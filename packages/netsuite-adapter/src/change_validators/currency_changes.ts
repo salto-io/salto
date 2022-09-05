@@ -38,16 +38,15 @@ const changeValidator: ChangeValidator = async changes => (
           elemID: instance.elemID,
           severity: 'Error',
           message: 'Element contains instance that cannot be deployed.',
-          detailedMessage: 'The currency\'s \'OVERRIDE CURRENCY FORMAT\' is disabled and cannot be deployed.',
+          detailedMessage: 'The currency\'s \'OVERRIDE CURRENCY FORMAT\' is disabled and therfore cannot be deployed.',
         } as ChangeError
       }
       const fieldsToOmit = ['currencyPrecision', 'locale', 'formatSample']
-      fieldsToOmit.map(fieldToOmit => delete instance.value[fieldToOmit])
       return {
         elemID: instance.elemID,
         severity: 'Warning',
         message: 'Element contains fields that cannot be deployed. These fields will be skipped from the deployment.',
-        detailedMessage: 'The \'locale\' field cannot be deployed and will be skipped. Please edit it manually in the service.',
+        detailedMessage: `The ${fieldsToOmit.join(' ,')} fields cannot be deployed and will be skipped. Please edit locale manually in the service.`,
       } as ChangeError
     })
     .filter(isDefined)

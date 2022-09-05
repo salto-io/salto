@@ -60,6 +60,7 @@ import omitFieldsFilter from './filters/omit_fields'
 import currencyExchangeRate from './filters/currency_exchange_rate'
 import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
+import omitCurrencyFilter from './filters/currency_omit_fields'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -139,6 +140,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       consistentValues,
       // convertListsToMaps must run after convertLists and consistentValues
       // and must run before replaceInstanceReferencesFilter
+      omitCurrencyFilter,
       convertListsToMaps,
       replaceElementReferences,
       SDFInternalIds,

@@ -23,7 +23,7 @@ import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../src/config'
-import { ZENDESK } from '../src/constants'
+import { ZENDESK, BRAND_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
@@ -68,6 +68,23 @@ const deployChanges = async (
     })
     .toArray()
   return deployResults
+}
+
+const cleanup = async (adapterAttr: Reals): Promise<void> => {
+  const fetchResult = await adapterAttr.adapter.fetch({
+    progressReporter:
+      { reportProgress: () => null },
+  })
+  expect(fetchResult.errors).toHaveLength(0)
+  const { elements } = fetchResult
+  const e2eBrandInstances = elements
+    .filter(isInstanceElement)
+    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+    .filter(brand => brand.elemID.name.startsWith('Testbrand'))
+  await deployChanges(
+    adapterAttr,
+    { BRAND_TYPE_NAME: e2eBrandInstances.map(brand => toChange({ before: brand })) }
+  )
 }
 
 describe('Zendesk adapter E2E', () => {
@@ -245,6 +262,7 @@ describe('Zendesk adapter E2E', () => {
           },
         }
       )
+      await cleanup(adapterAttr)
       const instancesToAdd = [
         ticketFieldInstance,
         ticketFieldOption1,

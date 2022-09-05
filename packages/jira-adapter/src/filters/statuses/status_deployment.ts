@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, DeployResult, isModificationChange, AdditionChange, ModificationChange, Values, isReferenceExpression, isAdditionChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values, isReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
+import { deployChanges } from '../../deployment/standard_deployment'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { STATUS_TYPE_NAME } from '../../constants'
@@ -29,7 +30,6 @@ const STATUS_CATEGORY_NAME_TO_ID : Record<string, number> = {
   DONE: 3,
   IN_PROGRESS: 4,
 }
-const STATUS_DEPLOYMENT_LIMIT = 50
 
 type StatusResponse = {
   id: string
@@ -46,48 +46,34 @@ const STATUS_RESPONSE_SCHEME = Joi.array().items(
 const isStatusResponse = createSchemeGuard<StatusResponse>(STATUS_RESPONSE_SCHEME, 'Received an invalid status addition response')
 
 const createDeployableStatusValues = (
-  statusChanges: Array<Change<InstanceElement>>
-): Values[] => statusChanges
-  .map(getChangeData)
-  .map(instance => instance.value)
-  .map(value => {
-    const deployableValue = _.clone(value)
-    if (isReferenceExpression(value.statusCategory)) {
-      // resolve statusCategory value before deploy
-      const resolvedCategory = _.invert(STATUS_CATEGORY_NAME_TO_ID)[
-        value.statusCategory.value.value.id
-      ]
-      deployableValue.statusCategory = resolvedCategory
-    }
-    return deployableValue
-  })
-
-const setStatusIds = (
-  changes: Array<AdditionChange<InstanceElement>>,
-  instanceNameToId: Record<string, string>
-): void => {
-  changes
-    .map(getChangeData)
-    .forEach(instance => {
-      const statusId = instanceNameToId[instance.value.name]
-      instance.value.id = statusId
-    })
+  statusChange: Change<InstanceElement>
+): Values => {
+  const { value } = getChangeData(statusChange)
+  const deployableValue = _.clone(value)
+  if (isReferenceExpression(value.statusCategory)) {
+    // resolve statusCategory value before deploy
+    const resolvedCategory = _.invert(STATUS_CATEGORY_NAME_TO_ID)[
+      value.statusCategory.value.value.id
+    ]
+    deployableValue.statusCategory = resolvedCategory
+  }
+  return deployableValue
 }
 
-const modifyStatuses = async (
-  modificationChanges: Array<ModificationChange<InstanceElement>>,
+const modifyStatus = async (
+  modificationChange: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
   await client.put({
     url: '/rest/api/3/statuses',
     data: {
-      statuses: createDeployableStatusValues(modificationChanges),
+      statuses: createDeployableStatusValues(modificationChange),
     },
   })
 }
 
-const addStatuses = async (
-  additionChanges: Array<AdditionChange<InstanceElement>>,
+const addStatus = async (
+  additionChange: AdditionChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
   const response = await client.post({
@@ -96,60 +82,23 @@ const addStatuses = async (
       scope: {
         type: 'GLOBAL',
       },
-      statuses: createDeployableStatusValues(additionChanges),
+      statuses: createDeployableStatusValues(additionChange),
     },
   })
-
   if (!isStatusResponse(response.data)) {
-    const statusFullNames = additionChanges
-      .map(change => getChangeData(change))
-      .map(instance => instance.elemID.getFullName())
-    throw new Error(`Received an invalid status response when attempting to create statuses: ${statusFullNames.join()}`)
+    throw new Error(`Received an invalid status response when attempting to create status: ${additionChange.data.after.elemID.getFullName()}`)
   }
-  const statusNameToId = Object.fromEntries(response.data
-    .map(statusValue => [statusValue.name, statusValue.id]))
-  setStatusIds(additionChanges, statusNameToId)
+  additionChange.data.after.value.id = response.data[0].id
 }
 
-const deployStatuses = async (
-  changes: Array<AdditionChange<InstanceElement> | ModificationChange<InstanceElement>>,
+const deployStatus = async (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   client: JiraClient,
-): Promise<DeployResult> => {
-  const deployErrors: Error[] = []
-
-  await Promise.all(
-    _.chunk(changes, STATUS_DEPLOYMENT_LIMIT)
-      .map(async statusChangesChunk => {
-        try {
-          const [modificationChanges, additionChanges] = _.partition(
-            changes,
-            change => isModificationChange(change),
-          )
-
-          if (modificationChanges.length > 0) {
-            await modifyStatuses(
-              statusChangesChunk.filter(isModificationChange),
-              client
-            )
-          }
-
-          if (additionChanges.length > 0) {
-            await addStatuses(
-              statusChangesChunk.filter(isAdditionChange),
-              client
-            )
-          }
-        } catch (err) {
-          _.pullAll(changes, statusChangesChunk)
-          deployErrors.push(err)
-        }
-      })
-  )
-
-  return {
-    appliedChanges: changes,
-    errors: deployErrors,
+): Promise<void> => {
+  if (isModificationChange(change)) {
+    return modifyStatus(change, client)
   }
+  return addStatus(change, client)
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
@@ -201,11 +150,11 @@ const filter: FilterCreator = ({ client, config }) => ({
       }
     }
 
-    const deployResult = await deployStatuses(
+    const deployResult = await deployChanges(
       relevantChanges
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange),
-      client,
+      async change => deployStatus(change, client),
     )
 
     return {

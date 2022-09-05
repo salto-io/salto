@@ -53,7 +53,7 @@ const getInvalidPermissionErrorMessage = (
     .filter((permission: { permission: string }) =>
       !allowedPermissions.includes(permission.permission))
     .map((permission: { permission: string }) => permission.permission)))
-  return `Could not deploy element ${permissionScheme.elemID.getFullName()} because it had invalid permissions: ${invalidPermissionTypes.join(', ')}`
+  return `The permissions ${invalidPermissionTypes.join(', ')} in ${permissionScheme.elemID.getFullName()} does not exist in the current environment and will be excluded during deployment`
 }
 
 export const permissionTypeValidator: ChangeValidator = async (changes, elementsSource) => {

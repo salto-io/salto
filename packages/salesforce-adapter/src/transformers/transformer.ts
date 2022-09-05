@@ -1124,7 +1124,10 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
   if (isContainerType(fieldType) && _.isEmpty(value)) {
     return undefined
   }
-
+  if (isObjectType(fieldType) && value === '') {
+    //
+    return {}
+  }
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
@@ -1315,6 +1318,7 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
     element,
     transformFunc: removeLocalOnly,
     strict: false,
+    allowEmpty: true,
   })
 }
 

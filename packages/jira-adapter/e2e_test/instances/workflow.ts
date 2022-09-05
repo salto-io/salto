@@ -341,7 +341,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               type: 'UserInAnyGroupCondition',
               configuration: {
                 groups: [
-                  'system-administrators',
+                  createReference(new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'), allElements, ['name']),
                 ],
               },
             },

@@ -36,12 +36,6 @@ describe('group change', () => {
   let fieldConfiguration1: InstanceElement
   let fieldConfiguration2: InstanceElement
 
-  let statusType: ObjectType
-  let statusAddition1: InstanceElement
-  let statusAddition2: InstanceElement
-  let statusModification1: InstanceElement
-  let statusModification2: InstanceElement
-
   beforeEach(() => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME) })
     workflowInstance1 = new InstanceElement('workflow1', workflowType)

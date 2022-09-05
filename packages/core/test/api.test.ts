@@ -215,7 +215,7 @@ describe('api.ts', () => {
       mockedGetPlan = jest.spyOn(plan, 'getPlan')
       mockGetPlanResult = mockPlan.getPlan()
       mockedGetPlan.mockResolvedValue(mockGetPlanResult)
-      result = await api.preview(mockWorkspace({}), false, ACCOUNTS)
+      result = await api.preview(mockWorkspace({}), ACCOUNTS)
     })
 
     afterAll(() => {
@@ -265,7 +265,7 @@ describe('api.ts', () => {
             .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
           errors: [],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), false, ACCOUNTS)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
 
       it('should call adapter deploy function', async () => {
@@ -312,7 +312,7 @@ describe('api.ts', () => {
         )
 
         ws = mockWorkspace({ elements: [changedElement], stateElements: [origElement] })
-        result = await api.deploy(ws, actionPlan, jest.fn(), false)
+        result = await api.deploy(ws, actionPlan, jest.fn())
       })
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)
@@ -361,7 +361,7 @@ describe('api.ts', () => {
           appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [new Error('cannot add new employee')],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), false, ACCOUNTS)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
 
       it('should return error for the failed part', () => {
@@ -415,7 +415,7 @@ describe('api.ts', () => {
             .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
           errors: [],
         }))
-        executeDeploy = () => api.deploy(ws, actionPlan, jest.fn(), true, ACCOUNTS)
+        executeDeploy = () => api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, true)
       })
 
       describe('when adapter does not implement the validate method', () => {

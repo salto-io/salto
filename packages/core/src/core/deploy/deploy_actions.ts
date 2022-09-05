@@ -25,17 +25,21 @@ import { Plan, PlanItem, PlanItemId } from '../plan'
 
 const log = logger(module)
 
-const deployOrValidate = (
-  adapter: AdapterOperations,
-  adapterName: string,
-  opts: DeployOptions,
+type DeployOrValidateParams = {
+  adapter: AdapterOperations
+  adapterName: string
+  opts: DeployOptions
   checkOnly: boolean
+}
+
+const deployOrValidate = (
+  { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
 ): Promise<DeployResult> => {
   if (!checkOnly) {
     return adapter.deploy(opts)
   }
   if (_.isUndefined(adapter.validate)) {
-    throw new Error(`The adapter "${adapterName}" does not support checkOnly deployments.`)
+    throw new Error(`Check-Only deployment is not supported in adapter ${adapterName}`)
   }
   return adapter.validate(opts)
 }
@@ -52,7 +56,7 @@ const deployAction = (
     throw new Error(`Missing adapter for ${adapterName}`)
   }
   const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
-  return deployOrValidate(adapter, adapterName, opts, checkOnly)
+  return deployOrValidate({ adapter, adapterName, opts, checkOnly })
 }
 
 export class DeployError extends Error {

@@ -1124,8 +1124,9 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
   if (isContainerType(fieldType) && _.isEmpty(value)) {
     return undefined
   }
-  if (isObjectType(fieldType) && value === '') {
-    //
+  if (isObjectType(fieldType) && _.isEmpty(value)) {
+    // eslint-disable-next-line max-len
+    // We parse empty object as "" (empty string), and we dont want to delete them so we replace them with {} (empty object)
     return {}
   }
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {

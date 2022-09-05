@@ -127,7 +127,7 @@ describe('Zendesk adapter E2E', () => {
     )
     const ticketFieldInstance = createInstanceElement(
       'ticket_field',
-      { title: createName('ticket_field') },
+      { raw_title: createName('ticket_field') },
       { default_custom_field_option: { refType: BuiltinTypes.STRING } },
     )
     const ticketFieldOptionType = new ObjectType({
@@ -177,7 +177,7 @@ describe('Zendesk adapter E2E', () => {
     const userFieldName = createName('user_field')
     const userFieldInstance = createInstanceElement(
       'user_field',
-      { title: userFieldName, key: userFieldName },
+      { raw_title: userFieldName, key: userFieldName },
     )
     const userFieldOptionType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'user_field__custom_field_options'),

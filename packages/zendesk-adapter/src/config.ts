@@ -305,10 +305,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   automation: {
     transformation: {
       sourceTypeName: 'automations__automations',
-      idFields: ['raw_title'],
-      fileNameFields: ['raw_title'],
+      idFields: ['title'],
+      fileNameFields: ['title'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'title', fieldType: 'string' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/rules/automations/{id}',
     },
@@ -690,8 +689,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
-      idFields: ['title', 'type'],
-      fileNameFields: ['title', 'type'],
+      idFields: ['raw_title', 'type'],
+      fileNameFields: ['raw_title', 'type'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldsToOmit: FIELDS_TO_OMIT.concat(

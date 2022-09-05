@@ -283,8 +283,8 @@ export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
-  checkOnly: boolean,
   deleteBeforeUpdate?: boolean,
+  checkOnly = false,
 ): Promise<DeployResult> => {
   const pkg = createDeployPackage(deleteBeforeUpdate)
 

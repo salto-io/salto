@@ -45,10 +45,10 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
 }
 
-export const checkOnlyChangeValidators
-    : Record<CheckOnlyChangeValidatorName, ChangeValidatorCreator> = {
-      checkOnlyDeploy: createCheckOnlyDeployValidator,
-    }
+const checkOnlyChangeValidators
+  : Record<CheckOnlyChangeValidatorName, ChangeValidatorCreator> = {
+    checkOnlyDeploy: createCheckOnlyDeployValidator,
+  }
 
 
 const createSalesforceChangeValidator = (
@@ -56,7 +56,9 @@ const createSalesforceChangeValidator = (
   checkOnly: boolean
 ): ChangeValidator => {
   const [activeValidators, disabledValidators] = _.partition(
-    Object.entries(checkOnly ? checkOnlyChangeValidators : changeValidators),
+    Object.entries(checkOnly
+      ? { ...checkOnlyChangeValidators, ...changeValidators }
+      : changeValidators),
     ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
   )
   return createChangeValidator(

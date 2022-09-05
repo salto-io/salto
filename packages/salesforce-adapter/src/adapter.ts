@@ -413,11 +413,11 @@ export default class SalesforceAdapter implements AdapterOperations {
     const filtersRunner = this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
 
-    const result = await isCustomObjectInstanceChanges(resolvedChanges)
+    const result = !checkOnly && await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
-            resolvedChanges as Change<InstanceElement>[],
-            this.client,
-            this.fetchProfile.dataManagement
+          resolvedChanges as Change<InstanceElement>[],
+          this.client,
+          this.fetchProfile.dataManagement
       )
       : await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, checkOnly, this.userConfig.client?.deploy?.deleteBeforeUpdate)

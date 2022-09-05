@@ -38,8 +38,8 @@ export const getSubtypes = async (
         return
       }
       if (fieldType.elemID.getFullName() in subtypes) {
-        if (validateUniqueness && subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
-          log.warn(`duplicate ElemIDs of subtypes found. the duplicate is ${fieldType.elemID.getFullName()}`)
+        if (validateUniqueness && !subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
+          log.warn(`duplicate ElemIDs of subtypes found. The duplicate is ${fieldType.elemID.getFullName()}`)
         }
         return
       }

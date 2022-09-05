@@ -128,6 +128,7 @@ describe('Field references', () => {
       nestedValues: { refType: new ListType(someTypeWithNestedListOfValuesAndValue) },
       subjectAndValues: { refType: new ListType(someTypeWithNestedValuesAndSubject) },
       product: { refType: BuiltinTypes.STRING },
+      productWithName: { refType: BuiltinTypes.STRING },
       fail: { refType: BuiltinTypes.STRING },
       value: { refType: BuiltinTypes.STRING },
     },
@@ -208,6 +209,7 @@ describe('Field references', () => {
         },
       ],
       product: 'ABC',
+      productWithName: 'ABC',
       fail: 'fail',
       value: 'fail',
     }),
@@ -266,6 +268,11 @@ describe('Field references', () => {
         target: { type: 'product' },
       },
       {
+        src: { field: 'productWithName' },
+        serializationStrategy: 'nameWithPath',
+        target: { type: 'product' },
+      },
+      {
         src: { field: 'ticket_field_id', parentTypes: ['trigger'] },
         serializationStrategy: 'id',
         target: { type: 'ticket_field' },
@@ -316,6 +323,8 @@ describe('Field references', () => {
       expect(inst.value.nestedValues[1].values[0].list[0].value.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
       expect(inst.value.product).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.product.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC')
+      expect(inst.value.productWithName).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.productWithName.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC.name')
     })
     it('should resolve field values when context field is a reference', () => {
       const inst = elements.filter(
@@ -420,6 +429,19 @@ describe('Field references', () => {
       })
 
       expect(res).toEqual(2)
+    })
+
+    it('should resolve using ref value when ref value is not an element', async () => {
+      const res = await lookupNameFunc({
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'api_client', 'instance', 'instance', 'someVal'),
+          3,
+        ),
+        field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_client_id', BuiltinTypes.NUMBER),
+        path: new ElemID('adapter', 'somePath'),
+      })
+
+      expect(res).toEqual(3)
     })
 
     it('should resolve using the first strategy when multiple strategies are matched', async () => {

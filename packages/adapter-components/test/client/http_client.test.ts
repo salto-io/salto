@@ -62,13 +62,13 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(200, {
         accountId: 'ACCOUNT_ID',
       })
-      mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' })
-      mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' })
+      mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123' })
+      mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
       const getRes = await client.getSinglePage({ url: '/ep' })
       const getRes2 = await client.getSinglePage({ url: '/ep2', queryParams: { a: 'AAA' } })
-      expect(getRes).toEqual({ data: { a: 'b' }, status: 200 })
-      expect(getRes2).toEqual({ data: { c: 'd' }, status: 200 })
+      expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { h: '123' } })
+      expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: { hh: 'header' } })
     })
 
     it('should throw Unauthorized on login 401', async () => {

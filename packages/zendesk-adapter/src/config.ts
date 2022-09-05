@@ -1585,6 +1585,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   articles: {
     request: {
       url: '/help_center/articles',
+      recurseInto: [
+        {
+          type: 'article_translation',
+          toField: 'translations',
+          context: [{ name: 'articleId', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       dataField: 'articles',
@@ -1592,20 +1599,46 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
+      standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'author_id', fieldType: 'unknown' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
         { fieldName: 'edited_at' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
+      serviceUrl: '/knowledge/articles/{id}',
+    },
+  },
+  article_translation: {
+    request: {
+      url: '/help_center/articles/{articleId}/translations',
+    },
+    transformation: {
+      idFields: ['locale'],
+      sourceTypeName: 'article__translations',
+      dataField: 'translations',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'html_url', fieldType: 'string' },
+        { fieldName: 'source_id', fieldType: 'number' },
+        { fieldName: 'source_type', fieldType: 'string' },
+      ),
     },
   },
   sections: {
     request: {
       url: '/help_center/sections',
+      recurseInto: [
+        {
+          type: 'section_translation',
+          toField: 'translations',
+          context: [{ name: 'sectionId', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       dataField: 'sections',
@@ -1613,6 +1646,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   section: {
     transformation: {
+      standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'sections__sections',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
@@ -1620,6 +1654,24 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
+      ),
+      serviceUrl: '/knowledge/sections/{id}',
+    },
+  },
+  section_translation: {
+    request: {
+      url: '/help_center/sections/{sectionId}/translations',
+    },
+    transformation: {
+      idFields: ['locale'],
+      sourceTypeName: 'section__translations',
+      dataField: 'translations',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'html_url', fieldType: 'string' },
+        { fieldName: 'source_id', fieldType: 'number' },
+        { fieldName: 'source_type', fieldType: 'string' },
       ),
     },
   },
@@ -1641,6 +1693,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   categories: {
     request: {
       url: '/help_center/categories',
+      recurseInto: [
+        {
+          type: 'category_translation',
+          toField: 'translations',
+          context: [{ name: 'categoryId', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       dataField: 'categories',
@@ -1648,6 +1707,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   category: {
     transformation: {
+      standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'categories__categories',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
@@ -1655,6 +1715,24 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
+      ),
+      serviceUrl: '/hc/admin/categories/{id}/edit',
+    },
+  },
+  category_translation: {
+    request: {
+      url: '/help_center/categories/{categoryId}/translations',
+    },
+    transformation: {
+      idFields: ['locale'],
+      sourceTypeName: 'category__translations',
+      dataField: 'translations',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'html_url', fieldType: 'string' },
+        { fieldName: 'source_id', fieldType: 'number' },
+        { fieldName: 'source_type', fieldType: 'string' },
       ),
     },
   },
@@ -1671,6 +1749,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'permission_groups__permission_groups',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/knowledge/permissions/{id}',
     },
   },
   user_segments: {
@@ -1685,75 +1764,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'user_segments__user_segments',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-    },
-  },
-  badges: {
-    request: {
-      url: '/gather/badges',
-    },
-    transformation: {
-      dataField: 'badges',
-    },
-  },
-  badge: {
-    transformation: {
-      sourceTypeName: 'badges__badges',
-      fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'string' },
-      ),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'icon_url', fieldType: 'string' },
-      ),
-    },
-  },
-  badge_categories: {
-    request: {
-      url: '/gather/badge_categories',
-    },
-    transformation: {
-      dataField: 'badge_categories',
-    },
-  },
-  badge_category: {
-    transformation: {
-      sourceTypeName: 'badge_categories__badge_categories',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
-    },
-  },
-  themes: {
-    request: {
-      url: '/guide/theming/themes',
-    },
-    transformation: {
-      dataField: 'themes',
-    },
-  },
-  theme: {
-    transformation: {
-      sourceTypeName: 'themes__themes',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'string' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'string' }],
-    },
-  },
-  topics: {
-    request: {
-      url: '/community/topics',
-    },
-    transformation: {
-      dataField: 'topics',
-    },
-  },
-  topic: {
-    transformation: {
-      sourceTypeName: 'topics__topics',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'html_url', fieldType: 'string' },
-      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
+      serviceUrl: '/knowledge/user_segments/edit/{id}',
     },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
@@ -1801,10 +1813,6 @@ export const GUIDE_SUPPORTED_TYPES = {
   category: ['categories'],
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
-  badge: ['badges'],
-  badge_category: ['badge_categories'],
-  theme: ['themes'],
-  topic: ['topics'],
 }
 
 export const DEFAULT_CONFIG: ZendeskConfig = {

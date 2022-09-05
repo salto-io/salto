@@ -379,6 +379,14 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'neighborTableLookup', type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'publicGroup', parentTypes: ['PublicGroups'] },
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'role', parentTypes: ['Roles'] },
+    target: { type: 'Role' },
+  },
+  {
     // sometimes has a value that is not a reference - should only convert to reference
     // if lookupValueType exists
     src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },

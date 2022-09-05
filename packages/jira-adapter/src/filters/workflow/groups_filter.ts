@@ -40,7 +40,7 @@ export const fixGroupNames = (
           ?.map((groupName: string) => groupName.toLowerCase())
           .map((groupName: string) => (
             groupName in groups
-              ? new ReferenceExpression(groups[groupName].elemID, groups[groupName])
+              ? new ReferenceExpression(groups[groupName].elemID.createNestedID('name'), groups[groupName].value.name)
               : groupName
           ))
         return WALK_NEXT_STEP.SKIP
@@ -52,8 +52,8 @@ export const fixGroupNames = (
 
         if (groupInstance !== undefined) {
           value.configuration.group = new ReferenceExpression(
-            groupInstance.elemID,
-            groupInstance
+            groupInstance.elemID.createNestedID('name'),
+            groupInstance.value.name
           )
         }
 

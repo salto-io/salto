@@ -25,14 +25,16 @@ const log = logger(module)
 const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<string[]> => {
-  const permissionListInstance = await awu(await elementSource.list())
+  const permissionListElementId = await awu(await elementSource.list())
     .find(id => id.typeName === PERMISSIONS && id.idType === 'instance')
-  if (!permissionListInstance) {
+  if (!permissionListElementId) {
     return []
   }
-  const something = await elementSource.get(permissionListInstance)
-  return Object.values(something.value.additionalProperties as { key: string }[])
-    .map(({ key }) => key)
+  return Object.values(
+    (
+    await elementSource.get(permissionListElementId)
+    ).value.additionalProperties as { key: string }[]
+  ).map(({ key }) => key)
 }
 
 const hasInvalidPermissions = (

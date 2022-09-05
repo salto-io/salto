@@ -81,10 +81,12 @@ const cleanup = async (adapterAttr: Reals): Promise<void> => {
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .filter(brand => brand.elemID.name.startsWith('Testbrand'))
-  await deployChanges(
-    adapterAttr,
-    { BRAND_TYPE_NAME: e2eBrandInstances.map(brand => toChange({ before: brand })) }
-  )
+  if (e2eBrandInstances.length > 0) {
+    await deployChanges(
+      adapterAttr,
+      { BRAND_TYPE_NAME: e2eBrandInstances.map(brand => toChange({ before: brand })) }
+    )
+  }
 }
 
 describe('Zendesk adapter E2E', () => {

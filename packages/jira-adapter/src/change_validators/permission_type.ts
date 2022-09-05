@@ -16,6 +16,7 @@
 import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { isEmpty } from 'lodash'
 import { PERMISSION_SCHEME, PERMISSIONS } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -27,6 +28,7 @@ export const getAllowedPermissionTypes = async (
 ): Promise<string[]> => {
   const permissionListElementId = await awu(await elementSource.list())
     .find(id => id.typeName === PERMISSIONS && id.idType === 'instance')
+
   if (!permissionListElementId) {
     return []
   }
@@ -62,7 +64,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     return []
   }
   const allowedPermissionTypes = await getAllowedPermissionTypes(elementsSource)
-  if (allowedPermissionTypes === []) {
+  if (isEmpty(allowedPermissionTypes)) {
     log.warn('Could not find allowed permission types for permissionTypeValidator. Skipping validator')
     return []
   }

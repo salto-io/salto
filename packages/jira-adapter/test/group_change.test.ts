@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange, Change, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { getChangeGroupIds } from '../src/group_change'
-import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME, STATUS_TYPE_NAME } from '../src/constants'
+import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_TYPE_NAME } from '../src/constants'
 
 describe('group change', () => {
   let workflowType: ObjectType
@@ -115,12 +115,6 @@ describe('group change', () => {
         ],
       }
     )
-
-    statusType = new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) })
-    statusAddition1 = new InstanceElement('status1', statusType)
-    statusAddition2 = new InstanceElement('status2', statusType)
-    statusModification1 = new InstanceElement('status3', statusType)
-    statusModification2 = new InstanceElement('status4', statusType)
   })
 
   it('should group workflow modifications', async () => {
@@ -202,35 +196,5 @@ describe('group change', () => {
         after: fieldConfigurationItemInstance1,
       })],
     ]))).rejects.toThrow()
-  })
-
-  it('should group status modification changes', async () => {
-    const changeGroupIds = (await getChangeGroupIds(new Map<string, Change>([
-      [statusModification1.elemID.getFullName(), toChange({
-        before: statusModification1,
-        after: statusModification1,
-      })],
-      [statusModification2.elemID.getFullName(), toChange({
-        before: statusModification2,
-        after: statusModification2,
-      })],
-    ]))).changeGroupIdMap
-
-    expect(changeGroupIds.get(statusModification1.elemID.getFullName())).toBe('Status Modifications')
-    expect(changeGroupIds.get(statusModification2.elemID.getFullName())).toBe('Status Modifications')
-  })
-
-  it('should group status addition changes', async () => {
-    const changeGroupIds = (await getChangeGroupIds(new Map<string, Change>([
-      [statusAddition1.elemID.getFullName(), toChange({
-        after: statusAddition1,
-      })],
-      [statusAddition2.elemID.getFullName(), toChange({
-        after: statusAddition2,
-      })],
-    ]))).changeGroupIdMap
-
-    expect(changeGroupIds.get(statusAddition1.elemID.getFullName())).toBe('Status Additions')
-    expect(changeGroupIds.get(statusAddition2.elemID.getFullName())).toBe('Status Additions')
   })
 })

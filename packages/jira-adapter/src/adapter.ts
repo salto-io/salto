@@ -84,6 +84,7 @@ import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_schemes'
+import permissionSchemeFilter from './filters/permission_scheme'
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
@@ -160,6 +161,7 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
+  permissionSchemeFilter,
   jqlReferencesFilter,
   maskingFilter,
   referenceBySelfLinkFilter,

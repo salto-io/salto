@@ -32,9 +32,10 @@ const deployPermissionScheme = async (
   allowedPermissions: string[],
 ):Promise<void> => {
   const clonedPermissionSChemeChange = _.clone(permissionScheme)
-  clonedPermissionSChemeChange.data.after = getChangeData(clonedPermissionSChemeChange)
-    .value.permissions.filter((permission: { permission: string }) =>
-      allowedPermissions.includes(permission.permission))
+  clonedPermissionSChemeChange.data.after.value.permissions = getChangeData(
+    clonedPermissionSChemeChange
+  ).value.permissions.filter((permission: { permission: string }) =>
+    allowedPermissions.includes(permission.permission))
   await defaultDeployChange({
     change: clonedPermissionSChemeChange,
     client,

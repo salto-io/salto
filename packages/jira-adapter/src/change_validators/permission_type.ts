@@ -16,7 +16,7 @@
 import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { PERMISSION_SCHEME } from '../constants'
+import { PERMISSION_SCHEME, PERMISSIONS } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -25,9 +25,15 @@ const log = logger(module)
 const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<string[]> => {
-  // eslint-disable-next-line no-console
-  console.log(elementSource)
-  return []
+  const permissionListInstance = await awu(await elementSource.list())
+    .find(id => id.typeName === PERMISSIONS && id.idType === 'instance')
+  if (!permissionListInstance) {
+    log.warn('could not find permission list nacl.')
+    return []
+  }
+  const something = await elementSource.get(permissionListInstance)
+  return Object.values(something.value.additionalProperties as { key: string }[])
+    .map(({ key }) => key)
 }
 
 const hasInvalidPermissions = (
@@ -42,11 +48,11 @@ const getInvalidPermissionErrorMessage = (
   permissionScheme: InstanceElement,
   allowedPermissions: string[],
 ): string => {
-  // eslint-disable-next-line no-console
-  console.log(permissionScheme)
-  // eslint-disable-next-line no-console
-  console.log(allowedPermissions)
-  return 'something'
+  const invalidPermissionTypes = Array.from(new Set(permissionScheme.value.permissions
+    .filter((permission: { permission: string }) =>
+      !allowedPermissions.includes(permission.permission))
+    .map((permission: { permission: string }) => permission.permission)))
+  return `Could not deploy element ${permissionScheme.elemID.getFullName()} because it had invalid permissions: ${invalidPermissionTypes.join(', ')}`
 }
 
 export const permissionTypeValidator: ChangeValidator = async (changes, elementsSource) => {

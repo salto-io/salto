@@ -149,8 +149,9 @@ const deployPlan = async (
       workspace,
       actionPlan,
       (item: PlanItem, step: ItemStatus, details?: string) =>
-        updateAction(item, step, details), checkOnly,
+        updateAction(item, step, details),
       accounts,
+      checkOnly,
     ) : { success: true, errors: [] }
   const nonErroredActions = Object.keys(actions)
     .filter(action =>
@@ -200,7 +201,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     return CliExitCode.AppError
   }
 
-  const actionPlan = await preview(workspace, checkOnly, actualAccounts)
+  const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
 
   const result = dryRun ? { success: true, errors: [] } : await deployPlan(
@@ -213,6 +214,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     actualAccounts,
   )
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
+  // We don't flush the workspace for check-only deployments
   if (!_.isUndefined(result.changes) && !checkOnly) {
     const changes = [...result.changes]
     if (!(await updateWorkspace({
@@ -265,7 +267,7 @@ const deployDef = createWorkspaceCommand({
         name: 'checkOnly',
         alias: 'c',
         required: false,
-        description: 'Run validation deployment against the service',
+        description: 'Run validation-only deployment against the service',
         type: 'boolean',
       },
       ACCOUNTS_OPTION,

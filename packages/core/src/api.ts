@@ -109,8 +109,8 @@ const getAccountToServiceNameMap = (workspace: Workspace,
 
 export const preview = async (
   workspace: Workspace,
-  checkOnly: boolean,
   accounts = workspace.accounts(),
+  checkOnly = false,
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
@@ -142,8 +142,8 @@ export const deploy = async (
   workspace: Workspace,
   actionPlan: Plan,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  checkOnly: boolean,
   accounts = workspace.accounts(),
+  checkOnly = false,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adapters = await getAdapters(

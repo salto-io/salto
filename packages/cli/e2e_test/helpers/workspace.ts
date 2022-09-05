@@ -249,7 +249,7 @@ export const runPreviewGetPlan = async (
   accounts?: string[]
 ): Promise<Plan> => {
   const workspace = await loadLocalWorkspace({ path: fetchOutputDir })
-  return preview(workspace, false, accounts)
+  return preview(workspace, accounts)
 }
 
 const getChangedElementName = (change: Change): string => getChangeData(change).elemID.name

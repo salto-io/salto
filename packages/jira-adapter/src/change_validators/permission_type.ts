@@ -28,7 +28,6 @@ const getAllowedPermissionTypes = async (
   const permissionListInstance = await awu(await elementSource.list())
     .find(id => id.typeName === PERMISSIONS && id.idType === 'instance')
   if (!permissionListInstance) {
-    log.warn('could not find permission list nacl.')
     return []
   }
   const something = await elementSource.get(permissionListInstance)
@@ -61,6 +60,10 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     return []
   }
   const allowedPermissionTypes = await getAllowedPermissionTypes(elementsSource)
+  if (allowedPermissionTypes === []) {
+    log.warn('Could not find allowed permission types for permissionTypeValidator. Skipping validator')
+    return []
+  }
   return awu(changes)
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -70,7 +73,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'invalid something something',
+      message: 'Invalid permission type in permission scheme',
       detailedMessage: getInvalidPermissionErrorMessage(instance, allowedPermissionTypes),
     }))
     .toArray()

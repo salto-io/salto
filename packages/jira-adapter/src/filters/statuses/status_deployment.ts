@@ -30,6 +30,7 @@ const STATUS_CATEGORY_NAME_TO_ID : Record<string, number> = {
   DONE: 3,
   IN_PROGRESS: 4,
 }
+const INVERTED_STATUS_CATEGORY_NAME_TO_ID = _.invert(STATUS_CATEGORY_NAME_TO_ID)
 
 type StatusResponse = {
   id: string
@@ -52,7 +53,7 @@ const createDeployableStatusValues = (
   const deployableValue = _.clone(value)
   if (isReferenceExpression(value.statusCategory)) {
     // resolve statusCategory value before deploy
-    const resolvedCategory = _.invert(STATUS_CATEGORY_NAME_TO_ID)[
+    const resolvedCategory = INVERTED_STATUS_CATEGORY_NAME_TO_ID[
       value.statusCategory.value.value.id
     ]
     deployableValue.statusCategory = resolvedCategory

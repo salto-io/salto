@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, isInstanceChange, getChangeData, InstanceElement } from '@salto-io/adapter-api'
+import { Change, isInstanceChange, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { CURRENCY } from '../constants'
 import { FilterWith } from '../filter'
@@ -29,7 +29,8 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
       .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
         change,
         element => {
-          FIELDS_TO_OMIT.map(field => delete element.value[field])
+          const updatedList = isAdditionChange(change) ? FIELDS_TO_OMIT : ['currencyPrecision', 'formatSample']
+          updatedList.map(field => delete element.value[field])
           return element
         }
       ))

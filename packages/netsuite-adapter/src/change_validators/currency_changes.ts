@@ -37,7 +37,7 @@ const validatorModificationChange = (
     return {
       elemID: before.elemID,
       severity: 'Error',
-      message: 'Edition of \'currencyPrecision\' is not supported',
+      message: 'Editing of \'currencyPrecision\' is not supported',
       detailedMessage: 'The \'currencyPrecision\' field cannot be edited due to Netsuite restrictions.',
     }
   }
@@ -47,8 +47,8 @@ const validatorModificationChange = (
     return {
       elemID: before.elemID,
       severity: 'Error',
-      message: 'Element contains an instance that cannot be deployed.',
-      detailedMessage: 'The \'symbolPlacement\' and \'displaySymbol\' fields cannot be edited while overrideCurrencyFormat',
+      message: 'Currency contains a field that cannot be deployed.',
+      detailedMessage: 'The \'symbolPlacement\' and \'displaySymbol\' fields cannot be edited while overrideCurrencyFormat is disabled',
     }
   }
   return undefined
@@ -59,7 +59,7 @@ const validatorAdditionChange = (instance: InstanceElement): ChangeError => {
     return {
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Element contains an instance that cannot be deployed.',
+      message: 'Currency contains a field that cannot be deployed.',
       detailedMessage: 'The currency\'s \'OVERRIDE CURRENCY FORMAT\' field is disabled and therefore it cannot be deployed.',
     }
   }
@@ -67,8 +67,8 @@ const validatorAdditionChange = (instance: InstanceElement): ChangeError => {
   return {
     elemID: instance.elemID,
     severity: 'Warning',
-    message: 'Element contains fields that cannot be deployed. These fields will be skipped from the deployment.',
-    detailedMessage: `The following fileds: ${fieldsToOmit.join(' ,')}, cannot be deployed and will be skipped. Please edit locale manually in the service.`,
+    message: 'Currency contains fields that cannot be deployed. These fields will be skipped from the deployment.',
+    detailedMessage: `The following fields: ${fieldsToOmit.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,
   }
 }
 

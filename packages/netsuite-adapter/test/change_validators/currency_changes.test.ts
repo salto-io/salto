@@ -87,7 +87,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors[0].detailedMessage).toContain('The currency\'s \'OVERRIDE CURRENCY FORMAT\' field is disabled and therefore it cannot be deployed.')
     })
 
-    it('shoud not have changeError when deploying a new currency with \'overrideCurrencyFormat\' enabled.', async () => {
+    it('shoud have changeError when deploying a new currency with \'overrideCurrencyFormat\' enabled.', async () => {
       const after = instance.clone()
       after.value.overrideCurrencyFormat = true
       const fieldsToOmit = ['currencyPrecision', 'locale', 'formatSample']
@@ -97,7 +97,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain(`The following fileds: ${fieldsToOmit.join(' ,')}, cannot be deployed and will be skipped. Please edit locale manually in the service.`,)
+      expect(changeErrors[0].detailedMessage).toContain(`The following fields: ${fieldsToOmit.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,)
     })
   })
 

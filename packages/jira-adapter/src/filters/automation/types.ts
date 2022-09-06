@@ -207,7 +207,7 @@ export const createAutomationTypes = (): {
         },
       },
       state: { refType: BuiltinTypes.STRING },
-      authorAccountId: { refType: BuiltinTypes.STRING },
+      authorAccountId: { refType: accountIdInfoType },
       actor: { refType: actorType },
       projects: { refType: new ListType(projectType) },
       trigger: { refType: componentType },
@@ -224,6 +224,6 @@ export const createAutomationTypes = (): {
     automationType,
     subTypes: [actorType, componentType, tagType, projectType, componentValueType, fieldType,
       recipientType, statusType, operationType, conditionCriteriaType, conditionType,
-      groupType, roleType, subtaskType, compareFieldValueType],
+      groupType, roleType, subtaskType, compareFieldValueType, accountIdInfoType],
   }
 }

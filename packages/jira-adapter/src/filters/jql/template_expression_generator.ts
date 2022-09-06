@@ -21,7 +21,9 @@ import { logger } from '@salto-io/logging'
 import { ISSUE_TYPE_NAME, PRIORITY_TYPE_NAME, PROJECT_TYPE, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME, STATUS_CATEGORY_TYPE_NAME } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 
+// e.g., cf[1234]
 const CUSTOM_FIELD_PATTEN = /^cf\[(.*)\]$/
+// e.g. fieldNumber[Number]
 const FIELD_WITH_TYPE_PATTEN = /^(.*[^\\])\[.+\]$/
 const CUSTOM_FIELD_PREFIX = 'customfield_'
 
@@ -68,17 +70,17 @@ export const generateJqlContext = (
   typeToInstances: _(instances)
     .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
     .groupBy(instance => instance.elemID.typeName)
-    .mapValues(instanceGroup => _.keyBy(
-      instanceGroup.filter(instance => _.isString(instance.value.name)),
-      instance => {
+    .mapValues(instanceGroup => Object.fromEntries(instanceGroup
+      .map(instance => {
         const fieldName = CONTEXT_TYPE_TO_FIELD[instance.elemID.typeName]
-        return instance.value[fieldName].toLowerCase() as string
-      },
-    ))
+        return [instance.value[fieldName].toLowerCase(), instance]
+      })
+      .filter(([key]) => _.isString(key))))
     .value(),
 
   fieldsById: _(instances)
     .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
+    .filter(instance => _.isString(instance.value.id))
     .keyBy(instance => removeCustomFieldPrefix(instance.value.id))
     .value(),
 })
@@ -100,14 +102,23 @@ const getValueOperands = (operand: Operand): ValueOperand[] => {
 
 /**
  * This function is to get the real position of the `value`
- * since `position` is the position of the text`
+ * since `position` is the position of the text
  * `text` is the string as it is written in the jql (with quotation marks and escaping characters)
  * and `value` is the real value cleaned of the syntax differences
  */
-const getValuePosition = (node: { position: Position; value: string; text: string })
+type JqlNode = {
+  // The position of the `text`
+  position: Position
+  // `text` is the string as it is written in the jql (with quotation marks and escaping characters)
+  text: string
+  // `value` is the real value cleaned of the syntax differences
+  value: string
+}
+
+const getValuePosition = (node: JqlNode)
   : TokenPosition | undefined => {
   const valueIndex = node.text.indexOf(node.value)
-  // This might happen of node.text contains escaping characters.
+  // This might happen if node.text contains escaping characters.
   // We don't currently support that case but it is pretty rare to put characters
   // that require escaping the field names
   if (valueIndex === -1) {

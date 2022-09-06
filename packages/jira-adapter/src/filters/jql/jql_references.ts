@@ -37,6 +37,9 @@ type JqlDetails = {
   path: ElemID
 }
 
+type StringJqlDetails = JqlDetails & { jql: string }
+type TemplateJqlDetails = JqlDetails & { jql: TemplateExpression }
+
 const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
   // maps between the automation component type (which is determined by 'type' field)
   // and the corresponding jql relative paths
@@ -93,7 +96,7 @@ const filter: FilterCreator = () => {
 
       const jqls = instances
         .flatMap(getJqls)
-        .filter((jql): jql is JqlDetails & { jql: string } => _.isString(jql.jql))
+        .filter((jql): jql is StringJqlDetails => _.isString(jql.jql))
 
       const jqlContext = generateJqlContext(instances)
 
@@ -120,7 +123,7 @@ const filter: FilterCreator = () => {
             change,
             async instance => {
               getJqls(instance)
-                .filter((jql): jql is JqlDetails & { jql: TemplateExpression } =>
+                .filter((jql): jql is TemplateJqlDetails =>
                   isTemplateExpression(jql.jql))
                 .forEach(jql => {
                   const resolvedJql = jql.jql.parts.map(part => {
@@ -136,7 +139,7 @@ const filter: FilterCreator = () => {
                   }).join('')
 
 
-                  jqlToTemplateExpression[resolvedJql] = jql.jql
+                  jqlToTemplateExpression[jql.path.getFullName()] = jql.jql
 
                   setPath(instance, jql.path, resolvedJql)
                 })
@@ -156,9 +159,9 @@ const filter: FilterCreator = () => {
               getJqls(instance)
                 .filter((jql): jql is JqlDetails & { jql: string } =>
                   _.isString(jql.jql))
-                .filter(jql => jqlToTemplateExpression[jql.jql] !== undefined)
+                .filter(jql => jqlToTemplateExpression[jql.path.getFullName()] !== undefined)
                 .forEach(jql => {
-                  setPath(instance, jql.path, jqlToTemplateExpression[jql.jql])
+                  setPath(instance, jql.path, jqlToTemplateExpression[jql.path.getFullName()])
                 })
               return instance
             }

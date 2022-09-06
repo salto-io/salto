@@ -1121,7 +1121,7 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
   }
   const fieldType = await field?.getType()
 
-  if (isContainerType(fieldType) && _.isEmpty(value)) {
+  if (isContainerType(fieldType) && value === '') {
     return undefined
   }
   if (isObjectType(fieldType) && _.isEmpty(value)) {
@@ -1314,7 +1314,7 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
     if (isLocalOnly(field)) {
       return undefined
     }
-    if (_.isEmpty(value)) {
+    if (value === '' || value === []) {
       return {}
     }
     return value

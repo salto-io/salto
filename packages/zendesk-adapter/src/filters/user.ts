@@ -85,6 +85,26 @@ const replaceConditionsAndActionsCreator = (
   })
 }
 
+const fieldReplacer = (fields: string[]): UserReplacer => (instance, mapping) => {
+  fields
+    .forEach(field => {
+      const value = _.get(instance.value, field)?.toString()
+      const newValue = ((value !== undefined)
+            && Object.prototype.hasOwnProperty.call(mapping, value))
+        ? mapping[value]
+        : undefined
+      if (newValue !== undefined) {
+        _.set(
+          instance.value,
+          field,
+          (Number.isInteger(Number(newValue)))
+            ? Number(newValue)
+            : newValue
+        )
+      }
+    })
+}
+
 const replaceRestrictionImpl = (values: Values, mapping: Record<string, string>): void => {
   const id = values.restriction?.id
   if ((values.restriction?.type === 'User') && (id !== undefined)) {
@@ -147,6 +167,8 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
     replaceRestriction,
   ]),
   workspace: workspaceReplacer,
+  user_segment: fieldReplacer(['added_user_ids']),
+  article: fieldReplacer(['author_id']),
 }
 
 const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {

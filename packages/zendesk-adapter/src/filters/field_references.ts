@@ -36,13 +36,13 @@ const neighborContextFunc = (args: {
   ...args,
 })
 
-// TODO: Support in types with list values
 const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   brand_id: 'brand',
   group_id: 'group',
   schedule_id: 'business_hours_schedule',
   within_schedule: 'business_hours_schedule',
   set_schedule: 'business_hours_schedule',
+  ticket_form_id: 'ticket_form',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -239,6 +239,7 @@ type ZendeskFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 > & {
   zendeskSerializationStrategy?: ZendeskReferenceSerializationStrategyName
+  // Strategy for non-list values. For list values please check listValuesMissingRefereces filter
   zendeskMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
@@ -294,6 +295,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'group_restrictions' },
     serializationStrategy: 'id',
     target: { type: 'group' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'group_id' },
@@ -591,6 +593,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'ticket_form_id' },
     serializationStrategy: 'id',
     target: { type: 'ticket_form' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'ticket_form_ids' },
@@ -621,6 +624,31 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'permission_group_id' },
     serializationStrategy: 'id',
     target: { type: 'permission_group' },
+  },
+  {
+    src: { field: 'label_names', parentTypes: ['article'] },
+    serializationStrategy: 'name',
+    target: { type: 'label' },
+  },
+  {
+    src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
+    serializationStrategy: 'id',
+    target: { type: 'help_center_locale' },
+  },
+  {
+    src: { field: 'locale', parentTypes: ['article', 'section', 'category'] },
+    serializationStrategy: 'id',
+    target: { type: 'help_center_locale' },
+  },
+  {
+    src: { field: 'publish', parentTypes: ['permission_group'] },
+    serializationStrategy: 'id',
+    target: { type: 'user_segment' },
+  },
+  {
+    src: { field: 'edit', parentTypes: ['permission_group'] },
+    serializationStrategy: 'id',
+    target: { type: 'user_segment' },
   },
   {
     src: { field: 'organization_ids' },
@@ -729,11 +757,15 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
         'automation__conditions__all',
         'automation__conditions__any',
         'macro__actions',
+        'sla_policy__filter__all',
+        'sla_policy__filter__any',
         'trigger__actions',
         'trigger__conditions__all',
         'trigger__conditions__any',
         'view__conditions__all',
         'view__conditions__any',
+        'workspace__conditions__all',
+        'workspace__conditions__any',
       ],
     },
     target: { typeContext: 'allowlistedNeighborField' },

@@ -76,7 +76,13 @@ const deployWorkflowModification = async ({
   const tempInstance = originalInstance.clone()
   tempInstance.value.name = `${tempInstance.value.name}-${uuidv4()}`
 
+  const idToWorkflowSchemes = _.keyBy(
+    workflowSchemes,
+    scheme => scheme.elemID.getFullName()
+  )
+
   const workflowSchemesWithTemp = await awu(workflowSchemes)
+    .map(scheme => scheme.clone())
     .map(scheme => replaceWorkflowInScheme(
       scheme,
       originalInstance,
@@ -87,18 +93,12 @@ const deployWorkflowModification = async ({
     .toArray()
 
   const cleanTempInstance = async (): Promise<void> => {
-    const updateWorkflowSchemes = await awu(workflowSchemesWithTemp)
-      .map(scheme => replaceWorkflowInScheme(
-        scheme, tempInstance, originalInstance, elementsSource
-      ))
-      .filter(values.isDefined)
-      .toArray()
-
-    await awu(updateWorkflowSchemes).forEach(async scheme => {
+    await awu(workflowSchemesWithTemp).forEach(async schemeWithTemp => {
+      const scheme = idToWorkflowSchemes[schemeWithTemp.elemID.getFullName()]
       await preDeployWorkflowScheme(scheme, 'modify', elementsSource)
       try {
         await deployWorkflowScheme(
-          toChange({ before: scheme, after: scheme }),
+          toChange({ before: schemeWithTemp, after: scheme }),
           client,
           paginator,
           config,
@@ -127,10 +127,11 @@ const deployWorkflowModification = async ({
   )
 
   try {
-    await awu(workflowSchemesWithTemp).forEach(async scheme => {
-      await preDeployWorkflowScheme(scheme, 'modify', elementsSource)
+    await awu(workflowSchemesWithTemp).forEach(async schemeWithTemp => {
+      const scheme = idToWorkflowSchemes[schemeWithTemp.elemID.getFullName()]
+      await preDeployWorkflowScheme(schemeWithTemp, 'modify', elementsSource)
       await deployWorkflowScheme(
-        toChange({ before: scheme, after: scheme }),
+        toChange({ before: scheme, after: schemeWithTemp }),
         client,
         paginator,
         config,

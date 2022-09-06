@@ -118,6 +118,9 @@ const neighborReferenceTicketFieldLookupFunc: GetLookupNameFunc = async ({ ref }
 const neighborReferenceTicketFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
   (val === TICKET_FIELD_OPTION_TYPE_NAME ? val : undefined)
 
+const allowListLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  (NEIGHBOR_FIELD_TO_TYPE_NAMES[val])
+
 const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ ref }) => {
   if (isInstanceElement(ref.value) && ref.value.value.type === 'dropdown') {
     if (ref.elemID.typeName === USER_FIELD_TYPE_NAME) {
@@ -226,8 +229,8 @@ export const contextStrategyLookup: Record<
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
   // We use allow lists because there are types we don't support (such organizarion or requester)
   // and they'll as false positives
-  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: val => NEIGHBOR_FIELD_TO_TYPE_NAMES[val] }),
-  allowlistedNeighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: val => NEIGHBOR_FIELD_TO_TYPE_NAMES[val] }),
+  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
+  allowlistedNeighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: allowListLookupType }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),

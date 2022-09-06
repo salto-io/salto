@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, getChangeData, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -91,7 +91,7 @@ describe('workflowPropertiesFilter', () => {
     })
   })
 
-  describe('preDeploy', () => {
+  describe('pre/on Deploy', () => {
     it('should replace properties from list to map', async () => {
       const instance = new InstanceElement(
         'instance',
@@ -113,8 +113,11 @@ describe('workflowPropertiesFilter', () => {
           ],
         }
       )
-      await filter.preDeploy?.([toChange({ after: instance })])
-      expect(instance.value).toEqual({
+      const changes = [toChange({ after: instance })]
+      await filter.preDeploy?.(changes)
+
+      const instanceAfter = getChangeData(changes[0])
+      expect(instanceAfter.value).toEqual({
         statuses: [
           {
             properties: {
@@ -130,48 +133,11 @@ describe('workflowPropertiesFilter', () => {
           },
         ],
       })
-    })
-  })
 
-  describe('onDeploy', () => {
-    it('should replace properties from map to list', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        workflowType,
-        {
-          statuses: [
-            {
-              properties: {
-                a: '1',
-                b: '2',
-              },
-            },
-            {
-              properties: {
-                c: '3',
-                d: '4',
-              },
-            },
-          ],
-        }
-      )
-      await filter.onDeploy?.([toChange({ after: instance })])
-      expect(instance.value).toEqual({
-        statuses: [
-          {
-            properties: [
-              { key: 'a', value: '1' },
-              { key: 'b', value: '2' },
-            ],
-          },
-          {
-            properties: [
-              { key: 'c', value: '3' },
-              { key: 'd', value: '4' },
-            ],
-          },
-        ],
-      })
+      await filter.onDeploy?.(changes)
+
+      const instanceBefore = getChangeData(changes[0])
+      expect(instanceBefore.value).toEqual(instance.value)
     })
   })
 })

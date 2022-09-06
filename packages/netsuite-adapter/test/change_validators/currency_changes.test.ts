@@ -19,63 +19,63 @@ import currencyFieldValidator from '../../src/change_validators/currency_changes
 
 
 describe('Currency changes change  validator', () => {
-  describe('Additon changes to currency', () => {
-    let instance: InstanceElement
-    const type = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'currency'),
-      fields: {
-        name: {
-          refType: BuiltinTypes.STRING,
-        },
-        symbol: {
-          refType: BuiltinTypes.STRING,
-        },
-        isBaseCurrency: {
-          refType: BuiltinTypes.BOOLEAN,
-        },
-        isInactive: {
-          refType: BuiltinTypes.BOOLEAN,
-        },
-        overrideCurrencyFormat: {
-          refType: BuiltinTypes.BOOLEAN,
-        },
-        displaySymbol: {
-          refType: BuiltinTypes.STRING,
-        },
-        symbolPlacement: {
-          refType: BuiltinTypes.STRING,
-        },
-        locale: {
-          refType: BuiltinTypes.STRING,
-        },
-        formatSample: {
-          refType: BuiltinTypes.STRING,
-        },
-        exchangeRate: {
-          refType: BuiltinTypes.NUMBER,
-        },
-        currencyPrecision: {
-          refType: BuiltinTypes.STRING,
-        },
+  let instance: InstanceElement
+  const type = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'currency'),
+    fields: {
+      name: {
+        refType: BuiltinTypes.STRING,
       },
-      annotations: { source: 'soap' },
-    })
-    beforeEach(async () => {
-      instance = new InstanceElement('instance', type,
-        {
-          name: 'instance',
-          symbol: 'ILS',
-          isBaseCurrency: false,
-          isInactive: false,
-          overrideCurrencyFormat: false,
-          displaySymbol: '₪',
-          symbolPlacement: '_beforeNumber',
-          locale: '_israelHebrew',
-          formatSample: '₪1234.56',
-          exchangeRate: 2.365,
-          currencyPrecision: '_two',
-        })
-    })
+      symbol: {
+        refType: BuiltinTypes.STRING,
+      },
+      isBaseCurrency: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
+      isInactive: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
+      overrideCurrencyFormat: {
+        refType: BuiltinTypes.BOOLEAN,
+      },
+      displaySymbol: {
+        refType: BuiltinTypes.STRING,
+      },
+      symbolPlacement: {
+        refType: BuiltinTypes.STRING,
+      },
+      locale: {
+        refType: BuiltinTypes.STRING,
+      },
+      formatSample: {
+        refType: BuiltinTypes.STRING,
+      },
+      exchangeRate: {
+        refType: BuiltinTypes.NUMBER,
+      },
+      currencyPrecision: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+    annotations: { source: 'soap' },
+  })
+  beforeEach(async () => {
+    instance = new InstanceElement('instance', type,
+      {
+        name: 'instance',
+        symbol: 'ILS',
+        isBaseCurrency: false,
+        isInactive: false,
+        overrideCurrencyFormat: false,
+        displaySymbol: '₪',
+        symbolPlacement: '_beforeNumber',
+        locale: '_israelHebrew',
+        formatSample: '₪1234.56',
+        exchangeRate: 2.365,
+        currencyPrecision: '_two',
+      })
+  })
+  describe('Additon changes to currency', () => {
     it('should have changeError when deploying a new currency with \'overrideCurrencyFormat\' disabled.', async () => {
       const after = instance.clone()
       const changeErrors = await currencyFieldValidator(
@@ -101,7 +101,48 @@ describe('Currency changes change  validator', () => {
     })
   })
 
-  // describe('Modification changes to currency', () => {
+  describe('Modification changes to currency', () => {
+    it('should not have changeError when editing a field which isn\'t currencyPrecision, displaySymbol or symbolPlacement', async () => {
+      const after = instance.clone()
+      after.value.symbol = 'UYU'
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })]
+      )
+      expect(changeErrors).toHaveLength(0)
+    })
 
-  // })
+    it('should not have changeError when editing displaySymbol or symbolPlacement with overrideCurrencyFormat', async () => {
+      instance.value.overrideCurrencyFormat = true
+      const after = instance.clone()
+      after.value.displaySymbol = '@'
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })]
+      )
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('should have changeError when editing displaySymbol or symbolPlacement with overrideCurrencyFormat disabled', async () => {
+      const after = instance.clone()
+      after.value.displaySymbol = '@'
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })]
+      )
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(instance.elemID)
+      expect(changeErrors[0].detailedMessage).toContain('The \'symbolPlacement\' and \'displaySymbol\' fields cannot be edited')
+    })
+
+    it('should have changeError when modifying currencyPrecision', async () => {
+      const after = instance.clone()
+      after.value.currencyPrecision = '_zero'
+      const changeErrors = await currencyFieldValidator(
+        [toChange({ before: instance, after })]
+      )
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(instance.elemID)
+      expect(changeErrors[0].detailedMessage).toContain('The \'currencyPrecision\' field cannot be edited due to Netsuite restrictions.')
+    })
+  })
 })

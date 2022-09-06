@@ -36,7 +36,7 @@ const validatorModificationChange = (
   if (before.value.currencyPrecision !== after.value.currencyPrecision) {
     const instance = getChangeData(change)
     return {
-      elemID: instance.elemID,
+      elemID: before.elemID,
       severity: 'Error',
       message: 'Edition of \'currencyPrecision\' is not supported',
       detailedMessage: 'The \'currencyPrecision\' field cannot be edited due to Netsuite restrictions.',
@@ -49,7 +49,7 @@ const validatorModificationChange = (
       elemID: before.elemID,
       severity: 'Error',
       message: 'Element contains an instance that cannot be deployed.',
-      detailedMessage: 'The \'symbolPlacement\' and \'displaySymbol\' fields cannot be edited',
+      detailedMessage: 'The \'symbolPlacement\' and \'displaySymbol\' fields cannot be edited while overrideCurrencyFormat',
     }
   }
   return undefined

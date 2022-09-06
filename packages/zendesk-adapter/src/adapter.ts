@@ -79,6 +79,7 @@ import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
+import categoryTranslationFilter from './filters/translations/category'
 
 
 const log = logger(module)
@@ -137,6 +138,7 @@ export const DEFAULT_FILTERS = [
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
+  categoryTranslationFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,

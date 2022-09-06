@@ -138,6 +138,7 @@ export type Transition = {
   rules?: Rules
   name?: string
   from?: unknown[]
+  properties?: Values
 }
 
 const transitionsSchema = Joi.object({
@@ -146,6 +147,7 @@ const transitionsSchema = Joi.object({
   rules: rulesSchema.optional(),
   name: Joi.string().optional(),
   from: Joi.array().items(Joi.any()).optional(),
+  properties: Joi.alternatives(Joi.object(), Joi.array()).optional(),
 }).unknown(true)
 
 export type Status = {

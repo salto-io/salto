@@ -1527,7 +1527,7 @@ jira {
           url = "/rest/api/3/workflow/search"
           paginationField = "startAt"
           queryParams = {
-            expand = "transitions,transitions.rules,statuses,statuses.properties,operations"
+            expand = "transitions,transitions.rules,transitions.properties,statuses,statuses.properties,operations"
           }
         }
       }

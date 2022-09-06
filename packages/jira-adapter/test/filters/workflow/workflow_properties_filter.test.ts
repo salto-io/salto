@@ -24,13 +24,16 @@ describe('workflowPropertiesFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let workflowType: ObjectType
   let workflowStatusType: ObjectType
+  let workflowTransitionType: ObjectType
   let client: JiraClient
   beforeEach(async () => {
     workflowStatusType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowStatus') })
+    workflowTransitionType = new ObjectType({ elemID: new ElemID(JIRA, 'Transition') })
     workflowType = new ObjectType({
       elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME),
       fields: {
         statuses: { refType: new ListType(workflowStatusType) },
+        transitions: { refType: new ListType(workflowTransitionType) },
       },
     })
 
@@ -50,7 +53,14 @@ describe('workflowPropertiesFilter', () => {
       expect(elements).toHaveLength(2)
     })
 
-    it('should replace properties from map to list', async () => {
+    it('should set the properties field in Transition', async () => {
+      const elements = [workflowTransitionType]
+      await filter.onFetch(elements)
+      expect(workflowTransitionType.fields.properties).toBeDefined()
+      expect(elements).toHaveLength(2)
+    })
+
+    it('should replace properties from map to list in statuses', async () => {
       const instance = new InstanceElement(
         'instance',
         workflowType,
@@ -89,10 +99,50 @@ describe('workflowPropertiesFilter', () => {
         ],
       })
     })
+
+    it('should replace properties from map to list in transitions', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              properties: {
+                a: '1',
+                b: '2',
+              },
+            },
+            {
+              properties: {
+                c: '3',
+                d: '4',
+              },
+            },
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value).toEqual({
+        transitions: [
+          {
+            properties: [
+              { key: 'a', value: '1' },
+              { key: 'b', value: '2' },
+            ],
+          },
+          {
+            properties: [
+              { key: 'c', value: '3' },
+              { key: 'd', value: '4' },
+            ],
+          },
+        ],
+      })
+    })
   })
 
   describe('pre/on Deploy', () => {
-    it('should replace properties from list to map', async () => {
+    it('should replace properties from list to map statuses', async () => {
       const instance = new InstanceElement(
         'instance',
         workflowType,
@@ -119,6 +169,54 @@ describe('workflowPropertiesFilter', () => {
       const instanceAfter = getChangeData(changes[0])
       expect(instanceAfter.value).toEqual({
         statuses: [
+          {
+            properties: {
+              a: '1',
+              b: '2',
+            },
+          },
+          {
+            properties: {
+              c: '3',
+              d: '4',
+            },
+          },
+        ],
+      })
+
+      await filter.onDeploy?.(changes)
+
+      const instanceBefore = getChangeData(changes[0])
+      expect(instanceBefore.value).toEqual(instance.value)
+    })
+
+    it('should replace properties from list to map transitions', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              properties: [
+                { key: 'a', value: '1' },
+                { key: 'b', value: '2' },
+              ],
+            },
+            {
+              properties: [
+                { key: 'c', value: '3' },
+                { key: 'd', value: '4' },
+              ],
+            },
+          ],
+        }
+      )
+      const changes = [toChange({ after: instance })]
+      await filter.preDeploy?.(changes)
+
+      const instanceAfter = getChangeData(changes[0])
+      expect(instanceAfter.value).toEqual({
+        transitions: [
           {
             properties: {
               a: '1',

@@ -15,12 +15,15 @@
 */
 
 import { FIELD_TYPE_NAME } from '../filters/fields/constants'
-import { GROUP_TYPE_NAME, PROJECT_ROLE_TYPE } from '../constants'
+import { GROUP_TYPE_NAME, PROJECT_ROLE_TYPE, RESOLUTION_TYPE_NAME } from '../constants'
+
+export const RESOLUTION_KEY_PATTERN = 'jira\\.field\\.resolution'
 
 const KEY_ID_REGEX_TO_TYPE = {
   'jira\\.permission\\..*\\.projectrole': PROJECT_ROLE_TYPE,
   'jira\\.permission\\..*\\.groupCF': FIELD_TYPE_NAME,
   'jira\\.permission\\..*\\.userCF': FIELD_TYPE_NAME,
+  [RESOLUTION_KEY_PATTERN]: RESOLUTION_TYPE_NAME,
 }
 
 const KEY_NAME_REGEX_TO_TYPE = {

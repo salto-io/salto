@@ -17,50 +17,50 @@ import { ElemID, InstanceElement, ObjectType, BuiltinTypes, toChange } from '@sa
 import { NETSUITE } from '../../src/constants'
 import currencyFieldValidator from '../../src/change_validators/currency_changes'
 
+export const currencyType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'currency'),
+  fields: {
+    name: {
+      refType: BuiltinTypes.STRING,
+    },
+    symbol: {
+      refType: BuiltinTypes.STRING,
+    },
+    isBaseCurrency: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    isInactive: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    overrideCurrencyFormat: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    displaySymbol: {
+      refType: BuiltinTypes.STRING,
+    },
+    symbolPlacement: {
+      refType: BuiltinTypes.STRING,
+    },
+    locale: {
+      refType: BuiltinTypes.STRING,
+    },
+    formatSample: {
+      refType: BuiltinTypes.STRING,
+    },
+    exchangeRate: {
+      refType: BuiltinTypes.NUMBER,
+    },
+    currencyPrecision: {
+      refType: BuiltinTypes.STRING,
+    },
+  },
+  annotations: { source: 'soap' },
+})
 
 describe('Currency changes change  validator', () => {
   let instance: InstanceElement
-  const type = new ObjectType({
-    elemID: new ElemID(NETSUITE, 'currency'),
-    fields: {
-      name: {
-        refType: BuiltinTypes.STRING,
-      },
-      symbol: {
-        refType: BuiltinTypes.STRING,
-      },
-      isBaseCurrency: {
-        refType: BuiltinTypes.BOOLEAN,
-      },
-      isInactive: {
-        refType: BuiltinTypes.BOOLEAN,
-      },
-      overrideCurrencyFormat: {
-        refType: BuiltinTypes.BOOLEAN,
-      },
-      displaySymbol: {
-        refType: BuiltinTypes.STRING,
-      },
-      symbolPlacement: {
-        refType: BuiltinTypes.STRING,
-      },
-      locale: {
-        refType: BuiltinTypes.STRING,
-      },
-      formatSample: {
-        refType: BuiltinTypes.STRING,
-      },
-      exchangeRate: {
-        refType: BuiltinTypes.NUMBER,
-      },
-      currencyPrecision: {
-        refType: BuiltinTypes.STRING,
-      },
-    },
-    annotations: { source: 'soap' },
-  })
   beforeEach(async () => {
-    instance = new InstanceElement('instance', type,
+    instance = new InstanceElement('instance', currencyType,
       {
         name: 'instance',
         symbol: 'ILS',

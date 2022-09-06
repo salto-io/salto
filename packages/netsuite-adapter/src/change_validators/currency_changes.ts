@@ -34,7 +34,6 @@ const validatorModificationChange = (
 ): ChangeError | undefined => {
   const { before, after } = change.data
   if (before.value.currencyPrecision !== after.value.currencyPrecision) {
-    const instance = getChangeData(change)
     return {
       elemID: before.elemID,
       severity: 'Error',

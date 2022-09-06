@@ -47,6 +47,10 @@ const convertStatusesPropertiesToMap = (instance: WorkflowInstance): void => {
   })
 }
 
+const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
+  .filter(isInstanceChange)
+  .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
+  .filter(change => isWorkflowInstance(getChangeData(change)))
 
 const filter: FilterCreator = () => {
   const originalChanges: Record<string, Change<InstanceElement>> = {}
@@ -83,10 +87,7 @@ const filter: FilterCreator = () => {
     },
 
     preDeploy: async changes => {
-      const relevantChanges = changes
-        .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
-        .filter(change => isWorkflowInstance(getChangeData(change)))
+      const relevantChanges = getWorkflowChanges(changes)
 
       const changesToReturn = await awu(relevantChanges)
         .map(async change => {
@@ -110,10 +111,7 @@ const filter: FilterCreator = () => {
     },
 
     onDeploy: async changes => {
-      const relevantChanges = changes
-        .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
-        .filter(change => isWorkflowInstance(getChangeData(change)))
+      const relevantChanges = getWorkflowChanges(changes)
 
       const changesToReturn = await awu(relevantChanges)
         .map(async change => {

@@ -70,6 +70,8 @@ import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
 import unresolvedParentsFilter from './filters/unresolved_parents'
 import fieldNameFilter from './filters/fields/field_name_filter'
+import accountIdFilter from './filters/account_id/account_id_filter'
+import addDisplayNameFilter from './filters/account_id/add_display_name_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
@@ -92,7 +94,7 @@ import iconUrlFilter from './filters/icon_url'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
-import { removeScopedObjects } from './client/pagination'
+import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
@@ -105,7 +107,7 @@ const {
   addDeploymentAnnotations,
 } = elementUtils.swagger
 
-const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -187,6 +189,9 @@ export const DEFAULT_FILTERS = [
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
+  accountIdFilter,
+  // Must run after accountIdFilter
+  addDisplayNameFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]
@@ -224,7 +229,7 @@ export default class JiraAdapter implements AdapterOperations {
     this.client = client
     const paginator = createPaginator({
       client: this.client,
-      paginationFuncCreator: getWithOffsetAndLimit,
+      paginationFuncCreator: paginate,
       customEntryExtractor: removeScopedObjects,
     })
 

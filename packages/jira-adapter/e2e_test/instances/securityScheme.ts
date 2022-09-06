@@ -31,7 +31,10 @@ export const createSecurityLevelValues = (name: string, allElements: Element[]):
     {
       holder: {
         type: 'user',
-        parameter: '61d44bf59ee70a00685fa6b6',
+        parameter: {
+          id: '61d44bf59ee70a00685fa6b6',
+          displayName: 'Testing salto',
+        },
       },
     },
     {

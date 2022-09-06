@@ -57,6 +57,7 @@ type JiraFetchFilters = {
 type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
   addTypeToFieldName?: boolean
+  showUserDisplayNames?: boolean
 }
 
 export type MaskingConfig = {
@@ -187,6 +188,7 @@ const fetchConfigType = createUserFetchConfigType(
   {
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
+    showUserDisplayNames: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )

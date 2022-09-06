@@ -59,3 +59,7 @@ export const FIELD_CONFIGURATION_TYPE_NAME = 'FieldConfiguration'
 export const FIELD_CONFIGURATION_ITEM_TYPE_NAME = 'FieldConfigurationItem'
 export const GROUP_TYPE_NAME = 'Group'
 export const PERMISSION_SCHEME_TYPE_NAME = 'PermissionScheme'
+export const ACCOUNT_ID_INFO_TYPE = 'AccountIdInfo'
+export const ACCOUNT_ID_STRING = 'ACCOUNT_ID'
+export const ACCOUNT_IDS_FIELDS_NAMES = ['leadAccountId', 'authorAccountId', 'accountId']
+export const USER = 'user'

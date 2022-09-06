@@ -20,6 +20,7 @@ import { SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE, METADATA_TYPE } from '../../s
 import { defaultFilterContext } from '../utils'
 
 describe('emailTemplate static files filter', () => {
+  const SUFFIX = 'suffix'
   const ATTACHMENTS = 'attachments'
   const CONTENT = 'content'
   const FULL_NAME = 'fullName'
@@ -37,7 +38,10 @@ describe('emailTemplate static files filter', () => {
   }
 
   const emailType = new ObjectType({
-    annotations: { [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE },
+    annotations: {
+      [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE,
+      [SUFFIX]: 'email',
+    },
     elemID: emailTemplateID,
     fields,
     path: ['Objects', 'dir'],

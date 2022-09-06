@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { transformElement } from '@salto-io/adapter-utils'
 import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
@@ -124,7 +124,7 @@ export const deployChange = async ({
     ? { [endpoint.deployAsField]: valuesToDeploy }
     : valuesToDeploy
 
-  if (_.isEmpty(valuesToDeploy)) {
+  if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
 

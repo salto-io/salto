@@ -76,7 +76,36 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'users', fieldType: 'list<User>' },
         { fieldName: 'roles', fieldType: 'list<Role>' },
       ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'lastUpdated' },
+        { fieldName: 'lastMembershipUpdated' },
+        { fieldName: '_links' },
+      ],
       idFields: ['profile.name'],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/groups',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/groups/{groupId}',
+        method: 'put',
+        urlParamsToFields: {
+          groupId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/groups/{groupId}',
+        method: 'delete',
+        urlParamsToFields: {
+          groupId: 'id',
+        },
+      },
     },
   },
   'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu': {

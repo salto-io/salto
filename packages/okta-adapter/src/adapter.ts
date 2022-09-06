@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { objects } from '@salto-io/lowerdash'
+import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
 import { paginate } from './client/pagination'
@@ -26,12 +26,19 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
+import defaultDeployFilter from './filters/default_deploy'
+import groupDeploymentFilter from './filters/group_deployment'
 import { OKTA } from './constants'
 import fetchCriteria from './fetch_criteria'
+import { getLookUpName } from './reference_mapping'
+
+const { awu } = collections.asynciterable
 
 const {
   generateTypes,
   getAllInstances,
+  // loadSwagger,
+  // addDeploymentAnnotations,
 } = elementUtils.swagger
 
 const { createPaginator } = clientUtils
@@ -43,6 +50,9 @@ export const DEFAULT_FILTERS = [
   // should run before fieldReferencesFilter
   replaceObjectWithIdFilter,
   fieldReferencesFilter,
+  groupDeploymentFilter,
+  // should run last
+  defaultDeployFilter,
 ]
 
 export interface OktaAdapterParams {
@@ -154,6 +164,15 @@ export default class OktaAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
 
+    // This needs to happen after the onFetch since some filters
+    // may add fields that deployment annotation should be added to
+    // TODO update deploy func
+    // await addDeploymentAnnotations(
+    //   elements.filter(isObjectType),
+    //   [await loadSwagger(this.userConfig[API_DEFINITIONS_CONFIG].swagger.url)],
+    //   this.userConfig.apiDefinitions,
+    // )
+
     return filterResult.errors !== undefined
       ? { elements, errors: filterResult.errors }
       : { elements }
@@ -171,16 +190,32 @@ export default class OktaAdapter implements AdapterOperations {
         instance => instance.clone()
       )))
 
+    const resolvedChanges = await awu(changesToDeploy)
+      .map(async change =>
+        resolveChangeElement(change, getLookUpName)).toArray()
     const runner = this.createFiltersRunner()
-    await runner.preDeploy(changesToDeploy)
+    await runner.preDeploy(resolvedChanges)
 
-    const { deployResult: { appliedChanges, errors } } = await runner.deploy(changesToDeploy)
+    const { deployResult: { appliedChanges, errors } } = await runner.deploy(resolvedChanges)
 
-    const changesToReturn = [...appliedChanges]
-    await runner.onDeploy(changesToReturn)
+    const appliedChangesBeforeRestore = [...appliedChanges]
+    await runner.onDeploy(appliedChangesBeforeRestore)
+
+    const sourceChanges = _.keyBy(
+      changesToDeploy,
+      change => getChangeData(change).elemID.getFullName(),
+    )
+
+    const restoredAppliedChanges = await awu(appliedChangesBeforeRestore)
+      .map(change => restoreChangeElement(
+        change,
+        sourceChanges,
+        getLookUpName,
+      ))
+      .toArray()
 
     return {
-      appliedChanges: changesToReturn,
+      appliedChanges: restoredAppliedChanges,
       errors,
     }
   }

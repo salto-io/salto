@@ -29,8 +29,9 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
       .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
         change,
         element => {
-          const updatedList = isAdditionChange(change) ? FIELDS_TO_OMIT : ['currencyPrecision', 'formatSample']
-          updatedList.map(field => delete element.value[field])
+          if (isAdditionChange(change)) {
+            FIELDS_TO_OMIT.map(field => delete element.value[field])
+          }
           return element
         }
       ))

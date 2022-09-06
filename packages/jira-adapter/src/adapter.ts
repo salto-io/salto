@@ -57,6 +57,7 @@ import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
+import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties_filter'
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import stepIdsFilter from './filters/workflow/step_ids_filter'
@@ -129,6 +130,7 @@ export const DEFAULT_FILTERS = [
   transitionIdsFilter,
   stepIdsFilter,
   triggersFilter,
+  resolutionPropertyFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,

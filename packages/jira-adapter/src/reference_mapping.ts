@@ -473,12 +473,12 @@ ReferenceContextStrategyName
     target: { typeContext: 'parentFieldType' },
   },
   {
-    src: { field: 'value', parentTypes: ['StatusProperty'] },
+    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     serializationStrategy: 'id',
     target: { typeContext: 'workflowStatusPropertiesIdContext' },
   },
   {
-    src: { field: 'value', parentTypes: ['StatusProperty'] },
+    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     serializationStrategy: 'nameWithPath',
     target: { typeContext: 'workflowStatusPropertiesNameContext' },
   },

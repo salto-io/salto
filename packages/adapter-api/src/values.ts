@@ -180,11 +180,30 @@ export class TypeReference {
 
 export type TemplatePart = string | ReferenceExpression
 
+
+const concatString = (
+  part: TemplatePart, refString: {fullString: string}, allParts: TemplatePart[]
+): void => {
+  if (_.isString(part)) {
+    refString.fullString = refString.fullString.concat(part)
+  } else {
+    allParts.push(refString.fullString)
+    allParts.push(part)
+    refString.fullString = ''
+  }
+}
+
 export class TemplateExpression {
   parts: TemplatePart[]
 
   constructor({ parts }: { parts: TemplatePart[] }) {
-    this.parts = parts
+    const newParts:TemplatePart[] = []
+    const refString = { fullString: '' }
+    parts.forEach(part => concatString(part, refString, newParts))
+    if (refString.fullString) {
+      newParts.push(refString.fullString)
+    }
+    this.parts = newParts
   }
 
   get value(): string {

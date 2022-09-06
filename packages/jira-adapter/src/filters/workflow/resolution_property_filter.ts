@@ -14,15 +14,18 @@
 * limitations under the License.
 */
 import { Change, Element, getChangeData, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isWorkflowInstance, WorkflowInstance } from './types'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { RESOLUTION_KEY_PATTERN } from '../../references/workflow_properties'
 
 const { awu } = collections.asynciterable
+
+const log = logger(module)
 
 const splitResolutionProperties = (instance: WorkflowInstance): void => {
   instance.value.transitions
@@ -39,7 +42,10 @@ const splitResolutionProperties = (instance: WorkflowInstance): void => {
     })
 }
 
-
+/**
+ * This filter is to transform the jira.field.resolution property from a string
+ * of 'id1,id2,id3' to a list [id1, id2, id3] so we can convert it to references later
+ */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
@@ -59,15 +65,20 @@ const filter: FilterCreator = () => ({
           change,
           async instance => {
             instance.value.transitions
-              ?.filter(transition => transition.properties !== undefined)
+              ?.filter(transition => _.isPlainObject(transition.properties))
               ?.forEach(transition => {
                 transition.properties = _.mapValues(
                   transition.properties,
-                  (value, key) => (
-                    new RegExp(RESOLUTION_KEY_PATTERN).test(key) && Array.isArray(value)
-                      ? value.join(',')
-                      : value
-                  ),
+                  (value, key) => {
+                    if (!new RegExp(RESOLUTION_KEY_PATTERN).test(key)) {
+                      return value
+                    }
+                    if (!Array.isArray(value)) {
+                      log.warn(`Transition resolution property in instance ${instance.elemID.getFullName()} is not an array: ${safeJsonStringify(value)}`)
+                      return value
+                    }
+                    return value.join(',')
+                  },
                 )
               })
             return instance

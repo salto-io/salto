@@ -21,7 +21,7 @@ import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { isWorkflowInstance, WorkflowInstance } from './types'
-import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
+import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
 
 const PROPERTY_TYPE_NAME = 'WorkflowProperty'
@@ -80,12 +80,12 @@ const filter: FilterCreator = () => {
 
       elements.push(propertyType)
 
-      const workflowStatusType = findObject(elements, 'WorkflowStatus')
+      const workflowStatusType = findObject(elements, WORKFLOW_STATUS_TYPE_NAME)
       if (workflowStatusType !== undefined) {
         workflowStatusType.fields.properties = new Field(workflowStatusType, 'properties', new ListType(propertyType))
       }
 
-      const workflowTransitionType = findObject(elements, 'Transition')
+      const workflowTransitionType = findObject(elements, WORKFLOW_TRANSITION_TYPE_NAME)
       if (workflowTransitionType !== undefined) {
         workflowTransitionType.fields.properties = new Field(workflowTransitionType, 'properties', new ListType(propertyType))
       }

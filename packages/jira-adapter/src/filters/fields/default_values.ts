@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, compareSpecialValues, getChangeData, InstanceElement, isAdditionOrModificationChange, isObjectType, isReferenceExpression, isRemovalChange, isRemovalOrModificationChange, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isEqualValues, isObjectType, isReferenceExpression, isRemovalChange, isRemovalOrModificationChange, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getParents, resolveChangeElement, resolvePath, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -89,11 +89,7 @@ export const updateDefaultValues = async (
     : undefined
 
   if (isRemovalChange(contextChange)
-      || _.isEqualWith(
-        beforeDefault,
-        afterDefault,
-        compareSpecialValues
-      )
+      || isEqualValues(beforeDefault, afterDefault)
   ) {
     return
   }

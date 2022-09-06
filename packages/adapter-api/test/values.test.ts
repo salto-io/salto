@@ -175,22 +175,28 @@ describe('Values', () => {
         expect(isEqualValues(s1, s2)).toBeTruthy()
       })
 
-      it('References to inner properties with different values should not be equal', () => {
+      it('References to inner properties with different values should be equal by default', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val'), 2)
-        expect(isEqualValues(ref1, ref2)).toBeFalsy()
+        expect(isEqualValues(ref1, ref2)).toBeTruthy()
       })
 
-      it('References to different inner properties with the same value should not be equal', () => {
+      it('References to inner properties with the same should not be equal when compareReferencesValues is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
-        const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val2'), 1)
-        expect(isEqualValues(ref1, ref2)).toBeFalsy()
+        const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 2)
+        expect(isEqualValues(ref1, ref2, true)).toBeFalsy()
       })
 
       it('References to inner properties with the same should not be equal', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
-        expect(isEqualValues(ref1, ref2)).toBeTruthy()
+        expect(isEqualValues(ref1, ref2, true)).toBeTruthy()
+      })
+
+      it('References to different inner properties with the same value should be equal', () => {
+        const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
+        const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val2'), 1)
+        expect(isEqualValues(ref1, ref2, true)).toBeTruthy()
       })
     })
     it('calculate hash', () => {

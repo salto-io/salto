@@ -220,7 +220,8 @@ const shouldResolve = (ref: ReferenceExpression): boolean => (
 
 export const compareSpecialValues = (
   first: Value,
-  second: Value
+  second: Value,
+  compareReferencesValues = false,
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
@@ -229,15 +230,16 @@ export const compareSpecialValues = (
     const fValue = isReferenceExpression(first) ? first.value : first
     const sValue = isReferenceExpression(second) ? second.value : second
 
-    if (isReferenceExpression(first) && isReferenceExpression(second)) {
-      if (!first.elemID.isEqual(second.elemID)) {
-        return false
-      }
-      if (!shouldResolve(first)) {
-        return true
-      }
+    if (isReferenceExpression(first) && isReferenceExpression(second)
+     && !(shouldResolve(first) && compareReferencesValues)) {
+      return first.elemID.isEqual(second.elemID)
     }
-    return _.isEqualWith(fValue, sValue, compareSpecialValues)
+
+    return _.isEqualWith(
+      fValue,
+      sValue,
+      (va1, va2) => compareSpecialValues(va1, va2, compareReferencesValues),
+    )
   }
   if (typeof first === 'string' && typeof second === 'string') {
     return compareStringsIgnoreNewlineDifferences(first, second)
@@ -247,11 +249,12 @@ export const compareSpecialValues = (
 
 export const isEqualValues = (
   first: Value,
-  second: Value
+  second: Value,
+  compareReferencesValues = false,
 ): boolean => _.isEqualWith(
   first,
   second,
-  compareSpecialValues
+  (va1, va2) => compareSpecialValues(va1, va2, compareReferencesValues),
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

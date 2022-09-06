@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, Variable, VariableExpression, StaticFile } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
+import wu from 'wu'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
 import { createElementSource } from '../../common/helpers'
@@ -408,45 +409,88 @@ describe('getPlan', () => {
     expect(plan.size).toBe(1)
   })
 
-  it('should add a change to plan when a value of a reference to inner property is changed', async () => {
-    // This behavior works for fetch but it is not really the correct behavior for deploy:
-    // If there is no difference in the value to be deployed, it should not be a change in the plan
-    // (because nothing is actually going to change).
-    // We may want to change that in the future.
-    const type = new ObjectType({
-      elemID: new ElemID('adapter', 'type'),
-      fields: {
-        a: { refType: BuiltinTypes.NUMBER },
-        b: { refType: BuiltinTypes.NUMBER },
-        ref: { refType: BuiltinTypes.NUMBER },
-      },
+  describe('compareReferencesValues', () => {
+    let type: ObjectType
+    let instanceBefore: InstanceElement
+    let instanceAfter: InstanceElement
+    let referencedBefore: InstanceElement
+    let referencedAfter: InstanceElement
+
+    beforeEach(() => {
+      type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          a: { refType: BuiltinTypes.NUMBER },
+          b: { refType: BuiltinTypes.NUMBER },
+          ref: { refType: BuiltinTypes.NUMBER },
+        },
+      })
+
+      referencedBefore = new InstanceElement(
+        'instance2',
+        type,
+        {
+          a: 1,
+        }
+      )
+
+      instanceBefore = new InstanceElement(
+        'instance',
+        type,
+        {
+          a: 5,
+          b: 5,
+          ref: new ReferenceExpression(referencedBefore.elemID.createNestedID('a'), 1),
+        }
+      )
+
+      referencedAfter = new InstanceElement(
+        'instance2',
+        type,
+        {
+          a: 2,
+        }
+      )
+
+      instanceAfter = new InstanceElement(
+        'instance',
+        type,
+        {
+          a: 5,
+          b: 5,
+          ref: new ReferenceExpression(referencedAfter.elemID.createNestedID('a'), 2),
+        }
+      )
     })
 
-    const instance = new InstanceElement(
-      'instance',
-      type,
-      {
-        a: 5,
-        b: 5,
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'a'), 1),
-      }
-    )
+    it('when true should add a change to plan when a value of a reference to inner property is changed', async () => {
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+        compareReferencesValues: true,
+      })
+      expect(plan.size).toBe(2)
 
-    const changedInstance = new InstanceElement(
-      'instance',
-      type,
-      {
-        a: 5,
-        b: 5,
-        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'a'), 2),
-      }
-    )
-
-    const plan = await getPlan({
-      before: createElementSource([instance, type]),
-      after: createElementSource([changedInstance, type]),
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(2)
     })
-    expect(plan.size).toBe(1)
+
+    it('by default should not add a change to plan when a value of a reference to inner property is changed', async () => {
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+      })
+      expect(plan.size).toBe(1)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(1)
+    })
   })
 
   it('when reference in instance points to a whole element should have a change in plan', async () => {

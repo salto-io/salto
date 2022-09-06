@@ -84,6 +84,14 @@ describe('XML Transformer', () => {
         await pkg.add(createInstanceElement({ fullName: 'TestLayout' }, mockTypes.Layout))
         await pkg.add(createInstanceElement({ fullName: 'TestLayout2' }, mockTypes.Layout))
         await pkg.add(createInstanceElement(profileValues, mockTypes.Profile))
+        await pkg.add(createInstanceElement({ fullName: 'TestAction1',
+          quickActionLayout: { fullName: 'twoColumns',
+            quickActionLayoutColumns: [
+              { fullName: 'oneColumn' }, ''] } }, mockTypes.QuickAction))
+        await pkg.add(createInstanceElement({ fullName: 'TestAction2',
+          quickActionLayout: { fullName: 'twoColumns',
+            quickActionLayoutColumns: [
+              { fullName: 'oneColumn' }, []] } }, mockTypes.QuickAction))
         pkg.delete(mockTypes.Profile, 'foo')
         zipFiles = await getZipFiles(pkg)
       })
@@ -110,6 +118,18 @@ describe('XML Transformer', () => {
         expect(zipFiles).toHaveProperty([`${packageName}/layouts/TestLayout.layout`])
         expect(zipFiles).toHaveProperty([`${packageName}/layouts/TestLayout2.layout`])
         expect(zipFiles).toHaveProperty([`${packageName}/profiles/TestProfile.profile`])
+        expect(zipFiles).toHaveProperty([`${packageName}/quickActions/TestAction1.quickAction`])
+        expect(zipFiles).toHaveProperty([`${packageName}/quickActions/TestAction2.quickAction`])
+      })
+      it('should convert empty string into object', () => {
+        const quickActionXmlPath = `${packageName}/quickActions/TestAction1.quickAction`
+        const value = xmlParser.parse(zipFiles[quickActionXmlPath])
+        expect(value.QuickAction.quickActionLayout.quickActionLayoutColumns.length).toBe(2)
+      })
+      it('should convert empty array into object', () => {
+        const quickActionXmlPath = `${packageName}/quickActions/TestAction2.quickAction`
+        const value = xmlParser.parse(zipFiles[quickActionXmlPath])
+        expect(value.QuickAction.quickActionLayout.quickActionLayoutColumns.length).toBe(2)
       })
       describe('serialized xml file', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

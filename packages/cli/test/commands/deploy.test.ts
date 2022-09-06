@@ -23,6 +23,7 @@ import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/deploy'
 import { version as currentVersion } from '../../src/generated/version.json'
+import * as workspaceModule from '../../src/workspace/workspace'
 
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
@@ -83,6 +84,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
         },
         workspace,
@@ -106,6 +108,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
         },
         workspace,
@@ -122,6 +125,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
         },
         workspace,
@@ -139,6 +143,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: true,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
         },
         workspace,
@@ -158,6 +163,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: true,
+          checkOnly: false,
           accounts,
         },
         workspace,
@@ -177,6 +183,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
         },
         workspace,
@@ -194,6 +201,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
         },
         workspace,
@@ -221,6 +229,7 @@ describe('deploy command', () => {
             force: false,
             dryRun: false,
             detailedPlan: false,
+            checkOnly: false,
             accounts,
           },
           workspace,
@@ -237,6 +246,7 @@ describe('deploy command', () => {
             force: true,
             dryRun: false,
             detailedPlan: false,
+            checkOnly: false,
             accounts,
           },
           workspace,
@@ -255,6 +265,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
           env: mocks.withEnvironmentParam,
         },
@@ -295,6 +306,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
+          checkOnly: false,
           accounts,
           env: mocks.withEnvironmentParam,
         },
@@ -332,6 +344,7 @@ describe('deploy command', () => {
       force: false,
       dryRun: false,
       detailedPlan: false,
+      checkOnly: false,
     }
     describe('when state salto version does not exist', () => {
       beforeEach(async () => {
@@ -444,6 +457,29 @@ describe('deploy command', () => {
       })
       it('should recommend cancel', () => {
         expect(callbacks.shouldCancelCommand).toHaveBeenCalledTimes(1)
+      })
+    })
+    describe('when the user provides the checkOnly option', () => {
+      let result: number
+      let updateWorkspaceSpy: jest.SpyInstance
+      beforeEach(async () => {
+        updateWorkspaceSpy = jest.spyOn(workspaceModule, 'updateWorkspace')
+        mockGetUserBooleanInput.mockResolvedValueOnce(true)
+        result = await action({
+          ...cliCommandArgs,
+          input: {
+            force: false,
+            dryRun: false,
+            detailedPlan: false,
+            checkOnly: true,
+            accounts,
+          },
+          workspace,
+        })
+      })
+      it('should not flush workspace', () => {
+        expect(result).toBe(0)
+        expect(updateWorkspaceSpy).not.toHaveBeenCalled()
       })
     })
   })

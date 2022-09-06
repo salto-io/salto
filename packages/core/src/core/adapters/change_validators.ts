@@ -18,9 +18,13 @@ import { values } from '@salto-io/lowerdash'
 import { AdapterOperations, ChangeValidator } from '@salto-io/adapter-api'
 
 export const getAdapterChangeValidators = (
-  adapters: Record<string, AdapterOperations>
+  adapters: Record<string, AdapterOperations>,
+  checkOnly: boolean
 ): Record<string, ChangeValidator> =>
   _(adapters)
-    .mapValues(adapter => adapter.deployModifiers?.changeValidator)
+    .mapValues(adapter => (
+      checkOnly
+        ? adapter.validationModifiers?.changeValidator
+        : adapter.deployModifiers?.changeValidator))
     .pickBy(values.isDefined)
     .value()

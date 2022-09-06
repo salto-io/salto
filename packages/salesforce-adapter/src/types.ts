@@ -187,6 +187,7 @@ type ClientDeployConfig = Partial<{
   rollbackOnError: boolean
   ignoreWarnings: boolean
   purgeOnDelete: boolean
+  checkOnly: boolean
   testLevel: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg'
   runTests: string[]
   deleteBeforeUpdate: boolean

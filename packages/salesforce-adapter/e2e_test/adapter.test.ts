@@ -2645,7 +2645,7 @@ describe('Salesforce adapter E2E with real account', () => {
           if (await findInstance(instance)) {
             const pkg = createDeployPackage()
             pkg.delete(assertMetadataObjectType(await instance.getType()), await apiName(instance))
-            await client.deploy(await pkg.getZip(), false)
+            await client.deploy(await pkg.getZip(), { checkOnly: false })
           }
         }
 

@@ -76,10 +76,10 @@ describe('createSalesforceChangeValidator', () => {
         true
       )
     })
-    it('should create a validator', () => {
+    it('should create a validator with the extra checkOnlyValidator', () => {
       expect(validator).toBeDefined()
       expect(createChangeValidator).toHaveBeenCalledWith(
-        expect.toBeArrayOfSize(1), []
+        expect.toBeArrayOfSize(Object.keys(changeValidators).length + 1), []
       )
     })
   })

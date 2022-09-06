@@ -401,7 +401,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  async deployOrValidate(
+  private async deployOrValidate(
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {

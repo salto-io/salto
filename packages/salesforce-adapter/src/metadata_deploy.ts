@@ -199,7 +199,7 @@ const processDeployResponse = (
 
   const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
-  if (result.rollbackOnError && !result.success) {
+  if (!result.checkOnly && result.rollbackOnError && !result.success) {
     // if rollbackOnError and we did not succeed, nothing was applied as well
     return { successfulFullNames: [], errors }
   }
@@ -301,7 +301,7 @@ export const deployMetadata = async (
 
   const pkgData = await pkg.getZip()
 
-  const deployRes = await client.deploy(pkgData, checkOnly)
+  const deployRes = await client.deploy(pkgData, { checkOnly })
 
   log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
 

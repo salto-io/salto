@@ -15,8 +15,15 @@
 */
 import {
   Change,
-  Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression,
-  isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  isReferenceExpression,
+  isTemplateExpression,
+  ReferenceExpression,
+  TemplateExpression,
+  TemplatePart,
 } from '@salto-io/adapter-api'
 import { extractTemplate, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -59,19 +66,26 @@ const transformDynamicContentDependencies = async (
   }) ?? instance.value
 }
 
-const templatePartToApiValue = (part: TemplatePart): string => {
-  // remove brackets because they're included in placeholder
-  if (_.isString(part) && ['{{', '}}'].includes(part)) {
-    return ''
-  }
-  if (isReferenceExpression(part)) {
-    if (!isInstanceElement(part.value)) {
-      return part.value
+const templatePartToApiValue = (allParts: TemplatePart[]): string =>
+  allParts.map((part, index) => {
+    if (_.isString(part)) {
+      let tempString = part
+      if (part.startsWith('}}') && (index !== 0) && (isReferenceExpression(allParts[index - 1]))) {
+        tempString = tempString.slice(2)
+      }
+      if (part.endsWith('{{') && (index !== allParts.length - 1) && (isReferenceExpression(allParts[index + 1]))) {
+        tempString = tempString.slice(0, -2)
+      }
+      return tempString
     }
-    return part.value.value.placeholder ?? part
-  }
-  return part
-}
+    if (isReferenceExpression(part)) {
+      if (!isInstanceElement(part.value)) {
+        return part.value
+      }
+      return part.value.value.placeholder ?? part
+    }
+    return part
+  }).join('')
 
 const returnDynamicContentsToApiValue = async (
   instance: InstanceElement,
@@ -83,7 +97,7 @@ const returnDynamicContentsToApiValue = async (
     pathID: instance.elemID,
     transformFunc: ({ value, path }) => {
       if (path && path.name.startsWith('raw_') && isTemplateExpression(value)) {
-        const transformedValue = value.parts.map(templatePartToApiValue).join('')
+        const transformedValue = templatePartToApiValue(value.parts)
         mapping[transformedValue] = value
         return transformedValue
       }

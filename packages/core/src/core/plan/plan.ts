@@ -20,7 +20,7 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, ReferenceExpression, changeId,
+  isModificationChange, isRemovalChange, ReferenceExpression, changeId, shouldCompareByValue,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -91,7 +91,7 @@ const areReferencesEqual = async (
   // if both values are ReferenceExpressions and should not be resolved
   // they are compared by their elemID
   if (isReferenceExpression(first) && isReferenceExpression(second)
-   && !(shouldResolve(first) && compareReferencesValues)) {
+   && !shouldCompareByValue(first, second, compareReferencesValues)) {
     return {
       returnCode: 'return',
       returnValue: first.elemID.isEqual(second.elemID),

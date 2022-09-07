@@ -218,6 +218,16 @@ const shouldResolve = (ref: ReferenceExpression): boolean => (
   !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
 )
 
+export const shouldCompareByValue = (
+  first: ReferenceExpression,
+  second: ReferenceExpression,
+  compareReferencesValues: boolean
+): boolean => (
+  compareReferencesValues
+  && shouldResolve(first)
+  && shouldResolve(second)
+)
+
 export const compareSpecialValues = (
   first: Value,
   second: Value,
@@ -231,7 +241,7 @@ export const compareSpecialValues = (
     const sValue = isReferenceExpression(second) ? second.value : second
 
     if (isReferenceExpression(first) && isReferenceExpression(second)
-     && !(shouldResolve(first) && compareReferencesValues)) {
+     && !shouldCompareByValue(first, second, compareReferencesValues)) {
       return first.elemID.isEqual(second.elemID)
     }
 

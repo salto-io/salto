@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isElement } from 'lodash'
 import {
   ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType, isType,
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
@@ -29,9 +29,16 @@ const getValuesChanges = (
   after: Value,
   compareReferencesValues: boolean,
 ): DetailedChange[] => {
-  if (isEqualElements(before, after) || isEqualValues(before, after, compareReferencesValues)) {
+  if (isElement(before) && isElement(after)
+    && isEqualElements(before, after, compareReferencesValues)) {
     return []
   }
+
+  if (!isElement(before) && !isElement(after)
+    && isEqualValues(before, after, compareReferencesValues)) {
+    return []
+  }
+
   if (before === undefined) {
     return [{ id, action: 'add', data: { after } }]
   }
@@ -84,7 +91,6 @@ const getAnnotationTypeChanges = (
   id: ElemID,
   before: Value,
   after: Value,
-  compareReferencesValues: boolean
 ): DetailedChange[] => {
   const hasAnnotationTypes = (elem: ChangeDataType): elem is ObjectType | PrimitiveType =>
     isObjectType(elem) || isPrimitiveType(elem)
@@ -106,7 +112,7 @@ const getAnnotationTypeChanges = (
       id.createNestedID('annotation'),
       beforeUniqueAnnotationsTypes,
       afterUniqueAnnotationsTypes,
-      compareReferencesValues,
+      false,
     )
   }
   return []
@@ -164,7 +170,6 @@ export const detailedCompare = (
     after.elemID,
     before,
     after,
-    compareReferencesValues
   )
 
   const annotationChanges = getValuesChanges(

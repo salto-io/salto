@@ -29,6 +29,8 @@ import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
+import referencedIdFields from './filters/referenced_id_fields'
+import appStructureFilter from './filters/app_structure'
 import { OKTA } from './constants'
 import fetchCriteria from './fetch_criteria'
 import { getLookUpName } from './reference_mapping'
@@ -46,6 +48,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  appStructureFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
   // should run before fieldReferencesFilter
@@ -53,6 +56,8 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   groupDeploymentFilter,
   appDeploymentFilter,
+  // should run after fieldReferences
+  referencedIdFields,
   // should run last
   defaultDeployFilter,
 ]

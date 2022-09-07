@@ -52,11 +52,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       url: '/api/v1/groups',
       recurseInto: [
         {
-          type: 'api__v1__groups___groupId___apps@uuuuuu_00123_00125uu',
-          toField: 'apps',
-          context: [{ name: 'groupId', fromField: 'id' }],
-        },
-        {
           type: 'api__v1__groups___groupId___users@uuuuuu_00123_00125uu',
           toField: 'users',
           context: [{ name: 'groupId', fromField: 'id' }],
@@ -184,8 +179,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
       ],
+      standaloneFields: [{ fieldName: 'appUsers' }],
       // TODO SALTO-2644
       idFields: ['name', 'status'],
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: '_links' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'lastUpdated' },
+      ],
     },
     deployRequests: {
       add: {
@@ -205,6 +209,47 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         urlParamsToFields: {
           applicationId: 'id',
         },
+      },
+    },
+  },
+  AppUser: {
+    transformation: {
+      idFields: ['&id'],
+      extendsParentId: true,
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'lastUpdated' },
+        { fieldName: 'statusChanged' },
+        { fieldName: '_links' },
+      ],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/apps/{applicationId}/users/{userId}',
+        urlParamsToFields: {
+          applicationId: '_parent.0.id',
+          userId: 'id',
+        },
+        method: 'post',
+        fieldsToIgnore: ['id'],
+      },
+      modify: {
+        url: '/api/v1/apps/{applicationId}/users/{userId}',
+        urlParamsToFields: {
+          applicationId: '_parent.0.id',
+          userId: 'id',
+        },
+        method: 'post',
+        fieldsToIgnore: ['id'],
+      },
+      remove: {
+        url: '/api/v1/apps/{applicationId}/users/{userId}',
+        urlParamsToFields: {
+          applicationId: '_parent.0.id',
+          userId: 'id',
+        },
+        method: 'delete',
+        fieldsToIgnore: ['id'],
       },
     },
   },

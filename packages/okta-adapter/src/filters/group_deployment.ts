@@ -33,16 +33,6 @@ const GROUP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAc
       method: 'delete',
     },
   },
-  apps: {
-    add: {
-      url: '/api/v1/apps/{target}/groups/{source}',
-      method: 'put',
-    },
-    remove: {
-      url: '/api/v1/apps/{target}/groups/{source}',
-      method: 'delete',
-    },
-  },
   roles: {
     remove: {
       url: '/api/v1/groups/{source}/roles/{target}',

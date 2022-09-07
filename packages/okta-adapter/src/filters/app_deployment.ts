@@ -23,16 +23,6 @@ import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
 
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
-  appUsers: {
-    add: {
-      url: '/api/v1/apps/{source}/users/{target}',
-      method: 'put',
-    },
-    remove: {
-      url: '/api/v1/apps/{source}/users/{target}',
-      method: 'delete',
-    },
-  },
   assignedGroups: {
     add: {
       url: '/api/v1/apps/{source}/groups/{target}',

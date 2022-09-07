@@ -25,8 +25,9 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
   },
+  // TODO move the reference to user to parent annotation?
   {
-    src: { field: 'appUsers', parentTypes: [APPLICATION_TYPE_NAME] },
+    src: { field: 'id', parentTypes: ['AppUser'] },
     serializationStrategy: 'id',
     target: { type: USER_TYPE_NAME },
   },

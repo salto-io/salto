@@ -85,13 +85,15 @@ export const defaultDeployChange = async (
   }
 }
 
-// TODO bug: on modification change return value even if there was no change
 const getValuesToAdd = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   fieldName: string,
 ): string[] => {
   const fieldValuesAfter = _.get(getChangeData(change).value, fieldName)
   if (isAdditionChange(change)) {
+    if (fieldValuesAfter === undefined) {
+      return []
+    }
     return _.isString(fieldValuesAfter) ? [fieldValuesAfter] : fieldValuesAfter
   }
   const fieldValuesBefore = _.get(change.data.before.value, fieldName)
@@ -150,7 +152,7 @@ export const deployEdges = async (
   await awu(Object.keys(deployRequestByField)).forEach(async fieldName => {
     const fieldValuesToAdd = getValuesToAdd(change, fieldName)
     const addConfig = deployRequestByField[fieldName].add
-    if (fieldValuesToAdd.length > 0 && isDefined(addConfig)) {
+    if (fieldValuesToAdd?.length > 0 && isDefined(addConfig)) {
       await awu(fieldValuesToAdd).forEach(fieldValue =>
         deployEdge({ source: instanceId, target: fieldValue }, addConfig, fieldName))
     }
@@ -158,7 +160,7 @@ export const deployEdges = async (
     if (isModificationChange(change)) {
       const fieldValuesToRemove = getValuesToRemove(change, fieldName)
       const removeConfig = deployRequestByField[fieldName].remove
-      if (fieldValuesToRemove.length > 0 && isDefined(removeConfig)) {
+      if (fieldValuesToRemove?.length > 0 && isDefined(removeConfig)) {
         await awu(fieldValuesToRemove).forEach(fieldValue =>
           deployEdge({ source: instanceId, target: fieldValue }, removeConfig, fieldName))
       }

@@ -18,8 +18,8 @@ import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-a
 import { FilterCreator } from '../filter'
 
 const TYPE_TO_REFERENCES_TYPES: Record<string, string[]> = {
-  Application: ['appUsers', 'assignedGroups'],
-  Group: ['users', 'apps', 'roles'],
+  Application: ['assignedGroups'],
+  Group: ['users', 'roles'],
   IdentityProvider: ['users'],
   Feature: ['featureDependents', 'featureDependencies'],
 }

@@ -23,15 +23,16 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-// eslint-disable-next-line import/no-extraneous-dependencies,no-restricted-imports
-import { getDiffInstance } from '@salto-io/core/dist/src/core/plan/diff'
 import _ from 'lodash'
+import { detailedCompare, getPath } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isInstanceOfType } from './utils'
-import { PROFILE_METADATA_TYPE } from '../constants'
+import { INSTANCE_FULL_NAME_FIELD, PROFILE_METADATA_TYPE } from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const isInstanceOfTypeProfile = isInstanceOfType(PROFILE_METADATA_TYPE)
+
+export const LOGIN_IP_RANGES_FIELD = 'loginIpRanges'
 
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
@@ -40,15 +41,41 @@ const isProfileRelatedChange = async (change: Change): Promise<boolean> => (
   isInstanceOfTypeProfile(getChangeData(change))
 )
 
-const toMinifiedChange = (change: Change<InstanceElement>): Change<InstanceElement> => {
+const toMinifiedChange = (
+  change: Change<InstanceElement>,
+): Change<InstanceElement> => {
   const [before, after] = getAllChangeData(change)
-  const minifiedBefore = getDiffInstance(toChange({
-    before: after,
-    after: before,
-  }))
-  const minifiedAfter = getDiffInstance(change)
-  minifiedBefore.value.fullName = before.value.fullName
-  minifiedAfter.value.fullName = after.value.fullName
+  const detailedChanges = detailedCompare(before, after, true)
+  const minifiedBefore = before.clone()
+  const minifiedAfter = after.clone()
+  minifiedBefore.value = {
+    [INSTANCE_FULL_NAME_FIELD]: before.value[INSTANCE_FULL_NAME_FIELD],
+    [LOGIN_IP_RANGES_FIELD]: before.value[LOGIN_IP_RANGES_FIELD] ?? [],
+  }
+  minifiedAfter.value = {
+    [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
+    [LOGIN_IP_RANGES_FIELD]: after.value[LOGIN_IP_RANGES_FIELD] ?? [],
+  }
+
+  detailedChanges.forEach(detailedChange => {
+    const changePath = getPath(before, detailedChange.id)
+    if (_.isUndefined(changePath)) {
+      return
+    }
+    //  This code makes sure we deploy the whole parent value
+    //  of nested attributes (for example, a change in userPermissions)
+    const minifiedValuePath = changePath.length > 2
+      ? changePath.slice(0, -1)
+      : changePath
+    const beforeChange = _.get(before, minifiedValuePath)
+    const afterChange = _.get(after, minifiedValuePath)
+    if (isDefined(beforeChange)) {
+      _.set(minifiedBefore, minifiedValuePath, beforeChange)
+    }
+    if (isDefined(afterChange)) {
+      _.set(minifiedAfter, minifiedValuePath, afterChange)
+    }
+  })
   return toChange({
     before: minifiedBefore,
     after: minifiedAfter,

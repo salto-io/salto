@@ -16,7 +16,7 @@
 import { Change, getAllChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from '../../src/filter'
-import filterCreator from '../../src/filters/profile_deploy'
+import filterCreator, { LOGIN_IP_RANGES_FIELD } from '../../src/filters/profile_deploy'
 import { defaultFilterContext } from '../utils'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 
@@ -38,11 +38,16 @@ describe('profileDeployFilter', () => {
           nonModifiedField: '1',
           anotherNonModifiedField: '2',
           modifiedField: 'before',
+          modifiedNestedField: {
+            modifiedAttr: 'before',
+            nonModifiedAttr: '1',
+          },
         }
       )
 
       const afterInstance = beforeInstance.clone()
       afterInstance.value.modifiedField = 'after'
+      afterInstance.value.modifiedNestedField.modifiedAttr = 'after'
       originalChange = toChange({
         before: beforeInstance,
         after: afterInstance,
@@ -62,11 +67,21 @@ describe('profileDeployFilter', () => {
         const [before, after] = getAllChangeData(afterPreDeployChanges[0])
         expect(before.value).toEqual({
           [INSTANCE_FULL_NAME_FIELD]: FULL_NAME,
+          [LOGIN_IP_RANGES_FIELD]: [],
           modifiedField: 'before',
+          modifiedNestedField: {
+            modifiedAttr: 'before',
+            nonModifiedAttr: '1',
+          },
         })
         expect(after.value).toEqual({
           [INSTANCE_FULL_NAME_FIELD]: FULL_NAME,
+          [LOGIN_IP_RANGES_FIELD]: [],
           modifiedField: 'after',
+          modifiedNestedField: {
+            modifiedAttr: 'after',
+            nonModifiedAttr: '1',
+          },
         })
       })
     })

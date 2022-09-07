@@ -198,6 +198,16 @@ describe('Values', () => {
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val2'), 1)
         expect(isEqualValues(ref1, ref2, true)).toBeTruthy()
       })
+
+      it('Reference should not be equal to its resolved value by default', () => {
+        const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
+        expect(isEqualValues(ref1, 1)).toBeFalsy()
+      })
+
+      it('Reference should not be equal to its resolved value when compareReferencesValues is true', () => {
+        const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
+        expect(isEqualValues(ref1, 1, true)).toBeTruthy()
+      })
     })
     it('calculate hash', () => {
       const zOMGBuffer = Buffer.from('ZOMG')

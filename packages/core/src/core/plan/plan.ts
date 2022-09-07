@@ -88,35 +88,34 @@ const areReferencesEqual = async (
   secondVisitedReferences: Set<string>,
   compareReferencesValues: boolean
 ): Promise<ReferenceCompareReturnValue> => {
-  // if both values are ReferenceExpressions and should not be resolved
-  // they are compared by their elemID
-  if (isReferenceExpression(first) && isReferenceExpression(second)
-   && !shouldCompareByValue(first, second, compareReferencesValues)) {
-    return {
-      returnCode: 'return',
-      returnValue: first.elemID.isEqual(second.elemID),
+  if (shouldCompareByValue(first, second, compareReferencesValues)) {
+    const shouldResolveFirst = isReferenceExpression(first) && shouldResolve(first)
+
+    const firstValue = shouldResolveFirst
+      ? await getReferenceValue(first, firstSrc, firstVisitedReferences)
+      : first
+
+    const shouldResolveSecond = isReferenceExpression(second) && shouldResolve(second)
+
+    const secondValue = shouldResolveSecond
+      ? await getReferenceValue(second, secondSrc, secondVisitedReferences)
+      : second
+
+    if (shouldResolveFirst || shouldResolveSecond) {
+      return {
+        returnCode: 'recurse',
+        returnValue: {
+          firstValue,
+          secondValue,
+        },
+      }
     }
   }
 
-  const shouldResolveFirst = isReferenceExpression(first) && shouldResolve(first)
-
-  const firstValue = shouldResolveFirst
-    ? await getReferenceValue(first, firstSrc, firstVisitedReferences)
-    : first
-
-  const shouldResolveSecond = isReferenceExpression(second) && shouldResolve(second)
-
-  const secondValue = shouldResolveSecond
-    ? await getReferenceValue(second, secondSrc, secondVisitedReferences)
-    : second
-
-  if (shouldResolveFirst || shouldResolveSecond) {
+  if (isReferenceExpression(first) && isReferenceExpression(second)) {
     return {
-      returnCode: 'recurse',
-      returnValue: {
-        firstValue,
-        secondValue,
-      },
+      returnCode: 'return',
+      returnValue: first.elemID.isEqual(second.elemID),
     }
   }
 

@@ -219,14 +219,25 @@ const shouldResolve = (ref: ReferenceExpression): boolean => (
 )
 
 export const shouldCompareByValue = (
-  first: ReferenceExpression,
-  second: ReferenceExpression,
+  first: Value,
+  second: Value,
   compareReferencesValues: boolean
-): boolean => (
-  compareReferencesValues
-  && shouldResolve(first)
-  && shouldResolve(second)
-)
+): boolean => {
+  if (!isReferenceExpression(first) && !isReferenceExpression(second)) {
+    return true
+  }
+
+  if (!compareReferencesValues) {
+    return false
+  }
+
+  if ((isReferenceExpression(first) && !isReferenceExpression(second))
+   || (!isReferenceExpression(first) && isReferenceExpression(second))) {
+    return true
+  }
+
+  return shouldResolve(first) && shouldResolve(second)
+}
 
 export const compareSpecialValues = (
   first: Value,
@@ -237,19 +248,21 @@ export const compareSpecialValues = (
     return first.isEqual(second)
   }
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    const fValue = isReferenceExpression(first) ? first.value : first
-    const sValue = isReferenceExpression(second) ? second.value : second
+    if (shouldCompareByValue(first, second, compareReferencesValues)) {
+      const fValue = isReferenceExpression(first) ? first.value : first
+      const sValue = isReferenceExpression(second) ? second.value : second
 
-    if (isReferenceExpression(first) && isReferenceExpression(second)
-     && !shouldCompareByValue(first, second, compareReferencesValues)) {
-      return first.elemID.isEqual(second.elemID)
+      return _.isEqualWith(
+        fValue,
+        sValue,
+        (va1, va2) => compareSpecialValues(va1, va2, compareReferencesValues),
+      )
     }
 
-    return _.isEqualWith(
-      fValue,
-      sValue,
-      (va1, va2) => compareSpecialValues(va1, va2, compareReferencesValues),
-    )
+    if (isReferenceExpression(first) && isReferenceExpression(second)) {
+      return first.elemID.isEqual(second.elemID)
+    }
+    return false
   }
   if (typeof first === 'string' && typeof second === 'string') {
     return compareStringsIgnoreNewlineDifferences(first, second)

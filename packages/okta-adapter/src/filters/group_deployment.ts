@@ -14,21 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, InstanceElement, isInstanceChange, getChangeData, isRemovalChange, isAdditionChange, isAdditionOrModificationChange, AdditionChange, ModificationChange, isModificationChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceChange, getChangeData, isRemovalChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { values, collections } from '@salto-io/lowerdash'
 import { GROUP_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
-
-const { isDefined } = values
-const { awu } = collections.asynciterable
-
-const isStringArray = (
-  value: unknown,
-): value is string[] => _.isArray(value) && value.every(_.isString)
 
 const GROUP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   users: {
@@ -59,68 +51,6 @@ const GROUP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAc
   },
 }
 
-const getValuesToAdd = (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  fieldName: string,
-): string[] => {
-  const fieldValuesAfter = _.get(getChangeData(change).value, fieldName)
-  if (!isStringArray(fieldValuesAfter)) {
-    return []
-  }
-  if (isAdditionChange(change)) {
-    return fieldValuesAfter
-  }
-  const fieldValuesBefore = _.get(change.data.before.value, fieldName)
-  if (isStringArray(fieldValuesBefore)) {
-    return fieldValuesAfter.filter(val => !fieldValuesBefore.includes(val))
-  } if (!isDefined(fieldValuesBefore)) {
-    return fieldValuesAfter
-  }
-  return []
-}
-
-const getValuesToRemove = (
-  change: ModificationChange<InstanceElement>,
-  fieldName: string,
-): string[] => {
-  const fieldValuesBefore = _.get(change.data.before.value, fieldName)
-  const fieldValuesAfter = _.get(change.data.after.value, fieldName)
-  if (!isStringArray(fieldValuesBefore)) {
-    return []
-  }
-  if (!isDefined(fieldValuesAfter)) {
-    return fieldValuesBefore
-  }
-  if (isStringArray(fieldValuesAfter)) {
-    return fieldValuesBefore.filter(val => !fieldValuesAfter.includes(val))
-  }
-  return []
-}
-
-// Deploy group-app, group-user and group-role assignments
-const deployGroupEdges = async (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  deployRequestByField: Record<string, configUtils.DeploymentRequestsByAction>,
-  client: OktaClient,
-): Promise<void> => {
-  const groupId = getChangeData(change).value.id
-  await awu(Object.keys(deployRequestByField)).forEach(async fieldName => {
-    const fieldValuesToAdd = getValuesToAdd(change, fieldName)
-    const addConfig = deployRequestByField[fieldName].add
-    if (fieldValuesToAdd.length > 0 && isDefined(addConfig)) {
-      await deployEdges(groupId, fieldValuesToAdd, client, addConfig)
-    }
-
-    if (isModificationChange(change)) {
-      const fieldValuesToRemove = getValuesToRemove(change, fieldName)
-      const removeConfig = deployRequestByField[fieldName].remove
-      if (fieldValuesToRemove.length > 0 && isDefined(removeConfig)) {
-        await deployEdges(groupId, fieldValuesToRemove, client, removeConfig)
-      }
-    }
-  })
-}
-
 const deployGroup = async (
   change: Change<InstanceElement>,
   client: OktaClient,
@@ -136,7 +66,7 @@ const deployGroup = async (
   }
   await defaultDeployChange(change, client, config[API_DEFINITIONS_CONFIG], fieldsToIgnore)
   if (isAdditionOrModificationChange(change)) {
-    await deployGroupEdges(change, GROUP_ASSIGNMENT_FIELDS, client)
+    await deployEdges(change, GROUP_ASSIGNMENT_FIELDS, client)
   }
 }
 

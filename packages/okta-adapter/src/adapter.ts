@@ -28,6 +28,7 @@ import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
+import appDeploymentFilter from './filters/app_deployment'
 import { OKTA } from './constants'
 import fetchCriteria from './fetch_criteria'
 import { getLookUpName } from './reference_mapping'
@@ -51,6 +52,7 @@ export const DEFAULT_FILTERS = [
   replaceObjectWithIdFilter,
   fieldReferencesFilter,
   groupDeploymentFilter,
+  appDeploymentFilter,
   // should run last
   defaultDeployFilter,
 ]

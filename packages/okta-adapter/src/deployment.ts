@@ -14,15 +14,20 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange } from '@salto-io/adapter-api'
 import { config as configUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 
 const log = logger(module)
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+
+const isStringArray = (
+  value: unknown,
+): value is string[] => _.isArray(value) && value.every(_.isString)
 
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
@@ -80,29 +85,85 @@ export const defaultDeployChange = async (
   }
 }
 
+// TODO bug: on modification change return value even if there was no change
+const getValuesToAdd = (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  fieldName: string,
+): string[] => {
+  const fieldValuesAfter = _.get(getChangeData(change).value, fieldName)
+  if (isAdditionChange(change)) {
+    return _.isString(fieldValuesAfter) ? [fieldValuesAfter] : fieldValuesAfter
+  }
+  const fieldValuesBefore = _.get(change.data.before.value, fieldName)
+  if (isStringArray(fieldValuesAfter) && isStringArray(fieldValuesBefore)) {
+    return fieldValuesAfter.filter(val => !fieldValuesBefore.includes(val))
+  }
+  if (
+    _.isString(fieldValuesBefore)
+    && _.isString(fieldValuesAfter)
+    && fieldValuesAfter !== fieldValuesBefore
+  ) {
+    return [fieldValuesAfter]
+  }
+  return []
+}
+
+const getValuesToRemove = (
+  change: ModificationChange<InstanceElement>,
+  fieldName: string,
+): string[] => {
+  const fieldValuesBefore = _.get(change.data.before.value, fieldName)
+  const fieldValuesAfter = _.get(change.data.after.value, fieldName)
+  if (!isStringArray(fieldValuesBefore)) {
+    return []
+  } if (!isDefined(fieldValuesAfter)) {
+    return fieldValuesBefore
+  } if (isStringArray(fieldValuesAfter)) {
+    return fieldValuesBefore.filter(val => !fieldValuesAfter.includes(val))
+  }
+  return []
+}
+
 export const deployEdges = async (
-  sourceId: string,
-  fieldValues: string[],
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  deployRequestByField: Record<string, configUtils.DeploymentRequestsByAction>,
   client: OktaClient,
-  requestConfig:configUtils.DeployRequestConfig,
-):Promise<deployment.ResponseResult[]> => {
+): Promise<void> => {
+  const instance = getChangeData(change)
+  const instanceId = instance.value.id
+
   const deployEdge = async (
     paramValues: Record<string, string>,
     deployRequest: configUtils.DeployRequestConfig,
+    fieldName: string,
   ): Promise<deployment.ResponseResult> => {
     const url = elementUtils.replaceUrlParams(deployRequest.url, paramValues)
     try {
       const response = await client[deployRequest.method]({ url, data: {} })
       return response.data
     } catch (err) {
-      // TODO log error
-      throw new Error()
+      // TODO improve error
+      throw new Error(`Deploy field values of ${fieldName} in instance ${instance.elemID.getFullName()}`)
     }
   }
 
-  const responses = await awu(fieldValues).map(fieldValue =>
-    deployEdge({ source: sourceId, target: fieldValue }, requestConfig)).toArray()
-  return responses
+  await awu(Object.keys(deployRequestByField)).forEach(async fieldName => {
+    const fieldValuesToAdd = getValuesToAdd(change, fieldName)
+    const addConfig = deployRequestByField[fieldName].add
+    if (fieldValuesToAdd.length > 0 && isDefined(addConfig)) {
+      await awu(fieldValuesToAdd).forEach(fieldValue =>
+        deployEdge({ source: instanceId, target: fieldValue }, addConfig, fieldName))
+    }
+
+    if (isModificationChange(change)) {
+      const fieldValuesToRemove = getValuesToRemove(change, fieldName)
+      const removeConfig = deployRequestByField[fieldName].remove
+      if (fieldValuesToRemove.length > 0 && isDefined(removeConfig)) {
+        await awu(fieldValuesToRemove).forEach(fieldValue =>
+          deployEdge({ source: instanceId, target: fieldValue }, removeConfig, fieldName))
+      }
+    }
+  })
 }
 
 export const deployChanges = async <T extends Change<ChangeDataType>>(

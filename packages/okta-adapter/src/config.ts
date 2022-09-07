@@ -187,6 +187,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       // TODO SALTO-2644
       idFields: ['name', 'status'],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/apps',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/apps/{applicationId}',
+        method: 'put',
+        urlParamsToFields: {
+          applicationId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/apps/{applicationId}',
+        method: 'delete',
+        urlParamsToFields: {
+          applicationId: 'id',
+        },
+      },
+    },
   },
   'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu': {
     transformation: {

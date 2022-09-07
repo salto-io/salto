@@ -37,6 +37,7 @@ export {
   AppConfig,
   configFromDisk,
   CommandConfig,
+  getConfigDir,
   CONFIG_DIR_NAME,
 } from './src/app_config'
 export {

@@ -112,7 +112,7 @@ describe('dynamic content references filter', () => {
       expect(secondInstance.value.raw_value).toEqual(new TemplateExpression({
         parts: ['{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}', ' ', '{{notExistsPlaceholder}}', ' bb', '{{',
+          '}}', ' ', '{{notExistsPlaceholder}}', ' ', 'bb', '{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}', 'cc'],
       }))
@@ -162,7 +162,7 @@ describe('dynamic content references filter', () => {
       expect(secondInstanceCopy.value.raw_value).toEqual(new TemplateExpression({
         parts: ['{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}', ' ', '{{notExistsPlaceholder}}', ' bb', '{{',
+          '}}', ' ', '{{notExistsPlaceholder}}', ' ', 'bb', '{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}', 'cc'],
       }))

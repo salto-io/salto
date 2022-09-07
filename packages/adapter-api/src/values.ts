@@ -184,9 +184,10 @@ export type TemplatePart = string | ReferenceExpression
 const concatString = (
   part: TemplatePart, allParts: TemplatePart[]
 ): void => {
-  const tempPart = allParts[-1]
+  const tempPart = allParts[allParts.length - 1]
   if (_.isString(part) && _.isString(tempPart)) {
-    allParts[-1] = tempPart.concat(part)
+    allParts.pop()
+    allParts.push(tempPart.concat(part))
   } else {
     allParts.push(part)
   }

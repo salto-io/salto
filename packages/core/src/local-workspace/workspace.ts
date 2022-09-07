@@ -83,7 +83,7 @@ const getNaclFilesSourceParams = ({
   staticFileSource: staticFiles.StaticFilesSource
 } => {
   const dirPathToIgnore = (dirPath: string): boolean =>
-    !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirPath)
+    !(excludeDirs.concat(path.join(path.resolve(sourceBaseDir), CONFIG_DIR_NAME))).includes(dirPath)
 
   const naclFilesStore = localDirectoryStore({
     baseDir: sourceBaseDir,
@@ -159,7 +159,7 @@ export const createEnvironmentSource = async ({
     remoteMapCreator,
   ),
   state: localState(
-    path.join(getConfigDir(baseDir), STATES_DIR_NAME, env),
+    path.join(path.resolve(baseDir), CONFIG_DIR_NAME, STATES_DIR_NAME, env),
     env,
     remoteMapCreator,
     stateStaticFilesSource ?? state.buildOverrideStateStaticFilesSource(localDirectoryStore({

@@ -59,10 +59,10 @@ export const metadataType = async (element: Readonly<Element>): Promise<string> 
 
 export const isCustomObject = async (element: Readonly<Element>): Promise<boolean> => {
   const res = isObjectType(element)
-    && await metadataType(element) === CUSTOM_OBJECT
-    // The last part is so we can tell the difference between a custom object
-    // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
-    && element.annotations[API_NAME] !== undefined
+  && await metadataType(element) === CUSTOM_OBJECT
+  // The last part is so we can tell the difference between a custom object
+  // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
+  && element.annotations[API_NAME] !== undefined
   return res
 }
 
@@ -641,14 +641,14 @@ export class Types {
     const baseType = Types.primitiveDataTypes[baseTypeName]
     const typeName = formulaTypeName(baseTypeName)
     return { [typeName]: new PrimitiveType({
-        elemID: new ElemID(SALESFORCE, typeName),
-        primitive: baseType.primitive,
-        annotationRefsOrTypes: {
-          ...baseType.annotationRefTypes,
-          [FORMULA]: BuiltinTypes.STRING,
-          [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]: Types.TreatBlankAsType,
-        },
-      }) }
+      elemID: new ElemID(SALESFORCE, typeName),
+      primitive: baseType.primitive,
+      annotationRefsOrTypes: {
+        ...baseType.annotationRefTypes,
+        [FORMULA]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]: Types.TreatBlankAsType,
+      },
+    }) }
   }
 
   public static formulaDataTypes: Record<string, PrimitiveType> = _.merge(
@@ -779,7 +779,7 @@ export class Types {
   }
 
   static createObjectType(name: string, customObject = true, isSettings = false,
-                          serviceIds?: ServiceIds): ObjectType {
+    serviceIds?: ServiceIds): ObjectType {
     const elemId = this.getElemId(name, customObject, serviceIds)
     return new ObjectType({
       elemID: elemId,
@@ -834,7 +834,7 @@ export class Types {
 export const isNameField = async (field: Field): Promise<boolean> =>
   (isObjectType(await field.getType())
     && (field.refType.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-      || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
+    || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
 
 const transformCompoundValues = async (
   record: SalesforceRecord,
@@ -843,7 +843,7 @@ const transformCompoundValues = async (
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
   const relevantCompoundFields = _.pickBy((await instance.getType()).fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
-      && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
+    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
   if (_.isEmpty(relevantCompoundFields)) {
     return record
   }
@@ -1003,7 +1003,7 @@ export const toCustomProperties = async (
 }
 
 export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeField,
-                                         knownTypes: Map<string, TypeElement>, additionalAnnotations?: Values): Field => {
+  knownTypes: Map<string, TypeElement>, additionalAnnotations?: Values): Field => {
   const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
@@ -1207,12 +1207,12 @@ export const getSObjectFieldElement = (
       // e.g. salesforce.user_app_menu_item.ApplicationId, salesforce.login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
-    // Compound Fields
+  // Compound Fields
   } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
     // Only fields that are compound in this object get compound type
     if (objCompoundFieldNames[field.name] !== undefined) {
       naclFieldType = field.nameField
-        // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
+      // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
         ? Types.compoundDataTypes[objCompoundFieldNames[field.name] as COMPOUND_FIELD_TYPE_NAMES]
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }
@@ -1423,9 +1423,9 @@ type CreateMetadataTypeParams = {
   missingFields?: Record<string, ValueTypeField[]>
 }
 export const createMetadataTypeElements = async ({
-                                                   name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
-                                                   isSettings = false, annotations = {}, missingFields = defaultMissingFields(),
-                                                 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
+  name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
+  isSettings = false, annotations = {}, missingFields = defaultMissingFields(),
+}: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
     return []

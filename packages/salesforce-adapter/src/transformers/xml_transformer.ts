@@ -81,7 +81,7 @@ export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): Retriev
 })
 
 const addContentFieldAsStaticFile = (values: Values, valuePath: string[], content: Buffer,
-                                     fileName: string, type: string, namespacePrefix?: string): void => {
+  fileName: string, type: string, namespacePrefix?: string): void => {
   const folder = namespacePrefix === undefined
     ? `${SALESFORCE}/${RECORDS_PATH}/${type}`
     : `${SALESFORCE}/${INSTALLED_PACKAGES_PATH}/${namespacePrefix}/${RECORDS_PATH}/${type}`
@@ -98,7 +98,7 @@ type FileName = string
 type Content = Buffer
 type ComplexType = {
   addContentFields(fileNameToContent: Record<string, Buffer>, values: Values,
-                   type: string, namespacePrefix?: string): void
+    type: string, namespacePrefix?: string): void
   getMissingFields?(metadataFileName: string): Values
   mapContentFields(instanceName: string, values: Values):
     Record<FieldName, Record<FileName, Content>>
@@ -141,7 +141,7 @@ const complexTypesMap: ComplexTypesMap = {
    */
   AuraDefinitionBundle: {
     addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values, type: string,
-                       namespacePrefix?: string) => {
+      namespacePrefix?: string) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content]) => {
           const fieldName = Object.entries(auraFileSuffixToFieldName)
@@ -190,7 +190,7 @@ const complexTypesMap: ComplexTypesMap = {
    */
   LightningComponentBundle: {
     addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values, type: string,
-                       namespacePrefix?: string) => {
+      namespacePrefix?: string) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content], index) => {
           const resourcePath = [LWC_RESOURCES, LWC_RESOURCE, String(index)]
@@ -238,7 +238,7 @@ const xmlToValues = (xmlAsString: string, type: string): Values => {
 }
 
 const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
-                                     complexType: boolean, namespacePrefix?: string): Promise<Record<string, Buffer>> => {
+  complexType: boolean, namespacePrefix?: string): Promise<Record<string, Buffer>> => {
   if (!complexType) { // this is a single file
     const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
     return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }

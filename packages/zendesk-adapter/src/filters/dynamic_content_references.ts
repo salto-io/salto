@@ -70,11 +70,11 @@ const templatePartToApiValue = (allParts: TemplatePart[]): string =>
   allParts.map((part, index) => {
     if (_.isString(part)) {
       let tempString = part
-      if (part.startsWith('}}') && (index !== 0) && (isReferenceExpression(allParts[index - 1]))) {
-        tempString = tempString.slice(2)
+      if (part.startsWith('}}') && (isReferenceExpression(allParts[index - 1]))) {
+        tempString = tempString.slice('}}'.length)
       }
-      if (part.endsWith('{{') && (index !== allParts.length - 1) && (isReferenceExpression(allParts[index + 1]))) {
-        tempString = tempString.slice(0, -2)
+      if (part.endsWith('{{') && (isReferenceExpression(allParts[index + 1]))) {
+        tempString = tempString.slice(0, -('{{'.length))
       }
       return tempString
     }

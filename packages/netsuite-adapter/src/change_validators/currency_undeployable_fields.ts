@@ -26,7 +26,6 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { CURRENCY } from '../constants'
-import { FIELDS_TO_OMIT } from '../filters/currency_omit_fields'
 
 const { isDefined } = values
 
@@ -40,7 +39,7 @@ const validateModificationChange = (
       elemID: before.elemID,
       severity: 'Error',
       message: 'Editing of \'currencyPrecision\' is not supported',
-      detailedMessage: 'The \'currencyPrecision\' field cannot be edited due to Netsuite restrictions.',
+      detailedMessage: 'Failed to deploy - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
     }
   }
   if ((before.value.displaySymbol !== after.value.displaySymbol
@@ -50,7 +49,7 @@ const validateModificationChange = (
       elemID: before.elemID,
       severity: 'Error',
       message: 'Currency contains a field that cannot be deployed.',
-      detailedMessage: 'The \'symbolPlacement\' and \'displaySymbol\' fields cannot be edited while overrideCurrencyFormat is disabled',
+      detailedMessage: 'Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
     }
   }
   return undefined
@@ -63,14 +62,14 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Currency contains a field that cannot be deployed.',
-      detailedMessage: 'The currency\'s \'OVERRIDE CURRENCY FORMAT\' field is disabled and therefore it cannot be deployed.',
+      detailedMessage: 'Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'Currency contains fields that cannot be deployed. These fields will be skipped from the deployment.',
-    detailedMessage: `The following fields: ${FIELDS_TO_OMIT.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,
+    detailedMessage: 'Unable to deploy \'locale\' field. Please set the \'locale\' of the created currency to the desired value in the tartget enviroment.',
   }
 }
 

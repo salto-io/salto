@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, toChange } from '@salto-io/adapter-api'
-import { FIELDS_TO_OMIT } from '../../src/filters/currency_omit_fields'
 import { NETSUITE } from '../../src/constants'
 import currencyFieldValidator from '../../src/change_validators/currency_undeployable_fields'
 
@@ -85,7 +84,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('The currency\'s \'OVERRIDE CURRENCY FORMAT\' field is disabled and therefore it cannot be deployed.')
+      expect(changeErrors[0].detailedMessage).toContain('Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions')
     })
 
     it('shoud have changeError when deploying a new currency with \'overrideCurrencyFormat\' enabled.', async () => {
@@ -97,7 +96,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain(`The following fields: ${FIELDS_TO_OMIT.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,)
+      expect(changeErrors[0].detailedMessage).toContain('Unable to deploy \'locale\' field. Please set the \'locale\' of the created currency to the desired value in the tartget enviroment.',)
     })
   })
 
@@ -130,7 +129,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('The \'symbolPlacement\' and \'displaySymbol\' fields cannot be edited')
+      expect(changeErrors[0].detailedMessage).toContain('Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions')
     })
 
     it('should have changeError when modifying currencyPrecision', async () => {
@@ -142,7 +141,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('The \'currencyPrecision\' field cannot be edited due to Netsuite restrictions.')
+      expect(changeErrors[0].detailedMessage).toContain('Failed to deploy - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions')
     })
   })
 })

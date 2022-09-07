@@ -182,14 +182,13 @@ export type TemplatePart = string | ReferenceExpression
 
 
 const concatString = (
-  part: TemplatePart, refString: {fullString: string}, allParts: TemplatePart[]
+  part: TemplatePart, allParts: TemplatePart[]
 ): void => {
-  if (_.isString(part)) {
-    refString.fullString = refString.fullString.concat(part)
+  const tempPart = allParts[-1]
+  if (_.isString(part) && _.isString(tempPart)) {
+    allParts[-1] = tempPart.concat(part)
   } else {
-    allParts.push(refString.fullString)
     allParts.push(part)
-    refString.fullString = ''
   }
 }
 
@@ -198,11 +197,7 @@ export class TemplateExpression {
 
   constructor({ parts }: { parts: TemplatePart[] }) {
     const newParts:TemplatePart[] = []
-    const refString = { fullString: '' }
-    parts.forEach(part => concatString(part, refString, newParts))
-    if (refString.fullString) {
-      newParts.push(refString.fullString)
-    }
+    parts.forEach(part => concatString(part, newParts))
     this.parts = newParts
   }
 

@@ -25,7 +25,7 @@ import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, rem
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
-import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
+import { CONFIG_DIR_NAME, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'

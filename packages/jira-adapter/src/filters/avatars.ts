@@ -23,7 +23,7 @@ const ICON_URL_FIELD = 'iconUrl'
 
 const AVATAR_ID_PATTERN = new RegExp('/rest/api/\\d+/universal_avatar/view/type/\\w+/avatar/(\\d+)')
 
-const removeDomainPrefix = (url: string, baseUrl: string): string => {
+export const removeDomainPrefix = (url: string, baseUrl: string): string => {
   // This is to make sure the url will always have '/' in the end
   const fixedBaseUrl = new URL(baseUrl).href
   return url.startsWith(fixedBaseUrl) ? url.slice(fixedBaseUrl.length - 1) : url

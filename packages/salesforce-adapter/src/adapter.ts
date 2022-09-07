@@ -413,16 +413,25 @@ export default class SalesforceAdapter implements AdapterOperations {
     const filtersRunner = this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
 
-    const result = !checkOnly && await isCustomObjectInstanceChanges(resolvedChanges)
-      ? await deployCustomObjectInstancesGroup(
-          resolvedChanges as Change<InstanceElement>[],
-          this.client,
-          this.fetchProfile.dataManagement
+    let deployResult: DeployResult
+    if (await isCustomObjectInstanceChanges(resolvedChanges)) {
+      if (checkOnly) {
+        return {
+          appliedChanges: [],
+          errors: [new Error('Cannot deploy custom objects as part of validation-only deployment')],
+        }
+      }
+      deployResult = await deployCustomObjectInstancesGroup(
+        resolvedChanges as Change<InstanceElement>[],
+        this.client,
+        this.fetchProfile.dataManagement
       )
-      : await deployMetadata(resolvedChanges, this.client,
+    } else {
+      deployResult = await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, checkOnly, this.userConfig.client?.deploy?.deleteBeforeUpdate)
+    }
     // onDeploy can change the change list in place, so we need to give it a list it can modify
-    const appliedChangesBeforeRestore = [...result.appliedChanges]
+    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceChanges = _.keyBy(
@@ -435,8 +444,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       .toArray()
     return {
       appliedChanges,
-      errors: result.errors,
-      extraProperties: result.extraProperties,
+      errors: deployResult.errors,
+      extraProperties: deployResult.extraProperties,
     }
   }
 

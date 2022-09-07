@@ -193,6 +193,24 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return applied changes', () => {
           expect(result.appliedChanges).toHaveLength(1)
         })
+        describe('when attempting to deploy CustomObjects', () => {
+          beforeEach(async () => {
+            const customObjectInstance = new InstanceElement(
+              'TestCustomObject',
+              createCustomObjectType('TestCustomObject', {})
+            )
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: customObjectInstance } }],
+              },
+            })
+          })
+          it('should return error', () => {
+            expect(result.errors).toHaveLength(1)
+            expect(result.appliedChanges).toBeEmpty()
+          })
+        })
       })
     })
 

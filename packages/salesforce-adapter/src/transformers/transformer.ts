@@ -1311,12 +1311,11 @@ export const getSObjectFieldElement = (
 }
 
 export const toDeployableInstance = async (element: InstanceElement): Promise<InstanceElement> => {
-  const removeLocalOnly: TransformFunc = ({ value, field }) => {
-    if (isLocalOnly(field)) {
-      return undefined
-    }
-    return value
-  }
+  const removeLocalOnly: TransformFunc = ({ value, field }) => (
+    (isLocalOnly(field))
+      ? undefined
+      : value
+  )
   return transformElement({
     element,
     transformFunc: removeLocalOnly,

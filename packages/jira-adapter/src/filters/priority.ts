@@ -13,16 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionOrModificationChange, isInstanceChange, Change, ChangeDataType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import _ from 'lodash'
 import { findObject, setFieldDeploymentAnnotations } from '../utils'
 import { FilterCreator } from '../filter'
-import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
 import { PRIORITY_TYPE_NAME } from '../constants'
+import { removeDomainPrefix } from './avatars'
 
 const log = logger(module)
-
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     if (!config.client.usePrivateAPI) {
@@ -34,7 +32,6 @@ const filter: FilterCreator = ({ client, config }) => ({
     if (priorityType === undefined) {
       return
     }
-
     priorityType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     priorityType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
     setFieldDeploymentAnnotations(priorityType, 'id')
@@ -44,42 +41,28 @@ const filter: FilterCreator = ({ client, config }) => ({
     setFieldDeploymentAnnotations(priorityType, 'name')
   },
 
-  deploy: async changes => {
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
-        && getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME
-    )
+  preDeploy: async (changes: Change<ChangeDataType>[]) => {
+    changes.filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME)
+      .filter(change => getChangeData(change).value.iconUrl !== undefined)
+      .forEach(change => {
+        change.data.after.value.iconUrl = new URL(
+          getChangeData(change).value.iconUrl, client.baseUrl
+        ).href
+      })
+  },
 
-    if (relevantChanges.length === 0) {
-      return {
-        leftoverChanges,
-        deployResult: {
-          errors: [],
-          appliedChanges: [],
-        },
-      }
-    }
-
-    const jspRequests = config.apiDefinitions.types[PRIORITY_TYPE_NAME]?.jspRequests
-    if (jspRequests === undefined) {
-      throw new Error(`${PRIORITY_TYPE_NAME} jsp urls are missing from the configuration`)
-    }
-
-    const deployResult = await deployWithJspEndpoints({
-      changes: relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
-      client,
-      urls: jspRequests,
-      serviceValuesTransformer: serviceValues => _.omit({
-        ...serviceValues,
-        iconurl: new URL(serviceValues.iconUrl).pathname,
-      }, 'iconUrl'),
-    })
-    return {
-      leftoverChanges,
-      deployResult,
-    }
+  onDeploy: async (changes: Change<ChangeDataType>[]) => {
+    changes.filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME)
+      .filter(change => getChangeData(change).value.iconUrl !== undefined)
+      .forEach(change => {
+        change.data.after.value.iconUrl = removeDomainPrefix(
+          getChangeData(change).value.iconUrl, client.baseUrl
+        )
+      })
   },
 })
 

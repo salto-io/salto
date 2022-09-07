@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, toChange } from '@salto-io/adapter-api'
+import { FIELDS_TO_OMIT } from '../../src/filters/currency_omit_fields'
 import { NETSUITE } from '../../src/constants'
-import currencyFieldValidator from '../../src/change_validators/currency_changes'
+import currencyFieldValidator from '../../src/change_validators/currency_undeployable_fields'
 
 export const currencyType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'currency'),
@@ -90,14 +91,13 @@ describe('Currency changes change  validator', () => {
     it('shoud have changeError when deploying a new currency with \'overrideCurrencyFormat\' enabled.', async () => {
       const after = instance.clone()
       after.value.overrideCurrencyFormat = true
-      const fieldsToOmit = ['currencyPrecision', 'locale', 'formatSample']
       const changeErrors = await currencyFieldValidator(
         [toChange({ after })]
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain(`The following fields: ${fieldsToOmit.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,)
+      expect(changeErrors[0].detailedMessage).toContain(`The following fields: ${FIELDS_TO_OMIT.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,)
     })
   })
 

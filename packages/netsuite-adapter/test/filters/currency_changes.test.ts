@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
-import { currencyType } from '../change_validators/currency_changes.test'
-import filterCreator from '../../src/filters/currency_omit_fields'
-
-const fieldsToOmit = ['currencyPrecision', 'locale', 'formatSample']
+import { currencyType } from '../change_validators/currency_undeployable_fields.test'
+import filterCreator, { FIELDS_TO_OMIT } from '../../src/filters/currency_omit_fields'
 
 describe('currency fields filter', () => {
-  it(`should remove the following fields: ${fieldsToOmit.join(' ,')}`, async () => {
+  it(`should remove the following fields: ${FIELDS_TO_OMIT.join(' ,')}`, async () => {
     const instance = new InstanceElement('instance', currencyType,
       {
         name: 'instance',

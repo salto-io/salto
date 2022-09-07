@@ -16,22 +16,22 @@
 
 import { Change, isInstanceChange, getChangeData, InstanceElement, isAdditionChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { CURRENCY } from '../constants'
 import { FilterWith } from '../filter'
 
-const FIELDS_TO_OMIT = ['currencyPrecision', 'locale', 'formatSample']
+export const FIELDS_TO_OMIT = ['currencyPrecision', 'locale', 'formatSample']
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
   preDeploy: async changes => {
     changes
       .filter(isInstanceChange)
+      .filter(isAdditionChange)
       .filter(async change => getChangeData<InstanceElement>(change).elemID.typeName === CURRENCY)
       .forEach(change => applyFunctionToChangeData<Change<InstanceElement>>(
         change,
         element => {
-          if (isAdditionChange(change)) {
-            FIELDS_TO_OMIT.map(field => delete element.value[field])
-          }
+          element.value = _.omit(element.value, FIELDS_TO_OMIT)
           return element
         }
       ))

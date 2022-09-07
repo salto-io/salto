@@ -14,22 +14,24 @@
 * limitations under the License.
 */
 import {
+  AdditionChange,
   ChangeError,
   ChangeValidator,
   getChangeData,
   InstanceElement,
-  isAdditionChange,
   isAdditionOrModificationChange,
   isInstanceChange,
+  isModificationChange,
   ModificationChange,
-  toChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { CURRENCY } from '../constants'
+import { FIELDS_TO_OMIT } from '../filters/currency_omit_fields'
 
 const { isDefined } = values
 
-const validatorModificationChange = (
+
+const validateModificationChange = (
   change: ModificationChange<InstanceElement>
 ): ChangeError | undefined => {
   const { before, after } = change.data
@@ -54,7 +56,8 @@ const validatorModificationChange = (
   return undefined
 }
 
-const validatorAdditionChange = (instance: InstanceElement): ChangeError => {
+const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>): ChangeError => {
+  const instance = additionChange.data.after
   if (!instance.value.overrideCurrencyFormat) {
     return {
       elemID: instance.elemID,
@@ -63,12 +66,11 @@ const validatorAdditionChange = (instance: InstanceElement): ChangeError => {
       detailedMessage: 'The currency\'s \'OVERRIDE CURRENCY FORMAT\' field is disabled and therefore it cannot be deployed.',
     }
   }
-  const fieldsToOmit = ['currencyPrecision', 'locale', 'formatSample']
   return {
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'Currency contains fields that cannot be deployed. These fields will be skipped from the deployment.',
-    detailedMessage: `The following fields: ${fieldsToOmit.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,
+    detailedMessage: `The following fields: ${FIELDS_TO_OMIT.join(', ')} cannot be deployed and will be skipped. Please edit locale manually at the service.`,
   }
 }
 
@@ -78,14 +80,10 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .filter(elem => getChangeData(elem).elemID.typeName === CURRENCY)
     .map(change => {
-      if (isAdditionChange(change)) {
-        return validatorAdditionChange(getChangeData<InstanceElement>(change))
+      if (isModificationChange(change)) {
+        return validateModificationChange(change)
       }
-      const modificationChange = toChange({
-        before: change.data.before.clone(),
-        after: change.data.after.clone(),
-      }) as ModificationChange<InstanceElement>
-      return validatorModificationChange(modificationChange)
+      return validateAdditionChange(change)
     })
     .filter(isDefined)
 )

@@ -418,7 +418,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       if (checkOnly) {
         return {
           appliedChanges: [],
-          errors: [new Error('Cannot deploy custom objects as part of validation-only deployment')],
+          errors: [new Error('Cannot deploy CustomObject Records as part of check-only deployment')],
         }
       }
       deployResult = await deployCustomObjectInstancesGroup(

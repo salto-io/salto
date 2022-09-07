@@ -20,7 +20,7 @@ import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
 import { createConditionConfigurationTypes } from './conditions_types'
-import { Condition, isWorkflowInstance, Rules, Status, Validator, Workflow } from './types'
+import { Condition, isWorkflowInstance, Rules, Status, Transition, Validator, Workflow } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 
@@ -36,11 +36,11 @@ const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
   'IssueStoreFunction',
 ]
 
-const transformStatus = (status: Status): void => {
-  status.properties = status.properties?.additionalProperties
+const transformProperties = (item: Status | Transition): void => {
+  item.properties = item.properties?.additionalProperties
   // This is not deployable and we get another property
   // of "jira.issue.editable" with the same value
-  delete status.properties?.issueEditable
+  delete item.properties?.issueEditable
 }
 
 const isExtensionType = (type: string | undefined): boolean => type !== undefined && type.includes('__')
@@ -144,11 +144,14 @@ const transformWorkflowInstance = (workflowValues: Workflow): void => {
   workflowValues.name = workflowValues.id?.name
   delete workflowValues.id
 
-  workflowValues.statuses?.forEach(transformStatus)
+  workflowValues.statuses?.forEach(transformProperties)
 
+  workflowValues.transitions?.forEach(transformProperties)
   workflowValues.transitions
     ?.filter(transition => transition.rules !== undefined)
-    .forEach(transition => transformRules(transition.rules as Rules, transition.type))
+    .forEach(transition => {
+      transformRules(transition.rules as Rules, transition.type)
+    })
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint

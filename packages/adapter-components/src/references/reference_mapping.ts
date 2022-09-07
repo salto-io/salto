@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Field, Value, Element, isInstanceElement, ElemID } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
@@ -25,13 +25,22 @@ export type CreateMissingRefFunc = (
 ) => Element | undefined
 export type CheckMissingRefFunc = (element: Element) => boolean
 
+export type GetReferenceIdFunc = (topLevelId: ElemID) => ElemID
+
 export type ReferenceSerializationStrategy = {
-  serialize: GetLookupNameFunc
   lookup: LookupFunc
   lookupIndexName?: string
-}
+} & (
+  types.OneOf<{
+    serialize: GetLookupNameFunc
+    // getReferenceId set the path of the value that the reference will be set by.
+    // Note that this path will also be the path of the reference, meaning the if
+    // it won't return a top level id, the reference path won't be a top level id.
+    getReferenceId: GetReferenceIdFunc
+  }>
+)
 
-export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
+export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -48,6 +57,11 @@ export const ReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => ref.value.value.name,
     lookup: val => val,
     lookupIndexName: 'name',
+  },
+  nameWithPath: {
+    lookup: val => val,
+    lookupIndexName: 'name',
+    getReferenceId: topLevelId => topLevelId.createNestedID('name'),
   },
 }
 

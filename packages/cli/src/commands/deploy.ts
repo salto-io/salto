@@ -75,6 +75,7 @@ type DeployArgs = {
   force: boolean
   dryRun: boolean
   detailedPlan: boolean
+  checkOnly: boolean
 } & AccountsArg & EnvArg
 
 const deployPlan = async (
@@ -83,6 +84,7 @@ const deployPlan = async (
   cliTelemetry: CliTelemetry,
   output: CliOutput,
   force: boolean,
+  checkOnly: boolean,
   accounts?: string[],
 ): Promise<DeployResult> => {
   const actions: Record<string, Action> = {}
@@ -149,6 +151,7 @@ const deployPlan = async (
       (item: PlanItem, step: ItemStatus, details?: string) =>
         updateAction(item, step, details),
       accounts,
+      checkOnly,
     ) : { success: true, errors: [] }
   const nonErroredActions = Object.keys(actions)
     .filter(action =>
@@ -175,7 +178,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, dryRun, detailedPlan, accounts } = input
+  const { force, dryRun, detailedPlan, accounts, checkOnly } = input
   await validateAndSetEnv(workspace, input, output)
   const actualAccounts = getAndValidateActiveAccounts(workspace, accounts)
   const stateRecencies = await Promise.all(
@@ -198,7 +201,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     return CliExitCode.AppError
   }
 
-  const actionPlan = await preview(workspace, actualAccounts)
+  const actionPlan = await preview(workspace, actualAccounts, checkOnly)
   await printPlan(actionPlan, output, workspace, detailedPlan)
 
   const result = dryRun ? { success: true, errors: [] } : await deployPlan(
@@ -207,10 +210,12 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     cliTelemetry,
     output,
     force,
+    checkOnly,
     actualAccounts,
   )
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
-  if (!_.isUndefined(result.changes)) {
+  // We don't flush the workspace for check-only deployments
+  if (!_.isUndefined(result.changes) && !checkOnly) {
     const changes = [...result.changes]
     if (!(await updateWorkspace({
       workspace,
@@ -228,8 +233,8 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     }
   )
   outputLine(postDeployActionsOutput.join('\n'), output)
-  const deploymentUrls = result.extraProperties?.deploymentUrls
-  if (deploymentUrls !== undefined) {
+  const deploymentUrls = result.extraProperties?.deploymentUrls ?? []
+  if (!_.isEmpty(deploymentUrls)) {
     outputLine(`You can see your deployment here:\n${deploymentUrls.join('\n')}`, output)
   }
   return cliExitCode
@@ -256,6 +261,13 @@ const deployDef = createWorkspaceCommand({
         name: 'detailedPlan',
         alias: 'p',
         description: 'Print detailed plan including value changes',
+        type: 'boolean',
+      },
+      {
+        name: 'checkOnly',
+        alias: 'c',
+        required: false,
+        description: 'Run validation-only deployment against the service',
         type: 'boolean',
       },
       ACCOUNTS_OPTION,

@@ -641,14 +641,14 @@ export class Types {
     const baseType = Types.primitiveDataTypes[baseTypeName]
     const typeName = formulaTypeName(baseTypeName)
     return { [typeName]: new PrimitiveType({
-      elemID: new ElemID(SALESFORCE, typeName),
-      primitive: baseType.primitive,
-      annotationRefsOrTypes: {
-        ...baseType.annotationRefTypes,
-        [FORMULA]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]: Types.TreatBlankAsType,
-      },
-    }) }
+        elemID: new ElemID(SALESFORCE, typeName),
+        primitive: baseType.primitive,
+        annotationRefsOrTypes: {
+          ...baseType.annotationRefTypes,
+          [FORMULA]: BuiltinTypes.STRING,
+          [FIELD_ANNOTATIONS.FORMULA_TREAT_BLANKS_AS]: Types.TreatBlankAsType,
+        },
+      }) }
   }
 
   public static formulaDataTypes: Record<string, PrimitiveType> = _.merge(
@@ -779,7 +779,7 @@ export class Types {
   }
 
   static createObjectType(name: string, customObject = true, isSettings = false,
-    serviceIds?: ServiceIds): ObjectType {
+                          serviceIds?: ServiceIds): ObjectType {
     const elemId = this.getElemId(name, customObject, serviceIds)
     return new ObjectType({
       elemID: elemId,
@@ -1003,7 +1003,7 @@ export const toCustomProperties = async (
 }
 
 export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeField,
-  knownTypes: Map<string, TypeElement>, additionalAnnotations?: Values): Field => {
+                                         knownTypes: Map<string, TypeElement>, additionalAnnotations?: Values): Field => {
   const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
@@ -1423,9 +1423,9 @@ type CreateMetadataTypeParams = {
   missingFields?: Record<string, ValueTypeField[]>
 }
 export const createMetadataTypeElements = async ({
-  name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
-  isSettings = false, annotations = {}, missingFields = defaultMissingFields(),
-}: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
+                                                   name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
+                                                   isSettings = false, annotations = {}, missingFields = defaultMissingFields(),
+                                                 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
     return []

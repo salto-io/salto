@@ -22,7 +22,6 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import * as fs from 'fs'
 import { API_VERSION } from '../client/client'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
@@ -82,7 +81,7 @@ export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): Retriev
 })
 
 const addContentFieldAsStaticFile = (values: Values, valuePath: string[], content: Buffer,
-  fileName: string, type: string, namespacePrefix?: string): void => {
+                                     fileName: string, type: string, namespacePrefix?: string): void => {
   const folder = namespacePrefix === undefined
     ? `${SALESFORCE}/${RECORDS_PATH}/${type}`
     : `${SALESFORCE}/${INSTALLED_PACKAGES_PATH}/${namespacePrefix}/${RECORDS_PATH}/${type}`
@@ -102,7 +101,7 @@ type ComplexType = {
                    type: string, namespacePrefix?: string): void
   getMissingFields?(metadataFileName: string): Values
   mapContentFields(instanceName: string, values: Values):
-      Record<FieldName, Record<FileName, Content>>
+    Record<FieldName, Record<FileName, Content>>
   sortMetadataValues?(metadataValues: Values): Values
   getMetadataFilePath(instanceName: string, values?: Values): string
 }
@@ -142,7 +141,7 @@ const complexTypesMap: ComplexTypesMap = {
    */
   AuraDefinitionBundle: {
     addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values, type: string,
-      namespacePrefix?: string) => {
+                       namespacePrefix?: string) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content]) => {
           const fieldName = Object.entries(auraFileSuffixToFieldName)
@@ -191,7 +190,7 @@ const complexTypesMap: ComplexTypesMap = {
    */
   LightningComponentBundle: {
     addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values, type: string,
-      namespacePrefix?: string) => {
+                       namespacePrefix?: string) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content], index) => {
           const resourcePath = [LWC_RESOURCES, LWC_RESOURCE, String(index)]
@@ -239,7 +238,7 @@ const xmlToValues = (xmlAsString: string, type: string): Values => {
 }
 
 const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
-  complexType: boolean, namespacePrefix?: string): Promise<Record<string, Buffer>> => {
+                                     complexType: boolean, namespacePrefix?: string): Promise<Record<string, Buffer>> => {
   if (!complexType) { // this is a single file
     const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
     return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }
@@ -312,7 +311,7 @@ export const fromRetrieveResult = async (
 }
 
 const toMetadataXml = (name: string, values: Values): string =>
-// eslint-disable-next-line new-cap
+  // eslint-disable-next-line new-cap
   new parser.j2xParser({
     attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
     ignoreAttributes: false,
@@ -398,7 +397,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           complexType.getMetadataFilePath(instanceName, values),
           toMetadataXml(
             typeName,
-                complexType.sortMetadataValues?.(metadataValues) ?? metadataValues
+            complexType.sortMetadataValues?.(metadataValues) ?? metadataValues
           )
         )
 
@@ -424,8 +423,6 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
           }
         } else {
           zip.file(instanceContentPath, toMetadataXml(typeName, values))
-          const x = toMetadataXml(typeName, values)
-          console.log(x)
         }
       }
     },
@@ -434,16 +431,12 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       const typeName = getManifestTypeName(type)
       deleteManifest.get(typeName).push(name)
     },
-    getZip: async () => {
+    getZip: () => {
       zip.file(`${PACKAGE}/package.xml`, toPackageXml(addManifest))
       if (deleteManifest.size !== 0) {
         zip.file(`${PACKAGE}/${deletionsPackageName}`, toPackageXml(deleteManifest))
       }
-      const buffer = await zip.generateAsync({ type: 'nodebuffer' })
-      fs.writeFileSync('/Users/tamir/xmls/out.zip', buffer, {
-        flag: 'w',
-      })
-      return buffer
+      return zip.generateAsync({ type: 'nodebuffer' })
     },
     getDeletionsPackageName: () => deletionsPackageName,
   }

@@ -59,10 +59,10 @@ export const metadataType = async (element: Readonly<Element>): Promise<string> 
 
 export const isCustomObject = async (element: Readonly<Element>): Promise<boolean> => {
   const res = isObjectType(element)
-  && await metadataType(element) === CUSTOM_OBJECT
-  // The last part is so we can tell the difference between a custom object
-  // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
-  && element.annotations[API_NAME] !== undefined
+    && await metadataType(element) === CUSTOM_OBJECT
+    // The last part is so we can tell the difference between a custom object
+    // and the original "CustomObject" type from salesforce (the latter will not have an API_NAME)
+    && element.annotations[API_NAME] !== undefined
   return res
 }
 
@@ -834,7 +834,7 @@ export class Types {
 export const isNameField = async (field: Field): Promise<boolean> =>
   (isObjectType(await field.getType())
     && (field.refType.elemID.isEqual(Types.compoundDataTypes.Name.elemID)
-    || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
+      || field.refType.elemID.isEqual(Types.compoundDataTypes.Name2.elemID)))
 
 const transformCompoundValues = async (
   record: SalesforceRecord,
@@ -843,7 +843,7 @@ const transformCompoundValues = async (
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
   const relevantCompoundFields = _.pickBy((await instance.getType()).fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
-    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
+      && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.refType.elemID.isEqual(e))))
   if (_.isEmpty(relevantCompoundFields)) {
     return record
   }
@@ -1207,12 +1207,12 @@ export const getSObjectFieldElement = (
       // e.g. salesforce.user_app_menu_item.ApplicationId, salesforce.login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
-  // Compound Fields
+    // Compound Fields
   } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
     // Only fields that are compound in this object get compound type
     if (objCompoundFieldNames[field.name] !== undefined) {
       naclFieldType = field.nameField
-      // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
+        // objCompoundFieldNames[field.name] is either 'Name' or 'Name2'
         ? Types.compoundDataTypes[objCompoundFieldNames[field.name] as COMPOUND_FIELD_TYPE_NAMES]
         : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
     }
@@ -1254,20 +1254,15 @@ export const getSObjectFieldElement = (
 }
 
 export const toDeployableInstance = async (element: InstanceElement): Promise<InstanceElement> => {
-  const removeLocalOnly: TransformFunc = ({ value, field }) => {
-    if (isLocalOnly(field)) {
-      return undefined
-    }
-    if (value === '' || value === []) {
-      return {}
-    }
-    return value
-  }
+  const removeLocalOnly: TransformFunc = ({ value, field }) => (
+    (isLocalOnly(field))
+      ? undefined
+      : value
+  )
   return transformElement({
     element,
     transformFunc: removeLocalOnly,
     strict: false,
-    allowEmpty: true,
   })
 }
 

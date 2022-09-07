@@ -46,14 +46,6 @@ export type AdaptersConfigSource = {
   isConfigFile(filePath: string): boolean
 } & PartialNaclFilesSource
 
-const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
-  transformElement({
-    element: instance,
-    strict: false,
-    allowEmpty: true,
-    transformFunc: ({ value }) => value,
-  })
-
 const updateValidationErrorsCache = async (
   validationErrorsMap: RemoteMap<ValidationError[]>,
   elementsSource: ReadOnlyElementsSource,
@@ -150,6 +142,15 @@ export const buildAdaptersConfigSource = async ({
       })))
     // If flush is not called here the removal seems to be ignored
     await naclSource.flush()
+
+    const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
+      transformElement({
+        element: instance,
+        strict: false,
+        allowEmpty: true,
+        transformFunc: ({ value }) => value,
+        elementsSource: naclSource,
+      })
 
     const configsToUpdate = await Promise.all(configsArr.map(removeUndefined))
     await naclSource.updateNaclFiles(

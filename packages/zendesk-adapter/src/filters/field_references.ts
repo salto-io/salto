@@ -36,13 +36,14 @@ const neighborContextFunc = (args: {
   ...args,
 })
 
-// TODO: Support in types with list values
 const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   brand_id: 'brand',
   group_id: 'group',
   schedule_id: 'business_hours_schedule',
   within_schedule: 'business_hours_schedule',
   set_schedule: 'business_hours_schedule',
+  ticket_form_id: 'ticket_form',
+  locale_id: 'locale',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -116,6 +117,9 @@ const neighborReferenceTicketFieldLookupFunc: GetLookupNameFunc = async ({ ref }
 
 const neighborReferenceTicketFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
   (val === TICKET_FIELD_OPTION_TYPE_NAME ? val : undefined)
+
+const allowListLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  (NEIGHBOR_FIELD_TO_TYPE_NAMES[val])
 
 const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ ref }) => {
   if (isInstanceElement(ref.value) && ref.value.value.type === 'dropdown') {
@@ -208,6 +212,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
 
 export type ReferenceContextStrategyName = 'neighborField'
   | 'allowlistedNeighborField'
+  | 'allowlistedNeighborSubject'
   | 'neighborType'
   | 'parentSubject'
   | 'parentTitle'
@@ -222,7 +227,10 @@ export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
-  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: val => NEIGHBOR_FIELD_TO_TYPE_NAMES[val] }),
+  // We use allow lists because there are types we don't support (such organizarion or requester)
+  // and they'll as false positives
+  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
+  allowlistedNeighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: allowListLookupType }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
@@ -239,6 +247,7 @@ type ZendeskFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 > & {
   zendeskSerializationStrategy?: ZendeskReferenceSerializationStrategyName
+  // Strategy for non-list values. For list values please check listValuesMissingRefereces filter
   zendeskMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
@@ -294,6 +303,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'group_restrictions' },
     serializationStrategy: 'id',
     target: { type: 'group' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'group_id' },
@@ -304,6 +314,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'locale_ids' },
@@ -314,6 +325,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'default_locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'variants', parentTypes: ['dynamic_content_item'] },
@@ -591,6 +603,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'ticket_form_id' },
     serializationStrategy: 'id',
     target: { type: 'ticket_form' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'ticket_form_ids' },
@@ -754,14 +767,31 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
         'automation__conditions__all',
         'automation__conditions__any',
         'macro__actions',
+        'routing_attribute_value__conditions__all',
+        'routing_attribute_value__conditions__any',
+        'sla_policy__filter__all',
+        'sla_policy__filter__any',
         'trigger__actions',
         'trigger__conditions__all',
         'trigger__conditions__any',
         'view__conditions__all',
         'view__conditions__any',
+        'workspace__conditions__all',
+        'workspace__conditions__any',
       ],
     },
     target: { typeContext: 'allowlistedNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
+  {
+    src: {
+      field: 'value',
+      parentTypes: [
+        'routing_attribute_value__conditions__all',
+        'routing_attribute_value__conditions__any',
+      ],
+    },
+    target: { typeContext: 'allowlistedNeighborSubject' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
 ]
@@ -825,6 +855,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     zendeskSerializationStrategy: 'ticketFieldOption',
     target: { typeContext: 'neighborSubjectReferenceTicketField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -847,6 +878,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     zendeskSerializationStrategy: 'userFieldOption',
     target: { typeContext: 'neighborSubjectReferenceUserAndOrgField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -874,6 +906,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     src: { field: 'group_ids', parentTypes: ['user_segment'] },
     serializationStrategy: 'id',
     target: { type: 'group' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
 ]
 

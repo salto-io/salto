@@ -16,9 +16,8 @@
 import _ from 'lodash'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import { collections, values } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { ObjectType, isInstanceElement, ElemID, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS, FIELD_ANNOTATIONS } from '../constants'
+import { ObjectType, isInstanceElement, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS } from '../constants'
 import { RemoteFilterCreator } from '../filter'
 import { getSObjectFieldElement, apiName, toCustomField } from '../transformers/transformer'
 import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
@@ -49,18 +48,13 @@ const createFieldValue = async (
   // continuation of the temporary hack, since toCustomField returns values with JS classes
   // The "JSON.parse" part is done to get just the properties without the classes
   // The "_.pickBy" is to avoid undefined values that cause things to crash down the line
+  // Using JSON.stringify and not safeJsonStringify for performance and because the values here
+  // were JSON initially and should be safe to convert back
   const fieldValues = _.pickBy(
-    JSON.parse(safeJsonStringify(customField)),
+    // eslint-disable-next-line no-restricted-syntax
+    JSON.parse(JSON.stringify(customField)),
     values.isDefined,
   )
-
-  // The old code would allow _required on certain types in fetch but not in deploy
-  // so `toCustomField` sometimes removes the required annotation.
-  // since the old code would not do that on fetch, we need to add it back in order
-  // to preserve the old behavior
-  if (dummyField.annotations[CORE_ANNOTATIONS.REQUIRED] === true) {
-    fieldValues.required = true
-  }
 
   return fieldValues as CustomField
 }
@@ -76,14 +70,13 @@ const addSObjectInformationToInstance = async (
     {
       keyPrefix: sobject.keyPrefix,
       label: sobject.label,
-      pluralLabel: sobject.labelPlural,
     }
   )
   // Fix fields type in case it is not an array yet
   // this can happen if there is just one field, or if there are no fields
   instance.value.fields = makeArray(instance.value.fields)
   // Add information about fields
-  const knownFields = _.keyBy(instance.value.fields, field => field.fullName)
+  const fieldsFromMetadataApi = _.keyBy(instance.value.fields, field => field.fullName)
 
   const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
     if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
@@ -111,39 +104,13 @@ const addSObjectInformationToInstance = async (
   )
 
   sobjectFields.forEach(sobjectField => {
-    const knownField = knownFields[sobjectField.fullName]
-    if (knownField !== undefined) {
-      // Omit everything from type-less fields to preserve the behavior from the old code
-      // this is not a good decision, but we maintain the old behavior to avoid noisy changes
-      if (knownField.type === undefined) {
-        Object.keys(knownField).forEach(key => { delete knownField[key] })
-      }
-      _.defaults(knownField, sobjectField)
-      // Generally the old code took annotations from the metadata API
-      // except for the field type, the field type was taken from the SOAP API
-      // this is not a good decision, but we maintain the old behavior to avoid noisy changes
-      _.merge(knownField, { type: sobjectField.type })
+    const existingField = fieldsFromMetadataApi[sobjectField.fullName]
+    if (existingField !== undefined) {
+      _.defaults(existingField, sobjectField)
     } else {
       instance.value.fields.push(sobjectField)
     }
   })
-
-  // Old code had a somewhat strange behavior where for objects that exist in both APIs
-  // the fields that exist only in the metadata API would get a few extra annotations
-  // this didn't happen for fields of objects that don't exist in the SOAP API at all...
-  const sobjectFieldNames = new Set(sobjectFields.map(field => field.fullName))
-  Object.values(knownFields)
-    .filter(field => !sobjectFieldNames.has(field.fullName))
-    .forEach(field => {
-      _.defaults(
-        field,
-        {
-          [FIELD_ANNOTATIONS.CREATABLE]: false,
-          [FIELD_ANNOTATIONS.UPDATEABLE]: false,
-          [FIELD_ANNOTATIONS.QUERYABLE]: false,
-        },
-      )
-    })
 }
 
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional information about Custom Objects'

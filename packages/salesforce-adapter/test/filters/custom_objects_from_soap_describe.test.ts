@@ -239,13 +239,13 @@ describe('Custom Objects from describe filter', () => {
         beforeEach(async () => {
           mockSingleSObject({
             name: 'Lead',
-            labelPlural: 'Many Leads',
+            label: 'A Lead',
           })
           const elements = [customObjectType, testInstanceElement]
           await filter.onFetch(elements)
         })
         it('should add additional information to the instance', () => {
-          expect(testInstanceElement.value).toHaveProperty('pluralLabel', 'Many Leads')
+          expect(testInstanceElement.value).toHaveProperty('label', 'A Lead')
         })
       })
 

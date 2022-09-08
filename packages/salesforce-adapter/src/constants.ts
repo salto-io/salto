@@ -57,6 +57,10 @@ export enum FIELD_TYPE_NAMES {
   MASTER_DETAIL = 'MasterDetail',
   ROLLUP_SUMMARY = 'Summary',
   HIERARCHY = 'Hierarchy',
+  METADATA_RELATIONSHIP = 'MetadataRelationship',
+  EXTERNAL_LOOKUP = 'ExternalLookup',
+  INDIRECT_LOOKUP = 'IndirectLookup',
+  FILE = 'File',
 }
 
 export enum INTERNAL_FIELD_TYPE_NAMES {
@@ -84,15 +88,9 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
   }
 
 // target types for creating / updating custom fields:
-export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES = [
+export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: string[] = [
   ...Object.values(FIELD_TYPE_NAMES),
   COMPOUND_FIELD_TYPE_NAMES.LOCATION,
-  // The following types are valid according to the documentation
-  // TODO - support these field types
-  'MetadataRelationship',
-  'ExternalLookup',
-  'IndirectLookup',
-  'File',
 ]
 
 export const FIELD_SOAP_TYPE_NAMES:

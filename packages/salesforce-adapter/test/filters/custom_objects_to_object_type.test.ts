@@ -466,8 +466,6 @@ describe('Custom Objects to Object Type filter', () => {
       })
 
       it('should modify the customObjectType', async () => {
-        // TODO:ORI - this is not a reasonable test
-        // I guess it should have tested the annotation types?
         await filter.onFetch(result)
 
         const listViewType = await customObjectType

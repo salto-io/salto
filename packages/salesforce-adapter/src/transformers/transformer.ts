@@ -408,6 +408,14 @@ export class Types {
     [FIELD_ANNOTATIONS.TRACK_HISTORY]: BuiltinTypes.BOOLEAN,
   }
 
+  private static lookupAnnotationTypes = {
+    [FIELD_ANNOTATIONS.REFERENCE_TO]: new ListType(BuiltinTypes.STRING),
+    [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
+    [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
+    [FIELD_ANNOTATIONS.RELATIONSHIP_LABEL]: BuiltinTypes.STRING,
+    [FIELD_ANNOTATIONS.DELETE_CONSTRAINT]: BuiltinTypes.STRING,
+  }
+
   // Type mapping for custom objects
   public static primitiveDataTypes: Record<ALL_FIELD_TYPE_NAMES, PrimitiveType> = {
     serviceid: BuiltinTypes.SERVICE_ID,
@@ -587,11 +595,7 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.REFERENCE_TO]: new ListType(BuiltinTypes.STRING),
-        [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
-        [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.RELATIONSHIP_LABEL]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.DELETE_CONSTRAINT]: BuiltinTypes.STRING,
+        ...Types.lookupAnnotationTypes,
       },
     }),
     MasterDetail: new PrimitiveType({
@@ -623,6 +627,38 @@ export class Types {
     }),
     Hierarchy: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.HIERARCHY),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        ...Types.commonAnnotationTypes,
+        ...Types.lookupAnnotationTypes,
+      },
+    }),
+    MetadataRelationship: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.METADATA_RELATIONSHIP),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        ...Types.commonAnnotationTypes,
+        ...Types.lookupAnnotationTypes,
+      },
+    }),
+    ExternalLookup: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.EXTERNAL_LOOKUP),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        ...Types.commonAnnotationTypes,
+        ...Types.lookupAnnotationTypes,
+      },
+    }),
+    IndirectLookup: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.INDIRECT_LOOKUP),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        ...Types.commonAnnotationTypes,
+        ...Types.lookupAnnotationTypes,
+      },
+    }),
+    File: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, FIELD_TYPE_NAMES.FILE),
       primitive: PrimitiveTypes.STRING,
       annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,

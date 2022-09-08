@@ -357,7 +357,17 @@ const createFieldFromMetadataInstance = async (
   field: Values,
   instanceName: string,
 ): Promise<Field> => {
-  const fieldType = Types.getKnownType(getFieldTypeName(field), true)
+  let fieldType = Types.getKnownType(getFieldTypeName(field), true)
+  if (fieldType === undefined) {
+    // Should never happen
+    log.warn(
+      'Got unknown field type %s for field %s in object %s, using unknown type instead',
+      getFieldTypeName(field),
+      field[INSTANCE_FULL_NAME_FIELD],
+      customObject.elemID.getFullName(),
+    )
+    fieldType = Types.getKnownType(INTERNAL_FIELD_TYPE_NAMES.UNKNOWN, true)
+  }
   const annotations = await transformFieldAnnotations(
     field,
     fieldType,
@@ -779,8 +789,7 @@ const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromI
 }
 
 /**
- * Custom objects filter.
- * Fetches the custom objects via the soap api and adds them to the elements
+ * Convert custom object instance elements into object types
  */
 const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalChanges: Record<string, Change[]> = {}

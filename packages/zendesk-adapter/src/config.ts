@@ -1675,7 +1675,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
     },
   },
-  labels: {
+  article_labels: {
     request: {
       url: '/help_center/articles/labels',
     },
@@ -1683,9 +1683,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'labels',
     },
   },
-  label: {
+  article_label: {
     transformation: {
-      sourceTypeName: 'labels__labels',
+      sourceTypeName: 'article_labels__labels',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
@@ -1718,6 +1718,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/hc/admin/categories/{id}/edit',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories',
+        deployAsField: 'category',
+        method: 'post',
+      },
+      modify: {
+        url: '/help_center/categories/{categoryId}',
+        deployAsField: 'category',
+        method: 'put',
+        urlParamsToFields: {
+          categoryId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/categories/{categoryId}',
+        method: 'delete',
+        urlParamsToFields: {
+          categoryId: 'id',
+        },
+      },
+    },
   },
   category_translation: {
     request: {
@@ -1734,6 +1756,32 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+    },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories/{categoryId}/translations',
+        deployAsField: 'translation',
+        method: 'post',
+        urlParamsToFields: {
+          categoryId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/categories/{categoryId}/translations/{locale}',
+        deployAsField: 'translation',
+        method: 'put',
+        urlParamsToFields: {
+          categoryId: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translationId}',
+        method: 'delete',
+        urlParamsToFields: {
+          translationId: 'id',
+        },
+      },
     },
   },
   permission_groups: {
@@ -1831,7 +1879,7 @@ export const SUPPORTED_TYPES = {
 export const GUIDE_SUPPORTED_TYPES = {
   article: ['articles'],
   section: ['sections'],
-  label: ['labels'],
+  article_label: ['article_labels'],
   category: ['categories'],
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],

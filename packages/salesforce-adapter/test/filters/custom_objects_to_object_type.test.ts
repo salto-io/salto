@@ -344,6 +344,18 @@ describe('Custom Objects to Object Type filter', () => {
         expect(lookupFilter).not.toHaveProperty(LOOKUP_FILTER_FIELDS.ERROR_MESSAGE)
       })
 
+      it('should fetch sobject with unsupported field type as Unknown', async () => {
+        const fieldName = 'cool_new_field__c'
+        caseInstance.value.fields.push({
+          [INSTANCE_FULL_NAME_FIELD]: fieldName,
+          [INSTANCE_TYPE_FIELD]: 'AWholeNewType',
+        })
+        await filter.onFetch(result)
+        const caseObj = findElements(result, 'Case').pop() as ObjectType
+        const field = caseObj.fields[fieldName]
+        expect(field.refType.type).toBe(Types.primitiveDataTypes.Unknown)
+      })
+
       it('should fetch sobject with apiName and metadataType service ids', async () => {
         await filter.onFetch(result)
         const caseObj = findElements(result, 'Case').pop() as ObjectType

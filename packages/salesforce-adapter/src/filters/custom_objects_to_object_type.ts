@@ -359,7 +359,6 @@ const createFieldFromMetadataInstance = async (
 ): Promise<Field> => {
   let fieldType = Types.getKnownType(getFieldTypeName(field), true)
   if (fieldType === undefined) {
-    // Should never happen
     log.warn(
       'Got unknown field type %s for field %s in object %s, using unknown type instead',
       getFieldTypeName(field),

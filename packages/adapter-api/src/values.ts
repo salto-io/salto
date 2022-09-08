@@ -214,30 +214,15 @@ export const isTypeReference = (value: any): value is TypeReference => (
 const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean =>
   (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
-const shouldResolve = (ref: ReferenceExpression): boolean => (
-  !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
+export const shouldResolve = (value: unknown): boolean => (
+  !isReferenceExpression(value) || !value.elemID.isBaseID() || value.elemID.idType === 'var'
 )
 
-export const shouldCompareByValue = (
+const shouldCompareByValue = (
   first: Value,
   second: Value,
   compareReferencesValues: boolean
-): boolean => {
-  if (!isReferenceExpression(first) && !isReferenceExpression(second)) {
-    return true
-  }
-
-  if (!compareReferencesValues) {
-    return false
-  }
-
-  if ((isReferenceExpression(first) && !isReferenceExpression(second))
-   || (!isReferenceExpression(first) && isReferenceExpression(second))) {
-    return true
-  }
-
-  return shouldResolve(first) && shouldResolve(second)
-}
+): boolean => compareReferencesValues && shouldResolve(first) && shouldResolve(second)
 
 export const compareSpecialValues = (
   first: Value,

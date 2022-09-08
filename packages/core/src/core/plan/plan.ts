@@ -20,7 +20,8 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange, ReferenceExpression, changeId, shouldCompareByValue,
+  isModificationChange, isRemovalChange, ReferenceExpression, changeId,
+  shouldResolve,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -51,13 +52,6 @@ type ReferenceCompareReturnValue = {
 
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
 
-const shouldResolve = (ref: ReferenceExpression): boolean => (
-  // Do not resolve references to elements because we expect them to have their own
-  // node in the graph and we cannot know here if a difference in an element would
-  // cause a difference in the reference. We do resolve variables because they always
-  // point to a primitive value that we can compare
-  !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
-)
 
 const getReferenceValue = async (
   reference: ReferenceExpression,
@@ -88,7 +82,7 @@ const areReferencesEqual = async (
   secondVisitedReferences: Set<string>,
   compareReferencesValues: boolean
 ): Promise<ReferenceCompareReturnValue> => {
-  if (shouldCompareByValue(first, second, compareReferencesValues)) {
+  if (compareReferencesValues && shouldResolve(first) && shouldResolve(second)) {
     const shouldResolveFirst = isReferenceExpression(first) && shouldResolve(first)
 
     const firstValue = shouldResolveFirst

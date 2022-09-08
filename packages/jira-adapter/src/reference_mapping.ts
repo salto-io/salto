@@ -44,7 +44,7 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   return _.capitalize(val)
 }
 
-const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
+export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
   if (val === 'priority' || val === 'resolution') {
     return _.capitalize(val)
   }

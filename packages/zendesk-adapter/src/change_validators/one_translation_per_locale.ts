@@ -108,7 +108,7 @@ export const oneTranslationPerLocalValidator: ChangeValidator = async changes =>
   return Array.from(parentInstances)
     .filter(parentInstance => invalidParent(parentInstance))
     .flatMap(instance => [{
-      elemID:instance.elemID,
+      elemID: instance.elemID,
       severity: 'Error',
       message: `${instance.elemID.getFullName()} cannot have multiple translations with the same locale`,
       detailedMessage: `${instance.elemID.getFullName()} cannot have multiple translations with the same locale`,

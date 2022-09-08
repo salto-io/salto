@@ -13,11 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { APPLICATION_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-
 
 /**
  * Remove appUsers field from app instances

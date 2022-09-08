@@ -34,6 +34,7 @@ const GROUP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAc
     },
   },
   roles: {
+    // TODO add role addition request
     remove: {
       url: '/api/v1/groups/{source}/roles/{target}',
       method: 'delete',
@@ -48,7 +49,7 @@ const deployGroup = async (
 ): Promise<void> => {
   const fieldsToIgnore = [
     ...Object.keys(GROUP_ASSIGNMENT_FIELDS),
-    // TODO remove this once we update addDeploymentAnnotationsFromSwagger
+    // TODO SALTO-2690: remove this once completed
     'id', 'created', 'lastUpdated', 'objectClass', 'type', '_links', '_embedded', 'lastMembershipUpdated',
   ]
   if (isRemovalChange(change)) {

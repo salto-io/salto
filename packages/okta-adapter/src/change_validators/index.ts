@@ -15,12 +15,9 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-// import OktaClient from '../client/client'
-// import { OktaConfig } from '../config'
 import { applicationValidator } from './application'
 
 export default (
-  // client: OktaClient, config: OktaConfig
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     applicationValidator,

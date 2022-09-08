@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import { APPLICATION_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 type linkProperty = {
@@ -29,9 +30,7 @@ const LINK_PROPERTY_SCHEME = Joi.object({
 
 const isLinkProperty = createSchemeGuard<linkProperty>(LINK_PROPERTY_SCHEME, 'Received invalid link property')
 
-const URL_REFERENCES_MAPPING: Record<string, string[]> = {
-  Application: ['profileEnrollment', 'accessPolicy'],
-}
+const RELEVAT_FIELDS = ['profileEnrollment', 'accessPolicy']
 const INSTANCE_LINKS_PATH = ['_links', 'additionalProperties']
 
 const extractIdFromUrl = (url: string): string | undefined => {
@@ -39,11 +38,10 @@ const extractIdFromUrl = (url: string): string | undefined => {
   return urlParts.pop()
 }
 
-const replaceUrlsWithIds = (instance: InstanceElement): void => {
-  const relevantFields = URL_REFERENCES_MAPPING[instance.elemID.typeName]
+const extractIdsFromUrls = (instance: InstanceElement): void => {
   const linksObject = _.get(instance.value, INSTANCE_LINKS_PATH)
   Object.keys(linksObject)
-    .filter(field => relevantFields.includes(field))
+    .filter(field => RELEVAT_FIELDS.includes(field))
     .forEach(field => {
       if (isLinkProperty(linksObject[field])) {
         const url = _.get(linksObject, [field, 'href'])
@@ -56,22 +54,15 @@ const replaceUrlsWithIds = (instance: InstanceElement): void => {
 }
 
 /**
- * The filter extract ids from urls based on predefined rules
+ * The filter extract ids from urls in _link object in application type
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
-      .filter(instance => Object.keys(URL_REFERENCES_MAPPING).includes(instance.elemID.typeName))
-      .forEach(instance => replaceUrlsWithIds(instance))
+      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
+      .forEach(instance => extractIdsFromUrls(instance))
   },
-
-  // TODO Delete the added fields once we add deploy
-  // preDeploy: async changes => {
-  // },
-
-  // OnDeploy: async changes => {
-  // },
 })
 
 export default filter

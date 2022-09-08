@@ -22,6 +22,7 @@ import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
 
+const INACTIVE_STATUS = 'INACTIVE'
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   assignedGroups: {
     add: {
@@ -57,7 +58,7 @@ const deployAppStatusChange = async (
   if (instanceStatusBefore === instanceStatusAfter) {
     return undefined
   }
-  const appStatus = instanceStatusAfter === 'INACTIVE' ? 'deactivate' : 'activate'
+  const appStatus = instanceStatusAfter === INACTIVE_STATUS ? 'deactivate' : 'activate'
   const urlParams = { appId, appStatus }
   const url = elementUtils.replaceUrlParams('/api/v1/apps/{appId}/lifecycle/{appStatus}', urlParams)
   try {
@@ -75,16 +76,16 @@ const deployApp = async (
 ): Promise<void> => {
   const fieldsToIgnore = [
     ...Object.keys(APP_ASSIGNMENT_FIELDS),
-    // TODO remove this once we update addDeploymentAnnotationsFromSwagger
+    // TODO SALTO-2690: remove this once completed
     'id', 'created', 'lastUpdated', 'status', 'licensing', '_links', '_embedded',
   ]
-
   if (isAdditionChange(change)) {
     const instance = getChangeData(change)
     // In case of inactive app we need to update the query params
     if (instance.value.status === 'INACTIVE') {
       const appAdditionUrl = config[API_DEFINITIONS_CONFIG]
         .types[APPLICATION_TYPE_NAME].deployRequests?.add?.url
+        // TODO solve this bug
         appAdditionUrl?.concat('?activate=false')
     }
   }

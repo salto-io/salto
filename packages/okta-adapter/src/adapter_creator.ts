@@ -62,7 +62,6 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   return adapterConfig
 }
 
-// TODO ask neta
 export const adapter: Adapter = {
   operations: context => {
     // This can be removed once all the workspaces configs were migrated
@@ -74,9 +73,6 @@ export const adapter: Adapter = {
         context.config?.value
       ),
       DEFAULT_CONFIG,
-      [
-        'IssueEvent',
-      ]
     )
 
     const config = adapterConfigFromConfig(

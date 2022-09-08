@@ -37,35 +37,21 @@ describe('replaceObjectWithIdFilter', () => {
           name: 'Marketing',
           description: 'Marketing Dep',
         },
-        apps: [
+        users: [
           {
             id: '0oa66j371cnRcCeQB5d7',
-            name: 'saasure',
-            label: 'Okta Admin Console',
-            status: 'ACTIVE',
-            settings: {
-              notifications: {
-                vpn: {
-                  network: {
-                    connection: 'DISABLED',
-                  },
-                },
-              },
+            profile: {
+              firstName: 'test',
+              lastName: 'user',
+              login: 'user@test.io',
             },
           },
           {
             id: '0oa68k9spoT0zHGQe5d7',
-            name: 'zendesk',
-            label: 'Zendesk',
-            status: 'ACTIVE',
-            settings: {
-              notifications: {
-                vpn: {
-                  network: {
-                    connection: 'DISABLED',
-                  },
-                },
-              },
+            profile: {
+              firstName: 'test2',
+              lastName: 'user2',
+              login: 'user2@test.io',
             },
           },
         ],
@@ -75,29 +61,22 @@ describe('replaceObjectWithIdFilter', () => {
 
   it('should replace object with ids', async () => {
     await filter.onFetch?.([groupType, groupInstance])
-    expect(groupInstance.value.apps).toEqual([
+    expect(groupInstance.value.users).toEqual([
       '0oa66j371cnRcCeQB5d7',
       '0oa68k9spoT0zHGQe5d7',
     ])
   })
   it('should not replace object with ids if id does not exists', async () => {
     const group2 = groupInstance.clone()
-    delete group2.value.apps[1].id
+    delete group2.value.users[1].id
     await filter.onFetch?.([groupType, group2])
-    expect(group2.value.apps).toEqual([
+    expect(group2.value.users).toEqual([
       '0oa66j371cnRcCeQB5d7',
       {
-        name: 'zendesk',
-        label: 'Zendesk',
-        status: 'ACTIVE',
-        settings: {
-          notifications: {
-            vpn: {
-              network: {
-                connection: 'DISABLED',
-              },
-            },
-          },
+        profile: {
+          firstName: 'test2',
+          lastName: 'user2',
+          login: 'user2@test.io',
         },
       },
     ])

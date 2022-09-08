@@ -32,6 +32,7 @@ import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import referencedIdFields from './filters/referenced_id_fields'
 import appStructureFilter from './filters/app_structure'
+import standardRolesFilter from './filters/standard_roles'
 import { OKTA } from './constants'
 import fetchCriteria from './fetch_criteria'
 import { getLookUpName } from './reference_mapping'
@@ -41,14 +42,13 @@ const { awu } = collections.asynciterable
 const {
   generateTypes,
   getAllInstances,
-  // loadSwagger,
-  // addDeploymentAnnotations,
 } = elementUtils.swagger
 
 const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  standardRolesFilter,
   appStructureFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
@@ -172,14 +172,7 @@ export default class OktaAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const filterResult = await this.createFiltersRunner().onFetch(elements) || {}
 
-    // This needs to happen after the onFetch since some filters
-    // may add fields that deployment annotation should be added to
-    // TODO update deploy func
-    // await addDeploymentAnnotations(
-    //   elements.filter(isObjectType),
-    //   [await loadSwagger(this.userConfig[API_DEFINITIONS_CONFIG].swagger.url)],
-    //   this.userConfig.apiDefinitions,
-    // )
+    // TODO SALTO-2690: addDeploymentAnnotations
 
     return filterResult.errors !== undefined
       ? { elements, errors: filterResult.errors }

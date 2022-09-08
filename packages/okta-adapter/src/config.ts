@@ -149,24 +149,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         //   toField: 'appFeatures',
         //   context: [{ name: 'appId', fromField: 'id' }],
         // },
-        // TODO figure out if we want to indclude JWK
-        // {
-        //   type: 'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu',
-        //   toField: 'jsonWebKeys',
-        //   context: [{ name: 'appId', fromField: 'id' }],
-        // },
-        // returns for some instances 429 - need to investigate
-        // {
-        //   type: 'api__v1__apps___appId___grants@uuuuuu_00123_00125uu',
-        //   toField: 'oAuth2ScopeConsentGrants',
-        //   context: [{ name: 'appId', fromField: 'id' }],
-        // },
-        // return 500 - need to investigate
-        // {
-        //   type: 'api__v1__apps___appId___tokens@uuuuuu_00123_00125uu',
-        //   toField: 'OAuth2Tokens',
-        //   context: [{ name: 'appId', fromField: 'id' }],
-        // },
       ],
     },
   },
@@ -290,12 +272,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           toField: 'CSRs',
           context: [{ name: 'idpId', fromField: 'id' }],
         },
-        // TODO figure out if we want to indclude JWK
-        // {
-        //   type: 'api__v1__idps___idpId___credentials__keys@uuuuuu_00123_00125uuuu',
-        //   toField: 'jsonWebKeys',
-        //   context: [{ name: 'idpId', fromField: 'id' }],
-        // },
       ],
     },
   },
@@ -498,13 +474,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           toField: 'clients',
           context: [{ name: 'authServerId', fromField: 'id' }],
         },
-        // TODO figure out if we want to indclude JWK
-        /* eslint-disable max-len */
-        // {
-        //   type: 'api__v1__authorizationServers___authServerId___credentials__keys@uuuuuu_00123_00125uuuu',
-        //   toField: 'jsonWebKeys',
-        //   context: [{ name: 'authServerId', fromField: 'id' }],
-        // },
       ],
     },
   },
@@ -520,20 +489,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  // TODO we need to figure out if we to include tokens
-  /* eslint-disable max-len */
-  // 'api__v1__authorizationServers___authServerId___clients@uuuuuu_00123_00125uu': {
-  //   request: {
-  //     url: '/api/v1/authorizationServers/{authServerId}/clients',
-  //     recurseInto: [
-  //       {
-  //         type: 'api__v1__authorizationServers___authServerId___clients___clientId___tokens@uuuuuu_00123_00125uuuu_00123_00125uu',
-  //         toField: 'OAuth2Tokens',
-  //         context: [{ name: 'clientId', fromField: 'id' }],
-  //       },
-  //     ],
-  //   },
-  // },
   AuthorizationServer: {
     transformation: {
       fieldTypeOverrides: [
@@ -551,12 +506,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  // TODO figure out if we want to indclude JWK
-  // 'api__v1__authorizationServers___authServerId___credentials__keys@uuuuuu_00123_00125uuuu': {
-  //   transformation: {
-  //     dataField: '.',
-  //   },
-  // },
   api__v1__brands: {
     request: {
       url: '/api/v1/brands',

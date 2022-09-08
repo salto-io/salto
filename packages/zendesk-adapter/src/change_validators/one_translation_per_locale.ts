@@ -24,7 +24,7 @@ import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { createSchemeGuardForInstance } from './required_app_owned_parameters'
 
-// const ARTICLE_TYPE_NAME = 'article'
+
 const ARTICLE_TRANSLATION_TYPE_NAME = 'article_translation'
 const CATEGORY_TRANSLATION_TYPE_NAME = 'category_translation'
 const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
@@ -108,12 +108,9 @@ export const oneTranslationPerLocalValidator: ChangeValidator = async changes =>
   return Array.from(parentInstances)
     .filter(parentInstance => invalidParent(parentInstance))
     .flatMap(instance => [{
-      elemID: instance.elemID,
+      elemID:instance.elemID,
       severity: 'Error',
-      message: 'Automation must test for at least one of the following ticket properties in the ALL '
-                + 'conditions section: Status, Type, Group, Assignee, Requester',
-      detailedMessage: `Automation ${instance.elemID.getFullName()} must test for at least one of 
-      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
-      Requester`,
+      message: `${instance.elemID.getFullName()} cannot have multiple translations with the same locale`,
+      detailedMessage: `${instance.elemID.getFullName()} cannot have multiple translations with the same locale`,
     }])
 }

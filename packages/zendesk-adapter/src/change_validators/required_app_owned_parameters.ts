@@ -68,7 +68,7 @@ const EXPECTED_APP_OWNED_SCHEMA = Joi.object({
   parameters: Joi.object().pattern(Joi.any(), EXPECTED_PARAMETERS_SCHEMA),
 }).unknown(true).required()
 
-const createSchemeGuardForInstance = <T extends InstanceElement>(
+export const createSchemeGuardForInstance = <T extends InstanceElement>(
   scheme: Joi.AnySchema, errorMessage?: string
 ):
     (instance: InstanceElement) => instance is T => (instance): instance is T => {

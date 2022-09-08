@@ -36,6 +36,7 @@ import {
   phoneNumbersValidator,
   automationAllConditionsValidator,
   requiredAppOwnedParametersValidator,
+  oneTranslationPerLocalValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -81,6 +82,7 @@ export default ({
     phoneNumbersValidator,
     automationAllConditionsValidator,
     requiredAppOwnedParametersValidator,
+    oneTranslationPerLocalValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

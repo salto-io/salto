@@ -20,6 +20,7 @@ import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreCh
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
+import changeValidator from './change_validators'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
 import { paginate } from './client/pagination'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -224,6 +225,12 @@ export default class OktaAdapter implements AdapterOperations {
     return {
       appliedChanges: restoredAppliedChanges,
       errors,
+    }
+  }
+
+  static get deployModifiers(): AdapterOperations['deployModifiers'] {
+    return {
+      changeValidator: changeValidator(),
     }
   }
 }

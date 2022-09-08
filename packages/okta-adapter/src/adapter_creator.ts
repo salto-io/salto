@@ -102,6 +102,7 @@ export const adapter: Adapter = {
           updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
         }
       },
+      deployModifiers: OktaAdapter.deployModifiers,
     }
   },
   validateCredentials: async config => validateCredentials(

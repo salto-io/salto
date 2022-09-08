@@ -17,7 +17,7 @@ import { dependencyChange, DependencyChanger, getChangeData, isAdditionChange, i
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 export const fieldContextDependencyChanger: DependencyChanger = async (changes, dependencies) => {
-  const modificationChanges = Array.from(changes.entries() ?? [])
+  const modificationChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
       change =>
@@ -34,7 +34,7 @@ export const fieldContextDependencyChanger: DependencyChanger = async (changes, 
             return false
           }
           return isAdditionChange(change) && getChangeData(change).elemID.typeName
-           === FIELD_CONTEXT_TYPE_NAME
+            === FIELD_CONTEXT_TYPE_NAME
         })
       return contextDependencies.map(
         contextKey =>

@@ -90,6 +90,35 @@ describe('fieldContextsDependencyChanger', () => {
     const dependencyChanges = [
       ...await fieldContextDependencyChanger(inputChanges, inputDeps),
     ]
-    expect(dependencyChanges).toHaveLength(0)
+    expect(dependencyChanges).toBeEmpty()
+  })
+  it('should not reverse any dependency because the dependency does not in the input dependencies', async () => {
+    const inputChanges = new Map([
+      [0, toChange({ before: fieldInstance, after: modifiedFieldInstance })],
+      [1, toChange({ after: contextInstance })],
+
+    ])
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+    ])
+
+    const dependencyChanges = [
+      ...await fieldContextDependencyChanger(inputChanges, inputDeps),
+    ]
+    expect(dependencyChanges).toBeEmpty()
+  })
+
+  it('should not reverse any dependency because the modified field does not have a relevant dependency', async () => {
+    const inputChanges = new Map([
+      [0, toChange({ before: fieldInstance, after: modifiedFieldInstance })],
+
+    ])
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+      [0, new Set([1])],
+    ])
+
+    const dependencyChanges = [
+      ...await fieldContextDependencyChanger(inputChanges, inputDeps),
+    ]
+    expect(dependencyChanges).toBeEmpty()
   })
 })

@@ -670,6 +670,16 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { type: 'badge_category' },
   },
+  {
+    src: { field: 'tags', parentTypes: ['user_segment'] },
+    serializationStrategy: 'id',
+    target: { type: 'tag' },
+  },
+  {
+    src: { field: 'or_tags', parentTypes: ['user_segment'] },
+    serializationStrategy: 'id',
+    target: { type: 'tag' },
+  },
 
   {
     src: {

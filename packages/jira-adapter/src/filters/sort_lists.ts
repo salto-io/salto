@@ -18,7 +18,7 @@ import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -35,9 +35,6 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   PermissionScheme: {
     permissions: ['permission', 'holder.type', 'holder.parameter'],
   },
-  [WORKFLOW_TYPE_NAME]: {
-    statuses: ['id.elemID.name'],
-  },
   IssueTypeScreenScheme: {
     issueTypeMappings: ['issueTypeId.elemID.name'],
   },
@@ -46,6 +43,7 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
   [WORKFLOW_TYPE_NAME]: {
     transitions: ['name'],
+    statuses: ['id.elemID.name'],
   },
   [NOTIFICATION_EVENT_TYPE_NAME]: {
     notifications: ['type', 'parameter.elemID.name', 'parameter'],
@@ -71,6 +69,9 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
   WorkflowCondition: {
     conditions: WORKFLOW_CONDITION_SORT_BY,
+  },
+  [WORKFLOW_TRANSITION_TYPE_NAME]: {
+    from: ['elemID.name'],
   },
 }
 

@@ -215,38 +215,46 @@ const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean
   (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
 export const shouldResolve = (value: unknown): boolean => (
+  // Do not resolve references to elements because we expect them to have their own
+  // node in the graph and we cannot know here if a difference in an element would
+  // cause a difference in the reference. We do resolve variables because they always
+  // point to a primitive value that we can compare.
+  // If a value is not a reference we decided to return that we should "resolve" it so
+  // the value will be treated like a resolved reference
   !isReferenceExpression(value) || !value.elemID.isBaseID() || value.elemID.idType === 'var'
 )
 
 const shouldCompareByValue = (
   first: Value,
   second: Value,
-  compareReferencesValues: boolean
-): boolean => compareReferencesValues && shouldResolve(first) && shouldResolve(second)
+  compareReferencesByValue: boolean
+): boolean => compareReferencesByValue && shouldResolve(first) && shouldResolve(second)
 
 export const compareSpecialValues = (
   first: Value,
   second: Value,
-  compareReferencesValues = false,
+  compareReferencesByValue = false,
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
   }
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    if (shouldCompareByValue(first, second, compareReferencesValues)) {
+    if (shouldCompareByValue(first, second, compareReferencesByValue)) {
       const fValue = isReferenceExpression(first) ? first.value : first
       const sValue = isReferenceExpression(second) ? second.value : second
 
       return _.isEqualWith(
         fValue,
         sValue,
-        (va1, va2) => compareSpecialValues(va1, va2, compareReferencesValues),
+        (va1, va2) => compareSpecialValues(va1, va2, compareReferencesByValue),
       )
     }
 
     if (isReferenceExpression(first) && isReferenceExpression(second)) {
       return first.elemID.isEqual(second.elemID)
     }
+    // If one side is a reference and the other is not and we should not
+    // compare by values then the values are different
     return false
   }
   if (typeof first === 'string' && typeof second === 'string') {
@@ -258,11 +266,11 @@ export const compareSpecialValues = (
 export const isEqualValues = (
   first: Value,
   second: Value,
-  compareReferencesValues = false,
+  compareReferencesByValue = false,
 ): boolean => _.isEqualWith(
   first,
   second,
-  (va1, va2) => compareSpecialValues(va1, va2, compareReferencesValues),
+  (va1, va2) => compareSpecialValues(va1, va2, compareReferencesByValue),
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -181,7 +181,7 @@ describe('Values', () => {
         expect(isEqualValues(ref1, ref2)).toBeTruthy()
       })
 
-      it('References to inner properties with the same should not be equal when compareReferencesValues is true', () => {
+      it('References to inner properties with the same should not be equal when compareReferencesByValue is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 2)
         expect(isEqualValues(ref1, ref2, true)).toBeFalsy()
@@ -204,7 +204,7 @@ describe('Values', () => {
         expect(isEqualValues(ref1, 1)).toBeFalsy()
       })
 
-      it('Reference should not be equal to its resolved value when compareReferencesValues is true', () => {
+      it('Reference should not be equal to its resolved value when compareReferencesByValue is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         expect(isEqualValues(ref1, 1, true)).toBeTruthy()
       })

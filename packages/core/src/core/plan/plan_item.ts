@@ -41,7 +41,7 @@ const getGroupAction = (group: Group<Change>): ActionName => {
 
 export const addPlanItemAccessors = (
   group: Group<Change>,
-  compareReferencesValues = false
+  compareReferencesByValue = false
 ): PlanItem => Object.assign(group, {
   action: getGroupAction(group),
   changes() {
@@ -58,7 +58,7 @@ export const addPlanItemAccessors = (
           change.data.before,
           change.data.after,
           false,
-          compareReferencesValues
+          compareReferencesByValue
         )
       })
       .flatten()

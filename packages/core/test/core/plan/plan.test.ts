@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, StaticFile, Variable, VariableExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import wu from 'wu'
 import * as mock from '../../common/elements'
@@ -188,6 +188,163 @@ describe('getPlan', () => {
     })
   })
 
+  it('when instances have inner references and there is no change should create empty plan when compareReferencesByValue is on', async () => {
+    const innerType = new ObjectType({
+      elemID: new ElemID('adapter', 'inner'),
+      fields: {
+        inner: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        ref: { refType: innerType },
+        inner: { refType: innerType },
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const firstInstance1 = new InstanceElement(
+      'instance1',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'value')) },
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance1', 'inner')),
+      }
+    )
+
+    const secondInstance1 = new InstanceElement(
+      'instance1',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: 'some value' },
+        ref: { inner: 'some value' },
+      }
+    )
+
+
+    const firstInstance2 = new InstanceElement(
+      'instance2',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: 'some value' },
+        ref: { inner: 'some value' },
+      }
+    )
+
+    const secondInstance2 = new InstanceElement(
+      'instance2',
+      type,
+      {
+        value: 'some value',
+        inner: { inner: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'value')) },
+        ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance2', 'inner')),
+      }
+    )
+
+
+    const firstInstance3 = new InstanceElement(
+      'instance3',
+      type,
+      {
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'type', 'instance', 'instance3', 'inner'),
+          {
+            inner: new ReferenceExpression(
+              new ElemID('adapter', 'type', 'instance', 'instance3', 'value'),
+              'some value'
+            ),
+          }
+        ),
+      }
+    )
+
+    const secondInstance3 = new InstanceElement(
+      'instance3',
+      type,
+      {
+        ref: { inner: 'some value' },
+      }
+    )
+
+    const firstInstance4 = new InstanceElement(
+      'instance4',
+      type,
+      {
+        ref: { inner: 'some value' },
+      }
+    )
+
+    const secondInstance4 = new InstanceElement(
+      'instance4',
+      type,
+      {
+        ref: new ReferenceExpression(
+          new ElemID('adapter', 'type', 'instance', 'instance4', 'inner'),
+          {
+            inner: new ReferenceExpression(
+              new ElemID('adapter', 'type', 'instance', 'instance4', 'value'),
+              'some value'
+            ),
+          }
+        ),
+      }
+    )
+
+
+    const plan = await getPlan({
+      before: createElementSource(
+        [firstInstance1, firstInstance2, firstInstance3, firstInstance4, type, innerType]
+      ),
+      after: createElementSource(
+        [secondInstance1, secondInstance2, secondInstance3, secondInstance4, type, innerType]
+      ),
+      compareReferencesByValue: true,
+    })
+    expect(plan.size).toBe(0)
+  })
+
+  it('when instances use variables and there is no change should create empty plan when compareReferencesByValue is on', async () => {
+    const variableObject = new Variable(
+      new ElemID('var', 'a'),
+      5
+    )
+
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        value: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        value: new VariableExpression(variableObject.elemID),
+      }
+    )
+
+    const stateInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        value: 5,
+      }
+    )
+
+    const plan = await getPlan({
+      before: createElementSource([stateInstance, type]),
+      after: createElementSource([instance, type, variableObject]),
+      compareReferencesByValue: true,
+    })
+    expect(plan.size).toBe(0)
+  })
+
   it('when there is a circular reference in an instance it should behave as undefined', async () => {
     const type = new ObjectType({
       elemID: new ElemID('adapter', 'type'),
@@ -254,7 +411,7 @@ describe('getPlan', () => {
     expect(plan.size).toBe(1)
   })
 
-  describe('compareReferencesValues', () => {
+  describe('compareReferencesByValue', () => {
     let type: ObjectType
     let instanceBefore: InstanceElement
     let instanceAfter: InstanceElement
@@ -312,7 +469,7 @@ describe('getPlan', () => {
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
         after: createElementSource([instanceAfter, referencedAfter, type]),
-        compareReferencesValues: true,
+        compareReferencesByValue: true,
       })
       expect(plan.size).toBe(2)
 
@@ -342,7 +499,7 @@ describe('getPlan', () => {
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
         after: createElementSource([instanceAfter, referencedAfter, type]),
-        compareReferencesValues: true,
+        compareReferencesByValue: true,
       })
       expect(plan.size).toBe(1)
 

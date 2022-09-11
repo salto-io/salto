@@ -177,9 +177,17 @@ export const fetchDefault: FetchParams = {
       '^/Templates.*',
     ],
   },
+  fieldsToOmit: [
+    {
+      type: 'currency',
+      fields: [
+        'exchangeRate',
+      ],
+    },
+  ],
   [EXCLUDE]: {
     types: [
-      // Has a definition field which is a long XML and it contains 'translationScriptId'
+      // Has a definition field which is a long XML and it contains   'translationScriptId'
       // value that changes every fetch
       { name: WORKBOOK },
       // Has a definition field which is a long XML and it contains 'translationScriptId'

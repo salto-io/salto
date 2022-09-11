@@ -13,39 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, StaticFile } from '@salto-io/adapter-api'
+import { Element, InstanceElement, StaticFile } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/email_template_static_files'
 import { FilterWith } from '../../src/filter'
-import { SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
+import { mockTypes } from '../mock_elements'
+import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('emailTemplate static files filter', () => {
-  const SUFFIX = 'suffix'
-  const ATTACHMENTS = 'attachments'
-  const CONTENT = 'content'
-  const FULL_NAME = 'fullName'
   const ATTACHMENT_AS_STRING = 'attachment'
   const EMAILCONTENT = 'email-content'
   const ATTACHMENT_NAME = 'attachment.txt'
   let elements: Element[]
-
-  const emailTemplateID = new ElemID(SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE)
-
-  const fields = {
-    [CONTENT]: { refType: BuiltinTypes.STRING },
-    [ATTACHMENTS]: { refType: BuiltinTypes.STRING },
-    [FULL_NAME]: { refType: BuiltinTypes.STRING },
-  }
-
-  const emailType = new ObjectType({
-    annotations: {
-      [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE,
-      [SUFFIX]: 'email',
-    },
-    elemID: emailTemplateID,
-    fields,
-    path: ['Objects', 'dir'],
-  })
 
   const attachment = new StaticFile({
     filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/attachment.txt',
@@ -53,7 +32,7 @@ describe('emailTemplate static files filter', () => {
   })
 
   const staticContent = new StaticFile({
-    filepath: 'Objects/dir/emailTemplate.email',
+    filepath: 'salesforce/Records/emailTemplate.email',
     content: Buffer.from(EMAILCONTENT),
   })
 
@@ -63,14 +42,12 @@ describe('emailTemplate static files filter', () => {
 
     describe('attachment as an object', () => {
       beforeAll(async () => {
-        const emailNoArrayAttachment = new InstanceElement('emailTemplate', emailType, {
-          [ATTACHMENTS]: { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING },
-          [CONTENT]: staticContent,
-          [FULL_NAME]: 'unfiled$public/emailTemplate',
-        },
-        ['Objects', 'dir', 'emailTemplate'])
+        const emailNoArrayAttachment = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
+          content: staticContent,
+          attachments: { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING } },
+        mockTypes.EmailTemplate)
 
-        elements = [emailNoArrayAttachment, emailType]
+        elements = [emailNoArrayAttachment]
 
         filter = filterCreator({ config: defaultFilterContext }) as FilterType
         await filter.onFetch(elements)
@@ -89,14 +66,12 @@ describe('emailTemplate static files filter', () => {
 
     describe('attachment as an array', () => {
       beforeAll(async () => {
-        const emailArrayAttachment = new InstanceElement('emailTemplate', emailType, {
-          [ATTACHMENTS]: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }],
-          [CONTENT]: staticContent,
-          [FULL_NAME]: 'unfiled$public/emailTemplate',
-        },
-        ['Objects', 'dir', 'emailTemplate'])
+        const emailArrayAttachment = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
+          content: staticContent,
+          attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }] },
+        mockTypes.EmailTemplate)
 
-        elements = [emailArrayAttachment, emailType]
+        elements = [emailArrayAttachment]
 
         filter = filterCreator({ config: defaultFilterContext }) as FilterType
         await filter.onFetch(elements)
@@ -110,25 +85,6 @@ describe('emailTemplate static files filter', () => {
         expect(receivedEmailTemplate?.value.content?.filepath).toEqual(
           'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email'
         )
-      })
-    })
-
-    describe('can not create new folder due missing data', () => {
-      beforeAll(async () => {
-        const emailTemplateNoFullName = new InstanceElement('emailTemplate', emailType, {
-          [ATTACHMENTS]: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }],
-        })
-
-        elements = [emailTemplateNoFullName, emailType]
-
-        filter = filterCreator({ config: defaultFilterContext }) as FilterType
-        await filter.onFetch(elements)
-      })
-
-      it('should not replace content when emailTemplate instance has no full name', () => {
-        const instanceUndefinedPath = elements[0] as InstanceElement
-        expect(instanceUndefinedPath?.value.attachments)
-          .toIncludeSameMembers([{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }])
       })
     })
   })

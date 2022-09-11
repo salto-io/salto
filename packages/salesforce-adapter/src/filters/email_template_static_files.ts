@@ -62,8 +62,7 @@ const createStaticFile = (
   })
 
 const findFolderPath = (instance: InstanceElement): string | undefined =>
-  (!_.isUndefined(instance.value.fullName)
-    ? `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}` : undefined)
+  `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
   const folderPath = findFolderPath(instance)
@@ -71,7 +70,7 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
     const instApiName = await apiName(instance)
     log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
   } else {
-    const emailName = `${folderPath.split('/').pop()}.${instance.refType.type?.annotations.suffix}`
+    const emailName = `${folderPath.split('/').pop()}.email`
     instance.value.content = new StaticFile({
       filepath: path.join(folderPath, emailName),
       content: await instance.value.content.getContent(),

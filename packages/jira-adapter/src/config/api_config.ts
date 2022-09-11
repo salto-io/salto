@@ -718,7 +718,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/project/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'description,lead,url,projectKeys,permissions',
+        expand: 'description,lead,url',
       },
       recurseInto: [
         {
@@ -827,6 +827,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           fieldName: 'id',
         },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'style' },
+        { fieldName: 'simplified' },
+        { fieldName: 'isPrivate' },
+        { fieldName: 'expand' },
       ],
       standaloneFields: [
         {

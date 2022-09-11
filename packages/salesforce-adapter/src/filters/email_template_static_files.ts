@@ -61,7 +61,7 @@ const createStaticFile = (
     content: Buffer.from(content, 'base64'),
   })
 
-const findFolderPath = (instance: InstanceElement): string | undefined =>
+const findFolderPath = (instance: InstanceElement) =>
   `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionChange, isAdditionOrModificationChange, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionOrModificationChange, isModificationChange, ModificationChange, isAdditionChange } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, deployment } from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
@@ -79,22 +79,19 @@ const deployApp = async (
     // TODO SALTO-2690: remove this once completed
     'id', 'created', 'lastUpdated', 'status', 'licensing', '_links', '_embedded',
   ]
-  if (isAdditionChange(change)) {
-    const instance = getChangeData(change)
-    // In case of inactive app we need to update the query params
-    if (instance.value.status === 'INACTIVE') {
-      const appAdditionUrl = config[API_DEFINITIONS_CONFIG]
-        .types[APPLICATION_TYPE_NAME].deployRequests?.add?.url
-        // TODO solve this bug
-        appAdditionUrl?.concat('?activate=false')
-    }
-  }
+
   if (isModificationChange(change)) {
     // application status must be deployed seperatly
     await deployAppStatusChange(change, client)
   }
 
-  await defaultDeployChange(change, client, config[API_DEFINITIONS_CONFIG], fieldsToIgnore)
+  await defaultDeployChange(
+    change,
+    client,
+    config[API_DEFINITIONS_CONFIG],
+    fieldsToIgnore,
+    isAdditionChange(change) && getChangeData(change).value.status === 'INACTIVE' ? { activate: 'false' } : undefined
+  )
 
   if (isAdditionOrModificationChange(change)) {
     await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)

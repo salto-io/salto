@@ -75,7 +75,7 @@ describe('currency exchange rate validator', () => {
     }
   )
 
-  it('shoulde have changeError when exchangeRate isn\'t specified', async () => {
+  it('should have changeError when exchangeRate isn\'t specified', async () => {
     const after = instance.clone()
     delete after.value.exchangeRate
     const changeErrors = await currencyExchangeRateValidator(
@@ -85,5 +85,13 @@ describe('currency exchange rate validator', () => {
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
     expect(changeErrors[0].detailedMessage).toContain('\'exchangeRate\' field must be specified when deploying a new curreny')
+  })
+
+  it('should not have changeError when exchangeRate isn\'t specified', async () => {
+    const after = instance.clone()
+    const changeErrors = await currencyExchangeRateValidator(
+      [toChange({ after })]
+    )
+    expect(changeErrors).toHaveLength(0)
   })
 })

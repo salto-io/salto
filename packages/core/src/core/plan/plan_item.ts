@@ -57,8 +57,7 @@ export const addPlanItemAccessors = (
         return detailedCompare(
           change.data.before,
           change.data.after,
-          false,
-          compareReferencesByValue
+          { compareReferencesByValue }
         )
       })
       .flatten()

@@ -119,12 +119,19 @@ const getAnnotationTypeChanges = (
   return []
 }
 
+type CompareOptions = {
+  createFieldChanges?: boolean
+  compareReferencesByValue?: boolean
+}
+
 export const detailedCompare = (
   before: ChangeDataType,
   after: ChangeDataType,
-  createFieldChanges = false,
-  compareReferencesByValue = false,
+  compareOptions?: CompareOptions
 ): DetailedChange[] => {
+  const createFieldChanges = compareOptions?.createFieldChanges ?? false
+  const compareReferencesByValue = compareOptions?.compareReferencesByValue ?? false
+
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
       .filter(fieldName => afterObj.fields[fieldName] === undefined)
@@ -147,8 +154,7 @@ export const detailedCompare = (
       .map(fieldName => detailedCompare(
         beforeObj.fields[fieldName],
         afterObj.fields[fieldName],
-        false,
-        compareReferencesByValue,
+        { compareReferencesByValue },
       ))
 
     return [

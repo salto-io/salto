@@ -30,7 +30,13 @@ const replaceObjectWithId = (instance: InstanceElement): void => {
     const currentValues = instance.value[fieldName]
     if (_.isArray(currentValues)) {
       instance.value[fieldName] = currentValues
-        .map(value => (value.id !== undefined ? value.id : value))
+        .map(value => {
+          if (fieldName === 'roles' && value.type !== 'CUSTOM') {
+            // adjustment to standard role id
+            return value.type !== undefined ? value.type : value
+          }
+          return value.id !== undefined ? value.id : value
+        })
     }
   })
 }

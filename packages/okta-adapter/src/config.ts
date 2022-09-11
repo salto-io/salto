@@ -213,7 +213,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           userId: 'id',
         },
         method: 'post',
-        fieldsToIgnore: ['id'],
+        fieldsToIgnore: ['id', 'status', 'syncState'],
       },
       modify: {
         url: '/api/v1/apps/{applicationId}/users/{userId}',
@@ -222,7 +222,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           userId: 'id',
         },
         method: 'post',
-        fieldsToIgnore: ['id'],
+        fieldsToIgnore: ['id', 'status', 'syncState'],
       },
       remove: {
         url: '/api/v1/apps/{applicationId}/users/{userId}',
@@ -584,6 +584,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'roles', fieldType: 'Role' },
       ],
       dataField: 'roles',
+    },
+  },
+  SmsTemplate: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'lastUpdated' },
+      ],
     },
   },
 }

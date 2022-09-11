@@ -21,7 +21,8 @@ import { collections, decorators, hash } from '@salto-io/lowerdash'
 import {
   BatchResultInfo,
   BulkLoadOperation,
-  Connection as RealConnection, DeployOptions,
+  Connection as RealConnection,
+  DeployOptions as JSForceDeployOptions,
   DeployResult,
   DescribeGlobalSObjectResult,
   DescribeSObjectResult,
@@ -67,7 +68,7 @@ const { toMD5 } = hash
 const log = logger(module)
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
 
-type RequiredDeployOptions = Required<Pick<DeployOptions, 'checkOnly'>>
+type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
 export const API_VERSION = '55.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
@@ -670,17 +671,18 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  public async deploy(zip: Buffer, deployOptions: RequiredDeployOptions): Promise<DeployResult> {
+  public async deploy(zip: Buffer, deployOptions: DeployOptions): Promise<DeployResult> {
     this.setDeployPollingTimeout()
-    const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
-    // SALTO-2700
-    const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests', 'checkOnly']
+    const configOverrides = { rollbackOnError: true, ignoreWarnings: true }
+    const { checkOnly = false } = deployOptions
+    const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests']
     const deployResult = flatValues(
       await this.conn.metadata.deploy(
         zip,
         {
-          ..._.merge(defaultDeployOptions, _.pick(this.config?.deploy, optionsToSend)),
-          ...deployOptions,
+          ..._.merge(configOverrides, _.pick(this.config?.deploy, optionsToSend)),
+          // SALTO-2700
+          checkOnly: this.config?.deploy?.checkOnly ?? checkOnly,
         },
       ).complete(true)
     )

@@ -199,6 +199,7 @@ const processDeployResponse = (
 
   const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
+  // we don't want to flush the storage for check-only deployment
   if (!result.checkOnly && result.rollbackOnError && !result.success) {
     // if rollbackOnError and we did not succeed, nothing was applied as well
     return { successfulFullNames: [], errors }
@@ -284,7 +285,7 @@ export const deployMetadata = async (
   client: SalesforceClient,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
   deleteBeforeUpdate?: boolean,
-  checkOnly = false,
+  checkOnly?: boolean,
 ): Promise<DeployResult> => {
   const pkg = createDeployPackage(deleteBeforeUpdate)
 

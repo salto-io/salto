@@ -1789,6 +1789,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
       serviceUrl: '/knowledge/user_segments/edit/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/user_segments',
+        deployAsField: 'user_segment',
+        method: 'post',
+      },
+      modify: {
+        url: '/help_center/user_segments/{userSegmentId}',
+        method: 'put',
+        deployAsField: 'user_segment',
+        urlParamsToFields: {
+          userSegmentId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/user_segments/{userSegmentId}',
+        method: 'delete',
+        urlParamsToFields: {
+          userSegmentId: 'id',
+        },
+      },
+    },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }

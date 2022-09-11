@@ -59,6 +59,7 @@ const createSalesforceChangeValidator = (
   checkOnly: boolean
 ): ChangeValidator => {
   const [activeValidators, disabledValidators] = _.partition(
+    // SALTO-2700: Separate Validators
     Object.entries(checkOnly || isDefined(config.client?.deploy?.checkOnly)
       ? { ...checkOnlyChangeValidators, ...changeValidators }
       : changeValidators),

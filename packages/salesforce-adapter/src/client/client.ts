@@ -681,8 +681,7 @@ export default class SalesforceClient {
         zip,
         {
           ..._.merge(configOverrides, _.pick(this.config?.deploy, optionsToSend)),
-          // SALTO-2700
-          checkOnly: this.config?.deploy?.checkOnly ?? checkOnly,
+          checkOnly,
         },
       ).complete(true)
     )

@@ -450,8 +450,12 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   async deploy(deployOptions: DeployOptions): Promise<DeployResult> {
-    const result = await this.deployOrValidate(deployOptions, false)
-    // SALTO-2700
+    const result = await this.deployOrValidate(
+      deployOptions,
+      // SALTO-2700: Pass just false
+      this.userConfig?.client?.deploy?.checkOnly ?? false,
+    )
+    // SALTO-2700: Remove
     if (this.userConfig?.client?.deploy?.checkOnly) {
       return {
         ...result,

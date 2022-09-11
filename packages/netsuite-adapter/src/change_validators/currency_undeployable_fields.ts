@@ -39,7 +39,7 @@ const validateModificationChange = (
       elemID: before.elemID,
       severity: 'Error',
       message: 'Editing of \'currencyPrecision\' is not supported',
-      detailedMessage: 'Failed to deploy - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
+      detailedMessage: 'Could not deploy - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
     }
   }
   if ((before.value.displaySymbol !== after.value.displaySymbol
@@ -49,7 +49,7 @@ const validateModificationChange = (
       elemID: before.elemID,
       severity: 'Error',
       message: 'Currency contains a field that cannot be deployed.',
-      detailedMessage: 'Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
+      detailedMessage: 'Could not deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
     }
   }
   return undefined

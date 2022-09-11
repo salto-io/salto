@@ -29,7 +29,7 @@ import { isConditions } from './utils'
 const log = logger(module)
 
 const RELEVANT_FIELD_NAMES = ['current_tags', 'remove_tags', 'set_tags']
-const TYPE_NAME_TO_RELEVANT_FIELD_NAMES: Record<string, string[]> = {
+const TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS: Record<string, string[]> = {
   automation: ['actions', 'conditions.all', 'conditions.any'],
   trigger: ['actions', 'conditions.all', 'conditions.any'],
   view: ['conditions.all', 'conditions.any'],
@@ -37,6 +37,10 @@ const TYPE_NAME_TO_RELEVANT_FIELD_NAMES: Record<string, string[]> = {
   sla_policy: ['filter.all', 'filter.any'],
   workspace: ['conditions.all', 'conditions.any'],
 }
+const TYPE_NAME_TO_TAG_FIELD_NAMES: Record<string, string[]> = {
+  user_segment: ['tags', 'or_tags'],
+}
+
 const TYPE_NAME_WITH_CHECKBOXES = ['ticket_field', 'user_field', 'organization_field']
 const TAG_FIELD_NAME_IN_CHECKBOX = 'tag'
 export const TAG_TYPE_NAME = 'tag'
@@ -56,7 +60,8 @@ const isRelevantCheckboxInstance = (instance: InstanceElement): boolean => (
 )
 
 const isRelevantInstance = (instance: InstanceElement): boolean => (
-  Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES).includes(instance.elemID.typeName)
+  Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS).includes(instance.elemID.typeName)
+  || Object.keys(TYPE_NAME_TO_TAG_FIELD_NAMES).includes(instance.elemID.typeName)
   || isRelevantCheckboxInstance(instance)
 )
 
@@ -66,7 +71,7 @@ const createTagReferenceExpression = (tag: string): ReferenceExpression => (
 
 const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
   const tags: string[] = [];
-  (TYPE_NAME_TO_RELEVANT_FIELD_NAMES[instance.elemID.typeName] ?? [])
+  (TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS[instance.elemID.typeName] ?? [])
     .forEach(fieldName => {
       const conditions = _.get(instance.value, fieldName)
       if (conditions === undefined || !isConditions(conditions)) {
@@ -87,11 +92,20 @@ const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
     tags.push(tag)
     instance.value[TAG_FIELD_NAME_IN_CHECKBOX] = createTagReferenceExpression(tag)
   }
+  (TYPE_NAME_TO_TAG_FIELD_NAMES[instance.elemID.typeName] ?? [])
+    .forEach(fieldName => {
+      const value = instance.value[fieldName]
+      if (value === undefined || !_.isArray(value) || !value.every(_.isString)) {
+        return
+      }
+      value.forEach(tag => { tags.push(tag) })
+      instance.value[fieldName] = value.map(createTagReferenceExpression)
+    })
   return tags
 }
 
 const serializeReferencesToTags = (instance: InstanceElement): void => {
-  (TYPE_NAME_TO_RELEVANT_FIELD_NAMES[instance.elemID.typeName] ?? [])
+  (TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS[instance.elemID.typeName] ?? [])
     .forEach(fieldName => {
       const conditions = _.get(instance.value, fieldName)
       if (conditions === undefined || !isConditions(conditions)) {
@@ -166,7 +180,7 @@ const filterCreator: FilterCreator = () => ({
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const relevantChanges = changes
-      .filter(change => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES)
+      .filter(change => Object.keys(TYPE_NAME_TO_RELEVANT_FIELD_NAMES_WITH_CONDITIONS)
         .includes(getChangeData(change).elemID.typeName))
     if (_.isEmpty(relevantChanges)) {
       return

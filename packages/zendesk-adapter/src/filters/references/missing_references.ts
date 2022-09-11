@@ -23,6 +23,7 @@ const MISSING_REF_PREFIX = 'missing_'
 
 export const VALUES_TO_SKIP_BY_TYPE: Record<string, string[]> = {
   group: ['current_groups', 'group_id'],
+  webhook: ['(Value no longer exists. Choose another.)'],
 }
 
 export const createMissingInstance = (

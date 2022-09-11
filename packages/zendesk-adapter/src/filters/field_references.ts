@@ -43,6 +43,7 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   within_schedule: 'business_hours_schedule',
   set_schedule: 'business_hours_schedule',
   ticket_form_id: 'ticket_form',
+  locale_id: 'locale',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -116,6 +117,9 @@ const neighborReferenceTicketFieldLookupFunc: GetLookupNameFunc = async ({ ref }
 
 const neighborReferenceTicketFieldLookupType: referenceUtils.ContextValueMapperFunc = val =>
   (val === TICKET_FIELD_OPTION_TYPE_NAME ? val : undefined)
+
+const allowListLookupType: referenceUtils.ContextValueMapperFunc = val =>
+  (NEIGHBOR_FIELD_TO_TYPE_NAMES[val])
 
 const neighborReferenceUserAndOrgFieldLookupFunc: GetLookupNameFunc = async ({ ref }) => {
   if (isInstanceElement(ref.value) && ref.value.value.type === 'dropdown') {
@@ -208,6 +212,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
 
 export type ReferenceContextStrategyName = 'neighborField'
   | 'allowlistedNeighborField'
+  | 'allowlistedNeighborSubject'
   | 'neighborType'
   | 'parentSubject'
   | 'parentTitle'
@@ -222,7 +227,10 @@ export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
-  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: val => NEIGHBOR_FIELD_TO_TYPE_NAMES[val] }),
+  // We use allow lists because there are types we don't support (such organizarion or requester)
+  // and they'll as false positives
+  allowlistedNeighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: allowListLookupType }),
+  allowlistedNeighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: allowListLookupType }),
   neighborReferenceTicketField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceTicketFormCondition: neighborContextFunc({ contextFieldName: 'parent_field_id', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'field', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
@@ -306,6 +314,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'locale_ids' },
@@ -316,6 +325,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'default_locale_id' },
     serializationStrategy: 'id',
     target: { type: 'locale' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'variants', parentTypes: ['dynamic_content_item'] },
@@ -660,6 +670,16 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { type: 'badge_category' },
   },
+  {
+    src: { field: 'tags', parentTypes: ['user_segment'] },
+    serializationStrategy: 'id',
+    target: { type: 'tag' },
+  },
+  {
+    src: { field: 'or_tags', parentTypes: ['user_segment'] },
+    serializationStrategy: 'id',
+    target: { type: 'tag' },
+  },
 
   {
     src: {
@@ -757,6 +777,8 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
         'automation__conditions__all',
         'automation__conditions__any',
         'macro__actions',
+        'routing_attribute_value__conditions__all',
+        'routing_attribute_value__conditions__any',
         'sla_policy__filter__all',
         'sla_policy__filter__any',
         'trigger__actions',
@@ -769,6 +791,17 @@ const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
       ],
     },
     target: { typeContext: 'allowlistedNeighborField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
+  {
+    src: {
+      field: 'value',
+      parentTypes: [
+        'routing_attribute_value__conditions__all',
+        'routing_attribute_value__conditions__any',
+      ],
+    },
+    target: { typeContext: 'allowlistedNeighborSubject' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
 ]
@@ -832,6 +865,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     zendeskSerializationStrategy: 'ticketFieldOption',
     target: { typeContext: 'neighborSubjectReferenceTicketField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -854,6 +888,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     zendeskSerializationStrategy: 'userFieldOption',
     target: { typeContext: 'neighborSubjectReferenceUserAndOrgField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -881,6 +916,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     src: { field: 'group_ids', parentTypes: ['user_segment'] },
     serializationStrategy: 'id',
     target: { type: 'group' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
 ]
 

@@ -44,7 +44,15 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   return _.capitalize(val)
 }
 
+export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
+  if (val === 'priority' || val === 'resolution') {
+    return _.capitalize(val)
+  }
+  return undefined
+}
+
 export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesIdContext' | 'workflowStatusPropertiesNameContext'
+| 'parentFieldId'
 
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
@@ -53,6 +61,7 @@ export const contextStrategyLookup: Record<
   parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
   workflowStatusPropertiesIdContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefIdType }),
   workflowStatusPropertiesNameContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefNameType }),
+  parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
 }
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<
@@ -468,17 +477,22 @@ ReferenceContextStrategyName
     target: { typeContext: 'parentSelectedFieldType' },
   },
   {
+    src: { field: 'fieldValue', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'parentFieldId' },
+  },
+  {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'id',
     target: { typeContext: 'parentFieldType' },
   },
   {
-    src: { field: 'value', parentTypes: ['StatusProperty'] },
+    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     serializationStrategy: 'id',
     target: { typeContext: 'workflowStatusPropertiesIdContext' },
   },
   {
-    src: { field: 'value', parentTypes: ['StatusProperty'] },
+    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     serializationStrategy: 'nameWithPath',
     target: { typeContext: 'workflowStatusPropertiesNameContext' },
   },

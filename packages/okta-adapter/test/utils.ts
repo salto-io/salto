@@ -16,10 +16,30 @@
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { DEFAULT_CONFIG } from '../src/config'
+import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { DEFAULT_CONFIG, OktaConfig } from '../src/config'
+import { adapter } from '../src/adapter_creator'
 import OktaClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 import { FilterCreator } from '../src/filter'
+import { Credentials } from '../src/auth'
+
+
+export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
+  new InstanceElement(
+    ElemID.CONFIG_NAME,
+    adapter.authenticationMethods.basic.credentialsType,
+    credentials,
+  )
+)
+
+export const createConfigInstance = (config: OktaConfig): InstanceElement => (
+  new InstanceElement(
+    ElemID.CONFIG_NAME,
+    adapter.configType as ObjectType,
+    config,
+  )
+)
 
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
   get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue({ status: 200, data: '' }),

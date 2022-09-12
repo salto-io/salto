@@ -174,7 +174,6 @@ const compareValuesAndLazyResolveRefs = async (
     // code generator, but its here in order for the method to "fail fast" as some
     // can stop when the first non equal values are encountered.
     return !(await awu(first).some(
-      // eslint-disable-next-line no-use-before-define
       async (value, index) => !await compareValuesAndLazyResolveRefs(
         value,
         second[index],

@@ -48,8 +48,9 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
       if (path.isAttrID()) {
         return WALK_NEXT_STEP.SKIP
       }
-      if (Array.isArray(value)) {
-        wu(value)
+      if (path.createParentID().name === 'customvalues') {
+        const valueToArray = Object.entries(value).map(elem => elem[1])
+        wu(valueToArray)
           .map(getScriptId)
           .filter(values.isDefined)
           .forEach(id => {

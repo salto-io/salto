@@ -69,27 +69,6 @@ const transformDynamicContentDependencies = async (
   }) ?? instance.value
 }
 
-// const templatePartToApiValue = (allParts: TemplatePart[]): string =>
-//   allParts.map((part, index) => {
-//     if (_.isString(part)) {
-//       let tempString = part
-//       if (part.startsWith(CLOSE_BRACKETS) && (isReferenceExpression(allParts[index - 1]))) {
-//         tempString = tempString.slice(CLOSE_BRACKETS.length)
-//       }
-//       if (part.endsWith(OPEN_BRACKETS) && (isReferenceExpression(allParts[index + 1]))) {
-//         tempString = tempString.slice(0, -(OPEN_BRACKETS.length))
-//       }
-//       return tempString
-//     }
-//     if (isReferenceExpression(part)) {
-//       if (!isInstanceElement(part.value)) {
-//         return part.value
-//       }
-//       return part.value.value.placeholder ?? part
-//     }
-//     return part
-//   }).join('')
-
 const templatePartToApiValue = (allParts: TemplatePart[]): string =>
   allParts.map(part => {
     if (isReferenceExpression(part)) {

@@ -70,6 +70,7 @@ export const removeCustomFieldPrefix = (id: string): string => (
 export const generateJqlContext = (
   instances: InstanceElement[],
 ): JqlContext => ({
+  // TODO: handles better instances with duplicate names SALTO-2729
   typeToInstances: _(instances)
     .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
     .groupBy(instance => instance.elemID.typeName)

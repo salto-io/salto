@@ -314,12 +314,12 @@ describe('macro attachment filter', () => {
       resolvedClonedMacro.value[ATTACHMENTS_FIELD_NAME] = [attachmentId]
       // It's actually not deployed with id but its added to the element that we check
       resolvedClonedMacro.value.id = macroId
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: resolvedClonedMacro } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: resolvedClonedMacro } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
@@ -381,12 +381,12 @@ describe('macro attachment filter', () => {
       const resolvedClonedAfterMacro = clonedAfterMacro.clone()
       resolvedClonedBeforeMacro.value[ATTACHMENTS_FIELD_NAME] = [attachmentId]
       resolvedClonedAfterMacro.value[ATTACHMENTS_FIELD_NAME] = [newAttachmentId]
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
@@ -453,12 +453,12 @@ describe('macro attachment filter', () => {
       const resolvedClonedAfterMacro = clonedMacro.clone()
       resolvedClonedBeforeMacro.value[ATTACHMENTS_FIELD_NAME] = [attachmentId]
       resolvedClonedAfterMacro.value[ATTACHMENTS_FIELD_NAME] = [newAttachmentId]
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -501,12 +501,12 @@ describe('macro attachment filter', () => {
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       const resolvedClonedMacro = clonedMacro.clone()
       resolvedClonedMacro.value[ATTACHMENTS_FIELD_NAME] = [attachmentId]
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'remove', data: { before: resolvedClonedMacro } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'remove', data: { before: resolvedClonedMacro } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)

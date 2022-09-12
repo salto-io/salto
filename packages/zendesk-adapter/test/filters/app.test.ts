@@ -82,12 +82,12 @@ describe('app installation filter', () => {
     mockGet.mockResolvedValue({ status: 200, data: { status: 'completed' } })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedApp } },
-      expect.anything(),
-      expect.anything(),
-      ['app', 'settings.title', 'settings_objects']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedApp } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+    })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
       url: '/apps/job_statuses/123',
@@ -110,12 +110,12 @@ describe('app installation filter', () => {
       [{ action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } }]
     )
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } },
-      expect.anything(),
-      expect.anything(),
-      ['app', 'settings.title', 'settings_objects']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+    })
     expect(mockGet).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -130,12 +130,12 @@ describe('app installation filter', () => {
     mockDeployChange.mockImplementation(async () => { throw new Error('err') })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedApp } },
-      expect.anything(),
-      expect.anything(),
-      ['app', 'settings.title', 'settings_objects']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedApp } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+    })
     expect(mockGet).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)
@@ -149,12 +149,12 @@ describe('app installation filter', () => {
     mockGet.mockImplementation(async () => { throw new Error('err') })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedApp } },
-      expect.anything(),
-      expect.anything(),
-      ['app', 'settings.title', 'settings_objects']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedApp } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+    })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
       url: '/apps/job_statuses/123',
@@ -171,12 +171,12 @@ describe('app installation filter', () => {
     mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedApp } },
-      expect.anything(),
-      expect.anything(),
-      ['app', 'settings.title', 'settings_objects']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedApp } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+    })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
       url: '/apps/job_statuses/123',
@@ -193,12 +193,12 @@ describe('app installation filter', () => {
     mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedApp } },
-      expect.anything(),
-      expect.anything(),
-      ['app', 'settings.title', 'settings_objects']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedApp } },
+      client: expect.anything(),
+      endpointdDetails: expect.anything(),
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+    })
     expect(mockGet).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)

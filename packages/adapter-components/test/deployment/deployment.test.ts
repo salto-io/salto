@@ -69,11 +69,11 @@ describe('deployChange', () => {
   })
 
   it('When no endpoint for deploying the element should throw an error', async () => {
-    await expect(() => deployChange(
-      toChange({ before: instance, after: instance }),
-      httpClient,
-      endpoint
-    )).rejects.toThrow(
+    await expect(() => deployChange({
+      change: toChange({ before: instance, after: instance }),
+      client: httpClient,
+      endpointDetails: endpoint,
+    })).rejects.toThrow(
       'No endpoint of type modify for test'
     )
   })
@@ -84,11 +84,11 @@ describe('deployChange', () => {
       data: {},
     })
     instance.value.obj = { id: 1 }
-    await deployChange(
-      toChange({ before: instance }),
-      httpClient,
-      endpoint
-    )
+    await deployChange({
+      change: toChange({ before: instance }),
+      client: httpClient,
+      endpointDetails: endpoint,
+    })
 
     expect(instance.value.obj.id).toBe(1)
     expect(httpClient.delete).toHaveBeenCalledWith(expect.objectContaining({
@@ -101,12 +101,12 @@ describe('deployChange', () => {
       status: 200,
       data: {},
     })
-    await deployChange(
-      toChange({ after: instance }),
-      httpClient,
-      endpoint,
-      path => path.name === 'ignored',
-    )
+    await deployChange({
+      change: toChange({ after: instance }),
+      client: httpClient,
+      endpointDetails: endpoint,
+      fieldsToIgnore: path => path.name === 'ignored',
+    })
 
     expect(httpClient.post).toHaveBeenCalledWith({
       url: '/test/endpoint',

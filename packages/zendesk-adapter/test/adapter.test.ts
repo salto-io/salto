@@ -980,8 +980,8 @@ describe('adapter', () => {
           ],
         },
       })
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        toChange({
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: toChange({
           after: new InstanceElement(
             instance.elemID.name,
             new ObjectType({
@@ -1001,10 +1001,9 @@ describe('adapter', () => {
             { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
           ),
         }),
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+      })
     })
     it('should not try to deploy instances', async () => {
       mockDeployChange.mockImplementation(async () => ({}))

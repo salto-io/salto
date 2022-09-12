@@ -81,12 +81,12 @@ describe('account settings filter', () => {
       [{ action: 'modify', data: { before: accountSettings, after: clonedAfter } }]
     )
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
-      expect.anything(),
-      expect.anything(),
-      ['routing.autorouting_tag']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['routing.autorouting_tag']
+    })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges)
@@ -103,12 +103,12 @@ describe('account settings filter', () => {
       [{ action: 'modify', data: { before: accountSettings, after: clonedAfter } }]
     )
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
-      expect.anything(),
-      expect.anything(),
-      []
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: []
+    })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges)
@@ -136,12 +136,12 @@ describe('account settings filter', () => {
       [{ action: 'modify', data: { before: accountSettings, after: clonedAfter } }]
     )
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
-      expect.anything(),
-      expect.anything(),
-      ['routing.autorouting_tag']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['routing.autorouting_tag']
+    })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)
     expect(res.deployResult.appliedChanges).toHaveLength(0)

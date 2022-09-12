@@ -75,12 +75,12 @@ describe('business hours schedule filter', () => {
     mockPut.mockResolvedValue({ status: 200, data: { schedule: { id } } })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedSchedule } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedSchedule } },
-      expect.anything(),
-      expect.anything(),
-      ['holidays']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedSchedule } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['holidays']
+    })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
       url: '/business_hours/schedules/2/workweek',
@@ -107,12 +107,12 @@ describe('business hours schedule filter', () => {
       [{ action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } }]
     )
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
-      expect.anything(),
-      expect.anything(),
-      ['holidays']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['holidays']
+    })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
       url: '/business_hours/schedules/2/workweek',
@@ -135,12 +135,12 @@ describe('business hours schedule filter', () => {
     mockPut.mockResolvedValue({ status: 200, data: { schedule: { id } } })
     const res = await filter.deploy([{ action: 'remove', data: { before: clonedSchedule } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'remove', data: { before: clonedSchedule } },
-      expect.anything(),
-      expect.anything(),
-      ['holidays']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'remove', data: { before: clonedSchedule } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['holidays']
+    })
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -162,12 +162,12 @@ describe('business hours schedule filter', () => {
       [{ action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } }]
     )
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
-      expect.anything(),
-      expect.anything(),
-      ['holidays']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['holidays']
+    })
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -185,12 +185,12 @@ describe('business hours schedule filter', () => {
     mockPut.mockResolvedValue({ status: 200, data: { schedule: { id } } })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedSchedule } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedSchedule } },
-      expect.anything(),
-      expect.anything(),
-      ['holidays']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedSchedule } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['holidays']
+    })
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)
@@ -204,12 +204,12 @@ describe('business hours schedule filter', () => {
     mockPut.mockImplementation(async () => { throw new Error('err') })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedSchedule } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedSchedule } },
-      expect.anything(),
-      expect.anything(),
-      ['holidays']
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedSchedule } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['holidays']
+    })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)

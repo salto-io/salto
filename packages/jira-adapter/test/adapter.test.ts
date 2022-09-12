@@ -76,8 +76,8 @@ describe('adapter', () => {
        typeof deployment.deployChange
       >
       deployChangeMock.mockClear()
-      deployChangeMock.mockImplementation(async change => {
-        if (isRemovalChange(change)) {
+      deployChangeMock.mockImplementation(async params => {
+        if (isRemovalChange(params.change)) {
           throw new Error('some error')
         }
         return { id: 2 }
@@ -135,8 +135,8 @@ describe('adapter', () => {
     })
 
     it('should return the errors', async () => {
-      deployChangeMock.mockImplementation(async change => {
-        if (isRemovalChange(change)) {
+      deployChangeMock.mockImplementation(async params => {
+        if (isRemovalChange(params.change)) {
           throw new Error('some error')
         }
         throw new client.HTTPError('some error', { status: 400, data: { errorMessages: ['errorMessage'], errors: { key: 'value' } } })

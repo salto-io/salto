@@ -215,10 +215,10 @@ const compareStringsIgnoreNewlineDifferences = (s1: string, s2: string): boolean
   (s1 === s2) || (s1.replace(/\r\n/g, '\n') === s2.replace(/\r\n/g, '\n'))
 
 export const shouldResolve = (value: unknown): boolean => (
-  // Do not resolve references to elements because we expect them to have their own
-  // node in the graph and we cannot know here if a difference in an element would
-  // cause a difference in the reference. We do resolve variables because they always
-  // point to a primitive value that we can compare.
+  // We don't resolve references to elements because the logic of how to resolve each
+  // reference currently exists only in the adapter so here we don't know how to
+  // resolve them.
+  // We do resolve variables because they always point to a primitive value that we can compare.
   // If a value is not a reference we decided to return that we should "resolve" it so
   // the value will be treated like a resolved reference
   !isReferenceExpression(value) || !value.elemID.isBaseID() || value.elemID.idType === 'var'

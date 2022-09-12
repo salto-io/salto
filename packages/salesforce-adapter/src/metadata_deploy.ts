@@ -199,7 +199,7 @@ const processDeployResponse = (
 
   const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
-  // we don't want to flush the storage for check-only deployment
+  // we don't flush the storage for check-only deployment, since no changes are actually applied
   if (!result.checkOnly && result.rollbackOnError && !result.success) {
     // if rollbackOnError and we did not succeed, nothing was applied as well
     return { successfulFullNames: [], errors }

@@ -450,13 +450,12 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   async deploy(deployOptions: DeployOptions): Promise<DeployResult> {
-    const result = await this.deployOrValidate(
-      deployOptions,
-      // SALTO-2700: Pass just false
-      this.userConfig?.client?.deploy?.checkOnly ?? false,
-    )
-    // SALTO-2700: Remove
-    if (this.userConfig?.client?.deploy?.checkOnly) {
+    // Check old configuration flag for backwards compatibility (SALTO-2700)
+    const checkOnly = this.userConfig?.client?.deploy?.checkOnly ?? false
+    const result = await this.deployOrValidate(deployOptions, checkOnly)
+    // If we got here with checkOnly we must not return any applied changes
+    // to maintain the old deploy interface (SALTO-2700)
+    if (checkOnly) {
       return {
         ...result,
         appliedChanges: [],

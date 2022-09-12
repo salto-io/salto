@@ -66,7 +66,7 @@ export const removeCustomObjectsWithVariousFields = async (client: SalesforceCli
   const deployPkg = createDeployPackage()
   deployPkg.delete(mockTypes.CustomObject, customObjectWithFieldsName)
   deployPkg.delete(mockTypes.CustomObject, customObjectAddFieldsName)
-  await client.deploy(await deployPkg.getZip(), { checkOnly: false })
+  await client.deploy(await deployPkg.getZip())
 }
 
 export const verifyElementsExist = async (client: SalesforceClient): Promise<void> => {
@@ -857,7 +857,7 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     await awu(instances).forEach(async ([values, type]) => {
       await pkg.add(createInstanceElement(values, type))
     })
-    await client.deploy(await pkg.getZip(), { checkOnly: false })
+    await client.deploy(await pkg.getZip())
   }
 
   await Promise.all([

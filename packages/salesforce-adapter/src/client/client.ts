@@ -665,22 +665,23 @@ export default class SalesforceClient {
   /**
    * Updates salesforce metadata with the Deploy API
    * @param zip The package zip
-   * @param deployOptions Required salesforce deployment options
+   * @param deployOptions Salesforce deployment options
    * @returns The save result of the requested update
    */
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  public async deploy(zip: Buffer, deployOptions: DeployOptions): Promise<DeployResult> {
+  public async deploy(zip: Buffer, deployOptions?: DeployOptions): Promise<DeployResult> {
     this.setDeployPollingTimeout()
-    const configOverrides = { rollbackOnError: true, ignoreWarnings: true }
-    const { checkOnly = false } = deployOptions
+    const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
+    const { checkOnly = false } = deployOptions ?? {}
     const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests']
     const deployResult = flatValues(
       await this.conn.metadata.deploy(
         zip,
         {
-          ..._.merge(configOverrides, _.pick(this.config?.deploy, optionsToSend)),
+          ...defaultDeployOptions,
+          ..._.pick(this.config?.deploy, optionsToSend),
           checkOnly,
         },
       ).complete(true)

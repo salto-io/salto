@@ -175,23 +175,27 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
 
-      describe('when performing validation deploy with checkOnly', () => {
+      describe('when performing a check-only deployment', () => {
         let result: DeployResult
-        beforeEach(async () => {
-          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
+        beforeEach(() => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             success: true,
             componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
             checkOnly: true,
           }))
-          result = await adapter.deploy({
-            changeGroup: {
-              groupID: instance.elemID.getFullName(),
-              changes: [{ action: 'add', data: { after: instance } }],
-            },
-          })
         })
-        it('should return applied changes', () => {
-          expect(result.appliedChanges).toHaveLength(1)
+        describe('when attempting to deploy non CustomObjects', () => {
+          beforeEach(async () => {
+            result = await adapter.validate({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: instance } }],
+              },
+            })
+          })
+          it('should return applied changes', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+          })
         })
         describe('when attempting to deploy CustomObjects', () => {
           beforeEach(async () => {
@@ -199,7 +203,7 @@ describe('SalesforceAdapter CRUD', () => {
               'TestCustomObject',
               createCustomObjectType('TestCustomObject', {})
             )
-            result = await adapter.deploy({
+            result = await adapter.validate({
               changeGroup: {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: customObjectInstance } }],

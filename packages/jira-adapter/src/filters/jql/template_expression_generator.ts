@@ -22,9 +22,12 @@ import { ISSUE_TYPE_NAME, PRIORITY_TYPE_NAME, PROJECT_TYPE, RESOLUTION_TYPE_NAME
 import { FIELD_TYPE_NAME } from '../fields/constants'
 
 // e.g., cf[1234]
-const CUSTOM_FIELD_PATTEN = /^cf\[(.*)\]$/
+const CUSTOM_FIELD_PATTERN = /^cf\[(\d+)\]$/
+const JQL_CUSTOM_FIELD_PREFIX = 'cf['
+const JQL_CUSTOM_FIELD_SUFFIX = ']'
+
 // e.g. fieldNumber[Number]
-const FIELD_WITH_TYPE_PATTEN = /^(.*[^\\])\[.+\]$/
+const FIELD_WITH_TYPE_PATTERN = /^(.*[^\\])\[.+\]$/
 const CUSTOM_FIELD_PREFIX = 'customfield_'
 
 const log = logger(module)
@@ -109,9 +112,9 @@ const getValueOperands = (operand: Operand): ValueOperand[] => {
 type JqlNode = {
   // The position of the `text`
   position: Position
-  // `text` is the string as it is written in the jql (with quotation marks and escaping characters)
+  // The string as it is written in the jql (with quotation marks and escaping characters)
   text: string
-  // `value` is the real value cleaned of the syntax differences
+  // The real value cleaned of the syntax differences
   value: string
 }
 
@@ -144,16 +147,16 @@ const getFieldInfo = (
   }
 
   // Custom fields can be addressed in jql by id using `cf[...]` syntax, e.g., `cf[12345]`
-  const customFieldMatch = CUSTOM_FIELD_PATTEN.exec(fieldIdentifier)
+  const customFieldMatch = CUSTOM_FIELD_PATTERN.exec(fieldIdentifier)
   if (customFieldMatch !== null) {
     // eslint-disable-next-line prefer-destructuring
     fieldIdentifier = customFieldMatch[1]
-    position.start += 3
-    position.end -= 1
+    position.start += JQL_CUSTOM_FIELD_PREFIX.length
+    position.end -= JQL_CUSTOM_FIELD_SUFFIX.length
   }
 
-  // Fields can be written with therr type, e.g, `fieldName[number]`
-  const fieldWithTypeMatch = FIELD_WITH_TYPE_PATTEN.exec(fieldIdentifier)
+  // Fields can be written with their type, e.g, `fieldName[number]`
+  const fieldWithTypeMatch = FIELD_WITH_TYPE_PATTERN.exec(fieldIdentifier)
   if (fieldWithTypeMatch !== null) {
     // eslint-disable-next-line prefer-destructuring
     fieldIdentifier = fieldWithTypeMatch[1]
@@ -259,7 +262,7 @@ export const generateTemplateExpression = (
     walkAST(
       {
         // A terminal clause is a clause of the form `<field> <operator> <value>`,
-        // e.g., `status = Done`, as opposed to compound clause with is of the
+        // e.g., `status = Done`, as opposed to compound clause which is of the
         // form (<clause> AND/OR <anotherClaus>...)
         enterTerminalClause: clause => {
           const fieldInfo = getFieldInfo(clause.field, jqlContext)

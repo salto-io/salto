@@ -725,9 +725,9 @@ value
 
       it('should parse references to multiline template as TemplateExpression', () => {
         expect(multilineRefObj.annotations.tmpl).toBeInstanceOf(TemplateExpression)
-        expect(multilineRefObj.annotations.tmpl.parts).toEqual(['multiline\ntemplate {{', expect.objectContaining({
+        expect(multilineRefObj.annotations.tmpl.parts).toEqual(['multiline\n', 'template {{', expect.objectContaining({
           elemID: new ElemID('te@mp', 'late', 'instance', 'multiline_stuff@us'),
-        }), '}}\nvalue'])
+        }), '}}\n', 'value'])
       })
     })
 

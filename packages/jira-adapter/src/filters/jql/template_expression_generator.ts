@@ -18,6 +18,7 @@ import _ from 'lodash'
 import { walkAST, JastBuilder, Operand, ValueOperand, TerminalClause, Field as JqlField, Position } from '@atlassianlabs/jql-ast'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_NAME, PRIORITY_TYPE_NAME, PROJECT_TYPE, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME, STATUS_CATEGORY_TYPE_NAME } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 
@@ -247,7 +248,7 @@ const createJqlTemplate = (jql: string, tokens: JqlToken[]): TemplateExpression 
     templateParts.push(jql.slice(start, end))
   })
 
-  return new TemplateExpression({
+  return createTemplateExpression({
     parts: templateParts.filter(part => !_.isEmpty(part)),
   })
 }

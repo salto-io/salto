@@ -25,9 +25,27 @@ export type TemplateContainer = {
     fieldName: string
   }
 
+export const compactString = (
+  part: TemplatePart, allParts: TemplatePart[]
+): void => {
+  const tempPart = allParts[allParts.length - 1]
+  if (_.isString(part) && _.isString(tempPart)) {
+    allParts.pop()
+    allParts.push(tempPart.concat(part))
+  } else {
+    allParts.push(part)
+  }
+}
+
+export const createTemplateExpression = (parts: {parts: TemplatePart[] }):TemplateExpression => {
+  const newParts:TemplatePart[] = []
+  parts.parts.forEach(part => compactString(part, newParts))
+  return new TemplateExpression({ parts: newParts })
+}
+
 export const prepareTemplateForDeploy = (template: TemplateExpression,
   prepRef: (part: ReferenceExpression) => TemplatePart): TemplateExpression =>
-  new TemplateExpression({
+  createTemplateExpression({
     parts: template.parts.map(part => (isReferenceExpression(part) ? prepRef(part) : part)),
   })
 
@@ -80,5 +98,5 @@ export const extractTemplate = (
   if (templateParts.every(_.isString)) {
     return templateParts.join('')
   }
-  return new TemplateExpression({ parts: templateParts })
+  return createTemplateExpression({ parts: templateParts })
 }

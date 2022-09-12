@@ -147,7 +147,7 @@ after
       }))
       expect(app.value.settings.mapped_options).toEqual(new TemplateExpression({
         parts: ['custom_field_', new ReferenceExpression(option1.elemID, option1),
-          ',', 'custom_field_', new ReferenceExpression(option2.elemID, option2)],
+          ',custom_field_', new ReferenceExpression(option2.elemID, option2)],
       }))
     })
 

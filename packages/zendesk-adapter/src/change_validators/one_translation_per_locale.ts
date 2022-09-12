@@ -16,13 +16,14 @@
 
 import _ from 'lodash'
 import {
-  ChangeValidator, CORE_ANNOTATIONS,
+  ChangeValidator,
   getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { createSchemeGuardForInstance } from './required_app_owned_parameters'
+import { createSchemeGuardForInstance, getParents } from '@salto-io/adapter-utils'
+// eslint-disable-next-line no-restricted-imports
+import { findDuplicates } from '@salto-io/lowerdash/dist/src/collections/array'
 
 
 const ARTICLE_TRANSLATION_TYPE_NAME = 'article_translation'
@@ -31,13 +32,9 @@ const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
 
 type Translation = InstanceElement & {
     value: {
-        local: string
-    }
-    annotations: {
-        _parent: ReferenceExpression[]
+        locale: string
     }
 }
-
 type TranslationParent = InstanceElement & {
     value: {
         translations: ReferenceExpression[]
@@ -45,12 +42,7 @@ type TranslationParent = InstanceElement & {
 }
 
 const TRANSLATION_SCHEMA = Joi.object({
-  annotations: Joi.object({
-    _parent: Joi.array().required(),
-  }).unknown(true).required(),
-  value: Joi.object({
-    locale: Joi.string().required(),
-  }).unknown(true).required(),
+  locale: Joi.string().required(),
 }).unknown(true).required()
 
 const TRANSLATION_PARENT_SCHEMA = Joi.object({
@@ -60,57 +52,55 @@ const TRANSLATION_PARENT_SCHEMA = Joi.object({
 const isTranslationParent = createSchemeGuardForInstance<TranslationParent>(
   TRANSLATION_PARENT_SCHEMA, 'Received an invalid value for translation parent'
 )
-const isTranslation = createSchemeGuard<Translation>(
+const isTranslation = createSchemeGuardForInstance<Translation>(
   TRANSLATION_SCHEMA, 'Received an invalid value for translation'
 )
-
-const isNotUnique = (translation: InstanceElement, localeSet:Set<string>): boolean => {
-  if (!isTranslation(translation)) {
-    return false
-  }
-  const { locale } = translation.value
-  if (localeSet.has(locale)) {
-    return true
-  }
-  localeSet.add(locale)
-  return false
-}
 
 /**
  * returns true if there are translations with the same locale -> meaning that they are not unique
  */
-const invalidParent = (parent: InstanceElement): boolean => {
+const hasDuplicateTranslations = (parent: InstanceElement): string[] => {
   if (!isTranslationParent(parent)) {
-    return false
+    return []
   }
-  const localeSet = new Set<string>()
-  return !_.isEmpty(parent.value.translations
+  const locales = parent.value.translations
     .map(referenceExpression => referenceExpression.value)
-    .filter(translation => isNotUnique(translation, localeSet)))
+    .filter(translation => isTranslation(translation))
+    .map(translation => translation.value.locale)
+  return findDuplicates(locales)
 }
 
-export const oneTranslationPerLocalValidator: ChangeValidator = async changes => {
+export const oneTranslationPerLocaleValidator: ChangeValidator = async changes => {
   const relevantInstances = changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance =>
-      instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME
-    || instance.elemID.typeName === CATEGORY_TRANSLATION_TYPE_NAME
-    || instance.elemID.typeName === SECTION_TRANSLATION_TYPE_NAME)
+      [ARTICLE_TRANSLATION_TYPE_NAME,
+        CATEGORY_TRANSLATION_TYPE_NAME,
+        SECTION_TRANSLATION_TYPE_NAME].includes(instance.elemID.typeName))
 
   // it is a set to avoid duplicate of parents from translations which have the same parent
-  const parentInstances = new Set(relevantInstances
+  const parentInstances = relevantInstances
     .filter(instance => isTranslation(instance))
-    .flatMap(translationInstance => translationInstance.annotations[CORE_ANNOTATIONS.PARENT])
-    .map(translationParentInstance => translationParentInstance.value))
+    .flatMap(translationInstance => {
+      const parents = getParents(translationInstance)
+      return !_.isEmpty(parents) ? parents : []
+    })
+    .map(translationParentInstance => translationParentInstance.value)
 
-  return Array.from(parentInstances)
-    .filter(parentInstance => invalidParent(parentInstance))
-    .flatMap(instance => [{
-      elemID: instance.elemID,
+  const parentInstancesObj = _.keyBy(parentInstances, instance => instance.elemID.getFullName())
+
+  return Object.values(parentInstancesObj)
+    .map(parentInstance => ({
+      elemID: parentInstance.elemID,
+      duplicatedLocales: hasDuplicateTranslations(parentInstance),
+    }))
+    .filter(instance => !_.isEmpty(instance.duplicatedLocales))
+    .flatMap(({ elemID, duplicatedLocales }) => [{
+      elemID,
       severity: 'Error',
-      message: `${instance.elemID.getFullName()} cannot have multiple translations with the same locale`,
-      detailedMessage: `${instance.elemID.getFullName()} cannot have multiple translations with the same locale`,
+      message: `Multiple translations with the same locale found in ${elemID.typeName} instance. Only one translation per locale is supported.`,
+      detailedMessage: `Instance ${elemID.getFullName()} has multiple translations for locales: ${duplicatedLocales}. Only one translation per locale is supported.`,
     }])
 }

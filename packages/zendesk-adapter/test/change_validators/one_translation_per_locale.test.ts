@@ -23,7 +23,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { ZENDESK } from '../../src/constants'
-import { oneTranslationPerLocalValidator } from '../../src/change_validators'
+import { oneTranslationPerLocaleValidator } from '../../src/change_validators'
 
 describe('oneTranslationPerLocalValidator',
   () => {
@@ -78,7 +78,7 @@ describe('oneTranslationPerLocalValidator',
         articleType.elemID.createNestedID('instance', 'Test1'), article
       ))
 
-      const errors = await oneTranslationPerLocalValidator(
+      const errors = await oneTranslationPerLocaleValidator(
         [toChange({ after: heTranslation })]
       )
       expect(errors).toHaveLength(0)
@@ -128,14 +128,14 @@ describe('oneTranslationPerLocalValidator',
         articleType.elemID.createNestedID('instance', 'Test2'), article
       ))
 
-      const errors = await oneTranslationPerLocalValidator(
-        [toChange({ after: enTranslation })]
+      const errors = await oneTranslationPerLocaleValidator(
+        [toChange({ after: enTranslation }), toChange({ after: enTranslation2 })]
       )
       expect(errors).toEqual([{
         elemID: article.elemID,
         severity: 'Error',
-        message: `${article.elemID.getFullName()} cannot have multiple translations with the same locale`,
-        detailedMessage: `${article.elemID.getFullName()} cannot have multiple translations with the same locale`,
+        message: `Multiple translations with the same locale found in ${article.elemID.typeName} instance. Only one translation per locale is supported.`,
+        detailedMessage: `Instance ${article.elemID.getFullName()} has multiple translations for locales: en-us. Only one translation per locale is supported.`,
       }])
     })
   })

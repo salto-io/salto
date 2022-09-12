@@ -86,7 +86,8 @@ describe('fields_deployment', () => {
     expect(deployChangeMock).toHaveBeenCalledWith({
       change,
       client,
-      endpointDetails: getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Field.deployRequests,
+      endpointDetails: getDefaultConfig({ isDataCenter: false })
+        .apiDefinitions.types.Field.deployRequests,
       fieldsToIgnore: ['contexts'],
     })
   })

@@ -121,17 +121,14 @@ describe('adapter', () => {
         },
       })
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           before: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType),
           after: new InstanceElement('inst1', fieldConfigurationIssueTypeItemType, { issueTypeId: '3' }),
         }),
-        expect.any(JiraClient),
-        undefined,
-        [],
-        undefined,
-        undefined,
-      )
+        client: expect.any(JiraClient),
+        fieldsToIgnore: [],
+      })
     })
 
     it('should return the errors', async () => {

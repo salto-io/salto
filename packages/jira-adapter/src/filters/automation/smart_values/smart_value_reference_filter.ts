@@ -110,7 +110,7 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
     return part.value.value.id
   }
   if (!_.isString(part.value)) {
-    throw new Error(`Received an invalid value inside a template expression: ${safeJsonStringify(part.value)}`)
+    throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
   }
   return part.value
 }

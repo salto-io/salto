@@ -122,7 +122,7 @@ const filterCreator: FilterCreator = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
     onFetch: async (elements: Element[]) => log.time(async () =>
-      replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Template creation filter'),
+      replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Smart values creation filter'),
 
     preDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {
       filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
@@ -138,7 +138,7 @@ const filterCreator: FilterCreator = () => {
           }
         })
       )
-    }, 'Template resolve filter'),
+    }, 'Smart values resolve filter'),
 
     onDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {
       filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
@@ -153,7 +153,7 @@ const filterCreator: FilterCreator = () => {
           }
         })
       )
-    }, 'Templates restore filter'),
+    }, 'Smart values restore filter'),
   })
 }
 

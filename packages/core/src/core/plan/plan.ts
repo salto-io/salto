@@ -22,6 +22,7 @@ import {
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
   isModificationChange, isRemovalChange, ReferenceExpression, changeId,
   shouldResolve,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -199,6 +200,18 @@ const compareValuesAndLazyResolveRefs = async (
         firstVisitedReferences,
         secondVisitedReferences,
       )
+    )
+  }
+
+  if (isTemplateExpression(first) && isTemplateExpression(second)) {
+    return compareValuesAndLazyResolveRefs(
+      first.parts,
+      second.parts,
+      compareReferencesByValue,
+      firstSrc,
+      secondSrc,
+      firstVisitedReferences,
+      secondVisitedReferences,
     )
   }
 

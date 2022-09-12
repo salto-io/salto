@@ -35,28 +35,32 @@ type Component = {
   rawValue?: unknown
 }
 
-const getAutomations = (instances: InstanceElement[]): InstanceElement[] =>
+const filterAutomations = (instances: InstanceElement[]): InstanceElement[] =>
   instances.filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
 
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
-  const fields = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
-  const fieldsByName = _.keyBy(fields.filter(instance => _.isString(instance.value.name)),
+  const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
+  const fieldInstancesByName = _.keyBy(fieldInstances.filter(instance => _.isString(instance.value.name)),
     (instance: InstanceElement): string => instance.value.name)
-  const fieldsById = _.keyBy(fields.filter(instance => instance.value.id),
+  const fieldsById = _.keyBy(fieldInstances.filter(instance => instance.value.id),
     (instance: InstanceElement): number => instance.value.id)
-  getAutomations(instances).forEach(instance => {
+  filterAutomations(instances).forEach(instance => {
     [...(instance.value.components ?? []), instance.value.trigger]
       .forEach((component: Component) => {
         try {
           const { value } = component
           if (value !== undefined && _.isPlainObject(value)) {
             Object.keys(value).filter(key => _.isString(value[key])).forEach(key => {
-              value[key] = stringToTemplate(value[key], fieldsByName, fieldsById)
+              value[key] = stringToTemplate(value[key], fieldInstancesByName, fieldsById)
             })
           }
 
           if (component.rawValue !== undefined && _.isString(component.rawValue)) {
-            component.rawValue = stringToTemplate(component.rawValue, fieldsByName, fieldsById)
+            component.rawValue = stringToTemplate(
+              component.rawValue,
+              fieldInstancesByName,
+              fieldsById
+            )
           }
         } catch (e) {
           log.error('Error parsing templates in fetch', e)
@@ -82,7 +86,7 @@ const filterCreator: FilterCreator = () => {
       replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Template creation filter'),
 
     preDeploy: (changes: Change<InstanceElement>[]) => log.time(async () => {
-      await (Promise.all(getAutomations(await awu(changes).map(getChangeData).toArray())
+      await (Promise.all(filterAutomations(await awu(changes).map(getChangeData).toArray())
         .filter(isInstanceElement).flatMap(
           async instance => [...(instance.value.components ?? []), instance.value.trigger]
             .flatMap(async component => {
@@ -109,7 +113,7 @@ const filterCreator: FilterCreator = () => {
     }, 'Template resolve filter'),
 
     onDeploy: async (changes: Change<InstanceElement>[]) => log.time(async () => {
-      await (Promise.all(getAutomations(await awu(changes).map(getChangeData).toArray())
+      await (Promise.all(filterAutomations(await awu(changes).map(getChangeData).toArray())
         .filter(isInstanceElement).flatMap(
           async instance => [...(instance.value.components ?? []), instance.value.trigger]
             .flatMap(async component => {

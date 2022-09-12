@@ -17,16 +17,15 @@ import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement,
   ReferenceExpression, TemplateExpression, TemplatePart, Values,
 } from '@salto-io/adapter-api'
-import { replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
+import { createSchemeGuard, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import _ from 'lodash'
 import { AUTOMATION_TYPE } from '../../../constants'
 import { FilterCreator } from '../../../filter'
 import { FIELD_TYPE_NAME } from '../../fields/constants'
 import { stringToTemplate } from './template_expression_generator'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 
@@ -35,43 +34,83 @@ type Component = {
   rawValue?: unknown
 }
 
-const filterAutomations = (instances: InstanceElement[]): InstanceElement[] =>
-  instances.filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+type AutomationInstance = InstanceElement & {
+  value: {
+    trigger: Component
+    components?: Component[]
+  }
+}
+
+const COMPONENT_SCHEME = Joi.object({
+  value: Joi.object().optional(),
+  rawValue: Joi.optional(),
+}).unknown(true)
+
+const AUTOMATION_INSTANCE_SCHEME = Joi.object({
+  value: Joi.object({
+    trigger: COMPONENT_SCHEME.required(),
+    components: Joi.array().items(COMPONENT_SCHEME).optional(),
+  }).unknown(true),
+}).unknown(true)
+
+const isAutomationInstance = createSchemeGuard<AutomationInstance>(AUTOMATION_INSTANCE_SCHEME, 'Received an invalid automation')
+
+const filterAutomations = (instances: InstanceElement[]): AutomationInstance[] =>
+  instances
+    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+    .filter(isAutomationInstance)
+
+type SmartValueContainer = { obj: Values; key: string }
+
+const getPossibleSmartValues = (automation: AutomationInstance): SmartValueContainer[] =>
+  _(automation.value.components ?? []).concat(automation.value.trigger)
+    .flatMap(component => {
+      const containers: SmartValueContainer[] = []
+
+      if (component.value !== undefined) {
+        const { value } = component
+        Object.keys(component.value).map(key => ({
+          key,
+          obj: value,
+        })).forEach(container => containers.push(container))
+      }
+
+      containers.push({ key: 'rawValue', obj: component })
+      return containers
+    }).value()
 
 const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
   const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
-  const fieldInstancesByName = _.keyBy(fieldInstances.filter(instance => _.isString(instance.value.name)),
-    (instance: InstanceElement): string => instance.value.name)
-  const fieldsById = _.keyBy(fieldInstances.filter(instance => instance.value.id),
+  // TODO: handle better multiple fields with the same name (SALTO-2729)
+  const fieldInstancesByName = _.keyBy(
+    fieldInstances.filter(instance => _.isString(instance.value.name)),
+    (instance: InstanceElement): string => instance.value.name
+  )
+  const fieldInstancesById = _.keyBy(fieldInstances.filter(instance => instance.value.id),
     (instance: InstanceElement): number => instance.value.id)
-  filterAutomations(instances).forEach(instance => {
-    [...(instance.value.components ?? []), instance.value.trigger]
-      .forEach((component: Component) => {
-        try {
-          const { value } = component
-          if (value !== undefined && _.isPlainObject(value)) {
-            Object.keys(value).filter(key => _.isString(value[key])).forEach(key => {
-              value[key] = stringToTemplate(value[key], fieldInstancesByName, fieldsById)
-            })
-          }
 
-          if (component.rawValue !== undefined && _.isString(component.rawValue)) {
-            component.rawValue = stringToTemplate(
-              component.rawValue,
-              fieldInstancesByName,
-              fieldsById
-            )
-          }
-        } catch (e) {
-          log.error('Error parsing templates in fetch', e)
-        }
-      })
+
+  filterAutomations(instances).forEach(instance => {
+    getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+      try {
+        obj[key] = stringToTemplate({
+          referenceStr: obj[key],
+          fieldInstancesByName,
+          fieldInstancesById,
+        })
+      } catch (e) {
+        log.error('Error parsing templates in fetch', e)
+      }
+    })
   })
 }
 
 const prepRef = (part: ReferenceExpression): TemplatePart => {
   if (part.elemID.isTopLevel()) {
     return part.value.value.id
+  }
+  if (!_.isString(part.value)) {
+    throw new Error(`Received an invalid value inside a template expression: ${safeJsonStringify(part.value)}`)
   }
   return part.value
 }
@@ -85,56 +124,35 @@ const filterCreator: FilterCreator = () => {
     onFetch: async (elements: Element[]) => log.time(async () =>
       replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Template creation filter'),
 
-    preDeploy: (changes: Change<InstanceElement>[]) => log.time(async () => {
-      await (Promise.all(filterAutomations(await awu(changes).map(getChangeData).toArray())
-        .filter(isInstanceElement).flatMap(
-          async instance => [...(instance.value.components ?? []), instance.value.trigger]
-            .flatMap(async component => {
-              try {
-                if (_.isPlainObject(component.value)) {
-                  Object.keys(component.value).forEach(k => {
-                    replaceTemplatesWithValues(
-                      { fieldName: k, values: [component.value] },
-                      deployTemplateMapping,
-                      prepRef
-                    )
-                  })
-                }
-                replaceTemplatesWithValues(
-                  { fieldName: 'rawValue', values: [component] },
-                  deployTemplateMapping,
-                  prepRef
-                )
-              } catch (e) {
-                log.error('Error parsing templates in deployment', e)
-              }
-            })
-        )))
+    preDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {
+      filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
+        async instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+          try {
+            replaceTemplatesWithValues(
+              { values: [obj], fieldName: key },
+              deployTemplateMapping,
+              prepRef,
+            )
+          } catch (e) {
+            log.error('Error parsing templates in deployment', e)
+          }
+        })
+      )
     }, 'Template resolve filter'),
 
-    onDeploy: async (changes: Change<InstanceElement>[]) => log.time(async () => {
-      await (Promise.all(filterAutomations(await awu(changes).map(getChangeData).toArray())
-        .filter(isInstanceElement).flatMap(
-          async instance => [...(instance.value.components ?? []), instance.value.trigger]
-            .flatMap(async component => {
-              try {
-                if (component.value) {
-                  Object.keys(component.value).forEach(k => {
-                    resolveTemplates(
-                      { fieldName: k, values: [component.value] },
-                      deployTemplateMapping
-                    )
-                  })
-                }
-                resolveTemplates(
-                  { fieldName: 'rawValue', values: [component] },
-                  deployTemplateMapping
-                )
-              } catch (e) {
-                log.error('Error restoring templates in deployment', e)
-              }
-            })
-        )))
+    onDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {
+      filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
+        async instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+          try {
+            resolveTemplates(
+              { values: [obj], fieldName: key },
+              deployTemplateMapping,
+            )
+          } catch (e) {
+            log.error('Error restoring templates in deployment', e)
+          }
+        })
+      )
     }, 'Templates restore filter'),
   })
 }

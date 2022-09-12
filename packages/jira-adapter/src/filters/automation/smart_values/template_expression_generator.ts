@@ -20,64 +20,69 @@ import { extractTemplate } from '@salto-io/adapter-utils'
 
 const REFERENCE_MARKER_REGEX = /(\{\{.+?\}\})/
 
+// E.g abcd - true, a.b.c.d - false
 const FIELD_REGEX = /^([a-zA-Z0-9_ ]+)(?: |$|\.)/
 
-const handleJiraReference = (
-  ref: string,
-  fieldsByName: Record<string, InstanceElement>,
-  fieldsById: Record<string, InstanceElement>,
-): TemplatePart => {
-  if (fieldsById[ref] !== undefined) {
-    const instance = fieldsById[ref]
+const POSSIBLE_PREFIXES = [
+  'issue.fields.', 'destinationIssue.fields.', 'triggerIssue.fields.',
+  'issue.', 'destinationIssue.', 'triggerIssue.',
+  'fields.']
+
+const SMART_VALUE_PREFIX = '{{'
+const SMART_VALUE_SUFFIX = '}}'
+
+type GenerateTemplateParams = {
+  referenceStr: string
+  fieldInstancesByName: Record<string, InstanceElement>
+  fieldInstancesById: Record<string, InstanceElement>
+}
+
+const handleJiraReference = ({
+  referenceStr,
+  fieldInstancesByName,
+  fieldInstancesById,
+}: GenerateTemplateParams): TemplatePart => {
+  if (fieldInstancesById[referenceStr] !== undefined) {
+    const instance = fieldInstancesById[referenceStr]
     return new ReferenceExpression(instance.elemID, instance)
   }
 
-  if (fieldsByName[ref] !== undefined) {
-    const instance = fieldsByName[ref]
+  if (fieldInstancesByName[referenceStr] !== undefined) {
+    const instance = fieldInstancesByName[referenceStr]
     return new ReferenceExpression(instance.elemID.createNestedID('name'), instance.value.name)
   }
-  return ref
+  return referenceStr
 }
 
-// This function receives a string that contains issue references and replaces
-// it with salto style templates.
-export const stringToTemplate = (
-  referenceStr: string,
-  fieldsByName: Record<string, InstanceElement>,
-  fieldsById: Record<number, InstanceElement>,
-
-): TemplateExpression | string => {
-  const possibleIssues = ['issue', 'destinationIssue', 'triggerIssue', '']
-  const possibleFieldKeywords = ['fields', '']
-
-  const possiblePrefixes = possibleIssues
-    .flatMap(issueKey => possibleFieldKeywords
-      .map(fieldKey => [issueKey, fieldKey].filter(key => key !== '').join('.')))
-    .filter(prefix => prefix !== '')
-    .map(prefix => `${prefix}.`)
-
-  return extractTemplate(
-    referenceStr,
-    [REFERENCE_MARKER_REGEX],
-    expression => {
-      if (!expression.startsWith('{{') || !expression.endsWith('}}')) {
-        return expression
-      }
-
-      const smartValue = expression.slice(2, -2)
-
-      const prefix = possiblePrefixes.find(pref => smartValue.startsWith(pref)) ?? ''
-
-      const jiraReference = smartValue.slice(prefix.length).match(FIELD_REGEX)
-      if (jiraReference) {
-        const innerRef = jiraReference[1]
-        return [
-          `{{${prefix}`,
-          handleJiraReference(innerRef, fieldsByName, fieldsById),
-          `${smartValue.substring(prefix.length + innerRef.length)}}}`,
-        ]
-      }
+/**
+ * This function receives a string that contains issue references and replaces
+ * it with salto style templates.
+ */
+export const stringToTemplate = ({
+  referenceStr,
+  fieldInstancesByName,
+  fieldInstancesById,
+}: GenerateTemplateParams): TemplateExpression | string => extractTemplate(
+  referenceStr,
+  [REFERENCE_MARKER_REGEX],
+  expression => {
+    if (!expression.startsWith(SMART_VALUE_PREFIX) || !expression.endsWith(SMART_VALUE_SUFFIX)) {
       return expression
-    },
-  )
-}
+    }
+
+    const smartValue = expression.slice(SMART_VALUE_PREFIX.length, -SMART_VALUE_SUFFIX.length)
+
+    const prefix = POSSIBLE_PREFIXES.find(pref => smartValue.startsWith(pref)) ?? ''
+
+    const jiraReference = smartValue.slice(prefix.length).match(FIELD_REGEX)
+    if (jiraReference) {
+      const innerRef = jiraReference[1]
+      return [
+        `${SMART_VALUE_PREFIX}${prefix}`,
+        handleJiraReference({ referenceStr: innerRef, fieldInstancesByName, fieldInstancesById }),
+        `${smartValue.substring(prefix.length + innerRef.length)}${SMART_VALUE_SUFFIX}`,
+      ]
+    }
+    return expression
+  },
+)

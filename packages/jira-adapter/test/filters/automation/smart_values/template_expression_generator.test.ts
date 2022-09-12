@@ -60,11 +60,12 @@ describe('stringToTemplate', () => {
   })
 
   it('should resolve system field by id', () => {
-    expect(stringToTemplate(
-      '1-{{system}} 2-{{issue.system}} 3-{{issue.system.something}} 4-{{issue.fields.system.something}} 5-{{fields.system}} 6-{{destinationIssue.system}} 7-{{triggerIssue.system}}system',
-      nameToField,
-      idToField
-    )).toEqual(new TemplateExpression({
+    const x = stringToTemplate({
+      referenceStr: '1-{{system}} 2-{{issue.system}} 3-{{issue.system.something}} 4-{{issue.fields.system.something}} 5-{{fields.system}} 6-{{destinationIssue.system}} 7-{{triggerIssue.system}}system',
+      fieldInstancesByName: nameToField,
+      fieldInstancesById: idToField,
+    })
+    expect(x).toEqual(new TemplateExpression({
       parts: [
         '1-',
         '{{',
@@ -100,11 +101,11 @@ describe('stringToTemplate', () => {
   })
 
   it('should resolve system field by name', () => {
-    expect(stringToTemplate(
-      '1-{{SystemName}} 2-{{issue.SystemName}} 3-{{issue.SystemName.something}} 4-{{issue.fields.SystemName.something}} 5-{{fields.SystemName}} 6-{{destinationIssue.SystemName}} 7-{{triggerIssue.SystemName}}SystemName',
-      nameToField,
-      idToField
-    )).toEqual(new TemplateExpression({
+    expect(stringToTemplate({
+      referenceStr: '1-{{SystemName}} 2-{{issue.SystemName}} 3-{{issue.SystemName.something}} 4-{{issue.fields.SystemName.something}} 5-{{fields.SystemName}} 6-{{destinationIssue.SystemName}} 7-{{triggerIssue.SystemName}}SystemName',
+      fieldInstancesByName: nameToField,
+      fieldInstancesById: idToField,
+    })).toEqual(new TemplateExpression({
       parts: [
         '1-',
         '{{',
@@ -140,11 +141,11 @@ describe('stringToTemplate', () => {
   })
 
   it('should resolve custom field by id', () => {
-    expect(stringToTemplate(
-      '1-{{customfield_1234}} 2-{{issue.customfield_1234}} 3-{{issue.customfield_1234.something}} 4-{{issue.fields.customfield_1234.something}} 5-{{fields.customfield_1234}} 6-{{destinationIssue.customfield_1234}} 7-{{triggerIssue.customfield_1234}}customfield_1234',
-      nameToField,
-      idToField
-    )).toEqual(new TemplateExpression({
+    expect(stringToTemplate({
+      referenceStr: '1-{{customfield_1234}} 2-{{issue.customfield_1234}} 3-{{issue.customfield_1234.something}} 4-{{issue.fields.customfield_1234.something}} 5-{{fields.customfield_1234}} 6-{{destinationIssue.customfield_1234}} 7-{{triggerIssue.customfield_1234}}customfield_1234',
+      fieldInstancesByName: nameToField,
+      fieldInstancesById: idToField,
+    })).toEqual(new TemplateExpression({
       parts: [
         '1-',
         '{{',
@@ -180,11 +181,11 @@ describe('stringToTemplate', () => {
   })
 
   it('should resolve custom field by name', () => {
-    expect(stringToTemplate(
-      '1-{{Custom Field}} 2-{{issue.Custom Field}} 3-{{issue.Custom Field.something}} 4-{{issue.fields.Custom Field.something}} 5-{{fields.Custom Field}} 6-{{destinationIssue.Custom Field}} 7-{{triggerIssue.Custom Field}}Custom Field',
-      nameToField,
-      idToField
-    )).toEqual(new TemplateExpression({
+    expect(stringToTemplate({
+      referenceStr: '1-{{Custom Field}} 2-{{issue.Custom Field}} 3-{{issue.Custom Field.something}} 4-{{issue.fields.Custom Field.something}} 5-{{fields.Custom Field}} 6-{{destinationIssue.Custom Field}} 7-{{triggerIssue.Custom Field}}Custom Field',
+      fieldInstancesByName: nameToField,
+      fieldInstancesById: idToField,
+    })).toEqual(new TemplateExpression({
       parts: [
         '1-',
         '{{',
@@ -220,18 +221,18 @@ describe('stringToTemplate', () => {
   })
 
   it('should ignore unknown fields', () => {
-    expect(stringToTemplate(
-      '1-{{unknown}} 2-{{issue.unknown}}',
-      nameToField,
-      idToField
-    )).toBe('1-{{unknown}} 2-{{issue.unknown}}')
+    expect(stringToTemplate({
+      referenceStr: '1-{{unknown}} 2-{{issue.unknown}}',
+      fieldInstancesByName: nameToField,
+      fieldInstancesById: idToField,
+    })).toBe('1-{{unknown}} 2-{{issue.unknown}}')
   })
 
   it('should ignore invalid fields', () => {
-    expect(stringToTemplate(
-      '1-{{.}} 2-{{}}',
-      nameToField,
-      idToField
-    )).toBe('1-{{.}} 2-{{}}')
+    expect(stringToTemplate({
+      referenceStr: '1-{{.}} 2-{{}}',
+      fieldInstancesByName: nameToField,
+      fieldInstancesById: idToField,
+    })).toBe('1-{{.}} 2-{{}}')
   })
 })

@@ -57,14 +57,17 @@ describe('smart_value_reference_filter', () => {
       fieldInstance = new InstanceElement('field_one', fieldType, { name: 'fieldOne', id: 'fieldId' })
 
       automationInstance = new InstanceElement('autom', automationType,
-        { components: [
-          {
-            value: {
-              inner: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+        {
+          trigger: {},
+          components: [
+            {
+              value: {
+                inner: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+              },
+              rawValue: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
             },
-            rawValue: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
-          },
-        ] })
+          ],
+        })
 
       emptyAutomationInstance = new InstanceElement('emptyAutom', automationType)
     })
@@ -124,13 +127,6 @@ describe('smart_value_reference_filter', () => {
       })
     })
     describe('on fetch failure', () => {
-      it('logs exception without error', async () => {
-        // weird value to cause error
-        const errorInstance = new InstanceElement('emptyelement', automationType, { components: [undefined] })
-        await filter.onFetch([automationType, errorInstance])
-        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in fetch', expect.any(Error))
-      })
-
       it('should do nothing for components without a value', async () => {
         delete automationInstance.value.components[0].value
         delete automationInstance.value.components[0].rawValue
@@ -157,13 +153,6 @@ describe('smart_value_reference_filter', () => {
     })
 
     describe('on preDeploy failure', () => {
-      it('logs exception without error', async () => {
-        // weird value to cause error
-        const errorInstance = new InstanceElement('emptyelement', automationType, { components: [undefined] })
-        await filter.preDeploy([toChange({ before: errorInstance, after: errorInstance })])
-        expect(logErrorSpy).toHaveBeenCalledWith('Error parsing templates in deployment', expect.any(Error))
-      })
-
       it('should do nothing for components without a value', async () => {
         delete automationInstance.value.components[0].value
         delete automationInstance.value.components[0].rawValue
@@ -198,13 +187,6 @@ describe('smart_value_reference_filter', () => {
 
 
     describe('on onDeploy failure', () => {
-      it('logs exception without error', async () => {
-        // weird value to cause error
-        const errorInstance = new InstanceElement('emptyelement', automationType, { components: [undefined] })
-        await filter.onDeploy([toChange({ before: errorInstance, after: errorInstance })])
-        expect(logErrorSpy).toHaveBeenCalledWith('Error restoring templates in deployment', expect.any(Error))
-      })
-
       it('should do nothing for components without a value', async () => {
         delete automationInstance.value.components[0].value
         delete automationInstance.value.components[0].rawValue

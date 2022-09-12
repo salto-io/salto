@@ -83,14 +83,14 @@ export abstract class Element {
     return _.mapValues(this.annotationRefTypes, type => type.clone())
   }
 
-  isEqual(other: Element): boolean {
+  isEqual(other: Element, compareReferencesByValue = false): boolean {
     return this.elemID.isEqual(other.elemID)
-      && this.isAnnotationsEqual(other)
+      && this.isAnnotationsEqual(other, compareReferencesByValue)
   }
 
-  isAnnotationsEqual(other: Element): boolean {
+  isAnnotationsEqual(other: Element, compareReferencesByValue = false): boolean {
     return this.isAnnotationsTypesEqual(other)
-      && isEqualValues(this.annotations, other.annotations)
+      && isEqualValues(this.annotations, other.annotations, compareReferencesByValue)
   }
 
   isAnnotationsTypesEqual(other: Element): boolean {
@@ -171,8 +171,8 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     return new ElemID(GLOBAL_ADAPTER, `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
-  isEqual(other: ListType): boolean {
-    return super.isEqual(other)
+  isEqual(other: ListType, compareReferencesByValue = false): boolean {
+    return super.isEqual(other, compareReferencesByValue)
       // eslint-disable-next-line no-use-before-define
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
   }
@@ -231,8 +231,8 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     return new ElemID(GLOBAL_ADAPTER, `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
-  isEqual(other: MapType): boolean {
-    return super.isEqual(other)
+  isEqual(other: MapType, compareReferencesByValue = false): boolean {
+    return super.isEqual(other, compareReferencesByValue)
       // eslint-disable-next-line no-use-before-define
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
   }
@@ -284,10 +284,10 @@ export class Field extends Element {
     this.refType = getRefType(typeOrRefType)
   }
 
-  isEqual(other: Field): boolean {
+  isEqual(other: Field, compareReferencesByValue = false): boolean {
     return this.refType.elemID.isEqual(other.refType.elemID)
       && this.elemID.isEqual(other.elemID)
-      && isEqualValues(this.annotations, other.annotations)
+      && isEqualValues(this.annotations, other.annotations, compareReferencesByValue)
   }
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
@@ -337,8 +337,8 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
     this.primitive = primitive
   }
 
-  isEqual(other: PrimitiveType): boolean {
-    return super.isEqual(other)
+  isEqual(other: PrimitiveType, compareReferencesByValue = false): boolean {
+    return super.isEqual(other, compareReferencesByValue)
       && this.primitive === other.primitive
   }
 
@@ -401,14 +401,15 @@ export class ObjectType extends Element {
     return clonedFields
   }
 
-  isEqual(other: ObjectType): boolean {
-    return super.isEqual(other)
+  isEqual(other: ObjectType, compareReferencesByValue = false): boolean {
+    return super.isEqual(other, compareReferencesByValue)
       && _.isEqual(
         _.mapValues(this.fields, f => f.elemID.getFullName()),
         _.mapValues(other.fields, f => f.elemID.getFullName())
       )
       && _.isEqual(this.isSettings, other.isSettings)
-      && _.every(Object.keys(this.fields).map(n => this.fields[n].isEqual(other.fields[n])))
+      && _.every(Object.keys(this.fields)
+        .map(n => this.fields[n].isEqual(other.fields[n], compareReferencesByValue)))
   }
 
   /**
@@ -469,10 +470,10 @@ export class InstanceElement extends Element {
     return type
   }
 
-  isEqual(other: InstanceElement): boolean {
-    return super.isEqual(other)
+  isEqual(other: InstanceElement, compareReferencesByValue = false): boolean {
+    return super.isEqual(other, compareReferencesByValue)
       && this.refType.elemID.isEqual(other.refType.elemID)
-      && isEqualValues(this.value, other.value)
+      && isEqualValues(this.value, other.value, compareReferencesByValue)
   }
 
   /**
@@ -497,8 +498,9 @@ export class Variable extends Element {
     super({ elemID, path })
   }
 
-  isEqual(other: Variable): boolean {
-    return super.isEqual(other) && isEqualValues(this.value, other.value)
+  isEqual(other: Variable, compareReferencesByValue = false): boolean {
+    return super.isEqual(other, compareReferencesByValue)
+      && isEqualValues(this.value, other.value, compareReferencesByValue)
   }
 
   clone(): Variable {
@@ -562,21 +564,28 @@ export function isField(element: any): element is Field {
   return element instanceof Field
 }
 
-const isEqualTypes = (first: TypeElement, second: TypeElement): boolean => {
+const isEqualTypes = (
+  first: TypeElement,
+  second: TypeElement,
+  compareReferencesByValue = false,
+): boolean => {
   if (isPrimitiveType(first) && isPrimitiveType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, compareReferencesByValue)
   } if (isObjectType(first) && isObjectType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, compareReferencesByValue)
   } if (isListType(first) && isListType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, compareReferencesByValue)
   } if (isMapType(first) && isMapType(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, compareReferencesByValue)
   }
   return false
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isEqualElements(first?: any, second?: any): boolean {
+export function isEqualElements(
+  first?: unknown,
+  second?: unknown,
+  compareReferencesByValue = false
+): boolean {
   if (first === undefined && second === undefined) {
     return true
   }
@@ -586,13 +595,13 @@ export function isEqualElements(first?: any, second?: any): boolean {
   // first.isEqual line appears multiple times since the compiler is not smart
   // enough to understand the 'they are the same type' concept when using or
   if (isType(first) && isType(second)) {
-    return isEqualTypes(first, second)
+    return isEqualTypes(first, second, compareReferencesByValue)
   } if (isField(first) && isField(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, compareReferencesByValue)
   } if (isInstanceElement(first) && isInstanceElement(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, compareReferencesByValue)
   } if (isVariable(first) && isVariable(second)) {
-    return first.isEqual(second)
+    return first.isEqual(second, compareReferencesByValue)
   }
   return false
 }

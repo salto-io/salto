@@ -35,6 +35,8 @@ import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 const { awu } = collections.asynciterable
 const PLACEHOLDER_REGEX = /({{.+?}})/g
 const INNER_PLACEHOLDER_REGEX = /{{(.+?)}}/g
+const OPEN_BRACKETS = '{{'
+const CLOSE_BRACKETS = '}}'
 const log = logger(module)
 
 const transformDynamicContentDependencies = async (
@@ -50,7 +52,8 @@ const transformDynamicContentDependencies = async (
     if (!itemInstance) {
       return [part]
     }
-    return ['{{', new ReferenceExpression(itemInstance.elemID, itemInstance), '}}']
+    return [OPEN_BRACKETS,
+      new ReferenceExpression(itemInstance.elemID, itemInstance), CLOSE_BRACKETS]
   }
   instance.value = await transformValues({
     values: instance.value,
@@ -66,23 +69,36 @@ const transformDynamicContentDependencies = async (
   }) ?? instance.value
 }
 
+// const templatePartToApiValue = (allParts: TemplatePart[]): string =>
+//   allParts.map((part, index) => {
+//     if (_.isString(part)) {
+//       let tempString = part
+//       if (part.startsWith(CLOSE_BRACKETS) && (isReferenceExpression(allParts[index - 1]))) {
+//         tempString = tempString.slice(CLOSE_BRACKETS.length)
+//       }
+//       if (part.endsWith(OPEN_BRACKETS) && (isReferenceExpression(allParts[index + 1]))) {
+//         tempString = tempString.slice(0, -(OPEN_BRACKETS.length))
+//       }
+//       return tempString
+//     }
+//     if (isReferenceExpression(part)) {
+//       if (!isInstanceElement(part.value)) {
+//         return part.value
+//       }
+//       return part.value.value.placeholder ?? part
+//     }
+//     return part
+//   }).join('')
+
 const templatePartToApiValue = (allParts: TemplatePart[]): string =>
-  allParts.map((part, index) => {
-    if (_.isString(part)) {
-      let tempString = part
-      if (part.startsWith('}}') && (isReferenceExpression(allParts[index - 1]))) {
-        tempString = tempString.slice('}}'.length)
-      }
-      if (part.endsWith('{{') && (isReferenceExpression(allParts[index + 1]))) {
-        tempString = tempString.slice(0, -('{{'.length))
-      }
-      return tempString
-    }
+  allParts.map(part => {
     if (isReferenceExpression(part)) {
       if (!isInstanceElement(part.value)) {
         return part.value
       }
-      return part.value.value.placeholder ?? part
+      return part.value.value.placeholder.slice(
+        OPEN_BRACKETS.length, -(CLOSE_BRACKETS.length)
+      ) ?? part
     }
     return part
   }).join('')

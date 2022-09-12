@@ -100,6 +100,8 @@ const filter: FilterCreator = () => {
 
       const jqlContext = generateJqlContext(instances)
 
+      log.debug(`About to parse ${jqls.length} unique JQLs`)
+
       const jqlToTemplate = Object.fromEntries(jqls
         .map(jql => [jql.jql, generateTemplateExpression(jql.jql, jqlContext)]))
 

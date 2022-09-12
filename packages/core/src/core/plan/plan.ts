@@ -22,6 +22,7 @@ import {
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
   isModificationChange, isRemovalChange, ReferenceExpression, changeId,
   shouldResolve,
+  isTemplateExpression,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -121,6 +122,35 @@ const areReferencesEqual = async (
   }
 }
 
+const compareLists = async (
+  first: Array<Value>,
+  second: Array<Value>,
+  compareReferencesByValue: boolean,
+  firstSrc: ReadOnlyElementsSource,
+  secondSrc: ReadOnlyElementsSource,
+  firstVisitedReferences = new Set<string>(),
+  secondVisitedReferences = new Set<string>(),
+): Promise<boolean> => {
+  if (first.length !== second.length) {
+    return false
+  }
+  // The double negation and the double await might seem like this was created using a random
+  // code generator, but its here in order for the method to "fail fast" as some
+  // can stop when the first non equal values are encountered.
+  return !(await awu(first).some(
+    // eslint-disable-next-line no-use-before-define
+    async (value, index) => !await compareValuesAndLazyResolveRefs(
+      value,
+      second[index],
+      compareReferencesByValue,
+      firstSrc,
+      secondSrc,
+      firstVisitedReferences,
+      secondVisitedReferences,
+    )
+  ))
+}
+
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
@@ -166,23 +196,15 @@ const compareValuesAndLazyResolveRefs = async (
   }
 
   if (_.isArray(first) && _.isArray(second)) {
-    if (first.length !== second.length) {
-      return false
-    }
-    // The double negation and the double await might seem like this was created using a random
-    // code generator, but its here in order for the method to "fail fast" as some
-    // can stop when the first non equal values are encountered.
-    return !(await awu(first).some(
-      async (value, index) => !await compareValuesAndLazyResolveRefs(
-        value,
-        second[index],
-        compareReferencesByValue,
-        firstSrc,
-        secondSrc,
-        firstVisitedReferences,
-        secondVisitedReferences,
-      )
-    ))
+    return compareLists(
+      first,
+      second,
+      compareReferencesByValue,
+      firstSrc,
+      secondSrc,
+      firstVisitedReferences,
+      secondVisitedReferences,
+    )
   }
 
   if (_.isPlainObject(first) && _.isPlainObject(second)) {
@@ -199,6 +221,18 @@ const compareValuesAndLazyResolveRefs = async (
         firstVisitedReferences,
         secondVisitedReferences,
       )
+    )
+  }
+
+  if (isTemplateExpression(first) && isTemplateExpression(second)) {
+    return compareLists(
+      first.parts,
+      second.parts,
+      compareReferencesByValue,
+      firstSrc,
+      secondSrc,
+      firstVisitedReferences,
+      secondVisitedReferences,
     )
   }
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, StaticFile, Variable, VariableExpression } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, StaticFile, Variable, VariableExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import wu from 'wu'
 import * as mock from '../../common/elements'
@@ -442,7 +442,7 @@ describe('getPlan', () => {
         {
           a: 5,
           b: 5,
-          ref: new ReferenceExpression(referencedBefore.elemID.createNestedID('a'), 1),
+          ref: new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
         }
       )
 
@@ -460,7 +460,7 @@ describe('getPlan', () => {
         {
           a: 5,
           b: 5,
-          ref: new ReferenceExpression(referencedAfter.elemID.createNestedID('a'), 2),
+          ref: new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
         }
       )
     })
@@ -523,6 +523,62 @@ describe('getPlan', () => {
         .flatten()
         .toArray()
       expect(changes.length).toBe(2)
+    })
+
+    it('when true should add a change to plan when a value of a reference to inner property in template expression is changed', async () => {
+      instanceBefore.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      instanceAfter.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+        compareReferencesByValue: true,
+      })
+      expect(plan.size).toBe(2)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(2)
+    })
+
+    it('when true should not add a change to plan when a value of a reference to inner property in template expression is not changed', async () => {
+      referencedAfter.value.a = 1
+
+      instanceBefore.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      instanceAfter.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+        compareReferencesByValue: true,
+      })
+      expect(plan.size).toBe(0)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(0)
     })
   })
 

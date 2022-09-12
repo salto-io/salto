@@ -37,6 +37,7 @@ import validationRulesAuthorFilter from './filters/author_information/validation
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
+import emailTemplateFilter from './filters/email_template_static_files'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
@@ -118,6 +119,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   { creator: profilePermissionsFilter },
+  // emailTemplateFilter should run before convertMapsFilter
+  { creator: emailTemplateFilter },
   // convertMapsFilter should run before profile fieldReferencesFilter
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },

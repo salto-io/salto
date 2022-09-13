@@ -15,8 +15,15 @@
 */
 import {
   Change,
-  Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression,
-  isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  isReferenceExpression,
+  isTemplateExpression,
+  ReferenceExpression,
+  TemplateExpression,
+  TemplatePart,
 } from '@salto-io/adapter-api'
 import { extractTemplate, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -28,6 +35,8 @@ import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 const { awu } = collections.asynciterable
 const PLACEHOLDER_REGEX = /({{.+?}})/g
 const INNER_PLACEHOLDER_REGEX = /{{(.+?)}}/g
+const OPEN_BRACKETS = '{{'
+const CLOSE_BRACKETS = '}}'
 const log = logger(module)
 
 const transformDynamicContentDependencies = async (
@@ -43,7 +52,10 @@ const transformDynamicContentDependencies = async (
     if (!itemInstance) {
       return [part]
     }
-    return ['{{', new ReferenceExpression(itemInstance.elemID, itemInstance), '}}']
+    return [
+      OPEN_BRACKETS,
+      new ReferenceExpression(itemInstance.elemID, itemInstance),
+      CLOSE_BRACKETS]
   }
   instance.value = await transformValues({
     values: instance.value,
@@ -59,19 +71,21 @@ const transformDynamicContentDependencies = async (
   }) ?? instance.value
 }
 
-const templatePartToApiValue = (part: TemplatePart): string => {
-  // remove brackets because they're included in placeholder
-  if (_.isString(part) && ['{{', '}}'].includes(part)) {
-    return ''
-  }
-  if (isReferenceExpression(part)) {
-    if (!isInstanceElement(part.value)) {
-      return part.value
+const templatePartToApiValue = (allParts: TemplatePart[]): string =>
+  allParts.map(part => {
+    if (isReferenceExpression(part)) {
+      if (!isInstanceElement(part.value)) {
+        return part.value
+      }
+      if (part.value.value.placeholder?.startsWith(OPEN_BRACKETS)
+        && part.value.value.placeholder?.endsWith(CLOSE_BRACKETS)) {
+        return part.value.value.placeholder.slice(
+          OPEN_BRACKETS.length, -(CLOSE_BRACKETS.length)
+        )
+      }
     }
-    return part.value.value.placeholder ?? part
-  }
-  return part
-}
+    return part
+  }).join('')
 
 const returnDynamicContentsToApiValue = async (
   instance: InstanceElement,
@@ -83,7 +97,7 @@ const returnDynamicContentsToApiValue = async (
     pathID: instance.elemID,
     transformFunc: ({ value, path }) => {
       if (path && path.name.startsWith('raw_') && isTemplateExpression(value)) {
-        const transformedValue = value.parts.map(templatePartToApiValue).join('')
+        const transformedValue = templatePartToApiValue(value.parts)
         mapping[transformedValue] = value
         return transformedValue
       }

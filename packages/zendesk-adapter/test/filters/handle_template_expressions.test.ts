@@ -231,19 +231,19 @@ describe('handle templates filter', () => {
     it('should resolve more complicated templates correctly', () => {
       const fetchedMacroComplicated = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroComplicated')
       expect(fetchedMacroComplicated?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: ['{{', 'some other irrelevancies-',
+        parts: ['{{some other irrelevancies-',
           new ReferenceExpression(placeholder1.elemID, placeholder1),
           ' | something irrelevant | dynamic content now: ',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          ' | and done', '}}'],
+          ' | and done}}'],
       }))
       const fetchedMacroDifferentBracket = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroDifferentBracket')
       expect(fetchedMacroDifferentBracket?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: ['{%', 'some other irrelevancies-',
+        parts: ['{%some other irrelevancies-',
           new ReferenceExpression(placeholder1.elemID, placeholder1),
           ' | something irrelevant | dynamic content now: ',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          ' | and done', '%}'],
+          ' | and done%}'],
       }))
     })
 

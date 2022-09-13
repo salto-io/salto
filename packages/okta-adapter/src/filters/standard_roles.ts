@@ -13,15 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, findObjectType } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { findObject } from '../utils'
 import { ROLE_TYPE_NAME, OKTA } from '../constants'
 
 const { RECORDS_PATH } = elementUtils
 
+/**
+ * Source for standard roles definitions:
+ * https://developer.okta.com/docs/concepts/role-assignment/#standard-role-types
+ */
 const ROLE_TYPE_TO_LABEL: Record<string, string> = {
   API_ACCESS_MANAGEMENT_ADMIN: 'API Access Management Administrator',
   APP_ADMIN: 'Application Administrator',
@@ -35,12 +38,15 @@ const ROLE_TYPE_TO_LABEL: Record<string, string> = {
   USER_ADMIN: 'Group Administrator',
 }
 
+const ROLE_ELEM_ID = new ElemID(OKTA, ROLE_TYPE_NAME)
+
 /**
- * Adds standard role instances
+ * Create standard role instances,
+ * which are not returned by the API but are useful for impact analysis
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const roleObjectType = findObject(elements, ROLE_TYPE_NAME)
+    const roleObjectType = findObjectType(elements, ROLE_ELEM_ID)
     if (roleObjectType === undefined) {
       return
     }

@@ -69,6 +69,7 @@ const deployAppStatusChange = async (
   }
 }
 
+// TODO SALTO-2736 : adjust to support addition of more application types
 const deployApp = async (
   change: Change<InstanceElement>,
   client: OktaClient,
@@ -98,6 +99,10 @@ const deployApp = async (
   }
 }
 
+/**
+ * Application type is deployed separately to update application's status,
+ * application's assigned group and application's policies
+ */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(

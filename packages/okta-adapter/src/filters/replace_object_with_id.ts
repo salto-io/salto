@@ -42,7 +42,7 @@ const replaceObjectWithId = (instance: InstanceElement): void => {
 }
 
 /**
- * Some instances have references that contains the entire referenced object
+ * Some instances have references that contain the entire referenced object
  * the filter replaces the object with its id so we can use fieldReferences filter
  */
 const filter: FilterCreator = () => ({

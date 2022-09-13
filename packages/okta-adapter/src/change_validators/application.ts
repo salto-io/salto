@@ -13,12 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isRemovalChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange, InstanceElement, ChangeError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { APPLICATION_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
+/**
+ * Removal of Application in status 'ACTIVE' is not supported by the service
+ */
 export const applicationValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isInstanceChange)
@@ -26,11 +29,11 @@ export const applicationValidator: ChangeValidator = async changes => (
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
     .filter(instance => instance.value.status === 'ACTIVE')
-    .map(async instance => ({
+    .map((instance: InstanceElement): ChangeError => ({
       elemID: instance.elemID,
-      severity: 'Error' as SeverityLevel,
+      severity: 'Error',
       message: 'Cannot remove an active application',
-      detailedMessage: `Cannot remove an active application: ${instance.elemID.getFullName()}, application must be deactivated before removal`,
+      detailedMessage: `Cannot remove an active application: ${instance.elemID.getFullName()} must be deactivated before removal`,
     }))
     .toArray()
 )

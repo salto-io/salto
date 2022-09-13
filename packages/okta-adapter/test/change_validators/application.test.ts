@@ -44,7 +44,7 @@ describe('applicationChangeValidator', () => {
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Cannot remove an active application',
-        detailedMessage: `Cannot remove an active application: ${instance.elemID.getFullName()}, application must be deactivated before removal`,
+        detailedMessage: `Cannot remove an active application: ${instance.elemID.getFullName()} must be deactivated before removal`,
       },
     ])
   })

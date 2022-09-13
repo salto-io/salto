@@ -14,19 +14,27 @@
 * limitations under the License.
 */
 import { AccountId } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, client } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { Credentials, AccessTokenCredentials } from '../auth'
 
-
-export const instanceUrl = (baseUrl: string): string => baseUrl
+const log = logger(module)
 
 export const validateCredentials = async (_creds: {
   credentials: Credentials
   connection: clientUtils.APIConnection
-}): Promise<AccountId> => (
-  // TODO validate
-  ''
-)
+}): Promise<AccountId> => {
+  try {
+    const response = await _creds.connection.get('/api/v1/org')
+    return response.data.id
+  } catch (error) {
+    if (error.response?.status === 401) {
+      log.error('Failed to validate credentials: %s', error)
+      throw new client.UnauthorizedError('Invalid Credentials')
+    }
+    throw error
+  }
+}
 
 const accessTokenAuthParamsFunc = (
   { token }: AccessTokenCredentials
@@ -44,7 +52,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
     authParamsFunc: async (creds: Credentials) => (
       accessTokenAuthParamsFunc(creds)
     ),
-    baseURLFunc: ({ baseUrl }) => instanceUrl(baseUrl),
+    baseURLFunc: ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,
   })
 )

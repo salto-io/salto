@@ -62,13 +62,13 @@ export const defaultDeployChange = async (
 
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
-    const response = await deployment.deployChange({
-      change: changeToDeploy,
+    const response = await deployment.deployChange(
+      changeToDeploy,
       client,
-      endpointDetails: deployRequests,
+      deployRequests,
       fieldsToIgnore,
       queryParams,
-    })
+    )
 
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {
@@ -163,6 +163,7 @@ export const deployEdges = async (
   })
 }
 
+// TODO SALTO-2742 move to adapter components
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>

@@ -13,4 +13,4 @@ Salto supports authenticating with Okta using an API Token:
 
 ## Okta Swaggers
 
-The Okta adapter is heavily relying on [Core Okta API](https://developer.okta.com/docs/reference/core-okta-api/) and it's [API swagger definitions](https://github.com/okta/okta-management-openapi-spec/blob/master/resources/spec.yaml).
+The Okta adapter is heavily relying on [Core Okta API](https://developer.okta.com/docs/reference/core-okta-api/) and its [API swagger definitions](https://github.com/okta/okta-management-openapi-spec/blob/master/resources/spec.yaml).

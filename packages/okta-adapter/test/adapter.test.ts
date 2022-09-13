@@ -22,7 +22,7 @@ import { OKTA } from '../src/constants'
 import { createCredentialsInstance, createConfigInstance } from './utils'
 
 
-const { generateTypes, loadSwagger, getAllInstances } = elements.swagger
+const { generateTypes, getAllInstances } = elements.swagger
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -40,7 +40,6 @@ jest.mock('@salto-io/adapter-components', () => {
         flattenAdditionalProperties: actual.elements.swagger.flattenAdditionalProperties,
         generateTypes: jest.fn().mockImplementation(() => { throw new Error('generateTypes called without a mock') }),
         getAllInstances: jest.fn().mockImplementation(() => { throw new Error('getAllInstances called without a mock') }),
-        loadSwagger: jest.fn().mockImplementation(() => { throw new Error('loadSwagger called without a mock') }),
         addDeploymentAnnotations: jest.fn(),
       },
     },
@@ -72,32 +71,20 @@ describe('Okta adapter', () => {
     let testInstance: InstanceElement
 
     beforeEach(async () => {
+      oktaTestType = new ObjectType({
+        elemID: new ElemID(OKTA, 'okta'),
+      })
+      testInstance = new InstanceElement('test', oktaTestType);
+
       (generateTypes as jest.MockedFunction<typeof generateTypes>)
         .mockResolvedValueOnce({
           allTypes: { OktaTest: oktaTestType },
           parsedConfigs: { OktaTest: { request: { url: 'okta' } } },
         });
       (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
-        .mockResolvedValue([testInstance]);
-      (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
-        .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
+        .mockResolvedValue([testInstance])
 
       result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
-    })
-
-    it('should generate types for the platform and the jira apis', () => {
-      expect(loadSwagger).toHaveBeenCalledTimes(1)
-      expect(loadSwagger).toHaveBeenCalledWith('https://raw.githubusercontent.com/okta/okta-management-openapi-spec/master/dist/spec.yaml')
-      expect(generateTypes).toHaveBeenCalledWith(
-        OKTA,
-        expect.objectContaining({
-          swagger: expect.objectContaining({
-            url: 'https://raw.githubusercontent.com/okta/okta-management-openapi-spec/master/dist/spec.yaml',
-          }),
-        }),
-        undefined,
-        expect.any(Object)
-      )
     })
 
     it('should return all types and instances returned from the infrastructure', () => {

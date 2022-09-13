@@ -34,7 +34,7 @@ const GROUP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAc
     },
   },
   roles: {
-    // TODO add role addition request
+    // TODO SALTO-2743 add role addition deploy request
     remove: {
       url: '/api/v1/groups/{source}/roles/{target}',
       method: 'delete',
@@ -61,6 +61,9 @@ const deployGroup = async (
   }
 }
 
+/**
+ * Group type is deployed separately to update groups's users and group's roles
+ */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(

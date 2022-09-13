@@ -15,23 +15,30 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  InstanceElement, Adapter, ElemID,
-} from '@salto-io/adapter-api'
+import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
 import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, OktaApiConfig, CLIENT_CONFIG } from './config'
 import { createConnection } from './client/connection'
+import { OKTA } from './constants'
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => (
-  config.value as Credentials
-)
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
+  const { baseUrl, token } = config.value
+  const hostName = new URL(baseUrl).hostname
+  if (!hostName.includes(OKTA)) {
+    throw new Error(`'${hostName}' is not a valid okta account url`)
+  }
+  return {
+    baseUrl,
+    token,
+  }
+}
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): OktaConfig => {
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
@@ -64,19 +71,8 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
 export const adapter: Adapter = {
   operations: context => {
-    // This can be removed once all the workspaces configs were migrated
-    const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
-      // Creating new instance is required because the type is not resolved in context.config
-      new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        context.config?.value
-      ),
-      DEFAULT_CONFIG,
-    )
-
     const config = adapterConfigFromConfig(
-      updatedConfig?.config[0] ?? context.config,
+      context.config,
     )
     const credentials = credentialsFromConfig(context.credentials)
     const adapterOperations = new OktaAdapter({
@@ -95,7 +91,7 @@ export const adapter: Adapter = {
         const fetchRes = await adapterOperations.fetch(args)
         return {
           ...fetchRes,
-          updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
+          updatedConfig: fetchRes.updatedConfig,
         }
       },
       deployModifiers: OktaAdapter.deployModifiers,

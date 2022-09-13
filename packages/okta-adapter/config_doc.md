@@ -21,10 +21,7 @@ okta {
     ]
     exclude = [
       {
-        type = "Webhook"
-        criteria = {
-          name = "name.*"
-        }
+        type = "Group"
       }
     ]
   }
@@ -37,7 +34,6 @@ okta {
 | ---------------------------------------------------------| ------------------------------| -----------
 | [client](#client-configuration-options)                  | `{}` (no overrides)             | Configuration relating to the client used to interact with Okta
 | [fetch](#fetch-configuration-options)                    | `{}` (no overrides)             | Configuration relating to the endpoints that will be queried during fetch
-| [masking](#masking-configuration-options)                | `{}` (mask nothing)           | Configuration to mask sensitive data from the NaCls
 
 ### Client configuration options
 
@@ -45,7 +41,6 @@ okta {
 |---------------------------------------------------------------|--------------------------|------------
 | [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [rateLimit](#rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
-| usePrivateAPI                                                 | true                     | Whether to use Okta Private API when fetching and deploying changes
 
 #### Client retry options
 
@@ -68,7 +63,6 @@ okta {
 |---------------------------------------------|-----------------------------------|------------
 | [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
 | [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
-| fallbackToInternalId                        | false                             | Whether to add the internal ids to the instance name when the name is not unique among the instances of that type
 
 ## Masking configuration options
 | Name                                        | Default when undefined            | Description
@@ -82,9 +76,3 @@ okta {
 |---------------------------------------------|-----------------------------------|------------
 | type                                        | ""                                | A regex of the Salto type name to include in the entry
 | [criteria](#fetch-entry-criteria)             |                                   | A List of criteria to filter specific instance of certain types
-
-## Fetch entry criteria
-
-| Name                                        | Default when undefined            | Description
-|---------------------------------------------|-----------------------------------|------------
-| name                                        | .*                                | A regex used to filter instances by matching the regex to their name value

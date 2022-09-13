@@ -25,7 +25,7 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
   },
-  // TODO move the reference to user to parent annotation?
+  // TODO SALTO-2737 change this reference
   {
     src: { field: 'id', parentTypes: [APP_USER_TYPE_NAME] },
     serializationStrategy: 'id',
@@ -48,11 +48,6 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
   },
   {
     src: { field: 'featureDependencies', parentTypes: [FEATURE_TYPE_NAME] },
-    serializationStrategy: 'id',
-    target: { type: FEATURE_TYPE_NAME },
-  },
-  {
-    src: { field: 'featureDependents', parentTypes: [FEATURE_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: FEATURE_TYPE_NAME },
   },

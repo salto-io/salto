@@ -20,7 +20,6 @@ import OktaClient from '../client/client'
 
 /**
  *  Resolves references in elements name using referenced idFields
- *
  */
 const filter: FilterCreator = params =>
   filters.referencedInstanceNamesFilterCreator<OktaClient, FilterContext, FilterResult>(

@@ -24,6 +24,7 @@ const {
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  // TODO SALTO-2649: add better handling for rate limits
   get: 2,
   deploy: 2,
 }
@@ -48,7 +49,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         // TODO SALTO-2649: add better handling for rate limits
         retry: {
           maxAttempts: 5, // try 5 times
-          retryDelay: 10000, // wait for 10s before trying again
+          retryDelay: 10000, // wait for 10s before trying again, change after SALTO-2649
         },
       }
     )

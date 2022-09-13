@@ -34,7 +34,6 @@ import referencedIdFields from './filters/referenced_id_fields'
 import appStructureFilter from './filters/app_structure'
 import standardRolesFilter from './filters/standard_roles'
 import { OKTA } from './constants'
-import fetchCriteria from './fetch_criteria'
 import { getLookUpName } from './reference_mapping'
 
 const { awu } = collections.asynciterable
@@ -96,7 +95,6 @@ export default class OktaAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(
       this.userConfig.fetch,
-      fetchCriteria,
     )
 
     this.paginator = paginator

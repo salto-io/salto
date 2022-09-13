@@ -25,8 +25,14 @@ export type AccessTokenCredentials = {
 export const accessTokenCredentialsType = createMatchingObjectType<AccessTokenCredentials>({
   elemID: new ElemID(constants.OKTA),
   fields: {
-    baseUrl: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
-    token: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    baseUrl: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true, message: 'Base URL (https://<your-subdomain>.okta.com/)' },
+    },
+    token: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
   },
 })
 

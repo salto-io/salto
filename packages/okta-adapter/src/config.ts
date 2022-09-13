@@ -29,11 +29,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type OktaFetchConfig = configUtils.UserFetchConfig
-export type OktaApiConfig = configUtils.AdapterSwaggerApiConfig & {
-  settingsSwagger?: {
-    typeNameOverrides?: configUtils.TypeNameOverrideConfig[]
-  }
-}
+export type OktaApiConfig = configUtils.AdapterSwaggerApiConfig
 
 export type OktaConfig = {
   [CLIENT_CONFIG]?: OktaClientConfig
@@ -42,9 +38,7 @@ export type OktaConfig = {
 }
 
 const DEFAULT_ID_FIELDS = ['name']
-export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  // TODO
-]
+const DEFAULT_SERVICE_ID_FIELD = 'id'
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   api__v1__groups: {
@@ -127,7 +121,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     request: {
       url: '/api/v1/apps',
       recurseInto: [
-        // TODO after SALTO-2615 we can uncomment the types that might fail
         {
           type: 'api__v1__apps___appId___users@uuuuuu_00123_00125uu',
           toField: 'appUsers',
@@ -143,12 +136,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           toField: 'assignedGroups',
           context: [{ name: 'appId', fromField: 'id' }],
         },
-        // can return 400 depends on users definitions
-        // {
-        //   type: 'api__v1__apps___appId___features@uuuuuu_00123_00125uu',
-        //   toField: 'appFeatures',
-        //   context: [{ name: 'appId', fromField: 'id' }],
-        // },
+        {
+          type: 'api__v1__apps___appId___features@uuuuuu_00123_00125uu',
+          toField: 'appFeatures',
+          context: [{ name: 'appId', fromField: 'id' }],
+          skipOnError: true,
+        },
       ],
     },
   },
@@ -162,7 +155,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'accessPolicy', fieldType: 'string' },
       ],
       standaloneFields: [{ fieldName: 'appUsers' }],
-      // TODO SALTO-2644
+      // TODO SALTO-2644 It's possible to have many applications with the same name
       idFields: ['name', 'status'],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -288,15 +281,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       url: '/api/v1/features',
       recurseInto: [
         {
-          // Features that needs to be enabled in order to enable the feature
+          // Additional features that need to be enabled in order to enable the feature
           type: 'api__v1__features___featureId___dependencies@uuuuuu_00123_00125uu',
           toField: 'featureDependencies',
-          context: [{ name: 'featureId', fromField: 'id' }],
-        },
-        {
-          // Features that needs to be disabled in order to enable the feature
-          type: 'api__v1__features___featureId___dependents@uuuuuu_00123_00125uu',
-          toField: 'featureDependents',
           context: [{ name: 'featureId', fromField: 'id' }],
         },
       ],
@@ -306,10 +293,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'featureDependencies', fieldType: 'list<Feature>' },
-        { fieldName: 'featureDependents', fieldType: 'list<Feature>' },
       ],
     },
   },
+  // Policy type is splitted to different kinds of policies
+  // The full list of policy types is taken from here:
+  // https://developer.okta.com/docs/reference/api/policy/#policy-types
   AuthenticatorEnrollmentPolicies: {
     request: {
       url: '/api/v1/policies',
@@ -400,7 +389,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  // TODO returns 400 bad request
+  // TODO SALTO-2733 returns 400 bad request
   OAuthAuthorizationPolicies: {
     request: {
       url: '/api/v1/policies',
@@ -594,6 +583,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
+  AppUserCredentials: {
+    transformation: {
+      fieldsToOmit: [
+        // we not managing secrets
+        { fieldName: 'password' },
+      ],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
@@ -606,12 +603,11 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     { typeName: 'IdentityProviderRoutingRules', cloneFrom: 'api__v1__policies' },
     { typeName: 'PasswordPolicies', cloneFrom: 'api__v1__policies' },
     { typeName: 'OAuthAuthorizationPolicies', cloneFrom: 'api__v1__policies' },
-    // TODO this is not the right type to clone from, another solution is needed
+    // TODO SALTO-2735 this is not the right type to clone from
     { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
   ],
 }
 
-/* eslint-disable max-len */
 export const SUPPORTED_TYPES = {
   Application: [
     'api__v1__apps',
@@ -635,7 +631,7 @@ export const SUPPORTED_TYPES = {
     'api__v1__idps',
   ],
   InlineHook: ['api__v1__inlineHooks'],
-  // TODO returns 401
+  // TODO SALTO-2734 returns 401
   ProfileMapping: ['api__v1__mappings'],
   LinkedObjectDefinitions: ['api__v1__meta__schemas__user__linkedObjects'],
   GroupSchema: ['GroupSchema'],
@@ -665,14 +661,7 @@ export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
   typeDefaults: {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
-      fieldsToOmit: FIELDS_TO_OMIT,
-      // TODO: currently these fields can be nested
-      // fieldsToHide: [
-      //   { fieldName: 'created', fieldType: 'string' },
-      //   { fieldName: 'lastUpdated', fieldType: 'string' },
-      //   { fieldName: 'lastLogin', fieldType: 'string' },
-      //   { fieldName: '_links', fieldType: 'string' },
-      // ],
+      serviceIdField: DEFAULT_SERVICE_ID_FIELD,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
@@ -703,6 +692,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 

@@ -16,5 +16,5 @@
 export { toInstance } from './instance_elements'
 export { replaceInstanceTypeForDeploy, restoreInstanceTypeFromDeploy } from './deployment_placeholder_types'
 export { extractStandaloneFields } from './standalone_field_extractor'
-export { getAllElements, getTypeAndInstances, ConfigChangeSuggestion, FetchElements } from './transformer'
+export { getAllElements, getTypeAndInstances, getEntriesForType, ConfigChangeSuggestion, EntriesGetter, FetchElements } from './transformer'
 export { generateType, toNestedTypeName } from './type_elements'

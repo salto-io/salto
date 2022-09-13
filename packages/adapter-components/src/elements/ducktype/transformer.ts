@@ -64,9 +64,11 @@ export type FetchElements<T> = {
   elements: T
 }
 
-const getEntriesForType = async (
+export type EntriesGetter = (
   params: GetEntriesParams
-): Promise<Entries> => {
+) => Promise<Entries>
+
+export const getEntriesForType: EntriesGetter = async params => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, contextElements,
     requestContext, nestedFieldFinder, computeGetArgs, adapterName, getElemIdFunc,
@@ -221,6 +223,7 @@ export const getTypeAndInstances = async ({
   typeDefaultConfig,
   contextElements,
   getElemIdFunc,
+  getEntriesForTypeFunc = getEntriesForType,
 }: {
   adapterName: string
   typeName: string
@@ -231,8 +234,9 @@ export const getTypeAndInstances = async ({
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
   contextElements?: Record<string, Element[]>
   getElemIdFunc?: ElemIdGetter
+  getEntriesForTypeFunc?: EntriesGetter
 }): Promise<Element[]> => {
-  const entries = await getEntriesForType({
+  const entries = await getEntriesForTypeFunc({
     adapterName,
     paginator,
     typeName,
@@ -276,6 +280,7 @@ export const getAllElements = async ({
   typeDefaults,
   getElemIdFunc,
   isErrorTurnToConfigSuggestion,
+  getEntriesForTypeFunc = getEntriesForType,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
@@ -287,6 +292,7 @@ export const getAllElements = async ({
   typeDefaults: TypeDuckTypeDefaultsConfig
   getElemIdFunc?: ElemIdGetter
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
+  getEntriesForTypeFunc?: EntriesGetter
 }): Promise<FetchElements<Element[]>> => {
   const elementGenerationParams = {
     adapterName,
@@ -296,6 +302,7 @@ export const getAllElements = async ({
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
     getElemIdFunc,
+    getEntriesForTypeFunc,
   }
 
   const supportedTypesWithEndpoints = _.mapValues(

@@ -22,8 +22,9 @@ import {
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { createSchemeGuardForInstance, getParents } from '@salto-io/adapter-utils'
-// eslint-disable-next-line no-restricted-imports
-import { findDuplicates } from '@salto-io/lowerdash/dist/src/collections/array'
+import { collections } from '@salto-io/lowerdash'
+
+const { findDuplicates } = collections.array
 
 
 const ARTICLE_TRANSLATION_TYPE_NAME = 'article_translation'
@@ -31,14 +32,14 @@ const CATEGORY_TRANSLATION_TYPE_NAME = 'category_translation'
 const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
 
 type Translation = InstanceElement & {
-    value: {
-        locale: string
-    }
+  value: {
+    locale: string
+  }
 }
 type TranslationParent = InstanceElement & {
-    value: {
-        translations: ReferenceExpression[]
-    }
+  value: {
+    translations: ReferenceExpression[]
+  }
 }
 
 const TRANSLATION_SCHEMA = Joi.object({
@@ -59,13 +60,13 @@ const isTranslation = createSchemeGuardForInstance<Translation>(
 /**
  * returns true if there are translations with the same locale -> meaning that they are not unique
  */
-const hasDuplicateTranslations = (parent: InstanceElement): string[] => {
+const findDuplicateTranslations = (parent: InstanceElement): string[] => {
   if (!isTranslationParent(parent)) {
     return []
   }
   const locales = parent.value.translations
     .map(referenceExpression => referenceExpression.value)
-    .filter(translation => isTranslation(translation))
+    .filter(isTranslation)
     .map(translation => translation.value.locale)
   return findDuplicates(locales)
 }
@@ -83,10 +84,7 @@ export const oneTranslationPerLocaleValidator: ChangeValidator = async changes =
   // it is a set to avoid duplicate of parents from translations which have the same parent
   const parentInstances = relevantInstances
     .filter(instance => isTranslation(instance))
-    .flatMap(translationInstance => {
-      const parents = getParents(translationInstance)
-      return !_.isEmpty(parents) ? parents : []
-    })
+    .flatMap(getParents)
     .map(translationParentInstance => translationParentInstance.value)
 
   const parentInstancesObj = _.keyBy(parentInstances, instance => instance.elemID.getFullName())
@@ -94,7 +92,7 @@ export const oneTranslationPerLocaleValidator: ChangeValidator = async changes =
   return Object.values(parentInstancesObj)
     .map(parentInstance => ({
       elemID: parentInstance.elemID,
-      duplicatedLocales: hasDuplicateTranslations(parentInstance),
+      duplicatedLocales: findDuplicateTranslations(parentInstance),
     }))
     .filter(instance => !_.isEmpty(instance.duplicatedLocales))
     .flatMap(({ elemID, duplicatedLocales }) => [{

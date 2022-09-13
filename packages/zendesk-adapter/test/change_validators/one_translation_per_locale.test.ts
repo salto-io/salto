@@ -42,9 +42,6 @@ describe('oneTranslationPerLocalValidator',
           locale: 'en-us',
         },
         undefined,
-        {
-          _parent: [],
-        },
       )
       const heTranslation = new InstanceElement(
         'Test1',
@@ -53,9 +50,6 @@ describe('oneTranslationPerLocalValidator',
           locale: 'he',
         },
         undefined,
-        {
-          _parent: [],
-        },
       )
       const article = new InstanceElement(
         'Test1',
@@ -71,12 +65,12 @@ describe('oneTranslationPerLocalValidator',
           ],
         },
       )
-      heTranslation.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(
+      heTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
         articleType.elemID.createNestedID('instance', 'Test1'), article
-      ))
-      enTranslation.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(
+      )]
+      enTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
         articleType.elemID.createNestedID('instance', 'Test1'), article
-      ))
+      )]
 
       const errors = await oneTranslationPerLocaleValidator(
         [toChange({ after: heTranslation })]
@@ -92,9 +86,6 @@ describe('oneTranslationPerLocalValidator',
           locale: 'en-us',
         },
         undefined,
-        {
-          _parent: [],
-        },
       )
       const enTranslation2 = new InstanceElement(
         'Test2',
@@ -103,9 +94,6 @@ describe('oneTranslationPerLocalValidator',
           locale: 'en-us',
         },
         undefined,
-        {
-          _parent: [],
-        },
       )
       const article = new InstanceElement(
         'Test2',
@@ -121,12 +109,12 @@ describe('oneTranslationPerLocalValidator',
           ],
         },
       )
-      enTranslation2.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(
+      enTranslation2.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
         articleType.elemID.createNestedID('instance', 'Test2'), article
-      ))
-      enTranslation.annotations[CORE_ANNOTATIONS.PARENT].push(new ReferenceExpression(
+      )]
+      enTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
         articleType.elemID.createNestedID('instance', 'Test2'), article
-      ))
+      )]
 
       const errors = await oneTranslationPerLocaleValidator(
         [toChange({ after: enTranslation }), toChange({ after: enTranslation2 })]
@@ -137,5 +125,19 @@ describe('oneTranslationPerLocalValidator',
         message: `Multiple translations with the same locale found in ${article.elemID.typeName} instance. Only one translation per locale is supported.`,
         detailedMessage: `Instance ${article.elemID.getFullName()} has multiple translations for locales: en-us. Only one translation per locale is supported.`,
       }])
+    })
+    it('should not return an error when parent does not exist', async () => {
+      const noParentTranslation = new InstanceElement(
+        'Test1',
+        articleTranslationType,
+        {
+          locale: 'en-us',
+        },
+        undefined,
+      )
+      const errors = await oneTranslationPerLocaleValidator(
+        [toChange({ after: noParentTranslation })]
+      )
+      expect(errors).toHaveLength(0)
     })
   })

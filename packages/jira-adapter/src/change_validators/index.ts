@@ -33,6 +33,7 @@ import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
 import { globalProjectContextsValidator } from './global_project_contexts'
 import { systemFieldsValidator } from './system_fields'
+import { permissionSchemeValidator } from './permission_scheme'
 
 const {
   deployTypesNotSupportedValidator,
@@ -59,6 +60,7 @@ export default (
     lockedFieldsValidator,
     globalProjectContextsValidator,
     systemFieldsValidator,
+    permissionSchemeValidator,
   ]
 
   return createChangeValidator(validators)

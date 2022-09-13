@@ -67,8 +67,5 @@
     "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
-  },
-  "resolutions": {
-    "antlr4ts": "0.5.0-alpha.4"
   }
 }

@@ -15,6 +15,7 @@
 */
 import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement,
+  isTemplateExpression,
   ReferenceExpression, TemplateExpression, TemplatePart, Values,
 } from '@salto-io/adapter-api'
 import { createSchemeGuard, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -69,13 +70,17 @@ const getPossibleSmartValues = (automation: AutomationInstance): SmartValueConta
 
       if (component.value !== undefined) {
         const { value } = component
-        Object.keys(component.value).map(key => ({
-          key,
-          obj: value,
-        })).forEach(container => containers.push(container))
+        Object.keys(component.value)
+          .filter(key => _.isString(value[key]) || isTemplateExpression(value[key]))
+          .map(key => ({
+            key,
+            obj: value,
+          })).forEach(container => containers.push(container))
       }
 
-      containers.push({ key: 'rawValue', obj: component })
+      if (_.isString(component.rawValue) || isTemplateExpression(component.rawValue)) {
+        containers.push({ key: 'rawValue', obj: component })
+      }
       return containers
     }).value()
 

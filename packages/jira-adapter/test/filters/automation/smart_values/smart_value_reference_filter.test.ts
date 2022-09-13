@@ -97,15 +97,11 @@ describe('smart_value_reference_filter', () => {
       it('should resolve simple template in value', () => {
         expect(automation.value.components[0].value.inner).toEqual(new TemplateExpression({
           parts: [
-            'Field is: ',
-            '{{issue.',
+            'Field is: {{issue.',
             new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
-            '}}',
-            ' ',
-            '{{issue.',
+            '}} {{issue.',
             new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-            '}}',
-            ' ending',
+            '}} ending',
           ],
         }))
       })
@@ -113,15 +109,11 @@ describe('smart_value_reference_filter', () => {
       it('should resolve simple template in rawValue', () => {
         expect(automation.value.components[0].rawValue).toEqual(new TemplateExpression({
           parts: [
-            'Field is: ',
-            '{{issue.',
+            'Field is: {{issue.',
             new ReferenceExpression(fieldInstance.elemID.createNestedID('name'), 'fieldOne'),
-            '}}',
-            ' ',
-            '{{issue.',
+            '}} {{issue.',
             new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-            '}}',
-            ' ending',
+            '}} ending',
           ],
         }))
       })

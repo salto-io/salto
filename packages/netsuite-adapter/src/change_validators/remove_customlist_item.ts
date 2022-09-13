@@ -19,10 +19,8 @@ import {
   ElemID,
   Values,
 } from '@salto-io/adapter-api'
-// import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_LIST, NETSUITE } from '../constants'
 
-// const { makeArray } = collections.array
 
 const isCustomListChange = (change: ModificationChange<InstanceElement>): boolean =>
   getChangeData(change).refType.elemID.isEqual(new ElemID(NETSUITE, CUSTOM_LIST))
@@ -32,10 +30,11 @@ const hasItemRemoval = (change: ModificationChange<InstanceElement>): boolean =>
     ?.customvalue
   const afterCustomList: Record<string, Values> = change.data.after.value.customvalues?.customvalue
   const afterItemsScriptIds = new Set(
-    Object.entries(afterCustomList).map(item => item[1].scriptid)
+    Object.keys(afterCustomList)
   )
-  const beforeItems = Object.entries(beforeCustomList)
-  return beforeItems.some(beforeItem => !afterItemsScriptIds.has(beforeItem[1].scriptid))
+  // const beforeItems = Object.keys(beforeCustomList)
+  return Object.keys(beforeCustomList).some(beforeItemScriptIds =>
+    !afterItemsScriptIds.has(beforeItemScriptIds))
 }
 
 const changeValidator: ChangeValidator = async changes => (

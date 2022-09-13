@@ -22,22 +22,11 @@ import {
   ChangeError,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
+import { SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 
-
-const getScriptId = (value: unknown): string | undefined => {
-  if (typeof value === 'object'
-    && value !== null
-    && 'scriptid' in value) {
-    const valueWithScriptID = value as { scriptid: unknown }
-    if (typeof valueWithScriptID.scriptid === 'string') {
-      return valueWithScriptID.scriptid
-    }
-  }
-  return undefined
-}
 
 const getScriptIdsUnderLists = async (instance: InstanceElement):
   Promise<collections.map.DefaultMap<string, Set<string>>> => {
@@ -48,14 +37,8 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
       if (path.isAttrID()) {
         return WALK_NEXT_STEP.SKIP
       }
-      if (path.createParentID().name === 'customvalues') {
-        const valueToArray = Object.entries(value).map(elem => elem[1])
-        wu(valueToArray)
-          .map(getScriptId)
-          .filter(values.isDefined)
-          .forEach(id => {
-            pathToScriptIds.get(path.getFullName()).add(id)
-          })
+      if (_.isPlainObject(value) && SCRIPT_ID in value) {
+        pathToScriptIds.get(path.getFullName()).add(value.scriptid)
       }
       return WALK_NEXT_STEP.RECURSE
     },

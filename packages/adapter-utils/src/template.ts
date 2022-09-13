@@ -25,21 +25,30 @@ export type TemplateContainer = {
     fieldName: string
   }
 
-export const compactString = (
-  part: TemplatePart, allParts: TemplatePart[]
-): void => {
-  const tempPart = allParts[allParts.length - 1]
-  if (_.isString(part) && _.isString(tempPart)) {
-    allParts.pop()
-    allParts.push(tempPart.concat(part))
-  } else {
-    allParts.push(part)
+export const compactTemplateParts = (parts: TemplatePart[]): TemplatePart[] => {
+  let tempString: string[] = []
+  const compactedParts: TemplatePart[] = []
+  parts.forEach(part => {
+    if (_.isString(part)) {
+      tempString.push(part)
+    } else {
+      if (!_.isEmpty(tempString)) {
+        compactedParts.push(tempString.join(''))
+      }
+      tempString = []
+      compactedParts.push(part)
+    }
+  })
+  if (!_.isEmpty(tempString)) {
+    compactedParts.push(tempString.join(''))
   }
+  return compactedParts
 }
 
-export const createTemplateExpression = (parts: {parts: TemplatePart[] }):TemplateExpression => {
-  const newParts:TemplatePart[] = []
-  parts.parts.forEach(part => compactString(part, newParts))
+export const createTemplateExpression = (
+  parts: { parts: TemplatePart[] }
+): TemplateExpression => {
+  const newParts = compactTemplateParts(parts.parts)
   return new TemplateExpression({ parts: newParts })
 }
 

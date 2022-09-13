@@ -52,8 +52,10 @@ const transformDynamicContentDependencies = async (
     if (!itemInstance) {
       return [part]
     }
-    return [OPEN_BRACKETS,
-      new ReferenceExpression(itemInstance.elemID, itemInstance), CLOSE_BRACKETS]
+    return [
+      OPEN_BRACKETS,
+      new ReferenceExpression(itemInstance.elemID, itemInstance),
+      CLOSE_BRACKETS]
   }
   instance.value = await transformValues({
     values: instance.value,
@@ -75,9 +77,12 @@ const templatePartToApiValue = (allParts: TemplatePart[]): string =>
       if (!isInstanceElement(part.value)) {
         return part.value
       }
-      return part.value.value.placeholder.slice(
-        OPEN_BRACKETS.length, -(CLOSE_BRACKETS.length)
-      ) ?? part
+      if (part.value.value.placeholder?.startsWith(OPEN_BRACKETS)
+        && part.value.value.placeholder?.endsWith(CLOSE_BRACKETS)) {
+        return part.value.value.placeholder.slice(
+          OPEN_BRACKETS.length, -(CLOSE_BRACKETS.length)
+        )
+      }
     }
     return part
   }).join('')

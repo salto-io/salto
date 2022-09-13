@@ -140,7 +140,6 @@ describe('dynamic content references filter', () => {
       const { dynamicContentInstance, instance, secondInstance } = createInstances()
       const instanceCopy = instance.clone()
       await filter.onFetch([dynamicContentInstance, instanceCopy])
-      expect(instanceCopy).not.toEqual(instance)
       await filter.preDeploy([toChange({ after: instanceCopy })])
       expect(instanceCopy).toEqual(instance)
       await filter.onDeploy([toChange({ after: instanceCopy })])
@@ -155,7 +154,6 @@ describe('dynamic content references filter', () => {
 
       const secondInstanceCopy = secondInstance.clone()
       await filter.onFetch([dynamicContentInstance, secondInstanceCopy])
-      expect(secondInstanceCopy).not.toEqual(secondInstance)
       await filter.preDeploy([toChange({ after: secondInstanceCopy })])
       expect(secondInstanceCopy).toEqual(secondInstance)
       await filter.onDeploy([toChange({ after: secondInstanceCopy })])

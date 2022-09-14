@@ -31,6 +31,8 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
+import { createMissingInstance } from './references/missing_references'
+import { ZENDESK } from '../constants'
 
 const { awu } = collections.asynciterable
 const PLACEHOLDER_REGEX = /({{.+?}})/g
@@ -50,7 +52,19 @@ const transformDynamicContentDependencies = async (
     }
     const itemInstance = placeholderToItem[placeholder[0]]
     if (!itemInstance) {
-      return [part]
+      const matches = placeholder[0].match(/.*\.(.*)\}\}/)
+      if (!matches) {
+        return [part]
+      }
+      const missingInstance = createMissingInstance(
+        ZENDESK,
+        DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+        matches[1]
+      )
+      return [
+        OPEN_BRACKETS,
+        new ReferenceExpression(missingInstance.elemID, missingInstance),
+        CLOSE_BRACKETS]
     }
     return [
       OPEN_BRACKETS,

@@ -425,7 +425,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'policyRules', fieldType: 'list<PolicyRule>' },
-        { fieldName: 'settings', fieldType: 'Map<unknown>' },
+        { fieldName: 'settings', fieldType: 'map<unknown>' },
       ],
       idFields: ['name', 'type'],
       standaloneFields: [{ fieldName: 'policyRules' }],

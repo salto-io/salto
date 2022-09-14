@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
@@ -30,8 +29,6 @@ import createCheckOnlyDeployValidator from './change_validators/check_only_deplo
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
-
-const { isDefined } = values
 
 type ChangeValidatorCreator = (config: SalesforceConfig) => ChangeValidator
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {

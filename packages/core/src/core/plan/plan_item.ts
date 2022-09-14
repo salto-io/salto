@@ -16,7 +16,7 @@
 import wu from 'wu'
 
 import { NodeId, Group, ActionName } from '@salto-io/dag'
-import { Change, getChangeData, DetailedChange } from '@salto-io/adapter-api'
+import { Change, getChangeData, DetailedChange, CompareOptions } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 
 export type PlanItemId = NodeId
@@ -41,7 +41,7 @@ const getGroupAction = (group: Group<Change>): ActionName => {
 
 export const addPlanItemAccessors = (
   group: Group<Change>,
-  compareReferencesByValue = false
+  compareOptions?: CompareOptions,
 ): PlanItem => Object.assign(group, {
   action: getGroupAction(group),
   changes() {
@@ -57,7 +57,7 @@ export const addPlanItemAccessors = (
         return detailedCompare(
           change.data.before,
           change.data.after,
-          { compareReferencesByValue }
+          compareOptions,
         )
       })
       .flatten()

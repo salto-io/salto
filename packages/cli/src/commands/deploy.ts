@@ -267,7 +267,7 @@ const deployDef = createWorkspaceCommand({
         name: 'checkOnly',
         alias: 'c',
         required: false,
-        description: 'Run validation-only deployment against the service',
+        description: 'Run check-only deployment against the service',
         type: 'boolean',
       },
       ACCOUNTS_OPTION,

@@ -39,6 +39,10 @@ export type OktaConfig = {
 
 const DEFAULT_ID_FIELDS = ['name']
 const DEFAULT_SERVICE_ID_FIELD = 'id'
+const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'created' },
+  { fieldName: 'lastUpdated' },
+]
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   api__v1__groups: {
@@ -687,6 +691,7 @@ export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       serviceIdField: DEFAULT_SERVICE_ID_FIELD,
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

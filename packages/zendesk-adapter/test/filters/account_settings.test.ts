@@ -85,7 +85,7 @@ describe('account settings filter', () => {
       change: { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['routing.autorouting_tag']
+      fieldsToIgnore: ['routing.autorouting_tag'],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -107,7 +107,7 @@ describe('account settings filter', () => {
       change: { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: []
+      fieldsToIgnore: [],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -140,7 +140,7 @@ describe('account settings filter', () => {
       change: { action: 'modify', data: { before: accountSettings, after: clonedAfter } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['routing.autorouting_tag']
+      fieldsToIgnore: ['routing.autorouting_tag'],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)

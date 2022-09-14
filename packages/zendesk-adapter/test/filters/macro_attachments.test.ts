@@ -318,7 +318,7 @@ describe('macro attachment filter', () => {
         change: { action: 'add', data: { after: resolvedClonedMacro } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        undefined
+        undefined,
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -385,7 +385,7 @@ describe('macro attachment filter', () => {
         change: { action: 'modify', data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        undefined
+        undefined,
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -457,7 +457,7 @@ describe('macro attachment filter', () => {
         change: { action: 'modify', data: { before: resolvedClonedBeforeMacro, after: resolvedClonedAfterMacro } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        undefined
+        undefined,
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -505,7 +505,7 @@ describe('macro attachment filter', () => {
         change: { action: 'remove', data: { before: resolvedClonedMacro } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        undefined
+        undefined,
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)

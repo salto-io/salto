@@ -86,7 +86,7 @@ describe('app installation filter', () => {
       change: { action: 'add', data: { after: clonedApp } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
     })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
@@ -114,7 +114,7 @@ describe('app installation filter', () => {
       change: { action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
     })
     expect(mockGet).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -134,7 +134,7 @@ describe('app installation filter', () => {
       change: { action: 'add', data: { after: clonedApp } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
     })
     expect(mockGet).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -153,7 +153,7 @@ describe('app installation filter', () => {
       change: { action: 'add', data: { after: clonedApp } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
     })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
@@ -175,7 +175,7 @@ describe('app installation filter', () => {
       change: { action: 'add', data: { after: clonedApp } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
     })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
@@ -196,8 +196,8 @@ describe('app installation filter', () => {
     expect(mockDeployChange).toHaveBeenCalledWith({
       change: { action: 'add', data: { after: clonedApp } },
       client: expect.anything(),
-      endpointdDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects']
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
     })
     expect(mockGet).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)

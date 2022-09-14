@@ -175,7 +175,7 @@ describe('issueTypeScheme', () => {
           change: toChange({ after: instanceBefore }),
           client: expect.any(JiraClient),
           endpointDetails: expect.any(Object),
-          fieldsToIgnore: []
+          fieldsToIgnore: [],
         })
       })
 

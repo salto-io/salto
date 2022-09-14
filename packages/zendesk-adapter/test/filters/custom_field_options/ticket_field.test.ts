@@ -258,12 +258,12 @@ describe('ticket field filter', () => {
           }))
         const res = await filter.deploy(clonedElements.map(e => ({ action: 'add', data: { after: e } })))
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(mockDeployChange).toHaveBeenCalledWith(
-          { action: 'add', data: { after: clonedElements[0] } },
-          expect.anything(),
-          expect.anything(),
-          [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
-        )
+        expect(mockDeployChange).toHaveBeenCalledWith({
+          change: { action: 'add', data: { after: clonedElements[0] } },
+          client: expect.anything(),
+          endpointDetails: expect.anything(),
+          fieldsToIgnore: [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        })
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         const expectedElements = [ticketField, option1, option2].map(e => e.clone())
@@ -294,12 +294,12 @@ describe('ticket field filter', () => {
         const res = await filter.deploy(clonedElements.map((e, index) =>
           ({ action: 'modify', data: { before: e, after: clonedElementsAfter[index] } })))
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(mockDeployChange).toHaveBeenCalledWith(
-          { action: 'modify', data: { before: clonedElements[0], after: clonedElementsAfter[0] } },
-          expect.anything(),
-          expect.anything(),
-          [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
-        )
+        expect(mockDeployChange).toHaveBeenCalledWith({
+          change: { action: 'modify', data: { before: clonedElements[0], after: clonedElementsAfter[0] } },
+          client: expect.anything(),
+          endpointDetails: expect.anything(),
+          fieldsToIgnore: [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        })
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(3)
@@ -319,12 +319,12 @@ describe('ticket field filter', () => {
         const res = await filter.deploy(clonedElements.map(e =>
           ({ action: 'remove', data: { before: e } })))
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(mockDeployChange).toHaveBeenCalledWith(
-          { action: 'remove', data: { before: clonedElements[0] } },
-          expect.anything(),
-          expect.anything(),
-          [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
-        )
+        expect(mockDeployChange).toHaveBeenCalledWith({
+          change: { action: 'remove', data: { before: clonedElements[0] } },
+          client: expect.anything(),
+          endpointDetails: expect.anything(),
+          fieldsToIgnore: [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        })
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(3)
@@ -339,12 +339,12 @@ describe('ticket field filter', () => {
         })
         const res = await filter.deploy([{ action: 'add', data: { after: clonedTicketField } }])
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(mockDeployChange).toHaveBeenCalledWith(
-          { action: 'add', data: { after: clonedTicketField } },
-          expect.anything(),
-          expect.anything(),
-          [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
-        )
+        expect(mockDeployChange).toHaveBeenCalledWith({
+          change: { action: 'add', data: { after: clonedTicketField } },
+          client: expect.anything(),
+          endpointDetails: expect.anything(),
+          fieldsToIgnore: [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        })
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(1)
         expect(res.deployResult.appliedChanges).toHaveLength(0)
@@ -357,12 +357,12 @@ describe('ticket field filter', () => {
           }))
         const res = await filter.deploy(clonedElements.map(e => ({ action: 'add', data: { after: e } })))
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(mockDeployChange).toHaveBeenCalledWith(
-          { action: 'add', data: { after: clonedElements[0] } },
-          expect.anything(),
-          expect.anything(),
-          [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
-        )
+        expect(mockDeployChange).toHaveBeenCalledWith({
+          change: { action: 'add', data: { after: clonedElements[0] } },
+          client: expect.anything(),
+          endpointDetails: expect.anything(),
+          fieldsToIgnore: [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        })
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         const expectedElements = [ticketField, option1, option2].map(e => e.clone())
@@ -381,12 +381,12 @@ describe('ticket field filter', () => {
           { action: 'add', data: { after: clonedTicketField } },
         ])
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(mockDeployChange).toHaveBeenCalledWith(
-          { action: 'add', data: { after: clonedTicketField } },
-          expect.anything(),
-          expect.anything(),
-          [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
-        )
+        expect(mockDeployChange).toHaveBeenCalledWith({
+          change: { action: 'add', data: { after: clonedTicketField } },
+          client: expect.anything(),
+          endpointDetails: expect.anything(),
+          fieldsToIgnore: [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME],
+        })
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         const expectedTicketField = ticketField.clone()
@@ -410,12 +410,12 @@ describe('ticket field filter', () => {
           { action: 'modify', data: { before: clonedChildBefore, after: clonedChildAfter } },
         ])
         expect(mockDeployChange).toHaveBeenCalledTimes(1)
-        expect(mockDeployChange).toHaveBeenCalledWith(
-          { action: 'modify', data: { before: clonedChildBefore, after: clonedChildAfter } },
-          expect.anything(),
-          expect.anything(),
-          undefined,
-        )
+        expect(mockDeployChange).toHaveBeenCalledWith({
+          change: { action: 'modify', data: { before: clonedChildBefore, after: clonedChildAfter } },
+          client: expect.anything(),
+          endpointDetails: expect.anything(),
+          fieldsToIgnore: undefined,
+        })
         expect(res.leftoverChanges).toHaveLength(0)
         expect(res.deployResult.errors).toHaveLength(0)
         expect(res.deployResult.appliedChanges).toHaveLength(1)

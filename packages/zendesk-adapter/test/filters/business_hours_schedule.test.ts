@@ -79,7 +79,7 @@ describe('business hours schedule filter', () => {
       change: { action: 'add', data: { after: clonedSchedule } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['holidays']
+      fieldsToIgnore: ['holidays'],
     })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
@@ -111,7 +111,7 @@ describe('business hours schedule filter', () => {
       change: { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['holidays']
+      fieldsToIgnore: ['holidays'],
     })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
@@ -139,7 +139,7 @@ describe('business hours schedule filter', () => {
       change: { action: 'remove', data: { before: clonedSchedule } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['holidays']
+      fieldsToIgnore: ['holidays'],
     })
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -166,7 +166,7 @@ describe('business hours schedule filter', () => {
       change: { action: 'modify', data: { before: clonedBeforeSchedule, after: clonedAfterSchedule } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['holidays']
+      fieldsToIgnore: ['holidays'],
     })
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -189,7 +189,7 @@ describe('business hours schedule filter', () => {
       change: { action: 'add', data: { after: clonedSchedule } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['holidays']
+      fieldsToIgnore: ['holidays'],
     })
     expect(mockPut).toHaveBeenCalledTimes(0)
     expect(res.leftoverChanges).toHaveLength(0)
@@ -208,7 +208,7 @@ describe('business hours schedule filter', () => {
       change: { action: 'add', data: { after: clonedSchedule } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['holidays']
+      fieldsToIgnore: ['holidays'],
     })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(res.leftoverChanges).toHaveLength(0)

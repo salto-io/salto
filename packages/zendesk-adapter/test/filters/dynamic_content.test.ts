@@ -295,10 +295,12 @@ describe('dynmaic content filter', () => {
       beforeElements.forEach((e, i) => {
         expect(mockDeployChange).toHaveBeenNthCalledWith(
           i + 1,
-          { action: 'modify', data: { before: e, after: afterElements[i] } },
-          expect.anything(),
-          expect.anything(),
-          undefined,
+          {
+            change: { action: 'modify', data: { before: e, after: afterElements[i] } },
+            client: expect.anything(),
+            endpointDetails: expect.anything(),
+            fieldsToOmit: undefined,
+          },
         )
       })
       expect(res.leftoverChanges).toHaveLength(0)

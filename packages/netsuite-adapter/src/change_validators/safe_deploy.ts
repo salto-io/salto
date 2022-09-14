@@ -21,7 +21,7 @@ import { isInstanceChange, InstanceElement, Element,
 import { collections, values } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
 import { isCustomType, isFileCabinetInstance } from '../types'
-import { LAST_FETCH_TIME, PATH, SCRIPT_ID } from '../constants'
+import { PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
 import { FailedFiles, FailedTypes } from '../client/types'
 import { getReferencedInstances } from '../reference_dependencies'
@@ -70,15 +70,6 @@ const getIdentifingValuesByType = async (
     .toArray())
 )
 
-const getInstanceToCompare = (instance: InstanceElement): InstanceElement =>
-  new InstanceElement(
-    instance.elemID.name,
-    instance.refType,
-    _.omit(instance.value, LAST_FETCH_TIME),
-    instance.path,
-    instance.annotations
-  )
-
 const getMatchingServiceInstances = async (
   baseInstances: InstanceElement[],
   fetchByQuery: FetchByQueryFunc
@@ -98,7 +89,7 @@ const getMatchingServiceInstances = async (
   const fetchQuery = buildNetsuiteQuery(convertToQueryParams(fetchTarget))
   const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false, true)
   return _.keyBy(
-    elements.filter(isInstanceElement).map(getInstanceToCompare),
+    elements.filter(isInstanceElement),
     element => element.elemID.getFullName()
   )
 }
@@ -149,14 +140,14 @@ const hasChangedInService = (
   change: RemovalChange<InstanceElement> | ModificationChange<InstanceElement>,
   serviceInstance: InstanceElement
 ): boolean => (
-  !isEqualElements(getInstanceToCompare(change.data.before), serviceInstance)
+  !isEqualElements(change.data.before, serviceInstance)
 )
 
 const isChangeTheSameInService = (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   serviceInstance: InstanceElement
 ): boolean => (
-  isEqualElements(getInstanceToCompare(change.data.after), serviceInstance)
+  isEqualElements(change.data.after, serviceInstance)
 )
 
 const isModificationOverridingChange = (
@@ -215,10 +206,7 @@ const changeValidator: QueryChangeValidator = async (
   }
 
   const isOverridingAdditionalInstance = ({ instance }: AdditionalInstance): boolean =>
-    !isEqualElements(
-      getInstanceToCompare(instance),
-      serviceInstances[instance.elemID.getFullName()]
-    )
+    !isEqualElements(instance, serviceInstances[instance.elemID.getFullName()])
 
   const changesWarnings = instanceChanges
     .filter(isOverridingChange)

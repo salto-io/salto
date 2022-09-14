@@ -26,7 +26,6 @@ import savedSearchDetector from './changes_detectors/savedsearch'
 import { ChangedObject, ChangedType, DateRange } from './types'
 import NetsuiteClient from '../client/client'
 import { convertSavedSearchStringToDate } from './date_formats'
-import { ElementsSourceValue, LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const log = logger(module)
 
@@ -94,7 +93,7 @@ const getIdTime = (
 
 const getChangedIds = (
   changes: ChangedObject[],
-  idToLastFetchDate: Record<string, ElementsSourceValue>,
+  idToLastFetchDate: Record<string, Date>,
   systemNoteChanges?: Record<number, Date | undefined>
 ): Set<string> =>
   new Set(_(changes)
@@ -106,7 +105,7 @@ const getChangedIds = (
     .map(([externalId, changesGroup]): [string, Date | undefined] =>
       [externalId, getIdTime(changesGroup, systemNoteChanges)])
     .filter(([id, time]) => {
-      const lastFetchDate = idToLastFetchDate[id]?.lastFetchTime
+      const lastFetchDate = idToLastFetchDate[id]
       return time === undefined
       || lastFetchDate === undefined
       || time > lastFetchDate
@@ -118,7 +117,7 @@ export const getChangedObjects = async (
   client: NetsuiteClient,
   query: NetsuiteQuery,
   dateRange: DateRange,
-  elementsSourceIndex: LazyElementsSourceIndexes,
+  serviceIdToLastFetchDate: Record<string, Date>,
 ): Promise<NetsuiteQuery> => {
   log.debug('Starting to look for changed objects')
 
@@ -127,9 +126,6 @@ export const getChangedObjects = async (
       .filter(detector => detector.getTypes().some(query.isTypeMatch))
       .map(detector => detector.getChanges(client, dateRange))
   ).then(output => output.flat())
-
-  const idToLastFetchDate = (await elementsSourceIndex.getIndexes()).serviceIdsIndex
-
   const [
     systemNoteChanges,
     changedInstances,
@@ -146,15 +142,17 @@ export const getChangedObjects = async (
 
   const scriptIds = getChangedIds(
     changedObjects.map(change => ({ ...change, externalId: change.externalId.toLowerCase() })),
-    idToLastFetchDate,
+    serviceIdToLastFetchDate,
     systemNoteChanges
   )
 
-  const filePaths = new Set([...getChangedIds(changedFiles, idToLastFetchDate, systemNoteChanges)]
-    .filter(query.isFileMatch))
+  const filePaths = new Set([
+    ...getChangedIds(changedFiles, serviceIdToLastFetchDate, systemNoteChanges),
+  ].filter(query.isFileMatch))
 
-  const folderPaths = [...getChangedIds(changedFolders, idToLastFetchDate, systemNoteChanges)]
-    .filter(query.isFileMatch)
+  const folderPaths = [
+    ...getChangedIds(changedFolders, serviceIdToLastFetchDate, systemNoteChanges),
+  ].filter(query.isFileMatch)
 
   const unresolvedFolderPaths = folderPaths
     .map(folder => `${folder}/`)

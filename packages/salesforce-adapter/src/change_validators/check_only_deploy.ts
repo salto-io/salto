@@ -16,7 +16,6 @@
 import { ChangeValidator, ElemID, getChangeData, ChangeError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
-import { SalesforceConfig } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -31,18 +30,12 @@ const createChangeError = (instanceElemID: ElemID): ChangeError => ({
  * Data (CustomObject instances) is deployed although running in Salesforce validation process
  * (salesforce.client.deploy.checkOnly=true)
  */
-const createValidateOnlyFlagValidator = (config: SalesforceConfig): ChangeValidator => (
-  async changes => {
-    if (!config.client?.deploy?.checkOnly) {
-      return []
-    }
-
-    return awu(changes)
-      .filter(isInstanceOfCustomObjectChange)
-      .map(getChangeData)
-      .map(changeInstance => createChangeError(changeInstance.elemID))
-      .toArray()
-  }
+const createCheckOnlyDeployValidator = (): ChangeValidator => (
+  async changes => awu(changes)
+    .filter(isInstanceOfCustomObjectChange)
+    .map(getChangeData)
+    .map(changeInstance => createChangeError(changeInstance.elemID))
+    .toArray()
 )
 
-export default createValidateOnlyFlagValidator
+export default createCheckOnlyDeployValidator

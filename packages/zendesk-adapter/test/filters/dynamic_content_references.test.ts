@@ -65,6 +65,7 @@ describe('dynamic content references filter', () => {
   const createInstances = (): {
     dynamicContentInstance: InstanceElement
     instance: InstanceElement
+    secondInstance: InstanceElement
   } => {
     const dynamicContentInstance = new InstanceElement(
       'dynamicContentInstance',
@@ -82,56 +83,87 @@ describe('dynamic content references filter', () => {
         empty_value: [],
       }
     )
+    const secondInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} bb{{somePlaceholder}}cc',
+      }
+    )
     return {
       dynamicContentInstance,
       instance,
+      secondInstance,
     }
   }
 
   describe('onFetch', () => {
     it('should replace dynamic content placeholders with templates', async () => {
-      const { dynamicContentInstance, instance } = createInstances()
-
-      await filter.onFetch([dynamicContentInstance, instance])
+      const { dynamicContentInstance, instance, secondInstance } = createInstances()
+      await filter.onFetch([dynamicContentInstance, instance, secondInstance])
       expect(instance.value.raw_value).toEqual(new TemplateExpression({
         parts: ['{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}', ' ', '{{notExistsPlaceholder}}', ' ', '{{',
+          '}} {{notExistsPlaceholder}} {{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}'],
       }))
       expect(instance.value.empty_value).toEqual([])
+      expect(secondInstance.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{notExistsPlaceholder}} bb{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}cc'],
+      }))
     })
   })
 
   describe('preDeploy', () => {
     it('should switch instance back to original value before deploy', async () => {
-      const { dynamicContentInstance, instance } = createInstances()
+      const { dynamicContentInstance, instance, secondInstance } = createInstances()
       const instanceCopy = instance.clone()
       await filter.onFetch([dynamicContentInstance, instanceCopy])
       expect(instanceCopy).not.toEqual(instance)
       await filter.preDeploy([toChange({ after: instanceCopy })])
       expect(instanceCopy).toEqual(instance)
+      const secondInstanceCopy = secondInstance.clone()
+      await filter.onFetch([dynamicContentInstance, secondInstanceCopy])
+      expect(secondInstanceCopy).not.toEqual(secondInstance)
+      await filter.preDeploy([toChange({ after: secondInstanceCopy })])
+      expect(secondInstanceCopy).toEqual(secondInstance)
     })
   })
 
   describe('onDeploy', () => {
     it('should switch instance back to template value after deploy', async () => {
-      const { dynamicContentInstance, instance } = createInstances()
+      const { dynamicContentInstance, instance, secondInstance } = createInstances()
       const instanceCopy = instance.clone()
       await filter.onFetch([dynamicContentInstance, instanceCopy])
-      expect(instanceCopy).not.toEqual(instance)
       await filter.preDeploy([toChange({ after: instanceCopy })])
       expect(instanceCopy).toEqual(instance)
       await filter.onDeploy([toChange({ after: instanceCopy })])
       expect(instanceCopy.value.raw_value).toEqual(new TemplateExpression({
         parts: ['{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}', ' ', '{{notExistsPlaceholder}}', ' ', '{{',
+          '}} {{notExistsPlaceholder}} {{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}'],
       }))
       expect(instanceCopy.value.empty_value).toEqual([])
+
+      const secondInstanceCopy = secondInstance.clone()
+      await filter.onFetch([dynamicContentInstance, secondInstanceCopy])
+      await filter.preDeploy([toChange({ after: secondInstanceCopy })])
+      expect(secondInstanceCopy).toEqual(secondInstance)
+      await filter.onDeploy([toChange({ after: secondInstanceCopy })])
+      expect(secondInstanceCopy.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{notExistsPlaceholder}} bb{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}cc'],
+      }))
     })
   })
 })

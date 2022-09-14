@@ -15,17 +15,11 @@
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 
-export type ElementsSourceValue = {
-  lastFetchTime?: Date
-  elemID: ElemID
-}
-
 export type ServiceIdRecords = Record<string, { elemID: ElemID; serviceID: string }>
 
 export type ElementsSourceIndexes = {
-  serviceIdsIndex: Record<string, ElementsSourceValue>
   serviceIdRecordsIndex: ServiceIdRecords
-  internalIdsIndex: Record<string, ElementsSourceValue>
+  internalIdsIndex: Record<string, ElemID>
   customFieldsIndex: Record<string, InstanceElement[]>
   pathToInternalIdsIndex: Record<string, number>
   elemIdToChangeByIndex: Record<string, string>

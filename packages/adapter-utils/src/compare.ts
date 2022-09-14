@@ -17,16 +17,29 @@ import _ from 'lodash'
 import {
   ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType, isType,
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
+  isElement,
 } from '@salto-io/adapter-api'
 import { setPath } from './utils'
 
 /**
  * Create detailed changes from change data (before and after values)
  */
-const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChange[] => {
-  if (isEqualElements(before, after) || isEqualValues(before, after)) {
+const getValuesChanges = (
+  id: ElemID,
+  before: Value,
+  after: Value,
+  compareReferencesByValue: boolean,
+): DetailedChange[] => {
+  if (isElement(before) && isElement(after)
+    && isEqualElements(before, after, compareReferencesByValue)) {
     return []
   }
+
+  if (!isElement(before) && !isElement(after)
+    && isEqualValues(before, after, compareReferencesByValue)) {
+    return []
+  }
+
   if (before === undefined) {
     return [{ id, action: 'add', data: { after } }]
   }
@@ -36,7 +49,12 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
   if (_.isPlainObject(before) && _.isPlainObject(after)) {
     return _(before).keys()
       .union(_.keys(after))
-      .map(key => getValuesChanges(id.createNestedID(key), before[key], after[key]))
+      .map(key => getValuesChanges(
+        id.createNestedID(key),
+        before[key],
+        after[key],
+        compareReferencesByValue
+      ))
       .flatten()
       .value()
   }
@@ -46,7 +64,12 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
     if (before.length === after.length) {
       return _.flatten(
         _.times(before.length).map(
-          i => getValuesChanges(id.createNestedID(i.toString()), before[i], after[i])
+          i => getValuesChanges(
+            id.createNestedID(i.toString()),
+            before[i],
+            after[i],
+            compareReferencesByValue
+          )
         )
       )
     }
@@ -65,7 +88,11 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
  * annotationType exists in both (before & after) will not consider as change.
  *
  */
-const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): DetailedChange[] => {
+const getAnnotationTypeChanges = (
+  id: ElemID,
+  before: Value,
+  after: Value,
+): DetailedChange[] => {
   const hasAnnotationTypes = (elem: ChangeDataType): elem is ObjectType | PrimitiveType =>
     isObjectType(elem) || isPrimitiveType(elem)
 
@@ -85,7 +112,8 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
     return getValuesChanges(
       id.createNestedID('annotation'),
       beforeUniqueAnnotationsTypes,
-      afterUniqueAnnotationsTypes
+      afterUniqueAnnotationsTypes,
+      false,
     )
   }
   return []
@@ -94,7 +122,8 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
 export const detailedCompare = (
   before: ChangeDataType,
   after: ChangeDataType,
-  createFieldChanges = false
+  createFieldChanges = false,
+  compareReferencesByValue = false,
 ): DetailedChange[] => {
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
@@ -115,7 +144,12 @@ export const detailedCompare = (
 
     const modifyChanges = Object.keys(afterObj.fields)
       .filter(fieldName => beforeObj.fields[fieldName] !== undefined)
-      .map(fieldName => detailedCompare(beforeObj.fields[fieldName], afterObj.fields[fieldName]))
+      .map(fieldName => detailedCompare(
+        beforeObj.fields[fieldName],
+        afterObj.fields[fieldName],
+        false,
+        compareReferencesByValue,
+      ))
 
     return [
       ...removeChanges,
@@ -130,19 +164,21 @@ export const detailedCompare = (
   }
 
   const valueChanges = isInstanceElement(before) && isInstanceElement(after)
-    ? getValuesChanges(after.elemID, before.value, after.value)
+    ? getValuesChanges(after.elemID, before.value, after.value, compareReferencesByValue)
     : []
 
   // A special case to handle changes in annotationType.
   const annotationTypeChanges = getAnnotationTypeChanges(
     after.elemID,
     before,
-    after
+    after,
   )
 
   const annotationChanges = getValuesChanges(
     isType(after) ? after.elemID.createNestedID('attr') : after.elemID,
-    before.annotations, after.annotations
+    before.annotations,
+    after.annotations,
+    compareReferencesByValue
   )
 
   const fieldChanges = createFieldChanges && isObjectType(before) && isObjectType(after)

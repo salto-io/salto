@@ -83,12 +83,12 @@ describe('webhook filter', () => {
       mockDeployChange.mockImplementation(async () => ({ webhook: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: deployedWebhook } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: deployedWebhook } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -104,12 +104,12 @@ describe('webhook filter', () => {
       mockDeployChange.mockImplementation(async () => ({ webhook: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: deployedWebhook } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: deployedWebhook } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -132,12 +132,12 @@ describe('webhook filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -162,12 +162,12 @@ describe('webhook filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedWebhookBefore, after: clonedWebhookAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -193,12 +193,12 @@ describe('webhook filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -234,12 +234,12 @@ describe('webhook filter', () => {
       ]
       const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: deployedWebhook } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: deployedWebhook } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

@@ -68,12 +68,12 @@ describe('routing attribute filter', () => {
       mockDeployChange.mockImplementation(async () => ({ attribute: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedAttribute } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedAttribute } },
-        expect.anything(),
-        expect.anything(),
-        ['values'],
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedAttribute } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['values'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -92,12 +92,12 @@ describe('routing attribute filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedAttributeBefore, after: clonedAttributeAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedAttributeBefore, after: clonedAttributeAfter } },
-        expect.anything(),
-        expect.anything(),
-        ['values']
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedAttributeBefore, after: clonedAttributeAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['values'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -129,12 +129,12 @@ describe('routing attribute filter', () => {
       })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedAttribute } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedAttribute } },
-        expect.anything(),
-        expect.anything(),
-        ['values'],
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedAttribute } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['values'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

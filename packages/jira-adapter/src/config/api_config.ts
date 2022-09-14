@@ -1560,11 +1560,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         method: 'post',
       },
       modify: {
-        url: '/rest/api/3/priority/{priorityId}',
+        url: '/rest/api/3/priority/{id}',
         method: 'put',
-        urlParamsToFields: {
-          priorityId: 'id',
-        },
       },
     },
   },

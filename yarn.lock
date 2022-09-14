@@ -3328,6 +3328,11 @@
   resolved "https://registry.yarnpkg.com/@types/parse-json/-/parse-json-4.0.0.tgz#2f8bb441434d163b35fb8ffdccd7138927ffb8c0"
   integrity sha512-//oorEZjL6sbPcKUaCdIGlIUeH26mgzimjBB77G6XRgnDl/L5wOnpyBGRe/Mmf5CVW3PwEBE1NjiMZ/ssFh4wA==
 
+"@types/parse-link-header@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@types/parse-link-header/-/parse-link-header-2.0.0.tgz#a94d86ac2d13e3cdef4429c977217084e32378e7"
+  integrity sha512-KbqcQLdRaawDOfXnwqr6nvhe1MV+Uv/Ww+ViSx7Ujgw9X5qCgObLP52B1ZSJqZD8FK1y/4o+bJQTUrZOynegcg==
+
 "@types/pino-pretty@*":
   version "4.7.5"
   resolved "https://registry.yarnpkg.com/@types/pino-pretty/-/pino-pretty-4.7.5.tgz#e4ade1e42b78b8b0c1c28010ff7eb6c439278b19"
@@ -10206,6 +10211,13 @@ parse-json@^5.0.0:
     error-ex "^1.3.1"
     json-parse-even-better-errors "^2.3.0"
     lines-and-columns "^1.1.6"
+
+parse-link-header@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/parse-link-header/-/parse-link-header-2.0.0.tgz#949353e284f8aa01f2ac857a98f692b57733f6b7"
+  integrity sha512-xjU87V0VyHZybn2RrCX5TIFGxTVZE6zqqZWMPlIKiSKuWh/X5WZdt+w1Ki1nXB+8L/KtL+nZ4iq+sfI6MrhhMw==
+  dependencies:
+    xtend "~4.0.1"
 
 parse-path@^5.0.0:
   version "5.0.0"

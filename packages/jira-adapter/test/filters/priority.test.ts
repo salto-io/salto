@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../utils'
 import priorityFilter from '../../src/filters/priority'
@@ -53,49 +53,26 @@ describe('priorityFilter', () => {
   })
 
   describe('onFetch', () => {
-    it('should add deployment annotations', async () => {
-      await filter.onFetch?.([type])
-      expect(type.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
+    it('should remove is default when it is false', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { isDefault: false },
+      )
 
-      expect(type.fields.id.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.name.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.description.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.iconUrl.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.statusColor.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({})
     })
 
-    it('should do nothing when usePrivateAPI config is off', async () => {
-      config.client.usePrivateAPI = false
+    it('should not remove is default when it is true', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { isDefault: true },
+      )
 
-      await filter.onFetch?.([type])
-
-      expect(type.annotations).toEqual({})
-      expect(type.fields.name.annotations).toEqual({})
-      expect(type.fields.description.annotations).toEqual({})
-      expect(type.fields.iconUrl.annotations).toEqual({})
-      expect(type.fields.statusColor.annotations).toEqual({})
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({ isDefault: true })
     })
   })
   describe('preDeploy', () => {

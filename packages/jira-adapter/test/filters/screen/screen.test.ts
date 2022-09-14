@@ -122,14 +122,13 @@ describe('screenFilter', () => {
       })
       await filter.deploy?.([change])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
+      expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Screen.deployRequests,
-        ['tabs'],
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Screen.deployRequests,
+        fieldsToIgnore: ['tabs'],
+      })
     })
 
     it('should call deployChange and ignore tabs and names if were not changed', async () => {
@@ -139,14 +138,13 @@ describe('screenFilter', () => {
       })
       await filter.deploy?.([change])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
+      expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Screen.deployRequests,
-        ['tabs', 'name'],
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Screen.deployRequests,
+        fieldsToIgnore: ['tabs', 'name'],
+      })
     })
 
     it('should call endpoints to reorder tabs', async () => {

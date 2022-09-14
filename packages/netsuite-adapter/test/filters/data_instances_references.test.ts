@@ -107,7 +107,7 @@ describe('data_instances_references', () => {
           getIndexes: () => Promise.resolve({
             ...createEmptyElementsSourceIndexes(),
             internalIdsIndex: {
-              'firstType-1': { elemID: referencedInstance.elemID },
+              'firstType-1': referencedInstance.elemID,
             },
           }),
         },

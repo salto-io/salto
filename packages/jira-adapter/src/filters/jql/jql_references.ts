@@ -56,7 +56,7 @@ const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
-      const jqlRelativePaths = AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE[value.type]
+      const jqlRelativePaths = AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE[value?.type]
       if (jqlRelativePaths !== undefined) {
         jqlRelativePaths.forEach(relativePath => {
           const jqlValue = _.get(value, relativePath)

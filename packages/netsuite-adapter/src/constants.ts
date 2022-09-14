@@ -54,7 +54,6 @@ export const SCRIPT_ID = 'scriptid'
 export const PATH = 'path'
 export const PERMITTED_ROLE = 'permittedrole'
 export const RECORD_TYPE = 'recordType'
-export const LAST_FETCH_TIME = '_lastfetchtime'
 export const APPLICATION_ID = 'application_id'
 
 // Field Annotations

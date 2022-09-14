@@ -83,10 +83,13 @@ export type ChangeValidatorName = (
   | 'profileMapKeys'
   | 'multipleDefaults'
   | 'picklistPromote'
-  | 'validateOnlyFlag'
   | 'cpqValidator'
   | 'sbaaApprovalRulesCustomCondition'
 )
+
+export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
+
+
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 type ObjectIdSettings = {
@@ -540,7 +543,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     profileMapKeys: { refType: BuiltinTypes.BOOLEAN },
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
-    validateOnlyFlag: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
   },

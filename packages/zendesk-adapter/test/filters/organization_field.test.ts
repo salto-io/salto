@@ -105,12 +105,12 @@ describe('organization field filter', () => {
       const changes = clonedElements.map(e => toChange({ after: e }))
       const res = await filter.deploy(changes)
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedElements[0] } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedElements[0] } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined,
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       const expectedElements = [resolvedParent, child1Resolved, child2Resolved].map(e => e.clone())
@@ -129,12 +129,12 @@ describe('organization field filter', () => {
       mockDeployChange.mockImplementation(async () => ({}))
       const res = await filter.deploy(clonedElements.map(e => ({ action: 'remove', data: { before: e } })))
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'remove', data: { before: clonedElements[0] } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'remove', data: { before: clonedElements[0] } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined,
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(3)
@@ -157,12 +157,12 @@ describe('organization field filter', () => {
         action: 'modify', data: { before: e, after: afterElements[i] },
       })))
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: beforeElements[0], after: afterElements[0] } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: beforeElements[0], after: afterElements[0] } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined,
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(3)
@@ -193,12 +193,12 @@ describe('organization field filter', () => {
         action: 'modify', data: { before: e, after: afterElements[i] },
       })))
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedResolvedParent, after: clonedResolvedParent } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedResolvedParent, after: clonedResolvedParent } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined,
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(2)
@@ -213,12 +213,12 @@ describe('organization field filter', () => {
       })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedResolvedParent } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedResolvedParent } },
-        expect.anything(),
-        expect.anything(),
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedResolvedParent } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
         undefined,
-      )
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

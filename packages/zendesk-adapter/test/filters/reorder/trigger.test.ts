@@ -196,18 +196,18 @@ describe('trigger reorder filter', () => {
           ],
         },
       }
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        {
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: {
           action: 'modify',
           data: {
             after: instanceToDeploy,
             before,
           },
         },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
     })
     it('should return an error if there are multiple order changes', async () => {
       const res = await filter.deploy([change, change])

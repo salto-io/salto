@@ -23,13 +23,11 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
+import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
 import { APP_INSTALLATION_TYPE_NAME } from '../filters/app'
 import { APP_OWNED_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 type AppOwnedParameter = {
   required: boolean
@@ -68,19 +66,6 @@ const EXPECTED_APP_OWNED_SCHEMA = Joi.object({
   parameters: Joi.object().pattern(Joi.any(), EXPECTED_PARAMETERS_SCHEMA),
 }).unknown(true).required()
 
-const createSchemeGuardForInstance = <T extends InstanceElement>(
-  scheme: Joi.AnySchema, errorMessage?: string
-):
-    (instance: InstanceElement) => instance is T => (instance): instance is T => {
-    const { error } = scheme.validate(instance.value)
-    if (error !== undefined) {
-      if (errorMessage !== undefined) {
-        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(instance)}`)
-      }
-      return false
-    }
-    return true
-  }
 
 const isAppInstallation = createSchemeGuardForInstance<AppInstallation>(
   EXPECTED_APP_INSTALLATION_SCHEMA, 'Received an invalid value for App installation'

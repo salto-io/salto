@@ -104,18 +104,18 @@ describe('screenableTab', () => {
       }) as ModificationChange<InstanceElement>
       await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           after: new InstanceElement('tab', screenTabType, {
             name: 'tab',
           }),
         }),
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.ScreenableTab.deployRequests,
-        ['fields', 'position'],
-        { screenId: 'screenId' },
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.ScreenableTab.deployRequests,
+        fieldsToIgnore: ['fields', 'position'],
+        additionalUrlVars: { screenId: 'screenId' },
+      })
     })
 
     it('should call deployChange and ignore fields and names of were not changed', async () => {
@@ -136,17 +136,17 @@ describe('screenableTab', () => {
       }) as ModificationChange<InstanceElement>
       await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           before: new InstanceElement('tab', screenTabType, { name: 'tab', description: 'desc' }),
           after: new InstanceElement('tab', screenTabType, { name: 'tab' }),
         }),
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.ScreenableTab.deployRequests,
-        ['fields', 'position', 'name'],
-        { screenId: 'screenId' },
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.ScreenableTab.deployRequests,
+        fieldsToIgnore: ['fields', 'position', 'name'],
+        additionalUrlVars: { screenId: 'screenId' },
+      })
     })
 
     it('should remove  automatically created tabs tab on create', async () => {
@@ -170,16 +170,16 @@ describe('screenableTab', () => {
       }) as AdditionChange<InstanceElement>
       await deployTabs(change, client, getDefaultConfig({ isDataCenter: false }))
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           before: new InstanceElement('fieldTab', screenTabType, { name: 'fieldTab', id: 'tabId' }),
         }),
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.ScreenableTab.deployRequests,
-        ['fields', 'position'],
-        { screenId: 'screenId' },
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.ScreenableTab.deployRequests,
+        fieldsToIgnore: ['fields', 'position'],
+        additionalUrlVars: { screenId: 'screenId' },
+      })
     })
 
     describe('deploying fields', () => {

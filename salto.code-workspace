@@ -69,6 +69,10 @@
 			"path": "packages/netsuite-adapter"
 		},
 		{
+			"name": "okta-adapter",
+			"path": "packages/okta-adapter"
+		},
+		{
 			"name": "persistent-pool",
 			"path": "packages/persistent-pool"
 		},

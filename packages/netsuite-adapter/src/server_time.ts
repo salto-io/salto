@@ -22,16 +22,16 @@ const log = logger(module)
 
 export const SERVER_TIME_TYPE_NAME = 'server_time'
 
-type ServerTypeElements = {
+type ServerTimeElements = {
   type: ObjectType
   instance: InstanceElement
 }
 
-const serverTimeElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME)
-const serverTimeInstanceElemID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
+const SERVER_TIME_TYPE_ID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME)
+const SERVER_TIME_INSTANCE_ID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
 
 const serverTimeType = new ObjectType({
-  elemID: serverTimeElemID,
+  elemID: SERVER_TIME_TYPE_ID,
   isSettings: true,
   fields: {
     serverTime: { refType: BuiltinTypes.STRING },
@@ -42,7 +42,7 @@ const serverTimeType = new ObjectType({
   },
 })
 
-export const createServerTimeElements = (time: Date): ServerTypeElements => {
+export const createServerTimeElements = (time: Date): ServerTimeElements => {
   log.debug(`Creating server time elements with time: ${time.toJSON()}`)
   const instance = new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -61,8 +61,8 @@ export const createServerTimeElements = (time: Date): ServerTypeElements => {
 const getExistingServerTimeElements = async (
   time: Date,
   elementsSource: ReadOnlyElementsSource,
-): Promise<ServerTypeElements> => {
-  const instance = await elementsSource.get(serverTimeInstanceElemID)
+): Promise<ServerTimeElements> => {
+  const instance = await elementsSource.get(SERVER_TIME_INSTANCE_ID)
   if (!isInstanceElement(instance)) {
     log.warn('Server time instance not found in elements source')
     return createServerTimeElements(time)
@@ -75,18 +75,18 @@ const getExistingServerTimeElements = async (
   return { type: serverTimeType, instance }
 }
 
-export const getServerTimeElements = async (
+export const getOrCreateServerTimeElements = async (
   time: Date,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
-): Promise<ServerTypeElements> => (isPartial
+): Promise<ServerTimeElements> => (isPartial
   ? getExistingServerTimeElements(time, elementsSource)
   : createServerTimeElements(time)
 )
 
 export const getLastServiceIdToFetchTime = async (elementsSource: ReadOnlyElementsSource):
   Promise<Record<string, Date>> => {
-  const serverTimeElement = await elementsSource.get(serverTimeInstanceElemID)
+  const serverTimeElement = await elementsSource.get(SERVER_TIME_INSTANCE_ID)
 
   if (!isInstanceElement(serverTimeElement)) {
     log.warn('Server time instance not found in elements source')
@@ -107,7 +107,7 @@ export const getLastServiceIdToFetchTime = async (elementsSource: ReadOnlyElemen
 export const getLastServerTime = async (elementsSource: ReadOnlyElementsSource):
   Promise<Date | undefined> => {
   log.debug('Getting server time')
-  const serverTimeInstance = await elementsSource.get(serverTimeInstanceElemID)
+  const serverTimeInstance = await elementsSource.get(SERVER_TIME_INSTANCE_ID)
 
   if (!isInstanceElement(serverTimeInstance)) {
     log.warn('Server time instance not found in elements source')

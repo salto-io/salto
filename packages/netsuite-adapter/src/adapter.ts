@@ -61,7 +61,7 @@ import omitFieldsFilter from './filters/omit_fields'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
-import { getLastServerTime, getServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
+import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
@@ -229,7 +229,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : fetchQuery
 
     const serverTimeElements = serverTime !== undefined
-      ? await getServerTimeElements(
+      ? await getOrCreateServerTimeElements(
         serverTime,
         this.elementsSource,
         this.isPartialFetch(),

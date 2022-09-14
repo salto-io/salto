@@ -37,7 +37,7 @@ describe('createSalesforceChangeValidator', () => {
   describe('when checkOnly is false', () => {
     describe('with no validator config', () => {
       beforeEach(() => {
-        validator = createSalesforceChangeValidator({}, false)
+        validator = createSalesforceChangeValidator({ config: {}, checkOnly: false })
       })
       it('should create a validator', () => {
         expect(validator).toBeDefined()
@@ -51,10 +51,10 @@ describe('createSalesforceChangeValidator', () => {
     })
     describe('with a disabled validator config', () => {
       beforeEach(() => {
-        validator = createSalesforceChangeValidator(
-          { validators: { customFieldType: false } },
-          false
-        )
+        validator = createSalesforceChangeValidator({
+          config: { validators: { customFieldType: false } },
+          checkOnly: false,
+        })
       })
       it('should create a validator', () => {
         expect(validator).toBeDefined()
@@ -68,13 +68,46 @@ describe('createSalesforceChangeValidator', () => {
         expect(createChangeValidatorMock.mock.calls[0][0]).toHaveLength(enabledValidatorsCount)
       })
     })
+    // Remove as part of SALTO-2700
+    describe('with checkOnly defined in the client deploy config', () => {
+      const createValidatorWithConfig = (checkOnly: boolean): ChangeValidator => (
+        createSalesforceChangeValidator({
+          config: {
+            client: {
+              deploy: {
+                checkOnly,
+              },
+            },
+          },
+          checkOnly: false,
+        })
+      )
+      describe('when checkOnly is true in the deploy config', () => {
+        it('should create validator with the extra checkOnlyValidator', () => {
+          validator = createValidatorWithConfig(true)
+          expect(validator).toBeDefined()
+          expect(createChangeValidator).toHaveBeenCalledWith(
+            expect.toBeArrayOfSize(Object.keys(changeValidators).length + 1), []
+          )
+        })
+      })
+      describe('when checkOnly is false in the deploy config', () => {
+        it('should create validator without the extra checkOnlyValidator', () => {
+          validator = createValidatorWithConfig(false)
+          expect(validator).toBeDefined()
+          expect(createChangeValidator).toHaveBeenCalledWith(
+            expect.toBeArrayOfSize(Object.keys(changeValidators).length), []
+          )
+        })
+      })
+    })
   })
   describe('when checkOnly is true', () => {
     beforeEach(() => {
-      validator = createSalesforceChangeValidator(
-        { },
-        true
-      )
+      validator = createSalesforceChangeValidator({
+        config: {},
+        checkOnly: true,
+      })
     })
     it('should create a validator with the extra checkOnlyValidator', () => {
       expect(validator).toBeDefined()

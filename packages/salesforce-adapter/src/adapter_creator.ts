@@ -189,11 +189,11 @@ export const adapter: Adapter = {
       deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
       validate: salesforceAdapter.validate.bind(salesforceAdapter),
       deployModifiers: {
-        changeValidator: createChangeValidator(config, false),
+        changeValidator: createChangeValidator({ config, checkOnly: false }),
         getChangeGroupIds,
       },
       validationModifiers: {
-        changeValidator: createChangeValidator(config, true),
+        changeValidator: createChangeValidator({ config, checkOnly: true }),
       },
     }
   },

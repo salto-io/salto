@@ -425,8 +425,33 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'policyRules', fieldType: 'list<PolicyRule>' },
+        { fieldName: 'settings', fieldType: 'Map<unknown>' },
       ],
       idFields: ['name', 'type'],
+      standaloneFields: [{ fieldName: 'policyRules' }],
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'lastUpdated' },
+        { fieldName: '_links' },
+      ],
+    },
+  },
+  PolicyRule: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: '_links', fieldType: 'list<Policy__links>' },
+      ],
+      fieldsToHide: [
+        { fieldName: 'id' },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'created' },
+        { fieldName: 'lastUpdated' },
+        { fieldName: '_links' },
+      ],
     },
   },
   OrgContactTypeObj: {

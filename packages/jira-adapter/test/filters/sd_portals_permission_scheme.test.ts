@@ -16,14 +16,14 @@
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../utils'
-import permissionSchemeFilter from '../../src/filters/permission_scheme'
+import permissionSchemeFilter from '../../src/filters/sd_portals_permission_scheme'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
 import JiraClient from '../../src/client/client'
-import { unsupportedPermissionScheme } from '../../src/change_validators/permission_scheme'
+import { UNSUPPORTED_PERMISSION_SCHEME } from '../../src/change_validators/sd_portals_permission_scheme'
 
-const permissionScheme = {
+const PERMISSION_SCHEME = {
   holder: {
     type: 'holderType',
   },
@@ -55,7 +55,7 @@ describe('permissionSchemeFilter', () => {
       'instance',
       type,
       {
-        permissions: [permissionScheme],
+        permissions: [PERMISSION_SCHEME],
       }
     )
   })
@@ -66,26 +66,26 @@ describe('permissionSchemeFilter', () => {
       filter.preDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
-      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(permissionScheme)
+      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
       filter.onDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
-      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(permissionScheme)
+      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
     })
 
     it('should remove the problematic permission scheme in the preDeploy and add it back in the onDeploy', () => {
-      instance.value.permissions.push(unsupportedPermissionScheme)
+      instance.value.permissions.push(UNSUPPORTED_PERMISSION_SCHEME)
       const changes = [toChange({ after: instance })]
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
       filter.preDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(1)
-      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(permissionScheme)
+      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
       filter.onDeploy?.(changes)
       expect(changes.length).toEqual(1)
       expect(getChangeData(changes[0]).value.permissions.length).toEqual(2)
-      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(permissionScheme)
-      expect(getChangeData(changes[0]).value.permissions[1]).toEqual(unsupportedPermissionScheme)
+      expect(getChangeData(changes[0]).value.permissions[0]).toEqual(PERMISSION_SCHEME)
+      expect(getChangeData(changes[0]).value.permissions[1]).toEqual(UNSUPPORTED_PERMISSION_SCHEME)
     })
   })
 })

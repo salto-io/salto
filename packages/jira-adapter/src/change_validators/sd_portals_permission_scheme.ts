@@ -13,20 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isEqualValues, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import Joi, { string } from 'joi'
 import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 
 
 const { awu } = collections.asynciterable
 
-export interface permissionInterface {
-    holder : { type: string; parameter?: string }
+export type PermissionHolder = {
+    holder : { type: string; parameter?: unknown }
     permission: string
 }
 
-export const unsupportedPermissionScheme: permissionInterface = {
+const PERMISSION_HOLDER_SCHEME = Joi.object({
+  holder: Joi.object({
+    type: string().allow('').required(),
+    parameter: Joi.optional(),
+  }),
+  permission: string().allow('').required(),
+}).unknown(true)
+
+
+const isPermissionScheme = createSchemeGuard<PermissionHolder>(PERMISSION_HOLDER_SCHEME, 'Found an invalid Permission Holder in Permission Scheme')
+
+export const UNSUPPORTED_PERMISSION_SCHEME: PermissionHolder = {
   holder: {
     type: 'sd.customer.portal.only',
   },
@@ -41,13 +53,14 @@ export const permissionSchemeValidator: ChangeValidator = async changes => (
     .filter(element => element.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME
       && element.value.permissions !== undefined)
     .filter(element =>
-      element.value.permissions.filter((permission: permissionInterface) =>
-        _.isEqual(permission, unsupportedPermissionScheme)).length !== 0)
+      element.value.permissions.filter((permission: PermissionHolder) =>
+        isPermissionScheme(permission)
+        && isEqualValues(permission, UNSUPPORTED_PERMISSION_SCHEME)).length !== 0)
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Warning' as SeverityLevel,
       message: 'Cannot deploy the permission scheme permission',
-      detailedMessage: `Cannot deploy the permission scheme ${instance.elemID.getFullName()} because the permission type "sd.customer.portal.only" is not allowed, keep deploying without it`,
+      detailedMessage: `Jira does not allow granting the permission 'VIEW_AGGREGATED_DATA' to 'sd.customer.portal.only'. The permission scheme ${instance.elemID.getFullName()} will be deployed without it`,
     }))
     .toArray()
 )

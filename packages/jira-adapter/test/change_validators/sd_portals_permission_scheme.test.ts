@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
-import { permissionSchemeValidator, unsupportedPermissionScheme } from '../../src/change_validators/permission_scheme'
+import { permissionSchemeValidator, UNSUPPORTED_PERMISSION_SCHEME } from '../../src/change_validators/sd_portals_permission_scheme'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
 
 describe('permissionSchemeChangeValidator', () => {
@@ -36,7 +36,7 @@ describe('permissionSchemeChangeValidator', () => {
 
   it('should return a warning when attempting to deploy this permissionScheme', async () => {
     permissionSchemeInstance.value.permissions = [
-      unsupportedPermissionScheme,
+      UNSUPPORTED_PERMISSION_SCHEME,
     ]
 
     expect(await permissionSchemeValidator(
@@ -46,7 +46,7 @@ describe('permissionSchemeChangeValidator', () => {
         elemID: permissionSchemeInstance.elemID,
         severity: 'Warning',
         message: 'Cannot deploy the permission scheme permission',
-        detailedMessage: `Cannot deploy the permission scheme ${permissionSchemeInstance.elemID.getFullName()} because the permission type "sd.customer.portal.only" is not allowed, keep deploying without it`,
+        detailedMessage: `Jira does not allow granting the permission 'VIEW_AGGREGATED_DATA' to 'sd.customer.portal.only'. The permission scheme ${permissionSchemeInstance.elemID.getFullName()} will be deployed without it`,
       },
     ])
   })

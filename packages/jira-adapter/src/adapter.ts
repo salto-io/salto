@@ -96,7 +96,7 @@ import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
-import permissionSchemeFilter from './filters/permission_scheme'
+import permissionSchemeFilter from './filters/sd_portals_permission_scheme'
 
 const {
   generateTypes,

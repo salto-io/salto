@@ -62,13 +62,13 @@ export const defaultDeployChange = async (
 
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
-    const response = await deployment.deployChange(
-      changeToDeploy,
+    const response = await deployment.deployChange({
+      change: changeToDeploy,
       client,
-      deployRequests,
+      endpointDetails: deployRequests,
       fieldsToIgnore,
       queryParams,
-    )
+    })
 
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {

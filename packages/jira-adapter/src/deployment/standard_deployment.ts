@@ -78,7 +78,6 @@ export const defaultDeployChange = async ({
     endpointDetails: apiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
     fieldsToIgnore,
     additionalUrlVars,
-    undefined,
     elementsSource,
   })
 

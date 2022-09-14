@@ -70,28 +70,33 @@ export type ConnectionCreator<TCredentials> = (
 ) => Connection<TCredentials>
 
 const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
-  if (headers['retry-after'] !== undefined) {
-    return parseInt(headers['retry-after'], 10) * 1000
-  } if (
-    headers['x-rate-limit-reset'] !== undefined
-    && headers.date !== undefined
+  // Although the standard is 'Retry-After' is seems that some servers
+  // returns 'retry-after' so just in case we lowercase the headers
+  const lowercaseHeaders = _.mapKeys(
+    headers,
+    (_val, key) => key.toLowerCase()
+  )
+
+  if (lowercaseHeaders['retry-after'] !== undefined) {
+    return parseInt(lowercaseHeaders['retry-after'], 10) * 1000
+  }
+  // Handle rate limits as seen in Okta,
+  // x-rate-limit-reset contains the time at which the rate limit resets
+  // more information: https://developer.okta.com/docs/reference/rl-best-practices/
+  if (
+    lowercaseHeaders['x-rate-limit-reset'] !== undefined
+    && lowercaseHeaders.date !== undefined
   ) {
-    const restTime = parseInt(headers['x-rate-limit-reset'], 10) * 1000
-    const currentTime = new Date(headers.date).getTime()
-    return restTime - currentTime
+    const resetTime = parseInt(lowercaseHeaders['x-rate-limit-reset'], 10) * 1000
+    const currentTime = new Date(lowercaseHeaders.date).getTime()
+    return resetTime - currentTime
   }
   return undefined
 }
 
 const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
-  // Although the standard is 'Retry-After' is seems that some servers
-  // returns 'retry-after' so just in case we lowercase the headers
-  const lowercaseHeaders = _.mapKeys(
-    error.response?.headers ?? {},
-    (_val, key) => key.toLowerCase()
-  )
-
-  const retryDelay = getRetryDelayFromHeaders(lowercaseHeaders) ?? retryOptions.retryDelay
+  const retryDelay = getRetryDelayFromHeaders(error.response?.headers ?? {})
+  ?? retryOptions.retryDelay
 
   if (Number.isNaN(retryDelay)) {
     log.warn('Received invalid retry-after header value')

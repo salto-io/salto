@@ -23,6 +23,9 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
+import { createMissingInstance } from './references/missing_references'
+import { ZENDESK } from '../constants'
+
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -152,7 +155,15 @@ const formulaToTemplate = (formula: string,
       return new ReferenceExpression(elem.elemID, elem)
     }
     // if no id was detected we return the original expression.
-    return expression
+    const missingInstance = createMissingInstance(
+      ZENDESK,
+      ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
+      innerId
+    )
+    return new ReferenceExpression(
+      missingInstance.elemID,
+      missingInstance
+    )
   }
 
   const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray):

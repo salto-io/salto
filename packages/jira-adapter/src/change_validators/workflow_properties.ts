@@ -13,32 +13,39 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { map } from 'lodash'
+import { isWorkflowInstance, Status, Transition } from '../filters/workflow/types'
+import { Values } from '../../../adapter-api/src/values'
 import { WORKFLOW_TYPE_NAME } from '../constants'
 
+
 const { awu } = collections.asynciterable
+
+const getPropertiesKeys = (statusesOrTransitions: Status[]| Transition[]):
+  Array<string>[] => Array.from(statusesOrTransitions).map((param: Transition | Status) =>
+  (param.properties ?? []).map(((property: Values) => property.key)))
+
 
 export const workflowPropertiesValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+    .filter(isWorkflowInstance)
     .filter(instance => {
-      const statusesKeys = map(instance.value.statuses ?? [],
-        (status => map(status.properties, property => property.key)))
-      const transitionsKeys = map(instance.value.transitions ?? [],
-        (transition => map(transition.properties, property => property.key)))
-      const statusKeySets = statusesKeys.map(keyList => new Set<string>(keyList))
-      const transitionKeySets = transitionsKeys.map(keyList => new Set<string>(keyList))
-      const overrideStatusesKeys = statusesKeys.filter(
-        (keyList, i) => keyList.length !== statusKeySets[i].size
-      )
-      const overrideTransitionsKeys = transitionsKeys.filter(
-        (keyList, i) => keyList.length !== transitionKeySets[i].size
-      )
-      return overrideStatusesKeys.length !== 0 || overrideTransitionsKeys.length !== 0
+      const statuses = instance.value?.statuses
+      const transitions = instance.value?.transitions
+      const countStatusesKeys = (statuses !== undefined ? getPropertiesKeys(statuses) : [])
+        .map(key => _.countBy(key))
+      const countTransitionsKeys = (transitions !== undefined ? getPropertiesKeys(transitions) : [])
+        .map(key => _.countBy(key))
+      const duplicateTransitionKeys = countTransitionsKeys.map(dictionary => _.values(dictionary))
+        .flatMap(countList => countList.filter(count => count > 1))
+      const duplicateStatusKeys = countStatusesKeys.map(dictionary => _.values(dictionary))
+        .flatMap(countList => countList.filter(count => count > 1))
+      return !_.isEmpty(duplicateTransitionKeys) || !_.isEmpty(duplicateStatusKeys)
     })
     .map(async instance => ({
       elemID: instance.elemID,

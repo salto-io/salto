@@ -127,6 +127,16 @@ describe('workflowPropertiesValidator', () => {
       },
     ])
   })
+  it('should not return an error if the statuses and transitions are undefined', async () => {
+    afterInstance.value.statuses = undefined
+    afterInstance.value.transitions = undefined
+    expect(await workflowPropertiesValidator([
+      toChange({
+        before: instance,
+        after: afterInstance,
+      }),
+    ])).toEqual([])
+  })
   it('should not return an error because there are not properties with the same key', async () => {
     expect(await workflowPropertiesValidator([
       toChange({

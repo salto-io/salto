@@ -21,18 +21,15 @@ module.exports = deepMerge(
     name: 'okta-adapter',
     displayName: 'okta-adapter',
     rootDir: `${__dirname}`,
-    testEnvironment: process.env.RUN_E2E_TESTS
-      ? '@salto-io/okta-adapter/dist/e2e_test/jest_environment'
-      : undefined,
     collectCoverageFrom: [
       '!<rootDir>/index.ts',
     ],
     coverageThreshold: {
       'global': {
-        branches: 93.5,
-        functions: 95,
-        lines: 95,
-        statements: 95,
+        branches: 66,
+        functions: 32,
+        lines: 66,
+        statements: 52,
       },
     },
     setupFilesAfterEnv: ['jest-extended/all'],

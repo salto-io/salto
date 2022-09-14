@@ -25,6 +25,7 @@ import { ZENDESK } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/dynamic_content_references'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_content'
+import { createMissingInstance } from '../../src/filters/references/missing_references'
 
 describe('dynamic content references filter', () => {
   let client: ZendeskClient
@@ -71,7 +72,7 @@ describe('dynamic content references filter', () => {
       'dynamicContentInstance',
       dynamicContentType,
       {
-        placeholder: '{{somePlaceholder}}',
+        placeholder: '{{dc.somePlaceholder}}',
       },
     )
 
@@ -79,7 +80,7 @@ describe('dynamic content references filter', () => {
       'instance',
       type,
       {
-        raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}',
+        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} {{dc.somePlaceholder}}',
         empty_value: [],
       }
     )
@@ -87,7 +88,7 @@ describe('dynamic content references filter', () => {
       'instance',
       type,
       {
-        raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} bb{{somePlaceholder}}cc',
+        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} bb{{dc.somePlaceholder}}cc',
       }
     )
     return {
@@ -115,6 +116,28 @@ describe('dynamic content references filter', () => {
           '}} {{notExistsPlaceholder}} bb{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}cc'],
+      }))
+    })
+    it('should handel broken dynamic reference', async () => {
+      const noDCInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          raw_value: '{{dc.somePlaceholder}} {{dc.notExistsPlaceholder}} {{dc.somePlaceholder}}',
+        }
+      )
+      const { dynamicContentInstance } = createInstances()
+      await filter.onFetch([noDCInstance, dynamicContentInstance])
+      const missingInstance = createMissingInstance(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME, 'notExistsPlaceholder')
+      missingInstance.value.placeholder = '{{notExistsPlaceholder}}'
+      expect(noDCInstance.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{',
+          new ReferenceExpression(missingInstance.elemID, missingInstance),
+          '}} {{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}'],
       }))
     })
   })

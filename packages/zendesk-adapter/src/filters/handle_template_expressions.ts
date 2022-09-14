@@ -160,6 +160,7 @@ const formulaToTemplate = (formula: string,
       ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
       innerId
     )
+    missingInstance.value.id = innerId
     return new ReferenceExpression(
       missingInstance.elemID,
       missingInstance

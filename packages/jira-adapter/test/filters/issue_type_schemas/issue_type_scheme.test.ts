@@ -106,14 +106,12 @@ describe('issueTypeScheme', () => {
         await filter.deploy?.([change])
       })
       it('should call deployChange and ignore issueTypeIds', () => {
-        expect(deployChangeMock).toHaveBeenCalledWith(
+        expect(deployChangeMock).toHaveBeenCalledWith({
           change,
-          expect.any(JiraClient),
-          expect.any(Object),
-          ['issueTypeIds'],
-          undefined,
-          undefined,
-        )
+          client: expect.any(JiraClient),
+          endpointDetails: expect.any(Object),
+          fieldsToIgnore: ['issueTypeIds'],
+        })
       })
 
       it('should call the endpoint to add the new issue types ids', () => {
@@ -173,14 +171,12 @@ describe('issueTypeScheme', () => {
         await filter.deploy?.([change])
       })
       it('should call deployChange', () => {
-        expect(deployChangeMock).toHaveBeenCalledWith(
-          toChange({ after: instanceBefore }),
-          expect.any(JiraClient),
-          expect.any(Object),
-          [],
-          undefined,
-          undefined,
-        )
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change: toChange({ after: instanceBefore }),
+          client: expect.any(JiraClient),
+          endpointDetails: expect.any(Object),
+          fieldsToIgnore: [],
+        })
       })
 
       it('should add the id to the instance', () => {

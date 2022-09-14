@@ -191,15 +191,13 @@ describe('boardDeploymentFilter', () => {
       it('deploy should call the right endpoints', async () => {
         await filter.deploy([change])
 
-        expect(deployChangeMock).toHaveBeenCalledWith(
+        expect(deployChangeMock).toHaveBeenCalledWith({
           change,
           client,
-          getDefaultConfig({ isDataCenter: false })
+          endpointDetails: getDefaultConfig({ isDataCenter: false })
             .apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
-          [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
-          undefined,
-          undefined
-        )
+          fieldsToIgnore: [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
+        })
 
         expect(connection.put).toHaveBeenCalledWith(
           '/rest/greenhopper/1.0/rapidviewconfig/columns',

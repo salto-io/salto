@@ -739,7 +739,7 @@ describe('adapter', () => {
     const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, 'brand') })
     const anotherType = new ObjectType({ elemID: new ElemID(ZENDESK, 'anotherType') })
     beforeEach(() => {
-      mockDeployChange.mockImplementation(async change => {
+      mockDeployChange.mockImplementation(async ({ change }) => {
         if (isRemovalChange(change)) {
           throw new Error('some error')
         }
@@ -980,8 +980,8 @@ describe('adapter', () => {
           ],
         },
       })
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        toChange({
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: toChange({
           after: new InstanceElement(
             instance.elemID.name,
             new ObjectType({
@@ -1001,10 +1001,9 @@ describe('adapter', () => {
             { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
           ),
         }),
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+      })
     })
     it('should not try to deploy instances', async () => {
       mockDeployChange.mockImplementation(async () => ({}))
@@ -1018,8 +1017,8 @@ describe('adapter', () => {
         },
       })
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        toChange({ before: new InstanceElement(
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: toChange({ before: new InstanceElement(
           'inst',
           new ObjectType({
             elemID: groupType.elemID,
@@ -1033,10 +1032,10 @@ describe('adapter', () => {
             path: [ZENDESK, elementsUtils.TYPES_PATH, 'group'],
           }),
         ) }),
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(deployRes.appliedChanges).toEqual([
         toChange({ before: new InstanceElement('inst', groupType) }),
       ])

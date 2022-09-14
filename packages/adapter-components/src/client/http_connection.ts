@@ -69,20 +69,32 @@ export type ConnectionCreator<TCredentials> = (
   retryOptions: RetryOptions,
 ) => Connection<TCredentials>
 
+const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
+  if (headers['retry-after'] !== undefined) {
+    return parseInt(headers['retry-after'], 10) * 1000
+  } if (
+    headers['x-rate-limit-reset'] !== undefined
+    && headers.date !== undefined
+  ) {
+    const restTime = parseInt(headers['x-rate-limit-reset'], 10) * 1000
+    const currentTime = new Date(headers.date).getTime()
+    return restTime - currentTime
+  }
+  return undefined
+}
+
 const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
   // Although the standard is 'Retry-After' is seems that some servers
   // returns 'retry-after' so just in case we lowercase the headers
-  const retryAfterHeaderValue = _.mapKeys(
+  const lowercaseHeaders = _.mapKeys(
     error.response?.headers ?? {},
     (_val, key) => key.toLowerCase()
-  )['retry-after']
+  )
 
-  const retryDelay = retryAfterHeaderValue !== undefined
-    ? parseInt(retryAfterHeaderValue, 10) * 1000
-    : retryOptions.retryDelay
+  const retryDelay = getRetryDelayFromHeaders(lowercaseHeaders) ?? retryOptions.retryDelay
 
   if (Number.isNaN(retryDelay)) {
-    log.warn(`Received invalid retry-after header value: ${retryAfterHeaderValue}`)
+    log.warn('Received invalid retry-after header value')
     return retryOptions.retryDelay
   }
 

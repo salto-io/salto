@@ -33,6 +33,7 @@ import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import { createMissingInstance } from './references/missing_references'
 import { ZENDESK } from '../constants'
+import { FETCH_CONFIG } from '../config'
 
 const { awu } = collections.asynciterable
 const PLACEHOLDER_REGEX = /({{.+?}})/g
@@ -43,7 +44,8 @@ const log = logger(module)
 
 const transformDynamicContentDependencies = async (
   instance: InstanceElement,
-  placeholderToItem: Record<string, InstanceElement>
+  placeholderToItem: Record<string, InstanceElement>,
+  enableMissingReference: boolean | undefined
 ): Promise<void> => {
   const partToTemplate = (part: string): TemplatePart[] => {
     const placeholder = part.match(INNER_PLACEHOLDER_REGEX)
@@ -52,8 +54,8 @@ const transformDynamicContentDependencies = async (
     }
     const itemInstance = placeholderToItem[placeholder[0]]
     if (!itemInstance) {
-      const matches = placeholder[0].match(/.*\.(.*)\}\}/)
-      if (!matches) {
+      const matches = placeholder[0].match(/.*\.([a-zA-Z0-9_]+)\}\}/)
+      if (!enableMissingReference || !matches) {
         return [part]
       }
       const missingInstance = createMissingInstance(
@@ -65,12 +67,14 @@ const transformDynamicContentDependencies = async (
       return [
         OPEN_BRACKETS,
         new ReferenceExpression(missingInstance.elemID, missingInstance),
-        CLOSE_BRACKETS]
+        CLOSE_BRACKETS,
+      ]
     }
     return [
       OPEN_BRACKETS,
       new ReferenceExpression(itemInstance.elemID, itemInstance),
-      CLOSE_BRACKETS]
+      CLOSE_BRACKETS,
+    ]
   }
   instance.value = await transformValues({
     values: instance.value,
@@ -126,7 +130,7 @@ const returnDynamicContentsToApiValue = async (
  * Add dependencies from elements to dynamic content items in
  * the _generated_ dependencies annotation
  */
-const filterCreator: FilterCreator = () => {
+const filterCreator: FilterCreator = ({ config }) => {
   const templateMapping: Record<string, TemplateExpression> = {}
   return ({
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
@@ -138,7 +142,8 @@ const filterCreator: FilterCreator = () => {
         .value()
 
       await Promise.all(instances.map(instance =>
-        transformDynamicContentDependencies(instance, placeholderToItem)))
+        transformDynamicContentDependencies(instance, placeholderToItem,
+          config[FETCH_CONFIG].enableMissingReferences)))
     }, 'Dynamic content references filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       await Promise.all(changes.map(getChangeData).map(instance =>

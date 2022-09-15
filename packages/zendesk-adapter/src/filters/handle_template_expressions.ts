@@ -25,6 +25,7 @@ import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import { createMissingInstance } from './references/missing_references'
 import { ZENDESK } from '../constants'
+import { FETCH_CONFIG } from '../config'
 
 
 const { awu } = collections.asynciterable
@@ -140,7 +141,8 @@ const seekAndMarkPotentialReferences = (formula: string): string => {
 // This function receives a formula that contains zendesk-style references and replaces
 // it with salto style templates.
 const formulaToTemplate = (formula: string,
-  instancesByType: Record<string, InstanceElement[]>): TemplateExpression | string => {
+  instancesByType: Record<string, InstanceElement[]>,
+  enableMissingReferences: boolean | undefined): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(/_([\d]+)/).filter(v => !_.isEmpty(v))
@@ -154,7 +156,10 @@ const formulaToTemplate = (formula: string,
     if (elem) {
       return new ReferenceExpression(elem.elemID, elem)
     }
-    // if no id was detected we return the original expression.
+    if (!enableMissingReferences) {
+      return expression
+    }
+    // if no id was detected and enableMissingReferences we return a missing reference expression.
     const missingInstance = createMissingInstance(
       ZENDESK,
       ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
@@ -208,7 +213,9 @@ const getContainers = async (instances: InstanceElement[]): Promise<TemplateCont
       ].flat().filter(template.containerValidator).filter(v => !_.isEmpty(v)),
     }))).flat()
 
-const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
+const replaceFormulasWithTemplates = async (
+  instances: InstanceElement[], enableMissingReferences: boolean | undefined
+): Promise<void> => {
   try {
     (await getContainers(instances)).forEach(container => {
       const { fieldName } = container
@@ -216,9 +223,11 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
       container.values.forEach(value => {
         if (Array.isArray(value[fieldName])) {
           value[fieldName] = value[fieldName].map((innerValue: unknown) =>
-            (_.isString(innerValue) ? formulaToTemplate(innerValue, instancesByType) : innerValue))
+            (_.isString(innerValue) ? formulaToTemplate(innerValue, instancesByType,
+              enableMissingReferences) : innerValue))
         } else if (value[fieldName]) {
-          value[fieldName] = formulaToTemplate(value[fieldName], instancesByType)
+          value[fieldName] = formulaToTemplate(value[fieldName], instancesByType,
+            enableMissingReferences)
         }
       })
     })
@@ -242,11 +251,11 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
 /**
  * Process values that can reference other objects and turn them into TemplateExpressions
  */
-const filterCreator: FilterCreator = () => {
+const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
-      replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Create template creation filter'),
+      replaceFormulasWithTemplates(elements.filter(isInstanceElement), config[FETCH_CONFIG].enableMissingReferences), 'Create template creation filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       try {
         (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(

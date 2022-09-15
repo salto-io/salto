@@ -61,7 +61,7 @@ const transformDynamicContentDependencies = async (
         DYNAMIC_CONTENT_ITEM_TYPE_NAME,
         matches[1]
       )
-      missingInstance.value.placeholder = `{{${matches[1]}}}`
+      missingInstance.value.placeholder = `${placeholder[0]}`
       return [
         OPEN_BRACKETS,
         new ReferenceExpression(missingInstance.elemID, missingInstance),

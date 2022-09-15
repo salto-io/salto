@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/data_types_custom_fields'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
-import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { FilterOpts } from '../../src/filter'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 

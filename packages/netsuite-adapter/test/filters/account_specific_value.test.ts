@@ -16,7 +16,7 @@
 import { BuiltinTypes, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
-import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
+import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
 
 describe('account_specific_values filter', () => {
   it('should remove account specific values from instance', async () => {

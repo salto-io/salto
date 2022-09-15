@@ -19,7 +19,7 @@ import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
 import { ManifestValidationError, ObjectsValidationError } from '../../src/errors'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 
 describe('client validation', () => {
   let changes: Change[]

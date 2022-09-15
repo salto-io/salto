@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, TypeRefMap } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_PREFIX, CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID, SOURCE } from '../constants'
-import { customrecordtypeType } from '../autogen/types/custom_types/customrecordtype'
+import { customrecordtypeType } from '../autogen/types/standard_types/customrecordtype'
 
 const { mapValuesAsync } = promises.object
 

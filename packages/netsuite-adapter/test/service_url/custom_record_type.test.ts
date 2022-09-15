@@ -16,8 +16,8 @@
 import { CORE_ANNOTATIONS, InstanceElement, Element, ObjectType, ElemID } from '@salto-io/adapter-api'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/custom_record_type'
-import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
-import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
+import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 
 

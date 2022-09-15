@@ -16,8 +16,8 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
-import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
-import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../../src/types/file_cabinet_types'
 
 

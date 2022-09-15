@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
-import { customtransactiontypeType } from '../../src/autogen/types/custom_types/customtransactiontype'
+import { customtransactiontypeType } from '../../src/autogen/types/standard_types/customtransactiontype'
 import fileValidator from '../../src/change_validators/file_changes'
 import { fileType } from '../../src/types/file_cabinet_types'
 

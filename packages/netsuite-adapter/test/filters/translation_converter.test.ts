@@ -15,7 +15,7 @@
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { ATTRIBUTE_PREFIX } from '../../src/client/constants'
-import { translationcollectionType } from '../../src/autogen/types/custom_types/translationcollection'
+import { translationcollectionType } from '../../src/autogen/types/standard_types/translationcollection'
 import filterCreator from '../../src/filters/translation_converter'
 
 

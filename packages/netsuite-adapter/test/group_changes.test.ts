@@ -16,7 +16,7 @@
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
 import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
 import { APPLICATION_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../src/constants'
-import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../src/types/file_cabinet_types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from '../src/types'
 

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
+import { isStandardTypeName } from '../autogen/types'
 import { isStandardOrCustomRecordType } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
@@ -24,7 +25,7 @@ const changeValidator: ChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: `Removal of custom type ${elemID.idType}s is not supported via Salto`,
+      message: `Removal of ${isStandardTypeName(elemID.typeName) ? 'standard' : 'custom record'} type ${elemID.idType}s is not supported via Salto`,
       detailedMessage: `${elemID.name} cannot be removed`,
     }))
 )

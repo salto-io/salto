@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
-import { customrecordtypeType } from '../src/autogen/types/custom_types/customrecordtype'
-import { customsegmentType } from '../src/autogen/types/custom_types/customsegment'
-import { datasetType } from '../src/autogen/types/custom_types/dataset'
-import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
-import { workbookType } from '../src/autogen/types/custom_types/workbook'
+import { customrecordtypeType } from '../src/autogen/types/standard_types/customrecordtype'
+import { customsegmentType } from '../src/autogen/types/standard_types/customsegment'
+import { datasetType } from '../src/autogen/types/standard_types/dataset'
+import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
+import { workbookType } from '../src/autogen/types/standard_types/workbook'
 import { fileType } from '../src/types/file_cabinet_types'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../src/constants'
 import { getReferencedElements } from '../src/reference_dependencies'

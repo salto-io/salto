@@ -22,7 +22,7 @@ import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
-import { clientscriptType } from '../../../src/autogen/types/custom_types/clientscript'
+import { clientscriptType } from '../../../src/autogen/types/standard_types/clientscript'
 
 describe('sdf internal ids tests', () => {
   let filterOpts: FilterOpts

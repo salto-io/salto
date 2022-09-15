@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
-import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
 import { createElementsSourceIndex } from '../src/elements_source_index/elements_source_index'
 

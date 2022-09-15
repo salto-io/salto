@@ -27,14 +27,14 @@ import {
 import { convertToCustomTypeInfo, convertToXmlContent } from '../src/client/sdf_client'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
-import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
 import { featuresType } from '../src/types/configuration_types'
-import { customrecordtypeType } from '../src/autogen/types/custom_types/customrecordtype'
-import { emailtemplateType } from '../src/autogen/types/custom_types/emailtemplate'
-import { addressFormType } from '../src/autogen/types/custom_types/addressForm'
-import { transactionFormType } from '../src/autogen/types/custom_types/transactionForm'
-import { workflowType } from '../src/autogen/types/custom_types/workflow'
+import { customrecordtypeType } from '../src/autogen/types/standard_types/customrecordtype'
+import { emailtemplateType } from '../src/autogen/types/standard_types/emailtemplate'
+import { addressFormType } from '../src/autogen/types/standard_types/addressForm'
+import { transactionFormType } from '../src/autogen/types/standard_types/transactionForm'
+import { workflowType } from '../src/autogen/types/standard_types/workflow'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 

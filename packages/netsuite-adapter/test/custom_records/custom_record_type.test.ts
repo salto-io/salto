@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
-import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { createCustomRecordTypes, toCustomRecordTypeInstance } from '../../src/custom_records/custom_record_type'
 
 describe('custom record type transformer', () => {

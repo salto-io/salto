@@ -16,10 +16,10 @@
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/consistent_values'
 import { METADATA_TYPE, NETSUITE, PERMITTED_ROLE, RECORD_TYPE } from '../../src/constants'
-import { transactionFormType } from '../../src/autogen/types/custom_types/transactionForm'
-import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
-import { entryFormType } from '../../src/autogen/types/custom_types/entryForm'
-import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { transactionFormType } from '../../src/autogen/types/standard_types/transactionForm'
+import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
+import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 
 describe('consistent_values filter', () => {
   const instanceName = 'instanceName'

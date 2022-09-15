@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../../src/types/file_cabinet_types'
-import removeStandardTypesValidator from '../../src/change_validators/remove_custom_types'
+import removeStandardTypesValidator from '../../src/change_validators/remove_standard_types'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 
 

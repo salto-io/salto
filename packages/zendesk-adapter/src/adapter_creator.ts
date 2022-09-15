@@ -121,6 +121,7 @@ export const adapter: Adapter = {
         credentials,
         config: config[CLIENT_CONFIG],
       }),
+      credentials,
       config,
       getElemIdFunc: context.getElemIdFunc,
       configInstance: context.config,

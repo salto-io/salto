@@ -17,9 +17,12 @@ import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
+  isInstanceElement,
+  Value,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
+  config as configUtils,
   elements as elementUtils,
 } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement, restoreValues } from '@salto-io/adapter-utils'
@@ -27,8 +30,8 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig } from './config'
-import { ZENDESK, BRAND_LOGO_TYPE_NAME } from './constants'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig, CLIENT_CONFIG } from './config'
+import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -79,6 +82,7 @@ import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
+import { Credentials } from './auth'
 
 
 const log = logger(module)
@@ -88,6 +92,7 @@ const {
   getAllElements,
   replaceInstanceTypeForDeploy,
   restoreInstanceTypeFromDeploy,
+  getEntriesResponseValues,
 } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
@@ -156,9 +161,39 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'brand_logo',
 ]
 
+const zendeskGuideEntriesFunc = (
+  brandsList: InstanceElement[],
+  brandToPaginator: Record<string, clientUtils.Paginator>,
+): elementUtils.ducktype.EntriesRequester => {
+  const getZendeskGuideEntriesResponseValues = async (
+    _paginator: clientUtils.Paginator,
+    args: clientUtils.ClientGetWithPaginationParams,
+    typeName: string,
+    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>,
+  ): Promise<clientUtils.ResponseValue[]> => (
+    (await awu(brandsList).map(async brandInstance => {
+      const brandPaginatorResponseValues = (await getEntriesResponseValues(
+        brandToPaginator[brandInstance.elemID.name],
+        args,
+      )).flat()
+      // Defining Zendesk Guide element to its corresponding help center (= subdomain)
+      brandPaginatorResponseValues.forEach(response => {
+        const responseEntryName = typesConfig[typeName].transformation?.dataField || typeName
+        return (response[responseEntryName] as Value[]).forEach(instanceType => {
+          instanceType.brand_id = brandInstance.value.id
+        })
+      })
+      return brandPaginatorResponseValues
+    }).toArray()).flat()
+  )
+
+  return getZendeskGuideEntriesResponseValues
+}
+
 export interface ZendeskAdapterParams {
   filterCreators?: FilterCreator[]
   client: ZendeskClient
+  credentials: Credentials
   config: ZendeskConfig
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
@@ -168,6 +203,7 @@ export interface ZendeskAdapterParams {
 export default class ZendeskAdapter implements AdapterOperations {
   private createFiltersRunner: () => Promise<Required<Filter>>
   private client: ZendeskClient
+  private credentials: Credentials
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
@@ -177,6 +213,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
+    credentials,
     getElemIdFunc,
     config,
     configInstance,
@@ -185,6 +222,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
+    this.credentials = credentials
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -210,17 +248,19 @@ export default class ZendeskAdapter implements AdapterOperations {
     )
   }
 
+  public createClientBySubdomain(subdomain: string): ZendeskClient {
+    return new ZendeskClient({
+      credentials: { ...this.credentials, subdomain },
+      config: this.userConfig[CLIENT_CONFIG],
+    })
+  }
+
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
-    const supportedTypes = _.merge(
-      {},
-      this.userConfig.apiDefinitions.supportedTypes,
-      this.userConfig[FETCH_CONFIG].enableGuide ? GUIDE_SUPPORTED_TYPES : {},
-    )
-    return getAllElements({
+    const zendeskSupportElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
-      supportedTypes,
+      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -228,6 +268,49 @@ export default class ZendeskAdapter implements AdapterOperations {
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
     })
+
+    if (!this.userConfig[FETCH_CONFIG].enableGuide) {
+      return zendeskSupportElements
+    }
+
+    const brandsList = zendeskSupportElements.elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+
+    const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
+      [
+        brandInstance.elemID.name,
+        createPaginator({
+          client: this.createClientBySubdomain(brandInstance.value.subdomain),
+          paginationFuncCreator: paginate,
+        }),
+      ]
+    )))
+
+    const zendeskGuideElements = await getAllElements({
+      adapterName: ZENDESK,
+      types: this.userConfig.apiDefinitions.types,
+      supportedTypes: GUIDE_SUPPORTED_TYPES,
+      fetchQuery: this.fetchQuery,
+      paginator: this.paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
+      getElemIdFunc: this.getElemIdFunc,
+      getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandsList, brandToPaginator),
+    })
+
+    return {
+      configChanges: _.uniq([
+        ...zendeskSupportElements.configChanges,
+        ...zendeskGuideElements.configChanges,
+      ]),
+      elements: _.uniqBy([
+        ...zendeskSupportElements.elements,
+        ...zendeskGuideElements.elements,
+      ],
+      e => e.elemID.getFullName(),),
+    }
   }
 
   /**

@@ -18,7 +18,7 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
-import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
@@ -300,7 +300,7 @@ const filter: FilterCreator = () => {
           applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             async instance => {
-              const resolvedInstance = await resolveValues(instance, getLookUpName)
+              const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)
               await revertCompareFieldValueStructure(resolvedInstance)
@@ -331,7 +331,17 @@ const filter: FilterCreator = () => {
         .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
 
       const automationChangesToReturn = await awu(automationChanges)
-        .map(async change => restoreChangeElement(change, originalAutomationChanges, getLookUpName))
+        .map(async change => restoreChangeElement(
+          change,
+          originalAutomationChanges,
+          getLookUpName,
+          (source, targetElement, lookUpNameFunc, allowEmpty = true) => restoreValues(
+            source,
+            targetElement,
+            lookUpNameFunc,
+            allowEmpty,
+          )
+        ))
         .toArray()
       _.pullAll(changes, automationChanges)
       changes.push(...automationChangesToReturn)

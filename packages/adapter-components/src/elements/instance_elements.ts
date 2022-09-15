@@ -130,6 +130,7 @@ export const removeNullValues = async (
     type,
     transformFunc: ({ value }) => (value === null ? undefined : value),
     strict: false,
+    allowEmpty: true,
   }) ?? {}
 
 export const createServiceIds = (

@@ -30,9 +30,9 @@ const changeValidator: ChangeValidator = async changes => (
       if (!instance.value?.exchangeRate) {
         return {
           elemID: instance.elemID,
-          severity: 'Error',
-          message: 'Currency cannot be deployed',
-          detailedMessage: '\'exchangeRate\' field must be specified when deploying a new curreny. Please edit the field at the nacl file',
+          severity: 'Warning',
+          message: 'Currency exchangeRate is set with a default value',
+          detailedMessage: 'A default value has been set for the \'exchangeRate\' field. Please edit the field at the service after deploying',
         } as ChangeError
       }
       return undefined

@@ -22,6 +22,9 @@ import {
   client as clientUtils,
   elements as elementUtils,
 } from '@salto-io/adapter-components'
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement, restoreValues } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'

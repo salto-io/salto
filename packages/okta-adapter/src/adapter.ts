@@ -16,6 +16,9 @@
 import _ from 'lodash'
 import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'

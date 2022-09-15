@@ -13,40 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { types } from '@salto-io/lowerdash'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { Repo, Pool, LeaseWithStatus } from '../src/index'
 
-const mockFunc = <
-  T,
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  FN extends types.KeysOfType<T, Function>,
-  F extends T[FN] = T[FN],
-  RT extends ReturnType<F> = ReturnType<F>,
-  PT extends Parameters<F> = Parameters<F>,
-  >(): jest.Mock<RT, PT> => jest.fn<RT, PT>()
-
-export type MockObj<T> = T & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [K in keyof T]: T[K] extends (...args: any) => any ? jest.Mock<ReturnType<T[K]>> : never
-}
-
-const mockPoolFunc = <
-  T,
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  FN extends types.KeysOfType<Pool<T>, Function>,
-  F extends Pool<T>[FN] = Pool<T>[FN],
-  >(): jest.Mock<ReturnType<F>, Parameters<F>> => mockFunc<Pool<T>, FN>()
-
-export const createMockPool = <T>(): MockObj<Pool<T>> => ({
+export const createMockPool = <T>(): MockInterface<Pool<T>> => ({
   [Symbol.asyncIterator]: jest.fn<AsyncIterator<LeaseWithStatus<T>>, []>(),
-  register: mockPoolFunc<T, 'register'>(),
-  unregister: mockPoolFunc<T, 'unregister'>(),
-  suspend: mockPoolFunc<T, 'suspend'>(),
-  lease: mockPoolFunc<T, 'lease'>(),
-  waitForLease: mockPoolFunc<T, 'waitForLease'>(),
-  updateTimeout: mockPoolFunc<T, 'updateTimeout'>(),
-  return: mockPoolFunc<T, 'return'>(),
-  clear: mockPoolFunc<T, 'clear'>(),
+  register: mockFunction<Pool<T>['register']>(),
+  unregister: mockFunction<Pool<T>['unregister']>(),
+  suspend: mockFunction<Pool<T>['suspend']>(),
+  lease: mockFunction<Pool<T>['lease']>(),
+  waitForLease: mockFunction<Pool<T>['waitForLease']>(),
+  updateTimeout: mockFunction<Pool<T>['updateTimeout']>(),
+  return: mockFunction<Pool<T>['return']>(),
+  clear: mockFunction<Pool<T>['clear']>(),
 })
 
 export const createMockRepo = (): Repo => ({

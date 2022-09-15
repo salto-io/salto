@@ -21,7 +21,6 @@ import {
   Repo, Pool, Lease,
 } from '../../../src/types'
 import { MyType, myTypeName, myVal } from '../../types'
-import makeTimings, { Timings } from '../../utils/timing'
 import repeat from '../../utils/repeat'
 import asyncToArray from '../../utils/async_to_array'
 
@@ -54,8 +53,6 @@ describe('when there are existing leases', () => {
 
   const timeout = 1000 * 60
 
-  let timings: Timings
-
   const fillPool = async (): Promise<void> => {
     await Promise.all(repeat(NUM_LEASES, i => pool.register({ ...myLargeVal, intVal: i })))
     await Promise.all(repeat(NUM_LEASES, () => pool.lease(timeout)))
@@ -66,17 +63,7 @@ describe('when there are existing leases', () => {
     repo = await makeRepo(repoOpts())
     pool = await repo.pool(myTypeName)
 
-    timings = makeTimings()
-    timings.setup('pool', pool, 'lease')
-
     await fillPool()
-
-    // eslint-disable-next-line no-console
-    console.dir(timings.invocations)
-  })
-
-  afterAll(async () => {
-    if (timings) timings.teardown()
   })
 
   describe('lease', () => {

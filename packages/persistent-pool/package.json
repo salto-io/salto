@@ -29,6 +29,7 @@
   "dependencies": {
     "@salto-io/logging": "0.3.23",
     "@salto-io/lowerdash": "0.3.23",
+    "@salto-io/test-utils": "0.3.23",
     "aws-sdk": "^2.863.0",
     "uuid": "^8.3.0"
   },
@@ -37,8 +38,8 @@
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
     "@types/uuid": "^8.3.0",
-    "@typescript-eslint/eslint-plugin": "4.22.1",
-    "@typescript-eslint/parser": "4.22.1",
+    "@typescript-eslint/eslint-plugin": "4.33.0",
+    "@typescript-eslint/parser": "4.33.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",
@@ -53,6 +54,6 @@
     "jest-environment-node": "^27.4.4",
     "jest-junit": "^12.0.0",
     "ts-jest": "^27.1.2",
-    "typescript": "3.9.3"
+    "typescript": "4.8.3"
   }
 }

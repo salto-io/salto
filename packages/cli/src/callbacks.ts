@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 // TODO: This import breaks the abstraction of CliOutput as it communicate directly with console
-import * as inquirer from 'inquirer'
+import inquirer, { InputQuestion, ExpandQuestion, Answers } from 'inquirer'
 import {
   TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
@@ -34,7 +34,7 @@ import { CliOutput, WriteStream } from './types'
 
 const { awu } = collections.asynciterable
 export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
-  const question: inquirer.InputQuestion = {
+  const question: InputQuestion = {
     name: 'userInput',
     message: `${prompt} (y/n)`,
     type: 'input',
@@ -47,7 +47,7 @@ export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
 type YesNoCancelAnswer = 'yes' | 'no' | 'cancel operation'
 
 export const getUserYesNoCancelInput = async (prompt: string): Promise<YesNoCancelAnswer> => {
-  const question: inquirer.ExpandQuestion = {
+  const question: ExpandQuestion = {
     type: 'expand',
     choices: [
       { key: 'y', value: 'yes' },
@@ -113,7 +113,7 @@ export const shouldUpdateConfig = async (
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,
 ): Promise<ReadonlyArray<FetchChange>> => {
-  const shouldApproveAll = (answers: inquirer.Answers): boolean => (
+  const shouldApproveAll = (answers: Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
   const isConflict = (change: FetchChange): boolean => !_.isEmpty(change.pendingChanges)
@@ -125,7 +125,7 @@ export const getApprovedChanges = async (
   }
 
   const questions = await awu(askForApproval)
-    .map(async (change, idx): Promise<inquirer.ExpandQuestion> => ({
+    .map(async (change, idx): Promise<ExpandQuestion> => ({
       type: 'expand',
       choices: [
         { key: 'y', value: 'yes' },
@@ -190,7 +190,7 @@ export const getConfigWithHeader = async (output: WriteStream, credentialsType: 
 }
 
 export const getEnvName = async (currentName = 'env1'): Promise<string> => {
-  const question: inquirer.InputQuestion = {
+  const question: InputQuestion = {
     type: 'input',
     message: 'Enter a name for the first environment in the workspace',
     name: currentName,

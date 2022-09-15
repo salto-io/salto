@@ -13,12 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { mockFunction } from '@salto-io/test-utils'
 import { collections } from '../../src'
 
 const { asynciterable } = collections
 const {
-  handleErrorsAsync,
   findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
   filterAsync, flattenAsync, awu, isEmptyAsync, lengthAsync, peekAsync, takeAsync,
   zipSortedAsync, someAsync, everyAsync, forEachAsync, groupByAsync,
@@ -547,58 +545,6 @@ describe('asynciterable', () => {
           0,
         )
         expect(res).toEqual(9)
-      })
-    })
-  })
-
-  describe('handleErrorsAsync', () => {
-    let iterable: AsyncIterable<number>
-    let errorHandler: jest.MockedFunction<Parameters<typeof handleErrorsAsync>[1]>
-    let mapper: jest.MockedFunction<(num: number) => number>
-    beforeEach(() => {
-      errorHandler = mockFunction<typeof errorHandler>()
-      mapper = mockFunction<typeof mapper>().mockImplementation(num => num)
-      iterable = mapAsync(
-        handleErrorsAsync(
-          mapAsync(
-            toAsyncIterable([1, 2, 3, 4, 5]),
-            num => (num === 4 ? Promise.reject(new Error('err')) : Promise.resolve(num))
-          ),
-          errorHandler
-        ),
-        mapper,
-      )
-    })
-    describe('when error handling function throws', () => {
-      let result: Promise<number[]>
-      beforeEach(() => {
-        errorHandler.mockImplementation(error => { throw error })
-        result = toArrayAsync(iterable)
-      })
-      it('should throw the error', async () => {
-        await expect(result).rejects.toThrow()
-      })
-      it('should call error handler with the error', async () => {
-        await result.catch(() => undefined) // wait for iterable to finish
-        expect(errorHandler).toHaveBeenCalledWith(new Error('err'))
-      })
-      it('should stop iteration after the error', async () => {
-        await result.catch(() => undefined) // wait for iterable to finish
-        expect(mapper).toHaveBeenCalledTimes(3)
-      })
-    })
-    describe('when error handling function does not throw', () => {
-      let result: Promise<number[]>
-      beforeEach(() => {
-        result = toArrayAsync(iterable)
-      })
-      it('should stop iteration after the error', async () => {
-        await result // wait for iterable to finish
-        expect(mapper).toHaveBeenCalledTimes(3)
-        expect(mapper).not.toHaveBeenCalledWith(5)
-      })
-      it('should suppress the error', async () => {
-        await expect(result).resolves.toEqual([1, 2, 3])
       })
     })
   })

@@ -93,7 +93,7 @@ export const addReferencesForService = async <T extends SupportedRecipeBlock>(
 }
 
 export type Matcher<T> = (value: string) => T[]
-export const createMatcher = <T>(
+export const createMatcher = <T extends Values>(
   matchers: RegExp[],
   typeGuard: types.TypeGuard<Values, T>,
 ): Matcher<T> => (

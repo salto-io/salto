@@ -43,7 +43,7 @@ type CurrencyIsoCodeType = ObjectType & {
   fields: {
     [CURRENCY_CODE_FIELD_NAME]: {
       annotations: {
-        valueSet: ValueSet[]
+        valueSet?: ValueSet[]
         valueSetName?: ReferenceExpression
       }
     }
@@ -80,7 +80,7 @@ const transformCurrencyIsoCodes = (
   element.fields.CurrencyIsoCode.annotations.valueSetName = currencyIsoCodesRef
 }
 
-const createCurrencyCodesInstance = (supportedCurrencies: ValueSet): InstanceElement => (
+const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceElement => (
   new InstanceElement(
     ElemID.CONFIG_NAME,
     currencyCodeType,

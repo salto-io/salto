@@ -37,10 +37,8 @@ const listPretty: Lister = async iterable => {
     if (done) return undefined
     t.cell('id', value.id)
     t.cell('status', value.status)
-    if (value.clientId !== undefined) {
+    if (value.status !== 'available') {
       t.cell('clientId', value.clientId)
-    }
-    if (value.leaseExpiresBy !== undefined) {
       const duration = now - value.leaseExpiresBy.getTime()
       t.cell('expires', humanizeDuration(duration, { round: true, largest: 1 }))
     }

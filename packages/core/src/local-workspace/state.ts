@@ -96,6 +96,7 @@ export const localState = (
   persistent = true
 ): state.State => {
   let dirty = false
+  let cacheDirty = false
   let contentsAndHash: ContentsAndHash | undefined
   let pathToClean = ''
   let currentFilePrefix = filePrefix
@@ -177,7 +178,9 @@ export const localState = (
         newHash: stateFilesHash,
       })
       // We updated the remote maps, we should flush them if flush is called
-      setDirty()
+      // however, we should not update the state data, we should only update
+      // the cache
+      cacheDirty = true
     }
     return quickAccessStateData
   }
@@ -217,6 +220,11 @@ export const localState = (
   }
 
   const calculateHashImpl = async (): Promise<void> => {
+    if (!dirty) {
+      // If nothing was updated we will not flush, so to keep the hash consistent with what
+      // the content will end up being on disk, we should also not re-calculate the hash
+      return
+    }
     const contentHash = contentsAndHash?.hash ?? (await getContentAndHash()).hash
     await inMemState.setHash(contentHash)
   }
@@ -259,6 +267,10 @@ export const localState = (
     },
     flush: async (): Promise<void> => {
       if (!dirty && pathToClean === '') {
+        if (cacheDirty) {
+          await inMemState.flush()
+          cacheDirty = false
+        }
         return
       }
       await mkdirp(path.dirname(currentFilePrefix))

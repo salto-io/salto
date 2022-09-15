@@ -456,4 +456,37 @@ describe('local state', () => {
       })
     })
   })
+  describe('calculateHash', () => {
+    let state: wsState.State
+    let mapCreator: remoteMap.RemoteMapCreator
+    beforeEach(() => {
+      mapCreator = inMemRemoteMapCreator()
+      state = localState('multiple_files', '', mapCreator, mockStaticFilesSource())
+    })
+    describe('when cache is changed in memory', () => {
+      let origHash: string | undefined
+      let calculatedHash: string | undefined
+      beforeEach(async () => {
+        origHash = await state.getHash()
+        await state.set(new ObjectType({ elemID: new ElemID('salesforce', 'dummy') }))
+        await state.calculateHash()
+        calculatedHash = await state.getHash()
+      })
+      it('should calculate a new hash', () => {
+        expect(calculatedHash).not.toEqual(origHash)
+      })
+    })
+    describe('when cache is not changed in memory', () => {
+      let origHash: string | undefined
+      let calculatedHash: string | undefined
+      beforeEach(async () => {
+        origHash = await state.getHash()
+        await state.calculateHash()
+        calculatedHash = await state.getHash()
+      })
+      it('should return the original hash', () => {
+        expect(calculatedHash).toEqual(origHash)
+      })
+    })
+  })
 })

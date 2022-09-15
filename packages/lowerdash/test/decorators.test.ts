@@ -27,6 +27,9 @@ describe('decorators', () => {
         return `${originalResult}_modified`
       }
     )
+    // Disable lint warning due to a bug in the combination of lint and typescript
+    // TODO: remove this once we are able to update @typescript-eslint to a newer version
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const ensureFooIsCalledDecorator = decorators.wrapMethodWith(ensureFooIsCalled)
 
     class MyClass {

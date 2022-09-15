@@ -154,8 +154,7 @@ export const loggerRepo = (
     },
     async end(): Promise<void> { await baseLoggerRepo.end() },
   })
-
-  return Object.defineProperty(result, 'config', {
+  return Object.defineProperty<LoggerRepo>(result as unknown as LoggerRepo, 'config', {
     get(): Readonly<Config> { return config },
   })
 }

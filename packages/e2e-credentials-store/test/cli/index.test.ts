@@ -27,6 +27,10 @@ type MockPool = Pool & {
   [P in keyof Pool]: jest.SpyInstance<ReturnType<Pool[P]>, Parameters<Pool[P]>>
 }
 
+type FunctionPropertyNames<T> = {
+  [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? K : never
+}[keyof T] & string
+
 type MyCreds = {
   username: string
   password: string
@@ -97,7 +101,8 @@ describe('argparser', () => {
     await realPool.clear()
     mockPool = Object.assign(
       { [Symbol.asyncIterator]: realPool[Symbol.asyncIterator].bind(realPool) },
-      ...Object.keys(realPool).map(k => ({ [k]: jest.spyOn(realPool, k as keyof Pool) }))
+      ...Object.keys(realPool)
+        .map(k => ({ [k]: jest.spyOn(realPool, k as FunctionPropertyNames<Pool>) }))
     )
     jest.spyOn(repo, 'pool').mockImplementation(() => Promise.resolve(mockPool as Pool<{}>))
     createRepo = jest.fn<Promise<Repo>, [string]>(() => Promise.resolve(repo))

@@ -16,7 +16,7 @@
 export type MockInterface<T extends {}> = {
   [k in keyof T]: T[k] extends (...args: never[]) => unknown
     ? jest.MockedFunction<T[k]>
-    : MockInterface<T[k]>
+    : T[k] extends {} ? MockInterface<T[k]> : never
 }
 
 export const mockFunction = <T extends (...args: never[]) => unknown>(): jest.MockedFunction<T> => (

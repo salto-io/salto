@@ -18,7 +18,7 @@ import { OptsValidators, withOptsValidation } from './opts_validator'
 
 type DefaultOpts<TOpts> = { DEFAULT_OPTS: TOpts }
 
-const addDefaults = <T, TOpts>(
+const addDefaults = <T extends {}, TOpts>(
   o: T, defaults: TOpts
 ): T & DefaultOpts<TOpts> => Object.assign(o, { DEFAULT_OPTS: Object.freeze(defaults) })
 

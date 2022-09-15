@@ -66,6 +66,9 @@ const { makeArray } = collections.array
 const { toMD5 } = hash
 
 const log = logger(module)
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
@@ -171,7 +174,11 @@ const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorat
     }
   )
 
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validateDeleteResult = validateCRUDResult(true)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const validateSaveResult = validateCRUDResult(false)
 
 export type SalesforceClientOpts = {
@@ -559,13 +566,7 @@ export default class SalesforceClient {
    * Read metadata for salesforce object of specific type and name
    */
   @throttle<ClientRateLimitConfig>({ bucketName: 'read' })
-  @logDecorator(
-    [],
-    args => {
-      const arg = args[1]
-      return (_.isArray(arg) ? arg : [arg]).length.toString()
-    },
-  )
+  @logDecorator([], args => (_.isArray(args[1]) ? args[1] : [args[1]]).length.toString())
   @requiresLogin()
   public async readMetadata(
     type: string,

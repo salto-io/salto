@@ -127,25 +127,6 @@ export async function *filterAsync<T>(
   }
 }
 
-export const handleErrorsAsync = <T>(
-  itr: AsyncIterable<T>,
-  onError: (error: Error) => void,
-): AsyncIterable<T> => ({
-    [Symbol.asyncIterator]: () => {
-      const it = itr[Symbol.asyncIterator]()
-      return {
-        next: async args => {
-          try {
-            return await it.next(args)
-          } catch (error) {
-            onError(error)
-            return { done: true, value: undefined }
-          }
-        },
-      }
-    },
-  })
-
 export async function *flattenAsync<T>(
   ...iterables: ThenableIterable<ThenableIterable<T> | T>[]
 ): AsyncIterable<T> {

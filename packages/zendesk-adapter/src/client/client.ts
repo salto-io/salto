@@ -22,8 +22,7 @@ import { createConnection, createResourceConnection, instanceUrl } from './conne
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
 
-const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  throttle, logDecorator, requiresLogin } = clientUtils
+const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
@@ -104,9 +103,9 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     }
   }
 
-  @throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
-  @logDecorator(['url'])
-  @requiresLogin()
+  @clientUtils.throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
+  @clientUtils.logDecorator(['url'])
+  @clientUtils.requiresLogin()
   public async getResource(
     args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

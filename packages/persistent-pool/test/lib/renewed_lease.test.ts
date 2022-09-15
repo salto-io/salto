@@ -13,14 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { MockInterface } from '@salto-io/test-utils'
 import { RenewedLease, Pool, Lease, LeaseUpdateOpts, InstanceNotLeasedError } from '../../src/index'
-import { MockObj, createMockPool } from '../mock_repo'
+import { createMockPool } from '../mock_repo'
 
 jest.useFakeTimers('legacy')
 
 describe('RenewedLease', () => {
   type MyType = { x: number }
-  let pool: MockObj<Pool<MyType>>
+  let pool: MockInterface<Pool<MyType>>
   const lease: Lease<MyType> = { id: 'my-id', value: { x: 42 } }
   const timeout = 100
   const renewMargin = 5

@@ -41,6 +41,9 @@ const log = logger(module)
 export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const REQUEST_RETRY_DELAY = 5000
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
@@ -48,7 +51,11 @@ const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
 
 const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 
 type SoapSearchType = {
@@ -97,6 +104,9 @@ const retryOnBadResponseWithDelay = (
   )
 )
 
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
 
 export default class SoapClient {

@@ -182,7 +182,7 @@ export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
 ])
 
 export class Types {
-  private static getElemIdFunc: ElemIdGetter
+  private static getElemIdFunc?: ElemIdGetter
 
   private static filterItemElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.FILTER_ITEM)
   private static filterItemType = new ObjectType({

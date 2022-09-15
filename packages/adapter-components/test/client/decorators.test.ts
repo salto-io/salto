@@ -14,6 +14,9 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+// Disable lint warning due to a bug in the combination of lint and typescript
+// TODO: remove this once we are able to update @typescript-eslint to a newer version
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logDecorator, requiresLogin } from '../../src/client'
 
 const logging = logger('adapter-components/src/client/decorators')

@@ -16,19 +16,19 @@
 import { promises } from '@salto-io/lowerdash'
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/convert_lists_to_maps'
-import { getCustomTypes } from '../../src/autogen/types'
-import { getInnerCustomTypes, getTopLevelCustomTypes } from '../../src/types'
+import { getStandardTypes } from '../../src/autogen/types'
+import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 
 describe('convert lists to maps filter', () => {
-  const customTypes = getCustomTypes()
+  const standardTypes = getStandardTypes()
   let instance: InstanceElement
   let instanceWithMixedFieldKeys: InstanceElement
   let customRecordType: ObjectType
   beforeAll(async () => {
     instance = new InstanceElement(
       'workflow1',
-      customTypes.workflow.type,
+      standardTypes.workflow.type,
       {
         scriptid: 'customworkflow_changed_id',
         workflowcustomfields: {
@@ -57,7 +57,7 @@ describe('convert lists to maps filter', () => {
     )
     instanceWithMixedFieldKeys = new InstanceElement(
       'centercategory',
-      customTypes.centercategory.type,
+      standardTypes.centercategory.type,
       {
         scriptid: 'custcentercategory2',
         links: {
@@ -99,7 +99,7 @@ describe('convert lists to maps filter', () => {
     customRecordType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord1'),
       annotationRefsOrTypes: await promises.object.mapValuesAsync(
-        customTypes.customrecordtype.type.fields,
+        standardTypes.customrecordtype.type.fields,
         field => field.getType()
       ),
       annotations: {
@@ -114,8 +114,8 @@ describe('convert lists to maps filter', () => {
       },
     })
     await filterCreator().onFetch([
-      ...getTopLevelCustomTypes(customTypes),
-      ...getInnerCustomTypes(customTypes),
+      ...getTopLevelStandardTypes(standardTypes),
+      ...getInnerStandardTypes(standardTypes),
       instance,
       instanceWithMixedFieldKeys,
       customRecordType,
@@ -219,8 +219,8 @@ describe('convert lists to maps filter', () => {
 
   it('should throw when missing some types with field mapping', async () => {
     await expect(filterCreator().onFetch([
-      customTypes.workflow.type,
-      ...Object.values(customTypes.workflow.innerTypes),
+      standardTypes.workflow.type,
+      ...Object.values(standardTypes.workflow.innerTypes),
       instance,
     ])).rejects.toThrow('missing some types with field mapping')
   })

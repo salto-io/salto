@@ -19,15 +19,15 @@ import {
 import _ from 'lodash'
 import { values, collections } from '@salto-io/lowerdash'
 import { ADDITIONAL_FILE_SUFFIX, SCRIPT_ID, PATH } from '../src/constants'
-import { getMetadataTypes, getTopLevelCustomTypes } from '../src/types'
+import { getMetadataTypes, getTopLevelStandardTypes } from '../src/types'
 
 const { awu } = collections.asynciterable
 
 describe('Types', () => {
-  const { customTypes, fieldTypes, additionalTypes } = getMetadataTypes()
-  describe('CustomTypes', () => {
+  const { standardTypes, fieldTypes, additionalTypes } = getMetadataTypes()
+  describe('StandardTypes', () => {
     it('should have a required SCRIPT_ID field with regex restriction for all custom types', () => {
-      getTopLevelCustomTypes(customTypes)
+      getTopLevelStandardTypes(standardTypes)
         .forEach(typeDef => {
           expect(typeDef.fields[SCRIPT_ID]).toBeDefined()
           expect(typeDef.fields[SCRIPT_ID].annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
@@ -38,7 +38,7 @@ describe('Types', () => {
     })
 
     it('should have at most 1 fileContent field with ADDITIONAL_FILE_SUFFIX annotation', async () => {
-      await awu(getTopLevelCustomTypes(customTypes))
+      await awu(getTopLevelStandardTypes(standardTypes))
         .forEach(async typeDef => {
           const fileContentFields = await awu(Object.values(typeDef.fields))
             .filter(async f => {

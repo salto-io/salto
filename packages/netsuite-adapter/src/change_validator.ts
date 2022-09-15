@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
-import removeCustomTypesValidator from './change_validators/remove_custom_types'
+import removeStandardTypesValidator from './change_validators/remove_custom_types'
 import removeFileCabinetValidator from './change_validators/remove_file_cabinet'
 import removeListItemValidator from './change_validators/remove_list_item'
 import instanceChangesValidator from './change_validators/instance_changes'
@@ -25,7 +25,7 @@ import saveSearchMoveEnvironment from './change_validators/saved_search_move_env
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
-import customTypesInvalidValuesValidator from './change_validators/custom_types_invalid_values'
+import standardTypesInvalidValuesValidator from './change_validators/custom_types_invalid_values'
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
 import configChangesValidator from './change_validators/config_changes'
@@ -43,14 +43,14 @@ const changeValidators: ChangeValidator[] = [
   workflowAccountSpecificValuesValidator,
   accountSpecificValuesValidator,
   dataAccountSpecificValuesValidator,
-  removeCustomTypesValidator,
+  removeStandardTypesValidator,
   instanceChangesValidator,
   saveSearchMoveEnvironment,
   immutableChangesValidator,
   removeListItemValidator,
   fileValidator,
   subInstancesValidator,
-  customTypesInvalidValuesValidator,
+  standardTypesInvalidValuesValidator,
   mappedListsIndexesValidator,
   notYetSupportedValuesValidator,
   configChangesValidator,

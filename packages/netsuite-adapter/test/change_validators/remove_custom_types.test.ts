@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
 import { fileType } from '../../src/types/file_cabinet_types'
-import removeCustomTypesValidator from '../../src/change_validators/remove_custom_types'
+import removeStandardTypesValidator from '../../src/change_validators/remove_custom_types'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 
 
@@ -24,7 +24,7 @@ describe('remove custom object change validator', () => {
   describe('onRemove', () => {
     it('should have change error when removing an instance with custom object type', async () => {
       const instance = new InstanceElement('test', entitycustomfieldType().type)
-      const changeErrors = await removeCustomTypesValidator([toChange({ before: instance })])
+      const changeErrors = await removeStandardTypesValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -35,7 +35,7 @@ describe('remove custom object change validator', () => {
         elemID: new ElemID(NETSUITE, 'customrecord1'),
         annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE },
       })
-      const changeErrors = await removeCustomTypesValidator([
+      const changeErrors = await removeStandardTypesValidator([
         toChange({ before: customRecordType }),
       ])
       expect(changeErrors).toHaveLength(1)
@@ -45,13 +45,13 @@ describe('remove custom object change validator', () => {
 
     it('should not have change error when removing an instance with file cabinet type', async () => {
       const instance = new InstanceElement('test', fileType())
-      const changeErrors = await removeCustomTypesValidator([toChange({ before: instance })])
+      const changeErrors = await removeStandardTypesValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should not have change error when removing an instance with non custom object type', async () => {
       const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('bla') }))
-      const changeErrors = await removeCustomTypesValidator([toChange({ before: instance })])
+      const changeErrors = await removeStandardTypesValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(0)
     })
   })

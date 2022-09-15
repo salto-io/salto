@@ -26,7 +26,7 @@ import { filter } from '@salto-io/adapter-utils'
 import {
   createInstanceElement,
 } from './transformer'
-import { getMetadataTypes, getTopLevelCustomTypes, metadataTypesToList } from './types'
+import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
   INTEGRATION, FETCH_TARGET, SKIP_LIST, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS, CUSTOM_RECORD_TYPE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
@@ -72,7 +72,7 @@ import getChangeValidator from './change_validator'
 import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getDataElements } from './data_elements/data_elements'
-import { getCustomTypesNames, isCustomTypeName } from './autogen/types'
+import { getStandardTypesNames, isStandardTypeName } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { AdditionalDependencies } from './client/types'
 import { createCustomRecordTypes } from './custom_records/custom_record_type'
@@ -219,7 +219,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
-    const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
+    const { standardTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
     const {
       changedObjectsQuery,
       serverTime,
@@ -243,7 +243,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
-      getCustomTypesNames(),
+      getStandardTypesNames(),
       updatedFetchQuery
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(updatedFetchQuery)
@@ -262,10 +262,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedTypes,
     } = await getCustomObjectsResult
 
-    const topLevelCustomTypes = getTopLevelCustomTypes(customTypes)
+    const topLevelStandardTypes = getTopLevelStandardTypes(standardTypes)
     progressReporter.reportProgress({ message: 'Running filters for additional information' });
 
-    [...topLevelCustomTypes, ...Object.values(additionalTypes)].forEach(type => {
+    [...topLevelStandardTypes, ...Object.values(additionalTypes)].forEach(type => {
       type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
     })
 
@@ -273,8 +273,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const [customRecordTypeInstances, instances] = _.partition(
       await awu(customizationInfos).map(customizationInfo => {
-        const type = isCustomTypeName(customizationInfo.typeName)
-          ? customTypes[customizationInfo.typeName].type
+        const type = isStandardTypeName(customizationInfo.typeName)
+          ? standardTypes[customizationInfo.typeName].type
           : additionalTypes[customizationInfo.typeName]
         return type
           ? createInstanceElement(
@@ -291,7 +291,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const customRecordTypes = await createCustomRecordTypes(
       customRecordTypeInstances,
-      customTypes.customrecordtype.type
+      standardTypes.customrecordtype.type
     )
 
     const dataElements = await dataElementsPromise
@@ -300,7 +300,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     const elements = [
-      ...metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes }),
+      ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),
       ...dataElements,
       ...suiteAppConfigElements,
       ...instances,

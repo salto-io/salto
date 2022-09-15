@@ -20,7 +20,7 @@ import {
   getChangeData,
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
-import { isCustomTypeElement } from '../types'
+import { isStandardOrCustomRecordType } from '../types'
 import { NOT_YET_SUPPORTED_VALUE } from '../constants'
 import { isElementContainsStringValue } from './utils'
 
@@ -30,7 +30,7 @@ const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(isCustomTypeElement)
+    .filter(isStandardOrCustomRecordType)
     .filter(element => isElementContainsStringValue(element, NOT_YET_SUPPORTED_VALUE))
     .map(element => ({
       elemID: element.elemID,

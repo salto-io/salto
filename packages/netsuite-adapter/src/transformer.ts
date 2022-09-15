@@ -31,7 +31,7 @@ import {
   SETTINGS_PATH,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isCustomType, isFileCabinetType, isCustomRecordType } from './types'
+import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
@@ -48,7 +48,7 @@ const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_F
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
 export const getServiceId = (instance: InstanceElement): string =>
-  instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
+  instance.value[isStandardType(instance.refType) ? SCRIPT_ID : PATH]
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
@@ -61,10 +61,10 @@ export const createInstanceElement = async (
     if (isSDFConfigType(type)) {
       return ElemID.CONFIG_NAME
     }
-    if (!isCustomType(type) && !isFileCabinetType(type)) {
+    if (!isStandardType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    const serviceIdFieldName = isCustomType(type) ? SCRIPT_ID : PATH
+    const serviceIdFieldName = isStandardType(type) ? SCRIPT_ID : PATH
     const serviceIds: ServiceIds = {
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
       [OBJECT_SERVICE_ID]: toServiceIdsString({
@@ -285,7 +285,7 @@ export const toCustomizationInfo = async (
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
-    && isCustomType(instance.refType)) {
+    && isStandardType(instance.refType)) {
     const fileContent = values[fileContentField.name]
     delete values[fileContentField.name]
     return {
@@ -333,7 +333,7 @@ export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
   if (isFileCabinetType(topLevelParent.refType) && elemID.name === PATH) {
     return `[${value}]`
   }
-  if (isCustomType(topLevelParent.refType) && elemID.name === SCRIPT_ID) {
+  if (isStandardType(topLevelParent.refType) && elemID.name === SCRIPT_ID) {
     return `[${SCRIPT_ID}=${getScriptIdParts({
       instance: topLevelParent.value,
     }, elemID).join('.')}]`

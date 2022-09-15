@@ -37,7 +37,7 @@ import {
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
-import { isCustomTypeName } from '../src/autogen/types'
+import { isStandardTypeName } from '../src/autogen/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -45,8 +45,8 @@ const { awu } = collections.asynciterable
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
-  const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes })
+  const { standardTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes })
 
   const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
     const instValues = {
@@ -56,12 +56,12 @@ describe('Netsuite adapter E2E with real account', () => {
 
     const instanceName = isSDFConfigTypeName(type)
       ? ElemID.CONFIG_NAME
-      : naclCase(instValues[isCustomTypeName(type) ? SCRIPT_ID : PATH]
+      : naclCase(instValues[isStandardTypeName(type) ? SCRIPT_ID : PATH]
         .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
     return new InstanceElement(
       instanceName,
-      isCustomTypeName(type) ? customTypes[type].type : additionalTypes[type],
+      isStandardTypeName(type) ? standardTypes[type].type : additionalTypes[type],
       instValues
     )
   }

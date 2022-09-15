@@ -23,13 +23,13 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID, PATH } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
-import { isCustomRecordType, isCustomType, isFileCabinetType } from '../types'
+import { isCustomRecordType, isStandardType, isFileCabinetType } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 
 const { awu } = collections.asynciterable
 
-const customTypeServiceIdsToElemIds = async (
+const getServiceIdsToElemIds = async (
   element: Element,
   elementsSource?: ReadOnlyElementsSource
 ): Promise<ServiceIdRecords> => {
@@ -76,8 +76,8 @@ export const getElementServiceIdRecords = async (
   elementsSource?: ReadOnlyElementsSource
 ): Promise<ServiceIdRecords> => {
   if (isInstanceElement(element)) {
-    if (isCustomType(element.refType)) {
-      return customTypeServiceIdsToElemIds(element, elementsSource)
+    if (isStandardType(element.refType)) {
+      return getServiceIdsToElemIds(element, elementsSource)
     }
     if (isFileCabinetType(element.refType)) {
       const path = element.value[PATH]
@@ -90,7 +90,7 @@ export const getElementServiceIdRecords = async (
     }
   }
   if (isObjectType(element) && isCustomRecordType(element)) {
-    return customTypeServiceIdsToElemIds(element, elementsSource)
+    return getServiceIdsToElemIds(element, elementsSource)
   }
   return {}
 }

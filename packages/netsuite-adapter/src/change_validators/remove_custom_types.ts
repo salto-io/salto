@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import { ChangeValidator, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
-import { isCustomTypeElement } from '../types'
+import { isStandardOrCustomRecordType } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isRemovalChange)
     .map(getChangeData)
-    .filter(isCustomTypeElement)
+    .filter(isStandardOrCustomRecordType)
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',

@@ -17,7 +17,7 @@ import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, transformElement, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { isCustomRecordType, isCustomType } from '../types'
+import { isCustomRecordType, isStandardType } from '../types'
 import { FilterWith } from '../filter'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID } from '../constants'
 
@@ -57,7 +57,7 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
             }
             if (
               isInstanceElement(element)
-              && isCustomType((await element.getType()))
+              && isStandardType((await element.getType()))
               // instances that are not from a suite app are handled
               // using the accountspecificvalues flag
               && element.value[APPLICATION_ID] !== undefined

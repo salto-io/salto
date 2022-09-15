@@ -73,7 +73,7 @@ import { workbookbuilderpluginType } from './types/custom_types/workbookbuilderp
 import { workflowType } from './types/custom_types/workflow'
 import { workflowactionscriptType } from './types/custom_types/workflowactionscript'
 
-const customTypesNamesList = [
+const standardTypesNamesList = [
   'addressForm',
   'advancedpdftemplate',
   'bankstatementparserplugin',
@@ -134,19 +134,19 @@ const customTypesNamesList = [
   'workflowactionscript',
 ] as const
 
-export type CustomType = typeof customTypesNamesList[number]
+export type StandardType = typeof standardTypesNamesList[number]
 
-const customTypesNamesSet: ReadonlySet<CustomType> = new Set(customTypesNamesList)
-export const isCustomTypeName = (name: string): name is CustomType =>
-  customTypesNamesSet.has(name as CustomType)
+const standardTypesNamesSet: ReadonlySet<StandardType> = new Set(standardTypesNamesList)
+export const isStandardTypeName = (name: string): name is StandardType =>
+  standardTypesNamesSet.has(name as StandardType)
 
-export const getCustomTypesNames = (): CustomType[] =>
-  Array.from(customTypesNamesList)
+export const getStandardTypesNames = (): StandardType[] =>
+  Array.from(standardTypesNamesList)
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
-export const getCustomTypes = (): TypesMap<CustomType> => {
+export const getStandardTypes = (): TypesMap<StandardType> => {
   const addressForm = addressFormType()
   const advancedpdftemplate = advancedpdftemplateType()
   const bankstatementparserplugin = bankstatementparserpluginType()

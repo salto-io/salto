@@ -19,8 +19,8 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, validateTypesFieldMapping } from '../mapped_lists/utils'
 import { FilterWith } from '../filter'
-import { isCustomType, getInnerCustomTypes, isCustomRecordType } from '../types'
-import { getCustomTypes } from '../autogen/types'
+import { isStandardType, getInnerStandardTypes, isCustomRecordType } from '../types'
+import { getStandardTypes } from '../autogen/types'
 
 const { awu } = collections.asynciterable
 
@@ -33,29 +33,33 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * - convert instances' values in the fields mentioned above from lists to maps
    *   by the mapping key mentioned above
    *
-   * NOTICE: This filter works on CustomType types & instances only.
+   * NOTICE: This filter works on:
+   * - StandardType types
+   * - StandardType instances
+   * - CustomRecordType types
+   *
    * The reverse conversion happens in sdfDeploy
    *
    * @param elements the already fetched elements
    */
   onFetch: async elements => {
-    const innerCustomTypesNames = new Set(
-      getInnerCustomTypes(getCustomTypes())
+    const innerStandardTypesNames = new Set(
+      getInnerStandardTypes(getStandardTypes())
         .map(element => element.elemID.name)
     )
 
-    const customTypes = elements.filter(isObjectType).filter(
-      type => isCustomType(type) || innerCustomTypesNames.has(type.elemID.name)
+    const standardTypes = elements.filter(isObjectType).filter(
+      type => isStandardType(type) || innerStandardTypesNames.has(type.elemID.name)
     )
 
-    validateTypesFieldMapping(customTypes)
+    validateTypesFieldMapping(standardTypes)
 
-    await awu(customTypes)
+    await awu(standardTypes)
       .forEach(convertFieldsTypesFromListToMap)
 
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(inst => isCustomType(inst.refType))
+      .filter(inst => isStandardType(inst.refType))
       .forEach(
         async inst => {
           inst.value = await convertInstanceListsToMaps(inst) ?? inst.value

@@ -16,7 +16,7 @@
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { isCustomType } from '../types'
+import { isStandardType } from '../types'
 import { FilterCreator, FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -29,7 +29,7 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
     }
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(instance => isCustomType(instance.refType))
+      .filter(instance => isStandardType(instance.refType))
       .forEach(async instance => {
         // running transformValues with strict=true omits all untyped values
         instance.value = await transformValues({

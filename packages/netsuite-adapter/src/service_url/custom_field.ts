@@ -18,7 +18,7 @@ import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FIELD_TYPES } from '../types'
 import { ServiceUrlSetter } from './types'
-import { setElementsUrls } from './instances_urls'
+import { setElementsUrls } from './elements_urls'
 
 const log = logger(module)
 

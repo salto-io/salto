@@ -18,7 +18,7 @@ import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { PLUGIN_IMPLEMENTATION_TYPES, SCRIPT_TYPES } from '../types'
 import { ServiceUrlSetter } from './types'
 import { SUPPORTED_TYPES } from '../changes_detector/changes_detectors/script'
-import { setElementsUrls } from './instances_urls'
+import { setElementsUrls } from './elements_urls'
 
 const generateUrl = (id: number, element: InstanceElement):
   string | undefined => {

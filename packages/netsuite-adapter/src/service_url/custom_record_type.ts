@@ -16,7 +16,7 @@
 import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { CUSTOM_SEGMENT, SCRIPT_ID } from '../constants'
 import { isCustomRecordType } from '../types'
-import { setElementsUrls } from './instances_urls'
+import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {

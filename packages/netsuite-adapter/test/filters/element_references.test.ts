@@ -19,7 +19,7 @@ import {
   ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator from '../../src/filters/instance_references'
+import filterCreator from '../../src/filters/element_references'
 import { fileType } from '../../src/types/file_cabinet_types'
 import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
 import { workflowType } from '../../src/autogen/types/custom_types/workflow'

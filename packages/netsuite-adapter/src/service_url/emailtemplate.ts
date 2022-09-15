@@ -15,7 +15,7 @@
 */
 
 import { isInstanceElement } from '@salto-io/adapter-api'
-import { setElementsUrls } from './instances_urls'
+import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
 

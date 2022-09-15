@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, isCustomRecordType, isFileCabinetInstance } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
-import { getElementServiceIdRecords } from '../filters/instance_references'
+import { getElementServiceIdRecords } from '../filters/element_references'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

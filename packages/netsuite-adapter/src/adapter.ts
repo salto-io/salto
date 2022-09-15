@@ -30,7 +30,7 @@ import { getMetadataTypes, getTopLevelCustomTypes, metadataTypesToList } from '.
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
   INTEGRATION, FETCH_TARGET, SKIP_LIST, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS, CUSTOM_RECORD_TYPE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
-import replaceInstanceReferencesFilter from './filters/instance_references'
+import replaceInstanceReferencesFilter from './filters/element_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'

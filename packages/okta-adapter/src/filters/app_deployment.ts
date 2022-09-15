@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionOrModificationChange, isModificationChange, ModificationChange, isAdditionChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionOrModificationChange, isModificationChange, ModificationChange, isAdditionChange, AdditionChange } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, deployment } from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
@@ -23,6 +23,7 @@ import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
 
 const INACTIVE_STATUS = 'INACTIVE'
+export const AUTO_LOGIN_APP = 'AUTO_LOGIN'
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   assignedGroups: {
     add: {
@@ -69,12 +70,40 @@ const deployAppStatusChange = async (
   }
 }
 
+// Set fields that are created by the service to the returned app instance
+const assignCreatedFieldsToApp = (
+  change: AdditionChange<InstanceElement>,
+  response: deployment.ResponseResult,
+): void => {
+  const instance = getChangeData(change)
+  const signing = _.get(response, ['credentials', 'signing'])
+  if (_.isPlainObject(signing)) {
+    _.set(instance, ['value', 'credentials', 'signing'], signing)
+  }
+  if (instance.value.signOnMode === AUTO_LOGIN_APP) {
+    const createdAppName = _.get(response, ['name'])
+    if (_.isString(createdAppName)) {
+      _.set(instance, ['value', 'name'], createdAppName)
+    }
+  }
+  if (instance.value.licensing !== undefined) {
+    const licensing = _.get(response, ['licensing'])
+    if (_.isPlainObject(licensing)) {
+      _.set(instance, ['value', 'licensing'], licensing)
+    }
+  }
+}
+
+
 // TODO SALTO-2736 : adjust to support addition of more application types
 const deployApp = async (
   change: Change<InstanceElement>,
   client: OktaClient,
   config: OktaConfig,
 ): Promise<void> => {
+  const getAdditionalFieldsToIgnore = (instance: InstanceElement): string[] =>
+    (instance.value.signOnMode === AUTO_LOGIN_APP ? ['name'] : [])
+
   const fieldsToIgnore = [
     ...Object.keys(APP_ASSIGNMENT_FIELDS),
     // TODO SALTO-2690: remove this once completed
@@ -86,15 +115,19 @@ const deployApp = async (
     await deployAppStatusChange(change, client)
   }
 
-  await defaultDeployChange(
+  const response = await defaultDeployChange(
     change,
     client,
     config[API_DEFINITIONS_CONFIG],
-    fieldsToIgnore,
+    isAdditionChange(change)
+      ? fieldsToIgnore.concat(getAdditionalFieldsToIgnore(getChangeData(change))) : fieldsToIgnore,
     isAdditionChange(change) && getChangeData(change).value.status === 'INACTIVE' ? { activate: 'false' } : undefined
   )
 
   if (isAdditionOrModificationChange(change)) {
+    if (isAdditionChange(change)) {
+      assignCreatedFieldsToApp(change, response)
+    }
     await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)
   }
 }

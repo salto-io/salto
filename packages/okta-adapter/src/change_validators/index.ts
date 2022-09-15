@@ -16,11 +16,13 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { applicationValidator } from './application'
+import { applicationFieldsValidator } from './application_addition_fields'
 
 export default (
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     applicationValidator,
+    applicationFieldsValidator,
   ]
 
   return createChangeValidator(validators)

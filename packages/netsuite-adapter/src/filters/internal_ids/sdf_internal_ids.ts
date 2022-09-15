@@ -211,8 +211,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
     changesData.filter(isObjectType).filter(isCustomRecordType).forEach(type => {
       delete type.annotations[INTERNAL_ID]
     })
-    changesData.filter(isField).filter(field => isCustomRecordType(field.parent)).forEach(field => {
-      delete field.parent.annotations[INTERNAL_ID]
+    _.uniqBy(
+      changesData.filter(isField).map(field => field.parent),
+      type => type.elemID.name
+    ).filter(type => isCustomRecordType(type)).forEach(customRecordType => {
+      delete customRecordType.annotations[INTERNAL_ID]
     })
   },
   /**

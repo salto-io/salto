@@ -77,18 +77,29 @@ const getRetryDelayFromHeaders = (headers: Record<string, string>): number | und
     (_val, key) => key.toLowerCase()
   )
 
-  if (lowercaseHeaders['retry-after'] !== undefined) {
-    return parseInt(lowercaseHeaders['retry-after'], 10) * 1000
+  const retryAfterHeaderValue = lowercaseHeaders['retry-after']
+  if (retryAfterHeaderValue !== undefined) {
+    const retryAfter = parseInt(retryAfterHeaderValue, 10) * 1000
+    if (Number.isNaN(retryAfter)) {
+      log.warn(`Received invalid retry-after header value: ${retryAfterHeaderValue}`)
+      return undefined
+    }
+    return retryAfter
   }
   // Handle rate limits as seen in Okta,
   // x-rate-limit-reset contains the time at which the rate limit resets
   // more information: https://developer.okta.com/docs/reference/rl-best-practices/
+  const rateLimitResetHeaderValue = lowercaseHeaders['x-rate-limit-reset']
   if (
-    lowercaseHeaders['x-rate-limit-reset'] !== undefined
+    rateLimitResetHeaderValue !== undefined
     && lowercaseHeaders.date !== undefined
   ) {
-    const resetTime = parseInt(lowercaseHeaders['x-rate-limit-reset'], 10) * 1000
+    const resetTime = parseInt(rateLimitResetHeaderValue, 10) * 1000
     const currentTime = new Date(lowercaseHeaders.date).getTime()
+    if (Number.isNaN(resetTime) || Number.isNaN(currentTime)) {
+      log.warn(`Received invalid x-rate-limit-reset values: ${rateLimitResetHeaderValue}, ${lowercaseHeaders.date}`)
+      return undefined
+    }
     return resetTime - currentTime
   }
   return undefined
@@ -97,11 +108,6 @@ const getRetryDelayFromHeaders = (headers: Record<string, string>): number | und
 const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
   const retryDelay = getRetryDelayFromHeaders(error.response?.headers ?? {})
   ?? retryOptions.retryDelay
-
-  if (Number.isNaN(retryDelay)) {
-    log.warn('Received invalid retry-after header value')
-    return retryOptions.retryDelay
-  }
 
   return retryDelay
 }

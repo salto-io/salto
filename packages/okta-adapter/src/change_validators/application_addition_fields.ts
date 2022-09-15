@@ -26,22 +26,16 @@ const getReadOnlyFields = (instance: InstanceElement): string[] => {
   if (instance.value.licensing !== undefined) {
     fields.push('licensing')
   }
-  const { signing } = instance.value.credentials
+  const signing = _.get(instance.value, ['credentials', 'signing'])
   if (_.isPlainObject(signing)) {
     fields.push(...Object.keys(signing))
   }
   return fields
 }
 
-const isNameOverride = (instance: InstanceElement): boolean => {
-  if (
-    instance.value.signOnMode === AUTO_LOGIN_APP
-        && instance.value.name !== undefined
-  ) {
-    return true
-  }
-  return false
-}
+const isNameOverride = (instance: InstanceElement): boolean => (
+  instance.value.signOnMode === AUTO_LOGIN_APP && instance.value.name !== undefined
+)
 
 /**
  * Validate the created app does not have read only fields
@@ -70,7 +64,7 @@ export const applicationFieldsValidator: ChangeValidator = async changes => (
           elemID: instance.elemID,
           severity: 'Info',
           message: 'Field \'name\' is created by the service',
-          detailedMessage: `In application: ${instance.elemID.getFullName()}, name field will be override with the name created by the service`,
+          detailedMessage: `In application: ${instance.elemID.getFullName()}, name field will be overridden with the name created by the service`,
         }
       }
 

@@ -19,11 +19,12 @@ import { OKTA, APPLICATION_TYPE_NAME } from '../../src/constants'
 
 describe('applicationFieldsChangeValidator', () => {
   let type: ObjectType
-  let instance: InstanceElement
 
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
-    instance = new InstanceElement(
+  })
+  it('should return an error with read only fields if exists', async () => {
+    const instance = new InstanceElement(
       'bookmarkApp',
       type,
       {
@@ -45,9 +46,6 @@ describe('applicationFieldsChangeValidator', () => {
         },
       },
     )
-  })
-  it('should return an error with read only fields if exists', async () => {
-    instance.value.status = 'ACTIVE'
     expect(await applicationFieldsValidator([
       toChange({
         after: instance,
@@ -58,6 +56,34 @@ describe('applicationFieldsChangeValidator', () => {
         severity: 'Error',
         message: 'Cannot create an application with read only fields',
         detailedMessage: `Cannot create an application: ${instance.elemID.getFullName()} with read-only fields: licensing,kid`,
+      },
+    ])
+  })
+
+  it('should notify the user in case of AUTO_LOGIN app', async () => {
+    const instance = new InstanceElement(
+      'swa',
+      type,
+      {
+        name: 'swa autologin',
+        label: 'swa app',
+        status: 'ACTIVE',
+        signOnMode: 'AUTO_LOGIN',
+        settings: {
+          loginUrl: '213123',
+        },
+      },
+    )
+    expect(await applicationFieldsValidator([
+      toChange({
+        after: instance,
+      }),
+    ])).toEqual([
+      {
+        elemID: instance.elemID,
+        severity: 'Info',
+        message: 'Field \'name\' is created by the service',
+        detailedMessage: `In application: ${instance.elemID.getFullName()}, name field will be overridden with the name created by the service`,
       },
     ])
   })

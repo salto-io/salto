@@ -15,7 +15,7 @@
 */
 import { values, collections } from '@salto-io/lowerdash'
 import { ChangeError, ChangeValidator, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
-import { isStandardOrCustomRecordType } from '../types'
+import { isStandardInstanceOrCustomRecordType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
 import { isElementContainsStringValue } from './utils'
 
@@ -27,7 +27,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .map(async change => {
       const element = getChangeData(change)
-      if (!isStandardOrCustomRecordType(element)) {
+      if (!isStandardInstanceOrCustomRecordType(element)) {
         return undefined
       }
       if (!isElementContainsStringValue(element, ACCOUNT_SPECIFIC_VALUE)) {

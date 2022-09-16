@@ -15,13 +15,13 @@
 */
 import { ChangeValidator, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
 import { isStandardTypeName } from '../autogen/types'
-import { isStandardOrCustomRecordType } from '../types'
+import { isStandardInstanceOrCustomRecordType } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isRemovalChange)
     .map(getChangeData)
-    .filter(isStandardOrCustomRecordType)
+    .filter(isStandardInstanceOrCustomRecordType)
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',

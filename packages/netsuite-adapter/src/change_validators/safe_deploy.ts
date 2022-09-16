@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Element, ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
-import { isStandardOrCustomRecordType, isFileCabinetInstance } from '../types'
+import { isStandardInstanceOrCustomRecordType, isFileCabinetInstance } from '../types'
 import { CUSTOM_RECORD_TYPE, PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
 import { FailedFiles, FailedTypes } from '../client/types'
@@ -205,10 +205,10 @@ const changeValidator: QueryChangeValidator = async (
 ) => {
   const elements: Element[] = changes
     .map(getChangeData)
-    .filter(elem => isInstanceElement(elem) || isStandardOrCustomRecordType(elem))
+    .filter(elem => isInstanceElement(elem) || isStandardInstanceOrCustomRecordType(elem))
 
   const additionalElements = await getAdditionalElements(
-    elements.filter(isStandardOrCustomRecordType),
+    elements.filter(isStandardInstanceOrCustomRecordType),
     deployAllReferencedElements
   )
 

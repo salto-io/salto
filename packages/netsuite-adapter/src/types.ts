@@ -32,7 +32,7 @@ export const isStandardType = (type: ObjectType | TypeReference): boolean =>
 export const isCustomRecordType = (type: ObjectType): boolean =>
   type.annotations[METADATA_TYPE] === CUSTOM_RECORD_TYPE
 
-export const isStandardOrCustomRecordType = (element: Element): boolean => (
+export const isStandardInstanceOrCustomRecordType = (element: Element): boolean => (
   isInstanceElement(element) && isStandardType(element.refType)
 ) || (
   isObjectType(element) && isCustomRecordType(element)

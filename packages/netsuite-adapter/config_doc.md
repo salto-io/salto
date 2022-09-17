@@ -59,6 +59,16 @@ netsuite {
 | deploy.warnOnStaleWorkspaceData                            | false                   | If assigned 'true' runs a validation upon deploy which warns the user if the changes override other changes made in the service since the last fetch
 | concurrencyLimit                                    | The higher value between `suiteAppConcurrencyLimit` and `sdfConcurrencyLimit`                    | Limits the max number of concurrent API calls (Both SDF calls and Salto SuiteApp calls). The number should not exceed the concurrency limit enforced by the upstream service.
 
+### Including / Excluding deploy dependencies in the SDF manifest file
+
+| Name                           | Default when undefined  | Description
+| -------------------------------| ------------------------| -----------
+| deploy.additionalDependencies.include.features              | []                      | Feature dependencies list (string[]) to be included in the manifest passed to SDF when deploying
+| deploy.additionalDependencies.include.objects               | []                      | Object dependencies list (string[]) to be included in the manifest passed to SDF when deploying
+| deploy.additionalDependencies.exclude.features              | []                      | Feature dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
+| deploy.additionalDependencies.exclude.objects               | []                      | Object dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
+
+
 ### Fetch include configuration options
 
 | Name                           | Default when undefined  | Description
@@ -71,15 +81,6 @@ netsuite {
 | -------------------------------| ------------------------| -----------
 | types                          | no types are excluded   | Specify which types to exclude on fetch
 | fileCabinet                    | no files are excluded   | Specify which files to exclude on fetch
-
-### Including / Excluding deploy dependencies in the SDF manifest file
-
-| Name                           | Default when undefined  | Description
-| -------------------------------| ------------------------| -----------
-| deploy.additionalDependencies.include.features              | []                      | Feature dependencies list (string[]) to be included in the manifest passed to SDF when deploying
-| deploy.additionalDependencies.include.objects               | []                      | Object dependencies list (string[]) to be included in the manifest passed to SDF when deploying
-| deploy.additionalDependencies.exclude.features              | []                      | Feature dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
-| deploy.additionalDependencies.exclude.objects               | []                      | Object dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
 
 ### SDF Client configuration options
 

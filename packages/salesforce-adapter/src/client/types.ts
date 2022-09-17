@@ -113,7 +113,7 @@ export class CustomField implements MetadataInfo {
     restricted?: boolean
     controllingField?: string
     valueSetDefinition?: {
-      sorted: boolean
+      sorted?: boolean
       value: CustomPicklistValue[]
     }
     valueSettings?: ValueSettings[]
@@ -201,9 +201,9 @@ export class CustomField implements MetadataInfo {
       if ((values && !_.isEmpty(values)) || (valueSetName)) {
         if (values && !_.isEmpty(values)) {
           this.valueSet = {
-            restricted: picklistRestricted || false,
+            ...picklistRestricted ? { restricted: true } : {},
             valueSetDefinition: {
-              sorted: picklistSorted || false,
+              ...picklistSorted ? { sorted: true } : {},
               value: values.map(val =>
                 new CustomPicklistValue(
                   val.fullName, val.default, val.isActive ?? true, val.label, val.color,

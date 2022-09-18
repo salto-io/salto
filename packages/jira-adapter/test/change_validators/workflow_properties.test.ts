@@ -95,8 +95,8 @@ describe('workflowPropertiesValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Deploy workflow instance that has properties with the same key is not allowed',
-        detailedMessage: `Deploy the workflow ${instance.elemID.getFullName()} is not allowed because it has status or transition properties with the same key`,
+        message: 'Can\'t deploy workflow with status or transition that have multiple properties with an identical key.',
+        detailedMessage: `Can't deploy workflow ${instance.elemID.getFullName()} which has status or transition with multiple properties with an identical key.`,
       },
     ])
   })
@@ -122,8 +122,8 @@ describe('workflowPropertiesValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Deploy workflow instance that has properties with the same key is not allowed',
-        detailedMessage: `Deploy the workflow ${instance.elemID.getFullName()} is not allowed because it has status or transition properties with the same key`,
+        message: 'Can\'t deploy workflow with status or transition that have multiple properties with an identical key.',
+        detailedMessage: `Can't deploy workflow ${instance.elemID.getFullName()} which has status or transition with multiple properties with an identical key.`,
       },
     ])
   })

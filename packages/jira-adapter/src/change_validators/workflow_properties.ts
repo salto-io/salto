@@ -23,8 +23,8 @@ import { WORKFLOW_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const getPropertiesKeys = (statusesOrTransitions: Status[]| Transition[]):
-  Array<string>[] => Array.from(statusesOrTransitions).map((param: Transition | Status) =>
+const getPropertiesKeyGroups = (statusesOrTransitions: Status[]| Transition[]):
+  string[][] => Array.from(statusesOrTransitions).map(param =>
   (param.properties ?? []).map(((property: Values) => property.key)))
 
 
@@ -35,22 +35,16 @@ export const workflowPropertiesValidator: ChangeValidator = async changes =>
     .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
     .filter(isWorkflowInstance)
     .filter(instance => {
-      const statuses = instance.value?.statuses
-      const transitions = instance.value?.transitions
-      const countStatusesKeys = (statuses !== undefined ? getPropertiesKeys(statuses) : [])
-        .map(key => _.countBy(key))
-      const countTransitionsKeys = (transitions !== undefined ? getPropertiesKeys(transitions) : [])
-        .map(key => _.countBy(key))
-      const duplicateTransitionKeys = countTransitionsKeys.map(dictionary => _.values(dictionary))
+      const items = [...(instance.value.statuses ?? []), ...(instance.value.transitions ?? [])]
+      const countItemsKeys = getPropertiesKeyGroups(items).map(keyGroup => _.countBy(keyGroup))
+      const duplicateItemsKeys = countItemsKeys.map(dictionary => _.values(dictionary))
         .flatMap(countList => countList.filter(count => count > 1))
-      const duplicateStatusKeys = countStatusesKeys.map(dictionary => _.values(dictionary))
-        .flatMap(countList => countList.filter(count => count > 1))
-      return !_.isEmpty(duplicateTransitionKeys) || !_.isEmpty(duplicateStatusKeys)
+      return !_.isEmpty(duplicateItemsKeys)
     })
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Deploy workflow instance that has properties with the same key is not allowed',
-      detailedMessage: `Deploy the workflow ${instance.elemID.getFullName()} is not allowed because it has status or transition properties with the same key`,
+      message: 'Can\'t deploy workflow with status or transition that have multiple properties with an identical key.',
+      detailedMessage: `Can't deploy workflow ${instance.elemID.getFullName()} which has status or transition with multiple properties with an identical key.`,
     }))
     .toArray()

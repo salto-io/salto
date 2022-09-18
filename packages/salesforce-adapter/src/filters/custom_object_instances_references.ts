@@ -29,7 +29,7 @@ import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoErro
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
-import { addElementParentReference, isLookupField, isMasterDetailField } from './utils'
+import { isLookupField, isMasterDetailField } from './utils'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { makeArray } = collections.array
@@ -192,7 +192,6 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
       }
       reverseReferencesMap.get(await serializeInstanceInternalID(refTarget))
         .add(await serializeInstanceInternalID(instance))
-      addElementParentReference(instance, refTarget)
       return new ReferenceExpression(refTarget.elemID)
     }
 

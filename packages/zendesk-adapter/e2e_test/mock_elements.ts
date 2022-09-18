@@ -207,8 +207,8 @@ export const mockDefaultValues: Record<string, Values> = {
   },
   ticket_field: {
     type: 'tagger',
-    title: 'Test',
-    description: '',
+    raw_title: 'Test',
+    raw_description: '',
     active: true,
     required: false,
     collapsed_for_agents: false,
@@ -219,9 +219,9 @@ export const mockDefaultValues: Record<string, Values> = {
   },
   user_field: {
     type: 'dropdown',
-    title: 'Test',
+    raw_title: 'Test',
     key: 'Test',
-    description: '',
+    raw_description: '',
     position: 9999,
     active: true,
     system: false,

@@ -270,7 +270,8 @@ const filter: FilterCreator = () => {
         .forEach(async instance => {
           instance.value = await elementUtils.removeNullValues(
             instance.value,
-            await instance.getType()
+            await instance.getType(),
+            true,
           )
           await removeRedundantKeys(instance)
           await removeInnerIds(instance)

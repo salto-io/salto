@@ -32,7 +32,7 @@ const changeValidator: ChangeValidator = async changes => (
           elemID: instance.elemID,
           severity: 'Warning',
           message: 'Currency exchangeRate is set with a default value',
-          detailedMessage: 'A default value has been set for the \'exchangeRate\' field. Please edit the field at the service after deploying',
+          detailedMessage: '\'exchangeRate\' is omitted from fetch configuration by default. As this field has to be created in the target environment for this deployment to succeed, it will be deployed with a default value of 1. Please make sure this value is set to your desired value in the NetSuite UI of the target environment after deploying. See https://docs.salto.io/docs/netsuite#overriding-configuration-values for more details.',
         } as ChangeError
       }
       return undefined

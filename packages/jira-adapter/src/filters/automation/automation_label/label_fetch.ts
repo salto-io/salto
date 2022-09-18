@@ -27,13 +27,13 @@ import { createAutomationLabelType } from './types'
 
 const log = logger(module)
 
-type LabelsResponse = {
+export type LabelsResponse = {
   id: number
   name: string
   color: string
 }
 
-const LABELS_RESPONSE_SCHEME = Joi.array().items(
+export const LABELS_RESPONSE_SCHEME = Joi.array().items(
   Joi.object({
     id: Joi.number().required(),
     name: Joi.string().allow('').required(),
@@ -41,7 +41,7 @@ const LABELS_RESPONSE_SCHEME = Joi.array().items(
   }).unknown(true).required()
 )
 
-const isLabelsResponse = createSchemeGuard<LabelsResponse>(LABELS_RESPONSE_SCHEME, 'Received an invalid page response')
+export const isLabelsResponse = createSchemeGuard<LabelsResponse>(LABELS_RESPONSE_SCHEME, 'Received an invalid page response')
 
 
 const createInstance = (
@@ -65,12 +65,12 @@ const createInstance = (
   )
 }
 
-export const getLabels = async (
+export const getAutomationLabels = async (
   client: JiraClient,
   cloudId: string,
 ): Promise<Values> => {
   const response = await client.getSinglePage(
-    { url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels?withAssociatedRulesOnly=true` }
+    { url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels` }
   )
   if (!isLabelsResponse(response.data)) {
     throw new Error('Failed to get response page, received invalid response')
@@ -79,9 +79,9 @@ export const getLabels = async (
 }
 
 /**
- * Fetching automations from Jira using internal API endpoint.
+ * Fetching automation labels from Jira using internal API endpoint.
  * We first use `/resources` endpoint to get the cloud id of the account.
- * Using the cloud id, we create the url to query the automations with
+ * Using the cloud id, we create the url to query the automation labels with
  */
 export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) => ({
   onFetch: async elements => {
@@ -96,7 +96,7 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
 
     const cloudId = await getCloudId(client)
 
-    const automationLabels = await getLabels(client, cloudId)
+    const automationLabels = await getAutomationLabels(client, cloudId)
 
     const automationLabelType = createAutomationLabelType()
     elements.push(createInstance(automationLabels, automationLabelType, getElemIdFunc))

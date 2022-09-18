@@ -161,24 +161,34 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'brand_logo',
 ]
 
+/**
+ * Fetch Guide (help_center) elements for the given brands.
+ * Each help_center requires a different paginator.
+*/
 const zendeskGuideEntriesFunc = (
   brandsList: InstanceElement[],
   brandToPaginator: Record<string, clientUtils.Paginator>,
 ): elementUtils.ducktype.EntriesRequester => {
-  const getZendeskGuideEntriesResponseValues = async (
-    _paginator: clientUtils.Paginator,
-    args: clientUtils.ClientGetWithPaginationParams,
-    typeName: string,
-    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>,
-  ): Promise<clientUtils.ResponseValue[]> => (
+  const getZendeskGuideEntriesResponseValues = async ({
+    args,
+    typeName,
+    typesConfig,
+  } : {
+    args: clientUtils.ClientGetWithPaginationParams
+    typeName: string
+    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
+  }): Promise<clientUtils.ResponseValue[]> => (
     (await awu(brandsList).map(async brandInstance => {
-      const brandPaginatorResponseValues = (await getEntriesResponseValues(
-        brandToPaginator[brandInstance.elemID.name],
+      const brandPaginatorResponseValues = (await getEntriesResponseValues({
+        paginator: brandToPaginator[brandInstance.elemID.name],
         args,
-      )).flat()
+      })).flat()
       // Defining Zendesk Guide element to its corresponding help center (= subdomain)
       brandPaginatorResponseValues.forEach(response => {
-        const responseEntryName = typesConfig[typeName].transformation?.dataField || typeName
+        const responseEntryName = typesConfig[typeName].transformation?.dataField
+        if (responseEntryName === undefined) {
+          return undefined
+        }
         return (response[responseEntryName] as Value[]).forEach(instanceType => {
           instanceType.brand_id = brandInstance.value.id
         })
@@ -203,12 +213,12 @@ export interface ZendeskAdapterParams {
 export default class ZendeskAdapter implements AdapterOperations {
   private createFiltersRunner: () => Promise<Required<Filter>>
   private client: ZendeskClient
-  private credentials: Credentials
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
   private configInstance?: InstanceElement
   private fetchQuery: elementUtils.query.ElementQuery
+  private createClientBySubdomain: (subdomain: string) => ZendeskClient
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -222,11 +232,17 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
-    this.credentials = credentials
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
     })
+
+    this.createClientBySubdomain = (subdomain: string): ZendeskClient => (
+      new ZendeskClient({
+        credentials: { ...credentials, subdomain },
+        config: this.userConfig[CLIENT_CONFIG],
+      })
+    )
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
@@ -246,13 +262,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         concatObjects,
       )
     )
-  }
-
-  public createClientBySubdomain(subdomain: string): ZendeskClient {
-    return new ZendeskClient({
-      credentials: { ...this.credentials, subdomain },
-      config: this.userConfig[CLIENT_CONFIG],
-    })
   }
 
   @logDuration('generating instances and types from service')
@@ -300,16 +309,29 @@ export default class ZendeskAdapter implements AdapterOperations {
       getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandsList, brandToPaginator),
     })
 
+    const [zendeskSupportInstances, zendeskSupportTypes] = _.partition(
+      zendeskSupportElements.elements,
+      isInstanceElement,
+    )
+    const [zendeskGuideInstances, zendeskGuideTypes] = _.partition(
+      zendeskGuideElements.elements,
+      isInstanceElement,
+    )
+    const zendeskFetchedTypes = _.uniqBy(
+      [...zendeskSupportTypes, ...zendeskGuideTypes],
+      e => e.elemID.getFullName(),
+    )
+
     return {
-      configChanges: _.uniq([
+      configChanges: [
         ...zendeskSupportElements.configChanges,
         ...zendeskGuideElements.configChanges,
-      ]),
-      elements: _.uniqBy([
-        ...zendeskSupportElements.elements,
-        ...zendeskGuideElements.elements,
       ],
-      e => e.elemID.getFullName(),),
+      elements: [
+        ...zendeskFetchedTypes,
+        ...zendeskSupportInstances,
+        ...zendeskGuideInstances,
+      ],
     }
   }
 

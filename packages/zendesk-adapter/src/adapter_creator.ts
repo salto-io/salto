@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
@@ -20,7 +21,7 @@ import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
   configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
-  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig,
+  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig, GUIDE_SUPPORTED_TYPES,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
@@ -74,6 +75,16 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
   oauthRequiredFields: ['access_token'],
 })
 
+export const validateGuideTypesConfig = (
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => {
+  const zendeskGuideTypesWithoutDataField = _.values(GUIDE_SUPPORTED_TYPES).flat()
+    .filter(type => adapterApiConfig.types[type].transformation?.dataField === undefined)
+  if (zendeskGuideTypesWithoutDataField.length > 0) {
+    throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
+  }
+}
+
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
@@ -95,6 +106,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateGuideTypesConfig(apiDefinitions)
 
   Object.keys(configValue)
     .filter(k => !Object.keys(adapterConfig).includes(k))

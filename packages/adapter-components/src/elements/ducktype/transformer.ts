@@ -37,10 +37,12 @@ const { isDefined } = lowerdashValues
 const log = logger(module)
 
 export type EntriesRequester = (
-  paginator: Paginator,
-  args: ClientGetWithPaginationParams,
-  typeName: string,
-  typesConfig: Record<string, TypeDuckTypeConfig>,
+  args: {
+    paginator: Paginator
+    args: ClientGetWithPaginationParams
+    typeName: string
+    typesConfig: Record<string, TypeDuckTypeConfig>
+  }
 ) => Promise<ResponseValue[]>
 
 type GetEntriesParams = {
@@ -72,10 +74,13 @@ export type FetchElements<T> = {
   elements: T
 }
 
-export const getEntriesResponseValues = async (
-  paginator: Paginator,
-  args: ClientGetWithPaginationParams,
-): Promise<ResponseValue[]> => (
+export const getEntriesResponseValues = async ({
+  paginator,
+  args,
+} : {
+  paginator: Paginator
+  args: ClientGetWithPaginationParams
+}): Promise<ResponseValue[]> => (
   (await toArrayAsync(
     paginator(args, page => makeArray(page) as ResponseValue[])
   )).flat()
@@ -111,8 +116,8 @@ const getEntriesForType = async (
     return (await Promise.all(
       getArgs.map(async args => (
         getEntriesResponseValuesFunc
-          ? getEntriesResponseValuesFunc(paginator, args, typeName, typesConfig)
-          : getEntriesResponseValues(paginator, args)
+          ? getEntriesResponseValuesFunc({ paginator, args, typeName, typesConfig })
+          : getEntriesResponseValues({ paginator, args })
       ))
     )).flat()
   }

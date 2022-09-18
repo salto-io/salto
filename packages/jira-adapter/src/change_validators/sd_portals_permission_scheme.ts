@@ -16,7 +16,7 @@
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isEqualValues, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import Joi, { string } from 'joi'
+import Joi from 'joi'
 import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 
 
@@ -29,7 +29,7 @@ export type PermissionHolder = {
 
 const PERMISSION_HOLDER_SCHEME = Joi.object({
   holder: Joi.object({
-    type: string().allow('').required(),
+    type: Joi.string().allow('').required(),
     parameter: Joi.optional(),
   }),
   permission: Joi.string().allow('').required(),

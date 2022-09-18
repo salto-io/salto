@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
-// import removeCustomListItemValidator from './change_validators/remove_customlist_item'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeCustomTypesValidator from './change_validators/remove_custom_types'

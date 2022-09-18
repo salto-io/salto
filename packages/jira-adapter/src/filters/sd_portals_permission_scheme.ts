@@ -21,7 +21,7 @@ import { isPermissionScheme } from './forbidden_permission_schemes'
 
 
 const filter: FilterCreator = () => {
-  const UnsupportedPermissionSchemes: Record<string, InstanceElement> = {}
+  const unsupportedPermissionSchemes: Record<string, InstanceElement> = {}
   return ({
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
       changes.filter(isInstanceChange)
@@ -32,7 +32,7 @@ const filter: FilterCreator = () => {
           _.remove(element.value.permissions,
             (permissionScheme: PermissionHolder) => {
               if (isEqualValues(permissionScheme, UNSUPPORTED_PERMISSION_SCHEME)) {
-                UnsupportedPermissionSchemes[element.elemID.getFullName()] = element.clone()
+                unsupportedPermissionSchemes[element.elemID.getFullName()] = element.clone()
                 return true
               }
               return false
@@ -44,10 +44,10 @@ const filter: FilterCreator = () => {
         .map(getChangeData)
         .filter(isPermissionScheme)
         .forEach((element: InstanceElement) => {
-          if (UnsupportedPermissionSchemes[element.elemID.getFullName()] !== undefined) {
-            element.value.permissions = UnsupportedPermissionSchemes[
+          if (unsupportedPermissionSchemes[element.elemID.getFullName()] !== undefined) {
+            element.value.permissions = unsupportedPermissionSchemes[
               element.elemID.getFullName()].value.permissions
-            delete UnsupportedPermissionSchemes[element.elemID.getFullName()]
+            delete unsupportedPermissionSchemes[element.elemID.getFullName()]
           }
         })
     },

@@ -32,7 +32,7 @@ const PERMISSION_HOLDER_SCHEME = Joi.object({
     type: string().allow('').required(),
     parameter: Joi.optional(),
   }),
-  permission: string().allow('').required(),
+  permission: Joi.string().allow('').required(),
 }).unknown(true)
 
 

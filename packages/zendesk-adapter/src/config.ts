@@ -1705,6 +1705,32 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/sections/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/{locale}/categories/{category_id}/sections',
+        deployAsField: 'section',
+        method: 'post',
+        urlParamsToFields: {
+          category_id: 'category_id',
+          locale: 'locale',
+        },
+      },
+      modify: {
+        url: '/help_center/sections/{section_id}',
+        method: 'put',
+        deployAsField: 'section',
+        urlParamsToFields: {
+          section_id: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/sections/{section_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          section_id: 'id',
+        },
+      },
+    },
   },
   section_translation: {
     request: {

@@ -26,9 +26,12 @@ const ERROR_MESSAGE = (id: ElemID): string => `The change of ${id.getFullName()}
 
 const detailedNestedElementErrorMessage = (
   path: ElemID,
+  action: Change['action'],
 ): string => {
   const nestedPart = path.getFullNameParts().slice(path.nestingLevel * -1).join('.')
-  return `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported`
+  return action === 'modify'
+    ? `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported. The current value in the target environment will be maintained`
+    : `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported. The instance will be created with the default value of the target env`
 }
 
 const detailedTopLevelErrorMessage = (action: Change['action'], path: ElemID): string =>
@@ -88,7 +91,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
         elemID: instance.elemID,
         severity: 'Info',
         message: ERROR_MESSAGE(field),
-        detailedMessage: detailedNestedElementErrorMessage(path),
+        detailedMessage: detailedNestedElementErrorMessage(path, change.action),
       }))
     })
     .flat()

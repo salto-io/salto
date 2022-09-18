@@ -25,7 +25,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       fields: {
         updatableField: {
           refType: BuiltinTypes.STRING,
-          annotations: { [CORE_ANNOTATIONS.CREATABLE]: false },
+          annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
         },
         notUpdatableField: {
           refType: BuiltinTypes.STRING,
@@ -75,9 +75,9 @@ describe('checkDeploymentAnnotationsValidator', () => {
     }])
   })
 
-  it('should return an error when field does not support operation', async () => {
+  it('should return an error when a field does not support a modification operation', async () => {
     const afterInstance = instance.clone()
-    instance.value.notUpdatableField = 'value2'
+    instance.value.notUpdatableField = 'innerValue2'
     const errors = await checkDeploymentAnnotationsValidator([
       toChange({ before: instance, after: afterInstance }),
     ])
@@ -85,21 +85,22 @@ describe('checkDeploymentAnnotationsValidator', () => {
       elemID: instance.elemID,
       severity: 'Info',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported',
+      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The current value in the target environment will be maintained',
     }])
   })
 
-  it('should return an error when an inner field does not support operation', async () => {
+  it('should return an error when a field does not support an addition operation', async () => {
+    type.annotations[CORE_ANNOTATIONS.CREATABLE] = true
     const afterInstance = instance.clone()
-    instance.value.inner.notUpdatableField = 'innerValue2'
+    delete afterInstance.value.inner
     const errors = await checkDeploymentAnnotationsValidator([
-      toChange({ before: instance, after: afterInstance }),
+      toChange({ after: afterInstance }),
     ])
     expect(errors).toEqual([{
       elemID: instance.elemID,
       severity: 'Info',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: 'Deploying "inner.notUpdatableField" in adapter.test.instance.instance is not supported',
+      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The instance will be created with the default value of the target env',
     }])
   })
 

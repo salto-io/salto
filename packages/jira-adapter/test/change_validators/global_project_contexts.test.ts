@@ -75,7 +75,7 @@ describe('globalProjectContextsValidator', () => {
         elemID: contextInstance.elemID,
         severity: 'Error',
         message: 'Field context is not used in any project',
-        detailedMessage: `The context ${contextInstance.elemID.getFullName()} is not used by any project and it is not a global context, so it cannot be created.`,
+        detailedMessage: `The context ${contextInstance.elemID.getFullName()} is not used by any project and it is not a global context, so it cannot be created (this is generally safe to ignore, as this context would not have an effect on the account).`,
       },
     ])
   })

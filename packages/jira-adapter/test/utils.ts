@@ -22,6 +22,7 @@ import { Credentials } from '../src/auth'
 import { JiraConfig, configType, getDefaultConfig } from '../src/config/config'
 import JiraClient from '../src/client/client'
 import { FilterCreator } from '../src/filter'
+import { paginate } from '../src/client/pagination'
 
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
@@ -54,7 +55,7 @@ type ClientWithMockConnection = {
   connection: MockInterface<clientUtils.APIConnection>
 }
 export const mockClient = (
-  paginatorFunc: clientUtils.PaginationFuncCreator = clientUtils.getWithOffsetAndLimit
+  paginatorFunc: clientUtils.PaginationFuncCreator = paginate
 ): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({

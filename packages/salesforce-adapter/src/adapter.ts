@@ -27,7 +27,8 @@ import SalesforceClient from './client/client'
 import * as constants from './constants'
 import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
-import customObjectsFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects'
+import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
+import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
 import customSettingsFilter from './filters/custom_settings_filter'
 import customObjectsSplitFilter from './filters/custom_object_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
@@ -105,10 +106,11 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // should run before customObjectsFilter
   { creator: workflowFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
-  { creator: customObjectsFilter, addsNewInformation: true },
+  { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
-  // customObjectsInstancesFilter depends on customObjectsFilter
+  { creator: customObjectsToObjectTypeFilter },
+  // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   { creator: customObjectsInstancesFilter, addsNewInformation: true },
   { creator: removeFieldsAndValuesFilter },
   { creator: removeRestrictionAnnotationsFilter },

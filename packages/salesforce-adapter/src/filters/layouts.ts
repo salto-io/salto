@@ -23,7 +23,7 @@ import { apiName, isCustomObject } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
 import { addElementParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
-import { getObjectDirectoryPath } from './custom_objects'
+import { getObjectDirectoryPath } from './custom_objects_to_object_type'
 
 const { awu } = collections.asynciterable
 

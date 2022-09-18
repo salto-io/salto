@@ -101,6 +101,19 @@ describe('client_http_connection', () => {
       expect(retryOptions.retryDelay?.(1, {
         response: {
           headers: {
+            date: 'Wed, 14 Sep 2022 11:22:45 GMT',
+            'x-rate-limit-reset': '1663154597',
+          },
+        },
+        code: 'code',
+        config: {
+          url: 'url',
+        },
+      } as AxiosError)).toBe(32000)
+
+      expect(retryOptions.retryDelay?.(1, {
+        response: {
+          headers: {
             'retry-after': '10',
           },
         },

@@ -14,12 +14,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, ElemID, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, isRemovalChange, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath } from '@salto-io/adapter-utils'
+import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
+import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, USER } from '../../constants'
+import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { accountIdInfoType } from './types'
 
@@ -28,6 +28,10 @@ const log = logger(module)
 
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
 export const ACCOUNT_ID_TYPES = PARAMETER_STYLE_TYPES.concat(['Automation', 'Project', 'ProjectComponent', 'ProjectRole'])
+
+const USER_TYPE = 'user'
+const VALUE_FIELD = 'value'
+const PARAMETER_FIELD = 'parameter'
 
 type AccountIdCacheInfo = {
   path: ElemID
@@ -39,107 +43,77 @@ const addToCache = (
   cache: AccountIdsCache,
   path: ElemID,
   objectToClone: Value
-):void => {
+): void => {
   const key = path.createTopLevelParentID().parent.getFullName()
   if (_.isUndefined(cache[key])) {
     cache[key] = []
   }
-  cache[key].push({ path, object: _.cloneDeep(objectToClone) })
+  cache[key].push({ path, object: objectToClone })
 }
 
 export const isAccountIdType = (instanceElement: InstanceElement): boolean =>
   ACCOUNT_ID_TYPES.includes(instanceElement.elemID.typeName)
 
-export const isPermissionHolderCase = (
-  value: Value,
-  path: ElemID
-): boolean => PARAMETER_STYLE_TYPES.includes(path.typeName)
-    && !_.isUndefined(value.parameter)
-    && _.toLower(value.type) === USER
 
-const objectifyAccountId = (value: Value, path: ElemID):void => {
+export type WalkOnUsersCallback = (
+  { value, path, fieldName }: { value: Value; path?: ElemID; fieldName: string }) => void
+
+const accountIdsScenarios = (
+  value: Value,
+  path: ElemID,
+  callBack: WalkOnUsersCallback
+): void => {
   // main scenario, field is within the ACCOUNT_IDS_FIELDS_NAMES
   ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
     if (Object.prototype.hasOwnProperty.call(value, fieldName)) {
-      value[fieldName] = {
-        id: value[fieldName],
-      }
+      callBack({ value, path, fieldName })
     }
   })
   // second scenario: the type has ACCOUNT_ID_STRING and the value holds the actual account id
   if (value.type === ACCOUNT_ID_STRING) {
-    value.value = {
-      id: value.value,
-    }
+    callBack({ value, path, fieldName: VALUE_FIELD })
   }
   // third scenario the type is permissionHolder and the type is user
   // the id is in the parameter field. We cannot check type with walk on elements, so we
   // just check the two and verify it is within the known types
-  if (isPermissionHolderCase(value, path)) {
-    value.parameter = {
-      id: value.parameter,
-    }
+  if (PARAMETER_STYLE_TYPES.includes(path.typeName)
+      && value.parameter !== undefined
+      && _.toLower(value.type) === USER_TYPE) {
+    callBack({ value, path, fieldName: PARAMETER_FIELD })
   }
 }
 
-const objectifyAccountIdsWalk: WalkOnFunc = ({ value, path }):WALK_NEXT_STEP => {
-  if (isInstanceElement(value)) {
-    objectifyAccountId(value.value, path)
-  } else {
-    objectifyAccountId(value, path)
-  }
-  return WALK_NEXT_STEP.RECURSE
-}
-
-const storeAndSimplifyAccountIds = (
-  value: Value,
-  path: ElemID,
-  cache: AccountIdsCache
-): void => {
-  // main scenario, field is within the ACCOUNT_IDS_FIELDS_NAMES
-  ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
-    if (Object.prototype.hasOwnProperty.call(value, fieldName)
-    && !_.isUndefined(value[fieldName].id)
-    ) {
-      addToCache(cache, path.createNestedID(fieldName), value[fieldName])
-      value[fieldName] = value[fieldName].id
-    }
-  })
-  // second scenario: the type has ACCOUNT_ID_STRING and the value holds the actual account id
-  if (value.type === ACCOUNT_ID_STRING
-    && !_.isUndefined(value.value.id)) {
-    addToCache(cache, path.createNestedID('value'), value.value)
-    value.value = value.value.id
-  }
-  // third scenario the type is permissionHolder and the type is user
-  // the id is in the parameter field. We cannot check type with walk on elements, so we
-  // just check the two and verify it is within the known types
-  if (isPermissionHolderCase(value, path)
-    && !_.isUndefined(value.parameter)
-  ) {
-    addToCache(cache, path.createNestedID('parameter'), value.parameter)
-    value.parameter = value.parameter.id
-  }
-}
-
-const cacheAndSimplifyAccountIdWalk = (cache: AccountIdsCache): WalkOnFunc =>
-  ({ value, path }):WALK_NEXT_STEP => {
-    if (_.isUndefined(value)) {
-      return WALK_NEXT_STEP.SKIP
-    }
-    if (isInstanceElement(value) && !_.isUndefined(value.value)) {
-      storeAndSimplifyAccountIds(value.value, path, cache)
+export const walkOnUsers = (callback: WalkOnUsersCallback): WalkOnFunc => (
+  ({ value, path }): WALK_NEXT_STEP => {
+    if (isInstanceElement(value)) {
+      accountIdsScenarios(value.value, path, callback)
     } else {
-      storeAndSimplifyAccountIds(value, path, cache)
+      accountIdsScenarios(value, path, callback)
     }
     return WALK_NEXT_STEP.RECURSE
+  })
+
+const objectifyAccountId: WalkOnUsersCallback = ({ value, fieldName }): void => {
+  value[fieldName] = {
+    id: value[fieldName],
   }
+}
 
+const cacheAndSimplifyAccountId = (cache: AccountIdsCache): WalkOnUsersCallback => (
+  { value, path, fieldName }
+): void => {
+  if (value[fieldName] !== undefined && path !== undefined) {
+    addToCache(cache, path.createNestedID(fieldName), value[fieldName])
+    value[fieldName] = value[fieldName].id
+  }
+}
 
-const convertType = async (objectType: ObjectType):Promise<void> => {
+const convertType = async (objectType: ObjectType): Promise<void> => {
   ACCOUNT_IDS_FIELDS_NAMES.forEach(async fieldName => {
     if (Object.prototype.hasOwnProperty.call(objectType.fields, fieldName)
-      && await objectType.fields[fieldName].getType() === BuiltinTypes.STRING) {
+      && (await objectType.fields[fieldName].getType()).elemID.isEqual(
+        BuiltinTypes.STRING.elemID
+      )) {
       objectType.fields[fieldName].refType = new TypeReference(
         accountIdInfoType.elemID,
         accountIdInfoType
@@ -161,7 +135,7 @@ const filter: FilterCreator = () => {
         .filter(isInstanceElement)
         .filter(isAccountIdType)
         .forEach(element => {
-          walkOnElement({ element, func: objectifyAccountIdsWalk })
+          walkOnElement({ element, func: walkOnUsers(objectifyAccountId) })
         })
       await awu(elements)
         .filter(isObjectType)
@@ -170,35 +144,24 @@ const filter: FilterCreator = () => {
         })
     }, 'fetch account_id_filter'),
     preDeploy: async changes => {
-      await awu(changes)
+      changes
         .filter(isInstanceChange)
-        .filter(change => !isRemovalChange(change))
-        .forEach(async change => {
-          await applyFunctionToChangeData<Change<InstanceElement>>(
-            change,
-            element => {
-              if (isAccountIdType(element)) {
-                walkOnElement({ element, func: cacheAndSimplifyAccountIdWalk(cache) })
-              }
-              return element
-            }
-          )
-        })
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(isAccountIdType)
+        .forEach(element =>
+          walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache)) }))
     },
-    onDeploy: async changes => log.time(async () => {
-      await awu(changes)
+    onDeploy: async changes => log.time(() => {
+      changes
         .filter(isInstanceChange)
-        .filter(change => !isRemovalChange(change))
-        .forEach(async change => {
-          await applyFunctionToChangeData<Change<InstanceElement>>(
-            change,
-            element => {
-              cache[element.elemID.getFullName()]?.forEach(cacheInfo => {
-                setPath(element, cacheInfo.path, cacheInfo.object)
-              })
-              return element
-            }
-          )
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .forEach(element => {
+          cache[element.elemID.getFullName()]?.forEach(cacheInfo => {
+            setPath(element, cacheInfo.path, cacheInfo.object)
+          })
+          return element
         })
     }, 'account_id_filter'),
   }

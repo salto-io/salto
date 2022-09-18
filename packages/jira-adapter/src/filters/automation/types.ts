@@ -20,7 +20,6 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE,
   AUTOMATION_FIELD, AUTOMATION_STATUS, AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA,
   AUTOMATION_SUBTASK, AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT,
   AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA } from '../../constants'
-import { accountIdInfoType } from '../account_id/types'
 
 export const createAutomationTypes = (): {
   automationType: ObjectType
@@ -30,7 +29,7 @@ export const createAutomationTypes = (): {
     elemID: new ElemID(JIRA, 'AutomationActor'),
     fields: {
       type: { refType: BuiltinTypes.STRING },
-      value: { refType: accountIdInfoType },
+      value: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationActor'],
   })
@@ -208,7 +207,7 @@ export const createAutomationTypes = (): {
         },
       },
       state: { refType: BuiltinTypes.STRING },
-      authorAccountId: { refType: accountIdInfoType },
+      authorAccountId: { refType: BuiltinTypes.STRING },
       actor: { refType: actorType },
       projects: { refType: new ListType(projectType) },
       trigger: { refType: componentType },
@@ -225,6 +224,6 @@ export const createAutomationTypes = (): {
     automationType,
     subTypes: [actorType, componentType, tagType, projectType, componentValueType, fieldType,
       recipientType, statusType, operationType, conditionCriteriaType, conditionType,
-      groupType, roleType, subtaskType, compareFieldValueType, accountIdInfoType],
+      groupType, roleType, subtaskType, compareFieldValueType],
   }
 }

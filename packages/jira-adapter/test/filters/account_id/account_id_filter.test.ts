@@ -120,7 +120,7 @@ describe('account_id_filter', () => {
     it('returns account id structure to a simple and correct string on pre deploy on all 5 types', async () => {
       await filter.preDeploy(displayChanges)
       common.checkSimpleInstanceIds(getChangeData(displayChanges[0]), '0')
-      common.checkSimpleInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.before, '1')
+      common.checkObjectedInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.before, '1')
       common.checkSimpleInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.after, '2')
     })
     it('does not change removal objects', async () => {

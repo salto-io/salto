@@ -231,7 +231,6 @@ const updateFieldTypes = async (
       } else {
         f.refType = createRefToElmWithValue(new MapType(innerType))
       }
-
       // make the key field required
       const deepInnerType = await getDeepInnerType(innerType)
       if (isObjectType(deepInnerType)) {
@@ -246,6 +245,16 @@ const updateFieldTypes = async (
       const innerField = fieldType.fields[mapDef.innerField]
       const innerFieldType = await innerField.getType()
       innerField.refType = createRefToElmWithValue(new MapType(innerFieldType))
+      // make the key field required
+      const deepInnerType = await getDeepInnerType(innerFieldType)
+      if (isObjectType(deepInnerType)) {
+        const keyFieldType = deepInnerType.fields[mapDef.key]
+        if (!keyFieldType) {
+          log.error('could not find key field %s for field %s', f.elemID.getFullName())
+          return
+        }
+        keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+      }
     }
   })
 }

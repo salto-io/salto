@@ -13,10 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
+import {
+  Element,
+  InstanceElement,
+  ObjectType,
+  MapType,
+  isListType,
+  isMapType,
+  Change,
+  toChange,
+  isObjectType,
+} from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, defaultFilterContext } from '../utils'
+import { createInstanceElement } from '../../src/transformers/transformer'
+import { mockTypes } from '../mock_elements'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -314,6 +326,30 @@ describe('ProfileMaps filter', () => {
       expect(afterProfileObj).toEqual(generateProfileType(true))
       expect(beforeInstances).toEqual(generateInstances(beforeProfileObj))
       expect(afterInstances).toEqual(generateInstances(afterProfileObj))
+    })
+  })
+})
+
+describe('convert inner field to map', () => {
+  let elements: Element[]
+  type FilterType = FilterWith<'onFetch'| 'preDeploy'>
+  let filter: FilterType
+  beforeAll(async () => {
+    const lwc = createInstanceElement({ fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'dir/lwc.js', source: 'lwc.ts' }] } }, mockTypes.LightningComponentBundle)
+    elements = [lwc]
+
+    filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterType
+    await filter.onFetch(elements)
+  })
+  describe('on fetch', () => {
+    it('should convert lwcresource inner field to map ', async () => {
+      const lwc = elements[0] as InstanceElement
+      const fieldType = await lwc.getType()
+      const lwcResourcesType = await fieldType.fields.lwcResources.getType()
+      if (isObjectType(lwcResourcesType)) {
+        const lwcResourceType = await lwcResourcesType.fields.lwcResource.getType()
+        expect(isMapType(lwcResourceType)).toBeTruthy()
+      }
     })
   })
 })

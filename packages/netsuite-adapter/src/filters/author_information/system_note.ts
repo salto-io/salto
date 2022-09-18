@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, ObjectType, isObjectType, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, Values, isObjectType, ObjectType, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -173,14 +173,16 @@ const distinctSortedSystemNotes = (
   .uniqBy(note => getKeyForNote(note))
   .value()
 
-const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, string> =>
-  Object.fromEntries(systemNotes.map(systemnote => [getKeyForNote(systemnote), systemnote.name]))
+const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, Values> =>
+  Object.fromEntries(systemNotes.map(
+    systemnote => [getKeyForNote(systemnote), { name: systemnote.name, date: systemnote.date }]
+  ))
 
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
   lastFetchTime: Date
-): Promise<Record<string, string>> => {
+): Promise<Record<string, Values>> => {
   const systemNotes = await log.time(
     () => querySystemNotes(client, queryIds, lastFetchTime),
     'querySystemNotes'
@@ -280,18 +282,24 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
     }
 
     instancesWithInternalId.forEach(instance => {
-      const employeeId = systemNotes[getRecordIdAndTypeStringKey(
-        getInternalId(instance),
+      const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
+        instance.value.internalId,
         TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]
       )]
       setChangedBy(instance, employeeId)
+      if (isDefined(lastModifiedDate)) {
+        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: lastModifiedDate })
+      }
     })
     customRecordTypesWithInternalIds.forEach(type => {
-      const employeeId = systemNotes[getRecordIdAndTypeStringKey(
-        getInternalId(type),
+      const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
+        type.annotations.internalId,
         TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
       )]
       setChangedBy(type, employeeId)
+      if (isDefined(lastModifiedDate)) {
+        type.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: lastModifiedDate })
+      }
     })
     await awu(customRecordsWithInternalIds).forEach(async instance => {
       const employeeId = systemNotes[getRecordIdAndTypeStringKey(

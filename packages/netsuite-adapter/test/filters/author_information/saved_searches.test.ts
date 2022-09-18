@@ -41,9 +41,10 @@ describe('netsuite saved searches author information tests', () => {
 
   beforeEach(async () => {
     runSavedSearchQueryMock.mockReset()
-    runSavedSearchQueryMock.mockResolvedValueOnce([
-      { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }] },
+    runSavedSearchQueryMock.mockResolvedValue([
+      { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '01/28/1995 6:17am' },
     ])
+
     savedSearch = new InstanceElement(SAVED_SEARCH,
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
     missingSavedSearch = new InstanceElement(SAVED_SEARCH,
@@ -66,10 +67,10 @@ describe('netsuite saved searches author information tests', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(runSavedSearchQueryMock).toHaveBeenNthCalledWith(1, {
       type: 'savedsearch',
-      columns: ['modifiedby', 'id'],
+      columns: ['modifiedby', 'id', 'datemodified'],
       filters: [],
     })
-    expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
+    expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(2)
   })
 
   it('should not query at all if there is no elements', async () => {
@@ -80,6 +81,11 @@ describe('netsuite saved searches author information tests', () => {
   it('should add names to elements', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
+  })
+
+  it('should add last modified date to elements', async () => {
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '01/28/1995').toBeTruthy()
   })
 
   it('elements will stay the same if they were not found by the search', async () => {

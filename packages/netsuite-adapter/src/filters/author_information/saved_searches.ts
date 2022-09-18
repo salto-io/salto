@@ -31,7 +31,7 @@ const isSavedSearchInstance = (instance: InstanceElement): boolean =>
 const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearchesResult[]> => {
   const savedSearches = await client.runSavedSearchQuery({
     type: 'savedsearch',
-    columns: ['modifiedby', 'id'],
+    columns: ['modifiedby', 'id', 'datemodified'],
     filters: [],
   })
   if (savedSearches === undefined) {
@@ -51,6 +51,14 @@ const getSavedSearchesModifiersMap = async (
   const savedSearches = await fetchSavedSearches(client)
   return Object.fromEntries(savedSearches.map(savedSearch =>
     (_.isEmpty(savedSearch.modifiedby) ? [] : [savedSearch.id, savedSearch.modifiedby[0].text])))
+}
+
+const getLastModifiedDateMap = async (
+  client: NetsuiteClient,
+): Promise<Record<string, string>> => {
+  const savedSearches = await fetchSavedSearches(client)
+  return Object.fromEntries(savedSearches.map(savedSearch =>
+    (_.isUndefined(savedSearch.datemodified) ? [] : [savedSearch.id, savedSearch.datemodified.split(' ')[0]])))
 }
 
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
@@ -74,9 +82,15 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
     if (_.isEmpty(savedSearchesMap)) {
       return
     }
+    const savedSearchesDateMap = await getLastModifiedDateMap(client)
     savedSearchesInstances.forEach(search => {
       if (isDefined(savedSearchesMap[search.value.scriptid])) {
-        search.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: savedSearchesMap[search.value.scriptid] })
+        search.annotate(
+          {
+            [CORE_ANNOTATIONS.CHANGED_BY]: savedSearchesMap[search.value.scriptid],
+            [CORE_ANNOTATIONS.CHANGED_AT]: savedSearchesDateMap[search.value.scriptid],
+          }
+        )
       }
     })
   },

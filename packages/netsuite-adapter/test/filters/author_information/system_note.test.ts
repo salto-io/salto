@@ -142,6 +142,15 @@ describe('netsuite system note author information', () => {
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
   })
 
+  it('should add dates to elements', async () => {
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01').toBeTruthy()
+    expect(customTypeInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01').toBeTruthy()
+    expect(Object.values(missingInstance.annotations)).toHaveLength(0)
+    expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01').toBeTruthy()
+    expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01').toBeTruthy()
+  })
+
   it('elements will stay the same if there is no author information', async () => {
     runSuiteQLMock.mockReset()
     await filterCreator(filterOpts).onFetch?.(elements)

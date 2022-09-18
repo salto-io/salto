@@ -146,4 +146,5 @@ type modifiedbyField = {
 export type SavedSearchesResult = {
   id: string
   modifiedby: modifiedbyField[]
+  datemodified: string
 }

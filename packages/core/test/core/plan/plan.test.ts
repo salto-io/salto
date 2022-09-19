@@ -303,7 +303,7 @@ describe('getPlan', () => {
       after: createElementSource(
         [secondInstance1, secondInstance2, secondInstance3, secondInstance4, type, innerType]
       ),
-      compareReferencesByValue: true,
+      compareOptions: { compareReferencesByValue: true },
     })
     expect(plan.size).toBe(0)
   })
@@ -340,7 +340,7 @@ describe('getPlan', () => {
     const plan = await getPlan({
       before: createElementSource([stateInstance, type]),
       after: createElementSource([instance, type, variableObject]),
-      compareReferencesByValue: true,
+      compareOptions: { compareReferencesByValue: true },
     })
     expect(plan.size).toBe(0)
   })
@@ -469,7 +469,7 @@ describe('getPlan', () => {
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
         after: createElementSource([instanceAfter, referencedAfter, type]),
-        compareReferencesByValue: true,
+        compareOptions: { compareReferencesByValue: true },
       })
       expect(plan.size).toBe(2)
 
@@ -499,7 +499,7 @@ describe('getPlan', () => {
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
         after: createElementSource([instanceAfter, referencedAfter, type]),
-        compareReferencesByValue: true,
+        compareOptions: { compareReferencesByValue: true },
       })
       expect(plan.size).toBe(1)
 
@@ -541,7 +541,7 @@ describe('getPlan', () => {
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
         after: createElementSource([instanceAfter, referencedAfter, type]),
-        compareReferencesByValue: true,
+        compareOptions: { compareReferencesByValue: true },
       })
       expect(plan.size).toBe(2)
 
@@ -570,7 +570,7 @@ describe('getPlan', () => {
       const plan = await getPlan({
         before: createElementSource([instanceBefore, referencedBefore, type]),
         after: createElementSource([instanceAfter, referencedAfter, type]),
-        compareReferencesByValue: true,
+        compareOptions: { compareReferencesByValue: true },
       })
       expect(plan.size).toBe(0)
 

@@ -30,6 +30,10 @@ export interface Values {
   [key: string]: Value
 }
 
+export type CompareOptions = {
+  compareReferencesByValue?: boolean
+}
+
 export const calculateStaticFileHash = (content: Buffer): string =>
   hashUtils.toMD5(content)
 
@@ -227,26 +231,28 @@ export const shouldResolve = (value: unknown): boolean => (
 const shouldCompareByValue = (
   first: Value,
   second: Value,
-  compareReferencesByValue: boolean
-): boolean => compareReferencesByValue && shouldResolve(first) && shouldResolve(second)
+  options?: CompareOptions,
+): boolean => Boolean(options?.compareReferencesByValue)
+  && shouldResolve(first)
+  && shouldResolve(second)
 
 export const compareSpecialValues = (
   first: Value,
   second: Value,
-  compareReferencesByValue = false,
+  options?: CompareOptions,
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
   }
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
-    if (shouldCompareByValue(first, second, compareReferencesByValue)) {
+    if (shouldCompareByValue(first, second, options)) {
       const fValue = isReferenceExpression(first) ? first.value : first
       const sValue = isReferenceExpression(second) ? second.value : second
 
       return _.isEqualWith(
         fValue,
         sValue,
-        (va1, va2) => compareSpecialValues(va1, va2, compareReferencesByValue),
+        (va1, va2) => compareSpecialValues(va1, va2, options),
       )
     }
 
@@ -266,11 +272,11 @@ export const compareSpecialValues = (
 export const isEqualValues = (
   first: Value,
   second: Value,
-  compareReferencesByValue = false,
+  options?: CompareOptions,
 ): boolean => _.isEqualWith(
   first,
   second,
-  (va1, va2) => compareSpecialValues(va1, va2, compareReferencesByValue),
+  (va1, va2) => compareSpecialValues(va1, va2, options),
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

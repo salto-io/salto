@@ -184,19 +184,19 @@ describe('Values', () => {
       it('References to inner properties with the same should not be equal when compareReferencesByValue is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 2)
-        expect(isEqualValues(ref1, ref2, true)).toBeFalsy()
+        expect(isEqualValues(ref1, ref2, { compareReferencesByValue: true })).toBeFalsy()
       })
 
       it('References to inner properties with the same should not be equal', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
-        expect(isEqualValues(ref1, ref2, true)).toBeTruthy()
+        expect(isEqualValues(ref1, ref2, { compareReferencesByValue: true })).toBeTruthy()
       })
 
       it('References to different inner properties with the same value should be equal', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val2'), 1)
-        expect(isEqualValues(ref1, ref2, true)).toBeTruthy()
+        expect(isEqualValues(ref1, ref2, { compareReferencesByValue: true })).toBeTruthy()
       })
 
       it('Reference should not be equal to its resolved value by default', () => {
@@ -206,7 +206,7 @@ describe('Values', () => {
 
       it('Reference should not be equal to its resolved value when compareReferencesByValue is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
-        expect(isEqualValues(ref1, 1, true)).toBeTruthy()
+        expect(isEqualValues(ref1, 1, { compareReferencesByValue: true })).toBeTruthy()
       })
     })
     it('calculate hash', () => {

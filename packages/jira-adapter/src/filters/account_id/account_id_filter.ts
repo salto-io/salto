@@ -51,7 +51,7 @@ const addToCache = (
   cache[key].push({ path, object: objectToClone })
 }
 
-export const isAccountIdType = (instanceElement: InstanceElement): boolean =>
+const isAccountIdType = (instanceElement: InstanceElement): boolean =>
   ACCOUNT_ID_TYPES.includes(instanceElement.elemID.typeName)
 
 
@@ -61,17 +61,17 @@ export type WalkOnUsersCallback = (
 const accountIdsScenarios = (
   value: Value,
   path: ElemID,
-  callBack: WalkOnUsersCallback
+  callback: WalkOnUsersCallback
 ): void => {
   // main scenario, field is within the ACCOUNT_IDS_FIELDS_NAMES
   ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
     if (Object.prototype.hasOwnProperty.call(value, fieldName)) {
-      callBack({ value, path, fieldName })
+      callback({ value, path, fieldName })
     }
   })
   // second scenario: the type has ACCOUNT_ID_STRING and the value holds the actual account id
   if (value.type === ACCOUNT_ID_STRING) {
-    callBack({ value, path, fieldName: VALUE_FIELD })
+    callback({ value, path, fieldName: VALUE_FIELD })
   }
   // third scenario the type is permissionHolder and the type is user
   // the id is in the parameter field. We cannot check type with walk on elements, so we
@@ -79,13 +79,16 @@ const accountIdsScenarios = (
   if (PARAMETER_STYLE_TYPES.includes(path.typeName)
       && value.parameter !== undefined
       && _.toLower(value.type) === USER_TYPE) {
-    callBack({ value, path, fieldName: PARAMETER_FIELD })
+    callback({ value, path, fieldName: PARAMETER_FIELD })
   }
 }
 
 export const walkOnUsers = (callback: WalkOnUsersCallback): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
     if (isInstanceElement(value)) {
+      if (!isAccountIdType(value)) {
+        return WALK_NEXT_STEP.EXIT
+      }
       accountIdsScenarios(value.value, path, callback)
     } else {
       accountIdsScenarios(value, path, callback)
@@ -133,7 +136,6 @@ const filter: FilterCreator = () => {
     onFetch: async elements => log.time(async () => {
       elements
         .filter(isInstanceElement)
-        .filter(isAccountIdType)
         .forEach(element => {
           walkOnElement({ element, func: walkOnUsers(objectifyAccountId) })
         })
@@ -148,7 +150,6 @@ const filter: FilterCreator = () => {
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
-        .filter(isAccountIdType)
         .forEach(element =>
           walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache)) }))
     },

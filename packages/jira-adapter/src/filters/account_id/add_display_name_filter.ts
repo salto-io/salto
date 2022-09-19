@@ -20,7 +20,7 @@ import { walkOnElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { walkOnUsers, WalkOnUsersCallback, isAccountIdType } from './account_id_filter'
+import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -61,7 +61,6 @@ const filter: FilterCreator = ({ paginator, config }) => ({
     const idMap = await createIdToUserMap(paginator)
     elements
       .filter(isInstanceElement)
-      .filter(isAccountIdType)
       .forEach(element => {
         walkOnElement({ element, func: walkOnUsers(addDisplayName(idMap)) })
       })

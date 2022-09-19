@@ -89,6 +89,7 @@ import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_sche
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
@@ -165,6 +166,7 @@ export const DEFAULT_FILTERS = [
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
+  removeEmptyValuesFilter,
   maskingFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter

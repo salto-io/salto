@@ -81,7 +81,7 @@ const importAutomation = async (
   client: JiraClient,
   cloudId: string,
 ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> => {
-  const resolvedInstance = await resolveValues(instance, getLookUpName)
+  const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
 
   const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
 
@@ -144,7 +144,7 @@ const updateAutomation = async (
   client: JiraClient,
   cloudId: string,
 ): Promise<void> => {
-  const resolvedInstance = await resolveValues(instance, getLookUpName)
+  const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
 
   const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
 

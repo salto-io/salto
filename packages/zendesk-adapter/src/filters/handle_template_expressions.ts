@@ -140,9 +140,11 @@ const seekAndMarkPotentialReferences = (formula: string): string => {
 
 // This function receives a formula that contains zendesk-style references and replaces
 // it with salto style templates.
-const formulaToTemplate = (formula: string,
+const formulaToTemplate = (
+  formula: string,
   instancesByType: Record<string, InstanceElement[]>,
-  enableMissingReferences: boolean | undefined): TemplateExpression | string => {
+  enableMissingReferences?: boolean
+): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(/_([\d]+)/).filter(v => !_.isEmpty(v))
@@ -156,6 +158,7 @@ const formulaToTemplate = (formula: string,
     if (elem) {
       return new ReferenceExpression(elem.elemID, elem)
     }
+    // if no id was detected we return the original expression.
     if (!enableMissingReferences) {
       return expression
     }
@@ -214,7 +217,7 @@ const getContainers = async (instances: InstanceElement[]): Promise<TemplateCont
     }))).flat()
 
 const replaceFormulasWithTemplates = async (
-  instances: InstanceElement[], enableMissingReferences: boolean | undefined
+  instances: InstanceElement[], enableMissingReferences?: boolean
 ): Promise<void> => {
   try {
     (await getContainers(instances)).forEach(container => {
@@ -223,8 +226,9 @@ const replaceFormulasWithTemplates = async (
       container.values.forEach(value => {
         if (Array.isArray(value[fieldName])) {
           value[fieldName] = value[fieldName].map((innerValue: unknown) =>
-            (_.isString(innerValue) ? formulaToTemplate(innerValue, instancesByType,
-              enableMissingReferences) : innerValue))
+            (_.isString(innerValue)
+              ? formulaToTemplate(innerValue, instancesByType, enableMissingReferences)
+              : innerValue))
         } else if (value[fieldName]) {
           value[fieldName] = formulaToTemplate(value[fieldName], instancesByType,
             enableMissingReferences)

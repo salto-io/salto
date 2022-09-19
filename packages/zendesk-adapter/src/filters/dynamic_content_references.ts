@@ -45,7 +45,7 @@ const log = logger(module)
 const transformDynamicContentDependencies = async (
   instance: InstanceElement,
   placeholderToItem: Record<string, InstanceElement>,
-  enableMissingReference: boolean | undefined
+  enableMissingReference?: boolean,
 ): Promise<void> => {
   const partToTemplate = (part: string): TemplatePart[] => {
     const placeholder = part.match(INNER_PLACEHOLDER_REGEX)
@@ -54,8 +54,11 @@ const transformDynamicContentDependencies = async (
     }
     const itemInstance = placeholderToItem[placeholder[0]]
     if (!itemInstance) {
+      if (!enableMissingReference) {
+        return [part]
+      }
       const matches = placeholder[0].match(/.*\.([a-zA-Z0-9_]+)\}\}/)
-      if (!enableMissingReference || !matches) {
+      if (!matches) {
         return [part]
       }
       const missingInstance = createMissingInstance(

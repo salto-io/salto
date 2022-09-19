@@ -269,7 +269,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     const zendeskSupportElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
-      shouldAddRemainingTypes: false,
+      // Add remaining types if Zendesk Guide is disabled
+      shouldAddRemainingTypes: !this.userConfig[FETCH_CONFIG].enableGuide,
       supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,

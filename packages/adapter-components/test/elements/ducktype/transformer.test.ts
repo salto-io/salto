@@ -16,7 +16,7 @@
 
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
-import { getTypeAndInstances, getAllElements } from '../../../src/elements/ducktype'
+import { getTypeAndInstances, getAllElements, EntriesRequester } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
@@ -368,7 +368,7 @@ describe('ducktype_transformer', () => {
         nestedFieldFinder: returnFullEntry,
       })).rejects.toThrow(new Error('Could not fetch type myType, singleton types should not have more than one instance'))
     })
-    it('should return recurseInto values in the instances', async () => {
+    it('should returnsrecurseInto values in the instances', async () => {
       jest.spyOn(typeElements, 'generateType').mockRestore()
       jest.spyOn(instanceElements, 'toInstance').mockRestore()
       const res = await getTypeAndInstances({
@@ -593,6 +593,44 @@ describe('ducktype_transformer', () => {
         typesConfig,
         typeDefaultConfig,
         contextElements: undefined,
+      })
+    })
+    it('should run a function to retrieve entries responses and not adding the remaining types', async () => {
+      const getEntriesResponseValuesFunc: EntriesRequester = jest.fn()
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'folder' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folder'],
+        },
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: typesConfig,
+        typeDefaults: typeDefaultConfig,
+        getEntriesResponseValuesFunc,
+        shouldAddRemainingTypes: false,
+      })
+      const { elements } = res
+      expect(elements.map(e => e.elemID.getFullName())).toEqual([
+        'something.folder',
+        'something.folder.instance.abc',
+      ])
+      expect(transformer.getTypeAndInstances).toHaveBeenCalledTimes(1)
+      expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({
+        adapterName: 'something',
+        typeName: 'folder',
+        paginator: mockPaginator,
+        nestedFieldFinder: returnFullEntry,
+        computeGetArgs: simpleGetArgs,
+        typesConfig,
+        typeDefaultConfig,
+        getEntriesResponseValuesFunc,
       })
     })
     it('should return config changes', async () => {

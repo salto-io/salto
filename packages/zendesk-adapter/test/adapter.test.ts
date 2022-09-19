@@ -51,9 +51,13 @@ describe('adapter', () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onGet('/account/settings').replyOnce(200, { settings: {} })
     // Replying 200 for every new client we open for fetch brands' help centers
-    mockAxiosAdapter.onGet('/account/settings').replyOnce(200, { settings: {} })
-    const brandsReply = (mockReplies as MockReply[]).filter(reply => reply.url === '/brands')
-    expect(brandsReply).toHaveLength(1);
+    const accountSettingsResponse = (mockReplies as MockReply[]).find(reply => reply.url === '/account/settings')
+    if (accountSettingsResponse === undefined) {
+      return
+    }
+    mockAxiosAdapter.onGet('/account/settings').replyOnce(200, accountSettingsResponse.response)
+    mockAxiosAdapter.onGet('/account/settings').replyOnce(200, { settings: {} });
+
     (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
       mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(
         200, response
@@ -154,6 +158,7 @@ describe('adapter', () => {
           'zendesk.automation_order.instance',
           'zendesk.automations',
           'zendesk.brand',
+          'zendesk.brand.instance.brandWithoutGuide',
           'zendesk.brand.instance.myBrand',
           'zendesk.brand_logo',
           'zendesk.brands',
@@ -336,6 +341,7 @@ describe('adapter', () => {
           'zendesk.section_translation.instance.myBrand_Billing_and_Subscriptions_uss__myBrand_en_us@uuumuuub',
           'zendesk.section_translation.instance.myBrand_FAQ__myBrand_en_us@uuuub',
           'zendesk.section_translation.instance.myBrand_Internal_KB_us__myBrand_en_us@uumuuub',
+          'zendesk.section_translation__translations',
           'zendesk.sections',
           'zendesk.sharing_agreement',
           'zendesk.sharing_agreements',

@@ -40,8 +40,8 @@ export type EntriesRequester = (
   args: {
     paginator: Paginator
     args: ClientGetWithPaginationParams
-    typeName: string
-    typesConfig: Record<string, TypeDuckTypeConfig>
+    typeName?: string
+    typesConfig?: Record<string, TypeDuckTypeConfig>
   }
 ) => Promise<ResponseValue[]>
 
@@ -74,12 +74,9 @@ export type FetchElements<T> = {
   elements: T
 }
 
-export const getEntriesResponseValues = async ({
+export const getEntriesResponseValues: EntriesRequester = async ({
   paginator,
   args,
-} : {
-  paginator: Paginator
-  args: ClientGetWithPaginationParams
 }): Promise<ResponseValue[]> => (
   (await toArrayAsync(
     paginator(args, page => makeArray(page) as ResponseValue[])

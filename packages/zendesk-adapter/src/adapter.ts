@@ -175,10 +175,14 @@ const zendeskGuideEntriesFunc = (
     typesConfig,
   } : {
     args: clientUtils.ClientGetWithPaginationParams
-    typeName: string
-    typesConfig: Record<string, configUtils.TypeDuckTypeConfig>
-  }): Promise<clientUtils.ResponseValue[]> => (
-    (await awu(brandsList).map(async brandInstance => {
+    typeName?: string
+    typesConfig?: Record<string, configUtils.TypeDuckTypeConfig>
+  }): Promise<clientUtils.ResponseValue[]> => {
+    if (typeName === undefined || typesConfig === undefined) {
+      return []
+    }
+    return (await awu(brandsList).map(async brandInstance => {
+      log.debug(`Fetching type ${typeName} entries for brand ${brandInstance.elemID.name}`)
       const brandPaginatorResponseValues = (await getEntriesResponseValues({
         paginator: brandToPaginator[brandInstance.elemID.name],
         args,
@@ -195,7 +199,7 @@ const zendeskGuideEntriesFunc = (
       })
       return brandPaginatorResponseValues
     }).toArray()).flat()
-  )
+  }
 
   return getZendeskGuideEntriesResponseValues
 }
@@ -266,12 +270,13 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
+    const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
+    const { supportedTypes } = this.userConfig.apiDefinitions
     const zendeskSupportElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
-      // Add remaining types if Zendesk Guide is disabled
-      shouldAddRemainingTypes: !this.userConfig[FETCH_CONFIG].enableGuide,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      shouldAddRemainingTypes: isGuideDisabled,
+      supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -280,13 +285,14 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
     })
 
-    if (!this.userConfig[FETCH_CONFIG].enableGuide) {
+    if (isGuideDisabled) {
       return zendeskSupportElements
     }
 
     const brandsList = zendeskSupportElements.elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+      .filter(brandInstance => brandInstance.value.has_help_center)
 
     const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
       [
@@ -312,24 +318,18 @@ export default class ZendeskAdapter implements AdapterOperations {
       getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandsList, brandToPaginator),
     })
 
-    const zendeskElements = [...zendeskSupportElements.elements, ...zendeskGuideElements.elements]
+    const zendeskElements = zendeskSupportElements.elements.concat(zendeskGuideElements.elements)
     addRemainingTypes({
       adapterName: ZENDESK,
       elements: zendeskElements,
       typesConfig: this.userConfig.apiDefinitions.types,
-      supportedTypes: _.merge(
-        {},
-        this.userConfig.apiDefinitions.supportedTypes,
-        GUIDE_SUPPORTED_TYPES,
-      ),
+      supportedTypes: _.merge(supportedTypes, GUIDE_SUPPORTED_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
 
     return {
-      configChanges: [
-        ...zendeskSupportElements.configChanges,
-        ...zendeskGuideElements.configChanges,
-      ],
+      configChanges: zendeskSupportElements.configChanges
+        .concat(zendeskGuideElements.configChanges),
       elements: zendeskElements,
     }
   }

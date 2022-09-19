@@ -1990,3 +1990,16 @@ export type FilterContext = {
 }
 
 export const validateFetchConfig = validateDuckTypeFetchConfig
+
+/**
+ * Validating each Zendesk Guide type has a dataField property in the configuration
+ */
+export const validateGuideTypesConfig = (
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => {
+  const zendeskGuideTypesWithoutDataField = _.values(GUIDE_SUPPORTED_TYPES).flat()
+    .filter(type => adapterApiConfig.types[type].transformation?.dataField === undefined)
+  if (zendeskGuideTypesWithoutDataField.length > 0) {
+    throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
+  }
+}

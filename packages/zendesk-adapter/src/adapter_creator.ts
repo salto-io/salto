@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
@@ -21,7 +20,7 @@ import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
   configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
-  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig, GUIDE_SUPPORTED_TYPES,
+  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig, validateGuideTypesConfig,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
@@ -74,16 +73,6 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
   url: createUrlFromUserInput(userInput.value),
   oauthRequiredFields: ['access_token'],
 })
-
-export const validateGuideTypesConfig = (
-  adapterApiConfig: configUtils.AdapterApiConfig,
-): void => {
-  const zendeskGuideTypesWithoutDataField = _.values(GUIDE_SUPPORTED_TYPES).flat()
-    .filter(type => adapterApiConfig.types[type].transformation?.dataField === undefined)
-  if (zendeskGuideTypesWithoutDataField.length > 0) {
-    throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
-  }
-}
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}

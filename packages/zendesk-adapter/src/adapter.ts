@@ -84,7 +84,6 @@ import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
 import { Credentials } from './auth'
 
-
 const log = logger(module)
 const { createPaginator } = clientUtils
 const { findDataField, computeGetArgs } = elementUtils
@@ -93,6 +92,7 @@ const {
   replaceInstanceTypeForDeploy,
   restoreInstanceTypeFromDeploy,
   getEntriesResponseValues,
+  addRemainingTypes,
 } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
@@ -269,6 +269,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const zendeskSupportElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
+      shouldAddRemainingTypes: false,
       supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
@@ -299,6 +300,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const zendeskGuideElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
+      shouldAddRemainingTypes: false,
       supportedTypes: GUIDE_SUPPORTED_TYPES,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
@@ -309,29 +311,25 @@ export default class ZendeskAdapter implements AdapterOperations {
       getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandsList, brandToPaginator),
     })
 
-    const [zendeskSupportInstances, zendeskSupportTypes] = _.partition(
-      zendeskSupportElements.elements,
-      isInstanceElement,
-    )
-    const [zendeskGuideInstances, zendeskGuideTypes] = _.partition(
-      zendeskGuideElements.elements,
-      isInstanceElement,
-    )
-    const zendeskFetchedTypes = _.uniqBy(
-      [...zendeskSupportTypes, ...zendeskGuideTypes],
-      e => e.elemID.getFullName(),
-    )
+    const zendeskElements = [...zendeskSupportElements.elements, ...zendeskGuideElements.elements]
+    addRemainingTypes({
+      adapterName: ZENDESK,
+      elements: zendeskElements,
+      typesConfig: this.userConfig.apiDefinitions.types,
+      supportedTypes: _.merge(
+        {},
+        this.userConfig.apiDefinitions.supportedTypes,
+        GUIDE_SUPPORTED_TYPES,
+      ),
+      typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
+    })
 
     return {
       configChanges: [
         ...zendeskSupportElements.configChanges,
         ...zendeskGuideElements.configChanges,
       ],
-      elements: [
-        ...zendeskFetchedTypes,
-        ...zendeskSupportInstances,
-        ...zendeskGuideInstances,
-      ],
+      elements: zendeskElements,
     }
   }
 

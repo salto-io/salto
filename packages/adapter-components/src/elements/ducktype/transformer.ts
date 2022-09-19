@@ -298,6 +298,7 @@ export const getAllElements = async ({
   fetchQuery,
   supportedTypes,
   types,
+  shouldAddRemainingTypes = true,
   paginator,
   nestedFieldFinder,
   computeGetArgs,
@@ -310,6 +311,7 @@ export const getAllElements = async ({
   fetchQuery: ElementQuery
   supportedTypes: Record<string, string[]>
   types: Record<string, TypeConfig>
+  shouldAddRemainingTypes?: boolean
   paginator: Paginator
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
@@ -368,13 +370,15 @@ export const getAllElements = async ({
   const instancesAndTypes = [
     ...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e)),
   ]
-  addRemainingTypes({
-    adapterName,
-    elements: instancesAndTypes,
-    typesConfig: types,
-    supportedTypes,
-    typeDefaultConfig: typeDefaults,
-  })
+  if (shouldAddRemainingTypes) {
+    addRemainingTypes({
+      adapterName,
+      elements: instancesAndTypes,
+      typesConfig: types,
+      supportedTypes,
+      typeDefaultConfig: typeDefaults,
+    })
+  }
   return {
     elements: instancesAndTypes,
     configChanges: _.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude),

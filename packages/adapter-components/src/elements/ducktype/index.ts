@@ -18,3 +18,4 @@ export { replaceInstanceTypeForDeploy, restoreInstanceTypeFromDeploy } from './d
 export { extractStandaloneFields } from './standalone_field_extractor'
 export { getAllElements, getTypeAndInstances, ConfigChangeSuggestion, FetchElements, EntriesRequester, getEntriesResponseValues } from './transformer'
 export { generateType, toNestedTypeName } from './type_elements'
+export { addRemainingTypes } from './add_remaining_types'

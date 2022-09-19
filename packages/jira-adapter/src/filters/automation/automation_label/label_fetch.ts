@@ -99,7 +99,6 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
     const automationLabels = await getAutomationLabels(client, cloudId)
 
     const automationLabelType = createAutomationLabelType()
-    elements.push(createInstance(automationLabels, automationLabelType, getElemIdFunc))
     automationLabels.forEach((automationLabel: LabelsResponse) => elements.push(
       createInstance(automationLabel, automationLabelType, getElemIdFunc),
     ))

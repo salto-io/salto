@@ -17,19 +17,28 @@ import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isI
 // import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { addAnnotationRecursively, findObject } from '../../../utils'
-// import Joi from 'joi'
 import { AUTOMATION_LABEL_TYPE } from '../../../constants'
 import { FilterCreator } from '../../../filter'
 import { deployChanges } from '../../../deployment/standard_deployment'
 import JiraClient from '../../../client/client'
 import { getLookUpName } from '../../../reference_mapping'
 import { getCloudId } from '../cloud_id'
-import { isLabelsResponse } from './label_fetch'
+import { LabelsResponse } from './label_fetch'
 
 
 const log = logger(module)
+
+export const LABELS_RESPONSE_SCHEME = Joi.object({
+  id: Joi.number().required(),
+  name: Joi.string().allow('').required(),
+  color: Joi.string().allow('').required(),
+}).unknown(true).required()
+
+export const isLabelsResponse = createSchemeGuard<LabelsResponse>(LABELS_RESPONSE_SCHEME, 'Received an invalid page response')
+
 
 const updateAutomationLabel = async (
   instance: InstanceElement,

@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import { expressions, elementSource, Workspace } from '@salto-io/workspace'
 import { loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import { calcFetchChanges } from '@salto-io/core'
-import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
+import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
 import { CliExitCode, CliOutput } from '../types'
@@ -30,6 +30,7 @@ const { awu } = collections.asynciterable
 type FetchDiffArgs = {
   fromDir: string
   toDir: string
+  accountName: 'salesforce'
   targetEnvs?: string[]
 }
 
@@ -62,8 +63,8 @@ const fetchDiffToWorkspace = async (
     elementSource.createInMemoryElementSource(afterElements),
     elementSource.createInMemoryElementSource(beforeElements),
     resolvedWSElementSource,
-    new Set(['salesforce']),
-    new Set(['salesforce']),
+    new Set([input.accountName]),
+    new Set([input.accountName]),
   )
   const allChanges = Array.from(changes)
 
@@ -91,7 +92,7 @@ const fetchDiffToWorkspace = async (
 }
 
 
-const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
+export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
   workspace,
   input,
   output,
@@ -116,7 +117,6 @@ const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
       await workspace.setCurrentEnv(env, false)
       await workspace.flush()
     })
-    // TODO: for some reason this consistently causes cache invalidation, need to figure out why
   }
   return success ? CliExitCode.Success : CliExitCode.AppError
 }
@@ -126,6 +126,15 @@ const fetchDiffCmd = createWorkspaceCommand({
     name: 'fetch-diff',
     description: 'Calculate the difference between two SFDX folders and apply it to the workspace',
     keyedOptions: [
+      {
+        name: 'accountName',
+        alias: 't',
+        description: 'The account name for elements, this determines the expected format of the elements in the directories',
+        type: 'string',
+        required: true,
+        choices: ['salesforce'],
+        default: 'salesforce',
+      },
       {
         name: 'targetEnvs',
         alias: 'e',
@@ -151,14 +160,4 @@ const fetchDiffCmd = createWorkspaceCommand({
   action: fetchDiffAction,
 })
 
-const salesforceGroupDef = createCommandGroupDef({
-  properties: {
-    name: 'salesforce',
-    description: 'Salesforce specific commands',
-  },
-  subCommands: [
-    fetchDiffCmd,
-  ],
-})
-
-export default salesforceGroupDef
+export default fetchDiffCmd

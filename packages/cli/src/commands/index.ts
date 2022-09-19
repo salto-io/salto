@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import fetchDef from './fetch'
+import fetchDiffDef from './fetch_diff'
 import envGroupDef from './env'
 import serviceGroupDef from './service'
 import deployDef from './deploy'
@@ -21,7 +22,6 @@ import initDef from './init'
 import restoreDef from './restore'
 import elementGroupDef from './element'
 import workspaceGroupDef from './workspace'
-import salesforceGroupDef from './salesforce'
 
 // The order of the builders determines order of appearance in help text
 export default [
@@ -29,9 +29,9 @@ export default [
   envGroupDef,
   serviceGroupDef,
   fetchDef,
+  fetchDiffDef,
   deployDef,
   restoreDef,
   elementGroupDef,
   workspaceGroupDef,
-  salesforceGroupDef,
 ]

@@ -314,6 +314,7 @@ type MockWorkspaceArgs = {
   name?: string
   envs?: string[]
   accounts?: string[]
+  getElements?: () => Element[]
 }
 
 export const mockStateStaticFilesSource = ()
@@ -332,10 +333,11 @@ export const mockWorkspace = ({
   name = '',
   envs = ['active', 'inactive'],
   accounts = ['salesforce', 'netsuite'],
+  getElements = elements,
 }: MockWorkspaceArgs): MockWorkspace => {
   const state = wsState.buildInMemState(
     async () => ({
-      elements: createInMemoryElementSource(elements()),
+      elements: createInMemoryElementSource(getElements()),
       pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
       accountsUpdateDate: new InMemoryRemoteMap(),
       saltoMetadata: new InMemoryRemoteMap([
@@ -348,7 +350,7 @@ export const mockWorkspace = ({
     uid,
     name,
     elements: mockFunction<Workspace['elements']>().mockResolvedValue(
-      createInMemoryElementSource(elements())
+      createInMemoryElementSource(getElements())
     ),
     state: mockFunction<Workspace['state']>().mockReturnValue(state),
     envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),

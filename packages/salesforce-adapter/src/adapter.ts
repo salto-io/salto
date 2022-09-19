@@ -27,7 +27,8 @@ import SalesforceClient from './client/client'
 import * as constants from './constants'
 import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
-import customObjectsFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects'
+import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
+import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
 import customSettingsFilter from './filters/custom_settings_filter'
 import customObjectsSplitFilter from './filters/custom_object_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
@@ -37,6 +38,7 @@ import validationRulesAuthorFilter from './filters/author_information/validation
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
+import emailTemplateFilter from './filters/email_template_static_files'
 import profileDeployFilter from './filters/profile_deploy'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
@@ -105,10 +107,11 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // should run before customObjectsFilter
   { creator: workflowFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
-  { creator: customObjectsFilter, addsNewInformation: true },
+  { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
-  // customObjectsInstancesFilter depends on customObjectsFilter
+  { creator: customObjectsToObjectTypeFilter },
+  // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   { creator: customObjectsInstancesFilter, addsNewInformation: true },
   { creator: removeFieldsAndValuesFilter },
   { creator: removeRestrictionAnnotationsFilter },
@@ -119,6 +122,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   { creator: profilePermissionsFilter },
+  // emailTemplateFilter should run before convertMapsFilter
+  { creator: emailTemplateFilter },
   // convertMapsFilter should run before profile fieldReferencesFilter
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },
@@ -143,13 +148,13 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: currencyIsoCodeFilter },
   { creator: splitCustomLabels },
   { creator: customMetadataTypeFilter },
+  { creator: xmlAttributesFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
   // should be after convertTypeFilter & convertMapsFilter and before profileInstanceSplitFilter
   { creator: enumFieldPermissionsFilter },
   // should run after convertListsFilter
-  { creator: xmlAttributesFilter },
   { creator: replaceFieldValuesFilter },
   { creator: valueToStaticFileFilter },
   { creator: fieldReferencesFilter },
@@ -403,7 +408,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+  private async deployOrValidate(
+    { changeGroup }: DeployOptions,
+    checkOnly: boolean
+  ): Promise<DeployResult> {
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()
@@ -412,16 +420,25 @@ export default class SalesforceAdapter implements AdapterOperations {
     const filtersRunner = this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
 
-    const result = await isCustomObjectInstanceChanges(resolvedChanges)
-      ? await deployCustomObjectInstancesGroup(
+    let deployResult: DeployResult
+    if (await isCustomObjectInstanceChanges(resolvedChanges)) {
+      if (checkOnly) {
+        return {
+          appliedChanges: [],
+          errors: [new Error('Cannot deploy CustomObject Records as part of check-only deployment')],
+        }
+      }
+      deployResult = await deployCustomObjectInstancesGroup(
         resolvedChanges as Change<InstanceElement>[],
         this.client,
         this.fetchProfile.dataManagement
       )
-      : await deployMetadata(resolvedChanges, this.client,
-        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)
+    } else {
+      deployResult = await deployMetadata(resolvedChanges, this.client,
+        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
+    }
     // onDeploy can change the change list in place, so we need to give it a list it can modify
-    const appliedChangesBeforeRestore = [...result.appliedChanges]
+    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceChanges = _.keyBy(
@@ -434,9 +451,28 @@ export default class SalesforceAdapter implements AdapterOperations {
       .toArray()
     return {
       appliedChanges,
-      errors: result.errors,
-      extraProperties: result.extraProperties,
+      errors: deployResult.errors,
+      extraProperties: deployResult.extraProperties,
     }
+  }
+
+  async deploy(deployOptions: DeployOptions): Promise<DeployResult> {
+    // Check old configuration flag for backwards compatibility (SALTO-2700)
+    const checkOnly = this.userConfig?.client?.deploy?.checkOnly ?? false
+    const result = await this.deployOrValidate(deployOptions, checkOnly)
+    // If we got here with checkOnly we must not return any applied changes
+    // to maintain the old deploy interface (SALTO-2700)
+    if (checkOnly) {
+      return {
+        ...result,
+        appliedChanges: [],
+      }
+    }
+    return result
+  }
+
+  async validate(deployOptions: DeployOptions): Promise<DeployResult> {
+    return this.deployOrValidate(deployOptions, true)
   }
 
   private async listMetadataTypes(): Promise<MetadataObject[]> {

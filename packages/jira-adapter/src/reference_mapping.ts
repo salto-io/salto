@@ -44,7 +44,15 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   return _.capitalize(val)
 }
 
+export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
+  if (val === 'priority' || val === 'resolution') {
+    return _.capitalize(val)
+  }
+  return undefined
+}
+
 export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesIdContext' | 'workflowStatusPropertiesNameContext'
+| 'parentFieldId'
 
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
@@ -53,6 +61,7 @@ export const contextStrategyLookup: Record<
   parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
   workflowStatusPropertiesIdContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefIdType }),
   workflowStatusPropertiesNameContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefNameType }),
+  parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
 }
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<
@@ -466,6 +475,11 @@ ReferenceContextStrategyName
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'nameWithPath',
     target: { typeContext: 'parentSelectedFieldType' },
+  },
+  {
+    src: { field: 'fieldValue', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'parentFieldId' },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },

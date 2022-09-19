@@ -119,12 +119,12 @@ describe('ticket form reorder filter', () => {
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toEqual([change])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
+      expect(mockDeployChange).toHaveBeenCalledWith({
         change,
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
     })
     it('should return an error if there are multiple order changes', async () => {
       const res = await filter.deploy([change, change])

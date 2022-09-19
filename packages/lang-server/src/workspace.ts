@@ -216,7 +216,7 @@ export class EditorWorkspace {
       .map(c => getChangeData(c).elemID)
     const removalChangesOfNonTopLevels = changes
       .filter(isModificationChange)
-      .flatMap(c => detailedCompare(c.data.before, c.data.after, true))
+      .flatMap(c => detailedCompare(c.data.before, c.data.after, { createFieldChanges: true }))
       .filter(isRemovalChange)
       .map(c => c.id)
     const unresolvedReferences = await this.getUnresolvedRefForElement(

@@ -245,7 +245,7 @@ describe('detailedCompare', () => {
       })
     })
     describe('with field changes', () => {
-      const changes = detailedCompare(before, after, true)
+      const changes = detailedCompare(before, after, { createFieldChanges: true })
       it('should identify field changes, and create changes with the field id', () => {
         expect(hasChange(
           changes,

@@ -38,6 +38,7 @@ import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
+import smartValueReferenceFilter from './filters/automation/smart_values/smart_value_reference_filter'
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
@@ -88,6 +89,7 @@ import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_sche
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
@@ -95,6 +97,7 @@ import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
+import permissionSchemeFilter from './filters/sd_portals_permission_scheme'
 
 const {
   generateTypes,
@@ -163,6 +166,7 @@ export const DEFAULT_FILTERS = [
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
+  removeEmptyValuesFilter,
   maskingFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
@@ -183,6 +187,8 @@ export const DEFAULT_FILTERS = [
   hiddenValuesInListsFilter,
   queryFilter,
   missingDescriptionsFilter,
+  smartValueReferenceFilter,
+  permissionSchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

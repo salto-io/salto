@@ -76,12 +76,12 @@ describe('target filter', () => {
       mockDeployChange.mockImplementation(async () => ({ target: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedTarget } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: deployedTarget } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: deployedTarget } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -104,12 +104,12 @@ describe('target filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedTargetBefore, after: clonedTargetAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -135,12 +135,12 @@ describe('target filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedTargetBefore, after: clonedTargetAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -168,12 +168,12 @@ describe('target filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedTargetBefore, after: deployedTargetAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -208,12 +208,12 @@ describe('target filter', () => {
       delete deployedTarget.value.password
       const res = await filter.deploy([{ action: 'add', data: { after: clonedTarget } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: deployedTarget } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: deployedTarget } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

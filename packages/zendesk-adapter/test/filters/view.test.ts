@@ -223,12 +223,12 @@ describe('views filter', () => {
       mockDeployChange.mockImplementation(async () => ({ view: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedView } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedView } },
-        expect.anything(),
-        expect.anything(),
-        ['conditions', 'execution'],
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedView } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['conditions', 'execution'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -247,12 +247,12 @@ describe('views filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedViewBefore, after: clonedViewAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedViewBefore, after: clonedViewAfter } },
-        expect.anything(),
-        expect.anything(),
-        ['conditions', 'execution'],
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedViewBefore, after: clonedViewAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['conditions', 'execution'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -283,12 +283,12 @@ describe('views filter', () => {
       })
       const res = await filter.deploy([{ action: 'add', data: { after: view } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: view } },
-        expect.anything(),
-        expect.anything(),
-        ['conditions', 'execution'],
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: view } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['conditions', 'execution'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

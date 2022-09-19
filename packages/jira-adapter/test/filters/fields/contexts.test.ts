@@ -109,21 +109,19 @@ describe('deployContextChange', () => {
       getDefaultConfig({ isDataCenter: false }).apiDefinitions
     )
 
-    expect(deployChangeMock).toHaveBeenCalledWith(
-      await resolveChangeElement(change, getLookUpName),
+    expect(deployChangeMock).toHaveBeenCalledWith({
+      change: await resolveChangeElement(change, getLookUpName),
       client,
-      getDefaultConfig({ isDataCenter: false })
+      endpointDetails: getDefaultConfig({ isDataCenter: false })
         .apiDefinitions.types.CustomFieldContext.deployRequests,
-      [
+      fieldsToIgnore: [
         'defaultValue',
         'options',
         'isGlobalContext',
         'issueTypeIds',
         'projectIds',
       ],
-      undefined,
-      undefined,
-    )
+    })
   })
 
   it('should not throw if deploy failed because the field was deleted', async () => {

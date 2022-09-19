@@ -173,18 +173,16 @@ describe('dashboardDeploymentFilter', () => {
 
     it('should call the default deploy', async () => {
       await filter.deploy([change])
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        await resolveChangeElement(change, getLookUpName),
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: await resolveChangeElement(change, getLookUpName),
         client,
-        getDefaultConfig({ isDataCenter: false })
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types[DASHBOARD_TYPE].deployRequests,
-        [
+        fieldsToIgnore: [
           'layout',
           'gadgets',
         ],
-        undefined,
-        undefined,
-      )
+      })
     })
 
     it('should call layout with the right parameters on addition', async () => {

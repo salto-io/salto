@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElements
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
 import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
-import { LAST_FETCH_TIME, NETSUITE, PATH } from '../src/constants'
+import { NETSUITE } from '../src/constants'
 import { createElementsSourceIndex } from '../src/elements_source_index/elements_source_index'
 
 
@@ -45,33 +45,18 @@ describe('createElementsSourceIndex', () => {
     expect(getAllMock).toHaveBeenCalledTimes(1)
   })
 
-  it('should create the right service ids index', async () => {
-    getAllMock.mockImplementation(buildElementsSourceFromElements([
-      new InstanceElement(
-        'name',
-        new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') }),
-        { [PATH]: 'path', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
-        [],
-      ),
-    ]).getAll)
-
-    const elementsSourceIndex = createElementsSourceIndex(elementsSource)
-    const index = (await elementsSourceIndex.getIndexes()).serviceIdsIndex
-    expect(index.path).toEqual({ lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name', PATH) })
-  })
-
   it('should create the right internal ids index', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
     getAllMock.mockImplementation(buildElementsSourceFromElements([
       new InstanceElement(
         'name',
         type,
-        { internalId: '4', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
+        { internalId: '4' },
       ),
       new InstanceElement(
         'name2',
         type,
-        { internalId: '5', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z', isSubInstance: true },
+        { internalId: '5', isSubInstance: true },
       ),
       type,
     ]).getAll)
@@ -81,7 +66,7 @@ describe('createElementsSourceIndex', () => {
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
     const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
-    expect(index).toEqual({ 'someType-4': { lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name') } })
+    expect(index).toEqual({ 'someType-4': new ElemID(NETSUITE, 'someType', 'instance', 'name') })
   })
 
   it('should create the right custom fields index', async () => {

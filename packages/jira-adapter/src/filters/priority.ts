@@ -13,32 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionOrModificationChange, isInstanceChange, Change, ChangeDataType } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { findObject, setFieldDeploymentAnnotations } from '../utils'
+import { getChangeData, isAdditionOrModificationChange, isInstanceChange, Change, ChangeDataType, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { PRIORITY_TYPE_NAME } from '../constants'
 import { removeDomainPrefix } from './avatars'
 
-const log = logger(module)
-const filter: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]) => {
-    if (!config.client.usePrivateAPI) {
-      log.debug('Skipping priority filter because private API is not enabled')
-      return
-    }
-
-    const priorityType = findObject(elements, PRIORITY_TYPE_NAME)
-    if (priorityType === undefined) {
-      return
-    }
-    priorityType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-    priorityType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-    setFieldDeploymentAnnotations(priorityType, 'id')
-    setFieldDeploymentAnnotations(priorityType, 'statusColor')
-    setFieldDeploymentAnnotations(priorityType, 'description')
-    setFieldDeploymentAnnotations(priorityType, 'iconUrl')
-    setFieldDeploymentAnnotations(priorityType, 'name')
+const filter: FilterCreator = ({ client }) => ({
+  onFetch: async elements => {
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === PRIORITY_TYPE_NAME)
+      .filter(instance => !instance.value.isDefault)
+      .forEach(instance => { delete instance.value.isDefault })
   },
 
   preDeploy: async (changes: Change<ChangeDataType>[]) => {

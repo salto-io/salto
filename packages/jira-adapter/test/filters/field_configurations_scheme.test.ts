@@ -144,14 +144,12 @@ describe('field_configurations_scheme', () => {
         await filter.deploy?.([change])
       })
       it('should call deployChange and ignore items', () => {
-        expect(deployChangeMock).toHaveBeenCalledWith(
+        expect(deployChangeMock).toHaveBeenCalledWith({
           change,
-          expect.any(JiraClient),
-          expect.any(Object),
-          ['items'],
-          undefined,
-          undefined,
-        )
+          client: expect.any(JiraClient),
+          endpointDetails: expect.any(Object),
+          fieldsToIgnore: ['items'],
+        })
       })
 
       it('should call the endpoint to add the new items', () => {

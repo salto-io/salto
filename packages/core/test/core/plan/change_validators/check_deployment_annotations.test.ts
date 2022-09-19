@@ -70,7 +70,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
     expect(errors).toEqual([{
       elemID: instance.elemID,
       severity: 'Error',
-      message: `The change of ${type.elemID.getFullName()} is not supported and will be omitted from deploy`,
+      message: `Changing ${type.elemID.getFullName()} is not supported and it will be omitted from deploy`,
       detailedMessage: `"add" operation on ${instance.elemID.getFullName()} is not supported`,
     }])
   })
@@ -84,8 +84,8 @@ describe('checkDeploymentAnnotationsValidator', () => {
     expect(errors).toEqual([{
       elemID: instance.elemID,
       severity: 'Info',
-      message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The current value in the target environment will be maintained',
+      message: `Changing ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and it will be omitted from deploy`,
+      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The current value in the target environment will not be modified',
     }])
   })
 
@@ -99,8 +99,8 @@ describe('checkDeploymentAnnotationsValidator', () => {
     expect(errors).toEqual([{
       elemID: instance.elemID,
       severity: 'Info',
-      message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
-      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The instance will be created with the default value of the target env',
+      message: `Changing ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and it will be omitted from deploy`,
+      detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The instance will be created with the default value of the target environment',
     }])
   })
 

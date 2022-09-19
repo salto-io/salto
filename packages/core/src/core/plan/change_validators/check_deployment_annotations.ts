@@ -22,7 +22,7 @@ import { getDiffInstance } from '../diff'
 const { awu } = collections.asynciterable
 const { OPERATION_TO_ANNOTATION } = deployment
 
-const ERROR_MESSAGE = (id: ElemID): string => `The change of ${id.getFullName()} is not supported and will be omitted from deploy`
+const ERROR_MESSAGE = (id: ElemID): string => `Changing ${id.getFullName()} is not supported and it will be omitted from deploy`
 
 const detailedNestedElementErrorMessage = (
   path: ElemID,
@@ -30,8 +30,8 @@ const detailedNestedElementErrorMessage = (
 ): string => {
   const nestedPart = path.getFullNameParts().slice(path.nestingLevel * -1).join('.')
   return action === 'modify'
-    ? `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported. The current value in the target environment will be maintained`
-    : `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported. The instance will be created with the default value of the target env`
+    ? `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported. The current value in the target environment will not be modified`
+    : `Deploying "${nestedPart}" in ${path.createBaseID().parent.getFullName()} is not supported. The instance will be created with the default value of the target environment`
 }
 
 const detailedTopLevelErrorMessage = (action: Change['action'], path: ElemID): string =>

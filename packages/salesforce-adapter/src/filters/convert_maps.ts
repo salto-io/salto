@@ -266,18 +266,18 @@ const convertFieldsBackToLists = async (
 
   const backToArrays = (instance: InstanceElement): InstanceElement => {
     Object.keys(instanceMapFieldDef).filter(
-      fieldName => instance.value[fieldName] !== undefined
+      fieldName => _.get(instance.value, fieldName) !== undefined
     ).forEach(fieldName => {
-      if (Array.isArray(instance.value[fieldName])) {
+      if (Array.isArray(_.get(instance.value, fieldName))) {
         // should not happen
         return
       }
 
       if (instanceMapFieldDef[fieldName].nested) {
         // first convert the inner levels to arrays, then merge into one array
-        instance.value[fieldName] = _.mapValues(instance.value[fieldName], toVals)
+        _.set(instance.value, fieldName, _.mapValues(_.get(instance.value, fieldName), toVals))
       }
-      instance.value[fieldName] = toVals(instance.value[fieldName])
+      _.set(instance.value, fieldName, toVals(_.get(instance.value, fieldName)))
     })
     return instance
   }
@@ -319,17 +319,18 @@ const convertFieldTypesBackToLists = async (
   instanceType: ObjectType,
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
-  await awu(Object.values(instanceType.fields)).filter(
-    async f => instanceMapFieldDef[f.name] !== undefined && isMapType(await f.getType())
-  ).forEach(async f => {
-    const fieldType = await f.getType()
-    if (isMapType(fieldType)) {
-      f.refType = createRefToElmWithValue(await fieldType.getInnerType())
-    }
-    // for nested fields (not using while to avoid edge cases)
-    const newFieldType = await f.getType()
-    if (isMapType(newFieldType)) {
-      f.refType = createRefToElmWithValue(await newFieldType.getInnerType())
+  Object.entries(instanceMapFieldDef).forEach(async ([fieldName]) => {
+    const field = await getField(instanceType, fieldName.split('.'))
+    if (isDefined(field)) {
+      const fieldType = await field.getType()
+      if (isMapType(fieldType)) {
+        field.refType = createRefToElmWithValue(await fieldType.getInnerType())
+      }
+      // for nested fields (not using while to avoid edge cases)
+      const newFieldType = await field.getType()
+      if (isMapType(newFieldType)) {
+        field.refType = createRefToElmWithValue(await newFieldType.getInnerType())
+      }
     }
   })
 }

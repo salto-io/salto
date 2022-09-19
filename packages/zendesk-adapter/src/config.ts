@@ -1707,12 +1707,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/help_center/{locale}/categories/{category_id}/sections',
-        deployAsField: 'section',
+        url: '/help_center/categories/{category_id}/sections',
         method: 'post',
+        deployAsField: 'section',
         urlParamsToFields: {
           category_id: 'category_id',
-          locale: 'locale',
         },
       },
       modify: {
@@ -1748,6 +1747,32 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+    },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{section_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          section_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/sections/{section_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'custom_field_option',
+        urlParamsToFields: {
+          section_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
     },
   },
   labels: {

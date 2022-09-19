@@ -58,12 +58,14 @@ const transformDynamicContentDependencies = async (
         return [part]
       }
       const matches = placeholder[0].match(/.*\.([a-zA-Z0-9_]+)\}\}/)
-      if (!matches) {
+      // matches can return null
+      if (!matches || matches.length < 2) {
         return [part]
       }
       const missingInstance = createMissingInstance(
         ZENDESK,
         DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+        // matches[1] is the value after the ".", it is caught by the capture group in the regex
         matches[1]
       )
       missingInstance.value.placeholder = `${placeholder[0]}`

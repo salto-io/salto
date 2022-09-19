@@ -2306,9 +2306,13 @@ describe('Salesforce adapter E2E with real account', () => {
               fullName) as CustomField
             expect(fieldInfo[constants.INSTANCE_FULL_NAME_FIELD])
               .toEqual(`${accountApiName}.${CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY}`)
-            delete fieldInfo[constants.INSTANCE_FULL_NAME_FIELD]
+            const fieldWithoutName = _.omit(fieldInfo, constants.INSTANCE_FULL_NAME_FIELD)
             expect(Object.assign(
-              await transformFieldAnnotations(fieldInfo, Types.get(fieldInfo.type), accountApiName),
+              await transformFieldAnnotations(
+                fieldWithoutName,
+                Types.get(fieldInfo.type),
+                accountApiName,
+              ),
               { [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY }
             )).toEqual(_.omit(annotations, constants.API_NAME))
           })

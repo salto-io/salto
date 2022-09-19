@@ -16,12 +16,17 @@
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { DASHBOARD_GADGET_TYPE, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME } from '../constants'
+import { DASHBOARD_GADGET_TYPE, NOTIFICATION_SCHEME_TYPE_NAME, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const RELEVANT_TYPES: string[] = [WORKFLOW_TYPE_NAME, DASHBOARD_GADGET_TYPE, WEBHOOK_TYPE]
+const RELEVANT_TYPES: string[] = [
+  WORKFLOW_TYPE_NAME,
+  DASHBOARD_GADGET_TYPE,
+  WEBHOOK_TYPE,
+  NOTIFICATION_SCHEME_TYPE_NAME,
+]
 
 const filter: FilterCreator = () => ({
   onFetch: async elements => {

@@ -16,22 +16,16 @@
 
 import _ from 'lodash'
 import {
-  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement, CORE_ANNOTATIONS,
+  Element, ObjectType, isContainerType, ListType, MapType, InstanceElement, CORE_ANNOTATIONS,
   Values, isAdditionOrModificationChange, isInstanceChange, getChangeData, Change, isMapType,
-  isListType, isInstanceElement, createRefToElmWithValue, getDeepInnerType, isObjectType,
+  isListType, isInstanceElement, createRefToElmWithValue, getDeepInnerType, isObjectType, getField,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 import { LocalFilterCreator } from '../filter'
-import {
-  API_NAME_SEPARATOR,
-  PROFILE_METADATA_TYPE,
-  BUSINESS_HOURS_METADATA_TYPE,
-  EMAIL_TEMPLATE_METADATA_TYPE,
-  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
-} from '../constants'
+import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE, EMAIL_TEMPLATE_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -48,9 +42,8 @@ type MapDef = {
   nested?: boolean
   // use lists as map values, in order to allow multiple values under the same map key
   mapToList?: boolean
-  // under which inner field should we generate the map
-  // use in case the field you want to convert is not top level
-  innerField?: string
+  // with which mapper should we parse the key
+  mapper?: (string: string) => string[]
 }
 
 /**
@@ -97,7 +90,7 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
 }
 
 const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
-  lwcResources: { key: 'filePath', innerField: 'lwcResource' },
+  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => [naclCase(item)]) },
 }
 
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
@@ -141,37 +134,30 @@ const convertArraysToMaps = (
   }
 
   Object.entries(instanceMapFieldDef).filter(
-    ([fieldName]) => instance.value[fieldName] !== undefined
+    ([fieldName]) => _.get(instance.value, fieldName) !== undefined
   ).forEach(([fieldName, mapDef]) => {
     if (mapDef.nested) {
       const firstLevelGroups = _.groupBy(
-        makeArray(instance.value[fieldName]),
-        item => defaultMapper(item[mapDef.key])[0]
+        makeArray(_.get(instance.value, fieldName)),
+        mapDef.mapper ?? (item => (mapDef.mapper ?? defaultMapper)(item[mapDef.key])[0])
       )
-      instance.value[fieldName] = _.mapValues(
+      _.set(instance.value, fieldName, _.mapValues(
         firstLevelGroups,
         firstLevelValues => convertField(
           firstLevelValues,
-          item => defaultMapper(item[mapDef.key])[1],
+          item => (mapDef.mapper ?? defaultMapper)(item[mapDef.key])[1],
           !!mapDef.mapToList,
           fieldName,
         )
-      )
-    } else if (isDefined(mapDef.innerField)
-        && instance.value[fieldName][mapDef.innerField] !== undefined) {
-      instance.value[fieldName][mapDef.innerField] = convertField(
-        makeArray(instance.value[fieldName][mapDef.innerField]),
-        item => naclCase(item[mapDef.key]),
-        !!mapDef.mapToList,
-        fieldName,
-      )
+      ))
     } else {
-      instance.value[fieldName] = convertField(
-        makeArray(instance.value[fieldName]),
-        item => defaultMapper(item[mapDef.key])[0],
+      const res = _.get(instance.value, fieldName)
+      _.set(instance.value, fieldName, convertField(
+        makeArray(res),
+        item => (mapDef.mapper ?? defaultMapper)(item[mapDef.key])[0],
         !!mapDef.mapToList,
         fieldName,
-      )
+      ))
     }
   })
   return nonUniqueMapFields
@@ -191,15 +177,15 @@ const convertValuesToMapArrays = (
 ): void => {
   nonUniqueMapFields.forEach(fieldName => {
     if (instanceMapFieldDef[fieldName]?.nested) {
-      instance.value[fieldName] = _.mapValues(
-        instance.value[fieldName],
+      _.set(instance.value, fieldName, _.mapValues(
+        _.get(instance.value, fieldName),
         val => _.mapValues(val, makeArray),
-      )
+      ))
     } else {
-      instance.value[fieldName] = _.mapValues(
-        instance.value[fieldName],
+      _.set(instance.value, fieldName, _.mapValues(
+        _.get(instance.value, fieldName),
         makeArray,
-      )
+      ))
     }
   })
 }
@@ -216,44 +202,32 @@ const updateFieldTypes = async (
   nonUniqueMapFields: string[],
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
-  await awu(Object.values(instanceType.fields)).filter(
-    async f => instanceMapFieldDef[f.name] !== undefined && !isMapType(await f.getType())
-  ).forEach(async f => {
-    const mapDef = instanceMapFieldDef[f.name]
-    const fieldType = await f.getType()
-    if (_.isUndefined(mapDef.innerField)) {
-      let innerType = isContainerType(fieldType) ? await fieldType.getInnerType() : fieldType
-      if (mapDef.mapToList || nonUniqueMapFields.includes(f.name)) {
-        innerType = new ListType(innerType)
-      }
-      if (mapDef.nested) {
-        f.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
-      } else {
-        f.refType = createRefToElmWithValue(new MapType(innerType))
-      }
-      // make the key field required
-      const deepInnerType = await getDeepInnerType(innerType)
-      if (isObjectType(deepInnerType)) {
-        const keyFieldType = deepInnerType.fields[mapDef.key]
-        if (!keyFieldType) {
-          log.error('could not find key field %s for field %s', f.elemID.getFullName())
-          return
+  Object.entries(instanceMapFieldDef).forEach(async ([fieldName, mapDef]) => {
+    const field = await getField(instanceType, fieldName.split('.'))
+    if (isDefined(field)) {
+      const fieldType = await field.getType()
+      // navigate to the right field type
+      if (!isMapType(fieldType)) {
+        let innerType = isContainerType(fieldType) ? await fieldType.getInnerType() : fieldType
+        if (mapDef.mapToList || nonUniqueMapFields.includes(fieldName)) {
+          innerType = new ListType(innerType)
         }
-        keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-      }
-    } else if (isObjectType(fieldType)) {
-      const innerField = fieldType.fields[mapDef.innerField]
-      const innerFieldType = await innerField.getType()
-      innerField.refType = createRefToElmWithValue(new MapType(innerFieldType))
-      // make the key field required
-      const deepInnerType = await getDeepInnerType(innerFieldType)
-      if (isObjectType(deepInnerType)) {
-        const keyFieldType = deepInnerType.fields[mapDef.key]
-        if (!keyFieldType) {
-          log.error('could not find key field %s for field %s', f.elemID.getFullName())
-          return
+        if (mapDef.nested) {
+          field.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
+        } else {
+          field.refType = createRefToElmWithValue(new MapType(innerType))
         }
-        keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+
+        // make the key field required
+        const deepInnerType = await getDeepInnerType(innerType)
+        if (isObjectType(deepInnerType)) {
+          const keyFieldType = deepInnerType.fields[mapDef.key]
+          if (!keyFieldType) {
+            log.error('could not find key field %s for field %s', fieldName)
+            return
+          }
+          keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+        }
       }
     }
   })
@@ -298,18 +272,12 @@ const convertFieldsBackToLists = async (
         // should not happen
         return
       }
-      const innerFieldName = instanceMapFieldDef[fieldName].innerField
+
       if (instanceMapFieldDef[fieldName].nested) {
         // first convert the inner levels to arrays, then merge into one array
         instance.value[fieldName] = _.mapValues(instance.value[fieldName], toVals)
-        instance.value[fieldName] = toVals(instance.value[fieldName])
-      } else if (isDefined(innerFieldName)) {
-        instance.value[fieldName][innerFieldName] = toVals(
-          instance.value[fieldName][innerFieldName]
-        )
-      } else {
-        instance.value[fieldName] = toVals(instance.value[fieldName])
       }
+      instance.value[fieldName] = toVals(instance.value[fieldName])
     })
     return instance
   }
@@ -352,24 +320,16 @@ const convertFieldTypesBackToLists = async (
   instanceMapFieldDef: Record<string, MapDef>,
 ): Promise<void> => {
   await awu(Object.values(instanceType.fields)).filter(
-    async f => instanceMapFieldDef[f.name] !== undefined
+    async f => instanceMapFieldDef[f.name] !== undefined && isMapType(await f.getType())
   ).forEach(async f => {
     const fieldType = await f.getType()
-    const innerFieldName = instanceMapFieldDef[f.name].innerField
     if (isMapType(fieldType)) {
       f.refType = createRefToElmWithValue(await fieldType.getInnerType())
-      // for nested fields (not using while to avoid edge cases)
-      const newFieldType = await f.getType()
-      if (isMapType(newFieldType)) {
-        f.refType = createRefToElmWithValue(await newFieldType.getInnerType())
-      }
-    } else if (isDefined(innerFieldName)
-        && (isObjectType(fieldType))) {
-      const innerField = fieldType.fields[innerFieldName]
-      const innerFiledType = await innerField.getType()
-      if (isMapType(innerFiledType)) {
-        innerField.refType = createRefToElmWithValue(await innerFiledType.getInnerType())
-      }
+    }
+    // for nested fields (not using while to avoid edge cases)
+    const newFieldType = await f.getType()
+    if (isMapType(newFieldType)) {
+      f.refType = createRefToElmWithValue(await newFieldType.getInnerType())
     }
   })
 }

@@ -45,7 +45,7 @@ const toMinifiedChange = (
   change: Change<InstanceElement>,
 ): Change<InstanceElement> => {
   const [before, after] = getAllChangeData(change)
-  const detailedChanges = detailedCompare(before, after, true)
+  const detailedChanges = detailedCompare(before, after)
   const minifiedBefore = before.clone()
   const minifiedAfter = after.clone()
   minifiedBefore.value = {

@@ -13,20 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../utils'
 import priorityFilter from '../../src/filters/priority'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { JIRA, PRIORITY_TYPE_NAME } from '../../src/constants'
-import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
 import JiraClient from '../../src/client/client'
 
-jest.mock('../../src/deployment/jsp_deployment', () => ({
-  ...jest.requireActual<{}>('../../src/deployment/jsp_deployment'),
-  deployWithJspEndpoints: jest.fn(),
-}))
 
 describe('priorityFilter', () => {
   let filter: Filter
@@ -58,99 +53,53 @@ describe('priorityFilter', () => {
   })
 
   describe('onFetch', () => {
-    it('should add deployment annotations', async () => {
-      await filter.onFetch?.([type])
-      expect(type.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
+    it('should remove is default when it is false', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { isDefault: false },
+      )
 
-      expect(type.fields.id.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.name.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.description.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.iconUrl.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
-
-      expect(type.fields.statusColor.annotations).toEqual({
-        [CORE_ANNOTATIONS.CREATABLE]: true,
-        [CORE_ANNOTATIONS.UPDATABLE]: true,
-      })
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({})
     })
 
-    it('should do nothing when usePrivateAPI config is off', async () => {
-      config.client.usePrivateAPI = false
+    it('should not remove is default when it is true', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { isDefault: true },
+      )
 
-      await filter.onFetch?.([type])
-
-      expect(type.annotations).toEqual({})
-      expect(type.fields.name.annotations).toEqual({})
-      expect(type.fields.description.annotations).toEqual({})
-      expect(type.fields.iconUrl.annotations).toEqual({})
-      expect(type.fields.statusColor.annotations).toEqual({})
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({ isDefault: true })
     })
   })
-
-  describe('deploy', () => {
-    let deployWithJspEndpointsMock: jest.MockedFunction<typeof deployWithJspEndpoints>
-    beforeEach(() => {
-      deployWithJspEndpointsMock = deployWithJspEndpoints as jest.MockedFunction<
-        typeof deployWithJspEndpoints
-      >
-    })
-
-    it('should call deployWithJspEndpoints', async () => {
+  describe('preDeploy', () => {
+    const iconUrlTruncatePath = '/folder/image.png'
+    it('should concat the client base url to the instance icon url', () => {
       const instance = new InstanceElement(
         'instance',
         type,
+        { iconUrl: iconUrlTruncatePath }
       )
-      await filter.deploy?.([toChange({ after: instance })])
-
-      expect(deployWithJspEndpointsMock).toHaveBeenCalledWith({
-        changes: [toChange({ after: instance })],
-        client,
-        urls: {
-          add: '/secure/admin/AddPriority.jspa',
-          modify: '/secure/admin/EditPriority.jspa',
-          query: '/rest/api/3/priority',
-        },
-        serviceValuesTransformer: expect.toBeFunction(),
-      })
+      const changes = [toChange({ after: instance })]
+      filter.preDeploy?.(changes)
+      expect(getChangeData(changes[0]).value.iconUrl)
+        .toEqual(new URL(iconUrlTruncatePath, client.baseUrl).href)
     })
-
-    it('should throw if there are no jsp urls', async () => {
+  })
+  describe('onDeploy', () => {
+    it('should remove the domain prefix from the iconUrl field', () => {
+      const iconUrlTruncatePath = '/folder/image.png'
       const instance = new InstanceElement(
         'instance',
         type,
+        { iconUrl: new URL(iconUrlTruncatePath, client.baseUrl).href }
       )
-
-      delete config.apiDefinitions.types[PRIORITY_TYPE_NAME].jspRequests
-
-      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
-    })
-
-    it('should throw if there is no type definition', async () => {
-      const instance = new InstanceElement(
-        'instance',
-        type,
-      )
-
-      delete config.apiDefinitions.types[PRIORITY_TYPE_NAME]
-
-      await expect(filter.deploy?.([toChange({ after: instance })])).rejects.toThrow()
+      const changes = [toChange({ after: instance })]
+      filter.onDeploy?.(changes)
+      expect(getChangeData(changes[0]).value.iconUrl).toEqual(iconUrlTruncatePath)
     })
   })
 })

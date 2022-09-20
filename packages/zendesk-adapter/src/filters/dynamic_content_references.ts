@@ -15,8 +15,15 @@
 */
 import {
   Change,
-  Element, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression,
-  isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement,
+  isReferenceExpression,
+  isTemplateExpression,
+  ReferenceExpression,
+  TemplateExpression,
+  TemplatePart,
 } from '@salto-io/adapter-api'
 import { extractTemplate, transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -24,15 +31,21 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
+import { createMissingInstance } from './references/missing_references'
+import { ZENDESK } from '../constants'
+import { FETCH_CONFIG } from '../config'
 
 const { awu } = collections.asynciterable
 const PLACEHOLDER_REGEX = /({{.+?}})/g
 const INNER_PLACEHOLDER_REGEX = /{{(.+?)}}/g
+const OPEN_BRACKETS = '{{'
+const CLOSE_BRACKETS = '}}'
 const log = logger(module)
 
 const transformDynamicContentDependencies = async (
   instance: InstanceElement,
-  placeholderToItem: Record<string, InstanceElement>
+  placeholderToItem: Record<string, InstanceElement>,
+  enableMissingReference?: boolean,
 ): Promise<void> => {
   const partToTemplate = (part: string): TemplatePart[] => {
     const placeholder = part.match(INNER_PLACEHOLDER_REGEX)
@@ -41,9 +54,32 @@ const transformDynamicContentDependencies = async (
     }
     const itemInstance = placeholderToItem[placeholder[0]]
     if (!itemInstance) {
-      return [part]
+      if (!enableMissingReference) {
+        return [part]
+      }
+      const matches = placeholder[0].match(/.*\.([a-zA-Z0-9_]+)\}\}/)
+      // matches can return null
+      if (!matches || matches.length < 2) {
+        return [part]
+      }
+      const missingInstance = createMissingInstance(
+        ZENDESK,
+        DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+        // matches[1] is the value after the ".", it is caught by the capture group in the regex
+        matches[1]
+      )
+      missingInstance.value.placeholder = `${placeholder[0]}`
+      return [
+        OPEN_BRACKETS,
+        new ReferenceExpression(missingInstance.elemID, missingInstance),
+        CLOSE_BRACKETS,
+      ]
     }
-    return ['{{', new ReferenceExpression(itemInstance.elemID, itemInstance), '}}']
+    return [
+      OPEN_BRACKETS,
+      new ReferenceExpression(itemInstance.elemID, itemInstance),
+      CLOSE_BRACKETS,
+    ]
   }
   instance.value = await transformValues({
     values: instance.value,
@@ -59,19 +95,21 @@ const transformDynamicContentDependencies = async (
   }) ?? instance.value
 }
 
-const templatePartToApiValue = (part: TemplatePart): string => {
-  // remove brackets because they're included in placeholder
-  if (_.isString(part) && ['{{', '}}'].includes(part)) {
-    return ''
-  }
-  if (isReferenceExpression(part)) {
-    if (!isInstanceElement(part.value)) {
-      return part.value
+const templatePartToApiValue = (allParts: TemplatePart[]): string =>
+  allParts.map(part => {
+    if (isReferenceExpression(part)) {
+      if (!isInstanceElement(part.value)) {
+        return part.value
+      }
+      if (part.value.value.placeholder?.startsWith(OPEN_BRACKETS)
+        && part.value.value.placeholder?.endsWith(CLOSE_BRACKETS)) {
+        return part.value.value.placeholder.slice(
+          OPEN_BRACKETS.length, -(CLOSE_BRACKETS.length)
+        )
+      }
     }
-    return part.value.value.placeholder ?? part
-  }
-  return part
-}
+    return part
+  }).join('')
 
 const returnDynamicContentsToApiValue = async (
   instance: InstanceElement,
@@ -83,7 +121,7 @@ const returnDynamicContentsToApiValue = async (
     pathID: instance.elemID,
     transformFunc: ({ value, path }) => {
       if (path && path.name.startsWith('raw_') && isTemplateExpression(value)) {
-        const transformedValue = value.parts.map(templatePartToApiValue).join('')
+        const transformedValue = templatePartToApiValue(value.parts)
         mapping[transformedValue] = value
         return transformedValue
       }
@@ -97,7 +135,7 @@ const returnDynamicContentsToApiValue = async (
  * Add dependencies from elements to dynamic content items in
  * the _generated_ dependencies annotation
  */
-const filterCreator: FilterCreator = () => {
+const filterCreator: FilterCreator = ({ config }) => {
   const templateMapping: Record<string, TemplateExpression> = {}
   return ({
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
@@ -109,7 +147,8 @@ const filterCreator: FilterCreator = () => {
         .value()
 
       await Promise.all(instances.map(instance =>
-        transformDynamicContentDependencies(instance, placeholderToItem)))
+        transformDynamicContentDependencies(instance, placeholderToItem,
+          config[FETCH_CONFIG].enableMissingReferences)))
     }, 'Dynamic content references filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       await Promise.all(changes.map(getChangeData).map(instance =>

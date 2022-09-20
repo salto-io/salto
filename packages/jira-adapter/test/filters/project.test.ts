@@ -173,14 +173,14 @@ describe('projectFilter', () => {
       await filter.deploy([change])
     })
     it('should call deployChange and ignore scheme', () => {
-      expect(deployChangeMock).toHaveBeenCalledWith(
+      expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'workflowScheme', 'issueTypeScreenScheme', 'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: ['components', 'workflowScheme', 'issueTypeScreenScheme',
+          'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
+      })
     })
 
     it('should call the endpoint to set the scheme', () => {
@@ -219,14 +219,13 @@ describe('projectFilter', () => {
       await filter.deploy([change])
     })
     it('should call deployChange and ignore the right fields', () => {
-      expect(deployChangeMock).toHaveBeenCalledWith(
+      expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
+      })
     })
 
     it('should call the endpoint to get the components', () => {
@@ -300,14 +299,13 @@ describe('projectFilter', () => {
       await filter.deploy([change])
     })
     it('should call deployChange and ignore the right fields', () => {
-      expect(deployChangeMock).toHaveBeenCalledWith(
+      expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
+      })
     })
 
     it('should call the endpoint to get the projectId', () => {
@@ -399,14 +397,13 @@ describe('projectFilter', () => {
       await filter.deploy([change])
     })
     it('should call deployChange and ignore the right fields', () => {
-      expect(deployChangeMock).toHaveBeenCalledWith(
+      expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Project.deployRequests,
-        ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Project.deployRequests,
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
+      })
     })
 
     it('should call the endpoint to get the projectId', () => {

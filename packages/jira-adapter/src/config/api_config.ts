@@ -718,7 +718,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/project/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'description,lead,url,projectKeys,permissions',
+        expand: 'description,lead,url',
       },
       recurseInto: [
         {
@@ -827,6 +827,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           fieldName: 'id',
         },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'style' },
+        { fieldName: 'simplified' },
+        { fieldName: 'isPrivate' },
+        { fieldName: 'expand' },
       ],
       standaloneFields: [
         {
@@ -1080,7 +1086,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/workflow/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'transitions,transitions.rules,statuses,statuses.properties,operations',
+        expand: 'transitions,transitions.rules,transitions.properties,statuses,statuses.properties,operations',
       },
     },
   },
@@ -1533,7 +1539,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       serviceUrl: '/secure/admin/ListEventTypes.jspa',
     },
   },
-
+  Priorities: {
+    request: {
+      url: '/rest/api/3/priority/search',
+      paginationField: 'startAt',
+    },
+  },
   Priority: {
     transformation: {
       fieldsToHide: [
@@ -1543,10 +1554,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       serviceUrl: '/secure/admin/EditPriority!default.jspa?id={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddPriority.jspa',
-      modify: '/secure/admin/EditPriority.jspa',
-      query: '/rest/api/3/priority',
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/priority',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/priority/{id}',
+        method: 'put',
+      },
     },
   },
 
@@ -1749,7 +1765,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'NotificationSchemes',
       },
       {
-        originalName: 'rest__api__3__priority',
+        originalName: 'PageBeanPriority',
         newName: 'Priorities',
       },
       {

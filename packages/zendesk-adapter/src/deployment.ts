@@ -126,12 +126,12 @@ export const deployChange = async (
 ): Promise<deployment.ResponseResult> => {
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
-    const response = await deployment.deployChange(
+    const response = await deployment.deployChange({
       change,
       client,
-      deployRequests,
-      fieldsToIgnore
-    )
+      endpointDetails: deployRequests,
+      fieldsToIgnore,
+    })
     addId({
       change,
       apiDefinitions,

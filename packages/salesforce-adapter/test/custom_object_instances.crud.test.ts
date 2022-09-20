@@ -42,6 +42,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'Id',
         },
       },
@@ -50,6 +51,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'SaltoName',
         },
       },
@@ -58,6 +60,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'NumField',
         },
       },
@@ -66,6 +69,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'NotCreatable',
         },
       },
@@ -74,6 +78,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'AnotherField',
         },
       },
@@ -82,6 +87,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'Address',
         },
       },
@@ -90,6 +96,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'FieldWithNoValue',
         },
       },
@@ -98,6 +105,7 @@ describe('Custom Object Instances CRUD', () => {
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           [constants.API_NAME]: 'Name',
         },
       },
@@ -264,6 +272,7 @@ describe('Custom Object Instances CRUD', () => {
           refType: idType,
           label: 'id',
           annotations: {
+            [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.LABEL]: 'Record ID',
             [constants.API_NAME]: 'Id',
@@ -277,6 +286,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.LABEL]: 'Name',
             [constants.API_NAME]: 'Name',
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
         },
         // eslint-disable-next-line camelcase
@@ -287,6 +297,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.LABEL]: 'TestField',
             [constants.API_NAME]: 'Type.TestField__c',
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+            [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
           },
           annotationRefsOrTypes: {
             [constants.LABEL]: BuiltinTypes.STRING,

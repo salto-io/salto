@@ -16,10 +16,10 @@
 import {
   ChangeError, ElemID, InstanceElement, ObjectType, toChange, ChangeValidator,
 } from '@salto-io/adapter-api'
-import createValidateOnlyFlagValidator from '../../src/change_validators/validate_only_flag'
+import createCheckOnlyDeployValidator from '../../src/change_validators/check_only_deploy'
 import { CUSTOM_OBJECT } from '../../src/constants'
 
-describe('validate only flag change validator', () => {
+describe('checkOnly deploy validator', () => {
   const customObj = new ObjectType({
     elemID: new ElemID('salesforce', 'customObj'),
     annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
@@ -49,49 +49,29 @@ describe('validate only flag change validator', () => {
     { field: 'afterValue' }
   )
 
-  describe('when checkOnly is true', () => {
-    let validator: ChangeValidator
-    beforeEach(() => {
-      const config = { client: { deploy: { checkOnly: true } } }
-      validator = createValidateOnlyFlagValidator(config)
-    })
-    describe('with custom object instance change', () => {
-      let changeErrors: ReadonlyArray<ChangeError>
-      beforeEach(async () => {
-        changeErrors = await validator([
-          toChange({ before: beforeCustomObjInstance, after: afterCustomObjInstance }),
-        ])
-      })
-      it('should have Error for CustomObject instance modification', async () => {
-        expect(changeErrors).toHaveLength(1)
-        const [changeError] = changeErrors
-        expect(changeError.elemID).toEqual(beforeCustomObjInstance.elemID)
-        expect(changeError.severity).toEqual('Error')
-      })
-    })
-
-    describe('with regular instance change', () => {
-      let changeErrors: ReadonlyArray<ChangeError>
-      beforeEach(async () => {
-        changeErrors = await validator([
-          toChange({ before: beforeInstance, after: afterInstance }),
-        ])
-      })
-      it('should have no errors', () => {
-        expect(changeErrors).toHaveLength(0)
-      })
-    })
+  let validator: ChangeValidator
+  beforeEach(() => {
+    validator = createCheckOnlyDeployValidator()
   })
-  describe.each([
-    [false],
-    [undefined],
-  ])('when checkOnly is %s', checkOnly => {
+  describe('with custom object instance change', () => {
     let changeErrors: ReadonlyArray<ChangeError>
     beforeEach(async () => {
-      const config = { client: { deploy: { checkOnly } } }
-      const validator = createValidateOnlyFlagValidator(config)
       changeErrors = await validator([
         toChange({ before: beforeCustomObjInstance, after: afterCustomObjInstance }),
+      ])
+    })
+    it('should have Error for CustomObject instance modification', async () => {
+      expect(changeErrors).toHaveLength(1)
+      const [changeError] = changeErrors
+      expect(changeError.elemID).toEqual(beforeCustomObjInstance.elemID)
+      expect(changeError.severity).toEqual('Error')
+    })
+  })
+
+  describe('with regular instance change', () => {
+    let changeErrors: ReadonlyArray<ChangeError>
+    beforeEach(async () => {
+      changeErrors = await validator([
         toChange({ before: beforeInstance, after: afterInstance }),
       ])
     })

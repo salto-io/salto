@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
-import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, NOTIFICATION_SCHEME_TYPE_NAME, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME, STATUS_TYPE_NAME } from '../../src/constants'
+import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, NOTIFICATION_SCHEME_TYPE_NAME, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME, STATUS_TYPE_NAME, PROJECT_TYPE } from '../../src/constants'
 import { createReference, findType } from '../utils'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
@@ -33,6 +33,7 @@ import { createNotificationSchemeValues } from './notificationScheme'
 import { createAutomationValues } from './automation'
 import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
+import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
 
 export const createInstances = (fetchedElements: Element[]): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
@@ -143,7 +144,14 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     findType('Filter', fetchedElements),
     {
       name: randomString,
-      jql: 'project = TP ORDER BY Rank ASC',
+      jql: new TemplateExpression({ parts: [
+        createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project'), fetchedElements),
+        ' = ',
+        createReference(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'Test_Project@s'), fetchedElements, ['key']),
+        ' ORDER BY ',
+        createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Rank__gh_lexo_rank__c@uubbuu'), fetchedElements, ['name']),
+        ' ASC',
+      ] }),
     },
   )
 
@@ -215,12 +223,12 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const automation = new InstanceElement(
     randomString,
     findType(AUTOMATION_TYPE, fetchedElements),
-    createAutomationValues(randomString),
+    createAutomationValues(randomString, fetchedElements),
   )
   const webhook = new InstanceElement(
     randomString,
     findType(WEBHOOK_TYPE, fetchedElements),
-    createWebhookValues(randomString),
+    createWebhookValues(randomString, fetchedElements),
   )
 
   const group = new InstanceElement(

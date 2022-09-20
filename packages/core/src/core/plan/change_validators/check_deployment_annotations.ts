@@ -86,7 +86,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
 
       return unsupportedPaths.map(({ path, field }) => ({
         elemID: instance.elemID,
-        severity: 'Warning',
+        severity: 'Info',
         message: ERROR_MESSAGE(field),
         detailedMessage: detailedNestedElementErrorMessage(path),
       }))

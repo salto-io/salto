@@ -21,6 +21,7 @@ import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
+import { createMissingInstance } from '../../src/filters/references/missing_references'
 
 describe('handle templates filter', () => {
   let client: ZendeskClient
@@ -176,7 +177,14 @@ describe('handle templates filter', () => {
 
     it('should resolve almost-template normally', () => {
       const fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
-      expect(fetchedMacroAlmostTemplate?.value.actions[0].value).toEqual('almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}')
+      const missingInstance = createMissingInstance(ZENDESK, 'ticket_field', '1454')
+      missingInstance.value.id = '1454'
+      expect(fetchedMacroAlmostTemplate?.value.actions[0].value).toEqual(new TemplateExpression({
+        parts: ['almost template {{ticket.not_an_actual_field_1452}} and {{',
+          new ReferenceExpression(missingInstance.elemID, missingInstance),
+          '}}',
+        ],
+      }))
       const fetchedMacroAlmostTemplate2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost2')
       expect(fetchedMacroAlmostTemplate2?.value.actions[0].value).toEqual('{{ticket.ticket_field_1452}}')
     })
@@ -231,19 +239,19 @@ describe('handle templates filter', () => {
     it('should resolve more complicated templates correctly', () => {
       const fetchedMacroComplicated = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroComplicated')
       expect(fetchedMacroComplicated?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: ['{{', 'some other irrelevancies-',
+        parts: ['{{some other irrelevancies-',
           new ReferenceExpression(placeholder1.elemID, placeholder1),
           ' | something irrelevant | dynamic content now: ',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          ' | and done', '}}'],
+          ' | and done}}'],
       }))
       const fetchedMacroDifferentBracket = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroDifferentBracket')
       expect(fetchedMacroDifferentBracket?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: ['{%', 'some other irrelevancies-',
+        parts: ['{%some other irrelevancies-',
           new ReferenceExpression(placeholder1.elemID, placeholder1),
           ' | something irrelevant | dynamic content now: ',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          ' | and done', '%}'],
+          ' | and done%}'],
       }))
     })
 

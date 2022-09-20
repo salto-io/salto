@@ -26,7 +26,6 @@ import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
 import { findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
-import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
@@ -240,10 +239,9 @@ describe('SalesforceAdapter fetch', () => {
 
       const { elements: result } = await adapter.fetch(mockFetchOpts)
 
-      expect(result).toHaveLength(_.concat(
-        Object.keys(Types.primitiveDataTypes),
-        Object.keys(Types.compoundDataTypes),
-        Object.keys(Types.formulaDataTypes),
+      const elementNames = result.map(x => x.elemID.getFullName())
+      expect(elementNames).toHaveLength(_.concat(
+        Object.keys(Types.getAllFieldTypes()),
         Object.keys(Types.getAllMissingTypes()),
       ).length
         + 2 /* LookupFilter & filter items */
@@ -259,18 +257,18 @@ describe('SalesforceAdapter fetch', () => {
         + 2 /* field dependency & value settings */
         + 7 /* range restrictions */)
 
-      const elementsMap = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
-      const nestingType = elementsMap['salesforce.NestingType']
-      const nestedType = elementsMap['salesforce.NestedType']
-      const singleField = elementsMap['salesforce.SingleFieldType']
-      expect(nestingType).toBeDefined()
+      const elementsMap = _.keyBy(result, element => element.elemID.getFullName())
+      const nestingType = elementsMap['salesforce.NestingType'] as ObjectType
+      const nestedType = elementsMap['salesforce.NestedType'] as ObjectType
+      const singleField = elementsMap['salesforce.SingleFieldType'] as ObjectType
+      expect(nestingType).toBeInstanceOf(ObjectType)
       expect(nestingType.fields.field.refType.elemID).toEqual(nestedType.elemID)
       expect(nestingType.fields.otherField.refType.elemID).toEqual(singleField.elemID)
-      expect(nestedType).toBeDefined()
+      expect(nestedType).toBeInstanceOf(ObjectType)
       expect(nestedType.fields.nestedStr.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
       expect(nestedType.fields.nestedNum.refType.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
       expect(nestedType.fields.doubleNested.refType.elemID).toEqual(singleField.elemID)
-      expect(singleField).toBeDefined()
+      expect(singleField).toBeInstanceOf(ObjectType)
       expect(singleField.fields.str.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
     })
 

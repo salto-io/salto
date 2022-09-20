@@ -19,7 +19,7 @@ import { pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isCustom, isCustomObject, apiName } from '../transformers/transformer'
 import { FilterWith, LocalFilterCreator } from '../filter'
-import { getObjectDirectoryPath } from './custom_objects'
+import { getObjectDirectoryPath } from './custom_objects_to_object_type'
 import { OBJECT_FIELDS_PATH } from '../constants'
 
 const { awu } = collections.asynciterable

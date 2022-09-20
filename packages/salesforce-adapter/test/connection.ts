@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { IdentityInfo, DeployMessage } from 'jsforce'
+import { IdentityInfo, DeployMessage, Field as SalesforceField, DescribeGlobalSObjectResult, DescribeSObjectResult } from 'jsforce'
 import { MetadataObject, DescribeMetadataResult, ValueTypeField, DescribeValueTypeResult, FileProperties, RetrieveResult, RetrieveResultLocator, DeployResultLocator, DeployResult, QueryResult } from 'jsforce-types'
 import Connection, { Metadata, Soap, Bulk, Tooling, RunTestsResult, RunTestFailure } from '../src/client/jsforce'
 import { createEncodedZipContent, ZipFile } from './utils'
@@ -292,6 +292,109 @@ const mockIdentity = (organizationId: string): IdentityInfo => ({
   last_modified_date: new Date(),
   // eslint-disable-next-line camelcase
   is_app_installed: false,
+})
+
+export const mockSObjectField = (
+  overrides: Partial<SalesforceField>
+): SalesforceField => ({
+  aggregatable: false,
+  autoNumber: false,
+  byteLength: 0,
+  calculated: false,
+  cascadeDelete: false,
+  caseSensitive: false,
+  createable: false,
+  custom: false,
+  defaultedOnCreate: false,
+  dependentPicklist: false,
+  deprecatedAndHidden: false,
+  externalId: false,
+  filterable: false,
+  groupable: false,
+  htmlFormatted: false,
+  idLookup: false,
+  label: 'label',
+  length: 0,
+  name: 'name',
+  nameField: false,
+  namePointing: false,
+  nillable: false,
+  permissionable: false,
+  polymorphicForeignKey: false,
+  queryByDistance: false,
+  restrictedPicklist: false,
+  scale: 0,
+  searchPrefilterable: false,
+  soapType: 'xsd:string',
+  sortable: false,
+  type: 'string',
+  unique: false,
+  updateable: false,
+  ...overrides,
+})
+
+export const mockSObjectDescribeGlobal = (
+  overrides: Partial<DescribeGlobalSObjectResult>
+): DescribeGlobalSObjectResult => ({
+  activateable: false,
+  createable: false,
+  custom: true,
+  customSetting: false,
+  deletable: false,
+  deprecatedAndHidden: false,
+  feedEnabled: false,
+  hasSubtypes: false,
+  isSubtype: false,
+  keyPrefix: '0AE',
+  label: 'obj',
+  labelPlural: 'objs',
+  layoutable: false,
+  mergeable: false,
+  mruEnabled: false,
+  name: 'obj__c',
+  queryable: false,
+  replicateable: false,
+  retrieveable: false,
+  searchable: false,
+  triggerable: false,
+  undeletable: false,
+  updateable: false,
+  urls: {},
+  ...overrides,
+})
+
+export const mockSObjectDescribe = (
+  overrides: Omit<Partial<DescribeSObjectResult>, 'fields'> & { fields?: Partial<SalesforceField>[] }
+): DescribeSObjectResult => ({
+  activateable: false,
+  childRelationships: [],
+  compactLayoutable: false,
+  createable: false,
+  custom: false,
+  customSetting: false,
+  deletable: false,
+  deprecatedAndHidden: false,
+  feedEnabled: false,
+  label: 'obj',
+  labelPlural: 'objs',
+  layoutable: false,
+  mergeable: false,
+  mruEnabled: false,
+  name: 'obj__c',
+  namedLayoutInfos: [],
+  queryable: false,
+  recordTypeInfos: [],
+  replicateable: false,
+  retrieveable: false,
+  searchable: false,
+  searchLayoutable: false,
+  supportedScopes: [],
+  triggerable: false,
+  undeletable: false,
+  updateable: false,
+  urls: {},
+  ...overrides,
+  fields: overrides.fields?.map(mockSObjectField) ?? [],
 })
 
 export const mockJsforce: () => MockInterface<Connection> = () => ({

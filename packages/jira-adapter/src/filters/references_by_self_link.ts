@@ -97,6 +97,7 @@ const filter: FilterCreator = () => ({
         pathID: inst.elemID,
         transformFunc: transformSelfLinkToReference(elementsBySelfLink),
         strict: false,
+        allowEmpty: true,
       }) ?? inst.value
     })
   },

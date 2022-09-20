@@ -26,6 +26,7 @@ describe('custom object instances change validator', () => {
         annotations: {
           [FIELD_ANNOTATIONS.UPDATEABLE]: false,
           [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
         },
       },
       nonCreatable: {
@@ -33,6 +34,7 @@ describe('custom object instances change validator', () => {
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: false,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
         },
       },
     },

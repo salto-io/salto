@@ -61,10 +61,12 @@ const isReferenceField = (field: Field): boolean => (
 const getReferenceTo = (field: Field): string[] =>
   makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
 
+const isQueryableField = (field: Field): boolean => (
+  field.annotations[FIELD_ANNOTATIONS.QUERYABLE] === true
+)
+
 const getQueryableFields = (object: ObjectType): Field[] => (
-  Object.values(object.fields)
-    // the "queryable" annotation defaults to true when missing
-    .filter(field => field.annotations[FIELD_ANNOTATIONS.QUERYABLE] !== false)
+  Object.values(object.fields).filter(isQueryableField)
 )
 
 const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
@@ -380,9 +382,9 @@ export const getIdFields = async (
   const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
     ((fieldName === detectsParentsIndicator)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
-  const invalidIdFieldNames = idFieldsWithParents
-    .filter(fieldName => type.fields[fieldName] === undefined
-        || type.fields[fieldName].annotations[FIELD_ANNOTATIONS.QUERYABLE] === false)
+  const invalidIdFieldNames = idFieldsWithParents.filter(fieldName => (
+    type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName])
+  ))
   if (invalidIdFieldNames.length > 0) {
     return { idFields: [], invalidFields: invalidIdFieldNames }
   }

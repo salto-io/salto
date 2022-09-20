@@ -65,19 +65,21 @@ describe('forbidden permission scheme', () => {
     if (filter.deploy) {
       await filter.deploy([toChange({ after: instance })])
       expect(mockDefaultDeployChange)
-        .toHaveBeenCalledWith(expect.objectContaining({
-          change: expect.objectContaining({
-            data: expect.objectContaining({
-              after: expect.objectContaining({
-                value: {
-                  permissions: [
-                    { permission: 'validPermission' },
-                  ],
-                },
+        .toHaveBeenCalledWith(expect.arrayContaining([
+          expect.objectContaining({
+            change: expect.objectContaining({
+              data: expect.objectContaining({
+                after: expect.objectContaining({
+                  value: {
+                    permissions: [
+                      { permission: 'validPermission' },
+                    ],
+                  },
+                }),
               }),
             }),
           }),
-        }))
+        ]))
     }
   })
 })

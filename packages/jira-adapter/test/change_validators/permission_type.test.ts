@@ -29,7 +29,8 @@ describe('permissionType change validator', () => {
       },
     ],
   })
-  const permissionSchemeObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME) })
+  const permissionSchemeObject = new ObjectType({ elemID: new ElemID(JIRA,
+    PERMISSION_SCHEME_TYPE_NAME) })
   const invalidPermissionScheme = new InstanceElement('instance1', permissionSchemeObject, {
     permissions: [
       {

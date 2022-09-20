@@ -170,6 +170,9 @@ describe('netsuite system note author information', () => {
           elemIdToChangeByIndex: {
             [missingInstance.elemID.getFullName()]: 'another user name',
           },
+          elemIdToChangeAtIndex: {
+            [missingInstance.elemID.getFullName()]: '9/18/2022',
+          },
         }),
       },
       elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
@@ -178,6 +181,29 @@ describe('netsuite system note author information', () => {
     }
     await filterCreator(opts).onFetch?.(elements)
     expect(missingInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'another user name').toBeTruthy()
+  })
+
+  it('should use elemIdToChangeAtIndex to get the change date if there is no new change information', async () => {
+    runSuiteQLMock.mockReset()
+    const opts = {
+      client,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({
+          ...createEmptyElementsSourceIndexes(),
+          elemIdToChangeByIndex: {
+            [missingInstance.elemID.getFullName()]: 'another user name',
+          },
+          elemIdToChangeAtIndex: {
+            [missingInstance.elemID.getFullName()]: '9/18/2022',
+          },
+        }),
+      },
+      elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+    }
+    await filterCreator(opts).onFetch?.(elements)
+    expect(missingInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('9/18/2022')
   })
   describe('failure', () => {
     it('bad employee schema', async () => {

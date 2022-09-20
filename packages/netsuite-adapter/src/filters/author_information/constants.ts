@@ -148,3 +148,8 @@ export type SavedSearchesResult = {
   modifiedby: modifiedbyField[]
   datemodified: string
 }
+
+export type reducedSystemNote = {
+  name: string
+  date: string
+}

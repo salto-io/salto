@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, Values, isObjectType, ObjectType, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -23,9 +23,9 @@ import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../dat
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { getLastServerTime } from '../../server_time'
-import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA } from './constants'
-import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
-import { CUSTOM_RECORD_TYPE, INTERNAL_ID } from '../../constants'
+import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, reducedSystemNote } from './constants'
+import { isCustomRecordType } from '../../types'
+import { CUSTOM_RECORD_TYPE } from '../../constants'
 
 const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
@@ -173,7 +173,7 @@ const distinctSortedSystemNotes = (
   .uniqBy(note => getKeyForNote(note))
   .value()
 
-const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, Values> =>
+const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, reducedSystemNote> =>
   Object.fromEntries(systemNotes.map(
     systemnote => [getKeyForNote(systemnote), { name: systemnote.name, date: systemnote.date }]
   ))
@@ -182,7 +182,7 @@ const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
   lastFetchTime: Date
-): Promise<Record<string, Values>> => {
+): Promise<Record<string, reducedSystemNote>> => {
   const systemNotes = await log.time(
     () => querySystemNotes(client, queryIds, lastFetchTime),
     'querySystemNotes'
@@ -261,8 +261,9 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
     const systemNotes = !_.isEmpty(employeeNames)
       ? await fetchSystemNotes(client, queryIds, lastFetchTime)
       : {}
-    const { elemIdToChangeByIndex } = await elementsSourceIndex.getIndexes()
-    if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)) {
+    const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
+    if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)
+    && _.isEmpty(elemIdToChangeAtIndex)) {
       return
     }
 
@@ -289,6 +290,13 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       setChangedBy(instance, employeeId)
       if (isDefined(lastModifiedDate)) {
         instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: lastModifiedDate })
+      } else if (!_.isEmpty(elemIdToChangeAtIndex)) {
+        const changedAt = elemIdToChangeAtIndex[instance.elemID.getFullName()]
+        if (isDefined(changedAt)) {
+          instance.annotate(
+            { [CORE_ANNOTATIONS.CHANGED_AT]: changedAt }
+          )
+        }
       }
     })
     customRecordTypesWithInternalIds.forEach(type => {

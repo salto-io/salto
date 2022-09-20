@@ -70,7 +70,7 @@ describe('netsuite saved searches author information tests', () => {
       columns: ['modifiedby', 'id', 'datemodified'],
       filters: [],
     })
-    expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(2)
+    expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
   })
 
   it('should not query at all if there is no elements', async () => {
@@ -85,7 +85,7 @@ describe('netsuite saved searches author information tests', () => {
 
   it('should add last modified date to elements', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '01/28/1995').toBeTruthy()
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('01/28/1995')
   })
 
   it('elements will stay the same if they were not found by the search', async () => {

@@ -90,6 +90,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   const pathToInternalIdsIndex: Record<string, number> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
   const mapKeyFieldsIndex: Record<string, string | string[]> = {}
+  const elemIdToChangeAtIndex: Record<string, string> = {}
 
   const updateInternalIdsIndex = async (element: Element): Promise<void> => {
     await assignToInternalIdsIndex(element, internalIdsIndex, elementsSource)
@@ -132,6 +133,11 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
         mapKeyFieldsIndex[field.elemID.getFullName()] = field.annotations[LIST_MAPPED_BY_FIELD]
       }
     })
+  const updateElemIdToChangedAtIndex = (element: Element): void => {
+    const changeAt = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
+    if (changeAt !== undefined) {
+      elemIdToChangeAtIndex[element.elemID.getFullName()] = changeAt
+    }
   }
 
   const elements = await elementsSource.getAll()
@@ -143,11 +149,13 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
         updateCustomFieldsIndex(element)
         updatePathToInternalIdsIndex(element)
         updateElemIdToChangedByIndex(element)
+        updateElemIdToChangedAtIndex(element)
       }
       if (isObjectType(element) && isCustomRecordType(element)) {
         await updateServiceIdRecordsIndex(element)
         await updateInternalIdsIndex(element)
         updateElemIdToChangedByIndex(element)
+        updateElemIdToChangedAtIndex(element)
       }
       if (isObjectType(element)) {
         updateMapKeyFieldsIndex(element)
@@ -161,6 +169,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     pathToInternalIdsIndex,
     elemIdToChangeByIndex,
     mapKeyFieldsIndex,
+    elemIdToChangeAtIndex,
   }
 }
 

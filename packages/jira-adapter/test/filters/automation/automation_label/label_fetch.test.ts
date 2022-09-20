@@ -51,7 +51,6 @@ describe('automationLabelFetchFilter', () => {
         name: 'labelName',
         color: 'color',
       },
-      ['jira', 'Records', 'AutomationLabel', 'labelName']
     )
 
     fetchQuery = elementUtils.query.createMockQuery()
@@ -130,7 +129,6 @@ describe('automationLabelFetchFilter', () => {
       config.client.usePrivateAPI = false
       const elements = [] as Element[]
       await filter.onFetch(elements)
-
 
       expect(elements).toHaveLength(0)
 

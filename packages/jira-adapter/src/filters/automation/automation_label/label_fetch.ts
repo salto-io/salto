@@ -23,25 +23,15 @@ import JiraClient from '../../../client/client'
 import { FilterCreator } from '../../../filter'
 import { getCloudId } from '../cloud_id'
 import { createAutomationLabelType } from './types'
-
+import { LABELS_POST_RESPONSE_SCHEME, LabelsResponse } from './label_deployment'
 
 const log = logger(module)
 
-export type LabelsResponse = {
-  id: number
-  name: string
-  color: string
-}
-
-export const LABELS_RESPONSE_SCHEME = Joi.array().items(
-  Joi.object({
-    id: Joi.number().required(),
-    name: Joi.string().allow('').required(),
-    color: Joi.string().allow('').required(),
-  }).unknown(true).required()
+export const LABELS_GET_RESPONSE_SCHEME = Joi.array().items(
+  LABELS_POST_RESPONSE_SCHEME
 )
 
-export const isLabelsResponse = createSchemeGuard<LabelsResponse>(LABELS_RESPONSE_SCHEME, 'Received an invalid page response')
+export const isLabelsGetResponse = createSchemeGuard<LabelsResponse>(LABELS_GET_RESPONSE_SCHEME, 'Received an invalid page response')
 
 
 const createInstance = (
@@ -72,7 +62,7 @@ export const getAutomationLabels = async (
   const response = await client.getSinglePage(
     { url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels` }
   )
-  if (!isLabelsResponse(response.data)) {
+  if (!isLabelsGetResponse(response.data)) {
     throw new Error('Failed to get response page, received invalid response')
   }
   return response.data

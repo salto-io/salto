@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-// import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
@@ -26,18 +25,22 @@ import { deployChanges } from '../../../deployment/standard_deployment'
 import JiraClient from '../../../client/client'
 import { getLookUpName } from '../../../reference_mapping'
 import { getCloudId } from '../cloud_id'
-import { LabelsResponse } from './label_fetch'
-
 
 const log = logger(module)
 
-export const LABELS_RESPONSE_SCHEME = Joi.object({
+export type LabelsResponse = {
+  id: number
+  name: string
+  color: string
+}
+
+export const LABELS_POST_RESPONSE_SCHEME = Joi.object({
   id: Joi.number().required(),
   name: Joi.string().allow('').required(),
   color: Joi.string().allow('').required(),
 }).unknown(true).required()
 
-export const isLabelsResponse = createSchemeGuard<LabelsResponse>(LABELS_RESPONSE_SCHEME, 'Received an invalid page response')
+export const isLabelsPostResponse = createSchemeGuard<LabelsResponse>(LABELS_POST_RESPONSE_SCHEME, 'Received an invalid page response')
 
 
 const updateAutomationLabel = async (
@@ -70,7 +73,7 @@ const createAutomationLabel = async (
     url: `gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels`,
     data,
   })
-  if (!isLabelsResponse(response.data)) {
+  if (!isLabelsPostResponse(response.data)) {
     throw new Error(`Received an invalid automation label response when attempting to add automation label: ${instance.elemID.getFullName()}`)
   }
   instance.value.id = response.data.id

@@ -232,6 +232,7 @@ export const createCustomSettingsObject = (
       refType: idType,
       label: 'id',
       annotations: {
+        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [constants.LABEL]: 'Record ID',
         [constants.API_NAME]: 'Id',
@@ -245,6 +246,7 @@ export const createCustomSettingsObject = (
         [constants.LABEL]: 'Name',
         [constants.API_NAME]: 'Name',
         [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
       },
     },
     // eslint-disable-next-line camelcase
@@ -255,6 +257,7 @@ export const createCustomSettingsObject = (
         [constants.LABEL]: 'TestField',
         [constants.API_NAME]: `${name}.TestField__c`,
         [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+        [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
       },
       annotationRefsOrTypes: {
         [constants.LABEL]: BuiltinTypes.STRING,

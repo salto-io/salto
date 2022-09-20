@@ -132,7 +132,7 @@ const overrideIdInSource = (
   topLevelElement: ChangeDataType,
 ): DetailedChange[] => {
   if (id.isTopLevel()) {
-    return detailedCompare(before, topLevelElement, true)
+    return detailedCompare(before, topLevelElement, { createFieldChanges: true })
   }
 
   const afterValue = resolvePath(topLevelElement, id)
@@ -145,7 +145,7 @@ const overrideIdInSource = (
   return detailedCompare(
     wrapNestedValues([{ id, value: beforeValue }], before) as ChangeDataType,
     wrapNestedValues([{ id, value: afterValue }], topLevelElement) as ChangeDataType,
-    true,
+    { createFieldChanges: true },
   )
 }
 
@@ -208,7 +208,7 @@ const addToSource = async ({
       )
     }
     const after = await awu(mergeResult.merged.values()).peek() as ChangeDataType
-    return detailedCompare(before, after, true)
+    return detailedCompare(before, after, { createFieldChanges: true })
   }).flatMap(change => separateChangeByFiles(
     change,
     change.action === 'remove' ? targetSource : originSource

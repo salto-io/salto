@@ -89,6 +89,7 @@ import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_sche
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
@@ -96,6 +97,7 @@ import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
+import permissionSchemeFilter from './filters/sd_portals_permission_scheme'
 
 const {
   generateTypes,
@@ -164,6 +166,7 @@ export const DEFAULT_FILTERS = [
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
+  removeEmptyValuesFilter,
   maskingFilter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
@@ -185,6 +188,7 @@ export const DEFAULT_FILTERS = [
   queryFilter,
   missingDescriptionsFilter,
   smartValueReferenceFilter,
+  permissionSchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

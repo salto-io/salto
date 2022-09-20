@@ -18,6 +18,7 @@ import {
   ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType, isType,
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
   isElement,
+  CompareOptions,
 } from '@salto-io/adapter-api'
 import { setPath } from './utils'
 
@@ -28,15 +29,15 @@ const getValuesChanges = (
   id: ElemID,
   before: Value,
   after: Value,
-  compareReferencesByValue: boolean,
+  options?: CompareOptions,
 ): DetailedChange[] => {
   if (isElement(before) && isElement(after)
-    && isEqualElements(before, after, compareReferencesByValue)) {
+    && isEqualElements(before, after, options)) {
     return []
   }
 
   if (!isElement(before) && !isElement(after)
-    && isEqualValues(before, after, compareReferencesByValue)) {
+    && isEqualValues(before, after, options)) {
     return []
   }
 
@@ -53,7 +54,7 @@ const getValuesChanges = (
         id.createNestedID(key),
         before[key],
         after[key],
-        compareReferencesByValue
+        options
       ))
       .flatten()
       .value()
@@ -68,7 +69,7 @@ const getValuesChanges = (
             id.createNestedID(i.toString()),
             before[i],
             after[i],
-            compareReferencesByValue
+            options
           )
         )
       )
@@ -113,18 +114,22 @@ const getAnnotationTypeChanges = (
       id.createNestedID('annotation'),
       beforeUniqueAnnotationsTypes,
       afterUniqueAnnotationsTypes,
-      false,
     )
   }
   return []
 }
 
+export type DetailedCompareOptions = CompareOptions & {
+  createFieldChanges?: boolean
+}
+
 export const detailedCompare = (
   before: ChangeDataType,
   after: ChangeDataType,
-  createFieldChanges = false,
-  compareReferencesByValue = false,
+  compareOptions?: DetailedCompareOptions
 ): DetailedChange[] => {
+  const createFieldChanges = compareOptions?.createFieldChanges ?? false
+
   const getFieldsChanges = (beforeObj: ObjectType, afterObj: ObjectType): DetailedChange[] => {
     const removeChanges = Object.keys(beforeObj.fields)
       .filter(fieldName => afterObj.fields[fieldName] === undefined)
@@ -147,8 +152,7 @@ export const detailedCompare = (
       .map(fieldName => detailedCompare(
         beforeObj.fields[fieldName],
         afterObj.fields[fieldName],
-        false,
-        compareReferencesByValue,
+        compareOptions,
       ))
 
     return [
@@ -164,7 +168,7 @@ export const detailedCompare = (
   }
 
   const valueChanges = isInstanceElement(before) && isInstanceElement(after)
-    ? getValuesChanges(after.elemID, before.value, after.value, compareReferencesByValue)
+    ? getValuesChanges(after.elemID, before.value, after.value, compareOptions)
     : []
 
   // A special case to handle changes in annotationType.
@@ -178,7 +182,7 @@ export const detailedCompare = (
     isType(after) ? after.elemID.createNestedID('attr') : after.elemID,
     before.annotations,
     after.annotations,
-    compareReferencesByValue
+    compareOptions
   )
 
   const fieldChanges = createFieldChanges && isObjectType(before) && isObjectType(after)

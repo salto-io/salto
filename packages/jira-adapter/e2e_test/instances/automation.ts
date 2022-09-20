@@ -29,18 +29,10 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
   },
   trigger: {
     component: 'TRIGGER',
-    schemaVersion: 2,
-    type: 'jira.issue.field.changed',
+    schemaVersion: 1,
+    type: 'jira.manual.trigger.issue',
     value: {
-      changeType: 'VALUE_ADDED',
-      fields: [
-        {
-          value: 'components',
-          type: 'field',
-        },
-      ],
-      actions: [
-        'create',
+      groups: [
       ],
     },
   },

@@ -13,36 +13,33 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { isInstanceElement } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { DASHBOARD_GADGET_TYPE, NOTIFICATION_SCHEME_TYPE_NAME, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const isStringNumber = (value: string): boolean => !Number.isNaN(Number(value))
+const RELEVANT_TYPES: string[] = [
+  WORKFLOW_TYPE_NAME,
+  DASHBOARD_GADGET_TYPE,
+  WEBHOOK_TYPE,
+  NOTIFICATION_SCHEME_TYPE_NAME,
+]
 
-/**
- * Remove hidden value from lists, since core does not support it
- */
 const filter: FilterCreator = () => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
+      .filter(instance => RELEVANT_TYPES.includes(instance.elemID.typeName))
       .forEach(async instance => {
         instance.value = await transformValues({
           values: instance.value,
           type: await instance.getType(),
-          pathID: instance.elemID,
-          allowEmpty: true,
+          transformFunc: ({ value }) => value,
           strict: false,
-          transformFunc: ({ value, field, path }) => {
-            const isInArray = path?.getFullNameParts().some(isStringNumber)
-            if (isInArray && field?.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]) {
-              return undefined
-            }
-            return value
-          },
+          allowEmpty: false,
         }) ?? {}
       })
   },

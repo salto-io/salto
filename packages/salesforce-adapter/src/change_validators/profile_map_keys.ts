@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { getInstanceChanges, PROFILE_MAP_FIELD_DEF, defaultMapper } from '../filters/convert_maps'
+import { getInstanceChanges, PROFILE_AND_PERMISSIONS_SET_MAP_FIELD_DEF, defaultMapper } from '../filters/convert_maps'
 import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
 
@@ -35,10 +35,10 @@ const getMapKeyErrors = async (
   const errors: ChangeError[] = []
   await awu(Object.entries(after.value)).filter(
     async ([fieldName]) => isMapType(await (await after.getType()).fields[fieldName]?.getType())
-    && PROFILE_MAP_FIELD_DEF[fieldName] !== undefined
+    && PROFILE_AND_PERMISSIONS_SET_MAP_FIELD_DEF[fieldName] !== undefined
   ).forEach(async ([fieldName, fieldValues]) => {
     const fieldType = await (await after.getType()).fields[fieldName].getType() as MapType
-    const mapDef = PROFILE_MAP_FIELD_DEF[fieldName]
+    const mapDef = PROFILE_AND_PERMISSIONS_SET_MAP_FIELD_DEF[fieldName]
     const findInvalidPaths: TransformFunc = async ({ value, path, field }) => {
       if (isObjectType(await field?.getType()) && path !== undefined) {
         if (value[mapDef.key] === undefined) {

@@ -25,7 +25,7 @@ import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 import { LocalFilterCreator } from '../filter'
-import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE, EMAIL_TEMPLATE_METADATA_TYPE } from '../constants'
+import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE, EMAIL_TEMPLATE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -58,7 +58,7 @@ const BUSINESS_HOURS_MAP_FIELD_DEF: Record<string, MapDef> = {
   businessHours: { key: 'name' },
 }
 
-export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
+export const PROFILE_AND_PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
   applicationVisibilities: { key: 'application' },
   classAccesses: { key: 'apexClass' },
@@ -89,7 +89,8 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
   [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
-  [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
+  [PROFILE_METADATA_TYPE]: PROFILE_AND_PERMISSIONS_SET_MAP_FIELD_DEF,
+  [PERMISSION_SET_METADATA_TYPE]: PROFILE_AND_PERMISSIONS_SET_MAP_FIELD_DEF,
 }
 
 /**

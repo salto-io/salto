@@ -14,20 +14,18 @@
 * limitations under the License.
 */
 
-import { collections } from '@salto-io/lowerdash'
 import { getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 
-const { awu } = collections.asynciterable
-const DEFAULT_EXCHANGE_RATE = 1
+export const DEFAULT_EXCHANGE_RATE = 1
 
 const filterCreator = (): FilterWith<'onDeploy'> => ({
   onDeploy: async changes => {
-    awu(changes)
+    (changes)
       .filter(isInstanceChange)
       .filter(isAdditionChange)
-      .filter(async change => getChangeData(change).elemID.typeName === 'currency')
-      .map(async change => {
+      .filter(change => getChangeData(change).elemID.typeName === 'currency')
+      .forEach(change => {
         const instance = getChangeData(change)
         if (!instance.value?.exchangeRate) {
           instance.value.exchangeRate = DEFAULT_EXCHANGE_RATE

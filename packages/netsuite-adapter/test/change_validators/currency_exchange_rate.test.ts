@@ -19,7 +19,7 @@ import { NETSUITE } from '../../src/constants'
 import currencyExchangeRateValidator from '../../src/change_validators/currency_exchange_rate'
 
 
-const currencyType = new ObjectType({
+export const currencyType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'currency'),
   fields: {
     name: {
@@ -82,9 +82,9 @@ describe('currency exchange rate validator', () => {
       [toChange({ after })]
     )
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain('\'exchangeRate\' field must be specified when deploying a new curreny')
+    expect(changeErrors[0].detailedMessage).toContain('\'exchangeRate\' is omitted from fetch')
   })
 
   it('should not have changeError when exchangeRate isn\'t specified', async () => {

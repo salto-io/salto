@@ -368,7 +368,7 @@ describe('ducktype_transformer', () => {
         nestedFieldFinder: returnFullEntry,
       })).rejects.toThrow(new Error('Could not fetch type myType, singleton types should not have more than one instance'))
     })
-    it('should returnsrecurseInto values in the instances', async () => {
+    it('should returns recurseInto values in the instances', async () => {
       jest.spyOn(typeElements, 'generateType').mockRestore()
       jest.spyOn(instanceElements, 'toInstance').mockRestore()
       const res = await getTypeAndInstances({

@@ -186,6 +186,8 @@ const zendeskGuideEntriesFunc = (
       const brandPaginatorResponseValues = (await getEntriesResponseValues({
         paginator: brandToPaginator[brandInstance.elemID.name],
         args,
+        typeName,
+        typesConfig,
       })).flat()
       // Defining Zendesk Guide element to its corresponding help center (= subdomain)
       brandPaginatorResponseValues.forEach(response => {
@@ -318,6 +320,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandsList, brandToPaginator),
     })
 
+    // Adding the remaining types elements is necessary for deployments.
+    // For further details, go to add_remaining_types.ts
     const zendeskElements = zendeskSupportElements.elements.concat(zendeskGuideElements.elements)
     addRemainingTypes({
       adapterName: ZENDESK,

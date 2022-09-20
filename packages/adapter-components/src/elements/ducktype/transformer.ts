@@ -40,8 +40,8 @@ export type EntriesRequester = (
   args: {
     paginator: Paginator
     args: ClientGetWithPaginationParams
-    typeName?: string
-    typesConfig?: Record<string, TypeDuckTypeConfig>
+    typeName: string
+    typesConfig: Record<string, TypeDuckTypeConfig>
   }
 ) => Promise<ResponseValue[]>
 
@@ -114,7 +114,7 @@ const getEntriesForType = async (
       getArgs.map(async args => (
         getEntriesResponseValuesFunc
           ? getEntriesResponseValuesFunc({ paginator, args, typeName, typesConfig })
-          : getEntriesResponseValues({ paginator, args })
+          : getEntriesResponseValues({ paginator, args, typeName, typesConfig })
       ))
     )).flat()
   }

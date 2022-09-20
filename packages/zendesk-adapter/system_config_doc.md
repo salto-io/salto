@@ -770,8 +770,8 @@ zendesk {
             },
           ]
         }
-      }
       brand = {
+      }
         transformation = {
           sourceTypeName = "brands__brands"
           fieldsToOmit = [
@@ -1162,6 +1162,30 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "display_name"
+              fieldType = "string"
+            },
+            {
+              fieldName = "name"
+              fieldType = "string"
+            },
+          ]
           serviceUrl = "/admin/objects-rules/tickets/ticket-forms/edit/{id}"
         }
         deployRequests = {
@@ -1192,11 +1216,11 @@ zendesk {
         transformation = {
           sourceTypeName = "ticket_fields__ticket_fields"
           idFields = [
-            "title",
+            "raw_title",
             "type",
           ]
           fileNameFields = [
-            "title",
+            "raw_title",
             "type",
           ]
           standaloneFields = [
@@ -1236,6 +1260,18 @@ zendesk {
             {
               fieldName = "position"
               fieldType = "number"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
+            },
+            {
+              fieldName = "description"
+              fieldType = "string"
+            },
+            {
+              fieldName = "title_in_portal"
+              fieldType = "string"
             },
           ]
           fieldTypeOverrides = [
@@ -1369,6 +1405,30 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
+            },
+            {
+              fieldName = "description"
+              fieldType = "string"
             },
           ]
           serviceUrl = "/agent/admin/user_fields/{id}"
@@ -1510,6 +1570,30 @@ zendesk {
               fieldType = "number"
             },
           ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "title"
+              fieldType = "string"
+            },
+            {
+              fieldName = "description"
+              fieldType = "string"
+            },
+          ]
           serviceUrl = "/agent/admin/organization_fields/{id}"
         }
         deployRequests = {
@@ -1559,6 +1643,26 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "name"
+              fieldType = "string"
             },
           ]
         }
@@ -2681,6 +2785,18 @@ zendesk {
       articles = {
         request = {
           url = "/help_center/articles"
+          recurseInto = [
+            {
+              type = "article_translation"
+              toField = "translations"
+              context = [
+                {
+                  name = "articleId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
         }
         transformation = {
           dataField = "articles"
@@ -2688,7 +2804,91 @@ zendesk {
       }
       article = {
         transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "name",
+          ]
+          standaloneFields = [
+            {
+              fieldName = "translations"
+            },
+          ]
           sourceTypeName = "articles__articles"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "author_id"
+              fieldType = "unknown"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "vote_sum"
+            },
+            {
+              fieldName = "vote_count"
+            },
+            {
+              fieldName = "edited_at"
+            },
+            {
+              fieldName = "html_url"
+              fieldType = "string"
+            },
+          ]
+          serviceUrl = "/knowledge/articles/{id}"
+        }
+      }
+      article_translation = {
+        request = {
+          url = "/help_center/articles/{articleId}/translations"
+        }
+        transformation = {
+          idFields = [
+            "&brand_id",
+            "locale",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "locale",
+          ]
+          sourceTypeName = "article__translations"
+          dataField = "translations"
           fieldsToHide = [
             {
               fieldName = "created_at"
@@ -2725,16 +2925,15 @@ zendesk {
               fieldType = "number"
             },
             {
-              fieldName = "vote_sum"
-            },
-            {
-              fieldName = "vote_count"
-            },
-            {
-              fieldName = "edited_at"
-            },
-            {
               fieldName = "html_url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "source_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "source_type"
               fieldType = "string"
             },
           ]
@@ -2743,6 +2942,18 @@ zendesk {
       sections = {
         request = {
           url = "/help_center/sections"
+          recurseInto = [
+            {
+              type = "section_translation"
+              toField = "translations"
+              context = [
+                {
+                  name = "sectionId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
         }
         transformation = {
           dataField = "sections"
@@ -2750,6 +2961,19 @@ zendesk {
       }
       section = {
         transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "name",
+          ]
+          standaloneFields = [
+            {
+              fieldName = "translations"
+            },
+          ]
           sourceTypeName = "sections__sections"
           fieldsToHide = [
             {
@@ -2791,6 +3015,72 @@ zendesk {
               fieldType = "string"
             },
           ]
+          serviceUrl = "/knowledge/sections/{id}"
+        }
+      }
+      section_translation = {
+        request = {
+          url = "/help_center/sections/{sectionId}/translations"
+        }
+        transformation = {
+          idFields = [
+            "&brand_id",
+            "locale",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "locale",
+          ]
+          sourceTypeName = "section__translations"
+          dataField = "translations"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "html_url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "source_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "source_type"
+              fieldType = "string"
+            },
+          ]
         }
       }
       labels = {
@@ -2803,6 +3093,14 @@ zendesk {
       }
       label = {
         transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "name",
+          ]
           sourceTypeName = "labels__labels"
           fieldsToHide = [
             {
@@ -2829,6 +3127,18 @@ zendesk {
       categories = {
         request = {
           url = "/help_center/categories"
+          recurseInto = [
+            {
+              type = "category_translation"
+              toField = "translations"
+              context = [
+                {
+                  name = "categoryId"
+                  fromField = "id"
+                },
+              ]
+            },
+          ]
         }
         transformation = {
           dataField = "categories"
@@ -2836,6 +3146,19 @@ zendesk {
       }
       category = {
         transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "name",
+          ]
+          standaloneFields = [
+            {
+              fieldName = "translations"
+            },
+          ]
           sourceTypeName = "categories__categories"
           fieldsToHide = [
             {
@@ -2877,204 +3200,24 @@ zendesk {
               fieldType = "string"
             },
           ]
+          serviceUrl = "/hc/admin/categories/{id}/edit"
         }
       }
-      permission_groups = {
+      category_translation = {
         request = {
-          url = "/guide/permission_groups"
+          url = "/help_center/categories/{categoryId}/translations"
         }
         transformation = {
-          dataField = "permission_groups"
-        }
-      }
-      permission_group = {
-        transformation = {
-          sourceTypeName = "permission_groups__permission_groups"
-          fieldsToHide = [
-            {
-              fieldName = "created_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "updated_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "id"
-              fieldType = "number"
-            },
+          idFields = [
+            "&brand_id",
+            "locale",
           ]
-          fieldTypeOverrides = [
-            {
-              fieldName = "id"
-              fieldType = "number"
-            },
+          fileNameFields = [
+            "&brand_id",
+            "locale",
           ]
-        }
-      }
-      user_segments = {
-        request = {
-          url = "/help_center/user_segments"
-        }
-        transformation = {
-          dataField = "user_segments"
-        }
-      }
-      user_segment = {
-        transformation = {
-          sourceTypeName = "user_segments__user_segments"
-          fieldsToHide = [
-            {
-              fieldName = "created_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "updated_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "id"
-              fieldType = "number"
-            },
-          ]
-          fieldTypeOverrides = [
-            {
-              fieldName = "id"
-              fieldType = "number"
-            },
-          ]
-        }
-      }
-      badges = {
-        request = {
-          url = "/gather/badges"
-        }
-        transformation = {
-          dataField = "badges"
-        }
-      }
-      badge = {
-        transformation = {
-          sourceTypeName = "badges__badges"
-          fieldsToHide = [
-            {
-              fieldName = "created_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "updated_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "id"
-              fieldType = "string"
-            },
-          ]
-          fieldTypeOverrides = [
-            {
-              fieldName = "id"
-              fieldType = "string"
-            },
-          ]
-          fieldsToOmit = [
-            {
-              fieldName = "extended_input_schema"
-            },
-            {
-              fieldName = "extended_output_schema"
-            },
-            {
-              fieldName = "url"
-              fieldType = "string"
-            },
-            {
-              fieldName = "count"
-              fieldType = "number"
-            },
-            {
-              fieldName = "icon_url"
-              fieldType = "string"
-            },
-          ]
-        }
-      }
-      badge_categories = {
-        request = {
-          url = "/gather/badge_categories"
-        }
-        transformation = {
-          dataField = "badge_categories"
-        }
-      }
-      badge_category = {
-        transformation = {
-          sourceTypeName = "badge_categories__badge_categories"
-          fieldsToHide = [
-            {
-              fieldName = "created_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "updated_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "id"
-              fieldType = "string"
-            },
-          ]
-          fieldTypeOverrides = [
-            {
-              fieldName = "id"
-              fieldType = "string"
-            },
-          ]
-        }
-      }
-      themes = {
-        request = {
-          url = "/guide/theming/themes"
-        }
-        transformation = {
-          dataField = "themes"
-        }
-      }
-      theme = {
-        transformation = {
-          sourceTypeName = "themes__themes"
-          fieldsToHide = [
-            {
-              fieldName = "created_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "updated_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "id"
-              fieldType = "string"
-            },
-          ]
-          fieldTypeOverrides = [
-            {
-              fieldName = "id"
-              fieldType = "string"
-            },
-          ]
-        }
-      }
-      topics = {
-        request = {
-          url = "/community/topics"
-        }
-        transformation = {
-          dataField = "topics"
-        }
-      }
-      topic = {
-        transformation = {
-          sourceTypeName = "topics__topics"
+          sourceTypeName = "category__translations"
+          dataField = "translations"
           fieldsToHide = [
             {
               fieldName = "created_at"
@@ -3114,7 +3257,147 @@ zendesk {
               fieldName = "html_url"
               fieldType = "string"
             },
+            {
+              fieldName = "source_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "source_type"
+              fieldType = "string"
+            },
           ]
+        }
+      }
+      permission_groups = {
+        request = {
+          url = "/guide/permission_groups"
+        }
+        transformation = {
+          dataField = "permission_groups"
+        }
+      }
+      permission_group = {
+        transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "name",
+          ]
+          sourceTypeName = "permission_groups__permission_groups"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/knowledge/permissions/{id}"
+        }
+        deployRequests = {
+          add = {
+            url = "/guide/permission_groups"
+            deployAsField = "permission_group"
+            method = "post"
+          }
+          modify = {
+            url = "/guide/permission_groups/{permissionGroupId}"
+            method = "put"
+            deployAsField = "permission_group"
+            urlParamsToFields = {
+              permissionGroupId = "id"
+            }
+          }
+          remove = {
+            url = "/guide/permission_groups/{permissionGroupId}"
+            method = "delete"
+            urlParamsToFields = {
+              permissionGroupId = "id"
+            }
+          }
+        }
+      }
+      user_segments = {
+        request = {
+          url = "/help_center/user_segments"
+        }
+        transformation = {
+          dataField = "user_segments"
+        }
+      }
+      user_segment = {
+        transformation = {
+          idFields = [
+            "&brand_id",
+            "name",
+          ]
+          fileNameFields = [
+            "&brand_id",
+            "name",
+          ]
+          sourceTypeName = "user_segments__user_segments"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "added_user_ids"
+              fieldType = "unknown"
+            },
+          ]
+          serviceUrl = "/knowledge/user_segments/edit/{id}"
+        }
+        deployRequests = {
+          add = {
+            url = "/help_center/user_segments"
+            deployAsField = "user_segment"
+            method = "post"
+          }
+          modify = {
+            url = "/help_center/user_segments/{userSegmentId}"
+            method = "put"
+            deployAsField = "user_segment"
+            urlParamsToFields = {
+              userSegmentId = "id"
+            }
+          }
+          remove = {
+            url = "/help_center/user_segments/{userSegmentId}"
+            method = "delete"
+            urlParamsToFields = {
+              userSegmentId = "id"
+            }
+          }
         }
       }
     }

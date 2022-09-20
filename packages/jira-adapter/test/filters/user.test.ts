@@ -13,58 +13,90 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { getFilterParams } from '../utils'
 import userFilter from '../../src/filters/user'
 import { Filter } from '../../src/filter'
-import { JIRA } from '../../src/constants'
+import { ACCOUNT_ID_INFO_TYPE, JIRA } from '../../src/constants'
+import { createBoardType, createDashboardType, createEmptyType, createFilterType } from './account_id/account_id_common'
 
 describe('userFilter', () => {
   let filter: Filter
-  let userType: ObjectType
-  let type: ObjectType
+
+  let boardType: ObjectType
+  let adminType: ObjectType
+  let filterType: ObjectType
+  let dashboardType: ObjectType
 
   beforeEach(async () => {
     filter = userFilter(getFilterParams())
 
-    userType = new ObjectType({
-      elemID: new ElemID(JIRA, 'User'),
-    })
 
-    type = new ObjectType({
-      elemID: new ElemID(JIRA, 'Type'),
+    adminType = new ObjectType({
+      elemID: new ElemID(JIRA, 'BoardAdmins'),
       fields: {
-        user: { refType: userType },
-        userList: { refType: new ListType(userType) },
+        users: { refType: new ListType(createEmptyType('User')) },
       },
     })
+
+    boardType = createBoardType()
+    filterType = createFilterType()
+    dashboardType = createDashboardType()
   })
 
   describe('onFetch', () => {
-    it('should add the avatarId field if there is an iconUrl field', async () => {
+    it('should replace User types with account id field', async () => {
       const instance = new InstanceElement(
         'instance',
-        type,
+        boardType,
         {
-          user: {
-            displayName: 'John Doe',
+          admins: {
+            users: [{
+              accountId: 'John Doe',
+            }],
           },
-          userList: [{
-            displayName: 'John Doe',
-          }],
         }
       )
-      await filter.onFetch?.([instance])
+      const instanceFilter = new InstanceElement(
+        'instance2',
+        filterType,
+        {
+          owner: {
+            accountId: 'John Doe2',
+          },
+        }
+      )
+      const instanceDashboard = new InstanceElement(
+        'instance3',
+        dashboardType,
+        {
+          inner: {
+            owner: {
+              accountId: 'John Doe3',
+            },
+          },
+        }
+      )
+      await filter.onFetch?.([instance, instanceFilter, instanceDashboard])
       expect(instance.value).toEqual({
-        user: 'John Doe',
-        userList: ['John Doe'],
+        admins: {
+          users: ['John Doe'],
+        },
+      })
+      expect(instanceFilter.value).toEqual({
+        owner: 'John Doe2',
+      })
+      expect(instanceDashboard.value).toEqual({
+        inner: {
+          owner: 'John Doe3',
+        },
       })
     })
 
     it('should do nothing of not a user type', async () => {
       const instance = new InstanceElement(
         'instance',
-        type,
+        boardType,
         {
           notUser: {
             displayName: 'John Doe',
@@ -80,9 +112,12 @@ describe('userFilter', () => {
     })
 
     it('should replace field type', async () => {
-      await filter.onFetch?.([type])
-      expect(await type.fields.user.getType()).toBe(BuiltinTypes.STRING)
-      expect(await type.fields.userList.getType()).toEqual(new ListType(BuiltinTypes.STRING))
+      await filter.onFetch?.([adminType, filterType, dashboardType])
+      expect((await adminType.fields.users.getType()).elemID.name).toEqual(`List<jira.${ACCOUNT_ID_INFO_TYPE}>`)
+      expect((await filterType.fields.owner.getType()).elemID.name).toEqual(ACCOUNT_ID_INFO_TYPE)
+      expect((await dashboardType.fields.owner.getType()).elemID.name).toEqual(ACCOUNT_ID_INFO_TYPE)
+      // expect(await filterType.fields.owner.getType()).toEqual(accountIdInfoType)
+      // expect(await dashboardType.fields.owner.getType()).toEqual(accountIdInfoType)
     })
   })
 })

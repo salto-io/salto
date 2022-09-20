@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
+import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
 import { JiraConfig } from '../config/config'
 import { createIdToUserMap, IdMap } from '../filters/account_id/add_display_name_filter'
 import JiraClient from '../client/client'
@@ -143,7 +143,9 @@ export const accountIdValidator: (
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
         .map(change => getChangeData(change))
-        .map(element =>
-          createChangeErrorsForAccountIdIssues(element, idMap, baseUrl))
-        .flat()
+        .filter(isDeployableAccountIdType)
+        .forEach(element =>
+          walkOnElement({ element,
+            func: walkOnUsers(checkAndCreateChangeErrors(idMap, baseUrl, changeErrors)) }))
+      return changeErrors
     }, 'display name validator')

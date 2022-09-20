@@ -163,7 +163,7 @@ Go to ${url} to see valid users and account IDs.`,
     const realDisplayName = instances[0].value.nested.actor2[field].displayName
     const accountId = instances[0].value.nested.actor2[field].id
     instances[0].value.nested.actor2[field].displayName = 'wrong'
-    const elemId = instances[0].elemID.createNestedID('nested').createNestedID('actor2').createNestedID(field)
+    const elemId = instances[0].elemID.createNestedID('nested', 'actor2', field)
     const { parent } = elemId.createTopLevelParentID()
     expect(await validator([
       toChange({
@@ -187,16 +187,16 @@ Go to ${url} to see valid users and account IDs.`,
     // two same errors on a single element
     const field1 = 'parameter'
     delete instances[0].value.holder[field1].displayName
-    const elemId1 = instances[0].elemID.createNestedID('holder').createNestedID(field1)
+    const elemId1 = instances[0].elemID.createNestedID('holder', field1)
     const field2 = 'accountId'
     delete instances[0].value.list[0][field2].displayName
-    const elemId2 = instances[0].elemID.createNestedID('list').createNestedID('0').createNestedID(field2)
+    const elemId2 = instances[0].elemID.createNestedID('list', '0', field2)
     // two different errors on a single element
     delete instances[1].value.holder[field1].displayName
-    const elemId3 = instances[1].elemID.createNestedID('holder').createNestedID(field1)
+    const elemId3 = instances[1].elemID.createNestedID('holder', field1)
     const field4 = 'value'
     instances[1].value.actor[field4].id = '403'
-    const elemId4 = instances[1].elemID.createNestedID('actor').createNestedID(field4)
+    const elemId4 = instances[1].elemID.createNestedID('actor', field4)
     const parent4 = instances[1].elemID.createTopLevelParentID().parent
     const changeErrors = await validator([
       toChange({
@@ -234,5 +234,18 @@ Go to ${url} to see valid users and account IDs.`,
         after: instances[1],
       }),
     ])).toEqual([])
+  })
+  it('should not raise errors when the type is not deployable', async () => {
+    const objectType = common.createObjectedType('Filter')
+    instances = common.createInstanceElementArrayWithDisplayNames(2, objectType)
+    const changeErrors = await validator([
+      toChange({
+        after: instances[0],
+      }),
+      toChange({
+        after: instances[1],
+      }),
+    ])
+    expect(changeErrors).toEqual([])
   })
 })

@@ -191,6 +191,7 @@ export const DEFAULT_FILTERS = [
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
+  // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter
   addDisplayNameFilter,

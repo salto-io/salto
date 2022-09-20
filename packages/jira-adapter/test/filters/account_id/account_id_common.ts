@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
 import { accountIdInfoType } from '../../../src/filters/account_id/types'
 import { JIRA } from '../../../src/constants'
 
@@ -80,6 +80,45 @@ export const createType = (
       leadAccountId: { refType: BuiltinTypes.STRING },
       authorAccountId: { refType: BuiltinTypes.STRING },
       nested: { refType: nestedType },
+    },
+  })
+}
+export const createEmptyType = (type: string): ObjectType => new ObjectType({
+  elemID: new ElemID(JIRA, type),
+})
+
+export const createBoardType = (): ObjectType => {
+  const boardAdminsType = createEmptyType('Board_admins')
+  const adminType = new ObjectType({
+    elemID: new ElemID(JIRA, 'BoardAdmins'),
+    fields: {
+      users: { refType: new ListType(boardAdminsType) },
+    },
+  })
+  return new ObjectType({
+    elemID: new ElemID(JIRA, 'Board'),
+    fields: {
+      admins: { refType: adminType },
+    },
+  })
+}
+
+export const createFilterType = (): ObjectType => {
+  const userType = createEmptyType('User')
+  return new ObjectType({
+    elemID: new ElemID(JIRA, 'Filter'),
+    fields: {
+      owner: { refType: userType },
+    },
+  })
+}
+
+export const createDashboardType = (): ObjectType => {
+  const beanUserType = createEmptyType('UserBean')
+  return new ObjectType({
+    elemID: new ElemID(JIRA, 'Dashboard'),
+    fields: {
+      owner: { refType: beanUserType },
     },
   })
 }

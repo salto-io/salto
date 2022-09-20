@@ -211,6 +211,7 @@ export const createAutomationTypes = (): {
       projects: { refType: new ListType(projectType) },
       trigger: { refType: componentType },
       components: { refType: new ListType(componentType) },
+      labels: { refType: new ListType(BuiltinTypes.NUMBER) },
       tags: { refType: new ListType(tagType) },
       canOtherRuleTrigger: { refType: BuiltinTypes.BOOLEAN },
       notifyOnError: { refType: BuiltinTypes.STRING },

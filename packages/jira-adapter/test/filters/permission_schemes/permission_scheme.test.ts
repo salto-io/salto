@@ -22,8 +22,8 @@ import { getFilterParams } from '../../utils'
 
 const mockDefaultDeployChange = jest.fn()
 
-jest.mock('../../src/deployment/standard_deployment', () => ({
-  ...jest.requireActual<{}>('../../src/deployment/standard_deployment'),
+jest.mock('../../../src/deployment/standard_deployment', () => ({
+  ...jest.requireActual<{}>('../../../src/deployment/standard_deployment'),
   defaultDeployChange: jest.fn((...args) => mockDefaultDeployChange(args)),
 }))
 describe('forbidden permission scheme', () => {

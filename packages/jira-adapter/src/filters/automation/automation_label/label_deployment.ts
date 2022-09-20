@@ -38,7 +38,7 @@ export const LABELS_POST_RESPONSE_SCHEME = Joi.object({
   id: Joi.number().required(),
   name: Joi.string().allow('').required(),
   color: Joi.string().allow('').required(),
-}).unknown(true).required()
+}).unknown(true)
 
 export const isLabelsPostResponse = createSchemeGuard<LabelsResponse>(LABELS_POST_RESPONSE_SCHEME, 'Received an invalid page response')
 

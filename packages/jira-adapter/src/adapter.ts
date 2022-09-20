@@ -98,7 +98,7 @@ import { removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
-import permissionSchemeFilter from './filters/sd_portals_permission_scheme'
+import SDPortalPermissionSchemeFilter from './filters/sd_portals_permission_scheme'
 
 const {
   generateTypes,
@@ -190,7 +190,7 @@ export const DEFAULT_FILTERS = [
   queryFilter,
   missingDescriptionsFilter,
   smartValueReferenceFilter,
-  permissionSchemeFilter,
+  SDPortalPermissionSchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

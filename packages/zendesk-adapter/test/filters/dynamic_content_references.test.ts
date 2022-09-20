@@ -25,6 +25,7 @@ import { ZENDESK } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/dynamic_content_references'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_content'
+import { createMissingInstance } from '../../src/filters/references/missing_references'
 
 describe('dynamic content references filter', () => {
   let client: ZendeskClient
@@ -65,12 +66,14 @@ describe('dynamic content references filter', () => {
   const createInstances = (): {
     dynamicContentInstance: InstanceElement
     instance: InstanceElement
+    secondInstance: InstanceElement
+    noDCInstance: InstanceElement
   } => {
     const dynamicContentInstance = new InstanceElement(
       'dynamicContentInstance',
       dynamicContentType,
       {
-        placeholder: '{{somePlaceholder}}',
+        placeholder: '{{dc.somePlaceholder}}',
       },
     )
 
@@ -78,60 +81,141 @@ describe('dynamic content references filter', () => {
       'instance',
       type,
       {
-        raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}',
+        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} {{dc.somePlaceholder}}',
         empty_value: [],
+      }
+    )
+    const secondInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} bb{{dc.somePlaceholder}}cc',
+      }
+    )
+    const noDCInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        raw_value: '{{dc.somePlaceholder}} {{dc.notExistsPlaceholder}} {{dc.somePlaceholder}}',
       }
     )
     return {
       dynamicContentInstance,
       instance,
+      secondInstance,
+      noDCInstance,
     }
   }
 
   describe('onFetch', () => {
     it('should replace dynamic content placeholders with templates', async () => {
-      const { dynamicContentInstance, instance } = createInstances()
-
-      await filter.onFetch([dynamicContentInstance, instance])
+      const { dynamicContentInstance, instance, secondInstance } = createInstances()
+      await filter.onFetch([dynamicContentInstance, instance, secondInstance])
       expect(instance.value.raw_value).toEqual(new TemplateExpression({
         parts: ['{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}', ' ', '{{notExistsPlaceholder}}', ' ', '{{',
+          '}} {{notExistsPlaceholder}} {{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}'],
       }))
       expect(instance.value.empty_value).toEqual([])
+      expect(secondInstance.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{notExistsPlaceholder}} bb{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}cc'],
+      }))
+    })
+    it('should handel broken dynamic reference', async () => {
+      const { dynamicContentInstance, noDCInstance } = createInstances()
+      await filter.onFetch([noDCInstance, dynamicContentInstance])
+      const missingInstance = createMissingInstance(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME, 'notExistsPlaceholder')
+      missingInstance.value.placeholder = '{{dc.notExistsPlaceholder}}'
+      expect(noDCInstance.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{',
+          new ReferenceExpression(missingInstance.elemID, missingInstance),
+          '}} {{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}'],
+      }))
     })
   })
 
   describe('preDeploy', () => {
     it('should switch instance back to original value before deploy', async () => {
-      const { dynamicContentInstance, instance } = createInstances()
+      const { dynamicContentInstance, instance, secondInstance } = createInstances()
       const instanceCopy = instance.clone()
       await filter.onFetch([dynamicContentInstance, instanceCopy])
       expect(instanceCopy).not.toEqual(instance)
       await filter.preDeploy([toChange({ after: instanceCopy })])
       expect(instanceCopy).toEqual(instance)
+      const secondInstanceCopy = secondInstance.clone()
+      await filter.onFetch([dynamicContentInstance, secondInstanceCopy])
+      expect(secondInstanceCopy).not.toEqual(secondInstance)
+      await filter.preDeploy([toChange({ after: secondInstanceCopy })])
+      expect(secondInstanceCopy).toEqual(secondInstance)
+    })
+    it('should bring broken reference back to original value before deploy', async () => {
+      const { dynamicContentInstance, noDCInstance } = createInstances()
+      const noDCInstanceCopy = noDCInstance.clone()
+      await filter.onFetch([noDCInstanceCopy, dynamicContentInstance])
+      expect(noDCInstanceCopy).not.toEqual(noDCInstance)
+      await filter.preDeploy([toChange({ after: noDCInstanceCopy })])
+      expect(noDCInstanceCopy).toEqual(noDCInstance)
     })
   })
 
   describe('onDeploy', () => {
     it('should switch instance back to template value after deploy', async () => {
-      const { dynamicContentInstance, instance } = createInstances()
+      const { dynamicContentInstance, instance, secondInstance } = createInstances()
       const instanceCopy = instance.clone()
       await filter.onFetch([dynamicContentInstance, instanceCopy])
-      expect(instanceCopy).not.toEqual(instance)
       await filter.preDeploy([toChange({ after: instanceCopy })])
       expect(instanceCopy).toEqual(instance)
       await filter.onDeploy([toChange({ after: instanceCopy })])
       expect(instanceCopy.value.raw_value).toEqual(new TemplateExpression({
         parts: ['{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}', ' ', '{{notExistsPlaceholder}}', ' ', '{{',
+          '}} {{notExistsPlaceholder}} {{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}'],
       }))
       expect(instanceCopy.value.empty_value).toEqual([])
+
+      const secondInstanceCopy = secondInstance.clone()
+      await filter.onFetch([dynamicContentInstance, secondInstanceCopy])
+      await filter.preDeploy([toChange({ after: secondInstanceCopy })])
+      expect(secondInstanceCopy).toEqual(secondInstance)
+      await filter.onDeploy([toChange({ after: secondInstanceCopy })])
+      expect(secondInstanceCopy.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{notExistsPlaceholder}} bb{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}cc'],
+      }))
+    })
+    it('should switch broken reference back to template value after deploy', async () => {
+      const { dynamicContentInstance, noDCInstance } = createInstances()
+      const noDCInstanceCopy = noDCInstance.clone()
+      await filter.onFetch([noDCInstanceCopy, dynamicContentInstance])
+      await filter.preDeploy([toChange({ after: noDCInstanceCopy })])
+      expect(noDCInstanceCopy).toEqual(noDCInstance)
+      await filter.onDeploy([toChange({ after: noDCInstanceCopy })])
+      const missingInstance = createMissingInstance(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME, 'notExistsPlaceholder')
+      missingInstance.value.placeholder = '{{dc.notExistsPlaceholder}}'
+      expect(noDCInstanceCopy.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{',
+          new ReferenceExpression(missingInstance.elemID, missingInstance),
+          '}} {{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}'],
+      }))
     })
   })
 })

@@ -20,7 +20,7 @@ import { JiraConfig } from '../config/config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
 import { getAllowedPermissionTypes } from '../change_validators/permission_type'
-import { PERMISSION_SCHEME } from '../constants'
+import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 
 const log = logger(module)
@@ -53,7 +53,7 @@ const filter: FilterCreator = ({ client, elementsSource, config }) => ({
       changes,
       change => isInstanceChange(change)
         && isAdditionOrModificationChange(change)
-        && getChangeData(change).elemID.typeName === PERMISSION_SCHEME
+        && getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME
     )
 
     const deployResult = await deployChanges(

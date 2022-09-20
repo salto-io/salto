@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { JIRA, PERMISSIONS, PERMISSION_SCHEME } from '../../src/constants'
+import { JIRA, PERMISSIONS, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
 import permissionSchemeFilter from '../../src/filters/permission_scheme'
 import { getFilterParams } from '../utils'
 
@@ -31,7 +31,7 @@ describe('forbidden permission scheme', () => {
   let elementsSource: ReadOnlyElementsSource
   let elements: InstanceElement[]
   const type = new ObjectType({
-    elemID: new ElemID(JIRA, PERMISSION_SCHEME),
+    elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME),
   })
   const instance = new InstanceElement(
     'instance',

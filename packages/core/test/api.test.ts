@@ -382,6 +382,66 @@ describe('api.ts', () => {
         expect(stateSet).toHaveBeenCalledWith(existingEmployee)
       })
     })
+    describe('with checkOnly deployment', () => {
+      let executeDeploy: () => Promise<api.DeployResult>
+      beforeEach(async () => {
+        const workspaceElements = mockElements.getAllElements()
+        const stateElements = mockElements.getAllElements()
+
+        const removedElem = stateElements[4]
+        const addedElem = workspaceElements[3]
+
+        ws = mockWorkspace({
+          elements: workspaceElements.filter(elem => !isEqualElements(elem, removedElem)),
+          stateElements: stateElements.filter(elem => !isEqualElements(elem, addedElem)),
+        })
+
+        const actionPlan = mockPlan.createPlan([[
+          { action: 'add', data: { after: addedElem.clone() } },
+          { action: 'remove', data: { before: removedElem.clone() } },
+        ]])
+
+        // Add annotation to the new element
+        const cloneAndAddAnnotation = <T extends ChangeDataType>(
+          change: AdditionChange<T>
+        ): AdditionChange<T> => {
+          const cloned = change.data.after.clone() as T
+          cloned.annotations.test = 1
+          return { action: 'add', data: { after: cloned } }
+        }
+        mockAdapterOps.deploy.mockClear()
+        mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
+          appliedChanges: changeGroup.changes
+            .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
+          errors: [],
+        }))
+        executeDeploy = () => api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS, true)
+      })
+
+      describe('when adapter does not implement the validate method', () => {
+        it('should fail with error', async () => {
+          await executeDeploy()
+          expect(mockAdapterOps.deploy).not.toHaveBeenCalled()
+          expect(result.errors).toHaveLength(1)
+        })
+      })
+      describe('when adapter implements the validate method', () => {
+        let validateMock: jest.Mock
+        beforeEach(async () => {
+          validateMock = jest.fn()
+          adapterCreators[mockService].operations = mockFunction<Adapter['operations']>().mockReturnValue({
+            fetch: jest.fn(),
+            deploy: jest.fn(),
+            validate: validateMock,
+          })
+          await executeDeploy()
+        })
+        it('should call the adapter validate method', async () => {
+          expect(mockAdapterOps.deploy).not.toHaveBeenCalled()
+          expect(validateMock).toHaveBeenCalledTimes(1)
+        })
+      })
+    })
   })
 
   describe('login', () => {

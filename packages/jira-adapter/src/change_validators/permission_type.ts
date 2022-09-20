@@ -17,7 +17,7 @@ import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificati
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { isEmpty } from 'lodash'
-import { PERMISSION_SCHEME, PERMISSIONS } from '../constants'
+import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -72,7 +72,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME)
+    .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
     .filter(instance => hasInvalidPermissions(instance, allowedPermissionTypes))
     .map(async instance => ({
       elemID: instance.elemID,

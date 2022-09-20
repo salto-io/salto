@@ -21,11 +21,11 @@ import {
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  LAST_FETCH_TIME,
   APPLICATION_ID,
   SETTINGS_PATH,
 } from './constants'
@@ -36,6 +36,7 @@ import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomi
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -45,8 +46,16 @@ const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_F
 // don't load hidden files to the workspace in the core.
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
-export const createInstanceElement = async (customizationInfo: CustomizationInfo, type: ObjectType,
-  getElemIdFunc?: ElemIdGetter, fetchTime?: Date): Promise<InstanceElement> => {
+export const getServiceId = (instance: InstanceElement): string =>
+  instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
+
+export const createInstanceElement = async (
+  customizationInfo: CustomizationInfo,
+  type: ObjectType,
+  getElemIdFunc?: ElemIdGetter,
+  fetchTime?: Date,
+  serverTimeInstance?: InstanceElement,
+): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
     if (isSDFConfigType(type)) {
       return ElemID.CONFIG_NAME
@@ -139,26 +148,27 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
       content: customizationInfo.fileContent,
     })
   }
-
-  const lastFetchTimeValue = fetchTime !== undefined ? {
-    [LAST_FETCH_TIME]: fetchTime.toJSON(),
-  } : {}
-
-  const transformedValues = await transformValues({
+  const values = await transformValues({
     values: valuesWithTransformedAttrs,
     type,
     transformFunc: transformPrimitive,
     strict: false,
-  }) as Values
-  return new InstanceElement(
+  })
+  const instance = new InstanceElement(
     instanceName,
     type,
-    {
-      ...transformedValues,
-      ...lastFetchTimeValue,
-    },
+    values,
     getInstancePath(instanceFileName),
   )
+  if (fetchTime !== undefined && serverTimeInstance !== undefined) {
+    const serviceId = getServiceId(instance)
+    if (serviceId !== undefined) {
+      serverTimeInstance.value.instancesFetchTime[serviceId] = fetchTime.toJSON()
+    } else {
+      log.warn('Instance %s has no serviceId so cannot save it\'s fetchTime', instance.elemID.getFullName())
+    }
+  }
+  return instance
 }
 
 export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID):
@@ -269,7 +279,6 @@ export const toCustomizationInfo = async (
     return { typeName, values, path } as FolderCustomizationInfo
   }
 
-  delete values[LAST_FETCH_TIME]
   delete values[APPLICATION_ID]
 
   const scriptId = instance.value[SCRIPT_ID]
@@ -288,9 +297,6 @@ export const toCustomizationInfo = async (
   }
   return { typeName, values, scriptId } as CustomTypeInfo
 }
-
-export const getServiceId = (instance: InstanceElement): string =>
-  instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
 
 const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {
   if (elemId.isTopLevel()) {

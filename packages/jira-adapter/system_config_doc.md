@@ -1527,7 +1527,7 @@ jira {
           url = "/rest/api/3/workflow/search"
           paginationField = "startAt"
           queryParams = {
-            expand = "transitions,transitions.rules,statuses,statuses.properties,operations"
+            expand = "transitions,transitions.rules,transitions.properties,statuses,statuses.properties,operations"
           }
         }
       }
@@ -2057,10 +2057,15 @@ jira {
           ]
           serviceUrl = "/secure/admin/EditPriority!default.jspa?id={id}"
         }
-        jspRequests = {
-          add = "/secure/admin/AddPriority.jspa"
-          modify = "/secure/admin/EditPriority.jspa"
-          query = "/rest/api/3/priority"
+        deployRequests = {
+          add = {
+            url = "/rest/api/3/priority"
+            method = "post"
+          },
+          modify = {
+            url = "/rest/api/3/priority/{id}"
+            method = "put"
+          }
         }
       }
       ApplicationRole = {

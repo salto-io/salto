@@ -83,7 +83,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
     ])
     expect(errors).toEqual([{
       elemID: instance.elemID,
-      severity: 'Warning',
+      severity: 'Info',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
       detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported',
     }])
@@ -97,7 +97,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
     ])
     expect(errors).toEqual([{
       elemID: instance.elemID,
-      severity: 'Warning',
+      severity: 'Info',
       message: `The change of ${type.fields.notUpdatableField.elemID.getFullName()} is not supported and will be omitted from deploy`,
       detailedMessage: 'Deploying "inner.notUpdatableField" in adapter.test.instance.instance is not supported',
     }])

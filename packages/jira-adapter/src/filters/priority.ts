@@ -13,73 +13,42 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import _ from 'lodash'
-import { findObject, setFieldDeploymentAnnotations } from '../utils'
+import { getChangeData, isAdditionOrModificationChange, isInstanceChange, Change, ChangeDataType, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { deployWithJspEndpoints } from '../deployment/jsp_deployment'
 import { PRIORITY_TYPE_NAME } from '../constants'
+import { removeDomainPrefix } from './avatars'
 
-const log = logger(module)
-
-const filter: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]) => {
-    if (!config.client.usePrivateAPI) {
-      log.debug('Skipping priority filter because private API is not enabled')
-      return
-    }
-
-    const priorityType = findObject(elements, PRIORITY_TYPE_NAME)
-    if (priorityType === undefined) {
-      return
-    }
-
-    priorityType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-    priorityType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-    setFieldDeploymentAnnotations(priorityType, 'id')
-    setFieldDeploymentAnnotations(priorityType, 'statusColor')
-    setFieldDeploymentAnnotations(priorityType, 'description')
-    setFieldDeploymentAnnotations(priorityType, 'iconUrl')
-    setFieldDeploymentAnnotations(priorityType, 'name')
+const filter: FilterCreator = ({ client }) => ({
+  onFetch: async elements => {
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === PRIORITY_TYPE_NAME)
+      .filter(instance => !instance.value.isDefault)
+      .forEach(instance => { delete instance.value.isDefault })
   },
 
-  deploy: async changes => {
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change)
-        && isAdditionOrModificationChange(change)
-        && getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME
-    )
+  preDeploy: async (changes: Change<ChangeDataType>[]) => {
+    changes.filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME)
+      .filter(change => getChangeData(change).value.iconUrl !== undefined)
+      .forEach(change => {
+        change.data.after.value.iconUrl = new URL(
+          getChangeData(change).value.iconUrl, client.baseUrl
+        ).href
+      })
+  },
 
-    if (relevantChanges.length === 0) {
-      return {
-        leftoverChanges,
-        deployResult: {
-          errors: [],
-          appliedChanges: [],
-        },
-      }
-    }
-
-    const jspRequests = config.apiDefinitions.types[PRIORITY_TYPE_NAME]?.jspRequests
-    if (jspRequests === undefined) {
-      throw new Error(`${PRIORITY_TYPE_NAME} jsp urls are missing from the configuration`)
-    }
-
-    const deployResult = await deployWithJspEndpoints({
-      changes: relevantChanges.filter(isInstanceChange).filter(isAdditionOrModificationChange),
-      client,
-      urls: jspRequests,
-      serviceValuesTransformer: serviceValues => _.omit({
-        ...serviceValues,
-        iconurl: new URL(serviceValues.iconUrl).pathname,
-      }, 'iconUrl'),
-    })
-    return {
-      leftoverChanges,
-      deployResult,
-    }
+  onDeploy: async (changes: Change<ChangeDataType>[]) => {
+    changes.filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .filter(change => getChangeData(change).elemID.typeName === PRIORITY_TYPE_NAME)
+      .filter(change => getChangeData(change).value.iconUrl !== undefined)
+      .forEach(change => {
+        change.data.after.value.iconUrl = removeDomainPrefix(
+          getChangeData(change).value.iconUrl, client.baseUrl
+        )
+      })
   },
 })
 

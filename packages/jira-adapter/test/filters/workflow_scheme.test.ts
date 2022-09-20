@@ -195,15 +195,13 @@ describe('workflowScheme', () => {
 
       const change = toChange({ after: instance })
       await filter.deploy?.([change])
-      expect(deployChangeMock).toHaveBeenCalledWith(
+      expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
-        getDefaultConfig({ isDataCenter: false })
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
-        ['items'],
-        undefined,
-        undefined,
-      )
+        fieldsToIgnore: ['items'],
+      })
     })
 
     it('when draft should call publish draft', async () => {
@@ -253,15 +251,13 @@ describe('workflowScheme', () => {
       instanceBefore.value.description = 'desc'
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instanceBefore, after: instance }),
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({ before: instanceBefore, after: instance }),
         client,
-        getDefaultConfig({ isDataCenter: false })
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
-        ['items'],
-        undefined,
-        undefined,
-      )
+        fieldsToIgnore: ['items'],
+      })
 
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme/1/draft/publish',
@@ -335,15 +331,13 @@ describe('workflowScheme', () => {
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instanceBefore, after: instance }),
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({ before: instanceBefore, after: instance }),
         client,
-        getDefaultConfig({ isDataCenter: false })
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
-        ['items'],
-        undefined,
-        undefined,
-      )
+        fieldsToIgnore: ['items'],
+      })
 
 
       expect(connection.get).toHaveBeenCalledWith(
@@ -399,15 +393,13 @@ describe('workflowScheme', () => {
       instanceBefore.value.description = 'desc'
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instanceBefore, after: instance }),
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({ before: instanceBefore, after: instance }),
         client,
-        getDefaultConfig({ isDataCenter: false })
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
-        ['items'],
-        undefined,
-        undefined,
-      )
+        fieldsToIgnore: ['items'],
+      })
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme/1',
@@ -469,15 +461,13 @@ describe('workflowScheme', () => {
       instanceBefore.value.description = 'desc'
       await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({ before: instanceBefore, after: instance }),
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({ before: instanceBefore, after: instance }),
         client,
-        getDefaultConfig({ isDataCenter: false })
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
-        ['items'],
-        undefined,
-        undefined,
-      )
+        fieldsToIgnore: ['items'],
+      })
 
       expect(instance.value.statusMigrations).toBeUndefined()
       expect(instance.value.id).toBe('1')

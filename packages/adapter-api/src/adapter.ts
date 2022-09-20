@@ -96,11 +96,15 @@ export type DeployModifiers = {
   getChangeGroupIds?: ChangeGroupIdFunction
 }
 
+export type ValidationModifiers = Pick<DeployModifiers, 'changeValidator'>
+
 export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
+  validate?: (opts: DeployOptions) => Promise<DeployResult>
   postFetch?: (opts: PostFetchOptions) => Promise<void>
   deployModifiers?: DeployModifiers
+  validationModifiers?: ValidationModifiers
 }
 
 export type AdapterOperationName = keyof AdapterOperations

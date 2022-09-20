@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, ReadOnlyElementsSource, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { permissionTypeValidator } from '../../src/change_validators/permission_type'
-import { JIRA, PERMISSIONS, PERMISSION_SCHEME } from '../../src/constants'
+import { JIRA, PERMISSIONS, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
 
 describe('permissionType change validator', () => {
   let elementsSource: ReadOnlyElementsSource
@@ -29,7 +29,7 @@ describe('permissionType change validator', () => {
       },
     ],
   })
-  const permissionSchemeObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSION_SCHEME) })
+  const permissionSchemeObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME) })
   const invalidPermissionScheme = new InstanceElement('instance1', permissionSchemeObject, {
     permissions: [
       {

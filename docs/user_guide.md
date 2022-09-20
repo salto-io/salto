@@ -19,6 +19,7 @@ Currently, Salto supports the following business applications:
 - [Zuora Billing](https://github.com/salto-io/salto/tree/main/packages/zuora-billing-adapter)
 - [Jira](https://github.com/salto-io/salto/tree/main/packages/jira-adapter)
 - [Stripe](https://github.com/salto-io/salto/tree/main/packages/stripe-adapter)
+- [Okta](https://github.com/salto-io/salto/tree/main/packages/okta-adapter)
 
 Support for other business applications is in the works.
 

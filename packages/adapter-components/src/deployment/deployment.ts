@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { transformElement } from '@salto-io/adapter-utils'
 import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
@@ -82,16 +82,26 @@ export const filterIgnoredValues = async (
  * @param endpointDetails The details of of what endpoints to use for each action
  * @param fieldsToIgnore Fields to omit for the deployment
  * @param additionalUrlVars Additional url vars to add to the request url
+ * @param queryParams Query params to add to the request url
  * @returns: The response data of the request
  */
-export const deployChange = async (
-  change: Change<InstanceElement>,
-  client: HTTPWriteClientInterface,
-  endpointDetails?: DeploymentRequestsByAction,
-  fieldsToIgnore: string[] | ((path: ElemID) => boolean) = [],
-  additionalUrlVars?: Record<string, string>,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<ResponseResult> => {
+export const deployChange = async ({
+  change,
+  client,
+  endpointDetails,
+  fieldsToIgnore = [],
+  additionalUrlVars,
+  queryParams,
+  elementsSource,
+}:{
+  change: Change<InstanceElement>
+  client: HTTPWriteClientInterface
+  endpointDetails?: DeploymentRequestsByAction
+  fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
+  additionalUrlVars?: Record<string, string>
+  queryParams?: Record<string, string>
+  elementsSource?: ReadOnlyElementsSource
+}): Promise<ResponseResult> => {
   const instance = getChangeData(change)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
@@ -114,10 +124,10 @@ export const deployChange = async (
     ? { [endpoint.deployAsField]: valuesToDeploy }
     : valuesToDeploy
 
-  if (_.isEmpty(valuesToDeploy)) {
+  if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
 
-  const response = await client[endpoint.method]({ url, data })
+  const response = await client[endpoint.method]({ url, data, queryParams })
   return response.data
 }

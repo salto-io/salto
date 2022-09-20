@@ -75,6 +75,7 @@ Supported login parameters per service type:
 [stripe](/packages/stripe-adapter/specific-cli-options.md#non-interactive-login-parameters),
 [zendesk](/packages/zendesk-adapter/specific-cli-options.md#non-interactive-login-parameters),
 [zuora billing](/packages/zuora-billing-adapter/specific-cli-options.md#non-interactive-login-parameters)
+[okta](/packages/okta-adapter/specific-cli-options.md#non-interactive-login-parameters),
 
 ### **salto env \<command>**
 

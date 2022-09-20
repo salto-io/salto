@@ -83,14 +83,13 @@ describe('fields_deployment', () => {
 
     const change = toChange({ after: instance })
     await filter.deploy([change])
-    expect(deployChangeMock).toHaveBeenCalledWith(
+    expect(deployChangeMock).toHaveBeenCalledWith({
       change,
       client,
-      getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Field.deployRequests,
-      ['contexts'],
-      undefined,
-      undefined,
-    )
+      endpointDetails: getDefaultConfig({ isDataCenter: false })
+        .apiDefinitions.types.Field.deployRequests,
+      fieldsToIgnore: ['contexts'],
+    })
   })
 
   it('if an addition should remove default context', async () => {

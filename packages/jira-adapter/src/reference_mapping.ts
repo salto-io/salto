@@ -23,6 +23,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
   SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
+import { getRefIdType, getRefNameType } from './references/workflow_properties'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -43,12 +44,24 @@ const toTypeName: referenceUtils.ContextValueMapperFunc = val => {
   return _.capitalize(val)
 }
 
-export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType'
+export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperFunc = val => {
+  if (val === 'priority' || val === 'resolution') {
+    return _.capitalize(val)
+  }
+  return undefined
+}
+
+export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesIdContext' | 'workflowStatusPropertiesNameContext'
+| 'parentFieldId'
+
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
   parentSelectedFieldType: neighborContextFunc({ contextFieldName: 'selectedFieldType', levelsUp: 1, contextValueMapper: toTypeName }),
   parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
+  workflowStatusPropertiesIdContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefIdType }),
+  workflowStatusPropertiesNameContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefNameType }),
+  parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
 }
 
 export const referencesRules: referenceUtils.FieldReferenceDefinition<
@@ -464,9 +477,24 @@ ReferenceContextStrategyName
     target: { typeContext: 'parentSelectedFieldType' },
   },
   {
+    src: { field: 'fieldValue', parentTypes: ['PostFunctionConfiguration'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'parentFieldId' },
+  },
+  {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'id',
     target: { typeContext: 'parentFieldType' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'workflowStatusPropertiesIdContext' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
+    serializationStrategy: 'nameWithPath',
+    target: { typeContext: 'workflowStatusPropertiesNameContext' },
   },
 ]
 

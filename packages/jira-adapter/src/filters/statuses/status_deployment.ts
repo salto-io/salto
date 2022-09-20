@@ -68,7 +68,7 @@ const modifyStatus = async (
   await client.put({
     url: '/rest/api/3/statuses',
     data: {
-      statuses: createDeployableStatusValues(modificationChange),
+      statuses: [createDeployableStatusValues(modificationChange)],
     },
   })
 }
@@ -83,13 +83,13 @@ const addStatus = async (
       scope: {
         type: 'GLOBAL',
       },
-      statuses: createDeployableStatusValues(additionChange),
+      statuses: [createDeployableStatusValues(additionChange)],
     },
   })
   if (!isStatusResponse(response.data)) {
     throw new Error(`Received an invalid status response when attempting to create status: ${additionChange.data.after.elemID.getFullName()}`)
   }
-  additionChange.data.after.value.id = response.data[0].id
+  getChangeData(additionChange).value.id = response.data[0].id
 }
 
 const deployStatus = async (
@@ -97,9 +97,10 @@ const deployStatus = async (
   client: JiraClient,
 ): Promise<void> => {
   if (isModificationChange(change)) {
-    return modifyStatus(change, client)
+    await modifyStatus(change, client)
+    return
   }
-  return addStatus(change, client)
+  await addStatus(change, client)
 }
 
 const filter: FilterCreator = ({ client, config }) => ({

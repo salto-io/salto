@@ -17,7 +17,7 @@ import {
   Change,
   getAllChangeData,
   getChangeData,
-  InstanceElement,
+  InstanceElement, isAdditionOrModificationChange,
   isInstanceChange,
   isModificationChange,
   toChange,
@@ -33,6 +33,8 @@ import { apiName } from '../transformers/transformer'
 const isInstanceOfTypeProfile = isInstanceOfType(PROFILE_METADATA_TYPE)
 
 export const LOGIN_IP_RANGES_FIELD = 'loginIpRanges'
+export const LAYOUT_ASSIGNMENTS_FIELD = 'layoutAssignments'
+
 
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
@@ -46,38 +48,43 @@ const toMinifiedChange = (
 ): Change<InstanceElement> => {
   const [before, after] = getAllChangeData(change)
   const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
-  const minifiedBefore = before.clone()
   const minifiedAfter = after.clone()
-  minifiedBefore.value = {
-    [INSTANCE_FULL_NAME_FIELD]: before.value[INSTANCE_FULL_NAME_FIELD],
-    [LOGIN_IP_RANGES_FIELD]: before.value[LOGIN_IP_RANGES_FIELD] ?? [],
-  }
   minifiedAfter.value = {
     [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
     [LOGIN_IP_RANGES_FIELD]: after.value[LOGIN_IP_RANGES_FIELD] ?? [],
   }
 
-  detailedChanges.forEach(detailedChange => {
-    const changePath = getPath(before, detailedChange.id)
-    if (_.isUndefined(changePath)) {
-      return
-    }
-    //  This code makes sure we deploy the whole parent value
-    //  of nested attributes (for example, a change in userPermissions)
-    const minifiedValuePath = changePath.length > 2
-      ? changePath.slice(0, -1)
-      : changePath
-    const beforeChange = _.get(before, minifiedValuePath)
-    const afterChange = _.get(after, minifiedValuePath)
-    if (isDefined(beforeChange)) {
-      _.set(minifiedBefore, minifiedValuePath, beforeChange)
-    }
-    if (isDefined(afterChange)) {
-      _.set(minifiedAfter, minifiedValuePath, afterChange)
-    }
-  })
+  const newLayoutAssignmentNames: string[] = []
+  detailedChanges
+    .filter(isAdditionOrModificationChange)
+    .forEach(detailedChange => {
+      const changePath = getPath(before, detailedChange.id)
+      if (_.isUndefined(changePath)) {
+        return
+      }
+      if (changePath.includes(LAYOUT_ASSIGNMENTS_FIELD)) {
+        newLayoutAssignmentNames.push(changePath[changePath.length - 1])
+        return
+      }
+      //  This code makes sure we deploy the whole parent value
+      //  of nested attributes (for example, a change in userPermissions)
+      const minifiedValuePath = changePath.length > 2
+        ? changePath.slice(0, -1)
+        : changePath
+      const afterChange = _.get(after, minifiedValuePath)
+      if (isDefined(afterChange)) {
+        _.set(minifiedAfter, minifiedValuePath, afterChange)
+      }
+    })
+
+  if (newLayoutAssignmentNames.length > 0) {
+    minifiedAfter.value[LAYOUT_ASSIGNMENTS_FIELD] = _.pick(
+      after.value[LAYOUT_ASSIGNMENTS_FIELD],
+      newLayoutAssignmentNames,
+    )
+  }
   return toChange({
-    before: minifiedBefore,
+    before, // We don't really care about the before instance.
     after: minifiedAfter,
   })
 }
@@ -111,7 +118,7 @@ const filterCreator: LocalFilterCreator = () => {
         .filter(isDefined)
 
       _.pullAll(changes, appliedProfileChanges)
-      changes.push(...appliedOriginalChanges)
+      appliedOriginalChanges.forEach(change => changes.push(change))
     },
   }
 }

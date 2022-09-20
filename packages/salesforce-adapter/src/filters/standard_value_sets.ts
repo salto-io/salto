@@ -23,7 +23,13 @@ import {
   ReferenceExpression,
   isObjectType,
   isInstanceElement,
-  isModificationChange, isFieldChange, getChangeData, Change, getAllChangeData, toChange,
+  isModificationChange,
+  isFieldChange,
+  getChangeData,
+  Change,
+  getAllChangeData,
+  toChange,
+  ModificationChange,
 } from '@salto-io/adapter-api'
 import { resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -197,8 +203,8 @@ const emptyFileProperties = (fullName: string): FileProperties => ({
 })
 
 const toDeployableStandardPicklistFieldChange = (
-  change: Change<Field>
-): Change<Field> => {
+  change: ModificationChange<Field>
+): ModificationChange<Field> => {
   const [deployableBefore, deployableAfter] = getAllChangeData(change).map(field => field.clone())
   delete deployableBefore.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   delete deployableAfter.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
@@ -293,7 +299,7 @@ export const makeFilter = (
         .map(name => originalChanges[name])
         .filter(isDefined)
       _.pullAll(changes, appliedStandardPicklistFieldChanges)
-      changes.push(...appliedOriginalChanges)
+      appliedOriginalChanges.forEach(change => changes.push(change))
     },
   }
 }

@@ -22,6 +22,7 @@ import {
   BatchResultInfo,
   BulkLoadOperation,
   Connection as RealConnection,
+  DeployOptions as JSForceDeployOptions,
   DeployResult,
   DescribeGlobalSObjectResult,
   DescribeSObjectResult,
@@ -66,6 +67,8 @@ const { toMD5 } = hash
 
 const log = logger(module)
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
+
+type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
 export const API_VERSION = '55.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
@@ -662,20 +665,25 @@ export default class SalesforceClient {
   /**
    * Updates salesforce metadata with the Deploy API
    * @param zip The package zip
+   * @param deployOptions Salesforce deployment options
    * @returns The save result of the requested update
    */
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  public async deploy(zip: Buffer): Promise<DeployResult> {
+  public async deploy(zip: Buffer, deployOptions?: DeployOptions): Promise<DeployResult> {
     this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
-    const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete',
-      'checkOnly', 'testLevel', 'runTests']
+    const { checkOnly = false } = deployOptions ?? {}
+    const optionsToSend = ['rollbackOnError', 'ignoreWarnings', 'purgeOnDelete', 'testLevel', 'runTests']
     const deployResult = flatValues(
       await this.conn.metadata.deploy(
         zip,
-        _.merge(defaultDeployOptions, _.pick(this.config?.deploy, optionsToSend)),
+        {
+          ...defaultDeployOptions,
+          ..._.pick(this.config?.deploy, optionsToSend),
+          checkOnly,
+        },
       ).complete(true)
     )
     this.setFetchPollingTimeout()

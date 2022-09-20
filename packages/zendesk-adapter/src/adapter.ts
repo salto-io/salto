@@ -33,6 +33,7 @@ import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
 import fieldReferencesFilter, { lookupFunc } from './filters/field_references'
+import listValuesMissingReferencesFilter from './filters/references/list_values_missing_references'
 import unorderedListsFilter from './filters/unordered_lists'
 import viewFilter from './filters/view'
 import workspaceFilter from './filters/workspace'
@@ -65,6 +66,7 @@ import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
+import hcLocalesFilter from './filters/help_center_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
@@ -115,14 +117,18 @@ export const DEFAULT_FILTERS = [
   hardcodedChannelFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
-  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter and tagsFilter
+  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
+  // tagsFilter and hcLocalesFilter
   usersFilter,
   tagsFilter,
+  hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
   fieldReferencesFilter,
+  // listValuesMissingReferencesFilter should be after fieldReferencesFilter
+  listValuesMissingReferencesFilter,
   appsFilter,
   customFieldOptionsFilter,
   appOwnedConvertListToMapFilter,

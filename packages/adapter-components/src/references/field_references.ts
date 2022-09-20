@@ -14,14 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID, cloneDeepWithoutRefs } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID, cloneDeepWithoutRefs, isElement } from '@salto-io/adapter-api'
+import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues, safeJsonStringify, resolvePath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
 import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
   FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
   CreateMissingRefFunc,
+  GetReferenceIdFunc,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -40,6 +41,10 @@ const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
 export const MISSING_ANNOTATION = 'salto_missing_ref'
 const checkMissingRef = (element: Element): boolean =>
   element.annotations?.[MISSING_ANNOTATION] === true
+
+const isRelativeSerializer = (serializer: ReferenceSerializationStrategy)
+  : serializer is ReferenceSerializationStrategy & { getReferenceId: GetReferenceIdFunc } =>
+  'getReferenceId' in serializer
 
 export const replaceReferenceValues = async <
   T extends string
@@ -130,17 +135,29 @@ export const replaceReferenceValues = async <
             safeJsonStringify(cloneDeepWithoutRefs(element)),
           )
         }
+
+        const referenceId = isRelativeSerializer(serializer)
+          ? serializer.getReferenceId(element.elemID)
+          : element.elemID
+
         if (checkMissingRef(element)) {
-          return new ReferenceExpression(element.elemID)
+          return new ReferenceExpression(referenceId)
         }
         return (
           isEqualValue(
-            await serializer.serialize({
-              ref: new ReferenceExpression(element.elemID, elem),
-              field,
-            }),
+            !isRelativeSerializer(serializer)
+              ? await serializer.serialize({
+                ref: new ReferenceExpression(element.elemID, elem),
+                field,
+              })
+              : resolvePath(element, referenceId),
             val,
-          ) ? new ReferenceExpression(element.elemID, elem)
+          ) ? new ReferenceExpression(
+              referenceId,
+              elem !== undefined && !referenceId.isEqual(elem.elemID)
+                ? resolvePath(elem, referenceId)
+                : elem
+            )
             : undefined
         )
       }
@@ -290,8 +307,12 @@ export const generateLookupFunc = <
   }
 
   return async ({ ref, path, field }) => {
+    if (!isElement(ref.value)) {
+      return ref.value
+    }
+
     const strategy = await determineLookupStrategy({ ref, path, field })
-    if (strategy !== undefined) {
+    if (strategy !== undefined && !isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field })
     }
 

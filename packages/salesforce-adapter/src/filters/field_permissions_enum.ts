@@ -20,7 +20,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
-import { SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, TYPES_PATH, SUBTYPES_PATH } from '../constants'
+import { SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, TYPES_PATH, SUBTYPES_PATH } from '../constants'
 import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
@@ -28,7 +28,6 @@ const log = logger(module)
 
 const metadataTypesWithFieldPermissions = [
   PROFILE_METADATA_TYPE,
-  PERMISSION_SET_METADATA_TYPE,
 ]
 
 const FIELD_PERMISSIONS = 'fieldPermissions'

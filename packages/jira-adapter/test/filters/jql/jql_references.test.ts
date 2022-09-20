@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { MockInterface } from '@salto-io/test-utils'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import { getFilterParams, mockClient } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
 import { Filter } from '../../../src/filter'
@@ -26,7 +24,6 @@ describe('jqlReferencesFilter', () => {
   let filter: Filter
   let type: ObjectType
   let instance: InstanceElement
-  let connection: MockInterface<clientUtils.APIConnection>
   let fieldInstance: InstanceElement
   let doneInstance: InstanceElement
   let todoInstance: InstanceElement
@@ -34,8 +31,7 @@ describe('jqlReferencesFilter', () => {
 
 
   beforeEach(async () => {
-    const { client, paginator, connection: conn } = mockClient()
-    connection = conn
+    const { client, paginator } = mockClient()
 
     filter = jqlReferencesFilter(getFilterParams({
       client,
@@ -63,6 +59,7 @@ describe('jqlReferencesFilter', () => {
       'field',
       new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }),
       {
+        id: 'status',
         name: 'Status',
       }
     )
@@ -71,6 +68,7 @@ describe('jqlReferencesFilter', () => {
       'done',
       new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }),
       {
+        id: '1',
         name: 'Done',
       }
     )
@@ -78,6 +76,7 @@ describe('jqlReferencesFilter', () => {
       'todo',
       new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }),
       {
+        id: '2',
         name: 'To Do',
       }
     )
@@ -110,49 +109,6 @@ describe('jqlReferencesFilter', () => {
         ],
       }
     )
-
-    connection.post.mockResolvedValue({
-      status: 200,
-      data: {
-        queries: [
-          {
-            query: 'status = Done',
-            structure: {
-              where: {
-                field: {
-                  name: 'status',
-                },
-                operator: '=',
-                operand: {
-                  value: 'Done',
-                },
-              },
-            },
-          },
-          {
-            query: 'status IN (Done, "To Do")',
-            structure: {
-              where: {
-                field: {
-                  name: 'status',
-                },
-                operator: 'in',
-                operand: {
-                  values: [
-                    {
-                      value: 'Done',
-                    },
-                    {
-                      value: 'To Do',
-                    },
-                  ],
-                },
-              },
-            },
-          },
-        ],
-      },
-    })
   })
 
   describe('onFetch', () => {
@@ -160,280 +116,72 @@ describe('jqlReferencesFilter', () => {
       await filter.onFetch?.(
         [instance, fieldInstance, doneInstance, todoInstance, automationInstance]
       )
-      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
-        {
-          reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), 'status = Done'),
-            },
-          ],
-        },
-        {
-          reference: new ReferenceExpression(doneInstance.elemID, doneInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), 'status = Done'),
-            },
-          ],
-        },
+
+      expect(instance.value.jql).toBeInstanceOf(TemplateExpression)
+      expect(instance.value.jql.parts).toEqual([
+        new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        ' = ',
+        new ReferenceExpression(doneInstance.elemID.createNestedID('name'), 'Done'),
       ])
 
-      expect(automationInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
-        {
-          reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(
-                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
-                'status IN (Done, "To Do")'
-              ),
-            },
-            {
-              location: new ReferenceExpression(
-                automationInstance.elemID.createNestedID('conditions', '0', 'rawValue'), 'status = Done'
-              ),
-            },
-          ],
-        },
-        {
-          reference: new ReferenceExpression(doneInstance.elemID, doneInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(
-                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
-                'status IN (Done, "To Do")'
-              ),
-            },
-            {
-              location: new ReferenceExpression(
-                automationInstance.elemID.createNestedID('conditions', '0', 'rawValue'), 'status = Done'
-              ),
-            },
-          ],
-        },
-        {
-          reference: new ReferenceExpression(todoInstance.elemID, todoInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(
-                automationInstance.elemID.createNestedID('conditions', '0', 'children', '0', 'value', 'query', 'value'),
-                'status IN (Done, "To Do")'
-              ),
-            },
-          ],
-        },
+      expect(automationInstance.value.conditions[0].rawValue).toBeInstanceOf(TemplateExpression)
+      expect(automationInstance.value.conditions[0].rawValue.parts).toEqual([
+        new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        ' = ',
+        new ReferenceExpression(doneInstance.elemID.createNestedID('name'), 'Done'),
       ])
 
-      expect(connection.post).toHaveBeenCalledWith(
-        '/rest/api/3/jql/parse',
-        {
-          queries: [
-            'status = Done',
-            'status IN (Done, "To Do")',
-          ],
-        },
-        {
-          params: {
-            validation: 'none',
-          },
-        },
-      )
+      expect(automationInstance.value.conditions[0].children[0].value.query.value)
+        .toBeInstanceOf(TemplateExpression)
+      expect(automationInstance.value.conditions[0].children[0].value.query.value.parts).toEqual([
+        new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        ' IN (',
+        new ReferenceExpression(doneInstance.elemID.createNestedID('name'), 'Done'),
+        ', "',
+        new ReferenceExpression(todoInstance.elemID.createNestedID('name'), 'To Do'),
+        '")',
+      ])
     })
 
     it('should work with empty jql', async () => {
       instance.value.jql = ''
 
-      connection.post.mockResolvedValue({
-        status: 200,
-        data: {
-          queries: [
-            {
-              query: '',
-              structure: {
-                where: {
-                  field: {
-                    name: 'status',
-                  },
-                  operator: '=',
-                  operand: {
-                    value: 'Done',
-                  },
-                },
-              },
-            },
-          ],
-        },
-      })
-
       await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
-      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
-        {
-          reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), ''),
-            },
-          ],
-        },
-        {
-          reference: new ReferenceExpression(doneInstance.elemID, doneInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), ''),
-            },
-          ],
-        },
-      ])
-
-      expect(connection.post).toHaveBeenCalledWith(
-        '/rest/api/3/jql/parse',
-        {
-          queries: [''],
-        },
-        {
-          params: {
-            validation: 'none',
-          },
-        },
-      )
+      expect(instance.value.jql).toBe('')
     })
 
-    it('should parse correctly jql with multiple values', async () => {
-      const jql = 'status IN (Done, "To Do") AND otherfield = 2 AND issuetype = 3'
-      connection.post.mockResolvedValue({
-        status: 200,
-        data: {
-          queries: [
-            {
-              query: jql,
-              structure: {
-                otherField: 2,
-                where: {
-                  clauses: [
-                    {
-                      field: {
-                        name: 'status',
-                      },
-                      operator: 'in',
-                      operand: {
-                        values: [
-                          {
-                            value: 'Done',
-                          },
-                          {
-                            value: 'To Do',
-                          },
-                        ],
-                      },
-                    },
-                    {
-                      field: {
-                        name: 'status',
-                      },
-                      operator: 'in',
-                    },
-                    {
-                      field: {
-                        name: 'otherfield',
-                      },
-                      operator: '=',
-                    },
-                    {
-                      field: {
-                        name: 'issuetype',
-                      },
-                      operator: '=',
-                      operand: {
-                        value: '3',
-                      },
-                    },
-                  ],
-                  operator: 'and',
-                },
-              },
-              errors: [],
-            },
-          ],
-        },
-      })
-
-      instance.value.jql = jql
-
-      const issueTypeField = new InstanceElement(
-        'issuetype',
-        new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }),
-        {
-          name: 'Issue Type',
-        }
-      )
-
-      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance, issueTypeField])
-      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
-        {
-          reference: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), jql),
-            },
-          ],
-        },
-        {
-          reference: new ReferenceExpression(issueTypeField.elemID, issueTypeField),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), jql),
-            },
-          ],
-        },
-        {
-          reference: new ReferenceExpression(doneInstance.elemID, doneInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), jql),
-            },
-          ],
-        },
-        {
-          reference: new ReferenceExpression(todoInstance.elemID, todoInstance),
-          occurrences: [
-            {
-              location: new ReferenceExpression(instance.elemID.createNestedID('jql'), jql),
-            },
-          ],
-        },
-      ])
-    })
-
-    it('should do nothing if jql pares response in invalid', async () => {
-      connection.post.mockResolvedValue({
-        status: 200,
-        data: {},
-      })
-      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
-      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
-    })
 
     it('should do nothing if failed to parse jql', async () => {
-      connection.post.mockResolvedValue({
-        status: 200,
-        data: {
-          queries: [
-            {
-              query: 'status = Done',
-              errors: ['error'],
-            },
-          ],
-        },
-      })
+      instance.value.jql = 'asd { [ < ('
       await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
-      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+      expect(instance.value.jql).toBe('asd { [ < (')
+    })
+  })
+
+  describe('pre/onDeploy', () => {
+    it('should resolve the template expression before deploy and restore it after', async () => {
+      const templateExpression = new TemplateExpression({
+        parts: [
+          new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+          ' = ',
+          new ReferenceExpression(doneInstance.elemID.createNestedID('name'), 'Done'),
+        ],
+      })
+      instance.value.jql = templateExpression
+
+      await filter.preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.jql).toBe('status = Done')
+
+      await filter.onDeploy?.([toChange({ after: instance })])
+      expect(instance.value.jql).toBe(templateExpression)
     })
 
-    it('should do nothing if request failed', async () => {
-      connection.post.mockRejectedValue(new Error('error'))
-      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
-      expect(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    it('should resolve correctly string values', async () => {
+      await filter.preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.jql).toBe('status = Done')
+
+      await filter.onDeploy?.([toChange({ after: instance })])
+      expect(instance.value.jql).toBe('status = Done')
     })
   })
 })

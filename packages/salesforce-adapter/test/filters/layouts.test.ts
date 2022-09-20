@@ -20,7 +20,7 @@ import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
-import { getObjectDirectoryPath } from '../../src/filters/custom_objects'
+import { getObjectDirectoryPath } from '../../src/filters/custom_objects_to_object_type'
 
 describe('Test layout filter', () => {
   describe('Test layout fetch', () => {

@@ -153,7 +153,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   // note: not all field values under ReportColumn match this rule - but it's ok because
   // only the ones that match are currently extracted (SALTO-1758)
   {
-    src: { field: 'field', parentTypes: ['FilterItem', 'ReportColumn'] },
+    src: { field: 'field', parentTypes: ['FilterItem', 'ReportColumn', 'PermissionSetFieldPermissions'] },
     target: { type: CUSTOM_FIELD },
   },
   {
@@ -379,6 +379,14 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'neighborTableLookup', type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'publicGroup', parentTypes: ['PublicGroups'] },
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'role', parentTypes: ['Roles'] },
+    target: { type: 'Role' },
+  },
+  {
     // sometimes has a value that is not a reference - should only convert to reference
     // if lookupValueType exists
     src: { field: 'lookupValue', parentTypes: ['WorkflowFieldUpdate'] },
@@ -522,7 +530,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
 // Optional reference that should not be used if enumFieldPermissions config is on
 const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'PermissionSetFieldPermissions'] },
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
     target: { type: CUSTOM_FIELD },
   },
 ]

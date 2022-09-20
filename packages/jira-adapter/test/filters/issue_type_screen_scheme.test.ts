@@ -134,15 +134,13 @@ describe('issueTypeScreenScheme', () => {
         await filter.deploy?.([change])
       })
       it('should call deployChange and ignore issueTypeMappings', () => {
-        expect(deployChangeMock).toHaveBeenCalledWith(
+        expect(deployChangeMock).toHaveBeenCalledWith({
           change,
           client,
-          getDefaultConfig({ isDataCenter: false })
+          endpointDetails: getDefaultConfig({ isDataCenter: false })
             .apiDefinitions.types.IssueTypeScreenScheme.deployRequests,
-          ['issueTypeMappings'],
-          undefined,
-          undefined,
-        )
+          fieldsToIgnore: ['issueTypeMappings'],
+        })
       })
 
       it('should call the endpoint to remove the removed and modified items', () => {

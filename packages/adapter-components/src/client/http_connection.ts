@@ -34,6 +34,7 @@ export type Response<T> = {
   data: T
   status: number
   statusText?: string
+  headers?: Record<string, string>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,22 +69,45 @@ export type ConnectionCreator<TCredentials> = (
   retryOptions: RetryOptions,
 ) => Connection<TCredentials>
 
-const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
+const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
   // Although the standard is 'Retry-After' is seems that some servers
   // returns 'retry-after' so just in case we lowercase the headers
-  const retryAfterHeaderValue = _.mapKeys(
-    error.response?.headers ?? {},
+  const lowercaseHeaders = _.mapKeys(
+    headers,
     (_val, key) => key.toLowerCase()
-  )['retry-after']
+  )
 
-  const retryDelay = retryAfterHeaderValue !== undefined
-    ? parseInt(retryAfterHeaderValue, 10) * 1000
-    : retryOptions.retryDelay
-
-  if (Number.isNaN(retryDelay)) {
-    log.warn(`Received invalid retry-after header value: ${retryAfterHeaderValue}`)
-    return retryOptions.retryDelay
+  const retryAfterHeaderValue = lowercaseHeaders['retry-after']
+  if (retryAfterHeaderValue !== undefined) {
+    const retryAfter = parseInt(retryAfterHeaderValue, 10) * 1000
+    if (Number.isNaN(retryAfter)) {
+      log.warn(`Received invalid retry-after header value: ${retryAfterHeaderValue}`)
+      return undefined
+    }
+    return retryAfter
   }
+  // Handle rate limits as seen in Okta,
+  // x-rate-limit-reset contains the time at which the rate limit resets
+  // more information: https://developer.okta.com/docs/reference/rl-best-practices/
+  const rateLimitResetHeaderValue = lowercaseHeaders['x-rate-limit-reset']
+  if (
+    rateLimitResetHeaderValue !== undefined
+    && lowercaseHeaders.date !== undefined
+  ) {
+    const resetTime = parseInt(rateLimitResetHeaderValue, 10) * 1000
+    const currentTime = new Date(lowercaseHeaders.date).getTime()
+    if (Number.isNaN(resetTime) || Number.isNaN(currentTime)) {
+      log.warn(`Received invalid x-rate-limit-reset values: ${rateLimitResetHeaderValue}, ${lowercaseHeaders.date}`)
+      return undefined
+    }
+    return resetTime - currentTime
+  }
+  return undefined
+}
+
+const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosError): number => {
+  const retryDelay = getRetryDelayFromHeaders(error.response?.headers ?? {})
+  ?? retryOptions.retryDelay
 
   return retryDelay
 }

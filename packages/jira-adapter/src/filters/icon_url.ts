@@ -16,12 +16,12 @@
 import { isAdditionOrModificationChange, isInstanceChange, getChangeData, InstanceElement, Change } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { PRIORITY_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
+import { STATUS_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const RELEVANT_TYPES = [STATUS_TYPE_NAME, PRIORITY_TYPE_NAME]
+const RELEVANT_TYPES = [STATUS_TYPE_NAME]
 
 const filter: FilterCreator = () => ({
   preDeploy: async changes => {

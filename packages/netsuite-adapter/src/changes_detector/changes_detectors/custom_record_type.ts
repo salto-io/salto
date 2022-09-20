@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { convertSuiteQLStringToDate } from '../date_formats'
+import { convertSuiteQLStringToDate, SUITEQL_DATE_FORMAT } from '../date_formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -25,9 +25,9 @@ const changesDetector: TypeChangesDetector = {
     const [startDate, endDate] = dateRange.toSuiteQLRange()
 
     const results = await client.runSuiteQL(`
-        SELECT scriptid, lastmodifieddate
+        SELECT scriptid, TO_CHAR(lastmodifieddate, '${SUITEQL_DATE_FORMAT}') AS lastmodifieddate
         FROM customrecordtype
-        WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+        WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
         ORDER BY scriptid ASC
       `)
 

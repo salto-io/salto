@@ -15,6 +15,7 @@
 */
 import { InstanceElement, isInstanceElement, ObjectType, Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { JIRA } from '../src/constants'
 
 
@@ -34,5 +35,14 @@ export const findInstance = (id: ElemID, allElements: Element[]): InstanceElemen
   return instance
 }
 
-export const createReference = (elemID: ElemID, allElements: Element[]): ReferenceExpression =>
-  new ReferenceExpression(elemID, findInstance(elemID, allElements))
+export const createReference = (
+  elemID: ElemID,
+  allElements: Element[],
+  path: string[] = []
+): ReferenceExpression => {
+  const instance = findInstance(elemID, allElements)
+  return new ReferenceExpression(
+    elemID.createNestedID(...path),
+    _.isEmpty(path) ? instance : _.get(instance.value, path)
+  )
+}

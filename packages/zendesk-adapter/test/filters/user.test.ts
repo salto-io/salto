@@ -30,6 +30,26 @@ describe('user filter', () => {
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
   const workspaceType = new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') })
   const routingAttributeValueType = new ObjectType({ elemID: new ElemID(ZENDESK, 'routing_attribute_value') })
+  const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
+  const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, 'article') })
+
+  const userSegmentInstance = new InstanceElement(
+    'test',
+    userSegmentType,
+    {
+      title: 'test',
+      added_user_ids: 1,
+    }
+  )
+
+  const articleInstance = new InstanceElement(
+    'test',
+    articleType,
+    {
+      title: 'test',
+      author_id: 1,
+    }
+  )
 
   const triggerInstance = new InstanceElement(
     'test',
@@ -254,11 +274,14 @@ describe('user filter', () => {
       const elements = [
         macroType, slaPolicyType, triggerType, workspaceType, routingAttributeValueType,
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
-        routingAttributeValueInstance,
+        routingAttributeValueInstance, userSegmentType, userSegmentInstance,
+        articleType, articleInstance,
       ].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
+          'zendesk.article',
+          'zendesk.article.instance.test',
           'zendesk.macro',
           'zendesk.macro.instance.test',
           'zendesk.routing_attribute_value',
@@ -267,6 +290,8 @@ describe('user filter', () => {
           'zendesk.sla_policy.instance.test',
           'zendesk.trigger',
           'zendesk.trigger.instance.test',
+          'zendesk.user_segment',
+          'zendesk.user_segment.instance.test',
           'zendesk.workspace',
           'zendesk.workspace.instance.test',
         ])
@@ -356,9 +381,19 @@ describe('user filter', () => {
           ],
         },
       })
+      const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
+      expect(userSegment?.value).toEqual({
+        title: 'test',
+        added_user_ids: 'a@a.com',
+      })
+      const article = instances.find(e => e.elemID.typeName === 'article')
+      expect(article?.value).toEqual({
+        title: 'test',
+        author_id: 'a@a.com',
+      })
     })
     it('should not replace anything if the field is not exist', async () => {
-      const instance = new InstanceElement(
+      const macroInstanceNoField = new InstanceElement(
         'test',
         macroType,
         {
@@ -383,12 +418,22 @@ describe('user filter', () => {
           },
         },
       )
-      const elements = [macroType.clone(), instance.clone()]
+      const userSegmentInstanceNoField = new InstanceElement(
+        'test',
+        userSegmentType,
+        {
+          title: 'test',
+        },
+      )
+      const elements = [macroType.clone(), macroInstanceNoField.clone(),
+        userSegmentType.clone(), userSegmentInstanceNoField.clone()]
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
           'zendesk.macro',
           'zendesk.macro.instance.test',
+          'zendesk.user_segment',
+          'zendesk.user_segment.instance.test',
         ])
       const macro = elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'macro')
       expect(macro?.value).toEqual({
@@ -400,9 +445,14 @@ describe('user filter', () => {
         ],
         test2: { type: 'User', id: 3 },
       })
+      const userSegment = elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'user_segment')
+      expect(userSegment?.value).toEqual({
+        title: 'test',
+      })
     })
     it('should not replace anything if the user does not exist', async () => {
-      const elements = [macroType.clone(), macroInstance.clone()]
+      const elements = [macroType.clone(), macroInstance.clone(),
+        userSegmentType.clone(), userSegmentInstance.clone()]
       const paginator = mockFunction<clientUtils.Paginator>()
         .mockImplementationOnce(async function *get() {
           yield [
@@ -422,6 +472,8 @@ describe('user filter', () => {
         .toEqual([
           'zendesk.macro',
           'zendesk.macro.instance.test',
+          'zendesk.user_segment',
+          'zendesk.user_segment.instance.test',
         ])
       const instances = elements.filter(isInstanceElement)
       const macro = instances.find(e => e.elemID.typeName === 'macro')
@@ -433,6 +485,11 @@ describe('user filter', () => {
           { field: 'follower', value: '1' },
         ],
         restriction: { type: 'User', id: 3 },
+      })
+      const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
+      expect(userSegment?.value).toEqual({
+        title: 'test',
+        added_user_ids: 1,
       })
     })
     it('should not replace anything if the users response is invalid', async () => {
@@ -468,7 +525,8 @@ describe('user filter', () => {
   describe('preDeploy', () => {
     it('should change the emails to user ids ', async () => {
       const instances = [
-        macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
+        macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
+        articleInstance,
       ].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       await filter.preDeploy(changes)
@@ -544,12 +602,23 @@ describe('user filter', () => {
           },
         ],
       })
+      const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
+      expect(userSegment?.value).toEqual({
+        title: 'test',
+        added_user_ids: 1,
+      })
+      const article = instances.find(e => e.elemID.typeName === 'article')
+      expect(article?.value).toEqual({
+        title: 'test',
+        author_id: 1,
+      })
     })
   })
   describe('onDeploy', () => {
     it('should change the user ids to emails', async () => {
       const instances = [
-        macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
+        macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
+        articleInstance,
       ].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings
@@ -626,6 +695,16 @@ describe('user filter', () => {
             },
           },
         ],
+      })
+      const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
+      expect(userSegment?.value).toEqual({
+        title: 'test',
+        added_user_ids: 'a@a.com',
+      })
+      const article = instances.find(e => e.elemID.typeName === 'article')
+      expect(article?.value).toEqual({
+        title: 'test',
+        author_id: 'a@a.com',
       })
     })
     it('should not replace anything if the users response is invalid', async () => {

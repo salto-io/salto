@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { BuiltinTypes, Element, ElemID, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_object_split'
-import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
+import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
 import { FilterWith } from '../../src/filter'
 import {
   API_NAME,

@@ -35,6 +35,8 @@ import {
   targetAuthDataValidator,
   phoneNumbersValidator,
   automationAllConditionsValidator,
+  requiredAppOwnedParametersValidator,
+  oneTranslationPerLocaleValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -79,6 +81,8 @@ export default ({
     targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
     automationAllConditionsValidator,
+    requiredAppOwnedParametersValidator,
+    oneTranslationPerLocaleValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

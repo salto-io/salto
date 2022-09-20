@@ -110,6 +110,7 @@ const getAccountToServiceNameMap = (workspace: Workspace,
 export const preview = async (
   workspace: Workspace,
   accounts = workspace.accounts(),
+  checkOnly = false,
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
@@ -122,10 +123,11 @@ export const preview = async (
   return getPlan({
     before: stateElements,
     after: await workspace.elements(),
-    changeValidators: getChangeValidators(adapters),
+    changeValidators: getChangeValidators(adapters, checkOnly),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],
+    compareOptions: { compareReferencesByValue: true },
   })
 }
 
@@ -142,6 +144,7 @@ export const deploy = async (
   actionPlan: Plan,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   accounts = workspace.accounts(),
+  checkOnly = false,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
   const adapters = await getAdapters(
@@ -179,7 +182,7 @@ export const deploy = async (
     }))
   }
   const { errors, appliedChanges, extraProperties } = await deployActions(
-    actionPlan, adapters, reportProgress, postDeployAction
+    actionPlan, adapters, reportProgress, postDeployAction, checkOnly,
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve

@@ -25,7 +25,7 @@ import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 import { LocalFilterCreator } from '../filter'
-import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE } from '../constants'
+import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE, EMAIL_TEMPLATE_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -81,8 +81,14 @@ export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   recordTypeVisibilities: { key: 'recordType', nested: true },
 }
 
+const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
+  // One-level maps
+  attachments: { key: 'name' },
+}
+
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
+  [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
   [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
 }
 

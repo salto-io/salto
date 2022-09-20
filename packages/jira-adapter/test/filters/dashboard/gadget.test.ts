@@ -266,15 +266,13 @@ describe('gadgetFilter', () => {
 
     it('should call the default deploy', async () => {
       await filter.deploy([change])
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        await resolveChangeElement(change, getLookUpName),
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: await resolveChangeElement(change, getLookUpName),
         client,
-        getDefaultConfig({ isDataCenter: false })
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types[DASHBOARD_GADGET_TYPE].deployRequests,
-        ['properties'],
-        undefined,
-        undefined,
-      )
+        fieldsToIgnore: ['properties'],
+      })
     })
 
     it('should do nothing if removal throws 404', async () => {

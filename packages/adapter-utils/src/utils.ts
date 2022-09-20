@@ -1083,3 +1083,16 @@ export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage?: strin
     }
     return true
   }
+export const createSchemeGuardForInstance = <T extends InstanceElement>(
+  scheme: Joi.AnySchema, errorMessage?: string
+):
+    (instance: InstanceElement) => instance is T => (instance): instance is T => {
+    const { error } = scheme.validate(instance.value)
+    if (error !== undefined) {
+      if (errorMessage !== undefined) {
+        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(instance)}`)
+      }
+      return false
+    }
+    return true
+  }

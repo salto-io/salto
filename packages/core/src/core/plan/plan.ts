@@ -21,6 +21,9 @@ import {
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
   isModificationChange, isRemovalChange, ReferenceExpression, changeId,
+  shouldResolve,
+  isTemplateExpression,
+  CompareOptions,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -51,13 +54,6 @@ type ReferenceCompareReturnValue = {
 
 export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
 
-const shouldResolve = (ref: ReferenceExpression): boolean => (
-  // Do not resolve references to elements because we expect them to have their own
-  // node in the graph and we cannot know here if a difference in an element would
-  // cause a difference in the reference. We do resolve variables because they always
-  // point to a primitive value that we can compare
-  !ref.elemID.isBaseID() || ref.elemID.idType === 'var'
-)
 
 const getReferenceValue = async (
   reference: ReferenceExpression,
@@ -86,36 +82,36 @@ const areReferencesEqual = async (
   secondSrc: ReadOnlyElementsSource,
   firstVisitedReferences: Set<string>,
   secondVisitedReferences: Set<string>,
+  compareOptions?: CompareOptions,
 ): Promise<ReferenceCompareReturnValue> => {
-  // if both values are ReferenceExpressions they are compared by their elemID
+  if (compareOptions?.compareReferencesByValue && shouldResolve(first) && shouldResolve(second)) {
+    const shouldResolveFirst = isReferenceExpression(first)
+
+    const firstValue = shouldResolveFirst
+      ? await getReferenceValue(first, firstSrc, firstVisitedReferences)
+      : first
+
+    const shouldResolveSecond = isReferenceExpression(second)
+
+    const secondValue = shouldResolveSecond
+      ? await getReferenceValue(second, secondSrc, secondVisitedReferences)
+      : second
+
+    if (shouldResolveFirst || shouldResolveSecond) {
+      return {
+        returnCode: 'recurse',
+        returnValue: {
+          firstValue,
+          secondValue,
+        },
+      }
+    }
+  }
+
   if (isReferenceExpression(first) && isReferenceExpression(second)) {
     return {
       returnCode: 'return',
       returnValue: first.elemID.isEqual(second.elemID),
-    }
-  }
-
-  // if only first value is a ReferenceExpression and it should be resolved -
-  // its value is compared with the second value
-  if (isReferenceExpression(first) && shouldResolve(first)) {
-    return {
-      returnCode: 'recurse',
-      returnValue: {
-        firstValue: await getReferenceValue(first, firstSrc, firstVisitedReferences),
-        secondValue: second,
-      },
-    }
-  }
-
-  // if only second value is a ReferenceExpression and it should be resolved -
-  // its value is compared with the first value
-  if (isReferenceExpression(second) && shouldResolve(second)) {
-    return {
-      returnCode: 'recurse',
-      returnValue: {
-        firstValue: first,
-        secondValue: await getReferenceValue(second, secondSrc, secondVisitedReferences),
-      },
     }
   }
 
@@ -135,6 +131,7 @@ const compareValuesAndLazyResolveRefs = async (
   second: Value,
   firstSrc: ReadOnlyElementsSource,
   secondSrc: ReadOnlyElementsSource,
+  compareOptions?: CompareOptions,
   firstVisitedReferences = new Set<string>(),
   secondVisitedReferences = new Set<string>(),
 ): Promise<boolean> => {
@@ -148,7 +145,7 @@ const compareValuesAndLazyResolveRefs = async (
     const firstVisited = new Set(firstVisitedReferences)
     const secondVisited = new Set(secondVisitedReferences)
     const referencesCompareResult = await areReferencesEqual(
-      first, second, firstSrc, secondSrc, firstVisited, secondVisited,
+      first, second, firstSrc, secondSrc, firstVisited, secondVisited, compareOptions
     )
     if (referencesCompareResult.returnCode === 'return') {
       return referencesCompareResult.returnValue
@@ -159,6 +156,7 @@ const compareValuesAndLazyResolveRefs = async (
       secondValue,
       firstSrc,
       secondSrc,
+      compareOptions,
       firstVisited,
       secondVisited,
     )
@@ -182,6 +180,7 @@ const compareValuesAndLazyResolveRefs = async (
         second[index],
         firstSrc,
         secondSrc,
+        compareOptions,
         firstVisitedReferences,
         secondVisitedReferences,
       )
@@ -198,9 +197,22 @@ const compareValuesAndLazyResolveRefs = async (
         second[key],
         firstSrc,
         secondSrc,
+        compareOptions,
         firstVisitedReferences,
         secondVisitedReferences,
       )
+    )
+  }
+
+  if (isTemplateExpression(first) && isTemplateExpression(second)) {
+    return compareValuesAndLazyResolveRefs(
+      first.parts,
+      second.parts,
+      firstSrc,
+      secondSrc,
+      compareOptions,
+      firstVisitedReferences,
+      secondVisitedReferences,
     )
   }
 
@@ -214,6 +226,7 @@ const isEqualsNode = async (
   node2: ChangeDataType | undefined,
   src1: ReadOnlyElementsSource,
   src2: ReadOnlyElementsSource,
+  compareOptions?: CompareOptions,
 ): Promise<boolean> => {
   if (!values.isDefined(node1) || !values.isDefined(node2)) {
     // Theoratically we should return true if both are undefined, but practically
@@ -237,7 +250,8 @@ const isEqualsNode = async (
     node1.annotations,
     node2.annotations,
     src1,
-    src2
+    src2,
+    compareOptions,
   )) {
     return false
   }
@@ -256,7 +270,8 @@ const isEqualsNode = async (
         node1.value,
         node2.value,
         src1,
-        src2
+        src2,
+        compareOptions,
       )
   }
   if (isField(node1) && isField(node2)) {
@@ -269,7 +284,8 @@ const addDifferentElements = (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
-  numElements: number
+  numElements: number,
+  compareOptions?: CompareOptions,
 ): PlanTransformer => graph => log.time(async () => {
   const outputGraph = graph.clone()
   const sieve = new Set<string>()
@@ -315,14 +331,14 @@ const addDifferentElements = (
 
   const addNodeIfDifferent = async (
     beforeNode?: ChangeDataType,
-    afterNode?: ChangeDataType
+    afterNode?: ChangeDataType,
   ): Promise<void> => {
     // We can cast to string, at least one of the nodes should be defined.
     const fullname = beforeNode?.elemID.getFullName()
       ?? afterNode?.elemID.getFullName() as string
     if (!sieve.has(fullname)) {
       sieve.add(fullname)
-      if (!await isEqualsNode(beforeNode, afterNode, before, after)) {
+      if (!await isEqualsNode(beforeNode, afterNode, before, after, compareOptions)) {
         addElemToOutputGraph(beforeNode, afterNode)
       }
     }
@@ -388,6 +404,7 @@ const addDifferentElements = (
     }
     return 0
   }
+
   await awu(iterateTogether(await getFilteredElements(before), await getFilteredElements(after),
     cmp))
     .map(handleSpecialIds)
@@ -446,17 +463,19 @@ export type Plan = GroupDAG<Change> & {
 }
 
 const addPlanFunctions = (
-  groupGraph: GroupDAG<Change>, changeErrors: ReadonlyArray<ChangeError>
+  groupGraph: GroupDAG<Change>,
+  changeErrors: ReadonlyArray<ChangeError>,
+  compareOptions?: CompareOptions,
 ): Plan => Object.assign(groupGraph,
   {
     itemsByEvalOrder(): Iterable<PlanItem> {
       return wu(groupGraph.evaluationOrder())
         .map(group => groupGraph.getData(group))
-        .map(group => addPlanItemAccessors(group))
+        .map(group => addPlanItemAccessors(group, compareOptions))
     },
 
     getItem(planItemId: PlanItemId): PlanItem {
-      return addPlanItemAccessors(groupGraph.getData(planItemId))
+      return addPlanItemAccessors(groupGraph.getData(planItemId), compareOptions)
     },
     changeErrors,
   })
@@ -520,6 +539,7 @@ type GetPlanParameters = {
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
   additionalResolveContext?: ReadonlyArray<Element>
   topLevelFilters?: IDFilter[]
+  compareOptions?: CompareOptions
 }
 export const getPlan = async ({
   before,
@@ -528,12 +548,19 @@ export const getPlan = async ({
   dependencyChangers = defaultDependencyChangers,
   customGroupIdFunctions = {},
   topLevelFilters = [],
+  compareOptions,
 }: GetPlanParameters): Promise<Plan> => {
   const numBeforeElements = await awu(await before.list()).length()
   const numAfterElements = await awu(await after.list()).length()
   return log.time(async () => {
     const diffGraph = await buildDiffGraph(
-      addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements),
+      addDifferentElements(
+        before,
+        after,
+        topLevelFilters,
+        numBeforeElements + numAfterElements,
+        compareOptions
+      ),
       resolveNodeElements(before, after),
       addNodeDependencies(dependencyChangers),
     )
@@ -562,6 +589,6 @@ export const getPlan = async ({
       )
     )
     // build plan
-    return addPlanFunctions(groupedGraph, filterResult.changeErrors)
+    return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)
   }, 'get plan with %o -> %o elements', numBeforeElements, numAfterElements)
 }

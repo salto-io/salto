@@ -32,6 +32,7 @@
         { "path": "../logging" },
         { "path": "../lowerdash" },
         { "path": "../netsuite-adapter" },
+        { "path": "../okta-adapter" },
         { "path": "../salesforce-adapter" },
         { "path": "../stripe-adapter" },
         { "path": "../test-utils" },

@@ -171,7 +171,7 @@ describe('workflowModificationFilter', () => {
       tempSchemeInstance.value.updateDraftIfNeeded = true
       expect(deployWorkflowSchemeMock).toHaveBeenNthCalledWith(
         1,
-        toChange({ before: tempSchemeInstance, after: tempSchemeInstance }),
+        toChange({ before: workflowSchemeInstance, after: tempSchemeInstance }),
         client,
         paginator,
         config,
@@ -196,7 +196,7 @@ describe('workflowModificationFilter', () => {
       schemeInstance.value.updateDraftIfNeeded = true
       expect(deployWorkflowSchemeMock).toHaveBeenNthCalledWith(
         2,
-        toChange({ before: schemeInstance, after: schemeInstance }),
+        toChange({ before: tempSchemeInstance, after: schemeInstance }),
         client,
         paginator,
         config,
@@ -252,7 +252,7 @@ describe('workflowModificationFilter', () => {
       tempSchemeInstance.value.updateDraftIfNeeded = true
       expect(deployWorkflowSchemeMock).toHaveBeenNthCalledWith(
         1,
-        toChange({ before: tempSchemeInstance, after: tempSchemeInstance }),
+        toChange({ before: workflowSchemeInstance, after: tempSchemeInstance }),
         client,
         paginator,
         config,
@@ -263,7 +263,7 @@ describe('workflowModificationFilter', () => {
       schemeInstance.value.updateDraftIfNeeded = true
       expect(deployWorkflowSchemeMock).toHaveBeenNthCalledWith(
         2,
-        toChange({ before: schemeInstance, after: schemeInstance }),
+        toChange({ before: tempSchemeInstance, after: schemeInstance }),
         client,
         paginator,
         config,
@@ -308,7 +308,7 @@ describe('workflowModificationFilter', () => {
       tempSchemeInstance.value.updateDraftIfNeeded = true
       expect(deployWorkflowSchemeMock).toHaveBeenNthCalledWith(
         1,
-        toChange({ before: tempSchemeInstance, after: tempSchemeInstance }),
+        toChange({ before: workflowSchemeInstance, after: tempSchemeInstance }),
         client,
         paginator,
         config,
@@ -319,7 +319,7 @@ describe('workflowModificationFilter', () => {
       schemeInstance.value.updateDraftIfNeeded = true
       expect(deployWorkflowSchemeMock).toHaveBeenNthCalledWith(
         2,
-        toChange({ before: schemeInstance, after: schemeInstance }),
+        toChange({ before: tempSchemeInstance, after: schemeInstance }),
         client,
         paginator,
         config,

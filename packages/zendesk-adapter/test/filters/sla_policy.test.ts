@@ -109,12 +109,12 @@ describe('sla policy filter', () => {
       mockDeployChange.mockImplementation(async () => ({ sla_policy: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedSlaPolicy } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedSlaPolicyToDeploy } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedSlaPolicyToDeploy } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -128,12 +128,12 @@ describe('sla policy filter', () => {
       mockDeployChange.mockImplementation(async () => ({ sla_policy: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: clonedSlaPolicy } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedSlaPolicy } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedSlaPolicy } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -154,12 +154,12 @@ describe('sla policy filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedSlaPolicyBefore, after: clonedSlaPolicyAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedSlaPolicyBefore, after: clonedSlaPolicyToDeploy } },
-        expect.anything(),
-        expect.anything(),
-        undefined
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedSlaPolicyBefore, after: clonedSlaPolicyToDeploy } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -183,12 +183,12 @@ describe('sla policy filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedSlaPolicyBefore, after: clonedSlaPolicyAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedSlaPolicyBefore, after: clonedSlaPolicyAfter } },
-        expect.anything(),
-        expect.anything(),
-        undefined
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedSlaPolicyBefore, after: clonedSlaPolicyAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -220,12 +220,12 @@ describe('sla policy filter', () => {
       })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedSlaPolicy } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: clonedSlaPolicy } },
-        expect.anything(),
-        expect.anything(),
-        undefined,
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedSlaPolicy } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: undefined,
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

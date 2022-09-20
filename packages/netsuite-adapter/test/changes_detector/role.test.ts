@@ -93,7 +93,7 @@ describe('role', () => {
       SELECT role.scriptid, role.id
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -118
+      WHERE systemnote.date BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY') AND systemnote.recordtypeid = -118
       ORDER BY role.id ASC
     `)
 

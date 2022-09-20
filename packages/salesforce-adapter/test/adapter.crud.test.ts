@@ -175,23 +175,107 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
 
-      describe('when performing validation deploy with checkOnly', () => {
+      describe('when performing a check-only deployment', () => {
         let result: DeployResult
-        beforeEach(async () => {
-          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
+        beforeEach(() => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             success: true,
             componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
             checkOnly: true,
           }))
-          result = await adapter.deploy({
-            changeGroup: {
-              groupID: instance.elemID.getFullName(),
-              changes: [{ action: 'add', data: { after: instance } }],
-            },
+        })
+        describe('when attempting to deploy non CustomObjects', () => {
+          beforeEach(async () => {
+            result = await adapter.validate({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: instance } }],
+              },
+            })
+          })
+          it('should return applied changes', () => {
+            expect(result.appliedChanges).toHaveLength(1)
           })
         })
-        it('should not return any changes as applied', () => {
-          expect(result.appliedChanges).toHaveLength(0)
+        describe('when attempting to deploy CustomObjects', () => {
+          beforeEach(async () => {
+            const customObjectInstance = new InstanceElement(
+              'TestCustomObject',
+              createCustomObjectType('TestCustomObject', {})
+            )
+            result = await adapter.validate({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: customObjectInstance } }],
+              },
+            })
+          })
+          it('should return error', () => {
+            expect(result.errors).toHaveLength(1)
+            expect(result.appliedChanges).toBeEmpty()
+          })
+        })
+      })
+
+      describe('when performing a check-only deployment with old config', () => {
+        let result: DeployResult
+        beforeEach(() => {
+          ({ connection, adapter } = mockAdapter({
+            adapterParams: {
+              config: {
+                client: {
+                  deploy: {
+                    checkOnly: true,
+                  },
+                },
+                fetch: {
+                  data: {
+                    includeObjects: ['Test'],
+                    saltoIDSettings: {
+                      defaultIdFields: ['Name'],
+                    },
+                  },
+                },
+              },
+            },
+          }))
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            success: true,
+            componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+            checkOnly: true,
+          }))
+        })
+
+        describe('when attempting to deploy non CustomObjects', () => {
+          beforeEach(async () => {
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: instance } }],
+              },
+            })
+          })
+          it('should not return applied changes', () => {
+            expect(result.appliedChanges).toBeEmpty()
+          })
+        })
+        describe('when attempting to deploy CustomObjects', () => {
+          beforeEach(async () => {
+            const customObjectInstance = new InstanceElement(
+              'TestCustomObject',
+              createCustomObjectType('TestCustomObject', {})
+            )
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: customObjectInstance } }],
+              },
+            })
+          })
+          it('should return error', () => {
+            expect(result.errors).toHaveLength(1)
+            expect(result.appliedChanges).toBeEmpty()
+          })
         })
       })
     })

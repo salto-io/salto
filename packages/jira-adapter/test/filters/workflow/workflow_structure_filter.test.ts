@@ -192,6 +192,48 @@ describe('workflowStructureFilter', () => {
       ])
     })
 
+    it('should remove additionalProperties and issueEditable from transitions', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        workflowType,
+        {
+          transitions: [
+            {
+              properties: {
+                additionalProperties: {
+                  'jira.issue.editable': 'true',
+                  issueEditable: true,
+                },
+              },
+            },
+            {
+              properties: {
+                additionalProperties: {
+                  'jira.issue.editable': 'false',
+                  issueEditable: false,
+                },
+              },
+            },
+            {},
+          ],
+        }
+      )
+      await filter.onFetch([instance])
+      expect(instance.value.transitions).toEqual([
+        {
+          properties: {
+            'jira.issue.editable': 'true',
+          },
+        },
+        {
+          properties: {
+            'jira.issue.editable': 'false',
+          },
+        },
+        {},
+      ])
+    })
+
     it('should replace conditionsTree with conditions', async () => {
       const instance = new InstanceElement(
         'instance',

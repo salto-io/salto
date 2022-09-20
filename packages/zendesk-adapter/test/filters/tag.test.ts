@@ -40,6 +40,7 @@ describe('tags filter', () => {
   const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK, 'sla_policy') })
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
   const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, 'ticket_field') })
+  const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
 
   const triggerInstance = new InstanceElement(
     'test',
@@ -123,6 +124,16 @@ describe('tags filter', () => {
       tag: 'myTag',
     }
   )
+  const usetSegmentInstance = new InstanceElement(
+    'test',
+    userSegmentType,
+    {
+      user_type: 'signed_in_users',
+      name: 'VIP Customers',
+      tags: ['t7', 't8'],
+      or_tags: ['t9'],
+    },
+  )
   let mockPaginator: clientUtils.Paginator
   const tagRef = (val: string): ReferenceExpression =>
     new ReferenceExpression(new ElemID(ZENDESK, TAG_TYPE_NAME, 'instance', val))
@@ -155,8 +166,8 @@ describe('tags filter', () => {
   describe('onFetch', () => {
     it('should change the tags to be references', async () => {
       const elements = [
-        slaPolicyType, triggerType, ticketFieldType,
-        slaPolicyInstance, triggerInstance, ticketFieldInstance,
+        slaPolicyType, triggerType, ticketFieldType, userSegmentType,
+        slaPolicyInstance, triggerInstance, ticketFieldInstance, usetSegmentInstance,
       ].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
@@ -172,10 +183,15 @@ describe('tags filter', () => {
           'zendesk.tag.instance.t4',
           'zendesk.tag.instance.t5',
           'zendesk.tag.instance.t6',
+          'zendesk.tag.instance.t7',
+          'zendesk.tag.instance.t8',
+          'zendesk.tag.instance.t9',
           'zendesk.ticket_field',
           'zendesk.ticket_field.instance.test',
           'zendesk.trigger',
           'zendesk.trigger.instance.test',
+          'zendesk.user_segment',
+          'zendesk.user_segment.instance.test',
         ])
       const instances = elements.filter(isInstanceElement)
       const trigger = instances.find(e => e.elemID.typeName === 'trigger')
@@ -222,6 +238,13 @@ describe('tags filter', () => {
         title: 'test',
         raw_title: 'test',
         tag: tagRef('myTag'),
+      })
+      const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
+      expect(userSegment?.value).toEqual({
+        user_type: 'signed_in_users',
+        name: 'VIP Customers',
+        tags: [tagRef('t7'), tagRef('t8')],
+        or_tags: [tagRef('t9')],
       })
     })
   })

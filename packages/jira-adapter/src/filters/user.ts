@@ -34,6 +34,7 @@ const filter: FilterCreator = () => ({
           values: instance.value,
           type: await instance.getType(),
           strict: false,
+          allowEmpty: true,
           transformFunc: ({ value, field }) => {
             if (USER_TYPE_NAMES.includes(field?.refType.elemID.typeName ?? '')) {
               return value.displayName

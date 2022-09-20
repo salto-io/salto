@@ -71,8 +71,8 @@ describe('workflowDeployFilter', () => {
 
       await filter.deploy([change])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           after: new InstanceElement(
             'instance',
             workflowType,
@@ -107,11 +107,10 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
-        expect.toBeFunction(),
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Workflow.deployRequests,
+        fieldsToIgnore: expect.toBeFunction(),
+      })
     })
 
     it('should change ids from number to string on condition configuration', async () => {
@@ -147,8 +146,8 @@ describe('workflowDeployFilter', () => {
 
       await filter.deploy([change])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           after: new InstanceElement(
             'instance',
             workflowType,
@@ -178,11 +177,10 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
-        expect.toBeFunction(),
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Workflow.deployRequests,
+        fieldsToIgnore: expect.toBeFunction(),
+      })
     })
 
     it('should add operations value', async () => {
@@ -212,8 +210,8 @@ describe('workflowDeployFilter', () => {
 
       await filter.deploy([change])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           after: new InstanceElement(
             'instance',
             workflowType,
@@ -223,11 +221,10 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
-        expect.toBeFunction(),
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Workflow.deployRequests,
+        fieldsToIgnore: expect.toBeFunction(),
+      })
     })
 
     it('should not change the values if there are no rules', async () => {
@@ -248,8 +245,8 @@ describe('workflowDeployFilter', () => {
 
       await filter.deploy([change])
 
-      expect(deployChangeMock).toHaveBeenCalledWith(
-        toChange({
+      expect(deployChangeMock).toHaveBeenCalledWith({
+        change: toChange({
           after: new InstanceElement(
             'instance',
             workflowType,
@@ -264,11 +261,10 @@ describe('workflowDeployFilter', () => {
           ),
         }),
         client,
-        getDefaultConfig({ isDataCenter: false }).apiDefinitions.types.Workflow.deployRequests,
-        expect.toBeFunction(),
-        undefined,
-        undefined,
-      )
+        endpointDetails: getDefaultConfig({ isDataCenter: false })
+          .apiDefinitions.types.Workflow.deployRequests,
+        fieldsToIgnore: expect.toBeFunction(),
+      })
     })
 
     it('should throw an error if workflow is invalid', async () => {

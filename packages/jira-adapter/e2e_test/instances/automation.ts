@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from '@salto-io/adapter-api'
+import { ElemID, TemplateExpression, Values, Element } from '@salto-io/adapter-api'
+import { createReference } from '../utils'
+import { JIRA, PRIORITY_TYPE_NAME } from '../../src/constants'
+import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
 
 
-export const createAutomationValues = (name: string): Values => ({
+export const createAutomationValues = (name: string, allElements: Element[]): Values => ({
   name,
   state: 'ENABLED',
   authorAccountId: '61d44bf59ee70a00685fa6b6',
@@ -26,18 +29,10 @@ export const createAutomationValues = (name: string): Values => ({
   },
   trigger: {
     component: 'TRIGGER',
-    schemaVersion: 2,
-    type: 'jira.issue.field.changed',
+    schemaVersion: 1,
+    type: 'jira.manual.trigger.issue',
     value: {
-      changeType: 'VALUE_ADDED',
-      fields: [
-        {
-          value: 'components',
-          type: 'field',
-        },
-      ],
-      actions: [
-        'create',
+      groups: [
       ],
     },
   },
@@ -76,7 +71,11 @@ export const createAutomationValues = (name: string): Values => ({
           component: 'CONDITION',
           schemaVersion: 1,
           type: 'jira.jql.condition',
-          rawValue: 'priority > Medium',
+          rawValue: new TemplateExpression({ parts: [
+            createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Priority__priority'), allElements),
+            ' = ',
+            createReference(new ElemID(JIRA, PRIORITY_TYPE_NAME, 'instance', 'Medium'), allElements, ['name']),
+          ] }),
         },
         {
           component: 'ACTION',

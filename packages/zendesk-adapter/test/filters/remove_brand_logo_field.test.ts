@@ -86,12 +86,12 @@ describe('remove brand logo field filter', () => {
     mockDeployChange.mockImplementation(async () => ({ brand: { brandId } }))
     const res = await filter.deploy([{ action: 'add', data: { after: clonedBrand } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedBrand } },
-      expect.anything(),
-      expect.anything(),
-      [LOGO_FIELD]
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedBrand } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: [LOGO_FIELD],
+    })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -110,12 +110,12 @@ describe('remove brand logo field filter', () => {
       [{ action: 'modify', data: { before: clonedBeforeBrand, after: clonedAfterBrand } }]
     )
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'modify', data: { before: clonedBeforeBrand, after: clonedAfterBrand } },
-      expect.anything(),
-      expect.anything(),
-      [LOGO_FIELD]
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'modify', data: { before: clonedBeforeBrand, after: clonedAfterBrand } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: [LOGO_FIELD],
+    })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -130,12 +130,12 @@ describe('remove brand logo field filter', () => {
     mockDeployChange.mockImplementation(async () => ({ brand: { brandId } }))
     const res = await filter.deploy([{ action: 'remove', data: { before: clonedBrand } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'remove', data: { before: clonedBrand } },
-      expect.anything(),
-      expect.anything(),
-      [LOGO_FIELD]
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'remove', data: { before: clonedBrand } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: [LOGO_FIELD],
+    })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
     expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -147,12 +147,12 @@ describe('remove brand logo field filter', () => {
     mockDeployChange.mockImplementation(async () => { throw new Error('err') })
     const res = await filter.deploy([{ action: 'add', data: { after: clonedBrand } }])
     expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith(
-      { action: 'add', data: { after: clonedBrand } },
-      expect.anything(),
-      expect.anything(),
-      [LOGO_FIELD]
-    )
+    expect(mockDeployChange).toHaveBeenCalledWith({
+      change: { action: 'add', data: { after: clonedBrand } },
+      client: expect.anything(),
+      endpointDetails: expect.anything(),
+      fieldsToIgnore: [LOGO_FIELD],
+    })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)
     expect(res.deployResult.appliedChanges).toHaveLength(0)

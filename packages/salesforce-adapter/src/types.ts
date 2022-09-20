@@ -71,6 +71,7 @@ export type OptionalFeatures = {
   profilePaths?: boolean
   addMissingIds?: boolean
   authorInformation?: boolean
+  describeSObjects?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -83,10 +84,13 @@ export type ChangeValidatorName = (
   | 'profileMapKeys'
   | 'multipleDefaults'
   | 'picklistPromote'
-  | 'validateOnlyFlag'
   | 'cpqValidator'
   | 'sbaaApprovalRulesCustomCondition'
 )
+
+export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
+
+
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 type ObjectIdSettings = {
@@ -522,6 +526,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     profilePaths: { refType: BuiltinTypes.BOOLEAN },
     addMissingIds: { refType: BuiltinTypes.BOOLEAN },
     authorInformation: { refType: BuiltinTypes.BOOLEAN },
+    describeSObjects: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -540,7 +545,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     profileMapKeys: { refType: BuiltinTypes.BOOLEAN },
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
-    validateOnlyFlag: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
   },

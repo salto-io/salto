@@ -16,12 +16,12 @@
 import { AdditionChange, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { JiraConfig } from '../config/config'
-import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange } from '../deployment/standard_deployment'
-import { getAllowedPermissionTypes } from '../change_validators/permission_type'
-import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
-import JiraClient from '../client/client'
+import { JiraConfig } from '../../config/config'
+import { FilterCreator } from '../../filter'
+import { deployChanges, defaultDeployChange } from '../../deployment/standard_deployment'
+import { getAllowedPermissionTypes } from '../../change_validators/permission_type'
+import { PERMISSION_SCHEME_TYPE_NAME } from '../../constants'
+import JiraClient from '../../client/client'
 
 const log = logger(module)
 

@@ -16,9 +16,9 @@
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { JIRA, PERMISSIONS, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
-import permissionSchemeFilter from '../../src/filters/permission_scheme'
-import { getFilterParams } from '../utils'
+import { JIRA, PERMISSIONS, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
+import permissionSchemeFilter from '../../../src/filters/permission_schemes/permission_scheme'
+import { getFilterParams } from '../../utils'
 
 const mockDefaultDeployChange = jest.fn()
 

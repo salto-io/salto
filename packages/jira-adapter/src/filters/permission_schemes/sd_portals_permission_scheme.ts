@@ -15,8 +15,8 @@
 */
 import { Change, ChangeDataType, isAdditionOrModificationChange, isInstanceChange, getChangeData, InstanceElement, isEqualValues } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { PermissionHolder, UNSUPPORTED_PERMISSION_SCHEME } from '../change_validators/sd_portals_permission_scheme'
-import { FilterCreator } from '../filter'
+import { PermissionHolder, UNSUPPORTED_PERMISSION_SCHEME } from '../../change_validators/sd_portals_permission_scheme'
+import { FilterCreator } from '../../filter'
 import { isPermissionScheme } from './forbidden_permission_schemes'
 
 

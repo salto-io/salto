@@ -24,11 +24,15 @@ import {
   toChange,
   isObjectType,
 } from '@salto-io/adapter-api'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
+
+
+const { isDefined } = lowerdashValues
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -350,6 +354,10 @@ describe('Convert maps filter', () => {
           const lwcResourceType = await lwcResourcesType.fields.lwcResource.getType()
           expect(isMapType(lwcResourceType)).toBeTruthy()
         }
+      })
+      it('should use the custom mapper to create the key', async () => {
+        const lwc = elements[0] as InstanceElement
+        expect(Object.keys(lwc.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
       })
     })
   })

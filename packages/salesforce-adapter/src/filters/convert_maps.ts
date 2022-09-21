@@ -90,7 +90,7 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
 }
 
 const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
-  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => item.split('/').reverse().map(v => naclCase(v))) },
+  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => [naclCase(_.last(item.split('/')))]) },
 }
 
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
@@ -152,9 +152,8 @@ const convertArraysToMaps = (
         )
       ))
     } else {
-      const res = _.get(instance.value, fieldName)
       _.set(instance.value, fieldName, convertField(
-        makeArray(res),
+        makeArray(_.get(instance.value, fieldName)),
         item => mapper(item[mapDef.key])[0],
         !!mapDef.mapToList,
         fieldName,
@@ -224,7 +223,7 @@ const updateFieldTypes = async (
         if (isObjectType(deepInnerType)) {
           const keyFieldType = deepInnerType.fields[mapDef.key]
           if (!keyFieldType) {
-            log.error('could not find key field %s for field %s', fieldName)
+            log.error('could not find key field %s for field %s', mapDef.key, field.elemID.getFullName())
             return
           }
           keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true

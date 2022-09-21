@@ -152,9 +152,9 @@ const getLoginInputFlow = async (
 ): Promise<void> => {
   const getLoginInput = isDefined(loginParameters)
     ? createConfigFromLoginParameters(loginParameters)
-    // In this option we need to ask the user to enter his credentials
+    // In this login option we ask the user to enter his credentials
     : (credentialsType: ObjectType) : Promise<InstanceElement> =>
-      getConfigWithHeader(output, credentialsType)
+      getConfigWithHeader(credentialsType, output)
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
   const result = await verifyCredentials(newConfig)
   if (!result.success) {

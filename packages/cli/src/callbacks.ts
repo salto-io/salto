@@ -184,7 +184,7 @@ export const getCredentialsFromUser = async (credentialsType: ObjectType):
   return new InstanceElement(ElemID.CONFIG_NAME, credentialsType, values)
 }
 
-export const getConfigWithHeader = async (output: CliOutput, credentialsType: ObjectType):
+export const getConfigWithHeader = async (credentialsType: ObjectType, output: CliOutput):
   Promise<InstanceElement> => {
   outputLine(formatCredentialsHeader(credentialsType.elemID.adapter), output)
   return getCredentialsFromUser(credentialsType)

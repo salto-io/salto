@@ -30,7 +30,8 @@ import {
   formatNotChangingFetchMode,
 } from './formatter'
 import Prompts from './prompts'
-import { CliOutput, WriteStream } from './types'
+import { CliOutput } from './types'
+import { outputLine } from './outputer'
 
 const { awu } = collections.asynciterable
 export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
@@ -183,9 +184,9 @@ export const getCredentialsFromUser = async (credentialsType: ObjectType):
   return new InstanceElement(ElemID.CONFIG_NAME, credentialsType, values)
 }
 
-export const getConfigWithHeader = async (output: WriteStream, credentialsType: ObjectType):
+export const getConfigWithHeader = async (output: CliOutput, credentialsType: ObjectType):
   Promise<InstanceElement> => {
-  output.write(formatCredentialsHeader(credentialsType.elemID.adapter))
+  outputLine(formatCredentialsHeader(credentialsType.elemID.adapter), output)
   return getCredentialsFromUser(credentialsType)
 }
 

@@ -36,7 +36,7 @@ import { Workspace } from '@salto-io/workspace'
 import { naclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { getCredentialsFromUser } from '../callbacks'
+import { getConfigWithHeader } from '../callbacks'
 import { CliExitCode, CliOutput, KeyedOption } from '../types'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import {
@@ -121,7 +121,6 @@ const getLoginConfig = async (
   } else {
     const configType = authMethods[authType]
     if (configType) {
-      outputLine(formatCredentialsHeader(configType.credentialsType.elemID.adapter), output)
       newConfig = await getLoginInput(configType.credentialsType)
     } else {
       throw new Error(`Adapter does not support authentication of type ${authType}`)
@@ -153,7 +152,9 @@ const getLoginInputFlow = async (
 ): Promise<void> => {
   const getLoginInput = isDefined(loginParameters)
     ? createConfigFromLoginParameters(loginParameters)
-    : getCredentialsFromUser
+    // In this option we need to ask the user to enter his credentials
+    : (credentialsType: ObjectType) : Promise<InstanceElement> =>
+      getConfigWithHeader(output, credentialsType)
   const newConfig = await getLoginConfig(authType, authMethods, output, getLoginInput)
   const result = await verifyCredentials(newConfig)
   if (!result.success) {

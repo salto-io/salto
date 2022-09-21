@@ -80,8 +80,9 @@ describe('custom field option restriction filter', () => {
 
   describe('onFetch', () => {
     it('should omit the name and description fields', async () => {
-      await filter.onFetch([sectionTranslationInstance, sectionInstance])
-      expect(sectionInstance.value).toEqual({
+      const sectionInstanceCopy = sectionInstance.clone()
+      await filter.onFetch([sectionTranslationInstance, sectionInstanceCopy])
+      expect(sectionInstanceCopy.value).toEqual({
         source_locale: 'he',
         translations: [
           sectionTranslationInstance.value,

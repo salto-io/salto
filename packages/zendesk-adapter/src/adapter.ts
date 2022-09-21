@@ -320,8 +320,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       getEntriesResponseValuesFunc: zendeskGuideEntriesFunc(brandsList, brandToPaginator),
     })
 
-    // Adding the remaining types elements is necessary for deployments.
-    // For further details, go to add_remaining_types.ts
+    // Remaining types should be added once to avoid overlaps between the generated elements,
+    // so we add them once after all elements are generated
     const zendeskElements = zendeskSupportElements.elements.concat(zendeskGuideElements.elements)
     addRemainingTypes({
       adapterName: ZENDESK,

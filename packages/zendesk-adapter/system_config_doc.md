@@ -770,8 +770,8 @@ zendesk {
             },
           ]
         }
-      brand = {
       }
+      brand = {
         transformation = {
           sourceTypeName = "brands__brands"
           fieldsToOmit = [

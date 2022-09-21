@@ -1742,6 +1742,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(

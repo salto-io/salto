@@ -87,6 +87,7 @@ import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import hcSectionFilter from './filters/help_center_section'
+import hcTranslationFilter from './filters/help_center_section_translation'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -132,6 +133,7 @@ export const DEFAULT_FILTERS = [
   tagsFilter,
   hcLocalesFilter,
   hcSectionFilter,
+  hcTranslationFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter

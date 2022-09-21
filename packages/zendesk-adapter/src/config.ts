@@ -1740,7 +1740,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1760,7 +1762,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       modify: {
         url: '/help_center/sections/{section_id}/translations/{locale}',
         method: 'put',
-        deployAsField: 'custom_field_option',
+        deployAsField: 'translation',
         urlParamsToFields: {
           section_id: '_parent.0.id',
           locale: 'locale',

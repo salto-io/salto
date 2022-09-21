@@ -17,10 +17,11 @@
 import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { currencyType } from '../change_validators/currency_exchange_rate.test'
 import filterCreator, { DEFAULT_EXCHANGE_RATE } from '../../src/filters/currency_exchange_rate'
+import { CURRENCY } from '../../src/constants'
 
 describe('currency exchange rate filter', () => {
   const instance = new InstanceElement(
-    'currency',
+    CURRENCY,
     currencyType,
     {
       name: 'Canadian Dollar',
@@ -37,14 +38,14 @@ describe('currency exchange rate filter', () => {
     const after = instance.clone()
     after.value.exchangeRate = 0.35
     const change = toChange({ after })
-    await filterCreator().onDeploy([change], { errors: [new Error('error')], appliedChanges: [] })
+    await filterCreator().preDeploy([change])
     expect(getChangeData(change).value).toEqual(after.value)
   })
 
   it('should insert exchang rate with default value when it is not specified', async () => {
     const after = instance.clone()
     const change = toChange({ after })
-    await filterCreator().onDeploy([change], { errors: [new Error('error')], appliedChanges: [] })
+    await filterCreator().preDeploy([change])
     expect(getChangeData(change).value.exchangeRate).toEqual(DEFAULT_EXCHANGE_RATE)
   })
 })

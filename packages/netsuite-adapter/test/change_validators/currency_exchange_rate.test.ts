@@ -87,7 +87,7 @@ describe('currency exchange rate validator', () => {
     expect(changeErrors[0].detailedMessage).toContain('\'exchangeRate\' is omitted from fetch')
   })
 
-  it('should not have changeError when exchangeRate isn\'t specified', async () => {
+  it('should not have changeError when exchangeRate is specified', async () => {
     const after = instance.clone()
     const changeErrors = await currencyExchangeRateValidator(
       [toChange({ after })]

@@ -15,30 +15,30 @@
 */
 
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
+import { CURRENCY } from '../constants'
+import { DEFAULT_EXCHANGE_RATE } from '../filters/currency_exchange_rate'
 
-const { awu } = collections.asynciterable
 const { isDefined } = values
 
 const changeValidator: ChangeValidator = async changes => (
-  awu(changes)
+  changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
-    .filter(async change => getChangeData<InstanceElement>(change).elemID.typeName === 'currency')
-    .map(async change => {
-      const instance = getChangeData(change)
+    .map(change => getChangeData<InstanceElement>(change))
+    .filter(instance => instance.elemID.typeName === CURRENCY)
+    .map(instance => {
       if (!instance.value?.exchangeRate) {
         return {
           elemID: instance.elemID,
           severity: 'Warning',
           message: 'Currency exchangeRate is set with a default value',
-          detailedMessage: '\'exchangeRate\' is omitted from fetch configuration by default. As this field has to be created in the target environment for this deployment to succeed, it will be deployed with a default value of 1. Please make sure this value is set to your desired value in the NetSuite UI of the target environment after deploying. See https://docs.salto.io/docs/netsuite#overriding-configuration-values for more details.',
+          detailedMessage: `'exchangeRate' is omitted from fetch configuration by default. As this field has to be created in the target environment for this deployment to succeed, it will be deployed with a default value of ${DEFAULT_EXCHANGE_RATE}. Please make sure this value is set to your desired value in the NetSuite UI of the target environment after deploying. See https://docs.salto.io/docs/netsuite#overriding-configuration-values for more details.`,
         } as ChangeError
       }
       return undefined
     })
     .filter(isDefined)
-    .toArray()
 )
 
 export default changeValidator

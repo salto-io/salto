@@ -49,6 +49,7 @@ export const FILE = 'file'
 export const FOLDER = 'folder'
 export const SELECT_OPTION = 'selectOption'
 export const CONFIG_FEATURES = 'companyFeatures'
+export const CURRENCY = 'currency'
 
 // Type Annotations
 export const SOURCE = 'source'

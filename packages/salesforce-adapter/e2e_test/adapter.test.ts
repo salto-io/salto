@@ -386,8 +386,7 @@ describe('Salesforce adapter E2E with real account', () => {
         'testLightningComponentBundle')[0] as InstanceElement
       expect(lwc.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('testLightningComponentBundle')
-      const lwcResource = makeArray(lwc.value.lwcResources?.lwcResource)
-        .find(resource => resource.filePath === 'lwc/testLightningComponentBundle/testLightningComponentBundle.js')
+      const lwcResource = lwc.value.lwcResources?.lwcResource['testLightningComponentBundle_js@v']
       expect(lwcResource).toBeDefined()
       expect(isStaticFile(lwcResource.source)).toBe(true)
       const lwcResourceStaticFile = lwcResource.source as StaticFile

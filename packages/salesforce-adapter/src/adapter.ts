@@ -149,6 +149,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: splitCustomLabels },
   { creator: customMetadataTypeFilter },
   { creator: xmlAttributesFilter },
+  { creator: profileDeployFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
@@ -166,7 +167,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customObjectsSplitFilter },
   { creator: profileInstanceSplitFilter },
-  { creator: profileDeployFilter },
 ]
 
 // By default we run all filters and provide a client

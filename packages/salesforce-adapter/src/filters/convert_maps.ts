@@ -90,7 +90,7 @@ const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
 }
 
 const LIGHTNING_COMPONENT_BUNDLE_MAP: Record<string, MapDef> = {
-  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => [naclCase(item)]) },
+  'lwcResources.lwcResource': { key: 'filePath', mapper: (item => item.split('/').reverse().map(v => naclCase(v))) },
 }
 
 export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>> = {
@@ -136,16 +136,17 @@ const convertArraysToMaps = (
   Object.entries(instanceMapFieldDef).filter(
     ([fieldName]) => _.get(instance.value, fieldName) !== undefined
   ).forEach(([fieldName, mapDef]) => {
+    const mapper = mapDef.mapper ?? defaultMapper
     if (mapDef.nested) {
       const firstLevelGroups = _.groupBy(
         makeArray(_.get(instance.value, fieldName)),
-        mapDef.mapper ?? (item => (mapDef.mapper ?? defaultMapper)(item[mapDef.key])[0])
+        (item => mapper(item[mapDef.key])[0])
       )
       _.set(instance.value, fieldName, _.mapValues(
         firstLevelGroups,
         firstLevelValues => convertField(
           firstLevelValues,
-          item => (mapDef.mapper ?? defaultMapper)(item[mapDef.key])[1],
+          item => mapper(item[mapDef.key])[1],
           !!mapDef.mapToList,
           fieldName,
         )
@@ -154,7 +155,7 @@ const convertArraysToMaps = (
       const res = _.get(instance.value, fieldName)
       _.set(instance.value, fieldName, convertField(
         makeArray(res),
-        item => (mapDef.mapper ?? defaultMapper)(item[mapDef.key])[0],
+        item => mapper(item[mapDef.key])[0],
         !!mapDef.mapToList,
         fieldName,
       ))

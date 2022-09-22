@@ -23,12 +23,14 @@ import {
   Change,
   toChange,
   isObjectType,
+  ElemID, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
+import { EMAIL_TEMPLATE_METADATA_TYPE, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -354,6 +356,37 @@ describe('Convert maps filter', () => {
       it('should use the custom mapper to create the key', async () => {
         const lwc = elements[0] as InstanceElement
         expect(Object.keys(lwc.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
+      })
+    })
+  })
+  describe('Convert ObjectType, even without instances', () => {
+    let elements: Element[]
+    type FilterType = FilterWith<'onFetch'>
+    let filter: FilterType
+    beforeAll(async () => {
+      const emailTemplateID = new ElemID(SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE)
+
+      const fields = {
+        attachments: { refType: BuiltinTypes.STRING },
+      }
+
+      const emailTemplateType = new ObjectType({
+        annotations: { [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE },
+        elemID: emailTemplateID,
+        fields,
+        path: ['Objects', 'dir'],
+      })
+
+      elements = [emailTemplateType]
+
+      filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterType
+      await filter.onFetch(elements)
+    })
+    describe('on fetch', () => {
+      it('should convert field type to map ', async () => {
+        const emailTemplateType = elements[0] as ObjectType
+        const attachmentsType = await emailTemplateType.fields.attachments.getType()
+        expect(isMapType(attachmentsType)).toBeTruthy()
       })
     })
   })

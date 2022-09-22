@@ -1892,6 +1892,14 @@ export const GUIDE_SUPPORTED_TYPES = {
   user_segment: ['user_segments'],
 }
 
+export const GUIDE_INSTANCE_TYPES = [
+  ...Object.keys(GUIDE_SUPPORTED_TYPES),
+  'article_translation',
+  'category_translation',
+  'section_translation',
+  'label',
+]
+
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     include: [{

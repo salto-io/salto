@@ -56,10 +56,14 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
         .find(reply => reply.url === url && reply.params === requestParams)?.response || [],
     ]
   }
-  return [
-    200,
-    (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response || [],
-  ]
+  if (baseURL === 'https://brandwithguide.zendesk.com/api/v2') {
+    return [
+      200,
+      (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response
+        || [],
+    ]
+  }
+  return [404]
 }
 
 describe('adapter', () => {

@@ -338,7 +338,8 @@ describe('Convert maps filter', () => {
     let filter: FilterType
     beforeAll(async () => {
       const lwc = createInstanceElement({ fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'dir/lwc.js', source: 'lwc.ts' }] } }, mockTypes.LightningComponentBundle)
-      elements = [lwc]
+      const lwcType = mockTypes.LightningComponentBundle
+      elements = [lwc, lwcType]
 
       filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterType
       await filter.onFetch(elements)

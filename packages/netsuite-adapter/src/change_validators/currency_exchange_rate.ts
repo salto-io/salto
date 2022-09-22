@@ -14,19 +14,15 @@
 * limitations under the License.
 */
 
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { CURRENCY } from '../constants'
-import { DEFAULT_EXCHANGE_RATE } from '../filters/currency_exchange_rate'
+import { DEFAULT_EXCHANGE_RATE, getCurrencyAdditionsWithoutExchangeRate } from '../filters/currency_exchange_rate'
+
 
 const { isDefined } = values
 
 const changeValidator: ChangeValidator = async changes => (
-  changes
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(change => getChangeData<InstanceElement>(change))
-    .filter(instance => instance.elemID.typeName === CURRENCY)
+  getCurrencyAdditionsWithoutExchangeRate(changes)
     .map(instance => {
       if (!instance.value?.exchangeRate) {
         return {

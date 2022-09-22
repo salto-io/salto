@@ -14,19 +14,25 @@
 * limitations under the License.
 */
 
-import { getChangeData, InstanceElement, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
+import { ChangeDataType, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, Change } from '@salto-io/adapter-api'
 import { CURRENCY } from '../constants'
 import { FilterWith } from '../filter'
 
 export const DEFAULT_EXCHANGE_RATE = 1
 
+export const getCurrencyAdditionsWithoutExchangeRate = (
+  changes: readonly Change<ChangeDataType>[]
+): InstanceElement[] => (
+  changes
+    .filter(isInstanceChange)
+    .filter(isAdditionChange)
+    .map(change => getChangeData<InstanceElement>(change))
+    .filter(instance => instance.elemID.typeName === CURRENCY)
+)
+
 const filterCreator = (): FilterWith<'preDeploy'> => ({
   preDeploy: async changes => {
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionChange)
-      .map(change => getChangeData<InstanceElement>(change))
-      .filter(instance => instance.elemID.typeName === CURRENCY)
+    getCurrencyAdditionsWithoutExchangeRate(changes)
       .map(instance => {
         if (!instance.value?.exchangeRate) {
           instance.value.exchangeRate = DEFAULT_EXCHANGE_RATE

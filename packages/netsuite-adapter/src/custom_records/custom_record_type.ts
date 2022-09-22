@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, TypeRefMap } from '@salto-io/adapter-api'
-import { CUSTOM_FIELD_PREFIX, CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID, SOURCE } from '../constants'
+import { CUSTOM_FIELD_PREFIX, CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INDEX, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID, SOURCE } from '../constants'
 import { customrecordtypeType } from '../autogen/types/standard_types/customrecordtype'
 
 const { mapValuesAsync } = promises.object
@@ -76,9 +76,12 @@ export const toCustomRecordTypeInstance = (
   {
     ..._.omit(element.annotations, [SOURCE, METADATA_TYPE]),
     [CUSTOM_FIELDS]: {
-      [CUSTOM_FIELDS_LIST]: Object.values(element.fields)
+      [CUSTOM_FIELDS_LIST]: _(Object.values(element.fields))
         .filter(field => field.name.startsWith(CUSTOM_FIELD_PREFIX))
-        .map(field => field.annotations),
+        .map(field => field.annotations)
+        .sortBy(INDEX)
+        .map(item => _.omit(item, INDEX))
+        .value(),
     },
   }
 )

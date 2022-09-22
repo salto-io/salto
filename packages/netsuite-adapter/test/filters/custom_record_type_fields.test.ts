@@ -45,6 +45,7 @@ describe('custom record type fields filter', () => {
     expect(customRecordType.fields.custom_custrecord_newfield.annotations).toEqual({
       scriptid: 'custrecord_newfield',
       fieldtype: 'TEXT',
+      index: 0,
     })
     expect(customRecordType.fields.custom_custrecord_ref.refType.elemID.name)
       .toEqual('customrecord1')
@@ -52,6 +53,7 @@ describe('custom record type fields filter', () => {
       scriptid: 'custrecord_ref',
       fieldtype: 'SELECT',
       selectrecordtype: `[${SCRIPT_ID}=customrecord1]`,
+      index: 1,
     })
   })
   it('should remove custom fields annotation', async () => {

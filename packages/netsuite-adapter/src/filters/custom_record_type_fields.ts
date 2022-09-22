@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import { getCustomField } from './data_types_custom_fields'
 import { isCustomRecordType } from '../types'
-import { SCRIPT_ID } from '../constants'
+import { INDEX, SCRIPT_ID } from '../constants'
 import { CUSTOM_FIELDS, CUSTOM_FIELDS_LIST } from '../custom_records/custom_record_type'
 
 const { makeArray } = collections.array
@@ -31,14 +31,14 @@ const addFieldsToType = (
   nameToType: Record<string, ObjectType>,
   customRecordTypes: Record<string, ObjectType>,
 ): void => {
-  makeArray(type.annotations[CUSTOM_FIELDS]?.[CUSTOM_FIELDS_LIST]).forEach(customField => {
+  makeArray(type.annotations[CUSTOM_FIELDS]?.[CUSTOM_FIELDS_LIST]).forEach((customField, index) => {
     const field = getCustomField({
       type,
       customField,
       nameToType,
       customRecordTypes,
     })
-    field.annotations = customField
+    field.annotations = { ...customField, [INDEX]: index }
     type.fields[field.name] = field
   })
 }

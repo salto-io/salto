@@ -49,7 +49,10 @@ describe('custom record type transformer', () => {
         fields: {
           custom_field: {
             refType: BuiltinTypes.STRING,
-            annotations: { [SCRIPT_ID]: 'custom_field' },
+            annotations: {
+              [SCRIPT_ID]: 'custom_field',
+              index: 0,
+            },
           },
         },
         annotations: {
@@ -65,6 +68,43 @@ describe('custom record type transformer', () => {
         customrecordcustomfields: {
           customrecordcustomfield: [
             { [SCRIPT_ID]: 'custom_field' },
+          ],
+        },
+      })
+    })
+    it('should keep the right order of custom fields', () => {
+      const instance = toCustomRecordTypeInstance(new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        fields: {
+          custom_second_field: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              [SCRIPT_ID]: 'custom_second_field',
+              index: 1,
+            },
+          },
+          custom_first_field: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              [SCRIPT_ID]: 'custom_first_field',
+              index: 0,
+            },
+          },
+        },
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          source: 'soup',
+          [SCRIPT_ID]: 'customrecord1',
+        },
+      }))
+      expect(instance.elemID.typeName).toEqual(CUSTOM_RECORD_TYPE)
+      expect(instance.elemID.name).toEqual('customrecord1')
+      expect(instance.value).toEqual({
+        [SCRIPT_ID]: 'customrecord1',
+        customrecordcustomfields: {
+          customrecordcustomfield: [
+            { [SCRIPT_ID]: 'custom_first_field' },
+            { [SCRIPT_ID]: 'custom_second_field' },
           ],
         },
       })

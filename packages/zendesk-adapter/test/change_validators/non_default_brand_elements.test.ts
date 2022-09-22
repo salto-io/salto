@@ -15,9 +15,9 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ZENDESK } from '../../src/constants'
-import { nonDefaultBrandElementsValidator } from '../../src/change_validators/non_default_brand_elements'
+import { zendeskGuideElementsDeploymentValidator } from '../../src/change_validators/zendesk_guide_elements_deployment'
 
-describe('nonDefaultBrandElementsValidator', () => {
+describe('zendeskGuideElementsDeploymentValidator', () => {
   const articleType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'article'),
   })
@@ -35,18 +35,18 @@ describe('nonDefaultBrandElementsValidator', () => {
     { name: 'bestGroupEver' },
   )
   it('should return an error when deploying changes for a Zendesk Guide type instance', async () => {
-    const errors = await nonDefaultBrandElementsValidator(
+    const errors = await zendeskGuideElementsDeploymentValidator(
       [toChange({ after: guideInstance })],
     )
     expect(errors).toEqual([{
       elemID: guideInstance.elemID,
       severity: 'Error',
-      message: 'Deploying of non-primary brand elements is not supported.',
+      message: 'Deployment of Zendesk Guide elements is not supported.',
       detailedMessage: `Element ${guideInstance.elemID.getFullName()} which related to the brand ${guideInstance.value.brand_id} cannot be deployed.`,
     }])
   })
   it('should not return an error when deploying changes for a non-Zendesk Guide type instance', async () => {
-    const errors = await nonDefaultBrandElementsValidator(
+    const errors = await zendeskGuideElementsDeploymentValidator(
       [toChange({ after: nonGuideInstance })],
     )
     expect(errors).toHaveLength(0)

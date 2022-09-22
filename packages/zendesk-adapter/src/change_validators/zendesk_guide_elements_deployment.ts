@@ -17,7 +17,7 @@ import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adap
 import { GUIDE_INSTANCE_TYPES } from '../config'
 
 // TO DO - remove after supporting on multiple brands deployment - SALTO-2769
-export const nonDefaultBrandElementsValidator: ChangeValidator = async changes => (
+export const zendeskGuideElementsDeploymentValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .filter(change => GUIDE_INSTANCE_TYPES.includes(getChangeData(change).elemID.typeName))
@@ -25,7 +25,7 @@ export const nonDefaultBrandElementsValidator: ChangeValidator = async changes =
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Deploying of non-primary brand elements is not supported.',
+      message: 'Deployment of Zendesk Guide elements is not supported.',
       detailedMessage: `Element ${instance.elemID.getFullName()} which related to the brand ${instance.value.brand_id} cannot be deployed.`,
     }))
 )

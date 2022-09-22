@@ -13,8 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DynamoDB } from 'aws-sdk'
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import {
+  BillingMode,
+  CreateTableCommandInput,
+  DynamoDBClient,
+  DynamoDBClientConfig,
+} from '@aws-sdk/client-dynamodb'
+import {
+  DeleteCommand,
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  QueryCommandInput,
+  UpdateCommand,
+  UpdateCommandInput,
+} from '@aws-sdk/lib-dynamodb'
+
 import { functions, retry as retryUtil } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import {
@@ -24,15 +39,17 @@ import {
   LeaseUpdateOpts,
   DEFAULT_LEASE_UPDATE_OPTS,
 } from '../../types'
-import { dbUtils, dbDocUtils, BatchDeleteOpts, QueryOpts } from './utils'
+import { Key, dbUtils, dbDocUtils, BatchDeleteOpts, QueryOpts } from './utils'
 
 const { defaultOpts } = functions
 const { withRetry, retryStrategies, RetryError } = retryUtil
 
+type ItemList = Key[]
+
 export type DynamoRepoPartialOpts = {
   tableName: string
   listBatchSize: number | undefined
-  billingMode: DynamoDB.BillingMode
+  billingMode: BillingMode
   optimisticLockMaxRetries: number
   leaseRandomizationRange: number | undefined
   batchDelete: BatchDeleteOpts
@@ -40,12 +57,12 @@ export type DynamoRepoPartialOpts = {
 }
 
 export type DynamoDbInstances = {
-  db: DynamoDB
-  dbDoc: DynamoDB.DocumentClient
+  db: DynamoDBClient
+  dbDoc: DynamoDBDocumentClient
 }
 
 export type DynamoInstancesOrConfig = DynamoDbInstances | {
-  serviceOpts: ServiceConfigurationOptions
+  serviceOpts: DynamoDBClientConfig
 }
 
 export type DynamoRepoRequiredOpts = RepoOpts & DynamoInstancesOrConfig
@@ -61,7 +78,7 @@ type Unpacked<T> =
 
 const createTableParams = (
   { tableName, billingMode }: Pick<DynamoRepoOpts, 'tableName' | 'billingMode'>,
-): DynamoDB.Types.CreateTableInput => ({
+): CreateTableCommandInput => ({
   KeySchema: [
     { AttributeName: 'type', KeyType: 'HASH' },
     { AttributeName: 'id', KeyType: 'RANGE' },
@@ -99,8 +116,9 @@ type LeaseDoc<T> = {
 
 export const dynamoDbInstances = (opts: DynamoInstancesOrConfig): DynamoDbInstances => {
   if ('serviceOpts' in opts) {
-    const db = new DynamoDB(opts.serviceOpts)
-    return { db, dbDoc: new DynamoDB.DocumentClient({ service: db }) }
+    const db = new DynamoDBClient(opts.serviceOpts)
+    const dbDoc = DynamoDBDocumentClient.from(db)
+    return { db, dbDoc }
   }
   return { db: opts.db, dbDoc: opts.dbDoc }
 }
@@ -125,7 +143,7 @@ export const repo = defaultOpts.withRequired<
     try {
       return await f()
     } catch (e) {
-      if (e.code === 'ConditionalCheckFailedException') {
+      if (e.toString().includes('ConditionalCheckFailedException')) {
         if (retryNumber === opts.optimisticLockMaxRetries) {
           throw e
         }
@@ -137,8 +155,8 @@ export const repo = defaultOpts.withRequired<
 
   const pool = <T>(typeName: string): Pool<T> => {
     const queryInput = (
-      partialQueryInput: Partial<DynamoDB.DocumentClient.QueryInput> = {},
-    ): DynamoDB.DocumentClient.QueryInput => ({
+      partialQueryInput: Partial<QueryCommandInput> = {},
+    ): QueryCommandInput => ({
       TableName: opts.tableName,
       ConsistentRead: true,
       Select: 'ALL_ATTRIBUTES',
@@ -160,8 +178,8 @@ export const repo = defaultOpts.withRequired<
       const now = Date.now()
       const retry = retryStrategy ?? retryStrategies.none()
 
-      const makeQuery = async (): Promise<DynamoDB.ItemList | undefined> => {
-        const queryResults = await dbDoc.query({
+      const makeQuery = async (): Promise<ItemList | undefined> => {
+        const queryResults = await dbDoc.send(new QueryCommand({
           TableName: opts.tableName,
           IndexName: 'leaseExpiresBy',
           ConsistentRead: true,
@@ -175,19 +193,19 @@ export const repo = defaultOpts.withRequired<
             ':now': (new Date(now)).toISOString(),
           },
           Limit: opts.leaseRandomizationRange,
-        }).promise()
+        }))
 
         const maybeItems = queryResults.Items
         const hasItems = maybeItems !== undefined && maybeItems.length !== 0
-        return hasItems ? maybeItems as DynamoDB.ItemList : undefined
+        return hasItems ? maybeItems as ItemList : undefined
       }
 
-      let items: DynamoDB.ItemList
+      let items: ItemList
       try {
         items = await withRetry(makeQuery, {
           strategy: retry,
           description: 'waiting for available lease',
-        }) as DynamoDB.ItemList
+        }) as ItemList
       } catch (e) {
         if (e instanceof RetryError && retryStrategy === undefined) {
           return null
@@ -198,7 +216,7 @@ export const repo = defaultOpts.withRequired<
       const itemIndex = Math.floor(Math.random() * items.length)
       const { id, version } = items[itemIndex] as Pick<LeaseDoc<T>, 'id' | 'version'>
 
-      const updateResult = await dbDoc.update({
+      const updateResult = await dbDoc.send(new UpdateCommand({
         TableName: opts.tableName,
         Key: {
           type: typeName,
@@ -216,17 +234,14 @@ export const repo = defaultOpts.withRequired<
           ':leaseExpiresBy': new Date(now + returnTimeout).toISOString(),
         },
         ReturnValues: 'ALL_NEW',
-      }).promise()
+      }))
 
       return { id, value: (updateResult.Attributes as LeaseDoc<T>).value }
     })
 
     const updateLease = (
       id: InstanceId,
-      updates: {
-        UpdateExpression: DynamoDB.UpdateExpression
-        ExpressionAttributeValues?: DynamoDB.DocumentClient.ExpressionAttributeValueMap
-      },
+      updates: Pick<UpdateCommandInput, 'UpdateExpression' | 'ExpressionAttributeValues'>,
       updateOpts?: Partial<LeaseUpdateOpts> & { validateLeased: boolean },
     ): Promise<void> => {
       const { validateClientId, validateLeased } = {
@@ -235,13 +250,13 @@ export const repo = defaultOpts.withRequired<
       }
 
       return withOptimisticLock(async (): Promise<void> => {
-        const item = (await dbDoc.get({
+        const item = (await dbDoc.send(new GetCommand({
           TableName: opts.tableName,
           Key: {
             type: typeName,
             id,
           },
-        }).promise()).Item as LeaseDoc<T> | undefined
+        }))).Item as LeaseDoc<T> | undefined
 
         if (item === undefined) {
           throw new InstanceNotFoundError({ id, typeName })
@@ -256,7 +271,7 @@ export const repo = defaultOpts.withRequired<
 
         const { version } = item
 
-        await dbDoc.update({
+        await dbDoc.send(new UpdateCommand({
           TableName: opts.tableName,
           Key: {
             type: typeName,
@@ -272,14 +287,14 @@ export const repo = defaultOpts.withRequired<
             ':newVersion': version + 1,
             ...updates.ExpressionAttributeValues,
           },
-        }).promise()
+        }))
       })
     }
 
     return {
       async register(value: T, id: InstanceId = uuidv4()): Promise<InstanceId> {
         try {
-          await dbDoc.put({
+          await dbDoc.send(new PutCommand({
             TableName: opts.tableName,
             Item: {
               type: typeName,
@@ -289,10 +304,10 @@ export const repo = defaultOpts.withRequired<
               leaseExpiresBy: NOT_LEASED,
             },
             ConditionExpression: 'attribute_not_exists(id)',
-          }).promise()
+          }))
           return id
         } catch (e) {
-          if (e.code === 'ConditionalCheckFailedException') {
+          if (e.toString().includes('ConditionalCheckFailedException')) {
             throw new InstanceIdAlreadyRegistered({ id, typeName })
           }
           throw e
@@ -301,16 +316,16 @@ export const repo = defaultOpts.withRequired<
 
       async unregister(id: InstanceId): Promise<void> {
         try {
-          await dbDoc.delete({
+          await dbDoc.send(new DeleteCommand({
             TableName: opts.tableName,
             Key: {
               type: typeName,
               id,
             },
             ConditionExpression: 'attribute_exists(id)',
-          }).promise()
+          }))
         } catch (e) {
-          if (e.code === 'ConditionalCheckFailedException') {
+          if (e.toString().includes('ConditionalCheckFailedException')) {
             throw new InstanceNotFoundError({ id, typeName })
           }
           throw e
@@ -427,7 +442,7 @@ export const repo = defaultOpts.withRequired<
           ProjectionExpression: 'id',
         }), opts.query)
 
-        const keysToDelete: DynamoDB.Key[] = []
+        const keysToDelete: Key[] = []
 
         let batch: Unpacked<ReturnType<typeof batchIter.next>>
 
@@ -439,7 +454,7 @@ export const repo = defaultOpts.withRequired<
             batch = await batchIter.next()
             if (batch.value) {
               keysToDelete.push(
-                ...batch.value.map(r => ({ type: typeName, id: r.id } as DynamoDB.Key))
+                ...batch.value.map(r => ({ type: typeName, id: r.id } as Key))
               )
             }
             return nextBatch()

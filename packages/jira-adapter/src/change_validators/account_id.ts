@@ -13,13 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, ElemID, getChangeData,
+import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { walkOnElement } from '@salto-io/adapter-utils'
-import _ from 'lodash'
-import { isAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
+import { walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
 import { JiraConfig } from '../config/config'
 import { createIdToUserMap, IdMap } from '../filters/account_id/add_display_name_filter'
 import JiraClient from '../client/client'
@@ -28,7 +27,7 @@ const log = logger(module)
 
 const JIRA_USERS_PAGE = 'jira/people/search'
 
-export const noDisplayNameChangeError = (
+const noDisplayNameChangeError = (
   elemId: ElemID,
 ): ChangeError => ({
   elemID: elemId,
@@ -37,7 +36,7 @@ export const noDisplayNameChangeError = (
   detailedMessage: `A display name was not attached to ${elemId.getFullName()}. It will be added in the first fetch after this deployment.`,
 })
 
-export const noAccountIdChangeError = ({
+const noAccountIdChangeError = ({
   elemId,
   fieldName,
   baseUrl,
@@ -48,7 +47,7 @@ export const noAccountIdChangeError = ({
   baseUrl: string
   accountId: string
 }): ChangeError => {
-  const url = `${baseUrl}${JIRA_USERS_PAGE}`
+  const url = new URL(JIRA_USERS_PAGE, baseUrl).href
   const { parent } = elemId.createTopLevelParentID()
   return {
     elemID: elemId,
@@ -59,7 +58,7 @@ Go to ${url} to see valid users and account IDs`,
   }
 }
 
-export const displayNameMismatchChangeError = ({
+const displayNameMismatchChangeError = ({
   elemId,
   baseUrl,
   currentDisplayName,
@@ -72,7 +71,7 @@ export const displayNameMismatchChangeError = ({
   realDisplayName: string
   accountId: string
 }): ChangeError => {
-  const url = `${baseUrl}${JIRA_USERS_PAGE}`
+  const url = new URL(JIRA_USERS_PAGE, baseUrl).href
   const { parent } = elemId.createTopLevelParentID()
   return {
     elemID: elemId,
@@ -84,7 +83,7 @@ Go to ${url} to see valid users and account IDs.`,
   }
 }
 
-const checkAndCreateChangeErrors = (
+const checkAndAddChangeErrors = (
   idMap: IdMap,
   baseUrl: string,
   changeErrors: ChangeError[]
@@ -101,7 +100,7 @@ const checkAndCreateChangeErrors = (
       baseUrl,
       accountId,
     }))
-  } else if (_.isUndefined(currentDisplayName)) {
+  } else if (currentDisplayName === undefined) {
     changeErrors.push(noDisplayNameChangeError(path.createNestedID(fieldName)))
   } else if (realDisplayName !== currentDisplayName) {
     changeErrors.push(displayNameMismatchChangeError(
@@ -112,6 +111,17 @@ const checkAndCreateChangeErrors = (
         accountId }
     ))
   }
+}
+
+const createChangeErrorsForAccountIdIssues = (
+  element: InstanceElement,
+  idMap: IdMap,
+  baseUrl : string
+): ChangeError[] => {
+  const changeErrors: ChangeError[] = []
+  walkOnElement({ element,
+    func: walkOnUsers(checkAndAddChangeErrors(idMap, baseUrl, changeErrors)) })
+  return changeErrors
 }
 
 export const accountIdValidator: (
@@ -125,14 +135,11 @@ export const accountIdValidator: (
       }
       const { baseUrl } = client
       const idMap = await createIdToUserMap(paginator)
-      const changeErrors: ChangeError[] = []
-      changes
+      return changes
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
         .map(change => getChangeData(change))
-        .filter(isAccountIdType)
-        .forEach(element =>
-          walkOnElement({ element,
-            func: walkOnUsers(checkAndCreateChangeErrors(idMap, baseUrl, changeErrors)) }))
-      return changeErrors
+        .map(element =>
+          createChangeErrorsForAccountIdIssues(element, idMap, baseUrl))
+        .flat()
     }, 'display name validator')

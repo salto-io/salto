@@ -188,6 +188,7 @@ const fetchConfigType = createUserFetchConfigType(
   {
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
+    // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,

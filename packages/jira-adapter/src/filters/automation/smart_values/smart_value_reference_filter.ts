@@ -97,7 +97,13 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
 
   filterAutomations(instances).forEach(instance => {
     getPossibleSmartValues(instance)
-      .filter(({ obj, key }) => _.isString(obj[key]))
+      .filter(({ obj, key }) => {
+        if (!_.isString(obj[key])) {
+          log.debug(`'${key}' in ${instance.elemID.getFullName()} key is not a string`)
+          return false
+        }
+        return true
+      })
       .forEach(({ obj, key }) => {
         try {
           obj[key] = stringToTemplate({
@@ -106,7 +112,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
             fieldInstancesById,
           })
         } catch (e) {
-          log.error('Error parsing templates in fetch', e)
+          log.error(`Error parsing templates in fetch ${e}, stack: ${e.stack}`)
         }
       })
   })

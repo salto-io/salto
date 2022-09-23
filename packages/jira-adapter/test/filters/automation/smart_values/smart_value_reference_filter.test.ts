@@ -17,6 +17,8 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
+import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import filterCreator from '../../../../src/filters/automation/smart_values/smart_value_reference_filter'
 import { getFilterParams } from '../../../utils'
 
@@ -31,12 +33,14 @@ describe('smart_value_reference_filter', () => {
     let fieldInstance: InstanceElement
     let automationInstance: InstanceElement
     let emptyAutomationInstance: InstanceElement
+    let config: JiraConfig
 
     beforeEach(() => {
       logErrorSpy.mockReset()
 
-      filter = filterCreator(getFilterParams()) as FilterType
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
+      filter = filterCreator(getFilterParams({ config })) as FilterType
 
       automationType = new ObjectType({
         elemID: new ElemID('jira', 'Automation'),
@@ -118,6 +122,7 @@ describe('smart_value_reference_filter', () => {
         }))
       })
     })
+
     describe('on fetch failure', () => {
       it('should do nothing for components without a value', async () => {
         delete automationInstance.value.components[0].value
@@ -125,6 +130,18 @@ describe('smart_value_reference_filter', () => {
         const originalAutomation = automationInstance.clone()
         await filter.onFetch([automationInstance])
         expect(automationInstance.value).toEqual(originalAutomation.value)
+      })
+
+      it('should do nothing if was disabled in the config', async () => {
+        const elements = generateElements()
+        const automationResult = elements.filter(isInstanceElement).find(i => i.elemID.name === 'autom')
+        expect(automationResult).toBeDefined()
+        const automation = automationResult as InstanceElement
+
+        const originalAutomation = automation.clone()
+        config.fetch.parseTemplateExpressions = false
+        await filter.onFetch(elements)
+        expect(automation.value).toEqual(originalAutomation.value)
       })
     })
     describe('preDeploy', () => {

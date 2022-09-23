@@ -96,17 +96,25 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
 
 
   filterAutomations(instances).forEach(instance => {
-    getPossibleSmartValues(instance).forEach(({ obj, key }) => {
-      try {
-        obj[key] = stringToTemplate({
-          referenceStr: obj[key],
-          fieldInstancesByName,
-          fieldInstancesById,
-        })
-      } catch (e) {
-        log.error('Error parsing templates in fetch', e)
-      }
-    })
+    getPossibleSmartValues(instance)
+      .filter(({ obj, key }) => {
+        if (!_.isString(obj[key])) {
+          log.debug(`'${key}' in ${instance.elemID.getFullName()} key is not a string`)
+          return false
+        }
+        return true
+      })
+      .forEach(({ obj, key }) => {
+        try {
+          obj[key] = stringToTemplate({
+            referenceStr: obj[key],
+            fieldInstancesByName,
+            fieldInstancesById,
+          })
+        } catch (e) {
+          log.error(`Error parsing templates in fetch ${e}, stack: ${e.stack}`)
+        }
+      })
   })
 }
 
@@ -123,11 +131,16 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
 /**
  * Process values that can reference other objects and turn them into TemplateExpressions
  */
-const filterCreator: FilterCreator = () => {
+const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
-    onFetch: async (elements: Element[]) => log.time(async () =>
-      replaceFormulasWithTemplates(elements.filter(isInstanceElement)), 'Smart values creation filter'),
+    onFetch: async (elements: Element[]) => log.time(async () => {
+      if (config.fetch.parseTemplateExpressions === false) {
+        log.debug('Parsing smart values template expressions was disabled')
+        return
+      }
+      await replaceFormulasWithTemplates(elements.filter(isInstanceElement))
+    }, 'Smart values creation filter'),
 
     preDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {
       filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(

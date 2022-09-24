@@ -26,6 +26,6 @@ export const zendeskGuideElementsDeploymentValidator: ChangeValidator = async ch
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Deployment of Zendesk Guide elements is not supported.',
-      detailedMessage: `Element ${instance.elemID.getFullName()} which related to the brand ${instance.value.brand_id} cannot be deployed.`,
+      detailedMessage: `Element ${instance.elemID.getFullName()} which related to the brand ${instance.value.brand_id.elemID.getFullName()} cannot be deployed.`,
     }))
 )

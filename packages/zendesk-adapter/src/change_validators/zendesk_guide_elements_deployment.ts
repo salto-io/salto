@@ -13,19 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { GUIDE_INSTANCE_TYPES } from '../config'
 
-// TO DO - remove after supporting on multiple brands deployment - SALTO-2769
 export const zendeskGuideElementsDeploymentValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .filter(change => GUIDE_INSTANCE_TYPES.includes(getChangeData(change).elemID.typeName))
     .map(getChangeData)
+    .filter(instance => !isReferenceExpression(instance.value.brand_id))
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Deployment of Zendesk Guide elements is not supported.',
-      detailedMessage: `Element ${instance.elemID.getFullName()} which related to the brand ${instance.value.brand_id.elemID.getFullName()} cannot be deployed.`,
+      message: `Element ${instance.elemID.getFullName()} cannot be deployed.`,
+      detailedMessage: `Element ${instance.elemID.getFullName()} is a Zendesk Guide element which isn't related to a brand, and therefore cannot be deployed.`,
     }))
 )

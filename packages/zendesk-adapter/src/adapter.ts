@@ -30,7 +30,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig, CLIENT_CONFIG } from './config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig, CLIENT_CONFIG, GUIDE_INSTANCE_TYPES } from './config'
 import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -219,7 +219,7 @@ export interface ZendeskAdapterParams {
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Promise<Required<Filter>>
+  private createFiltersRunner: (paginator?: clientUtils.Paginator) => Promise<Required<Filter>>
   private client: ZendeskClient
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
@@ -254,11 +254,11 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
-    this.createFiltersRunner = async () => (
+    this.createFiltersRunner = async (paginator?: clientUtils.Paginator) => (
       filtersRunner(
         {
           client: this.client,
-          paginator: this.paginator,
+          paginator: paginator || this.paginator,
           config: {
             fetch: config.fetch,
             apiDefinitions: config.apiDefinitions,
@@ -391,8 +391,30 @@ export default class ZendeskAdapter implements AdapterOperations {
           )))
       .toArray()
     await runner.preDeploy(resolvedChanges)
-    const { deployResult } = await runner.deploy(resolvedChanges)
-    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
+    const [guideResolvedChanges, supportResolvedChanges] = _.partition(
+      resolvedChanges,
+      change => Object.keys(GUIDE_INSTANCE_TYPES).includes(getChangeData(change).elemID.typeName)
+    )
+    const { deployResult } = await runner.deploy(supportResolvedChanges)
+
+    const subdomainToGuideChanges = _.groupBy(
+      guideResolvedChanges,
+      change => getChangeData(change).value.brand_id.subdomain
+    )
+    const guideDeployResults = await awu(Object.keys(subdomainToGuideChanges))
+      .map(async subdomain => {
+        const brandPaginator = createPaginator({
+          client: this.createClientBySubdomain(subdomain),
+          paginationFuncCreator: paginate,
+        })
+        const brandRunner = await this.createFiltersRunner(brandPaginator)
+        return (await brandRunner.deploy(subdomainToGuideChanges[subdomain])).deployResult
+      })
+      .toArray()
+
+    const appliedChangesBeforeRestore = deployResult.appliedChanges.concat(
+      guideDeployResults.flatMap(result => result.appliedChanges)
+    )
     await runner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceChanges = _.keyBy(
@@ -413,7 +435,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       appliedChanges,
       originalInstanceChanges: instanceChanges,
     })
-    return { appliedChanges: restoredAppliedChanges, errors: deployResult.errors }
+    return {
+      appliedChanges: restoredAppliedChanges,
+      errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)),
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

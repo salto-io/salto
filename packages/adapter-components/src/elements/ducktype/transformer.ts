@@ -18,7 +18,7 @@ import { Element, InstanceElement, isObjectType, Values, ObjectType, ElemIdGette
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { Paginator, ResponseValue } from '../../client'
+import { Paginator, ResponseValue, ClientGetWithPaginationParams } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
 import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from '../../config'
@@ -36,6 +36,15 @@ const { toArrayAsync, awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
+export type EntriesRequester = (
+  args: {
+    paginator: Paginator
+    args: ClientGetWithPaginationParams
+    typeName: string
+    typesConfig: Record<string, TypeDuckTypeConfig>
+  }
+) => Promise<ResponseValue[]>
+
 type GetEntriesParams = {
   adapterName: string
   typeName: string
@@ -47,6 +56,7 @@ type GetEntriesParams = {
   contextElements?: Record<string, Element[]>
   requestContext?: Record<string, unknown>
   getElemIdFunc?: ElemIdGetter
+  getEntriesResponseValuesFunc?: EntriesRequester
 }
 
 type Entries = {
@@ -64,12 +74,22 @@ export type FetchElements<T> = {
   elements: T
 }
 
+export const getEntriesResponseValues: EntriesRequester = async ({
+  paginator,
+  args,
+}): Promise<ResponseValue[]> => (
+  (await toArrayAsync(
+    paginator(args, page => makeArray(page) as ResponseValue[])
+  )).flat()
+)
+
 const getEntriesForType = async (
   params: GetEntriesParams
 ): Promise<Entries> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, contextElements,
     requestContext, nestedFieldFinder, computeGetArgs, adapterName, getElemIdFunc,
+    getEntriesResponseValuesFunc,
   } = params
   const typeConfig = typesConfig[typeName]
   if (typeConfig === undefined) {
@@ -91,9 +111,11 @@ const getEntriesForType = async (
   const getEntries = async (context: Values | undefined): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements, context)
     return (await Promise.all(
-      getArgs.map(async args => (await toArrayAsync(
-        paginator(args, page => makeArray(page) as ResponseValue[])
-      )).flat())
+      getArgs.map(async args => (
+        getEntriesResponseValuesFunc
+          ? getEntriesResponseValuesFunc({ paginator, args, typeName, typesConfig })
+          : getEntriesResponseValues({ paginator, args, typeName, typesConfig })
+      ))
     )).flat()
   }
   const entriesValues = (await getEntries(requestContext))
@@ -221,6 +243,7 @@ export const getTypeAndInstances = async ({
   typeDefaultConfig,
   contextElements,
   getElemIdFunc,
+  getEntriesResponseValuesFunc,
 }: {
   adapterName: string
   typeName: string
@@ -231,6 +254,7 @@ export const getTypeAndInstances = async ({
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
   contextElements?: Record<string, Element[]>
   getElemIdFunc?: ElemIdGetter
+  getEntriesResponseValuesFunc?: EntriesRequester
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -242,6 +266,7 @@ export const getTypeAndInstances = async ({
     typesConfig,
     contextElements,
     getElemIdFunc,
+    getEntriesResponseValuesFunc,
   })
   const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
   const transformationConfigByType = getTransformationConfigByType(typesConfig)
@@ -270,22 +295,26 @@ export const getAllElements = async ({
   fetchQuery,
   supportedTypes,
   types,
+  shouldAddRemainingTypes = true,
   paginator,
   nestedFieldFinder,
   computeGetArgs,
   typeDefaults,
   getElemIdFunc,
+  getEntriesResponseValuesFunc,
   isErrorTurnToConfigSuggestion,
 }: {
   adapterName: string
   fetchQuery: ElementQuery
   supportedTypes: Record<string, string[]>
   types: Record<string, TypeConfig>
+  shouldAddRemainingTypes?: boolean
   paginator: Paginator
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
   typeDefaults: TypeDuckTypeDefaultsConfig
   getElemIdFunc?: ElemIdGetter
+  getEntriesResponseValuesFunc?: EntriesRequester
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
 }): Promise<FetchElements<Element[]>> => {
   const elementGenerationParams = {
@@ -296,6 +325,7 @@ export const getAllElements = async ({
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
     getElemIdFunc,
+    getEntriesResponseValuesFunc,
   }
 
   const supportedTypesWithEndpoints = _.mapValues(
@@ -337,13 +367,15 @@ export const getAllElements = async ({
   const instancesAndTypes = [
     ...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e)),
   ]
-  addRemainingTypes({
-    adapterName,
-    elements: instancesAndTypes,
-    typesConfig: types,
-    supportedTypes,
-    typeDefaultConfig: typeDefaults,
-  })
+  if (shouldAddRemainingTypes) {
+    addRemainingTypes({
+      adapterName,
+      elements: instancesAndTypes,
+      typesConfig: types,
+      supportedTypes,
+      typeDefaultConfig: typeDefaults,
+    })
+  }
   return {
     elements: instancesAndTypes,
     configChanges: _.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude),

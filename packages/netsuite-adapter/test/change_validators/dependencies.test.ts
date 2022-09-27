@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { fileType } from '../../src/types/file_cabinet_types'
-import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { validateDependsOnInvalidElement } from '../../src/change_validators/dependencies'
 import { PATH, SCRIPT_ID } from '../../src/constants'
 

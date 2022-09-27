@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { clientscriptType } from '../../src/autogen/types/custom_types/clientscript'
-import { customlistType } from '../../src/autogen/types/custom_types/customlist'
+import { clientscriptType } from '../../src/autogen/types/standard_types/clientscript'
+import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import removeListItemValidator from '../../src/change_validators/remove_list_item'
 
 

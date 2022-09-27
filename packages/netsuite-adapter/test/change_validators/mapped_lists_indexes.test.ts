@@ -17,7 +17,7 @@ import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import mappedListsIndexesValidator from '../../src/change_validators/mapped_lists_indexes'
 import { SCRIPT_ID } from '../../src/constants'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/utils'
 
 const { awu } = collections.asynciterable

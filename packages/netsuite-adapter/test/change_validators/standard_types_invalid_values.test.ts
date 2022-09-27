@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { addressFormType } from '../../src/autogen/types/custom_types/addressForm'
-import { roleType } from '../../src/autogen/types/custom_types/role'
-import invalidValuesValidator from '../../src/change_validators/custom_types_invalid_values'
+import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
+import { roleType } from '../../src/autogen/types/standard_types/role'
+import invalidValuesValidator from '../../src/change_validators/standard_types_invalid_values'
 import { SCRIPT_ID } from '../../src/constants'
 
 

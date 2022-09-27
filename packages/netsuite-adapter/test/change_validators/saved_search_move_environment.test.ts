@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { savedsearchType } from '../../src/autogen/types/custom_types/savedsearch'
+import { savedsearchType } from '../../src/autogen/types/standard_types/savedsearch'
 import savedSearchesMoveEnvironment from '../../src/change_validators/saved_search_move_environment'
 
 jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({

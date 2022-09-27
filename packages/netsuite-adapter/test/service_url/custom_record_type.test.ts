@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, Element, ObjectType, ElemID } from '@salto-io/adapter-api'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/custom_record_type'
-import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
-import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
+import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 
 
 describe('setCustomRecordTypesUrls', () => {
@@ -29,7 +30,7 @@ describe('setCustomRecordTypesUrls', () => {
   const customsegment = customsegmentType().type
   const customrecordtype = customrecordtypeType().type
 
-  let elements: InstanceElement[]
+  let elements: Element[]
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -38,7 +39,13 @@ describe('setCustomRecordTypesUrls', () => {
       { scriptid: 'CUSTOMRECORD_CSEG1', id: '2' },
     ])
     elements = [
-      new InstanceElement('A', customrecordtype, { scriptid: 'customrecord1' }),
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          scriptid: 'customrecord1',
+        },
+      }),
       new InstanceElement('B', customsegment, { scriptid: 'cseg1' }),
     ]
   })

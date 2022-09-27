@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, Element, isInstanceElement, isField, isObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -27,15 +27,16 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { AdditionalDependencies, CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
-import { getReferencedInstances } from '../reference_dependencies'
+import { getReferencedElements } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
-import { DeployResult } from '../types'
+import { DeployResult, getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
-import { convertInstanceMapsToLists } from '../mapped_lists/utils'
+import { convertElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -125,7 +126,7 @@ export default class NetsuiteClient {
 
   private static toFeaturesDeployPartialSuccessResult(
     error: FeaturesDeployError,
-    changes: ReadonlyArray<Change<InstanceElement>>
+    changes: ReadonlyArray<Change>
   ): Change[] {
     // this case happens when all changes where deployed successfully,
     // except of some features in config_features
@@ -134,7 +135,7 @@ export default class NetsuiteClient {
     )
 
     // if some changed features are not in errors.ids we want to include the change
-    if (featuresChange && isModificationChange(featuresChange) && !_.isEqual(
+    if (isInstanceChange(featuresChange) && isModificationChange(featuresChange) && !_.isEqual(
       _(featuresChange.data.before.value.feature)
         .keyBy(feature => feature.id).omit(error.ids).value(),
       _(featuresChange.data.after.value.feature)
@@ -148,36 +149,63 @@ export default class NetsuiteClient {
 
   private static getFailedSdfDeployChangesElemIDs(
     error: ObjectsDeployError,
-    changes: ReadonlyArray<Change<InstanceElement>>
+    changes: ReadonlyArray<Change>
   ): Set<string> {
-    const changedInstances = changes.map(getChangeData)
-    const failedElemIDs = new Set(changedInstances
-      .filter(inst => error.failedObjects.has(inst.value[SCRIPT_ID]))
-      .map(inst => inst.elemID.getFullName()))
+    const changeData = changes.map(getChangeData)
+    const failedElemIDs = new Set(changeData
+      .filter(elem => (
+        isInstanceElement(elem) && error.failedObjects.has(elem.value[SCRIPT_ID])
+      ) || (
+        isField(elem) && error.failedObjects.has(elem.parent.annotations[SCRIPT_ID])
+      ) || (
+        error.failedObjects.has(elem.annotations[SCRIPT_ID])
+      ))
+      .map(elem => elem.elemID.getFullName()))
 
     // in case we cannot find the failed instances we return all as failed
     return failedElemIDs.size === 0
-      ? new Set(changedInstances.map(inst => inst.elemID.getFullName()))
+      ? new Set(changeData.map(elem => elem.elemID.getFullName()))
       : failedElemIDs
   }
 
   private static async toCustomizationInfos(
-    instances: InstanceElement[],
+    elements: Element[],
     deployReferencedElements: boolean
   ): Promise<CustomizationInfo[]> {
-    return awu(await getReferencedInstances(instances, deployReferencedElements))
-      .map(instance => resolveValues(instance, getLookUpName))
-      .map(convertInstanceMapsToLists)
+    const fieldsParents = _(elements)
+      .filter(isField)
+      .map(field => field.parent)
+      .uniqBy(parent => parent.elemID.name)
+      .value()
+
+    return awu(await getReferencedElements(
+      elements.concat(fieldsParents),
+      deployReferencedElements
+    ))
+      .map(element => resolveValues(element, getLookUpName))
+      .map(convertElementMapsToLists)
+      .map(element => {
+        if (isInstanceElement(element)) {
+          return element
+        }
+        if (isObjectType(element) && isCustomRecordType(element)) {
+          return toCustomRecordTypeInstance(element)
+        }
+        return undefined
+      })
+      .filter(values.isDefined)
       .map(toCustomizationInfo)
       .toArray()
   }
 
   private async sdfValidate(
-    changes: ReadonlyArray<Change<InstanceElement>>,
+    changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
     additionalDependencies: AdditionalDependencies
   ): Promise<void> {
-    const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]
+    const someElementToDeploy = getChangeData(changes[0])
+    const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
+
     const customizationInfos = await NetsuiteClient.toCustomizationInfos(
       changes.map(getChangeData),
       deployReferencedElements
@@ -193,12 +221,15 @@ export default class NetsuiteClient {
   }
 
   private async sdfDeploy(
-    changes: ReadonlyArray<Change<InstanceElement>>,
+    changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
     additionalDependencies: AdditionalDependencies
   ): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
-    const suiteAppId = getChangeData(changes[0]).value[APPLICATION_ID]
+
+    const someElementToDeploy = getChangeData(changes[0])
+    const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
+
     const errors: Error[] = []
 
     while (changesToDeploy.length > 0) {
@@ -256,7 +287,7 @@ export default class NetsuiteClient {
 
   @NetsuiteClient.logDecorator
   public async validate(
-    changes: Change<InstanceElement>[],
+    changes: Change[],
     groupID: string,
     deployReferencedElements: boolean,
     additionalSdfDependencies: AdditionalDependencies,
@@ -275,12 +306,11 @@ export default class NetsuiteClient {
     elementsSourceIndex: LazyElementsSourceIndexes
   ):
     Promise<DeployResult> {
-    const instancesChanges = changes.filter(isInstanceChange)
-
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      return this.sdfDeploy(instancesChanges, deployReferencedElements, additionalSdfDependencies)
+      return this.sdfDeploy(changes, deployReferencedElements, additionalSdfDependencies)
     }
 
+    const instancesChanges = changes.filter(isInstanceChange)
     if (SUITEAPP_FILE_CABINET_GROUPS.includes(groupID)) {
       return this.suiteAppFileCabinet !== undefined
         ? this.suiteAppFileCabinet.deploy(

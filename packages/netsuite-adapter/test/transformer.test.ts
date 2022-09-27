@@ -14,26 +14,27 @@
 * limitations under the License.
 */
 import {
-  ElemID, InstanceElement, ReferenceExpression, ServiceIds, StaticFile,
+  BuiltinTypes,
+  ElemID, InstanceElement, ObjectType, ReferenceExpression, ServiceIds, StaticFile,
 } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
-  ENTITY_CUSTOM_FIELD, SCRIPT_ID,
+  ENTITY_CUSTOM_FIELD, SCRIPT_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE,
   EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, CONFIG_FEATURES,
 } from '../src/constants'
 import { convertToCustomTypeInfo, convertToXmlContent } from '../src/client/sdf_client'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
-import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
 import { featuresType } from '../src/types/configuration_types'
-import { customrecordtypeType } from '../src/autogen/types/custom_types/customrecordtype'
-import { emailtemplateType } from '../src/autogen/types/custom_types/emailtemplate'
-import { addressFormType } from '../src/autogen/types/custom_types/addressForm'
-import { transactionFormType } from '../src/autogen/types/custom_types/transactionForm'
-import { workflowType } from '../src/autogen/types/custom_types/workflow'
+import { customrecordtypeType } from '../src/autogen/types/standard_types/customrecordtype'
+import { emailtemplateType } from '../src/autogen/types/standard_types/emailtemplate'
+import { addressFormType } from '../src/autogen/types/standard_types/addressForm'
+import { transactionFormType } from '../src/autogen/types/standard_types/transactionForm'
+import { workflowType } from '../src/autogen/types/standard_types/workflow'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 
@@ -719,6 +720,27 @@ describe('Transformer', () => {
       },
     })
 
+    const customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      fields: {
+        custom_field: {
+          refType: BuiltinTypes.STRING,
+          annotations: { [SCRIPT_ID]: 'custom_field' },
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+        [SCRIPT_ID]: 'customrecord1',
+        instances: {
+          instance: {
+            record1: {
+              [SCRIPT_ID]: 'record1',
+            },
+          },
+        },
+      },
+    })
+
     it('should resolve to netsuite path reference representation', async () => {
       const ref = new ReferenceExpression(
         fileInstance.elemID.createNestedID(PATH),
@@ -744,6 +766,24 @@ describe('Transformer', () => {
         workflowInstance
       )
       expect(getLookUpName({ ref })).toEqual('[scriptid=top_level.one_nesting.two_nesting]')
+    })
+
+    it('should resolve custom record type to netsuite scriptid reference', async () => {
+      const ref = new ReferenceExpression(
+        customRecordType.elemID.createNestedID('attr', 'instances', 'instance', 'record1', SCRIPT_ID),
+        'record1',
+        customRecordType
+      )
+      expect(getLookUpName({ ref })).toEqual('[scriptid=customrecord1.record1]')
+    })
+
+    it('should resolve custom record type field to netsuite scriptid reference', async () => {
+      const ref = new ReferenceExpression(
+        customRecordType.elemID.createNestedID('field', 'custom_field', SCRIPT_ID),
+        'record1',
+        customRecordType
+      )
+      expect(getLookUpName({ ref })).toEqual('[scriptid=customrecord1.custom_field]')
     })
 
     describe('when the resolved value should be returned', () => {

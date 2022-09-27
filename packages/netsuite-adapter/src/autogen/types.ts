@@ -14,66 +14,66 @@
 * limitations under the License.
 */
 import { TypesMap } from '../types/object_types'
-import { addressFormType } from './types/custom_types/addressForm'
-import { advancedpdftemplateType } from './types/custom_types/advancedpdftemplate'
-import { bankstatementparserpluginType } from './types/custom_types/bankstatementparserplugin'
-import { bundleinstallationscriptType } from './types/custom_types/bundleinstallationscript'
-import { centerType } from './types/custom_types/center'
-import { centercategoryType } from './types/custom_types/centercategory'
-import { centerlinkType } from './types/custom_types/centerlink'
-import { centertabType } from './types/custom_types/centertab'
-import { clientscriptType } from './types/custom_types/clientscript'
-import { cmscontenttypeType } from './types/custom_types/cmscontenttype'
-import { crmcustomfieldType } from './types/custom_types/crmcustomfield'
-import { customglpluginType } from './types/custom_types/customglplugin'
-import { customlistType } from './types/custom_types/customlist'
-import { customrecordactionscriptType } from './types/custom_types/customrecordactionscript'
-import { customrecordtypeType } from './types/custom_types/customrecordtype'
-import { customsegmentType } from './types/custom_types/customsegment'
-import { customtransactiontypeType } from './types/custom_types/customtransactiontype'
-import { datasetType } from './types/custom_types/dataset'
-import { datasetbuilderpluginType } from './types/custom_types/datasetbuilderplugin'
-import { emailcapturepluginType } from './types/custom_types/emailcaptureplugin'
-import { emailtemplateType } from './types/custom_types/emailtemplate'
-import { entitycustomfieldType } from './types/custom_types/entitycustomfield'
-import { entryFormType } from './types/custom_types/entryForm'
-import { ficonnectivitypluginType } from './types/custom_types/ficonnectivityplugin'
-import { fiparserpluginType } from './types/custom_types/fiparserplugin'
-import { integrationType } from './types/custom_types/integration'
-import { itemcustomfieldType } from './types/custom_types/itemcustomfield'
-import { itemnumbercustomfieldType } from './types/custom_types/itemnumbercustomfield'
-import { itemoptioncustomfieldType } from './types/custom_types/itemoptioncustomfield'
-import { kpiscorecardType } from './types/custom_types/kpiscorecard'
-import { mapreducescriptType } from './types/custom_types/mapreducescript'
-import { massupdatescriptType } from './types/custom_types/massupdatescript'
-import { othercustomfieldType } from './types/custom_types/othercustomfield'
-import { pluginimplementationType } from './types/custom_types/pluginimplementation'
-import { plugintypeType } from './types/custom_types/plugintype'
-import { portletType } from './types/custom_types/portlet'
-import { promotionspluginType } from './types/custom_types/promotionsplugin'
-import { publisheddashboardType } from './types/custom_types/publisheddashboard'
-import { restletType } from './types/custom_types/restlet'
-import { roleType } from './types/custom_types/role'
-import { savedcsvimportType } from './types/custom_types/savedcsvimport'
-import { savedsearchType } from './types/custom_types/savedsearch'
-import { scheduledscriptType } from './types/custom_types/scheduledscript'
-import { sdfinstallationscriptType } from './types/custom_types/sdfinstallationscript'
-import { secretType } from './types/custom_types/secret'
-import { sspapplicationType } from './types/custom_types/sspapplication'
-import { sublistType } from './types/custom_types/sublist'
-import { subtabType } from './types/custom_types/subtab'
-import { suiteletType } from './types/custom_types/suitelet'
-import { transactionFormType } from './types/custom_types/transactionForm'
-import { transactionbodycustomfieldType } from './types/custom_types/transactionbodycustomfield'
-import { transactioncolumncustomfieldType } from './types/custom_types/transactioncolumncustomfield'
-import { translationcollectionType } from './types/custom_types/translationcollection'
-import { usereventscriptType } from './types/custom_types/usereventscript'
-import { workbookType } from './types/custom_types/workbook'
-import { workbookbuilderpluginType } from './types/custom_types/workbookbuilderplugin'
-import { workflowType } from './types/custom_types/workflow'
-import { workflowactionscriptType } from './types/custom_types/workflowactionscript'
+import { addressFormType } from './types/standard_types/addressForm'
+import { advancedpdftemplateType } from './types/standard_types/advancedpdftemplate'
+import { bankstatementparserpluginType } from './types/standard_types/bankstatementparserplugin'
+import { bundleinstallationscriptType } from './types/standard_types/bundleinstallationscript'
+import { centerType } from './types/standard_types/center'
+import { centercategoryType } from './types/standard_types/centercategory'
+import { centerlinkType } from './types/standard_types/centerlink'
+import { centertabType } from './types/standard_types/centertab'
+import { clientscriptType } from './types/standard_types/clientscript'
+import { cmscontenttypeType } from './types/standard_types/cmscontenttype'
+import { crmcustomfieldType } from './types/standard_types/crmcustomfield'
+import { customglpluginType } from './types/standard_types/customglplugin'
+import { customlistType } from './types/standard_types/customlist'
+import { customrecordactionscriptType } from './types/standard_types/customrecordactionscript'
+import { customrecordtypeType } from './types/standard_types/customrecordtype'
+import { customsegmentType } from './types/standard_types/customsegment'
+import { customtransactiontypeType } from './types/standard_types/customtransactiontype'
+import { datasetType } from './types/standard_types/dataset'
+import { datasetbuilderpluginType } from './types/standard_types/datasetbuilderplugin'
+import { emailcapturepluginType } from './types/standard_types/emailcaptureplugin'
+import { emailtemplateType } from './types/standard_types/emailtemplate'
+import { entitycustomfieldType } from './types/standard_types/entitycustomfield'
+import { entryFormType } from './types/standard_types/entryForm'
+import { ficonnectivitypluginType } from './types/standard_types/ficonnectivityplugin'
+import { fiparserpluginType } from './types/standard_types/fiparserplugin'
+import { integrationType } from './types/standard_types/integration'
+import { itemcustomfieldType } from './types/standard_types/itemcustomfield'
+import { itemnumbercustomfieldType } from './types/standard_types/itemnumbercustomfield'
+import { itemoptioncustomfieldType } from './types/standard_types/itemoptioncustomfield'
+import { kpiscorecardType } from './types/standard_types/kpiscorecard'
+import { mapreducescriptType } from './types/standard_types/mapreducescript'
+import { massupdatescriptType } from './types/standard_types/massupdatescript'
+import { othercustomfieldType } from './types/standard_types/othercustomfield'
+import { pluginimplementationType } from './types/standard_types/pluginimplementation'
+import { plugintypeType } from './types/standard_types/plugintype'
+import { portletType } from './types/standard_types/portlet'
+import { promotionspluginType } from './types/standard_types/promotionsplugin'
+import { publisheddashboardType } from './types/standard_types/publisheddashboard'
+import { restletType } from './types/standard_types/restlet'
+import { roleType } from './types/standard_types/role'
+import { savedcsvimportType } from './types/standard_types/savedcsvimport'
+import { savedsearchType } from './types/standard_types/savedsearch'
+import { scheduledscriptType } from './types/standard_types/scheduledscript'
+import { sdfinstallationscriptType } from './types/standard_types/sdfinstallationscript'
+import { secretType } from './types/standard_types/secret'
+import { sspapplicationType } from './types/standard_types/sspapplication'
+import { sublistType } from './types/standard_types/sublist'
+import { subtabType } from './types/standard_types/subtab'
+import { suiteletType } from './types/standard_types/suitelet'
+import { transactionFormType } from './types/standard_types/transactionForm'
+import { transactionbodycustomfieldType } from './types/standard_types/transactionbodycustomfield'
+import { transactioncolumncustomfieldType } from './types/standard_types/transactioncolumncustomfield'
+import { translationcollectionType } from './types/standard_types/translationcollection'
+import { usereventscriptType } from './types/standard_types/usereventscript'
+import { workbookType } from './types/standard_types/workbook'
+import { workbookbuilderpluginType } from './types/standard_types/workbookbuilderplugin'
+import { workflowType } from './types/standard_types/workflow'
+import { workflowactionscriptType } from './types/standard_types/workflowactionscript'
 
-const customTypesNamesList = [
+const standardTypesNamesList = [
   'addressForm',
   'advancedpdftemplate',
   'bankstatementparserplugin',
@@ -134,19 +134,19 @@ const customTypesNamesList = [
   'workflowactionscript',
 ] as const
 
-export type CustomType = typeof customTypesNamesList[number]
+export type StandardType = typeof standardTypesNamesList[number]
 
-const customTypesNamesSet: ReadonlySet<CustomType> = new Set(customTypesNamesList)
-export const isCustomTypeName = (name: string): name is CustomType =>
-  customTypesNamesSet.has(name as CustomType)
+const standardTypesNamesSet: ReadonlySet<StandardType> = new Set(standardTypesNamesList)
+export const isStandardTypeName = (name: string): name is StandardType =>
+  standardTypesNamesSet.has(name as StandardType)
 
-export const getCustomTypesNames = (): CustomType[] =>
-  Array.from(customTypesNamesList)
+export const getStandardTypesNames = (): StandardType[] =>
+  Array.from(standardTypesNamesList)
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
-export const getCustomTypes = (): TypesMap<CustomType> => {
+export const getStandardTypes = (): TypesMap<StandardType> => {
   const addressForm = addressFormType()
   const advancedpdftemplate = advancedpdftemplateType()
   const bankstatementparserplugin = bankstatementparserpluginType()

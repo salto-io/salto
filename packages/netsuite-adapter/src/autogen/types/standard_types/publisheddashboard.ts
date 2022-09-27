@@ -1460,7 +1460,126 @@ export const publisheddashboardType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-
+      analytics: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_analytics)),
+        annotations: {
+        },
+      },
+      calendar: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_calendar)),
+        annotations: {
+        },
+      },
+      customportlet: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet)),
+        annotations: {
+        },
+      },
+      customsearch: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customsearch)),
+        annotations: {
+        },
+      },
+      enhsnapshots: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots)),
+        annotations: {
+        },
+      },
+      keyperformanceindicators: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators)),
+        annotations: {
+        },
+      },
+      kpimeter: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpimeter)),
+        annotations: {
+        },
+      },
+      kpireport: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpireport)),
+        annotations: {
+        },
+      },
+      lastlogin: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_lastlogin)),
+        annotations: {
+        },
+      },
+      list: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list)),
+        annotations: {
+        },
+      },
+      pdganttchart: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdganttchart)),
+        annotations: {
+        },
+      },
+      pdinfo: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdinfo)),
+        annotations: {
+        },
+      },
+      pdpl: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdpl)),
+        annotations: {
+        },
+      },
+      pdquicklinks: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinks)),
+        annotations: {
+        },
+      },
+      quicksearch: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_quicksearch)),
+        annotations: {
+        },
+      },
+      recentrecords: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentrecords)),
+        annotations: {
+        },
+      },
+      recentreports: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentreports)),
+        annotations: {
+        },
+      },
+      reminders: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders)),
+        annotations: {
+        },
+      },
+      scheduler: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_scheduler)),
+        annotations: {
+        },
+      },
+      searchform: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_searchform)),
+        annotations: {
+        },
+      },
+      settings: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_settings)),
+        annotations: {
+        },
+      },
+      shortcuts: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_shortcuts)),
+        annotations: {
+        },
+      },
+      tasklinks: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_tasklinks)),
+        annotations: {
+        },
+      },
+      trendgraph: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_trendgraph)),
+        annotations: {
+        },
+      },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
   })
@@ -1474,7 +1593,126 @@ export const publisheddashboardType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-
+      analytics: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_analytics)),
+        annotations: {
+        },
+      },
+      calendar: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_calendar)),
+        annotations: {
+        },
+      },
+      customportlet: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet)),
+        annotations: {
+        },
+      },
+      customsearch: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customsearch)),
+        annotations: {
+        },
+      },
+      enhsnapshots: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots)),
+        annotations: {
+        },
+      },
+      keyperformanceindicators: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators)),
+        annotations: {
+        },
+      },
+      kpimeter: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpimeter)),
+        annotations: {
+        },
+      },
+      kpireport: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpireport)),
+        annotations: {
+        },
+      },
+      lastlogin: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_lastlogin)),
+        annotations: {
+        },
+      },
+      list: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list)),
+        annotations: {
+        },
+      },
+      pdganttchart: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdganttchart)),
+        annotations: {
+        },
+      },
+      pdinfo: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdinfo)),
+        annotations: {
+        },
+      },
+      pdpl: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdpl)),
+        annotations: {
+        },
+      },
+      pdquicklinks: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_pdquicklinks)),
+        annotations: {
+        },
+      },
+      quicksearch: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_quicksearch)),
+        annotations: {
+        },
+      },
+      recentrecords: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentrecords)),
+        annotations: {
+        },
+      },
+      recentreports: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_recentreports)),
+        annotations: {
+        },
+      },
+      reminders: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders)),
+        annotations: {
+        },
+      },
+      scheduler: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_scheduler)),
+        annotations: {
+        },
+      },
+      searchform: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_searchform)),
+        annotations: {
+        },
+      },
+      settings: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_settings)),
+        annotations: {
+        },
+      },
+      shortcuts: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_shortcuts)),
+        annotations: {
+        },
+      },
+      tasklinks: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_tasklinks)),
+        annotations: {
+        },
+      },
+      trendgraph: {
+        refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_trendgraph)),
+        annotations: {
+        },
+      },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
   })

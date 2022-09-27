@@ -1494,6 +1494,59 @@ export const transactionFormType = (): TypeAndInnerTypes => {
 
   innerTypes.transactionForm_tabs_tab_subItems_subTab_fieldGroups = transactionForm_tabs_tab_subItems_subTab_fieldGroups
 
+  const transactionForm_tabs_tab_subItems_subTab_subLists_subListElemID = new ElemID(constants.NETSUITE, 'transactionForm_tabs_tab_subItems_subTab_subLists_subList')
+
+  const transactionForm_tabs_tab_subItems_subTab_subLists_subList = new ObjectType({
+    elemID: transactionForm_tabs_tab_subItems_subTab_subLists_subListElemID,
+    annotations: {
+    },
+    fields: {
+      id: {
+        refType: createRefToElmWithValue(enums.transactionform_sublistid),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: For information about possible values, see transactionform_sublistid. */
+      label: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+        },
+      }, /* Original description: This field accepts references to the string custom type. */
+      visible: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is T. */
+      neverEmpty: {
+        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        annotations: {
+        },
+      }, /* Original description: The default value is F. */
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+  })
+
+  innerTypes.transactionForm_tabs_tab_subItems_subTab_subLists_subList = transactionForm_tabs_tab_subItems_subTab_subLists_subList
+
+  const transactionForm_tabs_tab_subItems_subTab_subListsElemID = new ElemID(constants.NETSUITE, 'transactionForm_tabs_tab_subItems_subTab_subLists')
+
+  const transactionForm_tabs_tab_subItems_subTab_subLists = new ObjectType({
+    elemID: transactionForm_tabs_tab_subItems_subTab_subListsElemID,
+    annotations: {
+    },
+    fields: {
+      subList: {
+        refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_subLists_subList)),
+        annotations: {
+        },
+      },
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
+  })
+
+  innerTypes.transactionForm_tabs_tab_subItems_subTab_subLists = transactionForm_tabs_tab_subItems_subTab_subLists
+
   const transactionForm_tabs_tab_subItems_subTabElemID = new ElemID(constants.NETSUITE, 'transactionForm_tabs_tab_subItems_subTab')
 
   const transactionForm_tabs_tab_subItems_subTab = new ObjectType({
@@ -1525,6 +1578,11 @@ export const transactionFormType = (): TypeAndInnerTypes => {
       }, /* Original description: The default value is F. */
       fieldGroups: {
         refType: createRefToElmWithValue(transactionForm_tabs_tab_subItems_subTab_fieldGroups),
+        annotations: {
+        },
+      },
+      subLists: {
+        refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_subLists)),
         annotations: {
         },
       },

@@ -165,7 +165,7 @@ const getFieldInfo = (
     position.end = position.start + fieldIdentifier.length
   }
 
-  if (jqlContext.fieldsById[fieldIdentifier] !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(jqlContext.fieldsById, fieldIdentifier)) {
     return {
       instance: jqlContext.fieldsById[fieldIdentifier],
       position,
@@ -173,7 +173,10 @@ const getFieldInfo = (
     }
   }
 
-  if (jqlContext.typeToInstances[FIELD_TYPE_NAME]?.[fieldIdentifier] !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(
+    jqlContext.typeToInstances[FIELD_TYPE_NAME],
+    fieldIdentifier
+  )) {
     return {
       instance: jqlContext.typeToInstances[FIELD_TYPE_NAME][fieldIdentifier],
       position,
@@ -196,12 +199,23 @@ const getValueTokens = (
   // A heuristic that works for the types in CONTEXT_TYPE_TO_FIELD
   // to convert a field name to its values' type
   const typeName = fieldInstance.value.name.replace(/\s+/g, '')
-  const identifierToInstance = jqlContext.typeToInstances[typeName]
+  const identifierToInstance = Object.prototype.hasOwnProperty.call(
+    jqlContext.typeToInstances, typeName
+  ) ? jqlContext.typeToInstances[typeName]
+    : undefined
+
   return getValueOperands(clause.operand)
     .map(operand => {
-      const valueInstance = identifierToInstance?.[operand.value.toLowerCase()]
+      const valueInstance = Object.prototype.hasOwnProperty
+        .call(identifierToInstance ?? {}, operand.value.toLowerCase())
+        ? identifierToInstance?.[operand.value.toLowerCase()]
+        : undefined
 
-      const identifier = CONTEXT_TYPE_TO_FIELD[typeName]
+      const identifier = Object.prototype.hasOwnProperty
+        .call(CONTEXT_TYPE_TO_FIELD, typeName)
+        ? CONTEXT_TYPE_TO_FIELD[typeName]
+        : undefined
+
       const position = getValuePosition(operand)
       if (valueInstance === undefined || identifier === undefined || position === undefined) {
         return undefined

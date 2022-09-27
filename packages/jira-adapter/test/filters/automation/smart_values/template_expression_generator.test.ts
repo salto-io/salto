@@ -166,10 +166,10 @@ describe('stringToTemplate', () => {
 
   it('should ignore unknown fields', () => {
     expect(stringToTemplate({
-      referenceStr: '1-{{unknown}} 2-{{issue.unknown}}',
+      referenceStr: '1-{{unknown}} 2-{{issue.unknown}} 3-{{toString}}',
       fieldInstancesByName: nameToField,
       fieldInstancesById: idToField,
-    })).toBe('1-{{unknown}} 2-{{issue.unknown}}')
+    })).toBe('1-{{unknown}} 2-{{issue.unknown}} 3-{{toString}}')
   })
 
   it('should ignore invalid fields', () => {

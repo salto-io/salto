@@ -144,8 +144,7 @@ export const accountIdValidator: (
         .filter(isInstanceChange)
         .map(change => getChangeData(change))
         .filter(isDeployableAccountIdType)
-        .forEach(element =>
-          walkOnElement({ element,
-            func: walkOnUsers(checkAndCreateChangeErrors(idMap, baseUrl, changeErrors)) }))
-      return changeErrors
+        .map(element =>
+          createChangeErrorsForAccountIdIssues(element, idMap, baseUrl))
+        .flat()
     }, 'display name validator')

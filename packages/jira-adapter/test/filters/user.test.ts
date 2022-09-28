@@ -116,8 +116,6 @@ describe('userFilter', () => {
       expect((await adminType.fields.users.getType()).elemID.name).toEqual(`List<jira.${ACCOUNT_ID_INFO_TYPE}>`)
       expect((await filterType.fields.owner.getType()).elemID.name).toEqual(ACCOUNT_ID_INFO_TYPE)
       expect((await dashboardType.fields.owner.getType()).elemID.name).toEqual(ACCOUNT_ID_INFO_TYPE)
-      // expect(await filterType.fields.owner.getType()).toEqual(accountIdInfoType)
-      // expect(await dashboardType.fields.owner.getType()).toEqual(accountIdInfoType)
     })
   })
 })

@@ -100,7 +100,7 @@ const accountIdsScenarios = (
   if (path.typeName === 'Board') {
     if (path.name === 'users'
         && Array.isArray(value)) {
-      [...Array(value.length).keys()].forEach(index => callback({
+      _.range(value.length).forEach(index => callback({
         value,
         path,
         fieldName: index.toString(),

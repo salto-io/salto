@@ -39,7 +39,7 @@ Reals => {
     (adapterParams && adapterParams.client)
     || new ZendeskClient({ credentials, config: config.client })
   )
-  const adapter = new ZendeskAdapter({ client, config })
+  const adapter = new ZendeskAdapter({ client, credentials, config })
   return { client, adapter }
 }
 

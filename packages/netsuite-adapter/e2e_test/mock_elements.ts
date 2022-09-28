@@ -15,8 +15,8 @@
 */
 import { Values } from '@salto-io/adapter-api'
 import {
-  CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FILE, FOLDER, PATH, ROLE, SCRIPT_ID,
-  TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW,
+  CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FILE, FOLDER, METADATA_TYPE, PATH, ROLE,
+  SCRIPT_ID, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW,
 } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
@@ -73,6 +73,7 @@ export const mockDefaultValues: Record<string, Values> = {
     },
   },
   [CUSTOM_RECORD_TYPE]: {
+    [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
     [SCRIPT_ID]: 'customrecord_slt_e2e_test',
     accesstype: 'CUSTRECORDENTRYPERM',
     allowattachments: true,

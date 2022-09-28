@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
-import { SCRIPT_ID } from '../../src/constants'
+import { Change, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
 import { ManifestValidationError, ObjectsValidationError } from '../../src/errors'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 
 describe('client validation', () => {
   let changes: Change[]
@@ -32,13 +32,23 @@ describe('client validation', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    changes = [toChange({
-      after: new InstanceElement(
-        'instanceName',
-        workflowType().type,
-        { [SCRIPT_ID]: 'objectName' }
-      ),
-    })]
+    changes = [
+      toChange({
+        after: new InstanceElement(
+          'instanceName',
+          workflowType().type,
+          { [SCRIPT_ID]: 'objectName' }
+        ),
+      }), toChange({
+        after: new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord1'),
+          annotations: {
+            [SCRIPT_ID]: 'customrecord1',
+            [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          },
+        }),
+      }),
+    ]
   })
   it('should not have errors', async () => {
     const changeErrors = await clientValidation(
@@ -46,7 +56,7 @@ describe('client validation', () => {
     )
     expect(changeErrors).toHaveLength(0)
   })
-  it('should have SDF Objects Validation Error', async () => {
+  it('should have SDF Objects Validation Error for instance', async () => {
     const detailedMessage = 'error on objectName'
     mockValidate.mockRejectedValue(
       new ObjectsValidationError('error message', new Map([['objectName', detailedMessage]]))
@@ -62,13 +72,29 @@ describe('client validation', () => {
       severity: 'Warning',
     })
   })
+  it('should have SDF Objects Validation Error for customRecordType', async () => {
+    const detailedMessage = 'error on customrecord1'
+    mockValidate.mockRejectedValue(
+      new ObjectsValidationError('error message', new Map([['customrecord1', detailedMessage]]))
+    )
+    const changeErrors = await clientValidation(
+      changes, client, {} as unknown as AdditionalDependencies
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage,
+      elemID: getChangeData(changes[1]).elemID,
+      message: 'SDF Objects Validation Error',
+      severity: 'Warning',
+    })
+  })
   it('should have SDF Manifest Validation Error', async () => {
     const detailedMessage = 'manifest error'
     mockValidate.mockRejectedValue(new ManifestValidationError(detailedMessage))
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies
     )
-    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
       detailedMessage,
       elemID: getChangeData(changes[0]).elemID,
@@ -82,7 +108,7 @@ describe('client validation', () => {
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies
     )
-    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
       detailedMessage,
       elemID: getChangeData(changes[0]).elemID,

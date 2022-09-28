@@ -189,7 +189,6 @@ export const FIELD_ANNOTATIONS = {
   TRACK_HISTORY: 'trackHistory',
   CREATABLE: 'createable',
   UPDATEABLE: 'updateable',
-  // indicates whether a field is queryable by SOQL (default true)
   QUERYABLE: 'queryable',
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',

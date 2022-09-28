@@ -14,23 +14,23 @@
 * limitations under the License.
 */
 import {
-  Element, isInstanceElement, ElemID, ReferenceExpression, InstanceElement, CORE_ANNOTATIONS,
+  Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS,
   ReadOnlyElementsSource,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID, PATH } from '../constants'
-import { getServiceId } from '../transformer'
 import { FilterCreator, FilterWith } from '../filter'
-import { isCustomType } from '../types'
+import { isCustomRecordType, isStandardType, isFileCabinetType } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 
 const { awu } = collections.asynciterable
 
-const customTypeServiceIdsToElemIds = async (
-  instance: InstanceElement,
+const getServiceIdsToElemIds = async (
+  element: Element,
   elementsSource?: ReadOnlyElementsSource
 ): Promise<ServiceIdRecords> => {
   const serviceIdsToElemIds: ServiceIdRecords = {}
@@ -47,8 +47,8 @@ const customTypeServiceIdsToElemIds = async (
     return getClosestParentServiceId(parentElemId)
   }
 
-  const addFullServiceIdsCallback: TransformFunc = ({ value, path, field }) => {
-    if (field?.name === SCRIPT_ID && !_.isUndefined(path)) {
+  const addFullServiceIdsCallback: TransformFunc = ({ value, path }) => {
+    if (path?.name === SCRIPT_ID) {
       const parentServiceId = getClosestParentServiceId(path)
       const resolvedServiceId = _.isUndefined(parentServiceId) ? value : `${parentServiceId}.${value}`
       parentElemIdFullNameToServiceId[path.createParentID().getFullName()] = resolvedServiceId
@@ -58,7 +58,7 @@ const customTypeServiceIdsToElemIds = async (
   }
 
   await transformElement({
-    element: instance,
+    element,
     transformFunc: addFullServiceIdsCallback,
     strict: false,
     elementsSource,
@@ -71,32 +71,43 @@ const shouldExtractToGenereatedDependency = (serviceIdInfoRecord: ServiceIdInfo)
   || serviceIdInfoRecord.bundleid !== undefined
   || !serviceIdInfoRecord.isFullMatch
 
-export const getInstanceServiceIdRecords = async (
-  instance: InstanceElement,
+export const getElementServiceIdRecords = async (
+  element: Element,
   elementsSource?: ReadOnlyElementsSource
-): Promise<ServiceIdRecords> => (
-  isCustomType(instance.refType)
-    ? customTypeServiceIdsToElemIds(instance, elementsSource)
-    : { [getServiceId(instance)]: {
-      elemID: instance.elemID.createNestedID(PATH),
-      serviceID: getServiceId(instance),
-    } }
-)
+): Promise<ServiceIdRecords> => {
+  if (isInstanceElement(element)) {
+    if (isStandardType(element.refType)) {
+      return getServiceIdsToElemIds(element, elementsSource)
+    }
+    if (isFileCabinetType(element.refType)) {
+      const path = element.value[PATH]
+      return {
+        [path]: {
+          elemID: element.elemID.createNestedID(PATH),
+          serviceID: path,
+        },
+      }
+    }
+  }
+  if (isObjectType(element) && isCustomRecordType(element)) {
+    return getServiceIdsToElemIds(element, elementsSource)
+  }
+  return {}
+}
 
 const generateServiceIdToElemID = async (
   elements: Element[],
 ): Promise<ServiceIdRecords> =>
   _.assign(
     {},
-    ...await awu(elements).filter(isInstanceElement)
-      .map(instance => getInstanceServiceIdRecords(instance)).toArray()
+    ...await awu(elements).map(elem => getElementServiceIdRecords(elem)).toArray()
   )
 
 const replaceReferenceValues = async (
-  instance: InstanceElement,
+  element: Element,
   fetchedElementsServiceIdToElemID: ServiceIdRecords,
   elementsSourceServiceIdToElemID: ServiceIdRecords,
-): Promise<InstanceElement> => {
+): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
     if (!_.isString(value)) {
@@ -137,18 +148,18 @@ const replaceReferenceValues = async (
     return returnValue
   }
 
-  const newInstance = await transformElement({
-    element: instance,
+  const newElement = await transformElement({
+    element,
     transformFunc: replacePrimitive,
     strict: false,
   })
 
   extendGeneratedDependencies(
-    newInstance,
+    newElement,
     dependenciesToAdd.map(elemID => ({ reference: new ReferenceExpression(elemID) }))
   )
 
-  return newInstance
+  return newElement
 }
 
 const createElementsSourceServiceIdToElemID = async (
@@ -170,14 +181,25 @@ const filterCreator: FilterCreator = ({
       elementsSourceIndex,
       isPartial
     )
-    await awu(elements).filter(isInstanceElement).forEach(async instance => {
-      const newInstance = await replaceReferenceValues(
-        instance,
+    await awu(elements).filter(element => isInstanceElement(element) || (
+      isObjectType(element) && isCustomRecordType(element)
+    )).forEach(async element => {
+      const newElement = await replaceReferenceValues(
+        element,
         fetchedElementsServiceIdToElemID,
         elementsSourceServiceIdToElemID
       )
-      instance.value = newInstance.value
-      instance.annotations = newInstance.annotations
+      if (isInstanceElement(element) && isInstanceElement(newElement)) {
+        element.value = newElement.value
+      }
+      if (isObjectType(element) && isObjectType(newElement)) {
+        Object.entries(newElement.fields).forEach(([fieldName, field]) => {
+          if (element.fields[fieldName]) {
+            element.fields[fieldName].annotations = field.annotations
+          }
+        })
+      }
+      element.annotations = newElement.annotations
     })
   },
 })

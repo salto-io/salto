@@ -3,8 +3,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
-    "declaration": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@salto-io/suitecloud-cli": [
+        "../netsuite-adapter/types/suitecloud-cli"
+      ]
+    }
   },
   "include": [
     "src/**/*",

@@ -41,3 +41,12 @@ export const removeScopedObjects: clientUtils.PageEntriesExtractor = (
 ): clientUtils.ResponseValue[] => (
   makeArray(removeScopedObjectsImpl([entry]))
 )
+
+export const paginate: clientUtils.PaginationFuncCreator = args => {
+  if (args.getParams?.url === '/rest/api/3/users/search') {
+    // special handling for endpoints that use pagination without meta-data
+    // if more cases encountered should be moved to an object with url and items per page
+    return clientUtils.getWithItemIndexPagination({ firstIndex: 0, itemsPerPage: 50 })
+  }
+  return clientUtils.getWithOffsetAndLimit()
+}

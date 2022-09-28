@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isField, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { RECORD_ID_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../../client/client'
+import { isCustomRecordType } from '../../types'
+import { CUSTOM_RECORD_TYPE, INTERNAL_ID, SCRIPT_ID } from '../../constants'
 
 const log = logger(module)
 
@@ -75,24 +77,35 @@ Promise<RecordIdResult[]> => {
   }))
 }
 
-const addInternalIdFieldToType = (object: ObjectType): void => {
-  if (_.isUndefined(object.fields.internalId)) {
-    object.fields.internalId = new Field(
-      object,
-      'internalId',
-      BuiltinTypes.STRING,
-      { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-    )
-  }
+const addInternalIdAnnotationToCustomRecordTypes = (elements: Element[]): void => {
+  elements
+    .filter(isObjectType)
+    .filter(isCustomRecordType)
+    .forEach(object => {
+      if (_.isUndefined(object.annotationRefTypes[INTERNAL_ID])) {
+        object.annotationRefTypes[INTERNAL_ID] = new TypeReference(
+          BuiltinTypes.HIDDEN_STRING.elemID,
+          BuiltinTypes.HIDDEN_STRING
+        )
+      }
+    })
 }
 
-const addInternalIdFieldToInstancesObjects = async (
-  elements: Element[]
-): Promise<void> =>
+const addInternalIdFieldToSupportedType = (elements: Element[]): void => {
   elements
     .filter(isObjectType)
     .filter(object => getTableName(object) in TABLE_NAME_TO_ID_PARAMETER_MAP)
-    .forEach(addInternalIdFieldToType)
+    .forEach(object => {
+      if (_.isUndefined(object.fields[INTERNAL_ID])) {
+        object.fields[INTERNAL_ID] = new Field(
+          object,
+          INTERNAL_ID,
+          BuiltinTypes.STRING,
+          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+        )
+      }
+    })
+}
 
 const fetchRecordType = async (
   idParamName: string,
@@ -136,6 +149,36 @@ const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
     .filter(isAdditionChange)
     .map(getChangeData))
 
+const addInternalIdToInstances = async (
+  client: NetsuiteClient,
+  instances: InstanceElement[]
+): Promise<void> => {
+  const recordIdMap = await createRecordIdsMap(client, _.uniq(instances.map(getTableName)))
+  instances.forEach(instance => {
+    const typeRecordIdMap = recordIdMap[getTableName(instance)]
+    const scriptId = instance.value[SCRIPT_ID].toLowerCase()
+    if (scriptId in typeRecordIdMap) {
+      instance.value[INTERNAL_ID] = typeRecordIdMap[scriptId]
+    }
+  })
+}
+
+const addInternalIdToCustomRecordTypes = async (
+  client: NetsuiteClient,
+  elements: Element[]
+): Promise<void> => {
+  const customRecordTypes = elements.filter(isObjectType).filter(isCustomRecordType)
+  if (customRecordTypes.length > 0) {
+    const recordIdMap = await fetchRecordIdsForRecordType(CUSTOM_RECORD_TYPE, client)
+    customRecordTypes.forEach(type => {
+      const scriptId = type.annotations[SCRIPT_ID].toLowerCase()
+      if (scriptId in recordIdMap) {
+        type.annotations[INTERNAL_ID] = recordIdMap[scriptId]
+      }
+    })
+  }
+}
+
 /**
  * This filter adds the internal id to instances.
  * so we will be able to reference them in other instances
@@ -146,18 +189,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    await addInternalIdFieldToInstancesObjects(elements)
+    addInternalIdFieldToSupportedType(elements)
+    addInternalIdAnnotationToCustomRecordTypes(elements)
+
     const instances = getSupportedInstances(elements)
-    const recordIdMap = await createRecordIdsMap(
-      client, _.uniq(instances.map(getTableName))
-    )
-    instances
-      .filter(instance => recordIdMap[
-        getTableName(instance)][instance.value.scriptid.toLowerCase()])
-      .forEach(instance => {
-        instance.value.internalId = recordIdMap[
-          getTableName(instance)][instance.value.scriptid.toLowerCase()]
-      })
+    await addInternalIdToInstances(client, instances)
+    await addInternalIdToCustomRecordTypes(client, elements)
   },
 
   /**
@@ -167,10 +204,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const instances = getSupportedInstances(changes
-      .map(getChangeData))
-    instances.forEach(element => {
-      delete element.value.internalId
+    const changesData = changes.map(getChangeData)
+    getSupportedInstances(changesData).forEach(inst => {
+      delete inst.value[INTERNAL_ID]
+    })
+    changesData.filter(isObjectType).filter(isCustomRecordType).forEach(type => {
+      delete type.annotations[INTERNAL_ID]
+    })
+    _.uniqBy(
+      changesData.filter(isField).map(field => field.parent),
+      type => type.elemID.name
+    ).filter(type => isCustomRecordType(type)).forEach(customRecordType => {
+      delete customRecordType.annotations[INTERNAL_ID]
     })
   },
   /**
@@ -181,20 +226,13 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
     const additionInstances = getAdditionInstances(changes)
-    if (additionInstances.length === 0) {
-      return
+    if (additionInstances.length > 0) {
+      await addInternalIdToInstances(client, additionInstances)
     }
-    const recordIdMap = await createRecordIdsMap(
-      client, _.uniq(additionInstances.map(instance => getTableName(instance)))
+    await addInternalIdToCustomRecordTypes(
+      client,
+      changes.filter(isAdditionChange).map(getChangeData)
     )
-
-    additionInstances
-      .filter(instance => recordIdMap[
-        getTableName(instance)][instance.value.scriptid.toLowerCase()])
-      .forEach(instance => {
-        instance.value.internalId = recordIdMap[
-          getTableName(instance)][instance.value.scriptid.toLowerCase()]
-      })
   },
 })
 

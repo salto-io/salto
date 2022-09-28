@@ -22,7 +22,7 @@ import _ from 'lodash'
 import { getLookUpName } from '../reference_mapping'
 import { findObject } from '../utils'
 import { FilterCreator } from '../filter'
-import { JIRA } from '../constants'
+import { ISSUE_TYPE_NAME, JIRA, STATUS_TYPE_NAME } from '../constants'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
@@ -140,6 +140,42 @@ export const preDeployWorkflowScheme = async (
   }
 }
 
+const replaceIDsWithNames = (messages: string[], ids: string[],
+  idToInstance: Record<string, InstanceElement>):string[] => {
+  const newMessages = messages
+  messages.forEach((_message, i) => {
+    ids.forEach(id => {
+      if (idToInstance[id] === undefined) {
+        throw (new Error('can not find id'))
+      }
+      newMessages[i] = newMessages[i].replace(id, idToInstance[id].elemID.getFullName())
+    })
+    newMessages[i] = newMessages[i].replace(new RegExp('ID', 'g'), 'name')
+  })
+  return newMessages
+}
+
+const createMappingFromID = async (elementsSource: ReadOnlyElementsSource, typeName: string)
+  :Promise<Record<string, InstanceElement>> =>
+  awu(await elementsSource.list())
+    .filter(id => id.typeName === typeName && id.idType === 'instance')
+    .map(id => elementsSource.get(id))
+    .keyBy(inst => inst.value.id)
+
+const reformatMigrationErrorMessages = async (errorMessages: string[],
+  elementsSource: ReadOnlyElementsSource) : Promise<string[]> => {
+  const [relevantMessages, otherMessages] = _.partition(errorMessages, (message: string) => message.includes('is missing the mappings required for statuses'))
+  const idsToInstance = [await createMappingFromID(elementsSource, ISSUE_TYPE_NAME),
+    await createMappingFromID(elementsSource, STATUS_TYPE_NAME)]
+  const messagesPartition = [relevantMessages.map(message => message.slice(0, 30)),
+    relevantMessages.map(message => message.slice(30))]
+  const IDs = messagesPartition.map(messages => messages.flatMap((message: string) => message.match(new RegExp('\\d+', 'g')) ?? []))
+  const newMessages = IDs.map((IDList, i) => replaceIDsWithNames(messagesPartition[i],
+    IDList, idsToInstance[i]))
+  return [...newMessages[0].map((prefixMessage, i) => prefixMessage.concat(newMessages[1][i])),
+    ...otherMessages]
+}
+
 export const deployWorkflowScheme = async (
   change: Change<InstanceElement>,
   client: JiraClient,
@@ -166,11 +202,25 @@ export const deployWorkflowScheme = async (
   })
 
   if (isModificationChange(change) && !Array.isArray(response) && response?.draft) {
-    await publishDraft(change, client, statusMigrations)
+    try {
+      await publishDraft(change, client, statusMigrations)
+    } catch (err) {
+      if (elementsSource === undefined) {
+        throw (err)
+      }
+      try {
+        err.response.data.errorMessages = await reformatMigrationErrorMessages(
+          err.response.data.errorMessages, elementsSource
+        )
+      } catch (error) {
+        throw (err)
+      }
+      throw (err)
+    }
   }
 }
 
-const filter: FilterCreator = ({ config, client, paginator }) => ({
+const filter: FilterCreator = ({ config, client, paginator, elementsSource }) => ({
   onFetch: async elements => {
     const workflowSchemeType = findObject(elements, WORKFLOW_SCHEME_TYPE)
     if (workflowSchemeType !== undefined) {
@@ -275,7 +325,7 @@ const filter: FilterCreator = ({ config, client, paginator }) => ({
     const deployResult = await deployChanges(
       relevantChanges
         .filter(isInstanceChange),
-      async change => deployWorkflowScheme(change, client, paginator, config),
+      async change => deployWorkflowScheme(change, client, paginator, config, elementsSource),
     )
 
     return {

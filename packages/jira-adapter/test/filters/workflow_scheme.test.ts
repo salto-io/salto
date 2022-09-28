@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, toChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
@@ -40,6 +40,7 @@ describe('workflowScheme', () => {
   let filter: Filter
   let client: JiraClient
   let connection: MockInterface<clientUtils.APIConnection>
+  let elementsSource: ReadOnlyElementsSource
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
@@ -48,6 +49,7 @@ describe('workflowScheme', () => {
     filter = workflowSchemeFilter(getFilterParams({
       client,
       paginator,
+      elementsSource,
     }))
     workflowSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'WorkflowScheme'),

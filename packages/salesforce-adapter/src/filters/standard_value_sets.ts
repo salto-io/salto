@@ -28,7 +28,6 @@ import {
   getChangeData,
   Change,
   getAllChangeData,
-  toChange,
   ModificationChange,
 } from '@salto-io/adapter-api'
 import { resolveTypeShallow } from '@salto-io/adapter-utils'
@@ -208,10 +207,13 @@ const toDeployableStandardPicklistFieldChange = (
   const [deployableBefore, deployableAfter] = getAllChangeData(change).map(field => field.clone())
   delete deployableBefore.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   delete deployableAfter.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
-  return toChange({
-    before: deployableBefore,
-    after: deployableAfter,
-  })
+  return {
+    data: {
+      before: deployableBefore,
+      after: deployableAfter,
+    },
+    action: 'modify',
+  }
 }
 
 /**

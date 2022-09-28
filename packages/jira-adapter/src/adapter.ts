@@ -100,6 +100,8 @@ import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
 import permissionSchemeFilter from './filters/sd_portals_permission_scheme'
+import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
+import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 
 const {
   generateTypes,
@@ -112,6 +114,8 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  automationLabelFetchFilter,
+  automationLabelDeployFilter,
   automationFetchFilter,
   automationStructureFilter,
   automationDeploymentFilter,

@@ -21,7 +21,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefIdType, getRefNameType } from './references/workflow_properties'
 
@@ -480,6 +480,11 @@ ReferenceContextStrategyName
     src: { field: 'fieldValue', parentTypes: ['PostFunctionConfiguration'] },
     serializationStrategy: 'id',
     target: { typeContext: 'parentFieldId' },
+  },
+  {
+    src: { field: 'labels', parentTypes: [AUTOMATION_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: AUTOMATION_LABEL_TYPE },
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },

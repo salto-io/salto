@@ -23,10 +23,9 @@ import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../
 import { JiraConfig } from '../config/config'
 import { createIdToUserMap, IdMap } from '../filters/account_id/add_display_name_filter'
 import JiraClient from '../client/client'
+import { JIRA_USERS_PAGE } from '../constants'
 
 const log = logger(module)
-
-const JIRA_USERS_PAGE = 'jira/people/search'
 
 const noDisplayNameChangeError = (
   elemId: ElemID,
@@ -97,7 +96,8 @@ const checkAndAddChangeErrors = (
   const accountId = value[fieldName].id
   const currentDisplayName = value[fieldName].displayName
   const realDisplayName = idMap[accountId]
-  if (!Object.prototype.hasOwnProperty.call(idMap, accountId)) {
+  if (!Object.prototype.hasOwnProperty.call(idMap, accountId)
+    && path.typeName !== 'PermissionScheme') { // Permission scheme is solved in a different filter
     changeErrors.push(noAccountIdChangeError({
       elemId: path.createNestedID(fieldName),
       fieldName,
@@ -106,7 +106,8 @@ const checkAndAddChangeErrors = (
     }))
   } else if (currentDisplayName === undefined) {
     changeErrors.push(noDisplayNameChangeError(path.createNestedID(fieldName)))
-  } else if (realDisplayName !== currentDisplayName) {
+  } else if (realDisplayName !== currentDisplayName
+    && realDisplayName !== undefined) { // real name can be undefined in permission scheme
     changeErrors.push(displayNameMismatchChangeError(
       { elemId: path.createNestedID(fieldName),
         baseUrl,

@@ -87,7 +87,8 @@ import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
-import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_schemes'
+import forbiddenPermissionSchemeFilter from './filters/permission_scheme/forbidden_permission_schemes'
+import wrongUsersPermissionSchemeFilter from './filters/permission_scheme/wrong_users_permission_scheme_filter'
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
@@ -99,7 +100,7 @@ import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
-import permissionSchemeFilter from './filters/sd_portals_permission_scheme'
+import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 
@@ -199,6 +200,8 @@ export const DEFAULT_FILTERS = [
   accountIdFilter,
   // Must run after accountIdFilter
   addDisplayNameFilter,
+  // Must run after accountIdFilter
+  wrongUsersPermissionSchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

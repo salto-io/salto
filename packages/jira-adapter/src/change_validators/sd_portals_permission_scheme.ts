@@ -17,15 +17,11 @@ import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isEqual
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
+import { PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 
 
 const { awu } = collections.asynciterable
-
-export type PermissionHolder = {
-    holder : { type: string; parameter?: unknown }
-    permission: string
-}
 
 const PERMISSION_HOLDER_SCHEME = Joi.object({
   holder: Joi.object({

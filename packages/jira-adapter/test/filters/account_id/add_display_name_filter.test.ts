@@ -96,10 +96,13 @@ describe('add_display_name_filter', () => {
   describe('feature flag', () => {
     let filterFFOff: filterUtils.FilterWith<'onFetch'>
     let configFFOff: JiraConfig
+    let connectionFFOff: MockInterface<clientUtils.APIConnection>
+
     beforeEach(() => {
       configFFOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
       configFFOff.fetch.showUserDisplayNames = false
-      const { client, paginator } = mockClient()
+      const { client, paginator, connection } = mockClient()
+      connectionFFOff = connection
       filterFFOff = addDisplayNameFilter(getFilterParams({
         client,
         paginator,
@@ -109,7 +112,7 @@ describe('add_display_name_filter', () => {
     })
     it('should not call for users', async () => {
       await filterFFOff.onFetch(instances)
-      expect(mockConnection.get).not.toHaveBeenCalled()
+      expect(connectionFFOff.get).not.toHaveBeenCalled()
     })
     it('should not change objects on fetch', async () => {
       await filterFFOff.onFetch(instances)

@@ -36,6 +36,7 @@ import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
 import { accountIdValidator } from './account_id'
+import { wrongUsersPermissionSchemeValidator } from './wrong_users_permission_scheme'
 
 const {
   deployTypesNotSupportedValidator,
@@ -64,6 +65,7 @@ export default (
     systemFieldsValidator,
     workflowPropertiesValidator,
     permissionSchemeValidator,
+    wrongUsersPermissionSchemeValidator(client, config, paginator),
     accountIdValidator(client, config, paginator),
   ]
 

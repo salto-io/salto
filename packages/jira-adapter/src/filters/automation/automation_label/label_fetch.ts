@@ -31,7 +31,7 @@ export const LABELS_GET_RESPONSE_SCHEME = Joi.array().items(
   LABELS_POST_RESPONSE_SCHEME
 )
 
-export const isLabelsGetResponse = createSchemeGuard<LabelsResponse>(LABELS_GET_RESPONSE_SCHEME, 'Received an invalid page response')
+export const isLabelsGetResponse = createSchemeGuard<LabelsResponse[]>(LABELS_GET_RESPONSE_SCHEME, 'Failed to get automation labels, received invalid response')
 
 
 const createInstance = (
@@ -58,12 +58,12 @@ const createInstance = (
 export const getAutomationLabels = async (
   client: JiraClient,
   cloudId: string,
-): Promise<Values> => {
+): Promise<LabelsResponse[]> => {
   const response = await client.getSinglePage(
     { url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels` }
   )
   if (!isLabelsGetResponse(response.data)) {
-    throw new Error('Failed to get response page, received invalid response')
+    throw new Error('Failed to get automation labels, received invalid response')
   }
   return response.data
 }
@@ -89,7 +89,7 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
     const automationLabels = await getAutomationLabels(client, cloudId)
 
     const automationLabelType = createAutomationLabelType()
-    automationLabels.forEach((automationLabel: LabelsResponse) => elements.push(
+    automationLabels.forEach(automationLabel => elements.push(
       createInstance(automationLabel, automationLabelType, getElemIdFunc),
     ))
     elements.push(automationLabelType)

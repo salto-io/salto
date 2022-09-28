@@ -231,7 +231,7 @@ const typeAdder = ({
       || schemaObj.properties !== undefined
       || ([schemaObj.allOf, schemaObj.oneOf, schemaObj.anyOf].some(xOf =>
         Array.isArray(xOf)
-        && xOf.every((s: SchemaObject) => isObjectSchema(s) || isReferenceObject(s)))
+        && (xOf as SchemaObject[]).every(s => isObjectSchema(s) || isReferenceObject(s)))
       )
     )
 

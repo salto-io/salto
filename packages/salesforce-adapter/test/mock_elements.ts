@@ -98,6 +98,10 @@ export const mockTypes = {
         refType: allMissingSubTypes.find(t => t.elemID.typeName === 'TargetConfigs') as TypeElement
         ,
       },
+      lwcResources: { refType: createMetadataObjectType({ annotations: { metadataType: 'LwcResources' },
+        fields: {
+          lwcResource: { refType: new ListType(BuiltinTypes.STRING) },
+        } }) },
     },
   }),
   Layout: createMetadataObjectType({

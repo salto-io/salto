@@ -16,9 +16,9 @@
 import {
   Values, InstanceElement, isMapType, ObjectType, isField, isListType, Field,
   MapType, isObjectType, createRefToElmWithValue, ListType, isContainerType, ElemID, Value,
-  BuiltinTypes,
+  BuiltinTypes, Element,
 } from '@salto-io/adapter-api'
-import { naclCase, transformElement, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { naclCase, transformElement, transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -176,6 +176,15 @@ export const convertInstanceListsToMaps = async (
     strict: false,
   })
 
+export const convertAnnotationListsToMaps = async (
+  element: Element
+): Promise<Values> =>
+  transformElementAnnotations({
+    element,
+    transformFunc: transformMappedLists,
+    strict: false,
+  })
+
 export const isMappedList = async (value: Value, field: Field): Promise<boolean> =>
   field.annotations[LIST_MAPPED_BY_FIELD]
   && _.isPlainObject(value)
@@ -223,11 +232,11 @@ const convertToList: TransformFunc = async ({ value, field }) => {
   return objectAsList
 }
 
-export const convertInstanceMapsToLists = async (
-  instance: InstanceElement
-): Promise<InstanceElement> =>
+export const convertElementMapsToLists = async <T extends Element>(
+  element: T
+): Promise<T> =>
   transformElement({
-    element: instance,
+    element,
     transformFunc: convertToList,
     strict: false,
   })

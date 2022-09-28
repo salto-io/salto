@@ -19,7 +19,7 @@ import filterCreator from '../../src/filters/remove_unsupported_types'
 import { NETSUITE } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 import { FilterOpts } from '../../src/filter'
-import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
+import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('remove_unsupported_types', () => {

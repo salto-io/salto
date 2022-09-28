@@ -15,12 +15,13 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeError, changeId, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, ChangeError, changeId, getChangeData } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 import { AdditionalDependencies } from '../client/types'
 import { getChangeGroupIdsFunc } from '../group_changes'
 import { ObjectsValidationError, ManifestValidationError } from '../errors'
 import { SCRIPT_ID } from '../constants'
+import { getElementValueOrAnnotations } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -34,12 +35,11 @@ export type ClientChangeValidator = (
 const changeValidator: ClientChangeValidator = async (
   changes, client, additionalDependencies, deployReferencedElements = false
 ) => {
-  const instanceChanges = changes.filter(isInstanceChange)
   const getChangeGroupIds = getChangeGroupIdsFunc(client.isSuiteAppConfigured())
   const { changeGroupIdMap } = await getChangeGroupIds(
-    new Map(instanceChanges.map(change => [changeId(change), change]))
+    new Map(changes.map(change => [changeId(change), change]))
   )
-  const changesByGroupId = _(instanceChanges)
+  const changesByGroupId = _(changes)
     .filter(change => changeGroupIdMap.has(changeId(change)))
     .groupBy(change => changeGroupIdMap.get(changeId(change)))
     .entries()
@@ -58,12 +58,16 @@ const changeValidator: ClientChangeValidator = async (
       } catch (error) {
         if (error instanceof ObjectsValidationError) {
           return groupChanges.map(getChangeData)
-            .filter(instance => error.invalidObjects.has(instance.value[SCRIPT_ID]))
-            .map(instance => ({
+            .filter(element => error.invalidObjects.has(
+              getElementValueOrAnnotations(element)[SCRIPT_ID]
+            ))
+            .map(element => ({
               message: 'SDF Objects Validation Error',
               severity: 'Warning' as const,
-              elemID: instance.elemID,
-              detailedMessage: error.invalidObjects.get(instance.value[SCRIPT_ID]),
+              elemID: element.elemID,
+              detailedMessage: error.invalidObjects.get(
+                getElementValueOrAnnotations(element)[SCRIPT_ID]
+              ),
             }))
         }
         const message = error instanceof ManifestValidationError

@@ -15,10 +15,10 @@
 */
 
 import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
-import { CustomType } from '../autogen/types'
+import { StandardType } from '../autogen/types'
 import { ServiceUrlSetter } from './types'
 
-const TYPE_TO_URL: Record<CustomType | 'file' | 'folder', string| undefined> = {
+const TYPE_TO_URL: Record<StandardType | 'file' | 'folder', string| undefined> = {
   file: 'app/common/media/mediaitemfolders.nl',
   folder: 'app/common/media/mediaitemfolders.nl',
   addressForm: 'app/common/custom/custaddressentryforms.nl',
@@ -85,7 +85,7 @@ const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   elements
     .filter(isObjectType)
     .forEach(element => {
-      const url = TYPE_TO_URL[element.elemID.name as CustomType]
+      const url = TYPE_TO_URL[element.elemID.name as StandardType]
       if (url !== undefined) {
         element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
       }

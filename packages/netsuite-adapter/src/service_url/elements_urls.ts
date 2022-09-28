@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 
-import { InstanceElement, isInstanceElement, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { SCRIPT_ID } from '../constants'
 import NetsuiteClient from '../client/client'
 import { areQueryResultsValid } from './validation'
+import { getElementValueOrAnnotations } from '../types'
 
 const log = logger(module)
 
@@ -35,24 +37,23 @@ const getScriptIdToInternalId = async (
   )
 }
 
-export const setInstancesUrls = async (
+export const setElementsUrls = async <T extends Element>(
   {
     elements,
     client,
     filter,
     query,
     generateUrl,
-    elementToId = element => element.value.scriptid,
+    elementToId = element => getElementValueOrAnnotations(element)[SCRIPT_ID],
   }: {
-  elements: Element[]
+  elements: T[]
   client: NetsuiteClient
-  filter: (element: InstanceElement) => boolean
+  filter: (element: T) => boolean
   query: string
-  generateUrl: (id: number, element: InstanceElement) => string | undefined
-  elementToId?: (element: InstanceElement) => string
+  generateUrl: (id: number, element: T) => string | undefined
+  elementToId?: (element: T) => string
 }): Promise<void> => {
   const relevantElements = elements
-    .filter(isInstanceElement)
     .filter(e => filter(e))
 
   if (relevantElements.length === 0) {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { emailtemplateType } from '../../src/autogen/types/custom_types/emailtemplate'
+import { emailtemplateType } from '../../src/autogen/types/standard_types/emailtemplate'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/emailtemplate'
 

@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 /* eslint-disable camelcase */
-import { ElemID, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { Element, ElemID, isInstanceElement, isObjectType, Value } from '@salto-io/adapter-api'
+import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
-import {
-  CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE, RECORD_TYPE, NETSUITE,
-} from '../constants'
+import { ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE, RECORD_TYPE, NETSUITE } from '../constants'
+import { isCustomRecordType } from '../types'
 
 const { awu } = collections.asynciterable
 type InconsistentFieldMapping = {
@@ -77,12 +76,13 @@ const transactionFormRecordType = {
   consistentValue: 'JOURNALENTRY',
 }
 
+const customRecordTypeFieldMappings: InconsistentFieldMapping[] = [
+  customRecordTypeApClerkPermittedRole,
+  customRecordTypeCeoHandsOffPermittedRole,
+  customRecordTypeBuyerPermittedRole,
+]
+
 const typeToFieldMappings: Record<string, InconsistentFieldMapping[]> = {
-  [CUSTOM_RECORD_TYPE]: [
-    customRecordTypeApClerkPermittedRole,
-    customRecordTypeCeoHandsOffPermittedRole,
-    customRecordTypeBuyerPermittedRole,
-  ],
   [ENTRY_FORM]: [
     entryFormDiscountItemRecordType,
     entryFormItemGroupRecordType,
@@ -92,7 +92,7 @@ const typeToFieldMappings: Record<string, InconsistentFieldMapping[]> = {
   [TRANSACTION_FORM]: [transactionFormRecordType],
 }
 
-const setConsistentValues = async (instance: InstanceElement): Promise<void> => {
+const setConsistentValues = async (element: Element): Promise<void> => {
   const transformFunc = (
     fieldMappings: InconsistentFieldMapping[]
   ): TransformFunc => ({ value, field }) => {
@@ -106,14 +106,26 @@ const setConsistentValues = async (instance: InstanceElement): Promise<void> => 
     return value
   }
 
-  const fieldMappings = typeToFieldMappings[instance.refType.elemID.name]
-  if (!fieldMappings) return
-  instance.value = await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
-    transformFunc: transformFunc(fieldMappings),
-    strict: false,
-  }) ?? instance.value
+  if (isInstanceElement(element)) {
+    const fieldMappings = typeToFieldMappings[element.refType.elemID.name]
+    if (!fieldMappings) {
+      return
+    }
+    element.value = await transformValues({
+      values: element.value,
+      type: await element.getType(),
+      transformFunc: transformFunc(fieldMappings),
+      strict: false,
+    }) ?? element.value
+  }
+
+  if (isObjectType(element) && isCustomRecordType(element)) {
+    element.annotations = await transformElementAnnotations({
+      element,
+      transformFunc: transformFunc(customRecordTypeFieldMappings),
+      strict: false,
+    })
+  }
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
@@ -125,9 +137,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    * @param elements the already fetched elements
    */
   onFetch: async elements => {
-    await awu(elements)
-      .filter(isInstanceElement)
-      .forEach(setConsistentValues)
+    await awu(elements).forEach(setConsistentValues)
   },
 })
 

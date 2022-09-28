@@ -13,14 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Field, isInstanceElement, isInstanceChange, InstanceElement, Change, isField, ElemID, isObjectType, TypeElement, isPrimitiveType, isContainerType } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, getPath, transformValues } from '@salto-io/adapter-utils'
+import { BuiltinTypes, Field, isInstanceElement, isField, ElemID, isObjectType, TypeElement, isType, Element } from '@salto-io/adapter-api'
+import { elementAnnotationTypes, getPath, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterWith } from '../filter'
 import { ATTRIBUTE_PREFIX } from '../client/constants'
 import { CENTER_CATEGORY, CENTER_TAB, DATASET, NETSUITE, SUBTAB, TRANSLATION_COLLECTION, WORKBOOK } from '../constants'
+import { isCustomRecordType } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -64,69 +65,86 @@ const addTranslateFields = (typeElements: TypeElement[]): void => {
   })
 }
 
+const transformAnnotationsAndValues = async (
+  element: Element,
+  transformFunc: TransformFunc
+): Promise<void> => {
+  if (isInstanceElement(element)) {
+    element.value = await transformValues({
+      values: element.value,
+      type: await element.getType(),
+      strict: false,
+      transformFunc,
+    }) ?? {}
+  }
+  if (isObjectType(element)) {
+    await awu(Object.values(element.fields)).forEach(async field => {
+      field.annotations = await transformValues({
+        values: field.annotations,
+        type: await elementAnnotationTypes(field),
+        strict: false,
+        transformFunc,
+      }) ?? {}
+    })
+  }
+  element.annotations = await transformValues({
+    values: element.annotations,
+    type: await elementAnnotationTypes(element),
+    strict: false,
+    transformFunc,
+  }) ?? {}
+}
+
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
-    const types = elements.filter(isObjectType)
-    const primitives = elements.filter(isPrimitiveType)
-    const containers = elements.filter(isContainerType)
-    addTranslateFields([...types, ...primitives, ...containers])
+    addTranslateFields(elements.filter(isType))
 
-    await awu(elements)
-      .filter(isInstanceElement)
-      .forEach(async instance => {
-        instance.value = await transformValues({
-          values: instance.value,
-          type: await instance.getType(),
-          strict: false,
-          pathID: instance.elemID,
-          transformFunc: ({ value }) => {
-            if (!_.isPlainObject(value)) {
-              return value
-            }
-            _(value)
-              .entries()
-              .filter(([_key, val]) => _.isPlainObject(val) && REAL_VALUE_KEY in val)
-              .forEach(([key, val]) => {
-                value[getTranslateFieldName(key)] = val[TRANSLATE_KEY] === 'T'
-                value[key] = val[REAL_VALUE_KEY]
-              })
-            return value
-          },
-        }) ?? instance.value
+    await awu(elements).filter(element => isInstanceElement(element) || (
+      isObjectType(element) && isCustomRecordType(element)
+    )).forEach(async element => {
+      await transformAnnotationsAndValues(element, ({ value }) => {
+        if (!_.isPlainObject(value)) {
+          return value
+        }
+        _(value)
+          .entries()
+          .filter(([_key, val]) => _.isPlainObject(val) && REAL_VALUE_KEY in val)
+          .forEach(([key, val]) => {
+            value[getTranslateFieldName(key)] = (
+              val[TRANSLATE_KEY] === true || val[TRANSLATE_KEY] === 'T'
+            )
+            value[key] = val[REAL_VALUE_KEY]
+          })
+        return value
       })
+    })
   },
 
-  preDeploy: async changes =>
-    awu(changes)
-      .filter(isInstanceChange)
-      .forEach(async change =>
-        applyFunctionToChangeData<Change<InstanceElement>>(
-          change,
-          async instance => {
-            instance.value = await transformValues({
-              values: instance.value,
-              type: await instance.getType(),
-              strict: false,
-              pathID: instance.elemID,
-              transformFunc: ({ value }) => {
-                if (!_.isPlainObject(value)) {
-                  return value
-                }
-                Object.entries(value)
-                  .filter(([key]) => getTranslateFieldName(key) in value)
-                  .forEach(([key, val]) => {
-                    value[key] = {
-                      [REAL_VALUE_KEY]: val,
-                      [`${ATTRIBUTE_PREFIX}translate`]: value[getTranslateFieldName(key)] ? 'T' : 'F',
-                    }
-                    delete value[getTranslateFieldName(key)]
-                  })
-                return value
-              },
-            }) ?? instance.value
-            return instance
+  preDeploy: async changes => {
+    await awu(changes)
+      .flatMap(change => Object.values(change.data))
+      .map(element => (isField(element) ? element.parent : element))
+      .filter(element => isInstanceElement(element) || (
+        isObjectType(element) && isCustomRecordType(element)
+      ))
+      .forEach(async element => {
+        await transformAnnotationsAndValues(element, ({ value }) => {
+          if (!_.isPlainObject(value)) {
+            return value
           }
-        )),
+          Object.entries(value)
+            .filter(([key]) => getTranslateFieldName(key) in value)
+            .forEach(([key, val]) => {
+              value[key] = {
+                [REAL_VALUE_KEY]: val,
+                [`${ATTRIBUTE_PREFIX}translate`]: value[getTranslateFieldName(key)] ? 'T' : 'F',
+              }
+              delete value[getTranslateFieldName(key)]
+            })
+          return value
+        })
+      })
+  },
 })
 
 export default filterCreator

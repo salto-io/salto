@@ -18,11 +18,9 @@ import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adap
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import {
-  ARTICLE_ATTACHMENT_TYPE_NAME,
-  ARTICLE_ORDER_TYPE_NAME,
-  BRAND_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
-  SECTION_ORDER_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME, BRAND_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE, SECTION_ORDER_TYPE_NAME,
+  GROUP_MEMBERS_TYPE_NAME, GROUP_MEMBERS_USER_TYPE_NAME,
   ZENDESK,
 } from './constants'
 
@@ -116,6 +114,24 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  // placeholder types (replacing group_memberships__group_memberships)
+  // note: should add  group_members_user: ['group_memberships'] to the supportedTypes in order to fetch these
+  [GROUP_MEMBERS_TYPE_NAME]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'members', fieldType: `list<${GROUP_MEMBERS_USER_TYPE_NAME}>` },
+      ],
+    },
+  },
+  [GROUP_MEMBERS_USER_TYPE_NAME]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'user', fieldType: 'string' },
+        { fieldName: 'default', fieldType: 'boolean' },
+      ],
+    },
+  },
+
   custom_role: {
     transformation: {
       sourceTypeName: 'custom_roles__custom_roles',
@@ -1174,6 +1190,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       dataField: 'groups',
+    },
+  },
+  group_memberships: {
+    request: {
+      url: '/api/v2/group_memberships',
+    },
+    transformation: {
+      dataField: 'group_memberships',
     },
   },
   // eslint-disable-next-line camelcase

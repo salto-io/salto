@@ -307,7 +307,12 @@ const loadLocalWorkspaceImpl = async ({
       const allEnvSourcesEmpty = envSources.length === 1 && await envSources[0].naclFiles.isEmpty()
       if (allEnvSourcesEmpty) {
         const commonSource = elemSources.sources[elemSources.commonSourceName].naclFiles
-        const { currentEnv } = (await workspaceConfig.getWorkspaceConfig())
+        let { currentEnv } = (await workspaceConfig.getWorkspaceConfig())
+        // Probably workspaceConfig wasn't initialized yet, so we set current env to a default one
+        if (!currentEnv) {
+          currentEnv = ws.currentEnv() || ws.envs()[0]
+          await ws.setCurrentEnv(currentEnv)
+        }
         return commonSource.rename(getLocalEnvName(currentEnv))
       }
       return ws.demoteAll()

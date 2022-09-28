@@ -304,9 +304,37 @@ describe('local workspace', () => {
         elemSource: EnvironmentsSources
       ) => {
         wsElemSrcs = elemSource
+        let currentEnv = 'default'
         return {
           demoteAll: jest.fn(),
+          setCurrentEnv: async () => { currentEnv = 'wasSet' },
+          currentEnv: () => currentEnv,
         }
+      })
+    })
+
+    describe('without any current env', () => {
+      beforeAll(() => {
+        const getConf = repoDirStore.get as jest.Mock
+        getConf.mockResolvedValue({ buffer: `
+        salto {
+          uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+          name = "test"
+          envs = [
+              {
+                name = "default"
+              }
+          ]
+        }
+        `,
+        filename: '' })
+      })
+
+      it('should not crash and should set env', async () => {
+        const workspace = await loadLocalWorkspace({ path: '/west' })
+        await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
+        await workspace.demoteAll()
+        expect(workspace.currentEnv()).toBe('wasSet')
       })
     })
 

@@ -310,7 +310,7 @@ const loadLocalWorkspaceImpl = async ({
         let { currentEnv } = (await workspaceConfig.getWorkspaceConfig())
         // Probably workspaceConfig wasn't initialized yet, so we set current env to a default one
         if (!currentEnv) {
-          currentEnv = ws.currentEnv() || ws.envs()[0]
+          currentEnv = ws.currentEnv()
           await ws.setCurrentEnv(currentEnv)
         }
         return commonSource.rename(getLocalEnvName(currentEnv))

@@ -57,6 +57,7 @@ type JiraFetchFilters = {
 type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
   addTypeToFieldName?: boolean
+  showUserDisplayNames?: boolean
   parseTemplateExpressions?: boolean
 }
 
@@ -188,6 +189,7 @@ const fetchConfigType = createUserFetchConfigType(
   {
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
+    showUserDisplayNames: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
   },

@@ -22,10 +22,16 @@ import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
 export const createAutomationValues = (name: string, allElements: Element[]): Values => ({
   name,
   state: 'ENABLED',
-  authorAccountId: '61d44bf59ee70a00685fa6b6',
+  authorAccountId: {
+    id: '61d44bf59ee70a00685fa6b6',
+    displayName: 'Testing salto',
+  },
   actor: {
     type: 'ACCOUNT_ID',
-    value: '557058:f58131cb-b67d-43c7-b30d-6b58d40bd077',
+    value: {
+      id: '557058:f58131cb-b67d-43c7-b30d-6b58d40bd077',
+      displayName: 'Automation for Jira',
+    },
   },
   trigger: {
     component: 'TRIGGER',

@@ -38,8 +38,8 @@ describe('read only project role change validator test', () => {
       {
         elemID: readOnlyInstance.elemID,
         severity: 'Error',
-        message: 'Deploying a change to "atlassian-addons-project-access" Project rule is not supported',
-        detailedMessage: 'Deploying a change to "atlassian-addons-project-access" Project rule is not supported',
+        message: 'Changes to the “atlassian-addons-project-access” Project Role won’t be deployed.',
+        detailedMessage: 'Changes to the “atlassian-addons-project-access” Project Role won’t be deployed, as it’s only used by addons that are not installed on the target environment. See https://confluence.atlassian.com/servicedeskcloud/blog/2017/02/add-on-permissions-update to learn more about this role.',
       },
     ])
   })
@@ -52,8 +52,8 @@ describe('read only project role change validator test', () => {
       {
         elemID: readOnlyInstance.elemID,
         severity: 'Error',
-        message: 'Deploying a change to "atlassian-addons-project-access" Project rule is not supported',
-        detailedMessage: 'Deploying a change to "atlassian-addons-project-access" Project rule is not supported',
+        message: 'Changes to the “atlassian-addons-project-access” Project Role won’t be deployed.',
+        detailedMessage: 'Changes to the “atlassian-addons-project-access” Project Role won’t be deployed, as it’s only used by addons that are not installed on the target environment. See https://confluence.atlassian.com/servicedeskcloud/blog/2017/02/add-on-permissions-update to learn more about this role.',
       },
     ])
   })

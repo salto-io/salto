@@ -14,15 +14,16 @@
 * limitations under the License.
 */
 import {
+  BuiltinTypes,
   CORE_ANNOTATIONS,
   ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator from '../../src/filters/instance_references'
+import filterCreator from '../../src/filters/element_references'
 import { fileType } from '../../src/types/file_cabinet_types'
-import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
-import { PATH, SCRIPT_ID } from '../../src/constants'
+import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 import { getDefaultAdapterConfig } from '../utils'
 
@@ -34,6 +35,7 @@ describe('instance_references filter', () => {
     let instanceInElementsSource: InstanceElement
     let workflowInstance: InstanceElement
     let instanceWithRefs: InstanceElement
+    let customRecordType: ObjectType
 
     const getIndexesMock = jest.fn()
     const elementsSourceIndex = {
@@ -54,6 +56,7 @@ describe('instance_references filter', () => {
 
       customSegmentInstance = new InstanceElement('customSegmentInstance', customsegmentType().type, {
         [SCRIPT_ID]: 'cseg_1',
+        recordtype: '[scriptid=customrecord1]',
       })
 
       instanceInElementsSource = new InstanceElement('instanceInElementsSource', file, {
@@ -111,6 +114,23 @@ describe('instance_references filter', () => {
           [CORE_ANNOTATIONS.PARENT]: ['[/Templates/file.name]'],
         }
       )
+
+      customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        fields: {
+          custom_field: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              parent: '[scriptid=customrecord1]',
+            },
+          },
+        },
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord1',
+          customsegment: '[scriptid=cseg_1]',
+        },
+      })
     })
 
     it('should replace path references', async () => {
@@ -154,6 +174,32 @@ describe('instance_references filter', () => {
         .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH), '/Templates/file.name'))
       expect(instanceWithRefs.annotations.refToScriptId)
         .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID), 'top_level'))
+    })
+
+    it('should replace references in custom record type', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([customSegmentInstance, customRecordType])
+      expect(customRecordType.annotations.customsegment)
+        .toEqual(new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID), 'cseg_1'))
+      expect(customRecordType.fields.custom_field.annotations.parent)
+        .toEqual(new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1'))
+    })
+
+    it('should replace references to custom record type in instances', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([customSegmentInstance, customRecordType])
+      expect(customSegmentInstance.value.recordtype)
+        .toEqual(new ReferenceExpression(customRecordType.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1'))
     })
 
     it('parent should reference the element itself', async () => {

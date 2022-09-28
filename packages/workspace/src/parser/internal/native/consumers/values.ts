@@ -22,6 +22,7 @@
 import { Value, TemplateExpression, ElemID, Values } from '@salto-io/adapter-api'
 import _, { trimEnd } from 'lodash'
 import { Token } from 'moo'
+import { createTemplateExpression } from '@salto-io/adapter-utils'
 import { Consumer, ParseContext, ConsumerReturnType } from '../types'
 import { createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher,
   registerRange, positionAtStart, positionAtEnd } from '../helpers'
@@ -78,7 +79,7 @@ const createTemplateExpressions = (
     token: Required<Token>
   ) => string = defaultStringTokenTranformFunc
 ): TemplateExpression => (
-  new TemplateExpression({ parts: tokens.map(token => {
+  createTemplateExpression({ parts: tokens.map(token => {
     if (token.type === TOKEN_TYPES.REFERENCE) {
       const ref = createReferenceExpresion(token.value)
       return ref instanceof IllegalReference ? token.text : ref

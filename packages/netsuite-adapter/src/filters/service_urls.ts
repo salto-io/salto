@@ -15,6 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { CORE_ANNOTATIONS, Element, getChangeData, isField } from '@salto-io/adapter-api'
 import { FilterCreator, FilterWith } from '../filter'
 import setFileCabinetUrls from '../service_url/file_cabinet'
 import setScriptsUrls from '../service_url/script'
@@ -53,6 +54,14 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     await awu(Object.entries(SERVICE_URL_SETTERS)).forEach(
       ([setterName, setter]) => log.time(() => setter(elements, client), `serviceUrls.${setterName}`)
     )
+  },
+  preDeploy: async changes => {
+    changes
+      .map(getChangeData)
+      .flatMap<Element>(element => (isField(element) ? [element, element.parent] : element))
+      .forEach(element => {
+        delete element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+      })
   },
 })
 

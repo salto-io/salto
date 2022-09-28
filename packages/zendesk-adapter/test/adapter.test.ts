@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import axios from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { InstanceElement, isInstanceElement, ReferenceExpression, isRemovalChange,
   AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import mockReplies from './mock_replies.json'
+import defaultBrandMockReplies from './mock_replies/myBrand_mock_replies.json'
+import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
@@ -44,17 +45,33 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const callbackResponseFunc = (config: AxiosRequestConfig): any => {
+  const { baseURL, url, params } = config
+  const requestParams = !_.isEmpty(params) ? { params } : undefined
+  if (baseURL === 'https://mybrand.zendesk.com/api/v2') {
+    return [
+      200,
+      (defaultBrandMockReplies as MockReply[])
+        .find(reply => reply.url === url && reply.params === requestParams)?.response || [],
+    ]
+  }
+  if (baseURL === 'https://brandwithguide.zendesk.com/api/v2') {
+    return [
+      200,
+      (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response
+        || [],
+    ]
+  }
+  return [404]
+}
+
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/account/settings').replyOnce(200, { settings: {} });
-    (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
-      mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(
-        200, response
-      )
-    })
+    mockAxiosAdapter.onGet('/account/settings').replyOnce(200, { settings: {} })
   })
 
   afterEach(() => {
@@ -64,11 +81,12 @@ describe('adapter', () => {
   describe('fetch', () => {
     describe('full fetch', () => {
       it('should generate the right elements on fetch', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const { elements } = await adapter.operations({
           credentials: new InstanceElement(
             'config',
             usernamePasswordCredentialsType,
-            { username: 'user123', password: 'token456' },
+            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
           ),
           config: new InstanceElement(
             'config',
@@ -131,9 +149,11 @@ describe('adapter', () => {
           'zendesk.app_owned__parameters',
           'zendesk.apps_owned',
           'zendesk.article',
-          'zendesk.article.instance.How_can_agents_leverage_knowledge_to_help_customers_@sssssssa',
+          'zendesk.article.instance.brandWithGuide_This_is_the_name_of_the_article@ussssss',
+          'zendesk.article.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers_@usssssssa',
           'zendesk.article_translation',
-          'zendesk.article_translation.instance.How_can_agents_leverage_knowledge_to_help_customers__sssssssa__en_us@uuuuuuuumuub',
+          'zendesk.article_translation.instance.brandWithGuide_This_is_the_name_of_the_article_ussssss__brandWithGuide_en_us@uuuuuuumuuub',
+          'zendesk.article_translation.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers__usssssssa__myBrand_en_us@uuuuuuuuumuuub',
           'zendesk.article_translation__translations',
           'zendesk.articles',
           'zendesk.automation',
@@ -150,6 +170,8 @@ describe('adapter', () => {
           'zendesk.automation_order.instance',
           'zendesk.automations',
           'zendesk.brand',
+          'zendesk.brand.instance.brandWithGuide',
+          'zendesk.brand.instance.brandWithoutGuide',
           'zendesk.brand.instance.myBrand',
           'zendesk.brand_logo',
           'zendesk.brands',
@@ -165,11 +187,11 @@ describe('adapter', () => {
           'zendesk.business_hours_schedules',
           'zendesk.categories',
           'zendesk.category',
-          'zendesk.category.instance.Development',
-          'zendesk.category.instance.General',
+          'zendesk.category.instance.myBrand_Development',
+          'zendesk.category.instance.myBrand_General',
           'zendesk.category_translation',
-          'zendesk.category_translation.instance.Development__en_us@uub',
-          'zendesk.category_translation.instance.General__en_us@uub',
+          'zendesk.category_translation.instance.myBrand_Development__myBrand_en_us@uuuub',
+          'zendesk.category_translation.instance.myBrand_General__myBrand_en_us@uuuub',
           'zendesk.category_translation__translations',
           'zendesk.channel',
           'zendesk.channel.instance.Answer_Bot_for_Web_Widget@s',
@@ -233,9 +255,9 @@ describe('adapter', () => {
           'zendesk.help_center_locale.instance.en_us@b',
           'zendesk.help_center_locale.instance.he',
           'zendesk.label',
-          'zendesk.label.instance.KCTemplate',
-          'zendesk.label.instance.TestLabel',
-          'zendesk.label.instance.heb',
+          'zendesk.label.instance.myBrand_KCTemplate',
+          'zendesk.label.instance.myBrand_TestLabel',
+          'zendesk.label.instance.myBrand_heb',
           'zendesk.labels',
           'zendesk.locale',
           'zendesk.locale.instance.en_US@b',
@@ -300,7 +322,7 @@ describe('adapter', () => {
           'zendesk.organization_fields',
           'zendesk.organizations',
           'zendesk.permission_group',
-          'zendesk.permission_group.instance.Admins',
+          'zendesk.permission_group.instance.myBrand_Admins',
           'zendesk.permission_groups',
           'zendesk.resource_collection',
           'zendesk.resource_collection.instance.unnamed_0_0',
@@ -321,17 +343,17 @@ describe('adapter', () => {
           'zendesk.routing_attribute_value__conditions__all',
           'zendesk.routing_attributes',
           'zendesk.section',
-          'zendesk.section.instance.Announcements',
-          'zendesk.section.instance.Apex',
-          'zendesk.section.instance.Billing_and_Subscriptions@s',
-          'zendesk.section.instance.FAQ',
-          'zendesk.section.instance.Internal_KB@s',
+          'zendesk.section.instance.myBrand_Announcements',
+          'zendesk.section.instance.myBrand_Apex',
+          'zendesk.section.instance.myBrand_Billing_and_Subscriptions@uss',
+          'zendesk.section.instance.myBrand_FAQ',
+          'zendesk.section.instance.myBrand_Internal_KB@us',
           'zendesk.section_translation',
-          'zendesk.section_translation.instance.Announcements__en_us@uub',
-          'zendesk.section_translation.instance.Apex__en_us@uub',
-          'zendesk.section_translation.instance.Billing_and_Subscriptions_s__en_us@uumuub',
-          'zendesk.section_translation.instance.FAQ__en_us@uub',
-          'zendesk.section_translation.instance.Internal_KB_s__en_us@umuub',
+          'zendesk.section_translation.instance.myBrand_Announcements__myBrand_en_us@uuuub',
+          'zendesk.section_translation.instance.myBrand_Apex__myBrand_en_us@uuuub',
+          'zendesk.section_translation.instance.myBrand_Billing_and_Subscriptions_uss__myBrand_en_us@uuumuuub',
+          'zendesk.section_translation.instance.myBrand_FAQ__myBrand_en_us@uuuub',
+          'zendesk.section_translation.instance.myBrand_Internal_KB_us__myBrand_en_us@uumuuub',
           'zendesk.section_translation__translations',
           'zendesk.sections',
           'zendesk.sharing_agreement',
@@ -468,10 +490,10 @@ describe('adapter', () => {
           'zendesk.user_field_order.instance',
           'zendesk.user_fields',
           'zendesk.user_segment',
-          'zendesk.user_segment.instance.Agents_and_admins@s',
-          'zendesk.user_segment.instance.Signed_in_users@bs',
-          'zendesk.user_segment.instance.Tier_3_Articles@s',
-          'zendesk.user_segment.instance.VIP_Customers@s',
+          'zendesk.user_segment.instance.myBrand_Agents_and_admins@uss',
+          'zendesk.user_segment.instance.myBrand_Signed_in_users@ubs',
+          'zendesk.user_segment.instance.myBrand_Tier_3_Articles@uss',
+          'zendesk.user_segment.instance.myBrand_VIP_Customers@us',
           'zendesk.user_segments',
           'zendesk.view',
           'zendesk.view.instance.All_unsolved_tickets@s',
@@ -537,11 +559,15 @@ describe('adapter', () => {
 
     describe('type overrides', () => {
       it('should fetch only the relevant types', async () => {
+        (defaultBrandMockReplies as MockReply[]).forEach(({ url, params }) => {
+          mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined)
+            .replyOnce(callbackResponseFunc)
+        })
         const { elements } = await adapter.operations({
           credentials: new InstanceElement(
             'config',
             usernamePasswordCredentialsType,
-            { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+            { username: 'user123', password: 'pwd456', subdomain: 'myBrand' },
           ),
           config: new InstanceElement(
             'config',
@@ -594,12 +620,16 @@ describe('adapter', () => {
       })
     })
     it('should use elemIdGetter', async () => {
+      (defaultBrandMockReplies as MockReply[]).forEach(({ url, params }) => {
+        mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined)
+          .replyOnce(callbackResponseFunc)
+      })
       const supportInstanceId = 1500002894482
       const operations = adapter.operations({
         credentials: new InstanceElement(
           'config',
           usernamePasswordCredentialsType,
-          { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+          { username: 'user123', password: 'pwd456', subdomain: 'myBrand' },
         ),
         config: new InstanceElement(
           'config',
@@ -739,6 +769,10 @@ describe('adapter', () => {
     const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, 'brand') })
     const anotherType = new ObjectType({ elemID: new ElemID(ZENDESK, 'anotherType') })
     beforeEach(() => {
+      (defaultBrandMockReplies as MockReply[]).forEach(({ url, params, response }) => {
+        mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined)
+          .replyOnce(200, response)
+      })
       mockDeployChange.mockImplementation(async ({ change }) => {
         if (isRemovalChange(change)) {
           throw new Error('some error')

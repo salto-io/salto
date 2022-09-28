@@ -25,6 +25,7 @@ import { ZENDESK } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/dynamic_content_references'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_content'
+import { createMissingInstance } from '../../src/filters/references/missing_references'
 
 describe('dynamic content references filter', () => {
   let client: ZendeskClient
@@ -66,12 +67,13 @@ describe('dynamic content references filter', () => {
     dynamicContentInstance: InstanceElement
     instance: InstanceElement
     secondInstance: InstanceElement
+    noDCInstance: InstanceElement
   } => {
     const dynamicContentInstance = new InstanceElement(
       'dynamicContentInstance',
       dynamicContentType,
       {
-        placeholder: '{{somePlaceholder}}',
+        placeholder: '{{dc.somePlaceholder}}',
       },
     )
 
@@ -79,7 +81,7 @@ describe('dynamic content references filter', () => {
       'instance',
       type,
       {
-        raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} {{somePlaceholder}}',
+        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} {{dc.somePlaceholder}}',
         empty_value: [],
       }
     )
@@ -87,13 +89,21 @@ describe('dynamic content references filter', () => {
       'instance',
       type,
       {
-        raw_value: '{{somePlaceholder}} {{notExistsPlaceholder}} bb{{somePlaceholder}}cc',
+        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} bb{{dc.somePlaceholder}}cc',
+      }
+    )
+    const noDCInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        raw_value: '{{dc.somePlaceholder}} {{dc.notExistsPlaceholder}} {{dc.somePlaceholder}}',
       }
     )
     return {
       dynamicContentInstance,
       instance,
       secondInstance,
+      noDCInstance,
     }
   }
 
@@ -117,6 +127,21 @@ describe('dynamic content references filter', () => {
           '}}cc'],
       }))
     })
+    it('should handel broken dynamic reference', async () => {
+      const { dynamicContentInstance, noDCInstance } = createInstances()
+      await filter.onFetch([noDCInstance, dynamicContentInstance])
+      const missingInstance = createMissingInstance(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME, 'notExistsPlaceholder')
+      missingInstance.value.placeholder = '{{dc.notExistsPlaceholder}}'
+      expect(noDCInstance.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{',
+          new ReferenceExpression(missingInstance.elemID, missingInstance),
+          '}} {{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}'],
+      }))
+    })
   })
 
   describe('preDeploy', () => {
@@ -132,6 +157,14 @@ describe('dynamic content references filter', () => {
       expect(secondInstanceCopy).not.toEqual(secondInstance)
       await filter.preDeploy([toChange({ after: secondInstanceCopy })])
       expect(secondInstanceCopy).toEqual(secondInstance)
+    })
+    it('should bring broken reference back to original value before deploy', async () => {
+      const { dynamicContentInstance, noDCInstance } = createInstances()
+      const noDCInstanceCopy = noDCInstance.clone()
+      await filter.onFetch([noDCInstanceCopy, dynamicContentInstance])
+      expect(noDCInstanceCopy).not.toEqual(noDCInstance)
+      await filter.preDeploy([toChange({ after: noDCInstanceCopy })])
+      expect(noDCInstanceCopy).toEqual(noDCInstance)
     })
   })
 
@@ -163,6 +196,25 @@ describe('dynamic content references filter', () => {
           '}} {{notExistsPlaceholder}} bb{{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}}cc'],
+      }))
+    })
+    it('should switch broken reference back to template value after deploy', async () => {
+      const { dynamicContentInstance, noDCInstance } = createInstances()
+      const noDCInstanceCopy = noDCInstance.clone()
+      await filter.onFetch([noDCInstanceCopy, dynamicContentInstance])
+      await filter.preDeploy([toChange({ after: noDCInstanceCopy })])
+      expect(noDCInstanceCopy).toEqual(noDCInstance)
+      await filter.onDeploy([toChange({ after: noDCInstanceCopy })])
+      const missingInstance = createMissingInstance(ZENDESK, DYNAMIC_CONTENT_ITEM_TYPE_NAME, 'notExistsPlaceholder')
+      missingInstance.value.placeholder = '{{dc.notExistsPlaceholder}}'
+      expect(noDCInstanceCopy.value.raw_value).toEqual(new TemplateExpression({
+        parts: ['{{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}} {{',
+          new ReferenceExpression(missingInstance.elemID, missingInstance),
+          '}} {{',
+          new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
+          '}}'],
       }))
     })
   })

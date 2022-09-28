@@ -15,7 +15,7 @@
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { fileType } from '../../src/types/file_cabinet_types'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import notYetSupportedChangeValidator from '../../src/change_validators/not_yet_supported_values'
 import { PATH, SCRIPT_ID, NOT_YET_SUPPORTED_VALUE } from '../../src/constants'
 

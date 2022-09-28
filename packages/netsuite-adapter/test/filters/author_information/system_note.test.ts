@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator, { FILE_FIELD_IDENTIFIER, FOLDER_FIELD_IDENTIFIER } from '../../../src/filters/author_information/system_note'
-import { FILE, FOLDER, NETSUITE } from '../../../src/constants'
+import { CUSTOM_RECORD_TYPE, FILE, FOLDER, METADATA_TYPE, NETSUITE } from '../../../src/constants'
 import { createServerTimeElements } from '../../../src/server_time'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
@@ -27,11 +27,11 @@ import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../..
 
 describe('netsuite system note author information', () => {
   let filterOpts: FilterOpts
-  let elements: InstanceElement[]
+  let elements: Element[]
   let fileInstance: InstanceElement
   let folderInstance: InstanceElement
   let accountInstance: InstanceElement
-  let customTypeInstance: InstanceElement
+  let customRecordType: ObjectType
   let missingInstance: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
@@ -61,8 +61,11 @@ describe('netsuite system note author information', () => {
     ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'
-    customTypeInstance = new InstanceElement('customRecordType', new ObjectType({ elemID: new ElemID(NETSUITE, 'customRecordType') }))
-    customTypeInstance.value.internalId = '1'
+    customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE },
+    })
+    customRecordType.annotations.internalId = '1'
     fileInstance = new InstanceElement(FILE, new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
     fileInstance.value.internalId = '2'
     folderInstance = new InstanceElement(
@@ -71,7 +74,7 @@ describe('netsuite system note author information', () => {
     folderInstance.value.internalId = '2'
     missingInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     missingInstance.value.internalId = '8'
-    elements = [accountInstance, customTypeInstance, missingInstance, fileInstance, folderInstance]
+    elements = [accountInstance, customRecordType, missingInstance, fileInstance, folderInstance]
     filterOpts = {
       client,
       elementsSourceIndex: {
@@ -95,7 +98,7 @@ describe('netsuite system note author information', () => {
 
   it('should query information from api when there are no files', async () => {
     await filterCreator(filterOpts).onFetch?.(
-      [accountInstance, customTypeInstance, missingInstance]
+      [accountInstance, customRecordType, missingInstance]
     )
     const systemNotesQuery = "SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, TO_CHAR(MAX(date), 'YYYY-MM-DD') as date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (recordtypeid = '-112' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
@@ -111,7 +114,7 @@ describe('netsuite system note author information', () => {
   it('should add names to elements', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
-    expect(customTypeInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
+    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
     expect(Object.values(missingInstance.annotations)).toHaveLength(0)
     expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
@@ -121,7 +124,7 @@ describe('netsuite system note author information', () => {
     runSuiteQLMock.mockReset()
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(Object.values(accountInstance.annotations)).toHaveLength(0)
-    expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
     expect(Object.values(fileInstance.annotations)).toHaveLength(0)
     expect(Object.values(folderInstance.annotations)).toHaveLength(0)
   })
@@ -160,7 +163,7 @@ describe('netsuite system note author information', () => {
       ])
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
-      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -189,7 +192,7 @@ describe('netsuite system note author information', () => {
       ])
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
-      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -211,7 +214,7 @@ describe('netsuite system note author information', () => {
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
-      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -233,7 +236,7 @@ describe('netsuite system note author information', () => {
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
-      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -264,7 +267,7 @@ describe('netsuite system note author information', () => {
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
-      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })

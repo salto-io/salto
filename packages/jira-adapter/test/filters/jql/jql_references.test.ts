@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
-import { getFilterParams, mockClient } from '../../utils'
+import _ from 'lodash'
+import { getFilterParams } from '../../utils'
 import jqlReferencesFilter from '../../../src/filters/jql/jql_references'
 import { Filter } from '../../../src/filter'
 import { JIRA, STATUS_TYPE_NAME, AUTOMATION_TYPE } from '../../../src/constants'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 
 describe('jqlReferencesFilter', () => {
   let filter: Filter
@@ -28,15 +30,12 @@ describe('jqlReferencesFilter', () => {
   let doneInstance: InstanceElement
   let todoInstance: InstanceElement
   let automationInstance: InstanceElement
-
+  let config: JiraConfig
 
   beforeEach(async () => {
-    const { client, paginator } = mockClient()
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
-    filter = jqlReferencesFilter(getFilterParams({
-      client,
-      paginator,
-    }))
+    filter = jqlReferencesFilter(getFilterParams({ config }))
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'Filter'),
@@ -155,6 +154,12 @@ describe('jqlReferencesFilter', () => {
       instance.value.jql = 'asd { [ < ('
       await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
       expect(instance.value.jql).toBe('asd { [ < (')
+    })
+
+    it('should do nothing if was disabled in the config', async () => {
+      config.fetch.parseTemplateExpressions = false
+      await filter.onFetch?.([instance, fieldInstance, doneInstance, todoInstance])
+      expect(instance.value.jql).toBe('status = Done')
     })
   })
 

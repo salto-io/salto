@@ -13,10 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, MapType, isListType, isMapType, Change, toChange } from '@salto-io/adapter-api'
+import {
+  Element,
+  InstanceElement,
+  ObjectType,
+  MapType,
+  isListType,
+  isMapType,
+  Change,
+  toChange,
+  isObjectType,
+} from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, defaultFilterContext } from '../utils'
+import { createInstanceElement } from '../../src/transformers/transformer'
+import { mockTypes } from '../mock_elements'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -45,111 +57,17 @@ const generateProfileInstance = ({
     }
   )
 )
+describe('Convert maps filter', () => {
+  describe('ProfileMaps filter', () => {
+    describe('on fetch', () => {
+      const filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterWith<'onFetch' | 'preDeploy'>
+      let profileObj: ObjectType
+      let instances: InstanceElement[]
 
-describe('ProfileMaps filter', () => {
-  describe('on fetch', () => {
-    const filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterWith<'onFetch' | 'preDeploy'>
-    let profileObj: ObjectType
-    let instances: InstanceElement[]
-
-    describe('with regular instances', () => {
-      const generateInstances = (objType: ObjectType): InstanceElement[] => ([
-        generateProfileInstance({
-          profileObj: objType,
-          instanceName: 'aaa',
-          applications: ['app1', 'app2'],
-          fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
-          layoutAssignments: [
-            { layout: 'Account-Account Layout' },
-            // dots etc are escaped in the layout's name
-            { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
-            { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
-            { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
-          ],
-        }),
-        generateProfileInstance({
-          profileObj: objType,
-          instanceName: 'bbb',
-          applications: ['someApp'],
-          fields: ['Account.AccountNumber'],
-          layoutAssignments: [
-            { layout: 'Account-Account Layout' },
-          ],
-        }),
-      ])
-      beforeAll(async () => {
-        profileObj = generateProfileType()
-        instances = generateInstances(profileObj)
-        await filter.onFetch([profileObj, ...instances])
-      })
-
-      it('should convert object field types to maps', async () => {
-        expect(profileObj).toEqual(generateProfileType(true))
-        const fieldType = await profileObj.fields.applicationVisibilities.getType()
-        expect(isMapType(fieldType)).toBeTruthy()
-        expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
-      })
-      it('should mark the fields that are used for keys as _required=true', async () => {
-        expect(profileObj).toEqual(generateProfileType(true))
-        const fieldType = await profileObj.fields.applicationVisibilities.getType()
-        expect(isMapType(fieldType)).toBeTruthy()
-        expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
-      })
-      it('should convert instance values to maps', () => {
-        expect((instances[0] as InstanceElement).value).toEqual({
-          applicationVisibilities: {
-            app1: { application: 'app1', default: true, visible: false },
-            app2: { application: 'app2', default: true, visible: false },
-          },
-          fieldPermissions: {
-            Account: {
-              AccountNumber: {
-                field: 'Account.AccountNumber',
-                editable: true,
-                readable: true,
-              },
-            },
-            Contact: {
-              HasOptedOutOfEmail: {
-                field: 'Contact.HasOptedOutOfEmail',
-                editable: true,
-                readable: true,
-              },
-            },
-          },
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              { layout: 'Account-Account Layout' },
-            ],
-            'Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb@bssppppppupbs': [
-              { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
-              { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
-              { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
-            ],
-          },
-        })
-      })
-      it('should contain the original elements after fetch + preDeploy', async () => {
-        const afterProfileObj = generateProfileType()
-        const afterInstances = generateInstances(afterProfileObj)
-        await filter.onFetch([afterProfileObj, ...afterInstances])
-        const changes = instances.map(
-          (inst, idx) => toChange({ before: inst, after: afterInstances[idx] })
-        )
-        await filter.preDeploy(changes)
-        expect(afterProfileObj).toEqual(generateProfileType(false, true))
-        expect(profileObj).toEqual(generateProfileType(true))
-        expect(afterInstances).toEqual(generateInstances(afterProfileObj))
-        expect(instances).toEqual(generateInstances(profileObj))
-      })
-    })
-
-    describe('with unexpected non-unique fields', () => {
-      beforeAll(async () => {
-        profileObj = generateProfileType()
-        instances = [
+      describe('with regular instances', () => {
+        const generateInstances = (objType: ObjectType): InstanceElement[] => ([
           generateProfileInstance({
-            profileObj,
+            profileObj: objType,
             instanceName: 'aaa',
             applications: ['app1', 'app2'],
             fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
@@ -162,158 +80,281 @@ describe('ProfileMaps filter', () => {
             ],
           }),
           generateProfileInstance({
-            profileObj,
-            instanceName: 'unexpected values',
-            applications: ['sameApp', 'sameApp'],
-            fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail', 'Account.AccountNumber'],
+            profileObj: objType,
+            instanceName: 'bbb',
+            applications: ['someApp'],
+            fields: ['Account.AccountNumber'],
             layoutAssignments: [
               { layout: 'Account-Account Layout' },
+            ],
+          }),
+        ])
+        beforeAll(async () => {
+          profileObj = generateProfileType()
+          instances = generateInstances(profileObj)
+          await filter.onFetch([profileObj, ...instances])
+        })
+
+        it('should convert object field types to maps', async () => {
+          expect(profileObj).toEqual(generateProfileType(true))
+          const fieldType = await profileObj.fields.applicationVisibilities.getType()
+          expect(isMapType(fieldType)).toBeTruthy()
+          expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
+        })
+        it('should mark the fields that are used for keys as _required=true', async () => {
+          expect(profileObj).toEqual(generateProfileType(true))
+          const fieldType = await profileObj.fields.applicationVisibilities.getType()
+          expect(isMapType(fieldType)).toBeTruthy()
+          expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
+        })
+        it('should convert instance values to maps', () => {
+          expect((instances[0] as InstanceElement).value).toEqual({
+            applicationVisibilities: {
+              app1: { application: 'app1', default: true, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [
+                { layout: 'Account-Account Layout' },
+              ],
+              'Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb@bssppppppupbs': [
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
+              ],
+            },
+          })
+        })
+        it('should contain the original elements after fetch + preDeploy', async () => {
+          const afterProfileObj = generateProfileType()
+          const afterInstances = generateInstances(afterProfileObj)
+          await filter.onFetch([afterProfileObj, ...afterInstances])
+          const changes = instances.map(
+            (inst, idx) => toChange({ before: inst, after: afterInstances[idx] })
+          )
+          await filter.preDeploy(changes)
+          expect(afterProfileObj).toEqual(generateProfileType(false, true))
+          expect(profileObj).toEqual(generateProfileType(true))
+          expect(afterInstances).toEqual(generateInstances(afterProfileObj))
+          expect(instances).toEqual(generateInstances(profileObj))
+        })
+      })
+
+      describe('with unexpected non-unique fields', () => {
+        beforeAll(async () => {
+          profileObj = generateProfileType()
+          instances = [
+            generateProfileInstance({
+              profileObj,
+              instanceName: 'aaa',
+              applications: ['app1', 'app2'],
+              fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
+              layoutAssignments: [
+                { layout: 'Account-Account Layout' },
+                // dots etc are escaped in the layout's name
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
+              ],
+            }),
+            generateProfileInstance({
+              profileObj,
+              instanceName: 'unexpected values',
+              applications: ['sameApp', 'sameApp'],
+              fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail', 'Account.AccountNumber'],
+              layoutAssignments: [
+                { layout: 'Account-Account Layout' },
+                { layout: 'too.many.separators', recordType: 'something' },
+                { layout: 'too.many.wrongIndexing', recordType: 'something' },
+              ],
+            }),
+          ]
+          await filter.onFetch([profileObj, ...instances])
+        })
+
+        it('should convert all fields with duplicates into (maps of) lists', async () => {
+          const fieldType = await profileObj.fields.applicationVisibilities.getType()
+          expect(isMapType(fieldType)).toBeTruthy()
+          expect(isListType(await (fieldType as MapType).getInnerType())).toBeTruthy()
+          expect(Array.isArray(
+            (instances[1] as InstanceElement).value.applicationVisibilities.sameApp
+          )).toBeTruthy()
+          expect(Array.isArray(
+            (instances[0] as InstanceElement).value.applicationVisibilities.app1
+          )).toBeTruthy()
+          expect(Array.isArray(
+            (instances[1] as InstanceElement).value.fieldPermissions.Account.AccountNumber
+          )).toBeTruthy()
+          expect(Array.isArray(
+            (instances[0] as InstanceElement).value.fieldPermissions.Contact.HasOptedOutOfEmail
+          )).toBeTruthy()
+        })
+
+        it('should not fail even if there are unexpected API_NAME_SEPARATORs in the indexed value', () => {
+          const inst = instances[1] as InstanceElement
+          expect(inst.value.layoutAssignments).toEqual({
+            'Account_Account_Layout@bs': [{ layout: 'Account-Account Layout' }],
+            too: [
               { layout: 'too.many.separators', recordType: 'something' },
               { layout: 'too.many.wrongIndexing', recordType: 'something' },
             ],
-          }),
-        ]
-        await filter.onFetch([profileObj, ...instances])
-      })
-
-      it('should convert all fields with duplicates into (maps of) lists', async () => {
-        const fieldType = await profileObj.fields.applicationVisibilities.getType()
-        expect(isMapType(fieldType)).toBeTruthy()
-        expect(isListType(await (fieldType as MapType).getInnerType())).toBeTruthy()
-        expect(Array.isArray(
-          (instances[1] as InstanceElement).value.applicationVisibilities.sameApp
-        )).toBeTruthy()
-        expect(Array.isArray(
-          (instances[0] as InstanceElement).value.applicationVisibilities.app1
-        )).toBeTruthy()
-        expect(Array.isArray(
-          (instances[1] as InstanceElement).value.fieldPermissions.Account.AccountNumber
-        )).toBeTruthy()
-        expect(Array.isArray(
-          (instances[0] as InstanceElement).value.fieldPermissions.Contact.HasOptedOutOfEmail
-        )).toBeTruthy()
-      })
-
-      it('should not fail even if there are unexpected API_NAME_SEPARATORs in the indexed value', () => {
-        const inst = instances[1] as InstanceElement
-        expect(inst.value.layoutAssignments).toEqual({
-          'Account_Account_Layout@bs': [{ layout: 'Account-Account Layout' }],
-          too: [
-            { layout: 'too.many.separators', recordType: 'something' },
-            { layout: 'too.many.wrongIndexing', recordType: 'something' },
-          ],
+          })
         })
+      })
+    })
+
+    describe('deploy (pre + on)', () => {
+      const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'preDeploy' | 'onDeploy'>
+      let beforeProfileObj: ObjectType
+      let afterProfileObj: ObjectType
+      let beforeInstances: InstanceElement[]
+      let afterInstances: InstanceElement[]
+      let changes: Change[]
+
+      const generateInstances = (objType: ObjectType): InstanceElement[] => ([
+        new InstanceElement(
+          'profile1',
+          objType,
+          {
+            applicationVisibilities: {
+              app1: { application: 'app1', default: true, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [
+                { layout: 'Account-Account Layout' },
+              ],
+              'Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb@bssppppppupbs': [
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
+                { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
+              ],
+            },
+          }
+        ),
+        new InstanceElement(
+          'profile2',
+          objType,
+          {
+            applicationVisibilities: {
+              app1: { application: 'app1', default: false, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+            layoutAssignments: {
+              'Account_Account_Layout@bs': [
+                { layout: 'Account-Account Layout' },
+              ],
+            },
+          }
+        ),
+      ])
+
+      beforeAll(async () => {
+        beforeProfileObj = generateProfileType(true)
+        beforeInstances = generateInstances(beforeProfileObj)
+        afterProfileObj = generateProfileType(true)
+        afterInstances = generateInstances(afterProfileObj)
+        changes = beforeInstances.map((inst, idx) => (
+          toChange({ before: inst, after: afterInstances[idx] })
+        ))
+        await filter.preDeploy(changes)
+      })
+      it('should convert the object back to list on preDeploy', () => {
+        expect(afterProfileObj).toEqual(generateProfileType(false, true))
+      })
+
+      it('should convert the instances back to lists on preDeploy', () => {
+        expect(Array.isArray(afterInstances[0].value.applicationVisibilities)).toBeTruthy()
+        expect(Array.isArray(afterInstances[0].value.fieldPermissions)).toBeTruthy()
+        expect(Array.isArray(afterInstances[0].value.layoutAssignments)).toBeTruthy()
+        expect(Array.isArray(beforeInstances[0].value.applicationVisibilities)).toBeTruthy()
+        expect(Array.isArray(beforeInstances[0].value.fieldPermissions)).toBeTruthy()
+        expect(Array.isArray(beforeInstances[0].value.layoutAssignments)).toBeTruthy()
+      })
+
+      it('should return object and instances to their original form', async () => {
+        await filter.onDeploy(changes)
+        expect(beforeProfileObj).toEqual(generateProfileType(true))
+        expect(afterProfileObj).toEqual(generateProfileType(true))
+        expect(beforeInstances).toEqual(generateInstances(beforeProfileObj))
+        expect(afterInstances).toEqual(generateInstances(afterProfileObj))
       })
     })
   })
 
-  describe('deploy (pre + on)', () => {
-    const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'preDeploy' | 'onDeploy'>
-    let beforeProfileObj: ObjectType
-    let afterProfileObj: ObjectType
-    let beforeInstances: InstanceElement[]
-    let afterInstances: InstanceElement[]
-    let changes: Change[]
-
-    const generateInstances = (objType: ObjectType): InstanceElement[] => ([
-      new InstanceElement(
-        'profile1',
-        objType,
-        {
-          applicationVisibilities: {
-            app1: { application: 'app1', default: true, visible: false },
-            app2: { application: 'app2', default: true, visible: false },
-          },
-          fieldPermissions: {
-            Account: {
-              AccountNumber: {
-                field: 'Account.AccountNumber',
-                editable: true,
-                readable: true,
-              },
-            },
-            Contact: {
-              HasOptedOutOfEmail: {
-                field: 'Contact.HasOptedOutOfEmail',
-                editable: true,
-                readable: true,
-              },
-            },
-          },
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              { layout: 'Account-Account Layout' },
-            ],
-            'Account_random_characters__3B_2E_2B_3F_22aaa_27__2B__bbb@bssppppppupbs': [
-              { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
-              { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
-              { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'repetition' },
-            ],
-          },
-        }
-      ),
-      new InstanceElement(
-        'profile2',
-        objType,
-        {
-          applicationVisibilities: {
-            app1: { application: 'app1', default: false, visible: false },
-            app2: { application: 'app2', default: true, visible: false },
-          },
-          fieldPermissions: {
-            Account: {
-              AccountNumber: {
-                field: 'Account.AccountNumber',
-                editable: true,
-                readable: true,
-              },
-            },
-            Contact: {
-              HasOptedOutOfEmail: {
-                field: 'Contact.HasOptedOutOfEmail',
-                editable: true,
-                readable: true,
-              },
-            },
-          },
-          layoutAssignments: {
-            'Account_Account_Layout@bs': [
-              { layout: 'Account-Account Layout' },
-            ],
-          },
-        }
-      ),
-    ])
-
+  describe('Convert inner field to map', () => {
+    let elements: Element[]
+    type FilterType = FilterWith<'onFetch'| 'preDeploy'>
+    let filter: FilterType
     beforeAll(async () => {
-      beforeProfileObj = generateProfileType(true)
-      beforeInstances = generateInstances(beforeProfileObj)
-      afterProfileObj = generateProfileType(true)
-      afterInstances = generateInstances(afterProfileObj)
-      changes = beforeInstances.map((inst, idx) => (
-        toChange({ before: inst, after: afterInstances[idx] })
-      ))
-      await filter.preDeploy(changes)
-    })
-    it('should convert the object back to list on preDeploy', () => {
-      expect(afterProfileObj).toEqual(generateProfileType(false, true))
-    })
+      const lwc = createInstanceElement({ fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'dir/lwc.js', source: 'lwc.ts' }] } }, mockTypes.LightningComponentBundle)
+      elements = [lwc]
 
-    it('should convert the instances back to lists on preDeploy', () => {
-      expect(Array.isArray(afterInstances[0].value.applicationVisibilities)).toBeTruthy()
-      expect(Array.isArray(afterInstances[0].value.fieldPermissions)).toBeTruthy()
-      expect(Array.isArray(afterInstances[0].value.layoutAssignments)).toBeTruthy()
-      expect(Array.isArray(beforeInstances[0].value.applicationVisibilities)).toBeTruthy()
-      expect(Array.isArray(beforeInstances[0].value.fieldPermissions)).toBeTruthy()
-      expect(Array.isArray(beforeInstances[0].value.layoutAssignments)).toBeTruthy()
+      filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterType
+      await filter.onFetch(elements)
     })
-
-    it('should return object and instances to their original form', async () => {
-      await filter.onDeploy(changes)
-      expect(beforeProfileObj).toEqual(generateProfileType(true))
-      expect(afterProfileObj).toEqual(generateProfileType(true))
-      expect(beforeInstances).toEqual(generateInstances(beforeProfileObj))
-      expect(afterInstances).toEqual(generateInstances(afterProfileObj))
+    describe('on fetch', () => {
+      it('should convert lwcresource inner field to map ', async () => {
+        const lwc = elements[0] as InstanceElement
+        const fieldType = await lwc.getType()
+        const lwcResourcesType = await fieldType.fields.lwcResources.getType()
+        if (isObjectType(lwcResourcesType)) {
+          const lwcResourceType = await lwcResourcesType.fields.lwcResource.getType()
+          expect(isMapType(lwcResourceType)).toBeTruthy()
+        }
+      })
+      it('should use the custom mapper to create the key', async () => {
+        const lwc = elements[0] as InstanceElement
+        expect(Object.keys(lwc.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
+      })
     })
   })
 })

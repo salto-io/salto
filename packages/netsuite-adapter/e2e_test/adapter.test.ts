@@ -17,8 +17,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
-  isInstanceElement, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes, ChangeError, getChangeData,
+  DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
+  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes, ChangeError, getChangeData, Element,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -37,7 +37,7 @@ import {
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
-import { isCustomTypeName } from '../src/autogen/types'
+import { isStandardTypeName } from '../src/autogen/types'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -45,8 +45,8 @@ const { awu } = collections.asynciterable
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
-  const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes })
+  const { standardTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes })
 
   const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
     const instValues = {
@@ -56,12 +56,12 @@ describe('Netsuite adapter E2E with real account', () => {
 
     const instanceName = isSDFConfigTypeName(type)
       ? ElemID.CONFIG_NAME
-      : naclCase(instValues[isCustomTypeName(type) ? SCRIPT_ID : PATH]
+      : naclCase(instValues[isStandardTypeName(type) ? SCRIPT_ID : PATH]
         .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
     return new InstanceElement(
       instanceName,
-      isCustomTypeName(type) ? customTypes[type].type : additionalTypes[type],
+      isStandardTypeName(type) ? standardTypes[type].type : additionalTypes[type],
       instValues
     )
   }
@@ -85,7 +85,7 @@ describe('Netsuite adapter E2E with real account', () => {
     ['with SuiteApp', true],
   ]).describe('%s', (_text, withSuiteApp) => {
     let fetchResult: FetchResult
-    let fetchedInstances: InstanceElement[]
+    let fetchedElements: Element[]
 
     const validateConfigSuggestions = (updatedConfig?: InstanceElement): void => {
       if (updatedConfig === undefined) {
@@ -117,10 +117,14 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
-    const customRecordTypeToCreate = createInstanceElement(
-      CUSTOM_RECORD_TYPE,
-      { recordname: randomString }
-    )
+    const customRecordTypeValues = mockDefaultValues[CUSTOM_RECORD_TYPE]
+    const customRecordTypeToCreate = new ObjectType({
+      elemID: new ElemID(NETSUITE, customRecordTypeValues[SCRIPT_ID]),
+      annotations: {
+        ...customRecordTypeValues,
+        recordname: randomString,
+      },
+    })
 
     const workflowToCreate = createInstanceElement(
       WORKFLOW,
@@ -186,8 +190,8 @@ describe('Netsuite adapter E2E with real account', () => {
             ...mockDefaultValues[ROLE].permissions.permission,
             {
               permkey: new ReferenceExpression(
-                customRecordTypeToCreate.elemID.createNestedID(SCRIPT_ID),
-                customRecordTypeToCreate.value[SCRIPT_ID],
+                customRecordTypeToCreate.elemID.createNestedID('attr', SCRIPT_ID),
+                customRecordTypeToCreate.annotations[SCRIPT_ID],
                 customRecordTypeToCreate
               ),
               permlevel: 'EDIT',
@@ -286,7 +290,7 @@ describe('Netsuite adapter E2E with real account', () => {
     })
 
     describe('Create records', () => {
-      const changes: Map<ChangeId, Change<InstanceElement>> = new Map([
+      const changes: Map<ChangeId, Change> = new Map([
         entityCustomFieldToCreate,
         customRecordTypeToCreate,
         workflowToCreate,
@@ -514,7 +518,7 @@ describe('Netsuite adapter E2E with real account', () => {
           progressReporter: { reportProgress: jest.fn() },
         }
         fetchResult = await adapter.fetch(mockFetchOpts)
-        fetchedInstances = fetchResult.elements.filter(isInstanceElement)
+        fetchedElements = fetchResult.elements
       })
 
       it('should fetch account successfully', async () => {
@@ -524,7 +528,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch the created entityCustomField and its special chars', async () => {
         const fetchedEntityCustomField = findElement(
-          fetchedInstances,
+          fetchedElements,
           entityCustomFieldToCreate.elemID
         ) as InstanceElement
         expect(fetchedEntityCustomField.value.label).toEqual(randomString)
@@ -534,11 +538,11 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch the created customRecordType', async () => {
         const fetchedCustomRecordType = findElement(
-          fetchedInstances,
+          fetchedElements,
           customRecordTypeToCreate.elemID
-        ) as InstanceElement
-        expect(fetchedCustomRecordType.value.recordname).toEqual(randomString)
-        const permissions = fetchedCustomRecordType.value.permissions?.permission
+        ) as ObjectType
+        expect(fetchedCustomRecordType.annotations.recordname).toEqual(randomString)
+        const permissions = fetchedCustomRecordType.annotations.permissions?.permission
         expect(_.isPlainObject(permissions)).toBeTruthy()
         const createdRolePermission = Object.values(permissions as Values)
           .find(permission => isReferenceExpression(permission.permittedrole)
@@ -549,7 +553,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch the created role', async () => {
         const fetchedRole = findElement(
-          fetchedInstances,
+          fetchedElements,
           roleToCreateThatDependsOnCustomRecord.elemID
         ) as InstanceElement
         expect(fetchedRole.value.name).toEqual(randomString)
@@ -557,13 +561,13 @@ describe('Netsuite adapter E2E with real account', () => {
         const customRecordTypePermission = permissions
           .find(permission => isReferenceExpression(permission.permkey)
           && permission.permkey.elemID
-            .isEqual(customRecordTypeToCreate.elemID.createNestedID(SCRIPT_ID)))
+            .isEqual(customRecordTypeToCreate.elemID.createNestedID('attr', SCRIPT_ID)))
         expect(customRecordTypePermission).toBeDefined()
       })
 
       it('should fetch the created workflow', async () => {
         const fetchedWorkflow = findElement(
-          fetchedInstances,
+          fetchedElements,
           workflowToCreate.elemID
         ) as InstanceElement
         expect(fetchedWorkflow.value.name).toEqual(randomString)
@@ -578,7 +582,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch the created email template', async () => {
         const fetchedEmailTemplate = findElement(
-          fetchedInstances,
+          fetchedElements,
           emailTemplateToCreate.elemID
         ) as InstanceElement
         expect(fetchedEmailTemplate.value.name).toEqual(randomString)
@@ -592,7 +596,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch the created file', async () => {
         const fetchedFile = findElement(
-          fetchedInstances,
+          fetchedElements,
           fileToCreate.elemID
         ) as InstanceElement
         expect(fetchedFile.value.description).toEqual(randomString)
@@ -606,7 +610,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch the modified folder', async () => {
         const fetchedFolder = findElement(
-          fetchedInstances,
+          fetchedElements,
           folderToModify.elemID
         ) as InstanceElement
         expect(fetchedFolder.value.description).toEqual(randomString)
@@ -614,7 +618,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch the created transactionColumn', async () => {
         const fetchedTransactionColumn = findElement(
-          fetchedInstances,
+          fetchedElements,
           transactionColumnToCreateThatDependsOnField.elemID
         ) as InstanceElement
         expect(fetchedTransactionColumn.value.label).toEqual(randomString)
@@ -628,7 +632,7 @@ describe('Netsuite adapter E2E with real account', () => {
       it('should fetch the created subsidiary', async () => {
         if (withSuiteApp) {
           const fetchSubsidiary = findElement(
-            fetchedInstances,
+            fetchedElements,
             subsidiaryInstance.elemID
           ) as InstanceElement
           subsidiaryInstance.value.internalId = fetchSubsidiary.value.internalId
@@ -639,7 +643,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it(`should fetch the modified feature (status=${withSuiteApp})`, async () => {
         const fetchFeatures = findElement(
-          fetchedInstances,
+          fetchedElements,
           featuresInstance.elemID
         ) as InstanceElement
         // using 'withSuiteApp' to validate both boolean values

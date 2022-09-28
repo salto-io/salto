@@ -18,6 +18,7 @@ import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { walkOnElement } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
 import { JiraConfig } from '../config/config'
 import { createIdToUserMap, IdMap } from '../filters/account_id/add_display_name_filter'
@@ -90,6 +91,9 @@ const checkAndAddChangeErrors = (
 ): WalkOnUsersCallback => (
   { value, path, fieldName }
 ): void => {
+  if (!_.isPlainObject(value[fieldName])) {
+    return
+  }
   const accountId = value[fieldName].id
   const currentDisplayName = value[fieldName].displayName
   const realDisplayName = idMap[accountId]

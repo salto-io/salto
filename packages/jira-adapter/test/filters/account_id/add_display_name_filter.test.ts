@@ -21,7 +21,6 @@ import { collections } from '@salto-io/lowerdash'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import addDisplayNameFilter from '../../../src/filters/account_id/add_display_name_filter'
-import { paginate } from '../../../src/client/pagination'
 import * as common from './account_id_common'
 import { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
 
@@ -41,7 +40,7 @@ describe('add_display_name_filter', () => {
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
 
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    const { client, paginator, connection } = mockClient(paginate)
+    const { client, paginator, connection } = mockClient()
     mockConnection = connection
     filter = addDisplayNameFilter(getFilterParams({
       client,

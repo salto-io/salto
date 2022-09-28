@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
 import { defaultFieldConfigurationValidator } from './default_field_configuration'
@@ -35,6 +35,7 @@ import { globalProjectContextsValidator } from './global_project_contexts'
 import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
+import { accountIdValidator } from './account_id'
 
 const {
   deployTypesNotSupportedValidator,
@@ -42,7 +43,7 @@ const {
 
 
 export default (
-  client: JiraClient, config: JiraConfig
+  client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     deployTypesNotSupportedValidator,
@@ -63,6 +64,7 @@ export default (
     systemFieldsValidator,
     workflowPropertiesValidator,
     permissionSchemeValidator,
+    accountIdValidator(client, config, paginator),
   ]
 
   return createChangeValidator(validators)

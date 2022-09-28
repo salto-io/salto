@@ -56,7 +56,7 @@ const isAccountIdType = (instanceElement: InstanceElement): boolean =>
 
 
 export type WalkOnUsersCallback = (
-  { value, path, fieldName }: { value: Value; path?: ElemID; fieldName: string }) => void
+  { value, path, fieldName }: { value: Value; path: ElemID; fieldName: string }) => void
 
 const accountIdsScenarios = (
   value: Value,

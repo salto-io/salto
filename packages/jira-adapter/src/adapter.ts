@@ -375,7 +375,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig),
+      changeValidator: changeValidator(this.client, this.userConfig, this.paginator),
       dependencyChanger,
       getChangeGroupIds,
     }

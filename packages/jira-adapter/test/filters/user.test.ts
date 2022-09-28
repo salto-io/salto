@@ -111,6 +111,34 @@ describe('userFilter', () => {
       })
     })
 
+    it('should do nothing on wrong structure', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        boardType,
+        {
+          type: 'ACCOUNT_ID',
+        }
+      )
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({
+        type: 'ACCOUNT_ID',
+      })
+
+      const instance2 = new InstanceElement(
+        'instance2',
+        boardType,
+        {
+          type: 'ACCOUNT_ID',
+          value: 'bla',
+        }
+      )
+      await filter.onFetch?.([instance2])
+      expect(instance2.value).toEqual({
+        type: 'ACCOUNT_ID',
+        value: 'bla',
+      })
+    })
+
     it('should replace field type', async () => {
       await filter.onFetch?.([adminType, filterType, dashboardType])
       expect((await adminType.fields.users.getType()).elemID.name).toEqual(`List<jira.${ACCOUNT_ID_INFO_TYPE}>`)

@@ -22,6 +22,7 @@ import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { conditionFieldValue, isCorrectConditions } from './utils'
+import { GROUP_MEMBERSHIP_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 const { toArrayAsync, awu } = collections.asynciterable
@@ -169,6 +170,7 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
   workspace: workspaceReplacer,
   user_segment: fieldReplacer(['added_user_ids']),
   article: fieldReplacer(['author_id']),
+  [GROUP_MEMBERSHIP_TYPE_NAME]: fieldReplacer(['user_id']),
 }
 
 const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {

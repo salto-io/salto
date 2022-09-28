@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { BRAND_TYPE_NAME, ZENDESK } from './constants'
+import { BRAND_TYPE_NAME, ZENDESK, GROUP_MEMBERS_TYPE_NAME, GROUP_MEMBERS_USER_TYPE_NAME } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -103,6 +103,23 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  // placeholder types (replacing group_memberships__group_memberships)
+  [GROUP_MEMBERS_TYPE_NAME]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'members', fieldType: `list<${GROUP_MEMBERS_USER_TYPE_NAME}>` },
+      ],
+    },
+  },
+  [GROUP_MEMBERS_USER_TYPE_NAME]: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'user', fieldType: 'string' },
+        { fieldName: 'default', fieldType: 'boolean' },
+      ],
+    },
+  },
+
   custom_role: {
     transformation: {
       sourceTypeName: 'custom_roles__custom_roles',
@@ -1133,6 +1150,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'groups',
     },
   },
+  group_memberships: {
+    request: {
+      url: '/group_memberships',
+    },
+    transformation: {
+      dataField: 'group_memberships',
+    },
+  },
   // eslint-disable-next-line camelcase
   custom_roles: {
     request: {
@@ -1858,6 +1883,7 @@ export const SUPPORTED_TYPES = {
   custom_role: ['custom_roles'],
   dynamic_content_item: ['dynamic_content_item'],
   group: ['groups'],
+  [GROUP_MEMBERS_TYPE_NAME]: ['group_memberships'],
   locale: ['locales'],
   macro_categories: ['macro_categories'],
   macro: ['macros'],
@@ -1908,6 +1934,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     exclude: [
       { type: 'organization' },
       { type: 'oauth_global_client' },
+      { type: GROUP_MEMBERS_TYPE_NAME },
     ],
     hideTypes: true,
     enableMissingReferences: true,

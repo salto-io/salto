@@ -55,6 +55,7 @@ import ticketFieldFilter from './filters/custom_field_options/ticket_field'
 import userFieldFilter from './filters/custom_field_options/user_field'
 import dynamicContentFilter from './filters/dynamic_content'
 import dynamicContentReferencesFilter from './filters/dynamic_content_references'
+import groupMembersFilter from './filters/group_members'
 import restrictionFilter from './filters/restriction'
 import organizationFieldFilter from './filters/organization_field'
 import removeDefinitionInstancesFilter from './filters/remove_definition_instances'
@@ -122,15 +123,17 @@ export const DEFAULT_FILTERS = [
   hardcodedChannelFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
-  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
-  // tagsFilter and hcLocalesFilter
   usersFilter,
+  // groupMembersFilter should run be after usersFilter
+  groupMembersFilter,
   tagsFilter,
   hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
+  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
+  // tagsFilter and hcLocalesFilter
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,

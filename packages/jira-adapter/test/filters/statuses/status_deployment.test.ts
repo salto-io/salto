@@ -23,6 +23,7 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
+jest.setTimeout(1000000)
 describe('statusDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let mockConnection: MockInterface<clientUtils.APIConnection>
@@ -247,13 +248,12 @@ describe('statusDeploymentFilter', () => {
       expect(additionInstance.value.id).toEqual('12345')
     })
 
-    it('should deploy first chunk of changes and fail the other', async () => {
+    it('should try to deploy all of the statuses', async () => {
       const responseData = _.range(0, 50)
         .map(i => ({ id: `${i}`, name: `status${i}` }))
-      mockConnection.post
-        .mockResolvedValueOnce({ status: 200,
-          data: responseData })
-        .mockRejectedValueOnce((new Error('no status category')))
+      mockConnection.post.mockResolvedValue({ status: 200,
+        data: responseData })
+      mockConnection.post.mockRejectedValueOnce((new Error('no status category')))
       const validChanges = _.range(0, 50).map(i => toChange({
         after: new InstanceElement(
           `status${i}`,

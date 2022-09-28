@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { PLUGIN_IMPLEMENTATION_TYPES, SCRIPT_TYPES } from '../types'
 import { ServiceUrlSetter } from './types'
 import { SUPPORTED_TYPES } from '../changes_detector/changes_detectors/script'
-import { setInstancesUrls } from './instances_urls'
+import { setElementsUrls } from './elements_urls'
 
 const generateUrl = (id: number, element: InstanceElement):
   string | undefined => {
@@ -32,8 +32,8 @@ const generateUrl = (id: number, element: InstanceElement):
 }
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  await setInstancesUrls({
-    elements,
+  await setElementsUrls({
+    elements: elements.filter(isInstanceElement),
     client,
     filter: element => SUPPORTED_TYPES.includes(element.refType.elemID.name),
     query: 'SELECT id, scriptid FROM script ORDER BY id ASC',

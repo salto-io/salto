@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Change } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
-import { NETSUITE } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
@@ -127,6 +127,110 @@ describe('NetsuiteClient', () => {
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
+      })
+
+      describe('custom record types', () => {
+        it('should transform type to customrecordtype instance', async () => {
+          const change = toChange({
+            after: new ObjectType({
+              elemID: new ElemID(NETSUITE, 'customrecord1'),
+              annotations: {
+                [SCRIPT_ID]: 'customrecord1',
+                [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+              },
+            }),
+          })
+          expect(await client.deploy(
+            [change],
+            SDF_CHANGE_GROUP_ID,
+            ...deployParams
+          )).toEqual({
+            errors: [],
+            appliedChanges: [change],
+          })
+          expect(mockSdfDeploy).toHaveBeenCalledWith(
+            [{
+              scriptId: 'customrecord1',
+              typeName: 'customrecordtype',
+              values: { '@_scriptid': 'customrecord1' },
+            }],
+            undefined,
+            {
+              additionalDependencies: {
+                exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
+              },
+            }
+          )
+        })
+        it('should transform field to customrecordtype instance', async () => {
+          const customRecordType = new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            fields: {
+              custom_field: { refType: BuiltinTypes.STRING },
+            },
+            annotations: {
+              [SCRIPT_ID]: 'customrecord1',
+              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+            },
+          })
+          const change = toChange({
+            after: customRecordType.fields.custom_field,
+          })
+          expect(await client.deploy(
+            [change],
+            SDF_CHANGE_GROUP_ID,
+            ...deployParams
+          )).toEqual({
+            errors: [],
+            appliedChanges: [change],
+          })
+          expect(mockSdfDeploy).toHaveBeenCalledWith(
+            [{
+              scriptId: 'customrecord1',
+              typeName: 'customrecordtype',
+              values: { '@_scriptid': 'customrecord1' },
+            }],
+            undefined,
+            {
+              additionalDependencies: {
+                exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
+              },
+            }
+          )
+        })
+        it('should try again to deploy after ObjectsDeployError field fail', async () => {
+          const customRecordType = new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            fields: {
+              custom_field: { refType: BuiltinTypes.STRING },
+            },
+            annotations: {
+              [SCRIPT_ID]: 'customrecord1',
+              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+            },
+          })
+          const objectsDeployError = new ObjectsDeployError('error', new Set(['customrecord1']))
+          mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
+          const successChange = toChange({
+            after: new InstanceElement(
+              'instance',
+              new ObjectType({ elemID: new ElemID(NETSUITE, 'type') }),
+              { scriptid: 'someObject' }
+            ),
+          })
+          const failedChange = toChange({
+            after: customRecordType.fields.custom_field,
+          })
+          expect(await client.deploy(
+            [successChange, failedChange],
+            SDF_CHANGE_GROUP_ID,
+            ...deployParams
+          )).toEqual({
+            errors: [objectsDeployError],
+            appliedChanges: [successChange],
+          })
+          expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+        })
       })
 
       describe('features', () => {

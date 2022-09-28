@@ -16,12 +16,12 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ProgressReporter, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { NetsuiteQuery } from '../../src/query'
 import safeDeployValidator, { FetchByQueryReturnType } from '../../src/change_validators/safe_deploy'
-import { PATH, NETSUITE } from '../../src/constants'
+import { PATH, NETSUITE, CUSTOM_RECORD_TYPE, METADATA_TYPE } from '../../src/constants'
 import { IDENTIFIER_FIELD } from '../../src/data_elements/types'
-import { customlistType } from '../../src/autogen/types/custom_types/customlist'
-import { customrecordtypeType } from '../../src/autogen/types/custom_types/customrecordtype'
-import { customsegmentType } from '../../src/autogen/types/custom_types/customsegment'
-import { roleType } from '../../src/autogen/types/custom_types/role'
+import { customlistType } from '../../src/autogen/types/standard_types/customlist'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
+import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
+import { roleType } from '../../src/autogen/types/standard_types/role'
 import { fileType, folderType } from '../../src/types/file_cabinet_types'
 
 describe('safe deploy change validator', () => {
@@ -66,20 +66,10 @@ describe('safe deploy change validator', () => {
 
     const origInstance2 = new InstanceElement(
       'instance',
-      customrecordtypeType().type,
+      workflowType().type,
       {
-        customvalues: {
-          customvalue: [
-            {
-              scriptid: 'val_1',
-              value: 'Value 1',
-            },
-            {
-              scriptid: 'val_2',
-              value: 'Value 2',
-            },
-          ],
-        },
+        scriptid: 'custom_workflow1',
+        name: 'Custom Workflow 1',
       },
     )
 
@@ -123,6 +113,69 @@ describe('safe deploy change validator', () => {
             [toChange({ before: origInstance, after: afterInstance })],
             fetchByQuery
           )
+          expect(changeErrors).toHaveLength(1)
+        })
+      })
+
+      describe('When custom record type has changed in the service in the same annotation', () => {
+        it('should have warning', async () => {
+          const customRecordType = new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            annotations: {
+              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+              recordname: 'recordname',
+            },
+          })
+          const afterCustomRecordType = customRecordType.clone()
+          afterCustomRecordType.annotations.recordname = 'Modified in workspace'
+          const serviceCustomRecordType = customRecordType.clone()
+          serviceCustomRecordType.annotations.recordname = 'Modified in service'
+
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+            Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
+            elements: [serviceCustomRecordType.clone()],
+          }))
+          const changeErrors = await safeDeployValidator(
+            [toChange({ before: customRecordType, after: afterCustomRecordType })],
+            fetchByQuery
+          )
+          expect(changeErrors).toHaveLength(1)
+        })
+      })
+
+      describe('When custom record type field has changed in the service in the same annotation', () => {
+        it('should have warning', async () => {
+          const customRecordType = new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            fields: {
+              custom_field: {
+                refType: BuiltinTypes.STRING,
+                annotations: { name: 'something' },
+              },
+            },
+            annotations: {
+              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+            },
+          })
+          const afterCustomRecordType = customRecordType.clone()
+          afterCustomRecordType.fields.custom_field.annotations.name = 'Modified in workspace'
+          const serviceCustomRecordType = customRecordType.clone()
+          serviceCustomRecordType.fields.custom_field.annotations.name = 'Modified in service'
+
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+            Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
+            elements: [serviceCustomRecordType.clone()],
+          }))
+          const changeErrors = await safeDeployValidator([toChange({
+            before: customRecordType.fields.custom_field,
+            after: afterCustomRecordType.fields.custom_field,
+          })], fetchByQuery)
           expect(changeErrors).toHaveLength(1)
         })
       })
@@ -266,15 +319,15 @@ describe('safe deploy change validator', () => {
       })
     })
     describe('Changes in referenced instances', () => {
-      const customRecordInstance = new InstanceElement(
-        'customrecord_cseg1',
-        customrecordtypeType().type,
-        {
+      const customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord_cseg1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
           scriptid: 'customrecord_cseg1',
           customsegment: 'cseg1',
           value: 'Value',
         },
-      )
+      })
 
       const customSegmentInstance = new InstanceElement(
         'cseg1',
@@ -302,15 +355,15 @@ describe('safe deploy change validator', () => {
         }
       )
 
-      customRecordInstance.value.customsegment = new ReferenceExpression(
+      customRecordType.annotations.customsegment = new ReferenceExpression(
         customSegmentInstance.elemID.createNestedID('scriptid'),
         undefined,
         customSegmentInstance
       )
       customSegmentInstance.value.recordtype = new ReferenceExpression(
-        customRecordInstance.elemID.createNestedID('scriptid'),
+        customRecordType.elemID.createNestedID('attr', 'scriptid'),
         undefined,
-        customRecordInstance
+        customRecordType
       )
       customSegmentInstance.value.permissions.permission[0].role = new ReferenceExpression(
         roleInstance.elemID.createNestedID('scriptid'),
@@ -318,10 +371,10 @@ describe('safe deploy change validator', () => {
         roleInstance
       )
 
-      let afterCustomRecordInstance: InstanceElement
+      let afterCustomRecordType: ObjectType
       beforeEach(() => {
-        afterCustomRecordInstance = customRecordInstance.clone()
-        afterCustomRecordInstance.value.value = 'Changed Value'
+        afterCustomRecordType = customRecordType.clone()
+        afterCustomRecordType.annotations.value = 'Changed Value'
       })
 
       it('should have a warning when required instance changed in the service', async () => {
@@ -333,14 +386,14 @@ describe('safe deploy change validator', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: { lockedError: [], otherError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {} },
-          elements: [customRecordInstance.clone(), serviceRequiredInstance, roleInstance.clone()],
+          elements: [customRecordType.clone(), serviceRequiredInstance, roleInstance.clone()],
         }))
         const changeErrors = await safeDeployValidator(
-          [toChange({ before: customRecordInstance, after: afterCustomRecordInstance })],
+          [toChange({ before: customRecordType, after: afterCustomRecordType })],
           fetchByQuery
         )
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].detailedMessage).toEqual(`The element ${customSegmentInstance.elemID.getFullName()}, which is required in ${customRecordInstance.elemID.name} and going to be deployed with it, has recently changed in the service.`)
+        expect(changeErrors[0].detailedMessage).toEqual(`The element ${customSegmentInstance.elemID.getFullName()}, which is required in ${customRecordType.elemID.name} and going to be deployed with it, has recently changed in the service.`)
       })
       it('should have a warning when referenced instance changed in the service', async () => {
         const serviceReferencedInstance = roleInstance.clone()
@@ -352,18 +405,18 @@ describe('safe deploy change validator', () => {
           failedFilePaths: { lockedError: [], otherError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [
-            customRecordInstance.clone(),
+            customRecordType.clone(),
             customSegmentInstance.clone(),
             serviceReferencedInstance,
           ],
         }))
         const changeErrors = await safeDeployValidator(
-          [toChange({ before: customRecordInstance, after: afterCustomRecordInstance })],
+          [toChange({ before: customRecordType, after: afterCustomRecordType })],
           fetchByQuery,
           true
         )
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].detailedMessage).toEqual(`The element ${roleInstance.elemID.getFullName()}, which is referenced in ${customRecordInstance.elemID.name} and going to be deployed with it, has recently changed in the service.`)
+        expect(changeErrors[0].detailedMessage).toEqual(`The element ${roleInstance.elemID.getFullName()}, which is referenced in ${customRecordType.elemID.name} and going to be deployed with it, has recently changed in the service.`)
       })
     })
   })

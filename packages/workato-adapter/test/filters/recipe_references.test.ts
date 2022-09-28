@@ -854,24 +854,27 @@ describe('Recipe references filter', () => {
   }
   const generateNetsuiteElements = (): Element[] => {
     const customRecordType = new ObjectType({
-      elemID: new ElemID('netsuite', 'customrecordtype'),
-      fields: {},
-    })
-    const myCustomRecord = new InstanceElement(
-      'customrecord16',
-      customRecordType,
-      {
+      elemID: new ElemID('netsuite', 'customrecord16'),
+      fields: {
+        custom_custrecord5: {
+          refType: BuiltinTypes.STRING,
+          annotations: { scriptid: 'custrecord5' },
+        },
+        custom_somethingelse: {
+          refType: BuiltinTypes.STRING,
+          annotations: { scriptid: 'somethingelse' },
+        },
+        custom_custrecordaccount_id: {
+          refType: BuiltinTypes.STRING,
+          annotations: { scriptid: 'custrecordaccount_id' },
+        },
+      },
+      annotations: {
         scriptid: 'customrecord16',
         recordname: 'my custom record',
-        customrecordcustomfields: {
-          customrecordcustomfield: {
-            custrecord5: { scriptid: 'custrecord5', index: 0 },
-            somethingelse: { scriptid: 'somethingelse', index: 1 },
-            custrecordaccount_id: { scriptid: 'custrecordaccount_id', index: 2 },
-          },
-        },
-      }
-    )
+        metadataType: 'customrecordtype',
+      },
+    })
 
     const otherCustomFieldType = new ObjectType({
       elemID: new ElemID('netsuite', 'othercustomfield'),
@@ -913,7 +916,7 @@ describe('Recipe references filter', () => {
     })
 
     return [
-      customRecordType, myCustomRecord,
+      customRecordType,
       otherCustomFieldType, otherCustomFieldInst,
       entitycustomfieldType, entitycustomfieldInst,
       customerType, opportunityType,
@@ -1020,9 +1023,9 @@ describe('Recipe references filter', () => {
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
           dereferenceDep
         )).toEqual([
-          { reference: 'netsuite.customrecordtype.instance.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.block.0', direction: 'output' }] },
-          { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
-          { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
+          { reference: 'netsuite.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.block.0', direction: 'output' }] },
+          { reference: 'netsuite.customrecord16.field.custom_custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
+          { reference: 'netsuite.customrecord16.field.custom_custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
           { reference: 'netsuite.entitycustomfield.instance.custentitycustom_account_city', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
           { reference: 'netsuite.othercustomfield.instance.custrecord2', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.block.0', direction: 'output' }] },
           { reference: 'salesforce.MyCustom__c', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.block.0.block.0', direction: 'output' }] },
@@ -1095,7 +1098,7 @@ describe('Recipe references filter', () => {
         expect(block1.input.netsuite_object).toBeInstanceOf(
           ReferenceExpression
         )
-        expect(block1.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.customrecordtype.instance.customrecord16')
+        expect(block1.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.customrecord16')
         const block2 = block1.block[0]
         expect(block2.input.sobject_name).toBeInstanceOf(
           ReferenceExpression
@@ -1131,9 +1134,9 @@ describe('Recipe references filter', () => {
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
           dereferenceDep
         )).toEqual([
-          { reference: 'netsuite.customrecordtype.instance.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.block.0', direction: 'output' }] },
-          { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
-          { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
+          { reference: 'netsuite.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.block.0', direction: 'output' }] },
+          { reference: 'netsuite.customrecord16.field.custom_custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
+          { reference: 'netsuite.customrecord16.field.custom_custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
           { reference: 'netsuite.entitycustomfield.instance.custentitycustom_account_city', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
           { reference: 'netsuite.othercustomfield.instance.custrecord2', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.block.0', direction: 'output' }] },
         ])
@@ -1165,7 +1168,7 @@ describe('Recipe references filter', () => {
         expect(block1.input.netsuite_object).toBeInstanceOf(
           ReferenceExpression
         )
-        expect(block1.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.customrecordtype.instance.customrecord16')
+        expect(block1.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.customrecord16')
       })
     })
 
@@ -1378,14 +1381,14 @@ describe('Recipe references filter', () => {
           .flatMap(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] ?? [])
           .map(dereferenceDep)
       ).toEqual([
-        { reference: 'netsuite.customrecordtype.instance.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.block.0', direction: 'output' }] },
-        { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
-        { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
+        { reference: 'netsuite.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.block.0', direction: 'output' }] },
+        { reference: 'netsuite.customrecord16.field.custom_custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
+        { reference: 'netsuite.customrecord16.field.custom_custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
         { reference: 'netsuite.entitycustomfield.instance.custentitycustom_account_city', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.input.Custom__c', direction: 'input' }] },
         { reference: 'netsuite.othercustomfield.instance.custrecord2', occurrences: [{ location: 'workato.recipe__code.instance.recipe1_code.block.0', direction: 'output' }] },
-        { reference: 'netsuite.customrecordtype.instance.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.block.0', direction: 'output' }] },
-        { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
-        { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
+        { reference: 'netsuite.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.block.0', direction: 'output' }] },
+        { reference: 'netsuite.customrecord16.field.custom_custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
+        { reference: 'netsuite.customrecord16.field.custom_custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
         { reference: 'netsuite.entitycustomfield.instance.custentitycustom_account_city', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
         { reference: 'netsuite.othercustomfield.instance.custrecord2', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.block.0', direction: 'output' }] },
         { reference: 'netsuite.Customer', occurrences: [{ location: 'workato.recipe__code.instance.recipe6_code', direction: 'input' }] },
@@ -1454,9 +1457,9 @@ describe('Recipe references filter', () => {
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
           dereferenceDep
         )).toEqual([
-          { reference: 'netsuite.customrecordtype.instance.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.block.0', direction: 'output' }] },
-          { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.input.Custom__c', direction: 'input' }] },
-          { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.input.Custom__c', direction: 'input' }] },
+          { reference: 'netsuite.customrecord16', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.block.0', direction: 'output' }] },
+          { reference: 'netsuite.customrecord16.field.custom_custrecord5', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.input.Custom__c', direction: 'input' }] },
+          { reference: 'netsuite.customrecord16.field.custom_custrecordaccount_id', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.input.Custom__c', direction: 'input' }] },
           { reference: 'netsuite.entitycustomfield.instance.custentitycustom_account_city', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.input.Custom__c', direction: 'input' }] },
           { reference: 'netsuite.othercustomfield.instance.custrecord2', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.block.0', direction: 'output' }] },
           { reference: 'salesforce.MyCustom__c', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.block.0.block.0', direction: 'output' }] },

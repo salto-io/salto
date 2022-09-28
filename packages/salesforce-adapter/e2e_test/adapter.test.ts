@@ -386,8 +386,7 @@ describe('Salesforce adapter E2E with real account', () => {
         'testLightningComponentBundle')[0] as InstanceElement
       expect(lwc.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('testLightningComponentBundle')
-      const lwcResource = makeArray(lwc.value.lwcResources?.lwcResource)
-        .find(resource => resource.filePath === 'lwc/testLightningComponentBundle/testLightningComponentBundle.js')
+      const lwcResource = lwc.value.lwcResources?.lwcResource['testLightningComponentBundle_js@v']
       expect(lwcResource).toBeDefined()
       expect(isStaticFile(lwcResource.source)).toBe(true)
       const lwcResourceStaticFile = lwcResource.source as StaticFile
@@ -2307,9 +2306,13 @@ describe('Salesforce adapter E2E with real account', () => {
               fullName) as CustomField
             expect(fieldInfo[constants.INSTANCE_FULL_NAME_FIELD])
               .toEqual(`${accountApiName}.${CUSTOM_FIELD_NAMES.ROLLUP_SUMMARY}`)
-            delete fieldInfo[constants.INSTANCE_FULL_NAME_FIELD]
+            const fieldWithoutName = _.omit(fieldInfo, constants.INSTANCE_FULL_NAME_FIELD)
             expect(Object.assign(
-              await transformFieldAnnotations(fieldInfo, Types.get(fieldInfo.type), accountApiName),
+              await transformFieldAnnotations(
+                fieldWithoutName,
+                Types.get(fieldInfo.type),
+                accountApiName,
+              ),
               { [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY }
             )).toEqual(_.omit(annotations, constants.API_NAME))
           })

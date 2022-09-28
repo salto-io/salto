@@ -22,15 +22,6 @@ import { generateProfileType, defaultFilterContext } from '../utils'
 describe('FieldPermissionsEnum filter', () => {
   let filter: FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
   const profileObj = generateProfileType(true)
-  const permissionSetObject = new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, constants.PERMISSION_SET_METADATA_TYPE),
-    fields: {
-      fieldPermissions: { refType: new MapType(new MapType(profileFieldLevelSecurity)) },
-    },
-    annotations: {
-      [constants.METADATA_TYPE]: constants.PERMISSION_SET_METADATA_TYPE,
-    },
-  })
   const fieldPermissionObjectValue = {
     ObjA: {
       FieldA: {
@@ -86,31 +77,18 @@ describe('FieldPermissionsEnum filter', () => {
       fieldPermissions: fieldPermissionObjectValue,
     }
   )
-  const permissionSetInstance = new InstanceElement(
-    'permissionSetInst',
-    permissionSetObject,
-    {
-      fieldPermissions: fieldPermissionObjectValue,
-    }
-  )
 
   describe('onFetch', () => {
     let elements: (InstanceElement | ObjectType)[]
     let profileInstanceClone: InstanceElement
-    let permissionSetInstanceClone: InstanceElement
-    let permissionSetObjectClone: ObjectType
     let profileObjectClone: ObjectType
     describe('with enumFieldPermissions true', () => {
       beforeAll(async () => {
         profileInstanceClone = profileInstance.clone()
-        permissionSetInstanceClone = permissionSetInstance.clone()
-        permissionSetObjectClone = permissionSetObject.clone()
         profileObjectClone = profileObj.clone()
         elements = [
           profileObjectClone,
-          permissionSetObjectClone,
           profileInstanceClone,
-          permissionSetInstanceClone,
         ]
         filter = fieldPermissionsEnumFilter(
           { config: { ...defaultFilterContext, enumFieldPermissions: true } },
@@ -127,20 +105,9 @@ describe('FieldPermissionsEnum filter', () => {
           .toBeTruthy()
       })
 
-      it('Should convert PermissionSet Object fieldPermissions type to fieldPermissionEnum', async () => {
-        const fieldPermissionsFieldType = await (permissionSetObjectClone)
-          .fields.fieldPermissions.getType()
-        expect(isMapType(fieldPermissionsFieldType)).toBeTruthy()
-        const deepInnerFieldPermissionType = await getDeepInnerType(fieldPermissionsFieldType)
-        expect(deepInnerFieldPermissionType.elemID.isEqual(enumFieldPermissions.elemID))
-          .toBeTruthy()
-      })
-
-      it('Should convert Profile and PermissionSet instances\' fieldPermissions values to right enums', async () => {
-        [profileInstanceClone, permissionSetInstanceClone].forEach(instance => {
-          expect(instance.value).toEqual({
-            fieldPermissions: fieldPermissionEnumValue,
-          })
+      it('Should convert Profile instances\' fieldPermissions values to right enums', async () => {
+        expect(profileInstanceClone.value).toEqual({
+          fieldPermissions: fieldPermissionEnumValue,
         })
       })
     })
@@ -151,40 +118,25 @@ describe('FieldPermissionsEnum filter', () => {
           { config: { ...defaultFilterContext } },
         ) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
         profileInstanceClone = profileInstance.clone()
-        permissionSetInstanceClone = permissionSetInstance.clone()
-        permissionSetObjectClone = permissionSetObject.clone()
         profileObjectClone = profileObj.clone()
         elements = [
           profileObjectClone,
-          permissionSetObjectClone,
           profileInstanceClone,
-          permissionSetInstanceClone,
         ]
         await filter.onFetch(elements)
       })
 
-      it('Should not change the Profile and PermissionSet objects', async () => {
+      it('Should not change the Profile objects', async () => {
         expect(profileObj.isEqual(profileObjectClone)).toBeTruthy()
-        expect(permissionSetObject.isEqual(permissionSetObjectClone)).toBeTruthy()
       })
 
-      it('Should not change Profile and PermissionSet instances', () => {
+      it('Should not change Profile instances', () => {
         expect(profileInstance.isEqual(profileInstanceClone)).toBeTruthy()
-        expect(permissionSetInstance.isEqual(permissionSetInstanceClone)).toBeTruthy()
       })
     })
   })
 
   describe('deploy (pre + on)', () => {
-    const permissionSetObjectPostOnFetch = new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, constants.PERMISSION_SET_METADATA_TYPE),
-      fields: {
-        fieldPermissions: { refType: new MapType(new MapType(enumFieldPermissions)) },
-      },
-      annotations: {
-        [constants.METADATA_TYPE]: constants.PERMISSION_SET_METADATA_TYPE,
-      },
-    })
     const profileObjectPostOnFetch = new ObjectType({
       elemID: new ElemID(constants.SALESFORCE, constants.PROFILE_METADATA_TYPE),
       fields: {
@@ -201,13 +153,6 @@ describe('FieldPermissionsEnum filter', () => {
         fieldPermissions: fieldPermissionEnumValue,
       }
     )
-    const permissionSetInstancePostOnFetch = new InstanceElement(
-      'permissionSetInstPostOnFetch',
-      permissionSetObjectPostOnFetch,
-      {
-        fieldPermissions: fieldPermissionEnumValue,
-      }
-    )
     let changes: Change<InstanceElement>[]
 
     describe('with instances and types that had this filter\'s onFetch run on them', () => {
@@ -217,7 +162,6 @@ describe('FieldPermissionsEnum filter', () => {
         ) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
         changes = [
           profileInstancePostOnFetch,
-          permissionSetInstancePostOnFetch,
         ].map(elem => toChange({ after: elem.clone() }))
       })
 
@@ -277,7 +221,6 @@ describe('FieldPermissionsEnum filter', () => {
         ) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
         changes = [
           profileInstance,
-          permissionSetInstance,
         ].map(elem => toChange({ after: elem.clone() }))
       })
 

@@ -15,12 +15,12 @@
 */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections, values as lowerfashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ResponseValue } from './http_connection'
 import { ClientBaseParams, HTTPReadClientInterface } from './http_client'
 
-const { isDefined } = lowerfashValues
+const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
 const log = logger(module)
 
@@ -149,6 +149,32 @@ export const traverseRequests: (
   }
   // the number of results may be lower than actual if the instances are under a nested field
   log.info('Received %d results for endpoint %s', numResults, url)
+}
+
+/**
+ * Make paginated requests using the specified pagination field
+ * Response is expected to contain a list of values without metadata
+ * Going to next page is done manually by advancing the pagination field by the relevant amount
+ */
+export const getWithItemOffsetPagination = ({
+  firstIndex,
+  itemsPerPage,
+} : {
+  firstIndex: number
+  itemsPerPage: number
+}): PaginationFunc => {
+  const nextPage: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
+    const { paginationField } = getParams
+    if (paginationField === undefined || page.length < pageSize) {
+      return []
+    }
+    return [{
+      ...currentParams,
+      [paginationField]: (Number(currentParams[paginationField] ?? firstIndex) + itemsPerPage)
+        .toString(),
+    }]
+  }
+  return nextPage
 }
 
 /**

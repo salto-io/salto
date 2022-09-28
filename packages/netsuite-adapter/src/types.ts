@@ -13,17 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isInstanceElement, ObjectType, PrimitiveType, TypeElement, TypeReference } from '@salto-io/adapter-api'
+import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isField, isInstanceElement, isObjectType, ObjectType, PrimitiveType, TypeElement, TypeReference, Values } from '@salto-io/adapter-api'
 import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
-import { CustomType, getCustomTypes, isCustomTypeName } from './autogen/types'
+import { StandardType, getStandardTypes, isStandardTypeName } from './autogen/types'
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
-import { CONFIG_FEATURES } from './constants'
+import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, METADATA_TYPE } from './constants'
 
-export const isCustomType = (type: ObjectType | TypeReference): boolean =>
-  isCustomTypeName(type.elemID.name)
+export const getElementValueOrAnnotations = (element: Element): Values => (
+  isInstanceElement(element) ? element.value : element.annotations
+)
+
+export const isStandardType = (type: ObjectType | TypeReference): boolean =>
+  isStandardTypeName(type.elemID.name)
+
+export const isCustomRecordType = (type: ObjectType): boolean =>
+  type.annotations[METADATA_TYPE] === CUSTOM_RECORD_TYPE
+
+export const isStandardInstanceOrCustomRecordType = (element: Element): boolean => (
+  isInstanceElement(element) && isStandardType(element.refType)
+) || (
+  isObjectType(element) && isCustomRecordType(element)
+) || (
+  isField(element) && isCustomRecordType(element.parent)
+)
 
 export const isFileCabinetType = (type: ObjectType | TypeReference): boolean =>
   fileCabinetTypesNames.has(type.elemID.name)
@@ -38,30 +53,30 @@ export const isDataObjectType = (element: ObjectType): boolean =>
   element.annotations.source === 'soap'
 
 type MetadataTypes = {
-  customTypes: TypesMap<CustomType>
+  standardTypes: TypesMap<StandardType>
   enums: Readonly<Record<string, PrimitiveType>>
   additionalTypes: Readonly<Record<string, ObjectType>>
   fieldTypes: Readonly<Record<string, PrimitiveType>>
 }
 
 export const getMetadataTypes = (): MetadataTypes => ({
-  customTypes: getCustomTypes(),
+  standardTypes: getStandardTypes(),
   enums,
   additionalTypes: { ...getFileCabinetTypes(), ...getConfigurationTypes() },
   fieldTypes,
 })
 
-export const getTopLevelCustomTypes = (customTypes: TypesMap<CustomType>): ObjectType[] =>
-  Object.values(customTypes).map(customType => customType.type)
+export const getTopLevelStandardTypes = (standardTypes: TypesMap<StandardType>): ObjectType[] =>
+  Object.values(standardTypes).map(standardType => standardType.type)
 
-export const getInnerCustomTypes = (customTypes: TypesMap<CustomType>): ObjectType[] =>
-  Object.values(customTypes).flatMap(customType => Object.values(customType.innerTypes))
+export const getInnerStandardTypes = (standardTypes: TypesMap<StandardType>): ObjectType[] =>
+  Object.values(standardTypes).flatMap(standardType => Object.values(standardType.innerTypes))
 
 export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[] => {
-  const { customTypes, additionalTypes } = metadataTypes
+  const { standardTypes, additionalTypes } = metadataTypes
   return [
-    ...getTopLevelCustomTypes(customTypes),
-    ...getInnerCustomTypes(customTypes),
+    ...getTopLevelStandardTypes(standardTypes),
+    ...getInnerStandardTypes(standardTypes),
     ...Object.values(enums),
     ...Object.values(additionalTypes),
     ...Object.values(fieldTypes),

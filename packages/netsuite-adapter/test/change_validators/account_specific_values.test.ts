@@ -15,7 +15,7 @@
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import { fileType } from '../../src/types/file_cabinet_types'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import accountSpecificValueValidator from '../../src/change_validators/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, PATH, SCRIPT_ID } from '../../src/constants'
 

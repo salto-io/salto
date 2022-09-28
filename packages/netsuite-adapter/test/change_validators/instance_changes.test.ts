@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange } from '@salto-io/adapter-api'
-import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import instanceChangesValidator from '../../src/change_validators/instance_changes'
-import { SCRIPT_ID } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 
 
 describe('customization type change validator', () => {
@@ -29,5 +29,16 @@ describe('customization type change validator', () => {
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(after.elemID)
+  })
+  it('should not have change error if custom record type SCRIPT_ID has been modified', async () => {
+    const before = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      },
+    })
+    const after = before.clone()
+    after.annotate({ dummyKey: 'dummyValue' })
+    expect(await instanceChangesValidator([toChange({ before, after })])).toHaveLength(0)
   })
 })

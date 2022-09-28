@@ -38,6 +38,10 @@ describe('account_id_filter', () => {
   let simpleInstances: InstanceElement[] = []
   let displayChanges: Change<InstanceElement>[]
 
+  let filterInstance: InstanceElement
+  let dashboardInstance: InstanceElement
+  let boardInstance: InstanceElement
+
   beforeEach(() => {
     elemIdGetter = mockFunction<ElemIdGetter>()
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
@@ -52,15 +56,39 @@ describe('account_id_filter', () => {
       getElemIdFunc: elemIdGetter,
     })) as typeof filter
 
-    objectType = common.createType('PermissionScheme') // passes all conditions
-    changedObjectType = common.createObjectedType('NotificationScheme') // passes all conditions
+    objectType = common.createType('PermissionScheme') // passes 3rd condition
+    changedObjectType = common.createObjectedType('NotificationScheme') // passes 3rd condition
 
     displayNamesInstances = common.createInstanceElementArrayWithDisplayNames(4, changedObjectType)
     simpleInstances = []
     for (let i = 0; i < 4; i += 1) {
       simpleInstances[i] = common.createInstance(i.toString(), objectType)
     }
-
+    filterInstance = new InstanceElement(
+      'filterInstance',
+      common.createFilterType(),
+      {
+        owner: 'acc2',
+      }
+    )
+    boardInstance = new InstanceElement(
+      'boardInstance',
+      common.createBoardType(),
+      {
+        admins: {
+          users: ['acc3', 'acc31'],
+        },
+      }
+    )
+    dashboardInstance = new InstanceElement(
+      'instance3',
+      common.createDashboardType(),
+      {
+        inner: {
+          owner: 'acc4',
+        },
+      }
+    )
 
     displayChanges = [
       toChange({ after: displayNamesInstances[0] }),
@@ -69,8 +97,12 @@ describe('account_id_filter', () => {
   })
   describe('fetch', () => {
     it('changes instance element structures for all 5 types', async () => {
-      await filter.onFetch([simpleInstances[1]])
+      await filter.onFetch([simpleInstances[1], filterInstance, dashboardInstance, boardInstance])
       common.checkObjectedInstanceIds(simpleInstances[1], '1')
+      expect(filterInstance.value.owner.id).toEqual('acc2')
+      expect(boardInstance.value.admins.users[0].id).toEqual('acc3')
+      expect(boardInstance.value.admins.users[1].id).toEqual('acc31')
+      expect(dashboardInstance.value.inner.owner.id).toEqual('acc4')
     })
     it('should change account ids in all defined types', async () => {
       await awu(ACCOUNT_ID_TYPES).forEach(async typeName => {
@@ -122,6 +154,22 @@ describe('account_id_filter', () => {
       common.checkSimpleInstanceIds(getChangeData(displayChanges[0]), '0')
       common.checkObjectedInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.before, '1')
       common.checkSimpleInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.after, '2')
+    })
+    it('does not change non deployable objects on deploy', async () => {
+      await filter.onFetch([filterInstance, boardInstance, dashboardInstance])
+      displayChanges.push(toChange({ after: filterInstance }))
+      displayChanges.push(toChange({ after: boardInstance }))
+      displayChanges.push(toChange({ after: dashboardInstance }))
+      await filter.preDeploy(displayChanges)
+      expect(filterInstance.value.owner.id).toEqual('acc2')
+      expect(boardInstance.value.admins.users[0].id).toEqual('acc3')
+      expect(boardInstance.value.admins.users[1].id).toEqual('acc31')
+      expect(dashboardInstance.value.inner.owner.id).toEqual('acc4')
+      await filter.onDeploy(displayChanges)
+      expect(filterInstance.value.owner.id).toEqual('acc2')
+      expect(boardInstance.value.admins.users[0].id).toEqual('acc3')
+      expect(boardInstance.value.admins.users[1].id).toEqual('acc31')
+      expect(dashboardInstance.value.inner.owner.id).toEqual('acc4')
     })
     it('does not change removal objects', async () => {
       await filter.preDeploy([toChange({ before: displayNamesInstances[1] })])

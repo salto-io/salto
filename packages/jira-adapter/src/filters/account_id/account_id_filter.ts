@@ -26,12 +26,17 @@ import { accountIdInfoType } from './types'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
+export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
+export const NON_DEPLOYABLE_TYPES = [...OWNER_STYLE_TYPES, 'Board']
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
-export const ACCOUNT_ID_TYPES = PARAMETER_STYLE_TYPES.concat(['Automation', 'Project', 'ProjectComponent', 'ProjectRole'])
+export const DEPLOYABLE_TYPES = [...PARAMETER_STYLE_TYPES,
+  'Automation', 'Project', 'ProjectComponent', 'ProjectRole']
+export const ACCOUNT_ID_TYPES = [...NON_DEPLOYABLE_TYPES, ...DEPLOYABLE_TYPES]
 
 const USER_TYPE = 'user'
 const VALUE_FIELD = 'value'
 const PARAMETER_FIELD = 'parameter'
+const OWNER_FIELD = 'owner'
 
 type AccountIdCacheInfo = {
   path: ElemID
@@ -50,6 +55,9 @@ const addToCache = (
   }
   cache[key].push({ path, object: objectToClone })
 }
+
+export const isDeployableAccountIdType = (instanceElement: InstanceElement): boolean =>
+  DEPLOYABLE_TYPES.includes(instanceElement.elemID.typeName)
 
 const isAccountIdType = (instanceElement: InstanceElement): boolean =>
   ACCOUNT_ID_TYPES.includes(instanceElement.elemID.typeName)
@@ -81,6 +89,24 @@ const accountIdsScenarios = (
       && _.toLower(value.type) === USER_TYPE) {
     callback({ value, path, fieldName: PARAMETER_FIELD })
   }
+  // fourth scenario the type is Filter or Dashboard (coming from the user filter)
+  // the value is under the owner field
+  if (OWNER_STYLE_TYPES.includes(path.typeName)
+      && value.owner !== undefined) {
+    callback({ value, path, fieldName: OWNER_FIELD })
+  }
+  // fifth scenario the type is Board, inside the admins property there is a users
+  // property that is a list of account ids without any additional parameter
+  if (path.typeName === 'Board') {
+    if (path.name === 'users'
+        && Array.isArray(value)) {
+      _.range(value.length).forEach(index => callback({
+        value,
+        path,
+        fieldName: index.toString(),
+      }))
+    }
+  }
 }
 
 export const walkOnUsers = (callback: WalkOnUsersCallback): WalkOnFunc => (
@@ -90,7 +116,7 @@ export const walkOnUsers = (callback: WalkOnUsersCallback): WalkOnFunc => (
         return WALK_NEXT_STEP.EXIT
       }
       accountIdsScenarios(value.value, path, callback)
-    } else {
+    } else if (value !== undefined) {
       accountIdsScenarios(value, path, callback)
     }
     return WALK_NEXT_STEP.RECURSE
@@ -150,6 +176,7 @@ const filter: FilterCreator = () => {
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
+        .filter(isDeployableAccountIdType)
         .forEach(element =>
           walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache)) }))
     },

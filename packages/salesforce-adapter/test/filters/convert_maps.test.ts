@@ -23,14 +23,12 @@ import {
   Change,
   toChange,
   isObjectType,
-  ElemID, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
-import { EMAIL_TEMPLATE_METADATA_TYPE, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 
@@ -365,18 +363,7 @@ describe('Convert maps filter', () => {
     type FilterType = FilterWith<'onFetch'>
     let filter: FilterType
     beforeAll(async () => {
-      const emailTemplateID = new ElemID(SALESFORCE, EMAIL_TEMPLATE_METADATA_TYPE)
-
-      const fields = {
-        attachments: { refType: BuiltinTypes.STRING },
-      }
-
-      const emailTemplateType = new ObjectType({
-        annotations: { [METADATA_TYPE]: EMAIL_TEMPLATE_METADATA_TYPE },
-        elemID: emailTemplateID,
-        fields,
-        path: ['Objects', 'dir'],
-      })
+      const emailTemplateType = mockTypes.EmailTemplate
 
       elements = [emailTemplateType]
 

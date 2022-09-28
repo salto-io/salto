@@ -354,12 +354,14 @@ export const findInstancesToConvert = (
   return awu(instances).filter(async e => await metadataType(e) === targetMetadataType).toArray()
 }
 
-export const findTypeToConvert = (
+export const findTypeToConvert = async (
   elements: Element[],
   targetMetadataType: string,
-): Promise<ObjectType[]> => {
-  const instances = elements.filter(isObjectType)
-  return awu(instances).filter(async e => await metadataType(e) === targetMetadataType).toArray()
+): Promise<ObjectType | undefined> => {
+  const types = elements.filter(isObjectType)
+  return (await awu(types).filter(
+    async e => await metadataType(e) === targetMetadataType
+  ).toArray())[0]
 }
 
 /**
@@ -370,26 +372,28 @@ const filter: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
-      const typeToConvert = (await findTypeToConvert(elements, targetMetadataType))[0]
+      const typeToConvert = await findTypeToConvert(elements, targetMetadataType)
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
-      if (instancesToConvert.length === 0) {
-        if (isDefined(typeToConvert)) {
+      if (isDefined(typeToConvert)) {
+        if (instancesToConvert.length === 0) {
           await updateFieldTypes(typeToConvert, [], mapFieldDef)
+        } else {
+          const nonUniqueMapFields = await convertInstanceFieldsToMaps(
+            instancesToConvert, mapFieldDef
+          )
+          await updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
         }
-        return
       }
-      const nonUniqueMapFields = await convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
-      await updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
     })
   },
 
   preDeploy: async changes => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
+      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
         return
       }
-      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       // since transformElement and salesforce do not require list fields to be defined as lists,
       // we only mark fields as lists of their map inner value is a list,
       // so that we can convert the object back correctly in onDeploy

@@ -123,6 +123,7 @@ export const getElementHiddenParts = async <T extends Element>(
         : undefined
     ),
     strict: true,
+    allowEmpty: true,
     elementsSource,
   })
   // remove all annotation types from the hidden element so they don't cause merge conflicts
@@ -212,6 +213,7 @@ const removeHiddenFromValues = (
     pathID,
     elementsSource,
     strict: false,
+    allowEmpty: true,
   })
 )
 
@@ -518,6 +520,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
         strict: true,
         elementsSource: state,
         runOnFields: true,
+        allowEmpty: true,
       })
     })
 

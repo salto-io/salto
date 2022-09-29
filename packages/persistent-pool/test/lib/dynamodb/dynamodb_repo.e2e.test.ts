@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { retry as retryUtil } from '@salto-io/lowerdash'
 import {
   repo as makeRepo,
   DynamoDbInstances,
@@ -23,6 +24,8 @@ import {
 import { MyType, myTypeName, myVal } from '../../types'
 import repeat from '../../utils/repeat'
 import asyncToArray from '../../utils/async_to_array'
+
+const { retryStrategies } = retryUtil
 
 describe('when there are existing leases', () => {
   const NUM_LEASES = 40
@@ -58,34 +61,58 @@ describe('when there are existing leases', () => {
     await Promise.all(repeat(NUM_LEASES, () => pool.lease(timeout)))
   }
 
-  beforeAll(async () => {
-    ({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
-    repo = await makeRepo(repoOpts())
-    pool = await repo.pool(myTypeName)
 
-    await fillPool()
-  })
+  describe('without retries', () => {
+    beforeAll(async () => {
+      ({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
+      repo = await makeRepo(repoOpts())
+      pool = await repo.pool(myTypeName)
 
-  describe('lease', () => {
-    let lease: Lease<MyType>
-
-    beforeEach(async () => {
-      await pool.register(myVal)
-      lease = await pool.lease(timeout) as Lease<MyType>
+      await fillPool()
     })
 
-    it('should return a lease', () => {
-      expect(lease).not.toBeNull()
+    describe('lease', () => {
+      let lease: Lease<MyType>
+
+      beforeEach(async () => {
+        await pool.register(myVal)
+        lease = await pool.lease(timeout) as Lease<MyType>
+      })
+
+      it('should return a lease', () => {
+        expect(lease).not.toBeNull()
+      })
+    })
+
+    describe('clear', () => {
+      beforeAll(() => pool.clear())
+
+      afterAll(fillPool, 30000)
+
+      it('should clear the instances', async () => {
+        expect(await asyncToArray(pool)).toHaveLength(0)
+      })
     })
   })
 
-  describe('clear', () => {
-    beforeAll(() => pool.clear())
+  describe('retries', () => {
+    it('should throw if at limit', async () => {
+      ({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
+      const repo2 = await makeRepo({
+        ...repoOpts(),
+        optimisticLockMaxRetries: 2,
+      })
+      const pool2 = await repo2.pool(myTypeName)
 
-    afterAll(fillPool, 30000)
-
-    it('should clear the instances', async () => {
-      expect(await asyncToArray(pool)).toHaveLength(0)
+      try {
+        await Promise.all([
+          await Promise.all(repeat(NUM_LEASES, i => pool2.register({ ...myLargeVal, intVal: i }))),
+          await Promise.all(repeat(NUM_LEASES, () => pool2.lease(timeout))),
+        ])
+      } catch (e) {
+        expect(e.toString()).toContain('ConditionalCheckFailedException')
+      }
+      return expect(pool2.waitForLease(timeout, retryStrategies.none())).resolves.not.toBeNull()
     })
   })
 })

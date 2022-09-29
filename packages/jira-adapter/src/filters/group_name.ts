@@ -36,14 +36,10 @@ const getInstanceName = (
   getElemIdFunc?: ElemIdGetter
 ): string => {
   const match = instance.value.name.match(GROUP_NAME_REGEX)
-  if (!match) {
+  if (!match || !match[1]) {
     return instance.elemID.name
   }
   const baseName = match[1]
-  if (baseName === undefined) {
-    return instance.elemID.name
-  }
-
   const defaultName = naclCase(baseName)
   const { serviceIdField } = configUtils.getConfigWithDefault(
     config.apiDefinitions.types[instance.elemID.typeName].transformation,

@@ -237,7 +237,7 @@ export const transformValues = async (
       ),
       _.isUndefined
     )
-    return _.isEmpty(result) && !allowEmpty ? undefined : result
+    return _.isEmpty(result) ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = await awu(newVal)
@@ -248,7 +248,7 @@ export const transformValues = async (
       ))
       .filter(value => !_.isUndefined(value))
       .toArray()
-    return result.length === 0 && !allowEmpty ? undefined : result
+    return result.length === 0 ? undefined : result
   }
   return newVal
 }

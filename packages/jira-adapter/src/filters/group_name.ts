@@ -28,7 +28,7 @@ const isGroupElement = (element: Element): boolean =>
   element.elemID.typeName === GROUP_TYPE_NAME
 
 const hasUUIDInName = (instance: InstanceElement): boolean =>
-  instance.value.name.match(GROUP_NAME_REGEX) !== undefined
+  instance.value.name.match(GROUP_NAME_REGEX) !== null
 
 const getInstanceName = (
   instance: InstanceElement,

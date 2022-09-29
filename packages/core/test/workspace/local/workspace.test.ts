@@ -313,7 +313,7 @@ describe('local workspace', () => {
       })
     })
 
-    describe('without any current env', () => {
+    describe('without current env', () => {
       beforeAll(() => {
         const getConf = repoDirStore.get as jest.Mock
         getConf.mockResolvedValue({ buffer: `

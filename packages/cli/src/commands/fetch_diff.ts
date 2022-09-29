@@ -104,9 +104,13 @@ export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  const success = await awu(targetEnvs).every(async env => {
+  let success = true
+  await awu(targetEnvs).forEach(async env => {
+    if (!success) {
+      return
+    }
     await workspace.setCurrentEnv(env, false)
-    return fetchDiffToWorkspace(workspace, input, output)
+    success = await fetchDiffToWorkspace(workspace, input, output)
   })
 
   if (success) {

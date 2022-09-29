@@ -21,25 +21,18 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { filter } from '@salto-io/adapter-utils'
 import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, Element, isInstanceElement } from '@salto-io/adapter-api'
 import { readTextFile, readFile } from '@salto-io/file'
-import { allSystemFields, allFilters, RemoteFilterCreatorDefinition, LocalFilterCreatorDefinition, unsupportedSystemFields } from '../adapter'
+import { SYSTEM_FIELDS, allFilters, UNSUPPORTED_SYSTEM_FIELDS } from '../adapter'
 import { xmlToValues, isComplexType, complexTypesMap, PACKAGE } from '../transformers/xml_transformer'
 import { METADATA_TYPES_TO_RENAME, createInstanceElement, createMetadataObjectType, MetadataValues } from '../transformers/transformer'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
-
-
 import { CUSTOM_OBJECT, CUSTOM_FIELD, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH } from '../constants'
+import { isLocalFilterCreator } from '../filter'
 
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const isLocalFilterCreator = (
-  filterDef: LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition
-): filterDef is LocalFilterCreatorDefinition => (
-  filterDef.addsNewInformation !== true
-)
-
-const supportedTypeNames = [
+const SUPPORTED_TYPE_NAMES = [
   'CustomApplication',
   'AssignmentRules',
   'AuraDefinitionBundle',
@@ -55,7 +48,7 @@ const supportedTypeNames = [
   'ApexPage',
   'Profile',
   // 'LanguageSettings', // TODO: generally handle settings
-  'StaticResource',
+  // 'StaticResource', // TODO: handle static resources that have their content unzipped by SFDX
   'CustomTab',
   // 'Territory2Rule', // TODO: add folder name to fullName (should be <FolderName>.<FullName>)
   'Territory2Type',
@@ -105,8 +98,6 @@ const getElementsFromFile = async (
     const fileDir = path.dirname(fileName)
     const relevantFileNames = staticFileNames
       .filter(name => name.startsWith(path.join(fileDir, fullName)))
-      .sort()
-      .reverse() // TODO: remove this sort, it is just here as a workaround to the order bug in lwc
     const relevantFiles = Object.fromEntries(await Promise.all(
       relevantFileNames.map(async name => [
         path.join(PACKAGE, complexType.folderName, path.relative(path.dirname(fileDir), name)),
@@ -118,13 +109,11 @@ const getElementsFromFile = async (
   } else {
     // Handle simple case for single content static file
     const contentFileName = path.join(path.dirname(fileName), fullNameWithSuffix)
-    // TODO: handle static resources that have their content unzipped by SFDX (StaticResources)
     const contentFile = await readFile(
       path.join(packageDir, contentFileName)
     ).catch(() => undefined)
     if (contentFile !== undefined) {
       values[METADATA_CONTENT_FIELD] = new StaticFile({
-        // TODO: make this path less hard-coded
         filepath: path.join(SALESFORCE, RECORDS_PATH, typeName, fullNameWithSuffix),
         content: contentFile,
       })
@@ -144,25 +133,9 @@ const getElementsFromFile = async (
 
 const getElementsFromDXFolder = async (
   packageDir: string,
-  workspaceElements: ReadOnlyElementsSource
+  workspaceElements: ReadOnlyElementsSource,
+  types: Record<string, ObjectType>
 ): Promise<Element[]> => {
-  const typeNames = Object.fromEntries(
-    supportedTypeNames
-      .map(typeName => [typeName, METADATA_TYPES_TO_RENAME.get(typeName) ?? typeName])
-  )
-  const types = _.pickBy(
-    await promises.object.mapValuesAsync(
-      typeNames,
-      name => workspaceElements.get(new ElemID(SALESFORCE, name))
-    ),
-    isObjectType,
-  )
-
-  // We need to create explicit types for CustomObject and CustomField because
-  // we remove them when we fetch
-  types.CustomObject = createMetadataObjectType({ annotations: { metadataType: CUSTOM_OBJECT } })
-  types.CustomField = createMetadataObjectType({ annotations: { metadataType: CUSTOM_FIELD } })
-
   const allFiles = await readdirp.promise(
     packageDir,
     {
@@ -196,8 +169,8 @@ const getElementsFromDXFolder = async (
   const filterRunner = filter.filtersRunner(
     {
       config: {
-        unsupportedSystemFields,
-        systemFields: allSystemFields,
+        unsupportedSystemFields: UNSUPPORTED_SYSTEM_FIELDS,
+        systemFields: SYSTEM_FIELDS,
         fetchProfile: buildFetchProfile({ target: ['hack to make filters think this is partial fetch'] }),
         elementsSource: workspaceElements,
       },
@@ -206,6 +179,30 @@ const getElementsFromDXFolder = async (
   )
   await filterRunner.onFetch(elements)
   return elements
+}
+
+
+const getElementTypesForSFDX = async (
+  elementSource: ReadOnlyElementsSource
+): Promise<Record<string, ObjectType>> => {
+  const typeNames = Object.fromEntries(
+    SUPPORTED_TYPE_NAMES
+      .map(typeName => [typeName, METADATA_TYPES_TO_RENAME.get(typeName) ?? typeName])
+  )
+  const types = _.pickBy(
+    await promises.object.mapValuesAsync(
+      typeNames,
+      name => elementSource.get(new ElemID(SALESFORCE, name))
+    ),
+    isObjectType,
+  )
+
+  // We need to create explicit types for CustomObject and CustomField because
+  // we remove them when we fetch
+  types.CustomObject = createMetadataObjectType({ annotations: { metadataType: CUSTOM_OBJECT } })
+  types.CustomField = createMetadataObjectType({ annotations: { metadataType: CUSTOM_FIELD } })
+
+  return types
 }
 
 
@@ -238,7 +235,8 @@ export const loadElementsFromFolder = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<Element[]> => {
   const packages = await getDXPackageDirs(dxBaseDir)
+  const types = await getElementTypesForSFDX(elementSource)
   return awu(packages)
-    .flatMap(pkg => getElementsFromDXFolder(pkg, elementSource))
+    .flatMap(pkg => getElementsFromDXFolder(pkg, elementSource, types))
     .toArray()
 }

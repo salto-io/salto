@@ -50,3 +50,18 @@ export type LocalFilterCreator = filter.FilterCreator<FilterResult, Omit<FilterO
 // They should not change the format of existing elements, they should focus only on adding
 // the new information
 export type RemoteFilterCreator = filter.FilterCreator<FilterResult, FilterOpts>
+
+export type RemoteFilterCreatorDefinition = {
+  creator: RemoteFilterCreator
+  addsNewInformation: true
+}
+export type LocalFilterCreatorDefinition = {
+  creator: LocalFilterCreator
+  addsNewInformation?: false
+}
+
+export const isLocalFilterCreator = (
+  filterDef: LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition
+): filterDef is LocalFilterCreatorDefinition => (
+  filterDef.addsNewInformation !== true
+)

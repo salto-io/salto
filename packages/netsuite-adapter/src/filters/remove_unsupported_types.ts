@@ -18,7 +18,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
-import { getMetadataTypes, isDataObjectType, metadataTypesToList } from '../types'
+import { getMetadataTypes, isCustomRecordType, isDataObjectType, metadataTypesToList } from '../types'
 import { SUPPORTED_TYPES } from '../data_elements/types'
 
 
@@ -31,15 +31,12 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       metadataTypesToList(getMetadataTypes())
         .map(e => e.elemID.getFullName().toLowerCase())
     )
-    const supportedDataTypes = (await elementUtils
-      .filterTypes(
-        NETSUITE,
-        elements
-          .filter(isObjectType)
-          .filter(isDataObjectType),
-        SUPPORTED_TYPES
-      ))
-      .filter(e => !sdfTypeNames.has(e.elemID.getFullName().toLowerCase()))
+    const dataTypes = elements.filter(isObjectType).filter(isDataObjectType)
+    const supportedTypeNames = SUPPORTED_TYPES
+      .concat(dataTypes.filter(isCustomRecordType).map(({ elemID }) => elemID.name))
+    const supportedDataTypes = (
+      await elementUtils.filterTypes(NETSUITE, dataTypes, supportedTypeNames)
+    ).filter(e => !sdfTypeNames.has(e.elemID.getFullName().toLowerCase()))
 
     _.remove(elements, e => isObjectType(e) && isDataObjectType(e))
     elements.push(...supportedDataTypes)

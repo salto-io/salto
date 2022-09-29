@@ -15,7 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests } from '../../src/client'
+import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination } from '../../src/client'
 
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -341,6 +341,71 @@ describe('client_pagination', () => {
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a1' }], pageSize: 1, responseData: { items: [{ a: 'a1' }] } })
+    })
+  })
+
+  describe('getWithItemIndexPagination', () => {
+    it('should query a single page if data has less items than page size', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, itemsPerPage: 10 })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+        },
+        pageSize: 10,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }],
+      })).toEqual([])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '10' },
+        responseData: {},
+        page: [],
+      })).toEqual([])
+    })
+    it('should query multiple pages if response has more items than page size (or equal)', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, itemsPerPage: 2 })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+        },
+        pageSize: 2,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '2' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '2' },
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '4' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '4' },
+        responseData: {},
+        page: [{
+          a: 'a2',
+        }],
+      })).toEqual([])
     })
   })
 

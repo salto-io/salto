@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { regex, strings } from '@salto-io/lowerdash'
-import { getCustomTypesNames } from './autogen/types'
+import { getStandardTypesNames } from './autogen/types'
 import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES, STRICT_INSTANCE_STRUCTURE, FIELDS_TO_OMIT } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from './types'
@@ -93,7 +93,7 @@ export const validateFetchParameters = ({ types, fileCabinet }:
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
   }
   const existingTypes = [
-    ...getCustomTypesNames(),
+    ...getStandardTypesNames(),
     ...SUPPORTED_TYPES,
     ...SUITEAPP_CONFIG_TYPE_NAMES,
     CONFIG_FEATURES,

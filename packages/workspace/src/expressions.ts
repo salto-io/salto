@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { ElemID, Element, ReferenceExpression, TemplateExpression, isReferenceExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, BuiltinTypes, CoreAnnotationTypes, TypeReference, isType, PlaceholderObjectType, Expression, isTemplateExpression, isExpression, isField } from '@salto-io/adapter-api'
-import { resolvePath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { resolvePath, safeJsonStringify, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { DataNodeMap } from '@salto-io/dag'
 import { buildContainerType } from './workspace/elements_source'
@@ -323,13 +323,18 @@ export const resolve = (
       walkOnElement({
         element,
         func: ({ value, path }) => {
-          if (isReferenceExpression(value)) {
-            resolveReferenceExpression(value, path)
-            return WALK_NEXT_STEP.SKIP
-          }
-          if (isTemplateExpression(value)) {
-            resolveTemplateExpression(value, path)
-            return WALK_NEXT_STEP.SKIP
+          try {
+            if (isReferenceExpression(value)) {
+              resolveReferenceExpression(value, path)
+              return WALK_NEXT_STEP.SKIP
+            }
+            if (isTemplateExpression(value)) {
+              resolveTemplateExpression(value, path)
+              return WALK_NEXT_STEP.SKIP
+            }
+          } catch (err) {
+            log.error(`Failed to resolve path ${path.getFullName()}. value: ${safeJsonStringify(value, undefined, 2)}`)
+            throw err
           }
           return WALK_NEXT_STEP.RECURSE
         },

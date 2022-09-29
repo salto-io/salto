@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
@@ -24,6 +24,8 @@ import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA } from './constants'
+import { isCustomRecordType } from '../../types'
+import { CUSTOM_RECORD_TYPE } from '../../constants'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
@@ -195,6 +197,12 @@ const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
     .filter(instance => isDefined(instance.value.internalId))
     .filter(instance => instance.elemID.typeName.toLowerCase() in TYPES_TO_INTERNAL_ID)
 
+const getCustomRecordTypesWithInternalIds = (elements: Element[]): ObjectType[] =>
+  elements
+    .filter(isObjectType)
+    .filter(isCustomRecordType)
+    .filter(type => isDefined(type.annotations.internalId))
+
 const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
@@ -213,8 +221,14 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       return
     }
     const instancesWithInternalId = getInstancesWithInternalIds(elements)
+    const customRecordTypesWithInternalIds = getCustomRecordTypesWithInternalIds(elements)
+
     const queryIds = _.uniq(instancesWithInternalId
       .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]))
+    if (customRecordTypesWithInternalIds.length > 0) {
+      queryIds.push(TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE])
+    }
+
     if (_.isEmpty(queryIds)) {
       return
     }
@@ -226,22 +240,35 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
     if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)) {
       return
     }
-    instancesWithInternalId.forEach(instance => {
-      const employeeId = systemNotes[
-        getRecordIdAndTypeStringKey(instance.value.internalId,
-          TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()])]
+
+    const setChangedBy = (element: Element, employeeId: string): void => {
       if (isDefined(employeeId) && isDefined(employeeNames[employeeId])) {
-        instance.annotate(
+        element.annotate(
           { [CORE_ANNOTATIONS.CHANGED_BY]: employeeNames[employeeId] }
         )
       } else {
-        const changedBy = elemIdToChangeByIndex[instance.elemID.getFullName()]
+        const changedBy = elemIdToChangeByIndex[element.elemID.getFullName()]
         if (isDefined(changedBy)) {
-          instance.annotate(
+          element.annotate(
             { [CORE_ANNOTATIONS.CHANGED_BY]: changedBy }
           )
         }
       }
+    }
+
+    instancesWithInternalId.forEach(instance => {
+      const employeeId = systemNotes[getRecordIdAndTypeStringKey(
+        instance.value.internalId,
+        TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]
+      )]
+      setChangedBy(instance, employeeId)
+    })
+    customRecordTypesWithInternalIds.forEach(type => {
+      const employeeId = systemNotes[getRecordIdAndTypeStringKey(
+        type.annotations.internalId,
+        TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
+      )]
+      setChangedBy(type, employeeId)
     })
   },
 })

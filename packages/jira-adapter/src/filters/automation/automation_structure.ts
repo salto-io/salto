@@ -52,7 +52,7 @@ type CompareFieldValueObject = {
   compareFieldValue: {
     multiValue: boolean
     value: string
-    values: string
+    values?: string
     type: string
   }
 }
@@ -210,7 +210,7 @@ const consolidateLinkTypeFields = async (instance: InstanceElement): Promise<voi
         && isLinkTypeObject(value)
       ) {
         value.linkType = value.linkTypeDirection.concat(':', value.linkType)
-        delete value.linkTypeDirection
+        return _.omit(value, 'linkTypeDirection')
       }
       return value
     },

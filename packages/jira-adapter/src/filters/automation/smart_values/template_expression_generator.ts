@@ -42,12 +42,12 @@ const handleJiraReference = ({
   fieldInstancesByName,
   fieldInstancesById,
 }: GenerateTemplateParams): TemplatePart => {
-  if (fieldInstancesById[referenceStr] !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(fieldInstancesById, referenceStr)) {
     const instance = fieldInstancesById[referenceStr]
     return new ReferenceExpression(instance.elemID, instance)
   }
 
-  if (fieldInstancesByName[referenceStr] !== undefined) {
+  if (Object.prototype.hasOwnProperty.call(fieldInstancesByName, referenceStr)) {
     const instance = fieldInstancesByName[referenceStr]
     return new ReferenceExpression(instance.elemID.createNestedID('name'), instance.value.name)
   }

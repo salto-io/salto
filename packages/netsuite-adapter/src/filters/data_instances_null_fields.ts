@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith } from '../filter'
 import { isDataObjectType } from '../types'
-import { CUSTOM_FIELD_PREFIX } from './data_types_custom_fields'
+import { CUSTOM_FIELD_PREFIX } from '../constants'
 
 const { awu } = collections.asynciterable
 

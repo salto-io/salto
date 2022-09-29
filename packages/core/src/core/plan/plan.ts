@@ -429,11 +429,18 @@ const resolveNodeElements = (
   })
 
   const resolvedBefore = _.keyBy(
-    await resolve(beforeItemsToResolve, before),
+    await log.time(
+      () => resolve(beforeItemsToResolve, before),
+      'Resolving before items',
+    ),
     e => e.elemID.getFullName()
   ) as Record<string, ChangeDataType>
+
   const resolvedAfter = _.keyBy(
-    await resolve(afterItemsToResolve, after),
+    await log.time(
+      () => resolve(afterItemsToResolve, after),
+      'Resolving after items',
+    ),
     e => e.elemID.getFullName()
   ) as Record<string, ChangeDataType>
 

@@ -45,9 +45,9 @@ describe('omit sdf untyped values filter', () => {
       config: await getDefaultAdapterConfig(),
     }
   })
-  it('should omit untyped values by default', async () => {
+  it('should not omit untyped values by default', async () => {
     await filterCreator(defaultOpts).onFetch?.([instance])
-    expect(instance.value).toEqual({ someField: true })
+    expect(instance.value).toEqual({ someField: true, untypedField: 'test' })
   })
   it('should omit untyped values when enable=true', async () => {
     await filterCreator({

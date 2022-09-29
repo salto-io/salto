@@ -53,6 +53,7 @@ const createCustomObject = (
       refType: stringType,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Id',
         [API_NAME]: 'Id',
       },
@@ -61,6 +62,7 @@ const createCustomObject = (
       refType: stringType,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: false,
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'description label',
         [API_NAME]: 'Name',
       },
@@ -68,6 +70,7 @@ const createCustomObject = (
     TestField: {
       refType: stringType,
       annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
         [LABEL]: 'Test field',
         [API_NAME]: 'TestField',
       },
@@ -365,11 +368,19 @@ describe('Custom Object Instances filter', () => {
             refType: stringType,
             annotations: {
               [API_NAME]: 'Id',
-              queryable: false,
+              [FIELD_ANNOTATIONS.QUERYABLE]: false,
+            },
+          },
+          Other: {
+            refType: stringType,
+            annotations: {
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
+              [API_NAME]: 'Other',
             },
           },
         },
         annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
           [API_NAME]: noFieldsName,
           [METADATA_TYPE]: CUSTOM_OBJECT,
         },
@@ -384,6 +395,7 @@ describe('Custom Object Instances filter', () => {
         OtherAddress: {
           refType: Types.compoundDataTypes.Address,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'Address',
             [API_NAME]: 'OtherAddress',
           },
@@ -583,6 +595,7 @@ describe('Custom Object Instances filter', () => {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
               [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
             },
           },
           Pricebook2Id: {
@@ -591,6 +604,7 @@ describe('Custom Object Instances filter', () => {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
               [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToFromNamespaceObjectName],
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
             },
           },
         }
@@ -606,6 +620,7 @@ describe('Custom Object Instances filter', () => {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
               [FIELD_ANNOTATIONS.REFERENCE_TO]: [refFromAndToObjectName],
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
             },
           },
           Pricebook2Id: {
@@ -614,6 +629,7 @@ describe('Custom Object Instances filter', () => {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
               [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
+              [FIELD_ANNOTATIONS.QUERYABLE]: true,
             },
           },
         }
@@ -661,6 +677,7 @@ describe('Custom Object Instances filter', () => {
         Parent: {
           refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
@@ -679,6 +696,7 @@ describe('Custom Object Instances filter', () => {
         Grandparent: {
           refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
@@ -694,6 +712,7 @@ describe('Custom Object Instances filter', () => {
         Pricebook2Id: {
           refType: Types.primitiveDataTypes.Lookup,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'Pricebook2Id field',
             [API_NAME]: 'Pricebook2Id',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
@@ -709,6 +728,7 @@ describe('Custom Object Instances filter', () => {
         ProductCode: {
           refType: BuiltinTypes.STRING,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'ProductCode field',
             [API_NAME]: 'ProductCode',
           },
@@ -723,6 +743,7 @@ describe('Custom Object Instances filter', () => {
         SBQQ__Location__c: {
           refType: Types.primitiveDataTypes.Checkbox,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'Location checkbox field',
             [API_NAME]: 'SBQQ__Location__c',
             [FIELD_ANNOTATIONS.VALUE_SET]: [
@@ -737,6 +758,7 @@ describe('Custom Object Instances filter', () => {
         SBQQ__DisplayOrder__c: {
           refType: Types.primitiveDataTypes.Number,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'Display order',
             [API_NAME]: 'SBQQ__DisplayOrder__c',
           },
@@ -751,6 +773,7 @@ describe('Custom Object Instances filter', () => {
         Parent: {
           refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: [parentObjectName],
@@ -766,6 +789,7 @@ describe('Custom Object Instances filter', () => {
         Parent: {
           refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
+            [FIELD_ANNOTATIONS.QUERYABLE]: true,
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: ['noSuchObject'],

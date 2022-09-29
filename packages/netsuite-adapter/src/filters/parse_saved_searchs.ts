@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { NETSUITE, SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
 import { savedsearchType } from '../saved_search_parsing/parsed_saved_search'
-import { savedsearchType as oldSavedSearch } from '../autogen/types/custom_types/savedsearch'
+import { savedsearchType as oldSavedSearch } from '../autogen/types/standard_types/savedsearch'
 import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({

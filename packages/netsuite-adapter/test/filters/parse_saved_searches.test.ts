@@ -16,7 +16,7 @@
 import { AdditionChange, ElemID, InstanceElement, isObjectType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/parse_saved_searchs'
-import { savedsearchType } from '../../src/autogen/types/custom_types/savedsearch'
+import { savedsearchType } from '../../src/autogen/types/standard_types/savedsearch'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE, SAVED_SEARCH } from '../../src/constants'
 import { FilterOpts } from '../../src/filter'

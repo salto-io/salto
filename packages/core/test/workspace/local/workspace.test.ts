@@ -304,11 +304,9 @@ describe('local workspace', () => {
         elemSource: EnvironmentsSources
       ) => {
         wsElemSrcs = elemSource
-        let currentEnv = 'default'
         return {
           demoteAll: jest.fn(),
-          setCurrentEnv: async () => { currentEnv = 'wasSet' },
-          currentEnv: () => currentEnv,
+          currentEnv: () => 'default',
         }
       })
     })
@@ -330,11 +328,10 @@ describe('local workspace', () => {
         filename: '' })
       })
 
-      it('should not crash and should set env', async () => {
+      it('should not crash', async () => {
         const workspace = await loadLocalWorkspace({ path: '/west' })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
-        expect(workspace.currentEnv()).toBe('wasSet')
       })
     })
 

@@ -17,7 +17,8 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectT
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import { JIRA } from '../../src/constants'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { ISSUE_TYPE_NAME, JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
 import workflowSchemeFilter, { MAX_TASK_CHECKS } from '../../src/filters/workflow_scheme'
 import { Filter } from '../../src/filter'
@@ -34,6 +35,12 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+class ServiceError {
+  response: {data: {errorMessages: string[]}}
+  constructor(messages: string[]) {
+    this.response = { data: { errorMessages: messages } }
+  }
+}
 
 describe('workflowScheme', () => {
   let workflowSchemeType: ObjectType
@@ -45,6 +52,7 @@ describe('workflowScheme', () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
+    elementsSource = buildElementsSourceFromElements([])
 
     filter = workflowSchemeFilter(getFilterParams({
       client,
@@ -203,6 +211,7 @@ describe('workflowScheme', () => {
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
+        elementsSource,
       })
     })
 
@@ -259,6 +268,7 @@ describe('workflowScheme', () => {
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
+        elementsSource,
       })
 
       expect(connection.post).toHaveBeenCalledWith(
@@ -339,6 +349,7 @@ describe('workflowScheme', () => {
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
+        elementsSource,
       })
 
 
@@ -401,6 +412,7 @@ describe('workflowScheme', () => {
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
+        elementsSource,
       })
 
       expect(connection.get).toHaveBeenCalledWith(
@@ -469,6 +481,7 @@ describe('workflowScheme', () => {
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.WorkflowScheme.deployRequests,
         fieldsToIgnore: ['items'],
+        elementsSource,
       })
 
       expect(instance.value.statusMigrations).toBeUndefined()
@@ -586,6 +599,68 @@ describe('workflowScheme', () => {
 
       expect(res?.deployResult.appliedChanges).toEqual([])
       expect(res?.deployResult.errors).toHaveLength(1)
+    })
+    it('should reformat the error message when it does not get status migration', async () => {
+      const workflowSchemeInstance = new InstanceElement(
+        'workflowSchemeInstance',
+        workflowSchemeType,
+        { workflow: 'workflow name' }
+      )
+      const issueInstance = new InstanceElement(
+        'issueInstance',
+        new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }),
+        { id: '2' }
+      )
+      const statusInstance = new InstanceElement(
+        'statusInstance',
+        new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }),
+        { id: '3' }
+      )
+      elementsSource = buildElementsSourceFromElements(
+        [workflowSchemeInstance, statusInstance, issueInstance]
+      )
+      const { client: cli, paginator, connection: conn } = mockClient()
+      client = cli
+      connection = conn
+      filter = workflowSchemeFilter(getFilterParams({
+        client,
+        paginator,
+        elementsSource,
+      }))
+
+      deployChangeMock.mockResolvedValue({ draft: true })
+      connection.post.mockImplementation(() => { throw new ServiceError(['Issue type with ID 2 is missing the mappings required for statuses with IDs 3']) })
+
+      const instanceBefore = workflowSchemeInstance.clone()
+      workflowSchemeInstance.value.workflow = 'other workflow'
+      const result = await filter.deploy?.(
+        [toChange({ before: instanceBefore, after: workflowSchemeInstance })]
+      )
+      expect(result).toBeDefined()
+      expect(result?.deployResult.errors).toHaveLength(1)
+      const errorMessage = result?.deployResult.errors[0].message
+      expect(errorMessage).toInclude('Issue type with name jira.IssueType.instance.issueInstance is missing the mappings required for statuses with names jira.Status.instance.statusInstance')
+    })
+
+    it('should throw the regular error message when fail to reformat it', async () => {
+      const workflowSchemeInstance = new InstanceElement(
+        'workflowSchemeInstance',
+        workflowSchemeType,
+        { workflow: 'workflow name' }
+      )
+
+      deployChangeMock.mockResolvedValue({ draft: true })
+      connection.post.mockImplementation(() => { throw new ServiceError(['Issue type with ID 2 is missing the mappings required for statuses with IDs 3']) })
+
+      const instanceBefore = workflowSchemeInstance.clone()
+      workflowSchemeInstance.value.workflow = 'other workflow'
+      const result = await filter.deploy?.(
+        [toChange({ before: instanceBefore, after: workflowSchemeInstance })]
+      )
+      expect(result).toBeDefined()
+      expect(result?.deployResult.errors).toHaveLength(1)
+      const errorMessage = result?.deployResult.errors[0].message
+      expect(errorMessage).toInclude('Issue type with ID 2 is missing the mappings required for statuses with IDs 3')
     })
   })
 

@@ -145,9 +145,6 @@ const replaceIDsWithNames = (messages: string[], ids: string[],
   const newMessages = messages
   messages.forEach((_message, i) => {
     ids.forEach(id => {
-      if (idToInstance[id] === undefined) {
-        throw (new Error('can not find id'))
-      }
       newMessages[i] = newMessages[i].replace(id, idToInstance[id].elemID.getFullName())
     })
     newMessages[i] = newMessages[i].replace(new RegExp('ID', 'g'), 'name')
@@ -213,6 +210,7 @@ export const deployWorkflowScheme = async (
           err.response.data.errorMessages, elementsSource
         )
       } catch (error) {
+        log.warn(`failed to reformat the workflow scheme ${getChangeData(change).elemID.getFullName()} migration error `)
         throw (err)
       }
       throw (err)

@@ -20,7 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/brand_logo'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'

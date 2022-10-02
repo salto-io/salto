@@ -17,7 +17,7 @@ import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from '../src/client/client'
 import ZendeskAdapter, { ZendeskAdapterParams } from '../src/adapter'
-import { DEFAULT_CONFIG } from '../src/config'
+import { DEFAULT_CONFIG } from '../src/config/config'
 import { Credentials } from '../src/auth'
 import { credsSpec } from './jest_environment'
 

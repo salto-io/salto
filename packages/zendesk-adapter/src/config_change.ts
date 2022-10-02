@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 
-import { configType, FETCH_CONFIG } from './config'
+import { configType, FETCH_CONFIG } from './config/config'
 
 const { makeArray } = collections.array
 

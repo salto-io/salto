@@ -19,7 +19,7 @@ import { client as clientUtils, filterUtils, elements as elementUtils } from '@s
 import filterCreator from '../../../src/filters/references/list_values_missing_references'
 import ZendeskClient from '../../../src/client/client'
 import { paginate } from '../../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../../src/config'
+import { DEFAULT_CONFIG } from '../../../src/config/config'
 import { ZENDESK } from '../../../src/constants'
 
 describe('list values missing references filter', () => {

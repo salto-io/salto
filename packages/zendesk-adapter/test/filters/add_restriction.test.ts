@@ -19,7 +19,7 @@ import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/add_restriction'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config/config'
 
 describe('custom field option restriction filter', () => {
   let client: ZendeskClient

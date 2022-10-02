@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { GUIDE_INSTANCE_TYPES } from '../config'
+import { GUIDE_INSTANCE_TYPES } from '../config/config'
 
 // TO DO - remove after supporting on multiple brands deployment - SALTO-2769
 export const zendeskGuideElementsDeploymentValidator: ChangeValidator = async changes => (

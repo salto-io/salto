@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { BRAND_TYPE_NAME, ZENDESK, GROUP_MEMBERS_TYPE_NAME, GROUP_MEMBERS_USER_TYPE_NAME } from './constants'
+import { BRAND_TYPE_NAME, ZENDESK, GROUP_MEMBERS_TYPE_NAME, GROUP_MEMBERS_USER_TYPE_NAME } from '../constants'
 
 const { createClientConfigType } = clientUtils
 const {

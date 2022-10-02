@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config/config'
 import createChangeValidator from '../src/change_validator'
 import { ZENDESK } from '../src/constants'
 import ZendeskClient from '../src/client/client'

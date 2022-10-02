@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange,
   isRemovalChange } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../config/config'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
 
 export const removedFromParentValidatorCreator = (

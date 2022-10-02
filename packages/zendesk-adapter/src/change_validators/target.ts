@@ -15,7 +15,7 @@
 */
 import { ChangeError, ChangeValidator, ElemID, getChangeData,
   isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../config'
+import { ZendeskApiConfig } from '../config/config'
 import ZendeskClient from '../client/client'
 import { TARGET_TYPE_NAME } from '../constants'
 

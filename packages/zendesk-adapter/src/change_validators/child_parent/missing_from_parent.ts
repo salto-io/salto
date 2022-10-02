@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceElement,
   isReferenceExpression, isInstanceChange, AdditionChange, ChangeError, isAdditionChange,
   isAdditionOrModificationChange } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../config/config'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
 
 export const createParentReferencesError = (

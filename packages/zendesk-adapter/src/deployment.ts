@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
-import { ZendeskApiConfig } from './config'
+import { ZendeskApiConfig } from './config/config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

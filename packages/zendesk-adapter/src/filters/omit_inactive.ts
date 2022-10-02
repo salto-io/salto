@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { isInstanceElement, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG } from '../config/config'
 
 const log = logger(module)
 

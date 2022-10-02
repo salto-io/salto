@@ -33,7 +33,7 @@ import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import { createMissingInstance } from './references/missing_references'
 import { ZENDESK } from '../constants'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG } from '../config/config'
 
 const { awu } = collections.asynciterable
 const PLACEHOLDER_REGEX = /({{.+?}})/g

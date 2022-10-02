@@ -23,7 +23,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../../deployment'
 import { applyforInstanceChangesOfType } from '../utils'
-import { API_DEFINITIONS_CONFIG } from '../../config'
+import { API_DEFINITIONS_CONFIG } from '../../config/config'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'

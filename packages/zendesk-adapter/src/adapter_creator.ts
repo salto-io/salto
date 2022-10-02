@@ -21,9 +21,10 @@ import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersTyp
 import {
   configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
   API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig, validateGuideTypesConfig,
-} from './config'
+} from './config/config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
+import { excludeGroupMembers } from './config/migrations'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
@@ -106,7 +107,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 export const adapter: Adapter = {
   operations: context => {
     // This can be removed once all the workspaces configs were migrated
-    const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
+    const newFormatConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
       // Creating new instance is required because the type is not resolved in context.config
       new InstanceElement(
         ElemID.CONFIG_NAME,
@@ -114,6 +115,15 @@ export const adapter: Adapter = {
         context.config?.value
       ),
       DEFAULT_CONFIG,
+    )
+    // if the previous migration ran, then this migration is not relevant
+    const updatedConfig = newFormatConfig ?? excludeGroupMembers(
+      new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        context.config?.value
+      ),
+      context.stateVersion,
     )
     const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)

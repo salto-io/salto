@@ -16,7 +16,7 @@
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config/config'
 import ZendeskClient from '../../src/client/client'
 import filterCreator from '../../src/filters/help_center_locale'
 import { paginate } from '../../src/client/pagination'

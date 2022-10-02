@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { FETCH_CONFIG } from '../../config'
+import { FETCH_CONFIG } from '../../config/config'
 import { FilterCreator } from '../../filter'
 import { createMissingInstance, VALUES_TO_SKIP_BY_TYPE } from './missing_references'
 

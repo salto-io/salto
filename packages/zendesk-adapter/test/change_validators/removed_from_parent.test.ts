@@ -19,7 +19,7 @@ import {
   removedFromParentValidatorCreator,
 } from '../../src/change_validators/child_parent/removed_from_parent'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/filters/custom_field_options/creator'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config/config'
 
 describe('removedFromParentValidatorCreator', () => {
   const ticketFieldType = new ObjectType({

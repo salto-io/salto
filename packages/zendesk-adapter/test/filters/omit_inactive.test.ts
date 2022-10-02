@@ -15,7 +15,7 @@
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'

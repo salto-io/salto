@@ -23,7 +23,7 @@ import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify } from '@sal
 import { FilterCreator } from '../../filter'
 import { ZENDESK } from '../../constants'
 import { deployChange } from '../../deployment'
-import { API_DEFINITIONS_CONFIG } from '../../config'
+import { API_DEFINITIONS_CONFIG } from '../../config/config'
 import ZendeskClient from '../../client/client'
 
 const { TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH, SETTINGS_NESTED_PATH } = elementsUtils

@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, { TAG_TYPE_NAME } from '../../src/filters/tag'

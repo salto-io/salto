@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceElement, CORE_ANNOTATIONS,
   isReferenceExpression } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../config/config'
 import { getChildAndParentTypeNames } from './utils'
 
 export const parentAnnotationToHaveSingleValueValidatorCreator = (

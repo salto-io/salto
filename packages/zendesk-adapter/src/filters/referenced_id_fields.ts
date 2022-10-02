@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { filters } from '@salto-io/adapter-components'
-import { FilterContext } from '../config'
+import { FilterContext } from '../config/config'
 import { FilterCreator, FilterResult } from '../filter'
 import ZendeskClient from '../client/client'
 

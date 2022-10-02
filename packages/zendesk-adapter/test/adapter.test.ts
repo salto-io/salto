@@ -24,7 +24,7 @@ import defaultBrandMockReplies from './mock_replies/myBrand_mock_replies.json'
 import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
+import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config/config'
 import { ZENDESK } from '../src/constants'
 
 type MockReply = {

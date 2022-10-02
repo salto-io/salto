@@ -23,7 +23,7 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG } from '../config/config'
 
 const log = logger(module)
 

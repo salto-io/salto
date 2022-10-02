@@ -20,7 +20,7 @@ import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { BRAND_TYPE_NAME } from '../constants'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG } from '../config/config'
 import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
 
 const { neighborContextGetter } = referenceUtils

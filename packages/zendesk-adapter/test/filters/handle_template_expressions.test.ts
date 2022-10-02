@@ -19,7 +19,7 @@ import { client as clientUtils, filterUtils, elements as elementUtils } from '@s
 import filterCreator from '../../src/filters/handle_template_expressions'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config/config'
 import { ZENDESK } from '../../src/constants'
 import { createMissingInstance } from '../../src/filters/references/missing_references'
 

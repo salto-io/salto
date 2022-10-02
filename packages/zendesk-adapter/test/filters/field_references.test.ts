@@ -19,7 +19,7 @@ import { client as clientUtils, filterUtils, elements as elementUtils } from '@s
 import filterCreator from '../../src/filters/field_references'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config/config'
 import { ZENDESK } from '../../src/constants'
 
 describe('References by id filter', () => {

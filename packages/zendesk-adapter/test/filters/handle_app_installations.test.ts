@@ -20,7 +20,7 @@ import _ from 'lodash'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/handle_app_installations'
-import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config/config'
 import { ZENDESK } from '../../src/constants'
 
 describe('handle app installations filter', () => {

@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { TARGET_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createChangeError, targetAuthDataValidator } from '../../src/change_validators/target'
 import ZendeskClient from '../../src/client/client'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config/config'
 
 describe('targetAuthDataValidator', () => {
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })

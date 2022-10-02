@@ -19,7 +19,7 @@ import { ObjectType, InstanceElement, OAuthMethod } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter, createUrlFromUserInput } from '../src/adapter_creator'
 import { oauthAccessTokenCredentialsType, usernamePasswordCredentialsType } from '../src/auth'
-import { configType } from '../src/config'
+import { configType } from '../src/config/config'
 import { ZENDESK } from '../src/constants'
 import * as connection from '../src/client/connection'
 

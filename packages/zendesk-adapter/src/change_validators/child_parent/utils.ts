@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { elements } from '@salto-io/adapter-components'
 import { AdditionChange, InstanceElement, isAdditionChange, isInstanceElement, isReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
-import { ZendeskApiConfig } from '../../config'
+import { ZendeskApiConfig } from '../../config/config'
 
 
 export type ChildParentRelationship = {

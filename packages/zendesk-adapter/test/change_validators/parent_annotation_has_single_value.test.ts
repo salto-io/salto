@@ -19,7 +19,7 @@ import {
   parentAnnotationToHaveSingleValueValidatorCreator,
 } from '../../src/change_validators/child_parent/parent_annotation_has_single_value'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/filters/custom_field_options/creator'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config/config'
 
 describe('parentAnnotationToHaveSingleValueValidatorCreator', () => {
   const ticketFieldType = new ObjectType({

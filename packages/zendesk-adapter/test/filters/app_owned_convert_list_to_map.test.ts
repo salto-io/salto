@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { DEFAULT_CONFIG } from '../../src/config/config'
 import ZendeskClient from '../../src/client/client'
 import { APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Change, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
-import { API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG } from '../config/config'
 import { createAdditionalParentChanges } from './utils'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'

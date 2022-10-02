@@ -16,7 +16,7 @@
 import { SaltoError } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
-import { FilterContext } from './config'
+import { FilterContext } from './config/config'
 
 export const { filtersRunner } = filterUtils
 

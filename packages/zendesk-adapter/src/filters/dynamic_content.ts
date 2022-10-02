@@ -20,7 +20,7 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../deployment'
-import { API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG } from '../config/config'
 import { applyforInstanceChangesOfType } from './utils'
 
 export const VARIANTS_FIELD_NAME = 'variants'

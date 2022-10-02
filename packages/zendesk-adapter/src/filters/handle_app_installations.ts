@@ -21,7 +21,7 @@ import { extractTemplate, replaceTemplatesWithValues, resolveTemplates } from '@
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { FETCH_CONFIG, IdLocator } from '../config'
+import { FETCH_CONFIG, IdLocator } from '../config/config'
 import { APP_INSTALLATION_TYPE_NAME } from './app'
 import { ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE } from './handle_template_expressions'
 

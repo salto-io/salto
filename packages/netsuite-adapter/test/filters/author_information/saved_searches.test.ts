@@ -28,6 +28,7 @@ describe('netsuite saved searches author information tests', () => {
   let elements: InstanceElement[]
   let savedSearch: InstanceElement
   let missingSavedSearch: InstanceElement
+  let extendedSavedSearch: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
@@ -49,9 +50,26 @@ describe('netsuite saved searches author information tests', () => {
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
     missingSavedSearch = new InstanceElement(SAVED_SEARCH,
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
+    extendedSavedSearch = new InstanceElement(SAVED_SEARCH,
+      new ObjectType({ elemID: new ElemID(NETSUITE, 'userPreferences') }))
     savedSearch.value.scriptid = '1'
+    savedSearch.value.configRecord = { data: {
+      fields: {
+        DATEFORMAT: {
+          text: 'M/D/YYYY',
+        },
+      },
+    } }
     missingSavedSearch.value.scriptid = '2'
-    elements = [savedSearch, missingSavedSearch]
+    extendedSavedSearch.value.scriptid = '3'
+    extendedSavedSearch.value.configRecord = { data: {
+      fields: {
+        DATEFORMAT: {
+          text: 'M/D/YYYY',
+        },
+      },
+    } }
+    elements = [savedSearch, missingSavedSearch, extendedSavedSearch]
     filterOpts = {
       client,
       elementsSourceIndex: {
@@ -87,6 +105,22 @@ describe('netsuite saved searches author information tests', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('01/28/1995')
   })
+
+  it('should add last maodified date for different formats', async () => {
+    extendedSavedSearch.value.configRecord.data.fields.DATEFORMAT.text = 'D/M/YYYY'
+    runSavedSearchQueryMock.mockResolvedValue([
+      { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28/01/1995 6:17am' },
+    ])
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('01/28/1995')
+  })
+
+  it('should not add last modified date when the account date format isnt avaible', async () => {
+    extendedSavedSearch.value.configRecord.data.fields = {}
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toBeUndefined()
+  })
+
 
   it('elements will stay the same if they were not found by the search', async () => {
     runSavedSearchQueryMock.mockReset()

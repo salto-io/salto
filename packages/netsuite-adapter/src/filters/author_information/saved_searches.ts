@@ -57,6 +57,20 @@ const getSavedSearchesMap = async (
   ]))
 }
 
+const changeDateFormat = (date: string, dateFormat: string): string => {
+  if (dateFormat === 'M/D/YYYY') {
+    return date
+  }
+  const dateAsArray = date.split('/')
+  const dateFormatAsArray = dateFormat?.split('/')
+  const dateAsMap: Record<string, string> = {}
+  dateFormatAsArray.forEach((key, i) => {
+    dateAsMap[key] = dateAsArray[i]
+  })
+  return [dateAsMap.M, dateAsMap.D, dateAsMap.YYYY].join('/')
+}
+const isUserPreference = (instance: InstanceElement): boolean =>
+  instance.elemID.typeName === 'userPreferences'
 
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
@@ -76,6 +90,10 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
       return
     }
 
+    const dateFormat = elements
+      .filter(isInstanceElement)
+      .filter(isUserPreference)[0]?.value.configRecord.data.fields?.DATEFORMAT?.text
+
     const savedSearchesMap = await getSavedSearchesMap(client)
 
     savedSearchesInstances.forEach(search => {
@@ -86,9 +104,10 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
             { [CORE_ANNOTATIONS.CHANGED_BY]: name }
           )
         }
-        if (isDefined(date)) {
+        if (isDefined(date) && isDefined(dateFormat)) {
+          const annotationDate = changeDateFormat(date, dateFormat)
           search.annotate(
-            { [CORE_ANNOTATIONS.CHANGED_AT]: date }
+            { [CORE_ANNOTATIONS.CHANGED_AT]: annotationDate }
           )
         }
       }

@@ -14,24 +14,23 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
-import { createIdToUserMap } from '../filters/account_id/add_display_name_filter'
 import { wrongUsersPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_users_permission_scheme_filter'
+import { GetIdMapFunc } from '../users_map'
 
 export const wrongUsersPermissionSchemeValidator: (
   client: JiraClient,
   config: JiraConfig,
-  paginator: clientUtils.Paginator) =>
-  ChangeValidator = (client, config, paginator) => async changes => {
+  getIdMapFunc: GetIdMapFunc) =>
+  ChangeValidator = (client, config, getIdMapFunc) => async changes => {
     if (!(config.fetch.showUserDisplayNames ?? true)) {
       return []
     }
     const { baseUrl } = client
-    const idMap = await createIdToUserMap(paginator)
+    const idMap = await getIdMapFunc()
     return changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)

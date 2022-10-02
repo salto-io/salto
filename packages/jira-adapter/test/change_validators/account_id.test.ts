@@ -17,13 +17,13 @@ import { toChange, InstanceElement, ElemID, ChangeError } from '@salto-io/adapte
 import _ from 'lodash'
 import { mockClient } from '../utils'
 import { accountIdValidator } from '../../src/change_validators/account_id'
-import { getDefaultConfig } from '../../src/config/config'
 import * as common from '../filters/account_id/account_id_common'
+import { getDefaultConfig } from '../../src/config/config'
 
 describe('accountIdValidator', () => {
+  const { client, connection, getIdMapFunc } = mockClient()
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-  const { client, paginator, connection } = mockClient()
-  const validator = accountIdValidator(client, config, paginator)
+  const validator = accountIdValidator(client, config, getIdMapFunc)
   const url = `${client.baseUrl}jira/people/search`
   let instances: InstanceElement[] = []
   connection.get.mockResolvedValue({
@@ -218,7 +218,11 @@ Go to ${url} to see valid users and account IDs.`,
   it('should not raise errors when the flag is off', async () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     configOff.fetch.showUserDisplayNames = false
-    const validatorOff = accountIdValidator(client, configOff, paginator)
+    const validatorOff = accountIdValidator(
+      client,
+      configOff,
+      getIdMapFunc
+    )
     const field1 = 'parameter'
     delete instances[0].value.holder[field1].displayName
     const field2 = 'accountId'

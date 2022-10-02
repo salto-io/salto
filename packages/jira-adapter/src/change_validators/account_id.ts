@@ -16,16 +16,17 @@
 import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
+import { GetIdMapFunc, IdMap } from '../users_map'
 import { JiraConfig } from '../config/config'
-import { createIdToUserMap, IdMap } from '../filters/account_id/add_display_name_filter'
 import JiraClient from '../client/client'
 import { JIRA_USERS_PAGE } from '../constants'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 const noDisplayNameChangeError = (
   elemId: ElemID,
@@ -83,13 +84,13 @@ Go to ${url} to see valid users and account IDs.`,
   }
 }
 
-const checkAndAddChangeErrors = (
+const checkAndAddChangeErrors = async (
   idMap: IdMap,
   baseUrl: string,
   changeErrors: ChangeError[]
-): WalkOnUsersCallback => (
+): Promise<WalkOnUsersCallback> => async (
   { value, path, fieldName }
-): void => {
+): Promise<void> => {
   if (!_.isPlainObject(value[fieldName])) {
     return
   }
@@ -118,34 +119,39 @@ const checkAndAddChangeErrors = (
   }
 }
 
-const createChangeErrorsForAccountIdIssues = (
+const createChangeErrorsForAccountIdIssues = async (
   element: InstanceElement,
   idMap: IdMap,
   baseUrl : string
-): ChangeError[] => {
+): Promise<ChangeError[]> => {
   const changeErrors: ChangeError[] = []
   walkOnElement({ element,
-    func: walkOnUsers(checkAndAddChangeErrors(idMap, baseUrl, changeErrors)) })
+    func: walkOnUsers(await checkAndAddChangeErrors(idMap, baseUrl, changeErrors)) })
   return changeErrors
 }
 
 export const accountIdValidator: (
   client: JiraClient,
   config: JiraConfig,
-  paginator: clientUtils.Paginator) =>
-  ChangeValidator = (client, config, paginator) => async changes =>
+  getIdMapFunc: GetIdMapFunc
+) =>
+  ChangeValidator = (client, config, getIdMapFunc) => async changes =>
     log.time(async () => {
       if (!(config.fetch.showUserDisplayNames ?? true)) {
         return []
       }
+      const idMap = await getIdMapFunc()
       const { baseUrl } = client
-      const idMap = await createIdToUserMap(paginator)
-      return changes
+      return awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
         .map(change => getChangeData(change))
         .filter(isDeployableAccountIdType)
-        .map(element =>
-          createChangeErrorsForAccountIdIssues(element, idMap, baseUrl))
+        .map(
+          async element => createChangeErrorsForAccountIdIssues(
+            element, idMap, baseUrl
+          )
+        )
         .flat()
+        .toArray()
     }, 'display name validator')

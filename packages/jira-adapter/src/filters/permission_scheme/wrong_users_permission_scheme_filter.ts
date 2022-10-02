@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { Change, ChangeDataType } from '@salto-io/adapter-api'
+import { IdMap } from '../../users_map'
 import { FilterCreator } from '../../filter'
-import { createIdToUserMap, IdMap } from '../account_id/add_display_name_filter'
 import { omitChanges, OmitChangesPredicate, returnPermissions, PermissionHolder } from './omit_permissions_common'
 
 
@@ -26,14 +26,14 @@ export const wrongUsersPermissionSchemePredicateCreator = (idMap: IdMap): OmitCh
     && !Object.prototype.hasOwnProperty.call(idMap, accountId)
   }
 
-const filter: FilterCreator = ({ config, paginator }) => {
+const filter: FilterCreator = ({ config, getIdMapFunc }) => {
   let erroneousPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
       if (!(config.fetch.showUserDisplayNames ?? true)) {
         return
       }
-      const idMap = await createIdToUserMap(paginator)
+      const idMap = await getIdMapFunc()
       erroneousPermissionSchemes = omitChanges(
         changes,
         wrongUsersPermissionSchemePredicateCreator(idMap)

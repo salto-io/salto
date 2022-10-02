@@ -35,9 +35,9 @@ export const omitChanges = (
       .map(getChangeData)
       .filter(isPermissionScheme)
       .map((element: InstanceElement) => {
-        const temp: PermissionHolder[] = _.cloneDeep(element.value.permissions)
+        const permissions: PermissionHolder[] = _.cloneDeep(element.value.permissions)
         _.remove(element.value.permissions, predicate)
-        return [element.elemID.getFullName(), temp]
+        return [element.elemID.getFullName(), permissions]
       })
   )
 

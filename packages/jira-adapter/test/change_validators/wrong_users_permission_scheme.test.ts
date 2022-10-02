@@ -22,8 +22,8 @@ import { wrongUsersPermissionSchemeValidator } from '../../src/change_validators
 
 describe('wrongUsersPermissionSchemeValidator', () => {
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-  const { client, paginator, connection } = mockClient()
-  const validator = wrongUsersPermissionSchemeValidator(client, config, paginator)
+  const { client, getIdMapFunc, connection } = mockClient()
+  const validator = wrongUsersPermissionSchemeValidator(client, config, getIdMapFunc)
   const url = `${client.baseUrl}jira/people/search`
   let instances: InstanceElement[]
   let changes: Change[]
@@ -111,7 +111,7 @@ Check ${url} to see valid users and account IDs.`,
   it('should not return a warning when the flag is off', async () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     configOff.fetch.showUserDisplayNames = false
-    const validatorOff = wrongUsersPermissionSchemeValidator(client, configOff, paginator)
+    const validatorOff = wrongUsersPermissionSchemeValidator(client, configOff, getIdMapFunc)
     expect(await validatorOff(
       changes
     )).toEqual([])

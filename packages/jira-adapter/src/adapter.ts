@@ -103,6 +103,7 @@ import fetchCriteria from './fetch_criteria'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
+import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
   generateTypes,
@@ -226,6 +227,7 @@ export default class JiraAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
+  private getIdMapFunc: GetIdMapFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -249,6 +251,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
+    this.getIdMapFunc = getIdMapFuncCreator(paginator)
 
     const filterContext = {}
     this.createFiltersRunner = () => (
@@ -261,6 +264,7 @@ export default class JiraAdapter implements AdapterOperations {
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
+          getIdMapFunc: this.getIdMapFunc,
         },
         filterCreators,
         objects.concatObjects
@@ -383,7 +387,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig, this.paginator),
+      changeValidator: changeValidator(this.client, this.userConfig, this.getIdMapFunc),
       dependencyChanger,
       getChangeGroupIds,
     }

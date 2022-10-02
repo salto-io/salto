@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { expressions, elementSource, Workspace } from '@salto-io/workspace'
+import { expressions, elementSource, Workspace, merger } from '@salto-io/workspace'
 import { loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import { calcFetchChanges } from '@salto-io/core'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
@@ -26,6 +27,11 @@ import { CliExitCode, CliOutput } from '../types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+
+const mergeElements = async (elements: Element[]): Promise<Element[]> => {
+  const result = await merger.mergeElements(awu(elements))
+  return awu(result.merged.values()).toArray()
+}
 
 type FetchDiffArgs = {
   fromDir: string
@@ -47,14 +53,18 @@ const fetchDiffToWorkspace = async (
   )
   const resolvedWSElementSource = elementSource.createInMemoryElementSource(resolvedWSElements)
   outputLine(`Loading elements from ${input.fromDir}`, output)
-  const beforeElements = await loadElementsFromFolder(
-    input.fromDir,
-    resolvedWSElementSource,
+  const beforeElements = await mergeElements(
+    await loadElementsFromFolder(
+      input.fromDir,
+      resolvedWSElementSource,
+    )
   )
   outputLine(`Loading elements from ${input.toDir}`, output)
-  const afterElements = await loadElementsFromFolder(
-    input.toDir,
-    resolvedWSElementSource,
+  const afterElements = await mergeElements(
+    await loadElementsFromFolder(
+      input.toDir,
+      resolvedWSElementSource,
+    )
   )
 
   outputLine(`Calculating difference between ${input.fromDir} and ${input.toDir}`, output)

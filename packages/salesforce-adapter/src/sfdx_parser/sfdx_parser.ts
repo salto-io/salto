@@ -19,14 +19,15 @@ import readdirp from 'readdirp'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { filter } from '@salto-io/adapter-utils'
-import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, Element } from '@salto-io/adapter-api'
 import { readTextFile, readFile } from '@salto-io/file'
 import { SYSTEM_FIELDS, allFilters, UNSUPPORTED_SYSTEM_FIELDS } from '../adapter'
 import { xmlToValues, isComplexType, complexTypesMap, PACKAGE } from '../transformers/xml_transformer'
 import { METADATA_TYPES_TO_RENAME, createInstanceElement, createMetadataObjectType, MetadataValues } from '../transformers/transformer'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
-import { CUSTOM_OBJECT, CUSTOM_FIELD, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH } from '../constants'
+import { CUSTOM_OBJECT, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH } from '../constants'
 import { isLocalFilterCreator } from '../filter'
+import { sfdxFilters } from './filters'
 
 
 const log = logger(module)
@@ -56,8 +57,6 @@ const SUPPORTED_TYPE_NAMES = [
   'ApexTrigger',
 ]
 
-const CUSTOM_FIELD_OBJECT_NAME = '__objectName'
-
 const getElementsFromFile = async (
   packageDir: string,
   fileName: string,
@@ -77,20 +76,6 @@ const getElementsFromFile = async (
   const fullNameWithSuffix = path.basename(fileName).slice(0, -'-meta.xml'.length) as string
   const fullName = fullNameWithSuffix.split('.').slice(0, -1).join('.')
   values.fullName = fullName
-  if (typeName === CUSTOM_FIELD) {
-    // After A LOT of messing around with SFDX, it seems like the way it determines which
-    // object a field belongs to is that it expects a specific level of nesting.
-    // it is assumed objects are under "<package>/something/something/something/<object name>"
-    // where the default is "<package>/main/default/objects/<object name>" but the specific names
-    // do not seem to matter, only the number of nesting levels
-    //
-    // funnily enough, the object definition itself can be pretty much anywhere as long as it is in
-    // a folder with the same name as the object. but the fields must be under the structure
-    // as described above
-    const [/* pkgName */, /* appName */, /* typeFolder */, objectName] = fileName.split(path.sep)
-    // This is a hack so that we can later push all the custom fields into the right custom object
-    values[CUSTOM_FIELD_OBJECT_NAME] = objectName
-  }
 
   // Check for static files
   if (isComplexType(typeName)) {
@@ -150,22 +135,10 @@ const getElementsFromDXFolder = async (
     .flatMap(name => getElementsFromFile(packageDir, name, types, staticFileNames))
     .toArray()
 
-  // Remove field instances from elements and add them to custom objects
-  const fieldsByObject = _.groupBy(
-    _.remove(elements, e => e.elemID.typeName === CUSTOM_FIELD).filter(isInstanceElement),
-    inst => inst.value[CUSTOM_FIELD_OBJECT_NAME],
-  )
-  elements
-    .filter(isInstanceElement)
-    .filter(e => e.elemID.typeName === CUSTOM_OBJECT)
-    .forEach(objInst => {
-      const objectFields = fieldsByObject[objInst.value.fullName] ?? []
-      objInst.value.fields = objectFields.map(x => _.omit(x.value, CUSTOM_FIELD_OBJECT_NAME))
-    })
-
   const localFilters = allFilters
     .filter(isLocalFilterCreator)
     .map(({ creator }) => creator)
+  const filtersToRun = sfdxFilters.concat(localFilters)
   const filterRunner = filter.filtersRunner(
     {
       config: {
@@ -174,8 +147,13 @@ const getElementsFromDXFolder = async (
         fetchProfile: buildFetchProfile({ target: ['hack to make filters think this is partial fetch'] }),
         elementsSource: workspaceElements,
       },
+      files: {
+        baseDirName: packageDir,
+        sourceFileNames,
+        staticFileNames,
+      },
     },
-    localFilters,
+    filtersToRun,
   )
   await filterRunner.onFetch(elements)
   return elements
@@ -200,7 +178,6 @@ const getElementTypesForSFDX = async (
   // We need to create explicit types for CustomObject and CustomField because
   // we remove them when we fetch
   types.CustomObject = createMetadataObjectType({ annotations: { metadataType: CUSTOM_OBJECT } })
-  types.CustomField = createMetadataObjectType({ annotations: { metadataType: CUSTOM_FIELD } })
 
   return types
 }

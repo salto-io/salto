@@ -28,9 +28,16 @@ export type FilterContext = {
   separateFieldToFiles?: string[]
 }
 
+type FilterFilesContext = {
+  baseDirName: string
+  sourceFileNames: string[]
+  staticFileNames: string[]
+}
+
 export type FilterOpts = {
   client: SalesforceClient
   config: FilterContext
+  files: FilterFilesContext
 }
 
 export type FilterResult = {
@@ -44,12 +51,15 @@ export type FilterWith<M extends keyof Filter> = filter.FilterWith<FilterResult,
 
 // Local filters only use information in existing elements
 // They can change the format of elements, but cannot use external sources of information
-export type LocalFilterCreator = filter.FilterCreator<FilterResult, Omit<FilterOpts, 'client'>>
+export type LocalFilterCreator = filter.FilterCreator<FilterResult, Pick<FilterOpts, 'config'>>
 
 // Remote filters can add more information to existing elements
 // They should not change the format of existing elements, they should focus only on adding
 // the new information
-export type RemoteFilterCreator = filter.FilterCreator<FilterResult, FilterOpts>
+export type RemoteFilterCreator = filter.FilterCreator<FilterResult, Pick<FilterOpts, 'config' | 'client'>>
+
+// Files filters can run on folders and get additional context from the list of available files
+export type FilesFilterCreator = filter.FilterCreator<FilterResult, Pick<FilterOpts, 'config' | 'files'>>
 
 export type RemoteFilterCreatorDefinition = {
   creator: RemoteFilterCreator

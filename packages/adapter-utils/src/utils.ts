@@ -230,13 +230,14 @@ export const transformValues = async (
 
   const newVal = isTopLevel ? await transformFunc({ value: values, path: pathID }) : values
   if (_.isPlainObject(newVal)) {
-    const temp = await mapValuesAsync(
-      newVal ?? {},
-      (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))
+    const result = _.omitBy(
+      await mapValuesAsync(
+        newVal ?? {},
+        (value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key))
+      ),
+      _.isUndefined
     )
-    const result = _.omitBy(temp, _.isUndefined)
-    const res = _.isEmpty(result) && !allowEmpty ? undefined : result
-    return res
+    return _.isEmpty(result) ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = await awu(newVal)

@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
   FieldDefinition, BuiltinTypes, Value, DeployResult } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -252,7 +252,7 @@ describe('Zendesk adapter E2E', () => {
     beforeAll(async () => {
       credLease = await credsLease()
       adapterAttr = realAdapter(
-        { credentials: credLease.value },
+        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
         {
           ...DEFAULT_CONFIG,
           [FETCH_CONFIG]: {

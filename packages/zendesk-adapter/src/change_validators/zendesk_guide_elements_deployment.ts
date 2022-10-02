@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
-import { GUIDE_INSTANCE_TYPES } from '../config'
+import { TYPES_TO_HANDLE_BY_BRAND } from '../config'
 
 export const zendeskGuideElementsDeploymentValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
-    .filter(change => GUIDE_INSTANCE_TYPES.includes(getChangeData(change).elemID.typeName))
+    .filter(change => TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName))
     .map(getChangeData)
     .filter(instance => !isReferenceExpression(instance.value.brand_id))
     .map(instance => ({

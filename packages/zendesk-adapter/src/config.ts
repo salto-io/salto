@@ -1800,8 +1800,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   permission_group: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
       sourceTypeName: 'permission_groups__permission_groups',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
@@ -1840,8 +1838,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   user_segment: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
       sourceTypeName: 'user_segments__user_segments',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
@@ -1908,17 +1904,27 @@ export const SUPPORTED_TYPES = {
   workspace: ['workspaces'],
 }
 
-export const GUIDE_SUPPORTED_TYPES = {
+// Types in Zendesk Guide which relate to a certain brand
+export const GUIDE_PER_BRAND_TYPES = {
   article: ['articles'],
   section: ['sections'],
   label: ['labels'],
   category: ['categories'],
+}
+
+// Types in Zendesk Guide which doesn't related to any brand
+export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
 }
 
-export const GUIDE_INSTANCE_TYPES = [
-  ...Object.keys(GUIDE_SUPPORTED_TYPES),
+const GUIDE_SUPPORTED_TYPES = {
+  ...GUIDE_PER_BRAND_TYPES,
+  ...GUIDE_GLOBAL_TYPES,
+}
+
+export const TYPES_TO_HANDLE_BY_BRAND = [
+  ...Object.keys(GUIDE_PER_BRAND_TYPES),
   'article_translation',
   'category_translation',
   'section_translation',

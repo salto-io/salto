@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isString } from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
   isInstanceElement,
   Value,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -30,7 +31,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig, CLIENT_CONFIG, GUIDE_INSTANCE_TYPES } from './config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_PER_BRAND_TYPES } from './config'
 import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -208,11 +209,24 @@ const zendeskGuideEntriesFunc = (
   return getZendeskGuideEntriesResponseValues
 }
 
+const getSubdomainsFromElementsSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<string[]> => (
+  awu(await elementsSource.list())
+    .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
+    .map(id => elementsSource.get(id))
+    .filter(isInstanceElement)
+    .map(brandInstance => brandInstance.value.subdomain)
+    .filter(isString)
+    .toArray()
+)
+
 export interface ZendeskAdapterParams {
   filterCreators?: FilterCreator[]
   client: ZendeskClient
   credentials: Credentials
   config: ZendeskConfig
+  elementsSource: ReadOnlyElementsSource
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   configInstance?: InstanceElement
@@ -225,6 +239,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
   private configInstance?: InstanceElement
+  private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
   private createClientBySubdomain: (subdomain: string) => ZendeskClient
 
@@ -235,11 +250,13 @@ export default class ZendeskAdapter implements AdapterOperations {
     getElemIdFunc,
     config,
     configInstance,
+    elementsSource,
   }: ZendeskAdapterParams) {
     this.userConfig = config
     this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
+    this.elementsSource = elementsSource
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -275,8 +292,12 @@ export default class ZendeskAdapter implements AdapterOperations {
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
-    const { supportedTypes } = this.userConfig.apiDefinitions
-    const zendeskSupportElements = await getAllElements({
+    const { supportedTypes: supportSupportedTypes } = this.userConfig.apiDefinitions
+    const supportedTypes = isGuideDisabled
+      ? supportSupportedTypes
+      : { ...supportSupportedTypes, ...GUIDE_GLOBAL_TYPES }
+    // Zendesk Support and (if enabled) global Zendesk Guide types
+    const defaultSubdomainElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: isGuideDisabled,
@@ -290,10 +311,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
 
     if (isGuideDisabled) {
-      return zendeskSupportElements
+      return defaultSubdomainElements
     }
 
-    const brandsList = zendeskSupportElements.elements
+    const brandsList = defaultSubdomainElements.elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
       .filter(brandInstance => brandInstance.value.has_help_center)
@@ -312,7 +333,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: false,
-      supportedTypes: GUIDE_SUPPORTED_TYPES,
+      supportedTypes: GUIDE_PER_BRAND_TYPES,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -324,17 +345,17 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     // Remaining types should be added once to avoid overlaps between the generated elements,
     // so we add them once after all elements are generated
-    const zendeskElements = zendeskSupportElements.elements.concat(zendeskGuideElements.elements)
+    const zendeskElements = defaultSubdomainElements.elements.concat(zendeskGuideElements.elements)
     addRemainingTypes({
       adapterName: ZENDESK,
       elements: zendeskElements,
       typesConfig: this.userConfig.apiDefinitions.types,
-      supportedTypes: _.merge(supportedTypes, GUIDE_SUPPORTED_TYPES),
+      supportedTypes: _.merge(supportedTypes, GUIDE_PER_BRAND_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
 
     return {
-      configChanges: zendeskSupportElements.configChanges
+      configChanges: defaultSubdomainElements.configChanges
         .concat(zendeskGuideElements.configChanges),
       elements: zendeskElements,
     }
@@ -390,39 +411,57 @@ export default class ZendeskAdapter implements AdapterOperations {
               resolveValues(element, getLookUpName, elementsSource, true),
           )))
       .toArray()
-    await runner.preDeploy(resolvedChanges)
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(
       resolvedChanges,
-      change => Object.keys(GUIDE_INSTANCE_TYPES).includes(getChangeData(change).elemID.typeName)
+      change => Object.keys(TYPES_TO_HANDLE_BY_BRAND)
+        .includes(getChangeData(change).elemID.typeName)
     )
+    await runner.preDeploy(supportResolvedChanges)
     const { deployResult } = await runner.deploy(supportResolvedChanges)
+    const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
+    await runner.onDeploy(appliedChangesBeforeRestore)
 
+    const subdomainsList = await getSubdomainsFromElementsSource(this.elementsSource)
+    const subdomainToPaginator = Object.fromEntries(subdomainsList.map(subdomain => (
+      [
+        subdomain,
+        createPaginator({
+          client: this.createClientBySubdomain(subdomain),
+          paginationFuncCreator: paginate,
+        }),
+      ]
+    )))
     const subdomainToGuideChanges = _.groupBy(
       guideResolvedChanges,
       change => getChangeData(change).value.brand_id.subdomain
     )
-    const guideDeployResults = await awu(Object.keys(subdomainToGuideChanges))
-      .map(async subdomain => {
-        const brandPaginator = createPaginator({
-          client: this.createClientBySubdomain(subdomain),
-          paginationFuncCreator: paginate,
-        })
-        const brandRunner = await this.createFiltersRunner(brandPaginator)
-        return (await brandRunner.deploy(subdomainToGuideChanges[subdomain])).deployResult
+    const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
+      .filter(([subdomain, _paginator]) => subdomainToGuideChanges[subdomain] !== undefined)
+      .map(async ([subdomain, paginator]) => {
+        const brandRunner = await this.createFiltersRunner(paginator)
+        await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
+        const { deployResult: brandDeployResults } = (await brandRunner.deploy(
+          subdomainToGuideChanges[subdomain]
+        ))
+        const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
+        await runner.onDeploy(appliedChangesBeforeRestore)
+
+        return {
+          appliedChanges: guideChangesBeforeRestore,
+          errors: brandDeployResults.errors,
+        }
       })
       .toArray()
-
-    const appliedChangesBeforeRestore = deployResult.appliedChanges.concat(
-      guideDeployResults.flatMap(result => result.appliedChanges)
-    )
-    await runner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceChanges = _.keyBy(
       changesToDeploy,
       change => getChangeData(change).elemID.getFullName(),
     )
 
-    const appliedChanges = await awu(appliedChangesBeforeRestore)
+    const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
+      guideDeployResults.flatMap(result => result.appliedChanges)
+    )
+    const appliedChanges = await awu(allChangesBeforeRestore)
       .map(change => restoreChangeElement(
         change,
         sourceChanges,

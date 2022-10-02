@@ -15,9 +15,9 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange, ReferenceExpression } from '@salto-io/adapter-api'
 import { ZENDESK, BRAND_TYPE_NAME } from '../../src/constants'
-import { zendeskGuideElementsDeploymentValidator } from '../../src/change_validators/zendesk_guide_elements_deployment'
+import { brandFieldForBrandBasedElementsValidator } from '../../src/change_validators/brand_field_for_branded_based_elements'
 
-describe('zendeskGuideElementsDeploymentValidator', () => {
+describe('brandFieldForBrandBasedElementsValidator', () => {
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
   })
@@ -40,7 +40,7 @@ describe('zendeskGuideElementsDeploymentValidator', () => {
     { name: 'article' },
   )
   it('should return an error when deploying changes for a Zendesk Guide type instance without a brand_id field', async () => {
-    const errors = await zendeskGuideElementsDeploymentValidator(
+    const errors = await brandFieldForBrandBasedElementsValidator(
       [toChange({ after: guideInstanceWithoutBrand })],
     )
     expect(errors).toEqual([{
@@ -51,13 +51,13 @@ describe('zendeskGuideElementsDeploymentValidator', () => {
     }])
   })
   it('should not return an error when deploying changes for a Zendesk Guide type instance with a brand_id field', async () => {
-    const errors = await zendeskGuideElementsDeploymentValidator(
+    const errors = await brandFieldForBrandBasedElementsValidator(
       [toChange({ after: guideInstanceWithBrand })],
     )
     expect(errors).toHaveLength(0)
   })
   it('should not return an error when deploying changes for a non-Zendesk Guide type instance', async () => {
-    const errors = await zendeskGuideElementsDeploymentValidator(
+    const errors = await brandFieldForBrandBasedElementsValidator(
       [toChange({ after: brandInstance })],
     )
     expect(errors).toHaveLength(0)

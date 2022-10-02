@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isString } from 'lodash'
+import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
@@ -31,7 +31,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_PER_BRAND_TYPES } from './config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
 import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -217,7 +217,7 @@ const getSubdomainsFromElementsSource = async (
     .map(id => elementsSource.get(id))
     .filter(isInstanceElement)
     .map(brandInstance => brandInstance.value.subdomain)
-    .filter(isString)
+    .filter(_.isString)
     .toArray()
 )
 
@@ -275,7 +275,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       filtersRunner(
         {
           client: this.client,
-          paginator: paginator || this.paginator,
+          paginator: paginator ?? this.paginator,
           config: {
             fetch: config.fetch,
             apiDefinitions: config.apiDefinitions,
@@ -333,7 +333,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: false,
-      supportedTypes: GUIDE_PER_BRAND_TYPES,
+      supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -350,7 +350,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       adapterName: ZENDESK,
       elements: zendeskElements,
       typesConfig: this.userConfig.apiDefinitions.types,
-      supportedTypes: _.merge(supportedTypes, GUIDE_PER_BRAND_TYPES),
+      supportedTypes: _.merge(supportedTypes, GUIDE_BRAND_SPECIFIC_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
 
@@ -421,7 +421,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await runner.onDeploy(appliedChangesBeforeRestore)
 
-    const subdomainsList = await getSubdomainsFromElementsSource(this.elementsSource)
+    const subdomainsList = _.uniq(await getSubdomainsFromElementsSource(this.elementsSource))
     const subdomainToPaginator = Object.fromEntries(subdomainsList.map(subdomain => (
       [
         subdomain,
@@ -436,7 +436,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       change => getChangeData(change).value.brand_id.subdomain
     )
     const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
-      .filter(([subdomain, _paginator]) => subdomainToGuideChanges[subdomain] !== undefined)
+      .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
       .map(async ([subdomain, paginator]) => {
         const brandRunner = await this.createFiltersRunner(paginator)
         await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])

@@ -16,7 +16,8 @@
 import { ChangeValidator, getChangeData, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { TYPES_TO_HANDLE_BY_BRAND } from '../config'
 
-export const zendeskGuideElementsDeploymentValidator: ChangeValidator = async changes => (
+
+export const brandFieldForBrandBasedElementsValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .filter(change => TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName))

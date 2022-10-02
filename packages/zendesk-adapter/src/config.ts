@@ -1905,26 +1905,26 @@ export const SUPPORTED_TYPES = {
 }
 
 // Types in Zendesk Guide which relate to a certain brand
-export const GUIDE_PER_BRAND_TYPES = {
+export const GUIDE_BRAND_SPECIFIC_TYPES = {
   article: ['articles'],
   section: ['sections'],
   label: ['labels'],
   category: ['categories'],
 }
 
-// Types in Zendesk Guide which doesn't related to any brand
+// Types in Zendesk Guide that whose instances are shared across all brands
 export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
 }
 
 const GUIDE_SUPPORTED_TYPES = {
-  ...GUIDE_PER_BRAND_TYPES,
+  ...GUIDE_BRAND_SPECIFIC_TYPES,
   ...GUIDE_GLOBAL_TYPES,
 }
 
 export const TYPES_TO_HANDLE_BY_BRAND = [
-  ...Object.keys(GUIDE_PER_BRAND_TYPES),
+  ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
   'article_translation',
   'category_translation',
   'section_translation',

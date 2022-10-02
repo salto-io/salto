@@ -23,8 +23,9 @@ const LAST_VERSION_TO_UPGRADE = '0.3.23'
 /**
  * Adding the group_members type to the default exclude list, if the previous fetch
  * was on version <= 0.3.23.
- * Note: To avoid edge cases that are not currently handled, the item can only be removed from the
- * exclude list after a successful fetch.
+ * Note: We do not currently handle the edge case where the adapter was added on an earlier version
+ * and only fetched at a later version - in that case we may not exclude the group memberships
+ * from the fetch.
  */
 export const excludeGroupMembers = (
   config: InstanceElement | undefined,
@@ -32,7 +33,7 @@ export const excludeGroupMembers = (
 ): { config: [InstanceElement]; message: string } | undefined => {
   if (
     config === undefined
-    || (stateVersion !== undefined && semver.gt(stateVersion, LAST_VERSION_TO_UPGRADE))
+    || (stateVersion === undefined || semver.gt(stateVersion, LAST_VERSION_TO_UPGRADE))
     || (Array.isArray(config.value.exclude) && config.value.exclude.find(
       ({ type }: { type: string }) => type === GROUP_MEMBERS_TYPE_NAME
     ))

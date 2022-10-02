@@ -389,11 +389,11 @@ const filter: LocalFilterCreator = () => ({
 
   preDeploy: async changes => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
-      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       const instanceChanges = await getInstanceChanges(changes, targetMetadataType)
       if (instanceChanges.length === 0) {
         return
       }
+      const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
       // since transformElement and salesforce do not require list fields to be defined as lists,
       // we only mark fields as lists of their map inner value is a list,
       // so that we can convert the object back correctly in onDeploy

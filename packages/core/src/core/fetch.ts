@@ -33,6 +33,7 @@ import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
+import { version } from '../generated/version.json'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -1073,14 +1074,16 @@ export const getFetchAdapterAndServicesSetup = async (
         awu(await (await workspace.elements()).getAll()).filter(e => e.elemID.adapter === account),
         workspace.state()
       ))
-  const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
-    fetchServices,
-    await workspace.accountCredentials(fetchServices),
-    workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
-    accountToServiceNameMap,
-    elemIDGetters,
-  )
+  const adaptersCreatorConfigs = await getAdaptersCreatorConfigs({
+    accounts: fetchServices,
+    credentials: await workspace.accountCredentials(fetchServices),
+    getConfig: workspace.accountConfig.bind(workspace),
+    elementsSource: await workspace.elements(),
+    accountToServiceName: accountToServiceNameMap,
+    elemIdGetters: elemIDGetters,
+    stateVersion: await workspace.state().getStateSaltoVersion(),
+    currentVersion: version,
+  })
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)
     .filter(config => !_.isUndefined(config)) as InstanceElement[]

@@ -118,6 +118,8 @@ export type AdapterOperationsContext = {
   config?: InstanceElement
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
+  stateVersion: string | undefined
+  currentVersion: string
 }
 
 export type AdapterSuccessInstallResult = { success: true; installedVersion: string }

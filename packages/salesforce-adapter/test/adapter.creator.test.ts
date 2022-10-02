@@ -149,6 +149,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(SalesforceClient).toHaveBeenCalledWith({
         credentials: new UsernamePasswordCredentials({
@@ -173,6 +175,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
@@ -210,6 +214,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow()
     })
 
@@ -232,6 +238,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid fetch.data.includeObjects value. The following regular expressions are invalid: \\')
     })
 
@@ -255,6 +263,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid fetch.data.excludeObjects value. The following regular expressions are invalid: \\')
     })
 
@@ -278,6 +288,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid fetch.data.allowReferenceTo value. The following regular expressions are invalid: \\')
     })
 
@@ -303,6 +315,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid fetch.data.saltoIDSettings.overrides value. The following regular expressions are invalid: \\')
     })
 
@@ -328,6 +342,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid fetch.data.includeObjects value. includeObjects is required when dataManagement is configured')
     })
 
@@ -347,6 +363,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid fetch.data.saltoIDSettings value. saltoIDSettings is required when dataManagement is configured')
     })
 
@@ -371,6 +389,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid fetch.data.saltoIDSettings.defaultIdFields value. saltoIDSettings.defaultIdFields is required when dataManagement is configured')
     })
 
@@ -393,6 +413,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid client.maxConcurrentApiRequests value. maxConcurrentApiRequests values cannot be set to 0. Invalid keys: read')
     })
     it('should not throw an error when all rate limits client.maxConcurrentApiRequests are valid', () => {
@@ -413,6 +435,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: validConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).not.toThrow()
     })
 
@@ -426,6 +450,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: validConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).not.toThrow()
     })
 
@@ -447,6 +473,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: validConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       }
       expect(() => adapter.operations(adapterContext)).not.toThrow()
       validConfig.value.client.retry.retryStrategy = 'HTTPOrNetworkError'
@@ -467,6 +495,8 @@ describe('SalesforceAdapter creator', () => {
         credentials,
         config: invalidConfig,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Failed to load config due to an invalid client.clientConfig.retry.retryStrategy value. retryStrategy value \'somethingElse\' is not supported')
     })
 
@@ -474,6 +504,8 @@ describe('SalesforceAdapter creator', () => {
       expect(() => adapter.operations({
         credentials,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).not.toThrow()
     })
   })
@@ -488,6 +520,8 @@ describe('SalesforceAdapter creator', () => {
           credentials,
           elementsSource: buildElementsSourceFromElements([]),
           config: configClone,
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).toThrow('Failed to load config due to an invalid instancesRegexSkippedList value. The following regular expressions are invalid: (')
       })
 
@@ -499,6 +533,8 @@ describe('SalesforceAdapter creator', () => {
           credentials,
           elementsSource: buildElementsSourceFromElements([]),
           config: configClone,
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).not.toThrow()
       })
     })
@@ -512,6 +548,8 @@ describe('SalesforceAdapter creator', () => {
           credentials,
           elementsSource: buildElementsSourceFromElements([]),
           config: configClone,
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).toThrow('Failed to load config due to an invalid dataManagement.includeObjects value. includeObjects is required when dataManagement is configured')
       })
 
@@ -531,6 +569,8 @@ describe('SalesforceAdapter creator', () => {
           credentials,
           elementsSource: buildElementsSourceFromElements([]),
           config: configClone,
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).not.toThrow()
       })
 
@@ -552,6 +592,8 @@ describe('SalesforceAdapter creator', () => {
           credentials,
           elementsSource: buildElementsSourceFromElements([]),
           config: configClone,
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).toThrow('Failed to load config due to an invalid dataManagement value. fetch.data configuration option cannot be used with dataManagement option. The configuration of dataManagement should be moved to fetch.data')
       })
     })
@@ -565,6 +607,8 @@ describe('SalesforceAdapter creator', () => {
           credentials,
           elementsSource: buildElementsSourceFromElements([]),
           config: configClone,
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).not.toThrow()
       })
     })
@@ -579,6 +623,8 @@ describe('SalesforceAdapter creator', () => {
       credentials,
       config: deprecatedConfig,
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })
     it('pass to the adapter operation configuration without deprecated fields', () => {
       expect(SalesforceAdapter).toHaveBeenCalledWith({

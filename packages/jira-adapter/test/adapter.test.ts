@@ -67,6 +67,8 @@ describe('adapter', () => {
       credentials: createCredentialsInstance({ baseUrl: 'http:/jira.net', user: 'u', token: 't' }),
       config,
       getElemIdFunc,
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })
   })
   describe('deploy', () => {

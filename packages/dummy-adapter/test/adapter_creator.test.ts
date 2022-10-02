@@ -43,6 +43,8 @@ describe('adapter creator', () => {
         defaultParams
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeInstanceOf(DummyAdapter)
   })
 })

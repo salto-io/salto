@@ -88,6 +88,8 @@ describe('adapter creator', () => {
           elementsSource,
           credentials: credentialsInstance,
           config: createConfigInstance(configWithExtraValue),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })
       })
       it('should return jira operations', () => {
@@ -98,7 +100,12 @@ describe('adapter creator', () => {
     describe('without config', () => {
       it('should fail to create operations', () => {
         expect(
-          () => adapter.operations({ elementsSource, credentials: credentialsInstance })
+          () => adapter.operations({
+            elementsSource,
+            credentials: credentialsInstance,
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
+          })
         ).toThrow()
       })
     })
@@ -112,6 +119,8 @@ describe('adapter creator', () => {
             ...getDefaultConfig({ isDataCenter: false }),
             fetch: undefined,
           } as unknown as JiraConfig),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).toThrow()
       })
     })
@@ -125,6 +134,8 @@ describe('adapter creator', () => {
             ...getDefaultConfig({ isDataCenter: false }),
             apiDefinitions: { typeDefaults: 2 },
           } as unknown as JiraConfig),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })).toThrow()
       })
     })

@@ -40,12 +40,14 @@
     "form-data": "^4.0.0",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
+    "semver": "^7.3.2",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.23",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
+    "@types/semver": "^7.3.3",
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",

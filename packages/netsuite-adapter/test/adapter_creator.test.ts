@@ -173,6 +173,8 @@ describe('NetsuiteAdapter creator', () => {
         credentials,
         config,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(SdfClient).toHaveBeenCalledWith({
         credentials: {
@@ -194,6 +196,8 @@ describe('NetsuiteAdapter creator', () => {
         credentials,
         config,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(SuiteAppClient).not.toHaveBeenCalled()
     })
@@ -211,6 +215,8 @@ describe('NetsuiteAdapter creator', () => {
         credentials: cred,
         config,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })).toThrow('Missing SuiteApp login creds')
     })
 
@@ -227,6 +233,8 @@ describe('NetsuiteAdapter creator', () => {
         credentials: cred,
         config,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(SuiteAppClient).toHaveBeenCalledWith({
         credentials: { ...cred.value, accountId: 'FOO_A' },
@@ -255,6 +263,8 @@ describe('NetsuiteAdapter creator', () => {
         credentials: cred,
         config: configuration,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(SuiteAppClient).toHaveBeenCalledWith({
         credentials: { ...cred.value, accountId: 'FOO_A' },
@@ -275,6 +285,8 @@ describe('NetsuiteAdapter creator', () => {
         config,
         getElemIdFunc: mockGetElemIdFunc,
         elementsSource,
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
@@ -308,6 +320,8 @@ describe('NetsuiteAdapter creator', () => {
         config: conf,
         getElemIdFunc: mockGetElemIdFunc,
         elementsSource,
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
@@ -327,6 +341,8 @@ describe('NetsuiteAdapter creator', () => {
         credentials,
         getElemIdFunc: mockGetElemIdFunc,
         elementsSource,
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
@@ -350,6 +366,8 @@ describe('NetsuiteAdapter creator', () => {
           config: invalidConfig,
           getElemIdFunc: mockGetElemIdFunc,
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })
       ).toThrow()
     })
@@ -372,6 +390,8 @@ describe('NetsuiteAdapter creator', () => {
           config: invalidConfig,
           getElemIdFunc: mockGetElemIdFunc,
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })
       ).toThrow()
     })
@@ -396,6 +416,8 @@ describe('NetsuiteAdapter creator', () => {
           config: invalidConfig,
           getElemIdFunc: mockGetElemIdFunc,
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })
       ).toThrow()
     })
@@ -418,6 +440,8 @@ describe('NetsuiteAdapter creator', () => {
           config: invalidConfig,
           getElemIdFunc: mockGetElemIdFunc,
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })
       ).toThrow()
     })
@@ -439,6 +463,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -459,6 +485,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -478,6 +506,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -497,6 +527,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -518,6 +550,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -539,6 +573,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -561,6 +597,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -581,6 +619,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -601,6 +641,8 @@ describe('NetsuiteAdapter creator', () => {
             config: invalidConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).toThrow()
       })
@@ -621,6 +663,8 @@ describe('NetsuiteAdapter creator', () => {
             config: validConfig,
             getElemIdFunc: mockGetElemIdFunc,
             elementsSource: buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           })
         ).not.toThrow()
       })

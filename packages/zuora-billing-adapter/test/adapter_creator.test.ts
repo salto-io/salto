@@ -65,6 +65,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
   it('should return the zuora_billing adapter if configuration is missing', () => {
@@ -75,6 +77,8 @@ describe('adapter creator', () => {
         { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
     expect(adapter.operations({
       credentials: new InstanceElement(
@@ -84,6 +88,8 @@ describe('adapter creator', () => {
       ),
       config: new InstanceElement(ZUORA_BILLING, adapter.configType as ObjectType),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
   it('should ignore unexpected configuration values', () => {
@@ -108,6 +114,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
 
@@ -143,6 +151,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('Duplicate fieldsToHide params found in apiDefinitions for the following types: CustomObject'))
 
     expect(() => adapter.operations({
@@ -180,6 +190,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('Invalid type names in fetch: CatalogProduct2 does not match any of the supported types.'))
   })
 
@@ -207,6 +219,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('\'sandbox.na\' is a sandbox subdomain and cannot be used for production'))
     expect(() => adapter.operations({
       credentials: new InstanceElement(
@@ -231,6 +245,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('\'\' is not a valid sandbox subdomain'))
   })
 

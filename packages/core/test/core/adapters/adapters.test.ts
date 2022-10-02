@@ -146,13 +146,15 @@ describe('adapters.ts', () => {
     const d1Type = new ObjectType({ elemID: new ElemID('d1', 'type2') })
 
     it('should return default adapter config when there is no config', async () => {
-      const result = await getAdaptersCreatorConfigs(
-        [serviceName],
-        { [sfConfig.elemID.adapter]: sfConfig },
-        async () => undefined,
-        buildElementsSourceFromElements([]),
-        { [serviceName]: serviceName }
-      )
+      const result = await getAdaptersCreatorConfigs({
+        accounts: [serviceName],
+        credentials: { [sfConfig.elemID.adapter]: sfConfig },
+        getConfig: async () => undefined,
+        elementsSource: buildElementsSourceFromElements([]),
+        accountToServiceName: { [serviceName]: serviceName },
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
+      })
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
@@ -167,13 +169,15 @@ describe('adapters.ts', () => {
     })
 
     it('should return adapter config when there is config', async () => {
-      const result = await getAdaptersCreatorConfigs(
-        [serviceName],
-        { [sfConfig.elemID.adapter]: sfConfig },
-        async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
-        buildElementsSourceFromElements([]),
-        { [serviceName]: serviceName },
-      )
+      const result = await getAdaptersCreatorConfigs({
+        accounts: [serviceName],
+        credentials: { [sfConfig.elemID.adapter]: sfConfig },
+        getConfig: async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
+        elementsSource: buildElementsSourceFromElements([]),
+        accountToServiceName: { [serviceName]: serviceName },
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
+      })
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
@@ -187,16 +191,18 @@ describe('adapters.ts', () => {
     let result: Record<string, AdapterOperationsContext>
     describe('multi app adapter config', () => {
       beforeEach(async () => {
-        result = await getAdaptersCreatorConfigs(
-          [serviceName, 'd1'],
-          { [sfConfig.elemID.adapter]: sfConfig },
-          async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
-          buildElementsSourceFromElements([
+        result = await getAdaptersCreatorConfigs({
+          accounts: [serviceName, 'd1'],
+          credentials: { [sfConfig.elemID.adapter]: sfConfig },
+          getConfig: async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
+          elementsSource: buildElementsSourceFromElements([
             objectType,
             d1Type,
           ]),
-          { [serviceName]: serviceName, d1: 'dummy' },
-        )
+          accountToServiceName: { [serviceName]: serviceName, d1: 'dummy' },
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
+        })
       })
 
       it('should only return elements that belong to the relevant account', async () => {
@@ -245,6 +251,8 @@ describe('adapters.ts', () => {
             credentials: sfConfig,
             config: undefined,
             elementsSource: utils.buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           },
         },
         { salesforce: 'salesforce' },
@@ -259,6 +267,8 @@ describe('adapters.ts', () => {
           [accounts[0]]: {
             credentials: (credentials as unknown as InstanceElement),
             elementsSource: utils.buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           },
         }
       )).toThrow()
@@ -270,6 +280,8 @@ describe('adapters.ts', () => {
           notExist: {
             credentials: sfConfig,
             elementsSource: utils.buildElementsSourceFromElements([]),
+            stateVersion: '0.3.0',
+            currentVersion: '0.3.0',
           },
         }
       )).toThrow()

@@ -60,6 +60,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
 
@@ -82,6 +84,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
 
@@ -116,6 +120,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('Invalid type names in fetch: a,b does not match any of the supported types.'))
   })
 
@@ -150,6 +156,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('Unsupported service names in fetch.serviceConnectionNames: unsupportedName. The supported services are: salesforce,netsuite,zuora_billing'))
   })
 

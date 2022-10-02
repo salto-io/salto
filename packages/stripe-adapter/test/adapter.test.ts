@@ -84,6 +84,8 @@ describe('stripe swagger adapter', () => {
       credentials: CREDENTIALS,
       config,
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     }).fetch({ progressReporter: { reportProgress: () => null } })
 
     return elements.filter(isInstanceElement)
@@ -328,6 +330,8 @@ describe('stripe swagger adapter', () => {
         credentials: CREDENTIALS,
         config: DEFAULT_CONFIG_INSTANCE,
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       const deployOptions = { changeGroup: { groupID: '', changes: [] } }
       await expect(adapterOperations.deploy(deployOptions)).rejects.toThrow(new Error('Not implemented.'))

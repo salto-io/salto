@@ -102,6 +102,8 @@ describe('adapter', () => {
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }).fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.account_setting',
@@ -599,6 +601,8 @@ describe('adapter', () => {
             },
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }).fetch({ progressReporter: { reportProgress: () => null } })
         const instances = elements.filter(isInstanceElement)
         expect(instances.map(e => e.elemID.getFullName()).sort())
@@ -668,6 +672,8 @@ describe('adapter', () => {
           }
           return new ElemID(adapterName, name)
         },
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       const { elements } = await operations
         .fetch({ progressReporter: { reportProgress: () => null } })
@@ -876,6 +882,8 @@ describe('adapter', () => {
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
     })
     afterEach(() => {

@@ -156,7 +156,7 @@ describe('api.ts', () => {
       })
       // eslint-disable-next-line jest/no-disabled-tests
       it.skip('should pass the state elements to getAdaptersCreatorConfigs', async () => {
-        const elementsSource = mockGetAdaptersCreatorConfigs.mock.calls[0][3]
+        const { elementsSource } = mockGetAdaptersCreatorConfigs.mock.calls[0]
         expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'state_instance'))).toBeTruthy()
         expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'workspace_instance'))).toBeFalsy()
       })

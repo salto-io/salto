@@ -259,6 +259,8 @@ describe('adapter', () => {
             DEFAULT_CONFIG,
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }).fetch({ progressReporter: { reportProgress: () => null } })
 
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(2)
@@ -341,6 +343,8 @@ describe('adapter', () => {
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       }).fetch({ progressReporter: { reportProgress: () => null } })
       expect(updatedConfig).toBeUndefined()
     })
@@ -368,6 +372,8 @@ describe('adapter', () => {
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       }).fetch({ progressReporter: { reportProgress: () => null } })
       expect(updatedConfig).toBeDefined()
       expect(updatedConfig?.config[0].value[FETCH_CONFIG].include).toEqual([{ type: '.*' }])
@@ -399,6 +405,8 @@ describe('adapter', () => {
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       }).fetch({ progressReporter: { reportProgress: () => null } })
       expect(updatedConfig).toBeDefined()
     })
@@ -426,6 +434,8 @@ describe('adapter', () => {
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }).fetch({ progressReporter: { reportProgress: () => null } })
 
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
@@ -480,6 +490,8 @@ describe('adapter', () => {
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }).fetch({ progressReporter: { reportProgress: () => null } })
 
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
@@ -524,6 +536,8 @@ describe('adapter', () => {
           DEFAULT_CONFIG,
         ),
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
     })

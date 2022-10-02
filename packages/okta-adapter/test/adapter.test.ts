@@ -62,6 +62,8 @@ describe('Okta adapter', () => {
       credentials: createCredentialsInstance({ baseUrl: 'http:/okta.test', token: 't' }),
       config,
       getElemIdFunc,
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })
   })
 

@@ -113,13 +113,14 @@ export const preview = async (
   checkOnly = false,
 ): Promise<Plan> => {
   const stateElements = workspace.state()
-  const adapters = await getAdapters(
-    accounts,
-    await workspace.accountCredentials(accounts),
-    workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
-    getAccountToServiceNameMap(workspace, accounts),
-  )
+  const adapters = await getAdapters({
+    adapters: accounts,
+    credentials: await workspace.accountCredentials(accounts),
+    getConfig: workspace.accountConfig.bind(workspace),
+    workspaceElementsSource: await workspace.elements(),
+    accountToServiceName: getAccountToServiceNameMap(workspace, accounts),
+    stateVersion: await workspace.state().getStateSaltoVersion(),
+  })
   return getPlan({
     before: stateElements,
     after: await workspace.elements(),
@@ -147,13 +148,14 @@ export const deploy = async (
   checkOnly = false,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
-  const adapters = await getAdapters(
-    accounts,
-    await workspace.accountCredentials(accounts),
-    workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
-    getAccountToServiceNameMap(workspace, accounts)
-  )
+  const adapters = await getAdapters({
+    adapters: accounts,
+    credentials: await workspace.accountCredentials(accounts),
+    getConfig: workspace.accountConfig.bind(workspace),
+    workspaceElementsSource: await workspace.elements(),
+    accountToServiceName: getAccountToServiceNameMap(workspace, accounts),
+    stateVersion: await workspace.state().getStateSaltoVersion(),
+  })
 
   const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
     const changeElem = getChangeData(change)

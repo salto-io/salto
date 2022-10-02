@@ -74,6 +74,8 @@ describe('adapter', () => {
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }).fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements).toHaveLength(85)
         expect(elements.filter(isObjectType)).toHaveLength(49)
@@ -278,6 +280,8 @@ describe('adapter', () => {
             },
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }).fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'workato.api_access_profile',
@@ -332,6 +336,8 @@ describe('adapter', () => {
             }
             return new ElemID(adapterName, name)
           },
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         })
         const { elements } = await operations
           .fetch({ progressReporter: { reportProgress: () => null } })
@@ -406,6 +412,8 @@ describe('adapter', () => {
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
+          stateVersion: '0.3.0',
+          currentVersion: '0.3.0',
         }) as types.PickyRequired<AdapterOperations, 'postFetch'>
         const fetchResult = await adapterOperations.fetch({
           progressReporter: { reportProgress: () => null },
@@ -455,6 +463,8 @@ describe('adapter', () => {
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
+        stateVersion: '0.3.0',
+        currentVersion: '0.3.0',
       })
       await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
     })

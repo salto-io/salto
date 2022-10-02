@@ -65,6 +65,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
   it('should return the stripe adapter if configuration is missing', () => {
@@ -75,6 +77,8 @@ describe('adapter creator', () => {
         { token: 'aaa' },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
     expect(adapter.operations({
       credentials: new InstanceElement(
@@ -84,6 +88,8 @@ describe('adapter creator', () => {
       ),
       config: new InstanceElement(STRIPE, adapter.configType as ObjectType),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
   it('should ignore unexpected configuration values', () => {
@@ -108,6 +114,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toBeDefined()
   })
 
@@ -142,6 +150,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('Duplicate fieldsToHide params found in apiDefinitions for the following types: Product'))
 
     expect(() => adapter.operations({
@@ -169,6 +179,8 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
+      stateVersion: '0.3.0',
+      currentVersion: '0.3.0',
     })).toThrow(new Error('Invalid type names in fetch: country_spec2 does not match any of the supported types.'))
   })
 

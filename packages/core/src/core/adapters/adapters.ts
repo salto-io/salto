@@ -24,6 +24,7 @@ import { createAdapterReplacedID, merger, updateElementsWithAlternativeAccount }
 import { collections, promises } from '@salto-io/lowerdash'
 import { elements } from '@salto-io/adapter-components'
 import adapterCreators from './creators'
+import { version } from '../../generated/version.json'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
@@ -184,14 +185,25 @@ type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
 ) => Promise<InstanceElement | undefined>
 
-export const getAdaptersCreatorConfigs = async (
-  accounts: ReadonlyArray<string>,
-  credentials: Readonly<Record<string, InstanceElement>>,
-  getConfig: AdapterConfigGetter,
-  elementsSource: ReadOnlyElementsSource,
-  accountToServiceName: Record<string, string>,
-  elemIdGetters: Record<string, ElemIdGetter> = {},
-): Promise<Record<string, AdapterOperationsContext>> => (
+export const getAdaptersCreatorConfigs = async ({
+  accounts,
+  credentials,
+  getConfig,
+  elementsSource,
+  accountToServiceName,
+  elemIdGetters = {},
+  stateVersion,
+  currentVersion,
+}: {
+  accounts: ReadonlyArray<string>
+  credentials: Readonly<Record<string, InstanceElement>>
+  getConfig: AdapterConfigGetter
+  elementsSource: ReadOnlyElementsSource
+  accountToServiceName: Record<string, string>
+  elemIdGetters?: Record<string, ElemIdGetter>
+  stateVersion: string | undefined
+  currentVersion: string
+}): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(accounts.map(
     async account => {
       const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account],
@@ -205,28 +217,41 @@ export const getAdaptersCreatorConfigs = async (
             elementsSource, account
           ), account, accountToServiceName[account]),
           getElemIdFunc: elemIdGetters[account],
+          stateVersion,
+          currentVersion,
         },
       ]
     }
   )))
 )
 
-export const getAdapters = async (
-  adapters: ReadonlyArray<string>,
-  credentials: Readonly<Record<string, InstanceElement>>,
-  getConfig: AdapterConfigGetter,
-  workspaceElementsSource: ReadOnlyElementsSource,
-  accountToServiceName: Record<string, string>,
-  elemIdGetters: Record<string, ElemIdGetter> = {},
-): Promise<Record<string, AdapterOperations>> =>
+export const getAdapters = async ({
+  adapters,
+  credentials,
+  getConfig,
+  workspaceElementsSource,
+  accountToServiceName,
+  elemIdGetters = {},
+  stateVersion,
+}: {
+  adapters: ReadonlyArray<string>
+  credentials: Readonly<Record<string, InstanceElement>>
+  getConfig: AdapterConfigGetter
+  workspaceElementsSource: ReadOnlyElementsSource
+  accountToServiceName: Record<string, string>
+  elemIdGetters?: Record<string, ElemIdGetter>
+  stateVersion?: string
+}): Promise<Record<string, AdapterOperations>> =>
   initAdapters(
-    await getAdaptersCreatorConfigs(
-      adapters,
+    await getAdaptersCreatorConfigs({
+      accounts: adapters,
       credentials,
       getConfig,
-      workspaceElementsSource,
+      elementsSource: workspaceElementsSource,
       accountToServiceName,
-      elemIdGetters
-    ),
+      elemIdGetters,
+      stateVersion,
+      currentVersion: version,
+    }),
     accountToServiceName,
   )

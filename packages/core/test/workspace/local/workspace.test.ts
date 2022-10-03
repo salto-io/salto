@@ -328,7 +328,7 @@ describe('local workspace', () => {
         filename: '' })
       })
 
-      it('should not crash', async () => {
+      it('should successfully demote all without crashing', async () => {
         const workspace = await loadLocalWorkspace({ path: '/west' })
         await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()

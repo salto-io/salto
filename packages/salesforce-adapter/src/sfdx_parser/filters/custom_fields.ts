@@ -58,11 +58,7 @@ const getFieldsOfCustomObject = async (
         log.warn('skipping %s because we could not get its content', fileName)
         return undefined
       }
-      const fieldValues = xmlToValues(fileContent).values
-      const fullNameWithSuffix = path.basename(fileName).slice(0, -'-meta.xml'.length) as string
-      const fullName = fullNameWithSuffix.split('.').slice(0, -1).join('.')
-      fieldValues.fullName = fullName
-      return fieldValues
+      return xmlToValues(fileContent).values
     })
     .filter(values.isDefined)
     .toArray()

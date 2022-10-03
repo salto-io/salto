@@ -28,9 +28,21 @@ import { CliExitCode, CliOutput } from '../types'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const mergeElements = async (elements: Element[]): Promise<Element[]> => {
+const mergeElements = async (
+  workspace: Workspace,
+  elements: Element[],
+  output: CliOutput,
+): Promise<{ elements: Element[]; success: boolean }> => {
   const result = await merger.mergeElements(awu(elements))
-  return awu(result.merged.values()).toArray()
+  const errors = await awu(result.errors.values()).flat().toArray()
+  if (errors.length > 0) {
+    errorOutputLine('Encountered merge errors in elements:', output)
+    errorOutputLine(await formatWorkspaceErrors(workspace, errors), output)
+  }
+  return {
+    elements: await awu(result.merged.values()).toArray(),
+    success: errors.length === 0,
+  }
 }
 
 type FetchDiffArgs = {
@@ -52,26 +64,34 @@ const fetchDiffToWorkspace = async (
     wsElements,
   )
   const resolvedWSElementSource = elementSource.createInMemoryElementSource(resolvedWSElements)
+
   outputLine(`Loading elements from ${input.fromDir}`, output)
-  const beforeElements = await mergeElements(
-    await loadElementsFromFolder(
-      input.fromDir,
-      resolvedWSElementSource,
-    )
+  const beforeElements = await loadElementsFromFolder(input.fromDir, resolvedWSElementSource)
+  const { elements: mergedBeforeElements, success: beforeMergeSuccess } = await mergeElements(
+    workspace,
+    beforeElements,
+    output,
   )
+  if (!beforeMergeSuccess) {
+    return false
+  }
+
   outputLine(`Loading elements from ${input.toDir}`, output)
-  const afterElements = await mergeElements(
-    await loadElementsFromFolder(
-      input.toDir,
-      resolvedWSElementSource,
-    )
+  const afterElements = await loadElementsFromFolder(input.toDir, resolvedWSElementSource)
+  const { elements: mergedAfterElements, success: afterMergeSuccess } = await mergeElements(
+    workspace,
+    afterElements,
+    output,
   )
+  if (!afterMergeSuccess) {
+    return false
+  }
 
   outputLine(`Calculating difference between ${input.fromDir} and ${input.toDir}`, output)
   const changes = await calcFetchChanges(
     afterElements,
-    elementSource.createInMemoryElementSource(afterElements),
-    elementSource.createInMemoryElementSource(beforeElements),
+    elementSource.createInMemoryElementSource(mergedAfterElements),
+    elementSource.createInMemoryElementSource(mergedBeforeElements),
     resolvedWSElementSource,
     new Set([input.accountName]),
     new Set([input.accountName]),

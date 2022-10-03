@@ -34,27 +34,30 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const SUPPORTED_TYPE_NAMES = [
-  'CustomApplication',
+  'ApexClass',
+  'ApexPage',
+  'ApexTrigger',
   'AssignmentRules',
   'AuraDefinitionBundle',
-  'ApexClass',
+  'CompactLayout',
   'ContentAsset',
+  'CustomApplication',
+  'CustomObject',
+  'CustomTab',
   // 'EmailTemplate', // TODO: add folder name to fullName
+  'FieldSet',
   'FlexiPage',
   'Flow',
   'InstalledPackage',
+  // 'LanguageSettings', // TODO: generally handle settings
   'Layout',
   'LightningComponentBundle',
-  'CustomObject',
-  'ApexPage',
+  'ListView',
   'Profile',
-  // 'LanguageSettings', // TODO: generally handle settings
   // 'StaticResource', // TODO: handle static resources that have their content unzipped by SFDX
-  'CustomTab',
   // 'Territory2Rule', // TODO: add folder name to fullName (should be <FolderName>.<FullName>)
   'Territory2Type',
   // 'TopicsForObjects', // TODO: handle this
-  'ApexTrigger',
 ]
 
 const getElementsFromFile = async (
@@ -155,8 +158,12 @@ const getElementsFromDXFolder = async (
     },
     filtersToRun,
   )
-  await filterRunner.onFetch(elements)
-  return elements
+  // Some filters assume the types have to come from the elements list
+  // so when running the filters we must provide the types as well
+  // we omit the CustomObject type because we faked it here so it is not compatible
+  const result = elements.concat(Object.values(_.omit(types, CUSTOM_OBJECT)))
+  await filterRunner.onFetch(result)
+  return result
 }
 
 

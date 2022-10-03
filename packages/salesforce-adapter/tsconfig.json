@@ -18,6 +18,9 @@
         "e2e_test/**/*",
         "index.ts"
     ],
+    "exclude": [
+        "test/sfdx_parser/test_sfdx_project/**"
+    ],
     "references": [
         { "path": "../adapter-api" },
         { "path": "../adapter-components" },

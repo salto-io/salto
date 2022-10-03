@@ -314,10 +314,10 @@ const validateToEnvs = (
   workspace: Workspace
 ) : { envsToCloneTo: string[]; envsValidateError?: string } => {
   if (!toEnvs && !toAllEnvs) {
-    return { envsToCloneTo: [], envsValidateError: 'Must declare either --to-envs or --to-all-envs' }
+    return { envsToCloneTo: [], envsValidateError: 'either \'--to-envs or\' \'--to-all-envs\' is required' }
   }
   if (toEnvs && toAllEnvs) {
-    return { envsToCloneTo: [], envsValidateError: 'Can\'t choose both --to-envs and --to-all-envs' }
+    return { envsToCloneTo: [], envsValidateError: 'both \'--to-envs\' and \'--to-all-envs\' is not allowed' }
   }
   const envsToCloneTo = toEnvs || [...workspace.envs()]
   return { envsToCloneTo }
@@ -407,6 +407,7 @@ const cloneDef = createWorkspaceCommand({
         required: false,
         description: 'Clone to all environments but for the source environment',
         type: 'boolean',
+        alias: 'a',
 
       },
       // TODO: Check if needed

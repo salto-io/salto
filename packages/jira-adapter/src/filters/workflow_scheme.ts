@@ -153,28 +153,30 @@ const createMappingFromID = async (elementsSource: ReadOnlyElementsSource, typeN
     .map(id => elementsSource.get(id))
     .keyBy(inst => inst.value.id)
 
-const reformatMessages = (messages: string[], idsToInstance:Record<string, InstanceElement>)
-: string[] => {
-  const IDs = messages.flatMap((message: string) => message.match(new RegExp('\\d+', 'g')) ?? [])
+const reformatIssueID = (messages: string[],
+  idsToInstance:Record<string, InstanceElement>): string[] => {
+  const IDs = messages.flatMap((message: string) => message.match(new RegExp('Issue type with ID (\\d+).*'))?.[1] ?? [])
   return replaceIDsWithNames(messages, IDs, idsToInstance)
+}
+
+const reformatStatusesID = (messages: string[],
+  idsToInstance:Record<string, InstanceElement>): string[] => {
+  const IDs = messages.flatMap((message: string) => message.match(new RegExp('.*statuses? with names? (\\d+(?:,\\d+)*)'))?.[1] ?? [])
+  return replaceIDsWithNames(messages, IDs.flatMap(m => m.split(',')), idsToInstance)
 }
 
 const reformatMigrationErrorMessages = async (errorMessages: string[],
   elementsSource: ReadOnlyElementsSource) : Promise<string[]> => {
   const [relevantMessages, otherMessages] = _.partition(errorMessages, (message: string) => message.includes('is missing the mappings required for statuses'))
-  const idsToInstance = { ISSUE_TYPE_NAME:
+  const idsToInstance = { [ISSUE_TYPE_NAME]:
     await createMappingFromID(elementsSource, ISSUE_TYPE_NAME),
-  STATUS_TYPE_NAME: await createMappingFromID(elementsSource, STATUS_TYPE_NAME) }
-  const messagesPartition = { ISSUE_TYPE_NAME: relevantMessages.map(message => message.slice(0, message.indexOf('status'))),
-    STATUS_TYPE_NAME: relevantMessages.map(message => message.slice(message.indexOf('status'))) }
-  const newMessages = { ISSUE_TYPE_NAME: reformatMessages(
-    messagesPartition.ISSUE_TYPE_NAME, idsToInstance.ISSUE_TYPE_NAME
-  ),
-  STATUS_TYPE_NAME: reformatMessages(
-    messagesPartition.STATUS_TYPE_NAME, idsToInstance.STATUS_TYPE_NAME
-  ) }
-  return newMessages.ISSUE_TYPE_NAME.map((prefixMessage, i) =>
-    prefixMessage.concat(newMessages.STATUS_TYPE_NAME[i])).concat(otherMessages)
+  [STATUS_TYPE_NAME]: await createMappingFromID(elementsSource, STATUS_TYPE_NAME) }
+
+  const newMessages = reformatStatusesID(
+    reformatIssueID(relevantMessages, idsToInstance[ISSUE_TYPE_NAME]),
+    idsToInstance[STATUS_TYPE_NAME]
+  )
+  return newMessages.concat(otherMessages)
 }
 
 export const deployWorkflowScheme = async (

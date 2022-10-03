@@ -611,13 +611,18 @@ describe('workflowScheme', () => {
         new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }),
         { id: '2' }
       )
-      const statusInstance = new InstanceElement(
-        'statusInstance',
+      const statusFirstInstance = new InstanceElement(
+        'statusFirstInstance',
         new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }),
         { id: '3' }
       )
+      const statusSecondInstance = new InstanceElement(
+        'statusSecondInstance',
+        new ObjectType({ elemID: new ElemID(JIRA, STATUS_TYPE_NAME) }),
+        { id: '4' }
+      )
       elementsSource = buildElementsSourceFromElements(
-        [workflowSchemeInstance, statusInstance, issueInstance]
+        [workflowSchemeInstance, statusFirstInstance, statusSecondInstance, issueInstance]
       )
       const { client: cli, paginator, connection: conn } = mockClient()
       client = cli
@@ -629,7 +634,7 @@ describe('workflowScheme', () => {
       }))
 
       deployChangeMock.mockResolvedValue({ draft: true })
-      connection.post.mockImplementation(() => { throw new ServiceError(['Issue type with ID 2 is missing the mappings required for statuses with IDs 3']) })
+      connection.post.mockImplementation(() => { throw new ServiceError(['Issue type with ID 2 is missing the mappings required for statuses with IDs 3,4']) })
 
       const instanceBefore = workflowSchemeInstance.clone()
       workflowSchemeInstance.value.workflow = 'other workflow'
@@ -639,7 +644,7 @@ describe('workflowScheme', () => {
       expect(result).toBeDefined()
       expect(result?.deployResult.errors).toHaveLength(1)
       const errorMessage = result?.deployResult.errors[0].message
-      expect(errorMessage).toInclude('Issue type with name issueInstance is missing the mappings required for statuses with names statusInstance')
+      expect(errorMessage).toInclude('Issue type with name issueInstance is missing the mappings required for statuses with names statusFirstInstance,statusSecondInstance')
     })
 
     it('should throw the regular error message when fail to reformat it', async () => {

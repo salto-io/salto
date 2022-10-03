@@ -651,6 +651,16 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'help_center_locale' },
   },
   {
+    src: { field: 'parent_section_id', parentTypes: ['section'] },
+    serializationStrategy: 'id',
+    target: { type: 'section' },
+  },
+  {
+    src: { field: 'locale', parentTypes: ['article_translation', 'section_translation', 'category_translation'] },
+    serializationStrategy: 'id',
+    target: { type: 'help_center_locale' },
+  },
+  {
     src: { field: 'publish', parentTypes: ['permission_group'] },
     serializationStrategy: 'id',
     target: { type: 'user_segment' },

@@ -78,6 +78,7 @@ import handleTemplateExpressionFilter from './filters/handle_template_expression
 import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
+import articleFilter from './filters/article'
 import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
@@ -129,6 +130,7 @@ export const DEFAULT_FILTERS = [
   hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
+  articleFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
   fieldReferencesFilter,

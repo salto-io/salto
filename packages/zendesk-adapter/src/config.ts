@@ -1631,14 +1631,39 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/articles/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{sectionId}/articles',
+        deployAsField: 'article',
+        method: 'post',
+        urlParamsToFields: {
+          sectionId: 'section_id',
+        },
+      },
+      modify: {
+        url: '/help_center/articles/{articleId}',
+        method: 'put',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/articles/{articleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+    },
   },
   article_translation: {
     request: {
       url: '/help_center/articles/{articleId}/translations',
     },
     transformation: {
-      idFields: ['&brand_id', 'locale'],
-      fileNameFields: ['&brand_id', 'locale'],
+      idFields: ['&brand_id', '&locale'],
+      fileNameFields: ['&brand_id', '&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1647,6 +1672,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
       ),
     },
   },
@@ -1680,14 +1707,39 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/sections/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories/{categoryId}/sections',
+        deployAsField: 'section',
+        method: 'post',
+        urlParamsToFields: {
+          categoryId: 'category_id.id',
+        },
+      },
+      modify: {
+        url: '/help_center/sections/{sectionId}',
+        method: 'put',
+        deployAsField: 'section',
+        urlParamsToFields: {
+          sectionId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/sections/{sectionId}',
+        method: 'delete',
+        urlParamsToFields: {
+          sectionId: 'id',
+        },
+      },
+    },
   },
   section_translation: {
     request: {
       url: '/help_center/sections/{sectionId}/translations',
     },
     transformation: {
-      idFields: ['&brand_id', 'locale'],
-      fileNameFields: ['&brand_id', 'locale'],
+      idFields: ['&brand_id', '&locale'],
+      fileNameFields: ['&brand_id', '&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1696,6 +1748,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
       ),
     },
   },
@@ -1746,14 +1800,36 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/hc/admin/categories/{id}/edit',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories',
+        deployAsField: 'category',
+        method: 'post',
+      },
+      modify: {
+        url: '/help_center/categories/{categoryId}',
+        method: 'put',
+        deployAsField: 'category',
+        urlParamsToFields: {
+          categoryId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/categories/{categoryId}',
+        method: 'delete',
+        urlParamsToFields: {
+          categoryId: 'id',
+        },
+      },
+    },
   },
   category_translation: {
     request: {
       url: '/help_center/categories/{categoryId}/translations',
     },
     transformation: {
-      idFields: ['&brand_id', 'locale'],
-      fileNameFields: ['&brand_id', 'locale'],
+      idFields: ['&brand_id', '&locale'],
+      fileNameFields: ['&brand_id', '&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1762,6 +1838,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
       ),
     },
   },
@@ -1845,6 +1923,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  // help_center_locale: {
+  //   transformation: {
+  //     idFields: ['id'],
+  //     fileNameFields: ['id'],
+  //   },
+  // },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 

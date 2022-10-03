@@ -78,15 +78,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       path: [ZENDESK, TYPES_PATH, LOCALE_TYPE_NAME],
     })
     const defaultLocale = localesRes.default_locale
-    const locales = localesRes.locales.map(locale => {
-      const localeName = naclCase(locale)
-      return new InstanceElement(
-        localeName,
-        localeType,
-        { id: locale, default: locale === defaultLocale },
-        [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(locale)],
-      )
-    })
+    const locales = localesRes.locales.map(locale => new InstanceElement(
+      naclCase(locale),
+      localeType,
+      { id: locale, default: locale === defaultLocale },
+      [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(naclCase(locale))],
+    ))
     elements.push(localeType)
     locales.forEach(locale => {
       elements.push(locale)

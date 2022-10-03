@@ -311,15 +311,19 @@ type ElementCloneArgs = {
 const validateToEnvs = (
   toEnvs: string[] | undefined,
   toAllEnvs: boolean | undefined,
+  env: string | undefined,
   workspace: Workspace
 ) : { envsToCloneTo: string[]; envsValidateError?: string } => {
   if (!toEnvs && !toAllEnvs) {
-    return { envsToCloneTo: [], envsValidateError: 'either \'--to-envs or\' \'--to-all-envs\' is required' }
+    return { envsToCloneTo: [], envsValidateError: Prompts.CLONE_NO_TARGET_ENV }
   }
   if (toEnvs && toAllEnvs) {
-    return { envsToCloneTo: [], envsValidateError: 'both \'--to-envs\' and \'--to-all-envs\' is not allowed' }
+    return { envsToCloneTo: [], envsValidateError: Prompts.CLONE_CONFLICT_TARGET_ENV }
   }
-  const envsToCloneTo = toEnvs || [...workspace.envs()]
+
+  const fromEnv = env || workspace.currentEnv()
+  const envsToCloneTo = toEnvs || [...workspace.envs()].filter(e => e !== fromEnv)
+
   return { envsToCloneTo }
 }
 
@@ -329,8 +333,8 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { toEnvs, toAllEnvs, elementSelector, force, allowElementDeletions } = input
-  const { envsToCloneTo, envsValidateError } = validateToEnvs(toEnvs, toAllEnvs, workspace)
+  const { toEnvs, toAllEnvs, env, elementSelector, force, allowElementDeletions } = input
+  const { envsToCloneTo, envsValidateError } = validateToEnvs(toEnvs, toAllEnvs, env, workspace)
 
   if (envsValidateError) {
     errorOutputLine(formatInvalidFilters([envsValidateError]), output)

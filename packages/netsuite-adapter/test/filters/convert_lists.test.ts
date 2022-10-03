@@ -13,11 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement } from '@salto-io/adapter-api'
-import { datasetType } from '../../src/autogen/types/custom_types/dataset'
-import { entitycustomfieldType } from '../../src/autogen/types/custom_types/entitycustomfield'
-import { savedcsvimportType } from '../../src/autogen/types/custom_types/savedcsvimport'
+import { promises } from '@salto-io/lowerdash'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
+import { datasetType } from '../../src/autogen/types/standard_types/dataset'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
+import { savedcsvimportType } from '../../src/autogen/types/standard_types/savedcsvimport'
 import filterCreator from '../../src/filters/convert_lists'
+import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 
 describe('convert_lists filter', () => {
   const instanceName = 'instanceName'
@@ -104,5 +107,32 @@ describe('convert_lists filter', () => {
       })
     await filterCreator().onFetch([instance])
     expect(instance.value.roleaccesses.roleaccess).toEqual(roleAccessesValue)
+  })
+
+  describe('custom record type', () => {
+    let customRecordType: ObjectType
+    beforeEach(async () => {
+      customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotationRefsOrTypes: await promises.object.mapValuesAsync(
+          customrecordtypeType().type.fields,
+          field => field.getType()
+        ),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          instances: {
+            instance: {
+              [SCRIPT_ID]: 'customrecord1_record1',
+            },
+          },
+        },
+      })
+    })
+    it('should modify single value to a singleton in case of ListType', async () => {
+      await filterCreator().onFetch([customRecordType])
+      expect(customRecordType.annotations.instances.instance).toEqual([{
+        [SCRIPT_ID]: 'customrecord1_record1',
+      }])
+    })
   })
 })

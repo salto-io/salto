@@ -787,6 +787,19 @@ const typesToMergeFromInstance = async (elements: Element[]): Promise<TypesFromI
   }
 }
 
+const removeDuplicateElements = <T extends Element>(elements: T[]): T[] => {
+  const ids = new Set<string>()
+  return elements.filter(elem => {
+    const elemID = elem.elemID.getFullName()
+    if (ids.has(elemID)) {
+      log.warn('Removing duplicate element ID %s', elemID)
+      return false
+    }
+    ids.add(elemID)
+    return true
+  })
+}
+
 /**
  * Convert custom object instance elements into object types
  */
@@ -799,9 +812,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       const existingElementIDs = new Set(elements.map(elem => elem.elemID.getFullName()))
       const fieldsToSkip = config.unsupportedSystemFields
 
-      await awu(elements)
-        .filter(isInstanceElement)
-        .filter(isInstanceOfType(CUSTOM_OBJECT))
+      const customObjectInstances = removeDuplicateElements(
+        await awu(elements)
+          .filter(isInstanceElement)
+          .filter(isInstanceOfType(CUSTOM_OBJECT))
+          .toArray()
+      )
+
+      await awu(customObjectInstances)
         .flatMap(instance => createFromInstance(instance, typesFromInstance, fieldsToSkip))
         // Make sure we do not override existing metadata types with custom objects
         // this can happen with standard objects having the same name as a metadata type

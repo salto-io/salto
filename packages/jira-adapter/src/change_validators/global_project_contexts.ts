@@ -63,7 +63,7 @@ const getContextsNotUsedInProjectErrors = (
       elemID: instance.elemID,
       severity: 'Error' as const,
       message: 'Field context is not used in any project',
-      detailedMessage: `The context ${instance.elemID.getFullName()} is not used by any project and it is not a global context, so it cannot be created.`,
+      detailedMessage: `The context ${instance.elemID.getFullName()} is not used by any project and it is not a global context, so it cannot be created (this is generally safe to ignore, as this context would not have an effect on the account).`,
     }))
 }
 

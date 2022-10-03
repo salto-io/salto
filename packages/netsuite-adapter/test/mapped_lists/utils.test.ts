@@ -15,16 +15,16 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { convertFieldsTypesFromListToMap, convertInstanceMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping } from '../../src/mapped_lists/utils'
-import { getCustomTypes } from '../../src/autogen/types'
+import { convertFieldsTypesFromListToMap, convertElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping } from '../../src/mapped_lists/utils'
+import { getStandardTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
-import { getInnerCustomTypes, getTopLevelCustomTypes } from '../../src/types'
+import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
 
 const { awu } = collections.asynciterable
 
 describe('mapped lists', () => {
-  const customTypes = getCustomTypes()
-  const { workflow, kpiscorecard } = customTypes
+  const standardTypes = getStandardTypes()
+  const { workflow, kpiscorecard } = standardTypes
 
   let instance: InstanceElement
   let transformedInstance: InstanceElement
@@ -92,18 +92,18 @@ describe('mapped lists', () => {
       .forEach(t => convertFieldsTypesFromListToMap(t))
     transformedInstance = instance.clone()
     transformedInstance.value = await convertInstanceListsToMaps(instance) ?? instance.value
-    transformedBackInstance = await convertInstanceMapsToLists(transformedInstance)
+    transformedBackInstance = await convertElementMapsToLists(transformedInstance)
 
     await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
   })
 
   describe('validateTypesFieldMapping', () => {
-    const customTypesAndInnerTypes = [
-      ...getTopLevelCustomTypes(customTypes),
-      ...getInnerCustomTypes(customTypes),
+    const standardTypesAndInnerTypes = [
+      ...getTopLevelStandardTypes(standardTypes),
+      ...getInnerStandardTypes(standardTypes),
     ]
     it('should throw when missing some types with field mapping', async () => {
-      const missingTypes = customTypesAndInnerTypes
+      const missingTypes = standardTypesAndInnerTypes
         .filter(element => element.elemID.name !== 'addressForm_mainFields_defaultFieldGroup_fields')
       await expect(async () => validateTypesFieldMapping(missingTypes)).rejects.toThrow('missing some types with field mapping')
 

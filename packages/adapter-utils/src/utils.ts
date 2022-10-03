@@ -856,13 +856,13 @@ export const filterByID = async <T extends Element | Values>(
       ),
       isDefined,
     )
-    return _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
+    return !_.isEmpty(value) && _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
   }
   if (_.isArray(value)) {
     const filteredArray = (await Promise.all(value
       .map(async (item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc))))
       .filter(isDefined)
-    return _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
+    return !_.isEmpty(value) && _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
   }
 
   return value

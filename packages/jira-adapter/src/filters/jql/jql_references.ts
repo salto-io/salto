@@ -87,11 +87,16 @@ const getJqls = (instance: InstanceElement): JqlDetails[] => {
     .filter(({ jql }) => jql !== undefined)
 }
 
-const filter: FilterCreator = () => {
+const filter: FilterCreator = ({ config }) => {
   const jqlToTemplateExpression: Record<string, TemplateExpression> = {}
 
   return {
     onFetch: async elements => log.time(async () => {
+      if (config.fetch.parseTemplateExpressions === false) {
+        log.debug('Parsing JQL template expression was disabled')
+        return
+      }
+
       const instances = elements.filter(isInstanceElement)
 
       const jqls = instances

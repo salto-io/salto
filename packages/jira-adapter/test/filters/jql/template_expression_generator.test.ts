@@ -99,6 +99,12 @@ describe('generateTemplateExpression', () => {
     expect(expression).toBeUndefined()
   })
 
+  it('should parse correctly jql with orderBy with a JS built in name', async () => {
+    const jql = 'ORDER BY __proto__ ASC'
+    const expression = generateTemplateExpression(jql, generateJqlContext(instances))
+    expect(expression).toBeUndefined()
+  })
+
   it('should ignore functions', async () => {
     const jql = 'status = currentUser()'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))

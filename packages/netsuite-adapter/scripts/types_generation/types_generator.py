@@ -31,6 +31,7 @@ TYPE = 'type'
 DESCRIPTION = 'description'
 
 INNER_TYPE_NAME_TO_DEF = 'inner_type_name_to_def'
+INNER_TYPE_NAMES_ORDER = 'inner_type_names_order'
 TYPE_DEF = 'type_def'
 
 LICENSE_HEADER = '''/*
@@ -271,13 +272,14 @@ def parse_enums(account_id):
     return enum_to_possible_values
 
 
-def parse_type_for_inner_structured_field(type_name, inner_type_name_to_def, top_level_type_name):
-    type_def = parse_type(type_name, None, inner_type_name_to_def, top_level_type_name)
+def parse_type_for_inner_structured_field(type_name, inner_type_name_to_def, inner_type_names_order, top_level_type_name):
+    type_def = parse_type(type_name, None, inner_type_name_to_def, inner_type_names_order, top_level_type_name)
     inner_type_name_to_def[type_name] = type_def
+    inner_type_names_order.append(type_name)
     return type_name
 
 
-def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_type_name = None):
+def parse_type(type_name, script_id_prefix, inner_type_name_to_def, inner_type_names_order, top_level_type_name = None):
     if top_level_type_name is None:
         top_level_type_name = type_name
 
@@ -309,7 +311,7 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
             for inner_structured_field_name, link in inner_structured_field_name_to_link.items():
                 webpage.get(link)
                 # we create inner types with their parent's type_name so there will be no Salto element naming collisions
-                created_inner_type_name = parse_type_for_inner_structured_field(type_name + '_' + inner_structured_field_name, inner_type_name_to_def, top_level_type_name)
+                created_inner_type_name = parse_type_for_inner_structured_field(type_name + '_' + inner_structured_field_name, inner_type_name_to_def, inner_type_names_order, top_level_type_name)
                 is_list = False
                 if (is_list_from_doc and created_inner_type_name not in should_not_be_list) or created_inner_type_name in should_be_list:
                     is_list = True
@@ -344,11 +346,17 @@ def parse_types_definitions(account_id, type_name_to_script_id_prefix):
     type_name_to_types_defs = {}
     for type_name, page_link in type_name_to_page_link.items():
         try:
+            logging.info('fetching type definition: %s' % type_name)
             webpage.get(page_link)
             script_id_prefix = get_script_id_prefix(type_name)
+            inner_type_names_order = []
             inner_type_name_to_def = {}
-            type_def = parse_type(type_name, script_id_prefix, inner_type_name_to_def)
-            type_name_to_types_defs[type_name] = { TYPE_DEF: type_def, INNER_TYPE_NAME_TO_DEF: inner_type_name_to_def }
+            type_def = parse_type(type_name, script_id_prefix, inner_type_name_to_def, inner_type_names_order)
+            type_name_to_types_defs[type_name] = {
+                TYPE_DEF: type_def,
+                INNER_TYPE_NAME_TO_DEF: inner_type_name_to_def,
+                INNER_TYPE_NAMES_ORDER: inner_type_names_order,
+            }
         except Exception as e:
             logging.error('Failed to parse type: ' + type_name + '. Error: ', sys.exc_info())
     return type_name_to_types_defs
@@ -394,6 +402,42 @@ def create_types_file(type_names):
         file.write(file_content)
 
 
+def insert_in_order(type_name, order):
+    type_name_segments = type_name.split('_')
+    for i in range(len(type_name_segments) - 1, 0, -1):
+        parent_type_name = '_'.join(type_name_segments[:i])
+        if parent_type_name in order:
+            index_of_parent = order.index(parent_type_name)
+            order.insert(index_of_parent, type_name)
+            return
+    raise Exception('parent of %s does not exists' % type_name)
+
+
+def add_types_defs(type_name_to_types_defs):
+    for type_name, fields in fields_to_create.items():
+        top_level_type_name = type_name.split('_')[0]
+        type_name_to_types_defs[top_level_type_name][INNER_TYPE_NAME_TO_DEF][type_name][FIELDS].extend(fields)
+
+    for type_def in types_to_create:
+        type_name = type_def[NAME]
+        top_level_type_name = type_name.split('_')[0]
+        if type_name in type_name_to_types_defs[top_level_type_name][INNER_TYPE_NAME_TO_DEF]:
+            logging.warning('type %s already exists in %s. overriding it.' % (type_name, top_level_type_name))
+        else:
+            insert_in_order(type_name, type_name_to_types_defs[top_level_type_name][INNER_TYPE_NAMES_ORDER])
+        type_name_to_types_defs[top_level_type_name][INNER_TYPE_NAME_TO_DEF][type_name] = type_def
+
+    for source, target in types_to_copy:
+        source_top_level = source.split('_')[0]
+        type_def = type_name_to_types_defs[source_top_level][INNER_TYPE_NAME_TO_DEF][source]
+        target_top_level = target.split('_')[0]
+        if target in type_name_to_types_defs[target_top_level][INNER_TYPE_NAME_TO_DEF]:
+            logging.warning('type %s already exists in %s. overriding it.' % (target, target_top_level))
+        else:
+            insert_in_order(target, type_name_to_types_defs[target_top_level][INNER_TYPE_NAMES_ORDER])
+        type_name_to_types_defs[target_top_level][INNER_TYPE_NAME_TO_DEF][target] = type_def
+
+
 def parse_netsuite_types(account_id, username, password, secret_key_2fa):
     try:
         logging.info('Starting to parse Netsuite types')
@@ -403,6 +447,7 @@ def parse_netsuite_types(account_id, username, password, secret_key_2fa):
 
         type_name_to_script_id_prefix = generate_type_name_to_script_id_prefix()
         type_name_to_types_defs = parse_types_definitions(account_id, type_name_to_script_id_prefix)
+        add_types_defs(type_name_to_types_defs)
         logging.info('Parsed objects definitions')
 
         enum_to_possible_values = parse_enums(account_id)
@@ -460,9 +505,10 @@ def format_type_def(type_name, type_def, top_level_type_name = None):
       field_definitions = '\n'.join(field_definitions), path = path)
 
 
-def format_inner_types_defs(top_level_type_name, inner_type_name_to_def):
+def format_inner_types_defs(top_level_type_name, inner_type_name_to_def, inner_type_names_order):
     inner_types_defs = []
-    for inner_type_name, inner_type_def in inner_type_name_to_def.items():
+    for inner_type_name in inner_type_names_order:
+        inner_type_def = inner_type_name_to_def[inner_type_name]
         formatted_inner_type_def = format_type_def(inner_type_name, inner_type_def, top_level_type_name)
         inner_types_defs.append(inner_types_def_template.format(type_name = top_level_type_name, inner_type_name = inner_type_name, type_def = formatted_inner_type_def))
     return ''.join(inner_types_defs)
@@ -510,10 +556,11 @@ def generate_file_per_type(type_name_to_types_defs):
     order_types_fields(type_name_to_types_defs)
     for type_name, type_defs in type_name_to_types_defs.items():
         inner_type_name_to_def = type_defs[INNER_TYPE_NAME_TO_DEF]
+        inner_type_names_order = type_defs[INNER_TYPE_NAMES_ORDER]
         type_def = type_defs[TYPE_DEF]
         elem_id_def = type_elem_id_template.format(type_name = type_name)
         formatted_type_def = format_type_def(type_name, type_def)
-        content = INNER_TYPES_MAP + elem_id_def + format_inner_types_defs(type_name, inner_type_name_to_def) + formatted_type_def
+        content = INNER_TYPES_MAP + elem_id_def + format_inner_types_defs(type_name, inner_type_name_to_def, inner_type_names_order) + formatted_type_def
         file_data = get_type_template.format(type_name = type_name, content = content)
         import_statements = import_statements_for_type_def_template.format(
             list_type_import = list_type_import if 'new ListType(' in file_data else '',
@@ -660,6 +707,47 @@ type_name_to_special_script_id_prefix = {
     'emailtemplate': 'standardemailtemplate|standardpaymentlinktransactionemailtemplate|^custemailtmpl[0-9a-z_]+', # The standardemailtemplate scriptid appeared to a certain customer's account & standardpaymentlinktransactionemailtemplate appeared when fetching from 2021.2 release preview
 }
 
+fields_to_create = {
+    'entryForm_tabs_tab_subItems_subTab': [{
+        NAME: 'subLists',
+        TYPE: 'entryForm_tabs_tab_subItems_subTab_subLists',
+        ANNOTATIONS: {},
+        IS_LIST: True,
+    }],
+    'transactionForm_tabs_tab_subItems_subTab': [{
+        NAME: 'subLists',
+        TYPE: 'transactionForm_tabs_tab_subItems_subTab_subLists',
+        ANNOTATIONS: {},
+        IS_LIST: True,
+    }],
+}
+
+types_to_create = [{
+    NAME: 'entryForm_tabs_tab_subItems_subTab_subLists',
+    ANNOTATIONS: {},
+    FIELDS: [{
+        NAME: 'subList',
+        TYPE: 'entryForm_tabs_tab_subItems_subTab_subLists_subList',
+        ANNOTATIONS: {},
+        IS_LIST: True,
+    }],
+}, {
+    NAME: 'transactionForm_tabs_tab_subItems_subTab_subLists',
+    ANNOTATIONS: {},
+    FIELDS: [{
+        NAME: 'subList',
+        TYPE: 'transactionForm_tabs_tab_subItems_subTab_subLists_subList',
+        ANNOTATIONS: {},
+        IS_LIST: True,
+    }],
+}]
+
+types_to_copy = [
+    ('entryForm_tabs_tab_subItems_subLists_subList', 'entryForm_tabs_tab_subItems_subTab_subLists_subList'),
+    ('transactionForm_tabs_tab_subItems_subLists_subList', 'transactionForm_tabs_tab_subItems_subTab_subLists_subList'),
+    ('publisheddashboard_dashboards_dashboard_centercolumn', 'publisheddashboard_dashboards_dashboard_leftcolumn'),
+    ('publisheddashboard_dashboards_dashboard_centercolumn', 'publisheddashboard_dashboards_dashboard_rightcolumn'),
+]
 
 webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
 def main():

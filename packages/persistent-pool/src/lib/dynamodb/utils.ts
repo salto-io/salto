@@ -51,7 +51,7 @@ export const dbUtils = (db: DynamoDBClient) => {
   ): Promise<boolean> => await tableStatus(tableName) === 'ACTIVE'
 
   const ensureTableExists = async (
-    tableParams: CreateTableCommandInput,
+    tableParams: CreateTableCommandInput & { TableName: string},
     waitOpts?: retry.RetryOpts,
   ): Promise<void> => {
     try {
@@ -61,7 +61,7 @@ export const dbUtils = (db: DynamoDBClient) => {
         throw e
       }
     }
-    await withRetry(() => tableExists(tableParams.TableName ?? ''), waitOpts)
+    await withRetry(() => tableExists(tableParams.TableName), waitOpts)
   }
   return {
     tableStatus,

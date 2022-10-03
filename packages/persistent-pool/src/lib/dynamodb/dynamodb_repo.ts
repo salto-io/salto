@@ -78,7 +78,7 @@ type Unpacked<T> =
 
 const createTableParams = (
   { tableName, billingMode }: Pick<DynamoRepoOpts, 'tableName' | 'billingMode'>,
-): CreateTableCommandInput => ({
+): CreateTableCommandInput & { TableName: string } => ({
   KeySchema: [
     { AttributeName: 'type', KeyType: 'HASH' },
     { AttributeName: 'id', KeyType: 'RANGE' },

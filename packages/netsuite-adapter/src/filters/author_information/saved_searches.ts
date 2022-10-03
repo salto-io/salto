@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { SUITEQL_DATE_FORMAT } from '../../changes_detector/date_formats'
 import { SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
@@ -25,6 +26,7 @@ import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, reducedSystemNote } fr
 
 const log = logger(module)
 const { isDefined } = values
+export const INNER_DATE_FORMAT = 'M/D/YYYY'
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SAVED_SEARCH
 
@@ -58,7 +60,7 @@ const getSavedSearchesMap = async (
 }
 
 const changeDateFormat = (date: string, dateFormat: string): string => {
-  if (dateFormat === 'M/D/YYYY') {
+  if (dateFormat === INNER_DATE_FORMAT || dateFormat === SUITEQL_DATE_FORMAT) {
     return date
   }
   const dateAsArray = date.split('/')

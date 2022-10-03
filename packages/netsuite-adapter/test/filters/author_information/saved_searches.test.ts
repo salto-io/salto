@@ -15,7 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator from '../../../src/filters/author_information/saved_searches'
+import filterCreator, { INNER_DATE_FORMAT } from '../../../src/filters/author_information/saved_searches'
 import { NETSUITE, SAVED_SEARCH } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
@@ -56,7 +56,7 @@ describe('netsuite saved searches author information tests', () => {
     savedSearch.value.configRecord = { data: {
       fields: {
         DATEFORMAT: {
-          text: 'M/D/YYYY',
+          text: INNER_DATE_FORMAT,
         },
       },
     } }
@@ -65,7 +65,7 @@ describe('netsuite saved searches author information tests', () => {
     extendedSavedSearch.value.configRecord = { data: {
       fields: {
         DATEFORMAT: {
-          text: 'M/D/YYYY',
+          text: INNER_DATE_FORMAT,
         },
       },
     } }

@@ -639,7 +639,7 @@ describe('workflowScheme', () => {
       expect(result).toBeDefined()
       expect(result?.deployResult.errors).toHaveLength(1)
       const errorMessage = result?.deployResult.errors[0].message
-      expect(errorMessage).toInclude('Issue type with name jira.IssueType.instance.issueInstance is missing the mappings required for statuses with names jira.Status.instance.statusInstance')
+      expect(errorMessage).toInclude('Issue type with name issueInstance is missing the mappings required for statuses with names statusInstance')
     })
 
     it('should throw the regular error message when fail to reformat it', async () => {

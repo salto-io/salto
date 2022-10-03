@@ -141,16 +141,10 @@ export const preDeployWorkflowScheme = async (
 }
 
 const replaceIDsWithNames = (messages: string[], ids: string[],
-  idToInstance: Record<string, InstanceElement>):string[] => {
-  const newMessages = messages
-  messages.forEach((_message, i) => {
-    ids.forEach(id => {
-      newMessages[i] = newMessages[i].replace(id, idToInstance[id].elemID.getFullName())
-    })
-    newMessages[i] = newMessages[i].replace(new RegExp('ID', 'g'), 'name')
-  })
-  return newMessages
-}
+  idToInstance: Record<string, InstanceElement>):string[] =>
+  messages
+    .map(msg => _.reduce(ids, (m, id) => m.replace(id, idToInstance[id].elemID.name), msg))
+    .map(msg => msg.replace(new RegExp('ID', 'g'), 'name'))
 
 const createMappingFromID = async (elementsSource: ReadOnlyElementsSource, typeName: string)
   :Promise<Record<string, InstanceElement>> =>
@@ -159,18 +153,28 @@ const createMappingFromID = async (elementsSource: ReadOnlyElementsSource, typeN
     .map(id => elementsSource.get(id))
     .keyBy(inst => inst.value.id)
 
+const reformatMessages = (messages: string[], idsToInstance:Record<string, InstanceElement>)
+: string[] => {
+  const IDs = messages.flatMap((message: string) => message.match(new RegExp('\\d+', 'g')) ?? [])
+  return replaceIDsWithNames(messages, IDs, idsToInstance)
+}
+
 const reformatMigrationErrorMessages = async (errorMessages: string[],
   elementsSource: ReadOnlyElementsSource) : Promise<string[]> => {
   const [relevantMessages, otherMessages] = _.partition(errorMessages, (message: string) => message.includes('is missing the mappings required for statuses'))
-  const idsToInstance = [await createMappingFromID(elementsSource, ISSUE_TYPE_NAME),
-    await createMappingFromID(elementsSource, STATUS_TYPE_NAME)]
-  const messagesPartition = [relevantMessages.map(message => message.slice(0, 30)),
-    relevantMessages.map(message => message.slice(30))]
-  const IDs = messagesPartition.map(messages => messages.flatMap((message: string) => message.match(new RegExp('\\d+', 'g')) ?? []))
-  const newMessages = IDs.map((IDList, i) => replaceIDsWithNames(messagesPartition[i],
-    IDList, idsToInstance[i]))
-  return [...newMessages[0].map((prefixMessage, i) => prefixMessage.concat(newMessages[1][i])),
-    ...otherMessages]
+  const idsToInstance = { ISSUE_TYPE_NAME:
+    await createMappingFromID(elementsSource, ISSUE_TYPE_NAME),
+  STATUS_TYPE_NAME: await createMappingFromID(elementsSource, STATUS_TYPE_NAME) }
+  const messagesPartition = { ISSUE_TYPE_NAME: relevantMessages.map(message => message.slice(0, message.indexOf('status'))),
+    STATUS_TYPE_NAME: relevantMessages.map(message => message.slice(message.indexOf('status'))) }
+  const newMessages = { ISSUE_TYPE_NAME: reformatMessages(
+    messagesPartition.ISSUE_TYPE_NAME, idsToInstance.ISSUE_TYPE_NAME
+  ),
+  STATUS_TYPE_NAME: reformatMessages(
+    messagesPartition.STATUS_TYPE_NAME, idsToInstance.STATUS_TYPE_NAME
+  ) }
+  return newMessages.ISSUE_TYPE_NAME.map((prefixMessage, i) =>
+    prefixMessage.concat(newMessages.STATUS_TYPE_NAME[i])).concat(otherMessages)
 }
 
 export const deployWorkflowScheme = async (
@@ -178,7 +182,7 @@ export const deployWorkflowScheme = async (
   client: JiraClient,
   paginator: clientUtils.Paginator,
   config: JiraConfig,
-  elementsSource?: ReadOnlyElementsSource
+  elementsSource: ReadOnlyElementsSource
 ): Promise<void> => {
   const instance = getChangeData(change)
 
@@ -202,9 +206,6 @@ export const deployWorkflowScheme = async (
     try {
       await publishDraft(change, client, statusMigrations)
     } catch (err) {
-      if (elementsSource === undefined) {
-        throw (err)
-      }
       try {
         err.response.data.errorMessages = await reformatMigrationErrorMessages(
           err.response.data.errorMessages, elementsSource

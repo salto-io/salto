@@ -58,11 +58,8 @@ import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import configFeaturesFilter from './filters/config_features'
 import omitSdfUntypedValues from './filters/omit_sdf_untyped_values'
 import omitFieldsFilter from './filters/omit_fields'
-<<<<<<< HEAD
 import addFieldsToCustomRecordType from './filters/custom_record_type_fields'
-=======
 import currencyExchangeRate from './filters/currency_exchange_rate'
->>>>>>> 73c62ebe (added filter to adapter)
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'

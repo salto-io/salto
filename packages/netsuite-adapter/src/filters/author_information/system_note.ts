@@ -286,7 +286,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
         instance.value.internalId,
         TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]
-      )]
+      )] || {}
       setChangedBy(instance, employeeId)
       if (isDefined(lastModifiedDate)) {
         instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: lastModifiedDate })
@@ -303,7 +303,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
         type.annotations.internalId,
         TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
-      )]
+      )] || {}
       setChangedBy(type, employeeId)
       if (isDefined(lastModifiedDate)) {
         type.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: lastModifiedDate })

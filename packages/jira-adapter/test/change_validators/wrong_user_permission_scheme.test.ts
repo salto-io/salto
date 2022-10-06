@@ -44,8 +44,8 @@ describe('wrongUsersPermissionSchemeValidator', () => {
   const createWarning = (element: InstanceElement, parentName: string): ChangeError => ({
     elemID: element.elemID,
     severity: 'Warning',
-    message: 'An account ID in a permission scheme does not exist in target environment. The scheme will be deployed without that user’s permission.”',
-    detailedMessage: `The account id “id1” , specific in permission scheme ${parentName}, does not exist in target environment.
+    message: 'An account ID in a permission scheme does not exist in target environment. The scheme will be deployed without that user’s permission.',
+    detailedMessage: `The account id “id1”, specified in permission scheme ${parentName}, does not exist in target environment.
 The Permission Scheme will be deployed without the read permission containing that account ID.
 To fix this, make sure the account ID exists in target environment, or remove this permission from the permission scheme.
 Check ${url} to see valid users and account IDs.`,

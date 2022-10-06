@@ -29,8 +29,8 @@ const createChangeError = (
 ): ChangeError => ({
   elemID: element.elemID,
   severity: 'Warning',
-  message: 'An account ID in a permission scheme does not exist in target environment. The scheme will be deployed without that user’s permission.”',
-  detailedMessage: `The account id “${permission.holder.parameter.id}” , specific in permission scheme ${element.elemID.createTopLevelParentID().parent.name}, does not exist in target environment.
+  message: 'An account ID in a permission scheme does not exist in target environment. The scheme will be deployed without that user’s permission.',
+  detailedMessage: `The account id “${permission.holder.parameter.id}”, specified in permission scheme ${element.elemID.createTopLevelParentID().parent.name}, does not exist in target environment.
 The Permission Scheme will be deployed without the ${permission.permission} permission containing that account ID.
 To fix this, make sure the account ID exists in target environment, or remove this permission from the permission scheme.
 Check ${new URL(JIRA_USERS_PAGE, url).href} to see valid users and account IDs.`,

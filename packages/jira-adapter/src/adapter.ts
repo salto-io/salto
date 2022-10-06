@@ -87,7 +87,8 @@ import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
-import forbiddenPermissionSchemeFilter from './filters/forbidden_permission_schemes'
+import forbiddenPermissionSchemeFilter from './filters/permission_scheme/forbidden_permission_schemes'
+import wrongUserPermissionSchemeFilter from './filters/permission_scheme/wrong_user_permission_scheme_filter'
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
@@ -99,9 +100,10 @@ import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
-import permissionSchemeFilter from './filters/sd_portals_permission_scheme'
+import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
+import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
   generateTypes,
@@ -199,6 +201,8 @@ export const DEFAULT_FILTERS = [
   accountIdFilter,
   // Must run after accountIdFilter
   addDisplayNameFilter,
+  // Must run after accountIdFilter
+  wrongUserPermissionSchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]
@@ -223,6 +227,7 @@ export default class JiraAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
+  private getIdMapFunc: GetIdMapFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -246,6 +251,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
+    this.getIdMapFunc = getIdMapFuncCreator(paginator)
 
     const filterContext = {}
     this.createFiltersRunner = () => (
@@ -258,6 +264,7 @@ export default class JiraAdapter implements AdapterOperations {
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
+          getIdMapFunc: this.getIdMapFunc,
         },
         filterCreators,
         objects.concatObjects
@@ -380,7 +387,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig, this.paginator),
+      changeValidator: changeValidator(this.client, this.userConfig, this.getIdMapFunc),
       dependencyChanger,
       getChangeGroupIds,
     }

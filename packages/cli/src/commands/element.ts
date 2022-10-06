@@ -308,23 +308,18 @@ type ElementCloneArgs = {
 
 // Makes sure at least and only one of the env options are given, and returns the envs to clone to
 // commander package doesn't give an option to 'choose one of two' so we do it manually
-const validateToEnvs = (
-  toEnvs: string[] | undefined,
-  toAllEnvs: boolean | undefined,
-  env: string | undefined,
-  workspace: Workspace
-) : { envsToCloneTo: string[]; envsValidateError?: string } => {
+const validateToEnvs = ({ toEnvs, toAllEnvs, output }
+    : { toEnvs?: string[]; toAllEnvs?: boolean; output: CliOutput })
+    : boolean => {
   if (!toEnvs && !toAllEnvs) {
-    return { envsToCloneTo: [], envsValidateError: Prompts.CLONE_NO_TARGET_ENV }
+    errorOutputLine(formatInvalidFilters([Prompts.CLONE_NO_TARGET_ENV]), output)
+    return false
   }
   if (toEnvs && toAllEnvs) {
-    return { envsToCloneTo: [], envsValidateError: Prompts.CLONE_CONFLICT_TARGET_ENV }
+    errorOutputLine(formatInvalidFilters([Prompts.CLONE_CONFLICT_TARGET_ENV]), output)
+    return false
   }
-
-  const fromEnv = env || workspace.currentEnv()
-  const envsToCloneTo = toEnvs || [...workspace.envs()].filter(e => e !== fromEnv)
-
-  return { envsToCloneTo }
+  return true
 }
 
 export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
@@ -335,9 +330,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
 }): Promise<CliExitCode> => {
   const { toEnvs, toAllEnvs, env, elementSelector, force, allowElementDeletions } = input
 
-  const { envsToCloneTo, envsValidateError } = validateToEnvs(toEnvs, toAllEnvs, env, workspace)
-  if (envsValidateError) {
-    errorOutputLine(formatInvalidFilters([envsValidateError]), output)
+  if (!validateToEnvs({ toEnvs, toAllEnvs, output })) {
     return CliExitCode.UserInputError
   }
 
@@ -346,6 +339,9 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
+
+  const fromEnv = env ?? workspace.currentEnv()
+  const envsToCloneTo = toEnvs || [...workspace.envs()].filter(e => e !== fromEnv)
   await validateAndSetEnv(workspace, input, output)
   if (!validateEnvs(output, workspace, envsToCloneTo)) {
     return CliExitCode.UserInputError

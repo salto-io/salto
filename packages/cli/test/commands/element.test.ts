@@ -344,9 +344,13 @@ Cloning the specified elements to inactive.
     })
 
     describe('clone with -to-all-envs params', () => {
-      const runClone = async ({ toEnvs, toAllEnvs, workspace }
-          : {toEnvs?: string[]; toAllEnvs?: boolean; workspace?: MockWorkspace })
-          : Promise<{ result: CliExitCode; output: mocks.MockCliOutput }> => {
+      const runClone = async ({
+        toEnvs, toAllEnvs, workspace,
+      } : {
+        toEnvs?: string[]
+        toAllEnvs?: boolean
+        workspace?: MockWorkspace
+      }) : Promise<{ result: CliExitCode; output: mocks.MockCliOutput }> => {
         const cliArgs = mocks.mockCliArgs()
         const { output } = cliArgs
         const selector = new ElemID('salto', 'Account')
@@ -368,20 +372,20 @@ Cloning the specified elements to inactive.
       it('should fail receiving both toEnvs and toAllEnvs', async () => {
         const { result, output } = await runClone({ toEnvs: ['env1'], toAllEnvs: true })
         expect(result).toBe(CliExitCode.UserInputError)
-        expect(output.stderr.content).toContain(Prompts.CLONE_CONFLICT_TARGET_ENV)
+        expect(output.stderr.content).toContain('both \'--to-envs\' and \'--to-all-envs\' is not allowed')
       })
 
       it('should fail not receiving one of toEnvs or toAllEnvs', async () => {
         const { result, output } = await runClone({ })
         expect(result).toBe(CliExitCode.UserInputError)
-        expect(output.stderr.content).toContain(Prompts.CLONE_NO_TARGET_ENV)
+        expect(output.stderr.content).toContain('Either \'--to-envs or\' \'--to-all-envs\' is required')
       })
 
       it('should fail running toAllEnvs with only current env', async () => {
         const workspace = mocks.mockWorkspace({ envs: ['active'] })
         const { result, output } = await runClone({ toAllEnvs: true, workspace })
         expect(result).toBe(CliExitCode.UserInputError)
-        expect(output.stderr.content).toContain(Prompts.TARGET_ENVS_REQUIRED)
+        expect(output.stderr.content).toContain('The target environments cannot be empty')
       })
 
       it('should succeed cloning to all envs', async () => {

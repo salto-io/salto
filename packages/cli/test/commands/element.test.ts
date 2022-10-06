@@ -343,7 +343,7 @@ Cloning the specified elements to inactive.
       })
     })
 
-    describe('clone with target envs and --to-all-envs params', () => {
+    describe('clone with -to-all-envs params', () => {
       const runClone = async ({ toEnvs, toAllEnvs, workspace }
           : {toEnvs?: string[]; toAllEnvs?: boolean; workspace?: MockWorkspace })
           : Promise<{ result: CliExitCode; output: mocks.MockCliOutput }> => {

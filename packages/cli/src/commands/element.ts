@@ -334,8 +334,8 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const { toEnvs, toAllEnvs, env, elementSelector, force, allowElementDeletions } = input
-  const { envsToCloneTo, envsValidateError } = validateToEnvs(toEnvs, toAllEnvs, env, workspace)
 
+  const { envsToCloneTo, envsValidateError } = validateToEnvs(toEnvs, toAllEnvs, env, workspace)
   if (envsValidateError) {
     errorOutputLine(formatInvalidFilters([envsValidateError]), output)
     return CliExitCode.UserInputError
@@ -404,12 +404,10 @@ const cloneDef = createWorkspaceCommand({
         name: 'toEnvs',
         description: 'The environment(s) to clone to',
         type: 'stringsList',
-        required: false,
       },
       {
         name: 'toAllEnvs',
-        required: false,
-        description: 'Clone to all environments but for the source environment',
+        description: 'Clone to all environments but the source environment',
         type: 'boolean',
         alias: 'a',
 

@@ -32,14 +32,14 @@ describe('brandFieldForBrandBasedElementsValidator', () => {
   const guideInstanceWithBrand = new InstanceElement(
     'New Article',
     articleType,
-    { name: 'article', brand_id: new ReferenceExpression(brandInstance.elemID, brandInstance) },
+    { name: 'article', brand: new ReferenceExpression(brandInstance.elemID, brandInstance) },
   )
   const guideInstanceWithoutBrand = new InstanceElement(
     'New Article',
     articleType,
     { name: 'article' },
   )
-  it('should return an error when deploying changes for a Zendesk Guide type instance without a brand_id field', async () => {
+  it('should return an error when deploying changes for a Zendesk Guide type instance without a brand field', async () => {
     const errors = await brandFieldForBrandBasedElementsValidator(
       [toChange({ after: guideInstanceWithoutBrand })],
     )
@@ -50,7 +50,7 @@ describe('brandFieldForBrandBasedElementsValidator', () => {
       detailedMessage: `Element ${guideInstanceWithoutBrand.elemID.getFullName()} is a Zendesk Guide element which isn't related to a brand, and therefore cannot be deployed.`,
     }])
   })
-  it('should not return an error when deploying changes for a Zendesk Guide type instance with a brand_id field', async () => {
+  it('should not return an error when deploying changes for a Zendesk Guide type instance with a brand field', async () => {
     const errors = await brandFieldForBrandBasedElementsValidator(
       [toChange({ after: guideInstanceWithBrand })],
     )

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Joi from 'joi'
 import {
   BuiltinTypes, ElemID, InstanceElement, ObjectType,
@@ -84,6 +85,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       { id: locale, default: locale === defaultLocale },
       [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(naclCase(locale))],
     ))
+    // Those types already exist since we added the empty version of them
+    //  via the add remaining types mechanism. So we first need to remove the old versions
+    _.remove(elements, element => element.elemID.isEqual(localeType.elemID))
     elements.push(localeType)
     locales.forEach(locale => {
       elements.push(locale)

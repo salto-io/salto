@@ -140,11 +140,19 @@ export const preDeployWorkflowScheme = async (
   }
 }
 
-const replaceIDsWithNames = (messages: string[], ids: string[],
-  idToInstance: Record<string, InstanceElement>):string[] =>
+const replaceIDsWithNames = ({
+  messages,
+  IDs,
+  IDToInstance,
+}:{
+  messages: string[]
+  IDs: string[]
+  IDToInstance: Record<string, InstanceElement>
+}): string[] =>
   messages
-    .map(msg => _.reduce(ids, (m, id) => m.replace(id, idToInstance[id].elemID.name), msg))
-    .map(msg => msg.replace(new RegExp('ID', 'g'), 'name'))
+    .map(msg => _.reduce(IDs, (m, id) =>
+      m.replace(id, IDToInstance[id] !== undefined ? IDToInstance[id].elemID.name : `ID ${id}`), msg))
+    .map(msg => msg.replace(new RegExp(' ID'), ' name'))
 
 const createMappingFromID = async (elementsSource: ReadOnlyElementsSource, typeName: string)
   :Promise<Record<string, InstanceElement>> =>
@@ -153,25 +161,31 @@ const createMappingFromID = async (elementsSource: ReadOnlyElementsSource, typeN
     .map(id => elementsSource.get(id))
     .keyBy(inst => inst.value.id)
 
-const reformatIssueID = (messages: string[],
-  idsToInstance:Record<string, InstanceElement>): string[] => {
+const reformatIssueID = (
+  messages: string[],
+  IDToInstance:Record<string, InstanceElement>,
+): string[] => {
+  // for example catch the id in the parentheses: 'Issue type with ID <10008> is missing ...'
   const IDs = messages.flatMap((message: string) => message.match(new RegExp('Issue type with ID (\\d+).*'))?.[1] ?? [])
-  return replaceIDsWithNames(messages, IDs, idsToInstance)
+  return replaceIDsWithNames({ messages, IDs, IDToInstance })
 }
 
-const reformatStatusesID = (messages: string[],
-  idsToInstance:Record<string, InstanceElement>): string[] => {
-  const IDs = messages.flatMap((message: string) => message.match(new RegExp('.*statuses? with names? (\\d+(?:,\\d+)*)'))?.[1] ?? [])
-  return replaceIDsWithNames(messages, IDs.flatMap(m => m.split(',')), idsToInstance)
+const reformatStatusesID = (
+  messages: string[],
+  IDToInstance:Record<string, InstanceElement>
+): string[] => {
+  // for example catch the ids in the parentheses: '...statuses with IDs <10018,3,4,10165,10005>.'
+  const IDs = messages.flatMap((message: string) => message.match(new RegExp('.*statuses? with IDs? (\\d+(?:,\\d+)*)'))?.[1] ?? [])
+  return replaceIDsWithNames({ messages, IDs: IDs.flatMap(m => m.split(',')), IDToInstance })
 }
 
 const reformatMigrationErrorMessages = async (errorMessages: string[],
   elementsSource: ReadOnlyElementsSource) : Promise<string[]> => {
   const [relevantMessages, otherMessages] = _.partition(errorMessages, (message: string) => message.includes('is missing the mappings required for statuses'))
-  const idsToInstance = { [ISSUE_TYPE_NAME]:
-    await createMappingFromID(elementsSource, ISSUE_TYPE_NAME),
-  [STATUS_TYPE_NAME]: await createMappingFromID(elementsSource, STATUS_TYPE_NAME) }
-
+  const idsToInstance = {
+    [ISSUE_TYPE_NAME]: await createMappingFromID(elementsSource, ISSUE_TYPE_NAME),
+    [STATUS_TYPE_NAME]: await createMappingFromID(elementsSource, STATUS_TYPE_NAME),
+  }
   const newMessages = reformatStatusesID(
     reformatIssueID(relevantMessages, idsToInstance[ISSUE_TYPE_NAME]),
     idsToInstance[STATUS_TYPE_NAME]

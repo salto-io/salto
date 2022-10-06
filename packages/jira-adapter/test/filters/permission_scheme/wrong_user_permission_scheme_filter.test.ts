@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, toChange, Change, Value } from '@s
 import _ from 'lodash'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../../utils'
-import wrongUserPermissionSchemeFilter from '../../../src/filters/permission_scheme/wrong_users_permission_scheme_filter'
+import wrongUserPermissionSchemeFilter from '../../../src/filters/permission_scheme/wrong_user_permission_scheme_filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
 

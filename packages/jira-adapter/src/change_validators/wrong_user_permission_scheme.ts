@@ -18,7 +18,7 @@ import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permis
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
-import { wrongUserPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_users_permission_scheme_filter'
+import { wrongUserPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_user_permission_scheme_filter'
 import { GetIdMapFunc } from '../users_map'
 
 

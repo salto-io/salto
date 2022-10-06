@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { mockClient } from '../utils'
 import { getDefaultConfig } from '../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
-import { wrongUserPermissionSchemeValidator } from '../../src/change_validators/wrong_users_permission_scheme'
+import { wrongUserPermissionSchemeValidator } from '../../src/change_validators/wrong_user_permission_scheme'
 
 describe('wrongUsersPermissionSchemeValidator', () => {
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))

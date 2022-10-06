@@ -36,7 +36,7 @@ import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
 import { accountIdValidator } from './account_id'
-import { wrongUserPermissionSchemeValidator } from './wrong_users_permission_scheme'
+import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
 import { GetIdMapFunc } from '../users_map'
 
 const {

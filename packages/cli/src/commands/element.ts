@@ -306,22 +306,6 @@ type ElementCloneArgs = {
   allowElementDeletions: boolean
 } & EnvArg
 
-// Makes sure at least and only one of the env options are given, and returns the envs to clone to
-// commander package doesn't give an option to 'choose one of two' so we do it manually
-const validateToEnvs = ({ toEnvs, toAllEnvs, output }
-    : { toEnvs?: string[]; toAllEnvs?: boolean; output: CliOutput })
-    : boolean => {
-  if (!toEnvs && !toAllEnvs) {
-    errorOutputLine(formatInvalidFilters([Prompts.CLONE_NO_TARGET_ENV]), output)
-    return false
-  }
-  if (toEnvs && toAllEnvs) {
-    errorOutputLine(formatInvalidFilters([Prompts.CLONE_CONFLICT_TARGET_ENV]), output)
-    return false
-  }
-  return true
-}
-
 export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   input,
   output,
@@ -330,7 +314,9 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
 }): Promise<CliExitCode> => {
   const { toEnvs, toAllEnvs, env, elementSelector, force, allowElementDeletions } = input
 
-  if (!validateToEnvs({ toEnvs, toAllEnvs, output })) {
+  // Makes sure at least and only one of the env options is given
+  if ((!toEnvs && !toAllEnvs) || (toEnvs && toAllEnvs)) {
+    errorOutputLine(formatInvalidFilters([Prompts.CLONE_TARGET_ENV_ERROR]), output)
     return CliExitCode.UserInputError
   }
 
@@ -403,7 +389,7 @@ const cloneDef = createWorkspaceCommand({
       },
       {
         name: 'toAllEnvs',
-        description: 'Clone to all environments but the source environment',
+        description: 'Clone to all environments',
         type: 'boolean',
         alias: 'a',
 

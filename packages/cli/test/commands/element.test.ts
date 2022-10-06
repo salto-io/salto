@@ -372,13 +372,13 @@ Cloning the specified elements to inactive.
       it('should fail receiving both toEnvs and toAllEnvs', async () => {
         const { result, output } = await runClone({ toEnvs: ['env1'], toAllEnvs: true })
         expect(result).toBe(CliExitCode.UserInputError)
-        expect(output.stderr.content).toContain('both \'--to-envs\' and \'--to-all-envs\' is not allowed')
+        expect(output.stderr.content).toContain('Please specify the target environment(s) by passing exactly one of \'--to-envs\' and \'--to-all-envs\' parameters')
       })
 
       it('should fail not receiving one of toEnvs or toAllEnvs', async () => {
         const { result, output } = await runClone({ })
         expect(result).toBe(CliExitCode.UserInputError)
-        expect(output.stderr.content).toContain('Either \'--to-envs or\' \'--to-all-envs\' is required')
+        expect(output.stderr.content).toContain('Please specify the target environment(s) by passing exactly one of \'--to-envs\' and \'--to-all-envs\' parameters')
       })
 
       it('should fail running toAllEnvs with only current env', async () => {

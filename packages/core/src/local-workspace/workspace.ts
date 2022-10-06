@@ -307,7 +307,7 @@ const loadLocalWorkspaceImpl = async ({
       const allEnvSourcesEmpty = envSources.length === 1 && await envSources[0].naclFiles.isEmpty()
       if (allEnvSourcesEmpty) {
         const commonSource = elemSources.sources[elemSources.commonSourceName].naclFiles
-        const { currentEnv } = (await workspaceConfig.getWorkspaceConfig())
+        const currentEnv = ws.currentEnv()
         return commonSource.rename(getLocalEnvName(currentEnv))
       }
       return ws.demoteAll()

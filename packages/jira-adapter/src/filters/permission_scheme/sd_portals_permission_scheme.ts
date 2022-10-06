@@ -16,7 +16,7 @@
 import { Change, ChangeDataType, isEqualValues } from '@salto-io/adapter-api'
 import { UNSUPPORTED_PERMISSION_SCHEME } from '../../change_validators/sd_portals_permission_scheme'
 import { FilterCreator } from '../../filter'
-import { omitChanges, OmitChangesPredicate, PermissionHolder, returnPermissions } from './omit_permissions_common'
+import { omitChanges, OmitChangesPredicate, PermissionHolder, addBackPermissions } from './omit_permissions_common'
 
 
 const sdPermissionSchemePredicate: OmitChangesPredicate = (
@@ -30,7 +30,7 @@ const filter: FilterCreator = () => {
       unsupportedPermissionSchemes = omitChanges(changes, sdPermissionSchemePredicate)
     },
     onDeploy: async (changes: Change<ChangeDataType>[]) => {
-      returnPermissions(changes, unsupportedPermissionSchemes)
+      addBackPermissions(changes, unsupportedPermissionSchemes)
     },
   })
 }

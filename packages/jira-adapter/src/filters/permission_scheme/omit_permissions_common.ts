@@ -16,14 +16,30 @@
 */
 import { Change, ChangeDataType, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { isPermissionScheme } from './forbidden_permission_schemes'
 
+
+export const PERMISSION_HOLDER_SCHEME = Joi.object({
+  holder: Joi.object({
+    type: Joi.string().allow('').required(),
+    parameter: Joi.optional(),
+  }),
+  permission: Joi.string().allow('').required(),
+}).unknown(true)
+
 export type PermissionHolder = {
-  holder : { type: string; parameter?: Value }
+  holder : {
+    type: string
+    parameter?: Value
+  }
   permission: string
 }
 
 export type OmitChangesPredicate = (permissionHolder: PermissionHolder) => boolean
+export const isPermissionSchemeStructure = createSchemeGuard<PermissionHolder>(PERMISSION_HOLDER_SCHEME, 'Found an invalid Permission Holder in Permission Scheme')
+
 
 export const omitChanges = (
   changes: Change<ChangeDataType>[],
@@ -36,22 +52,23 @@ export const omitChanges = (
       .filter(isPermissionScheme)
       .map((element: InstanceElement) => {
         const permissions: PermissionHolder[] = _.cloneDeep(element.value.permissions)
-        _.remove(element.value.permissions, predicate)
+        _.remove(element.value.permissions, permissionHolder =>
+          isPermissionSchemeStructure(permissionHolder) && predicate(permissionHolder))
         return [element.elemID.getFullName(), permissions]
       })
   )
 
-export const returnPermissions = (
+export const addBackPermissions = (
   changes: Change<ChangeDataType>[],
-  permissionsToReturn: Record<string, PermissionHolder[]>
+  permissionsToAddBack: Record<string, PermissionHolder[]>
 ): void => {
   changes.filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isPermissionScheme)
     .forEach((element: InstanceElement) => {
-      if (permissionsToReturn[element.elemID.getFullName()] !== undefined) {
-        element.value.permissions = permissionsToReturn[element.elemID.getFullName()]
+      if (permissionsToAddBack[element.elemID.getFullName()] !== undefined) {
+        element.value.permissions = permissionsToAddBack[element.elemID.getFullName()]
       }
     })
 }

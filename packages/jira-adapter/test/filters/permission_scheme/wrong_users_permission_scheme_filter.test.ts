@@ -41,10 +41,12 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     const value2: Value = { permissions: [] }
     const createValue = (i: number): Value => ({
       holder: {
+        type: 'type',
         parameter: {
           id: `id${i}`,
         },
       },
+      permission: 'read',
     })
     for (let i = 0; i < 6; i += 1) {
       value1.permissions.push(createValue(i))

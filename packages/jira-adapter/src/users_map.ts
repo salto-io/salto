@@ -24,20 +24,24 @@ export type GetIdMapFunc = () => Promise<IdMap>
 
 export const getIdMapFuncCreator = (paginator: clientUtils.Paginator): GetIdMapFunc => {
   let idMap: IdMap
+  let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
   return async (): Promise<IdMap> => {
-    const paginationArgs = {
-      url: '/rest/api/3/users/search',
-      paginationField: 'startAt',
+    if (idMap === undefined) {
+      if (usersCallPromise === undefined) {
+        const paginationArgs = {
+          url: '/rest/api/3/users/search',
+          paginationField: 'startAt',
+        }
+        usersCallPromise = toArrayAsync(paginator(
+          paginationArgs,
+          page => makeArray(page) as clientUtils.ResponseValue[]
+        ))
+      }
+      idMap = Object.fromEntries((await usersCallPromise)
+        .flat()
+        .filter(user => user.accountId !== undefined)
+        .map(user => [user.accountId, user.displayName]))
     }
-    if (idMap !== undefined) {
-      return idMap
-    }
-    idMap = Object.fromEntries((await toArrayAsync(paginator(
-      paginationArgs,
-      page => makeArray(page) as clientUtils.ResponseValue[]
-    ))).flat().map(
-      user => [user.accountId, user.displayName]
-    ))
     return idMap
   }
 }

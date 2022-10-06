@@ -23,9 +23,6 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import addDisplayNameFilter from '../../../src/filters/account_id/add_display_name_filter'
 import * as common from './account_id_common'
 import { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
-// import JiraClient from 'src/client/client'
-// import { paginate } from 'src/client/pagination'
-// import { generateGetUserDisplayNameFunction } from 'src/users_map'
 
 const { awu } = collections.asynciterable
 
@@ -94,33 +91,6 @@ describe('add_display_name_filter', () => {
     })
   })
   it('should only call once in fetch when there are multiple objects with accountId', async () => {
-    // })
-    // const client = new JiraClient({
-    //   credentials: {
-    //     baseUrl: 'https://ori-salto-test.atlassian.net/',
-    //     user: 'test',
-    //     token: 'test',
-    //   },
-    //   connection: {
-    //     login: async () => ({
-    //       accountId: 'test',
-    //       ...connection(),
-    //     }),
-    //   },
-    //   isDataCenter: false,
-    // })
-
-    // const paginator = clientUtils.createPaginator(
-    //   { paginationFuncCreator: paginate, client }
-    // )
-    // const getUserDisplayName = generateGetUserDisplayNameFunction(paginator)
-    // const otherFilter = addDisplayNameFilter(getFilterParams({
-    //   client,
-    //   paginator,
-    //   config,
-    //   getElemIdFunc: elemIdGetter,
-    // })) as typeof filter
-
     await filter.onFetch(instances)
     expect(mockConnection.get).toHaveBeenCalledOnce()
   })

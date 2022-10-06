@@ -18,12 +18,12 @@ import _ from 'lodash'
 import { mockClient } from '../utils'
 import { getDefaultConfig } from '../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
-import { wrongUsersPermissionSchemeValidator } from '../../src/change_validators/wrong_users_permission_scheme'
+import { wrongUserPermissionSchemeValidator } from '../../src/change_validators/wrong_users_permission_scheme'
 
 describe('wrongUsersPermissionSchemeValidator', () => {
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
   const { client, getIdMapFunc, connection } = mockClient()
-  const validator = wrongUsersPermissionSchemeValidator(client, config, getIdMapFunc)
+  const validator = wrongUserPermissionSchemeValidator(client, config, getIdMapFunc)
   const url = `${client.baseUrl}jira/people/search`
   let instances: InstanceElement[]
   let changes: Change[]
@@ -41,18 +41,13 @@ describe('wrongUsersPermissionSchemeValidator', () => {
       accountId: 'id5',
     }],
   })
-  const createWarning = ({
-    element,
-    accountId,
-  } : {
-    element: InstanceElement
-    accountId: string
-  }): ChangeError => ({
+  const createWarning = (element: InstanceElement, parentName: string): ChangeError => ({
     elemID: element.elemID,
     severity: 'Warning',
-    message: 'The account id in a permission scheme does not exist. The element will be deployed without this permission scheme.',
-    detailedMessage: `The account id “${accountId}” does not exist.
-The Permission Scheme “${element.elemID.createTopLevelParentID().parent.name}” will be deployed without the permission containing it.
+    message: 'An account ID in a permission scheme does not exist in target environment. The scheme will be deployed without that user’s permission.”',
+    detailedMessage: `The account id “id1” , specific in permission scheme ${parentName}, does not exist in target environment.
+The Permission Scheme will be deployed without the read permission containing that account ID.
+To fix this, make sure the account ID exists in target environment, or remove this permission from the permission scheme.
 Check ${url} to see valid users and account IDs.`,
   })
 
@@ -66,10 +61,12 @@ Check ${url} to see valid users and account IDs.`,
     const value2: Value = { permissions: [] }
     const createValue = (i: number): Value => ({
       holder: {
+        type: 'type',
         parameter: {
           id: `id${i}`,
         },
       },
+      permission: 'read',
     })
     for (let i = 0; i < 6; i += 1) {
       value1.permissions.push(createValue(i))
@@ -97,8 +94,8 @@ Check ${url} to see valid users and account IDs.`,
     expect(await validator(
       changes
     )).toEqual([
-      createWarning({ element: instances[0], accountId: 'id1' }),
-      createWarning({ element: instances[1], accountId: 'id1' }),
+      createWarning(instances[0], 'instance'),
+      createWarning(instances[1], 'instance2'),
     ])
   })
   it('should not return a warning when all ids are ok', async () => {
@@ -111,7 +108,7 @@ Check ${url} to see valid users and account IDs.`,
   it('should not return a warning when the flag is off', async () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     configOff.fetch.showUserDisplayNames = false
-    const validatorOff = wrongUsersPermissionSchemeValidator(client, configOff, getIdMapFunc)
+    const validatorOff = wrongUserPermissionSchemeValidator(client, configOff, getIdMapFunc)
     expect(await validatorOff(
       changes
     )).toEqual([])

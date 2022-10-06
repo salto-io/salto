@@ -131,6 +131,13 @@ Go to ${url} to see valid users and account IDs.`,
     instances = common.createInstanceElementArrayWithDisplayNames(2, objectType)
   })
 
+  it('should only call outside once', async () => {
+    await validator([toChange({ after: instances[0] })])
+    const validator2 = accountIdValidator(client, config, getIdMapFunc)
+    await validator2([toChange({ after: instances[1] })])
+    expect(connection.get).toHaveBeenCalledOnce()
+  })
+
   it('should return an info when there is no display name', async () => {
     const field = 'accountId'
     delete instances[0].value[field].displayName
@@ -172,6 +179,19 @@ Go to ${url} to see valid users and account IDs.`,
     ])).toEqual([
       createWarning({ elemId, parent, accountId, realDisplayName, currentDisplayName: 'wrong' }),
     ])
+  })
+  it('should not issue an error in permission scheme type with no account id', async () => {
+    const objectType = common.createObjectedType('PermissionScheme')
+    const permissionSchemeInstances = common.createInstanceElementArrayWithDisplayNames(
+      1,
+      objectType
+    )
+    permissionSchemeInstances[0].value.holder.parameter.id = -1
+    expect(await validator([
+      toChange({
+        after: permissionSchemeInstances[0],
+      }),
+    ])).toEqual([])
   })
   it('should not return errors when data is ok', async () => {
     expect(await validator([

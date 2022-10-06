@@ -88,7 +88,7 @@ import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import forbiddenPermissionSchemeFilter from './filters/permission_scheme/forbidden_permission_schemes'
-import wrongUsersPermissionSchemeFilter from './filters/permission_scheme/wrong_users_permission_scheme_filter'
+import wrongUserPermissionSchemeFilter from './filters/permission_scheme/wrong_users_permission_scheme_filter'
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
@@ -202,7 +202,7 @@ export const DEFAULT_FILTERS = [
   // Must run after accountIdFilter
   addDisplayNameFilter,
   // Must run after accountIdFilter
-  wrongUsersPermissionSchemeFilter,
+  wrongUserPermissionSchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

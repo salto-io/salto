@@ -16,16 +16,24 @@
 import { Change, ChangeDataType } from '@salto-io/adapter-api'
 import { IdMap } from '../../users_map'
 import { FilterCreator } from '../../filter'
-import { omitChanges, OmitChangesPredicate, returnPermissions, PermissionHolder } from './omit_permissions_common'
+import { omitChanges, OmitChangesPredicate, addBackPermissions, PermissionHolder } from './omit_permissions_common'
 
 
-export const wrongUsersPermissionSchemePredicateCreator = (idMap: IdMap): OmitChangesPredicate =>
+/**
+ * A predicate that returns true if the permission scheme contains an account ID and it does not
+ * exist in the provided idMap
+ */
+export const wrongUserPermissionSchemePredicateCreator = (idMap: IdMap): OmitChangesPredicate =>
   (permissionScheme: PermissionHolder) => {
     const accountId = permissionScheme.holder?.parameter?.id
     return accountId !== undefined
-    && !Object.prototype.hasOwnProperty.call(idMap, accountId)
+      && !Object.prototype.hasOwnProperty.call(idMap, accountId)
   }
 
+/**
+ * pre deploy removes permissions within a permission scheme that contain a wrong account id.
+ * on deploy adds those permissions back
+ */
 const filter: FilterCreator = ({ config, getIdMapFunc }) => {
   let erroneousPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
@@ -36,11 +44,11 @@ const filter: FilterCreator = ({ config, getIdMapFunc }) => {
       const idMap = await getIdMapFunc()
       erroneousPermissionSchemes = omitChanges(
         changes,
-        wrongUsersPermissionSchemePredicateCreator(idMap)
+        wrongUserPermissionSchemePredicateCreator(idMap)
       )
     },
     onDeploy: async (changes: Change<ChangeDataType>[]) => {
-      returnPermissions(changes, erroneousPermissionSchemes)
+      addBackPermissions(changes, erroneousPermissionSchemes)
     },
   })
 }

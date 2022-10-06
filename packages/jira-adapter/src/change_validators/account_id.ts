@@ -18,15 +18,13 @@ import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
 import { logger } from '@salto-io/logging'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
 import { GetIdMapFunc, IdMap } from '../users_map'
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
-import { JIRA_USERS_PAGE } from '../constants'
+import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 const noDisplayNameChangeError = (
   elemId: ElemID,
@@ -84,21 +82,25 @@ Go to ${url} to see valid users and account IDs.`,
   }
 }
 
-const checkAndAddChangeErrors = async (
+const checkAndAddChangeErrors = (
   idMap: IdMap,
   baseUrl: string,
   changeErrors: ChangeError[]
-): Promise<WalkOnUsersCallback> => async (
+): WalkOnUsersCallback => (
   { value, path, fieldName }
-): Promise<void> => {
+): void => {
   if (!_.isPlainObject(value[fieldName])) {
     return
   }
   const accountId = value[fieldName].id
   const currentDisplayName = value[fieldName].displayName
   const realDisplayName = idMap[accountId]
-  if (!Object.prototype.hasOwnProperty.call(idMap, accountId)
-    && path.typeName !== 'PermissionScheme') { // Permission scheme is solved in a different filter
+  if (path.typeName === PERMISSION_SCHEME_TYPE_NAME
+      && !Object.prototype.hasOwnProperty.call(idMap, accountId)) {
+    return // handled by wrongUserPermissionScheme validator
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(idMap, accountId)) {
     changeErrors.push(noAccountIdChangeError({
       elemId: path.createNestedID(fieldName),
       fieldName,
@@ -107,8 +109,7 @@ const checkAndAddChangeErrors = async (
     }))
   } else if (currentDisplayName === undefined) {
     changeErrors.push(noDisplayNameChangeError(path.createNestedID(fieldName)))
-  } else if (realDisplayName !== currentDisplayName
-    && realDisplayName !== undefined) { // real name can be undefined in permission scheme
+  } else if (realDisplayName !== currentDisplayName) {
     changeErrors.push(displayNameMismatchChangeError(
       { elemId: path.createNestedID(fieldName),
         baseUrl,
@@ -119,17 +120,20 @@ const checkAndAddChangeErrors = async (
   }
 }
 
-const createChangeErrorsForAccountIdIssues = async (
+const createChangeErrorsForAccountIdIssues = (
   element: InstanceElement,
   idMap: IdMap,
   baseUrl : string
-): Promise<ChangeError[]> => {
+): ChangeError[] => {
   const changeErrors: ChangeError[] = []
   walkOnElement({ element,
-    func: walkOnUsers(await checkAndAddChangeErrors(idMap, baseUrl, changeErrors)) })
+    func: walkOnUsers(checkAndAddChangeErrors(idMap, baseUrl, changeErrors)) })
   return changeErrors
 }
 
+/**
+ * Validates that all account IDs exist, and that all display names match them
+ */
 export const accountIdValidator: (
   client: JiraClient,
   config: JiraConfig,
@@ -142,16 +146,15 @@ export const accountIdValidator: (
       }
       const idMap = await getIdMapFunc()
       const { baseUrl } = client
-      return awu(changes)
+      return changes
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
         .map(change => getChangeData(change))
         .filter(isDeployableAccountIdType)
         .map(
-          async element => createChangeErrorsForAccountIdIssues(
+          element => createChangeErrorsForAccountIdIssues(
             element, idMap, baseUrl
           )
         )
         .flat()
-        .toArray()
     }, 'display name validator')

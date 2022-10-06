@@ -14,25 +14,12 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isEqualValues, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import Joi from 'joi'
-import { PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
+import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 
 
 const { awu } = collections.asynciterable
-
-const PERMISSION_HOLDER_SCHEME = Joi.object({
-  holder: Joi.object({
-    type: Joi.string().allow('').required(),
-    parameter: Joi.optional(),
-  }),
-  permission: Joi.string().allow('').required(),
-}).unknown(true)
-
-
-const isPermissionScheme = createSchemeGuard<PermissionHolder>(PERMISSION_HOLDER_SCHEME, 'Found an invalid Permission Holder in Permission Scheme')
 
 export const UNSUPPORTED_PERMISSION_SCHEME: PermissionHolder = {
   holder: {
@@ -41,6 +28,9 @@ export const UNSUPPORTED_PERMISSION_SCHEME: PermissionHolder = {
   permission: 'VIEW_AGGREGATED_DATA',
 }
 
+/**
+ * Removes invalid permissions of type UNSUPPORTED_PERMISSION_SCHEME (see above) that fails deploy
+ */
 export const permissionSchemeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isInstanceChange)
@@ -50,7 +40,7 @@ export const permissionSchemeValidator: ChangeValidator = async changes => (
       && element.value.permissions !== undefined)
     .filter(element =>
       element.value.permissions.filter((permission: PermissionHolder) =>
-        isPermissionScheme(permission)
+        isPermissionSchemeStructure(permission)
         && isEqualValues(permission, UNSUPPORTED_PERMISSION_SCHEME)).length !== 0)
     .map(async instance => ({
       elemID: instance.elemID,

@@ -14,15 +14,20 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
-import { TYPES_TO_HANDLE_BY_BRAND } from '../config'
+import { GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
 
 
+/**
+ * Verifies each Zendesk Guide brand related instance has a brand reference value
+ */
 export const brandFieldForBrandBasedElementsValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
-    .filter(change => TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName))
+    .filter(change => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(
+      getChangeData(change).elemID.typeName
+    ))
     .map(getChangeData)
-    .filter(instance => !isReferenceExpression(instance.value.brand_id))
+    .filter(instance => !isReferenceExpression(instance.value.brand))
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',

@@ -1923,12 +1923,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  // help_center_locale: {
-  //   transformation: {
-  //     idFields: ['id'],
-  //     fileNameFields: ['id'],
-  //   },
-  // },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 

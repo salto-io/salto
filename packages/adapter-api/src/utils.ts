@@ -14,17 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TypeElement, ObjectType, Element, PrimitiveType, isContainerType, Field, isObjectType, isField, isListType, isMapType, ReadOnlyElementsSource } from './elements'
+import { TypeElement, ObjectType, Element, PrimitiveType, isContainerType, Field, isObjectType, isListType, isMapType, ReadOnlyElementsSource } from './elements'
 import { Values } from './values'
 
 interface AnnoRef {
   annoType?: TypeElement
   annoName?: string
-}
-
-type SubElementSearchResult = {
-  field?: Field
-  path: ReadonlyArray<string>
 }
 
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
@@ -39,93 +34,83 @@ export const getDeepInnerType = async (
   return getDeepInnerType(await type.getInnerType(elementsSource), elementsSource)
 }
 
-export const getSubElement = async (
+/**
+ * Performs a deep lookup in a type element to a sub type by a given path.
+ * Returns the type in the given path if exists, else undefined.
+ *
+ * NOTICE:
+ * This function recurse into field/list/map keys only. It doesn't recurse into annotation types.
+ * To lookup a sub type inside annotation first get the annotation type and then call this function.
+ *
+ * @example
+ * type.fields['field'] = new Field(type, 'field', new ListType(innerType))
+ * innerType.fields['name'] = new Field(innerType, 'name', BuiltinTypes.STRING)
+ *
+ * getSubType(type, ['field']) -> new ListType(innerType)
+ * getSubType(type, ['field', '1']) -> innerType
+ * getSubType(type, ['field', '1', 'name']) -> BuiltinTypes.STRING
+ */
+export const getSubType = async (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
-): Promise<SubElementSearchResult | undefined> => {
-  const getChildElement = async (
+): Promise<TypeElement | undefined> => {
+  const getChildElement = (
     type: TypeElement,
-    key: string
-  ): Promise<Field | TypeElement | undefined> => {
+    key: string,
+  ): Promise<TypeElement | undefined> => {
+    if (isObjectType(type) && type.fields[key]) {
+      return type.fields[key].getType(elementsSource)
+    }
     if ((isIndexPathPart(key) && isListType(type)) || isMapType(type)) {
       return type.getInnerType(elementsSource)
     }
-    if (type.annotationRefTypes[key]) return (await type.getAnnotationTypes(elementsSource))?.[key]
-    if (isObjectType(type)) return type.fields[key]
+    return Promise.resolve(undefined)
+  }
+  if (_.isEmpty(pathParts)) {
     return undefined
   }
-
   const [curPart, ...restOfParts] = pathParts
-  const nextBase = await getChildElement(baseType, curPart)
-  if (_.isUndefined(nextBase)) {
-    return undefined
-  }
-
-  if (_.isEmpty(restOfParts)) {
-    return isField(nextBase) ? { field: nextBase, path: [] } : { path: [curPart] }
-  }
-
-  const fieldData = isField(nextBase)
-    // This will fail if not called from the adapters
-    ? await getSubElement(await nextBase.getType(elementsSource), restOfParts, elementsSource)
-    : await getSubElement(nextBase, restOfParts, elementsSource)
-
-  if (_.isUndefined(fieldData)) return undefined
-  if (fieldData.field) return fieldData
-  if (isField(nextBase)) {
-    return {
-      path: restOfParts,
-      field: nextBase,
-    }
-  }
-  return {
-    path: pathParts,
-  }
+  const childElement = await getChildElement(baseType, curPart)
+  return !_.isEmpty(restOfParts) && childElement
+    ? getSubType(childElement, restOfParts, elementsSource)
+    : childElement
 }
 
-const getFieldAndPath = async (
-  baseType: TypeElement,
-  pathParts: ReadonlyArray<string>,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<SubElementSearchResult | undefined> => {
-  const fieldData = await getSubElement(baseType, pathParts, elementsSource)
-  if (fieldData && fieldData.field) {
-    return fieldData
-  }
-  return undefined
-}
-
+/**
+ * Performs a deep lookup in a type element to a field by a given path.
+ * Returns the field in the given path if exists, else undefined.
+ *
+ * NOTICE:
+ * This function recurse into field/list/map keys only. It doesn't recurse into annotation types.
+ * To lookup a field inside annotation first get the annotation type and then call this function.
+ *
+ * @example
+ * // to get a field of nested instance value (e.g. adapter.typeName.instance.fieldName.nestedField)
+ * getField(await instance.getType(), ['fieldName', 'nestedField'])
+ *
+ * // to get a field inside type annotation (e.g. adapter.typeName.attr.annoName.annoField)
+ * getField((await type.getAnnotationTypes())['annoName'], ['annoField'])
+ *
+ * // to get a field inside field annotation
+ * // (e.g. adapter.typeName.field.fieldName.annoName.annoField)
+ * getField((await (await type.fields['fieldName'].getType())
+ *   .getAnnotationTypes())['annoName'], ['annoField'])
+ */
 export const getField = async (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
-): Promise<Field | undefined> => (
-  (await getFieldAndPath(baseType, pathParts, elementsSource))?.field
-)
-
-export const getFieldType = async (
-  baseType: TypeElement,
-  path: ReadonlyArray<string>,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<TypeElement | undefined> => {
-  const getFieldInternalType = async (
-    fieldType: TypeElement,
-    pathParts: ReadonlyArray<string>
-  ): Promise<TypeElement | undefined> => {
-    const [curPart, ...restOfParts] = pathParts
-    if (_.isEmpty(curPart)) {
-      return fieldType
-    }
-    if ((isIndexPathPart(curPart) && isListType(fieldType)) || isMapType(fieldType)) {
-      return getFieldInternalType(await fieldType.getInnerType(elementsSource), restOfParts)
-    }
+): Promise<Field | undefined> => {
+  if (_.isEmpty(pathParts)) {
     return undefined
   }
-  const fieldData = await getFieldAndPath(baseType, path, elementsSource)
-  // This will fail if not called from the adapters
-  return fieldData?.field
-    && getFieldInternalType(await fieldData.field.getType(elementsSource), fieldData.path)
+  const parentPath = pathParts.slice(0, -1)
+  const type = _.isEmpty(parentPath)
+    ? baseType
+    : await getSubType(baseType, parentPath, elementsSource)
+  const fieldName = pathParts.slice(-1)[0]
+  return isObjectType(type) ? type.fields[fieldName] : undefined
 }
 
 export const getFieldNames = async (
@@ -136,7 +121,7 @@ export const getFieldNames = async (
   if (_.isEmpty(path)) {
     return _.keys(refType.fields)
   }
-  const fieldType = await getFieldType(refType, path, elementsSource)
+  const fieldType = await getSubType(refType, path, elementsSource)
   if (isObjectType(fieldType)) {
     return _.keys(fieldType.fields)
   }

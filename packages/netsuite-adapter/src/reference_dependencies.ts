@@ -15,7 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  isInstanceElement, isPrimitiveType, ElemID, getFieldType,
+  isInstanceElement, isPrimitiveType, ElemID, getSubType,
   isReferenceExpression, Value, isServiceId, isObjectType, Element,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
@@ -38,7 +38,7 @@ export const findDependingElementsFromRefs = async (
     elemId: ElemID
   ): Promise<boolean> => {
     if (isInstanceElement(topLevelParent)) {
-      const fieldType = await getFieldType(
+      const fieldType = await getSubType(
         await topLevelParent.getType(),
         elemId.createTopLevelParentID().path
       )

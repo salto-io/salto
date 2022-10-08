@@ -20,7 +20,7 @@ import { transformElement, TransformFunc, transformValues, applyFunctionToChange
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
-  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, MapType, getFieldType, isMapType, isTypeReference } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field, isModificationChange, ModificationChange, ReferenceExpression, MapType, getSubType, isMapType, isTypeReference } from '@salto-io/adapter-api'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -808,7 +808,7 @@ export const filterOutHiddenChanges = async (
         return { hidden: change }
       }
 
-      const fieldType = changeType && await getFieldType(changeType, changePath, state)
+      const fieldType = changeType && await getSubType(changeType, changePath, state)
       if (isObjectType(fieldType) || isMapType(fieldType)) {
         const visible = await applyFunctionToChangeData(
           change,

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, Value, getField,
-  getFieldNames, getFieldType, ElemID,
+  getFieldNames, getSubType, ElemID,
   isListType, getRestriction, isMapType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { parser } from '@salto-io/workspace'
 import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -235,7 +235,7 @@ export const fieldValueSuggestions = async (params: SuggestionsParams): Promise<
     refPathWithAttr,
     params.elements,
   )
-  const valueFieldType = await getFieldType(
+  const valueFieldType = await getSubType(
     await params.ref.element.getType(params.elements),
     refPathWithAttr,
     params.elements,
@@ -283,7 +283,7 @@ export const annoValueSuggestions = async (params: SuggestionsParams): Promise<S
   const valueToken = _.last(params.tokens) || ''
   if (annoType && !_.isEmpty(refPath)) {
     const attrField = await getField(annoType, refPath, params.elements)
-    const attrFieldType = await getFieldType(annoType, refPath, params.elements)
+    const attrFieldType = await getSubType(annoType, refPath, params.elements)
     return (attrField && attrFieldType)
       ? awu(await valueSuggestions(annoName, attrField, attrFieldType, valueToken, params.elements))
         .concat(await referenceSuggestions(params.elements, valueToken))

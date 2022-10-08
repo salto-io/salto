@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   isInstanceElement, isPrimitiveType, ElemID, getFieldType,
@@ -149,7 +150,10 @@ const getRequiredReferencedElements = (
 
   log.debug(`adding referenced element:${os.EOL}${requiredReferencedElements.map(elem => elem.elemID.getFullName()).join('\n')}`)
 
-  return Array.from(new Set(sourceElements.concat(requiredReferencedElements)))
+  return _.uniqBy(
+    sourceElements.concat(requiredReferencedElements),
+    element => element.elemID.getFullName()
+  )
 }
 
 export const getReferencedElements = async (

@@ -39,25 +39,26 @@ const SUPPORTED_TYPE_NAMES = [
   'ApexTrigger',
   'AssignmentRules',
   'AuraDefinitionBundle',
-  'CompactLayout',
+  // 'CompactLayout', // TODO: handle instances that are nested under custom object
   'ContentAsset',
   'CustomApplication',
   'CustomObject',
   'CustomTab',
   // 'EmailTemplate', // TODO: add folder name to fullName
-  'FieldSet',
+  // 'FieldSet', // TODO: handle instances that are nested under custom object
   'FlexiPage',
   'Flow',
   'InstalledPackage',
   // 'LanguageSettings', // TODO: generally handle settings
   'Layout',
   'LightningComponentBundle',
-  'ListView',
+  // 'ListView', // TODO: handle instances that are nested under custom object
   'Profile',
   // 'StaticResource', // TODO: handle static resources that have their content unzipped by SFDX
   // 'Territory2Rule', // TODO: add folder name to fullName (should be <FolderName>.<FullName>)
   'Territory2Type',
   // 'TopicsForObjects', // TODO: handle this
+  // 'WebLink', // TODO: handle instances that are nested under custom object
 ]
 
 const getElementsFromFile = async (

@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { isStandardType, isDataObjectType, isFileCabinetType } from '../types'
-import { ACCOUNT_SPECIFIC_VALUE, IS_SUB_INSTANCE, NETSUITE, RECORDS_PATH, RECORD_REF } from '../constants'
+import { collections } from '@salto-io/lowerdash'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression, TypeElement } from '@salto-io/adapter-api'
+import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { isStandardType, isDataObjectType, isFileCabinetType, isCustomFieldName } from '../types'
+import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID, IS_SUB_INSTANCE, NETSUITE, RECORDS_PATH, RECORD_REF } from '../constants'
 import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -32,6 +32,16 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
   return naclCase(`${path.typeName}_${name}_${internalId}`)
 }
 
+const hasInternalIdHiddenField = (type: unknown): boolean =>
+  isObjectType(type)
+  && type.fields[INTERNAL_ID]
+  && type.fields[INTERNAL_ID].annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+
+const shouldUseIdField = (fieldType: TypeElement | undefined, path: ElemID): boolean =>
+  fieldType?.elemID.name === RECORD_REF || (
+    isCustomFieldName(path.name) && hasInternalIdHiddenField(fieldType)
+  )
+
 /**
  * Extract to a new instance every object in a list that contains an internal id
  * (since the internal id is hidden, and we don't support hidden values in lists,
@@ -43,25 +53,25 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === RECORD_REF)
 
     const transformIds: TransformFunc = async ({ value, field, path }) => {
-      const fieldType = await field?.getType()
-      if (fieldType?.elemID.name === RECORD_REF) {
-        value.id = ACCOUNT_SPECIFIC_VALUE
+      if (!path || value[INTERNAL_ID] === undefined) {
+        return value
       }
 
-      if ((field === undefined || fieldType?.elemID.isEqual(BuiltinTypes.UNKNOWN.elemID))
-        && value.internalId !== undefined && !path?.isTopLevel()) {
-        value.internalId = ACCOUNT_SPECIFIC_VALUE
+      const originalInternalId = value[INTERNAL_ID]
+      const fieldType = await field?.getType()
+      if (!path.isTopLevel()) {
+        value[
+          shouldUseIdField(fieldType, path) ? ID_FIELD : INTERNAL_ID
+        ] = ACCOUNT_SPECIFIC_VALUE
         delete value.typeId
       }
 
-      const isInsideList = path?.getFullNameParts().some(part => isNumberStr(part))
-      if (path !== undefined
-        && value.internalId !== undefined
-        && isObjectType(fieldType)
+      const isInsideList = path.getFullNameParts().some(part => isNumberStr(part))
+      if (isObjectType(fieldType)
         && (isInsideList
           || isStandardType(fieldType)
           || isFileCabinetType(fieldType))) {
-        const instanceName = getSubInstanceName(path, value.internalId)
+        const instanceName = getSubInstanceName(path, originalInternalId)
 
         if (!(instanceName in newInstancesMap)) {
           const newInstance = new InstanceElement(
@@ -101,39 +111,32 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   },
 
   preDeploy: async changes => {
-    await awu(changes)
-      .forEach(async change =>
-        applyFunctionToChangeData(
-          change,
-          async element => {
-            if (!isInstanceElement(element) || !isDataObjectType(await element.getType())) {
-              return element
-            }
-
-            element.value = await transformValues({
-              values: element.value,
-              type: await element.getType(),
-              strict: false,
-              pathID: element.elemID,
-              transformFunc: async ({ value, field, path }) => {
-                const fieldType = path?.isTopLevel()
-                  ? await element.getType()
-                  : await field?.getType()
-
-                if (fieldType?.elemID.name === RECORD_REF) {
-                  if (value.id !== '[ACCOUNT_SPECIFIC_VALUE]') {
-                    value.internalId = value.id
-                  }
-                  delete value.id
+    await awu(changes).forEach(async change => {
+      await awu(Object.values(change.data))
+        .filter(isInstanceElement)
+        .filter(async instance => isDataObjectType(await instance.getType()))
+        .forEach(async instance => {
+          instance.value = await transformValues({
+            values: instance.value,
+            type: await instance.getType(),
+            strict: false,
+            pathID: instance.elemID,
+            transformFunc: async ({ value, field, path }) => {
+              if (
+                path && !path.isTopLevel()
+                && shouldUseIdField(await field?.getType(), path)
+                && value[ID_FIELD] !== undefined
+              ) {
+                if (value[ID_FIELD] !== ACCOUNT_SPECIFIC_VALUE) {
+                  value[INTERNAL_ID] = value[ID_FIELD]
                 }
-
-                return value
-              },
-            }) ?? element.value
-
-            return element
-          }
-        ))
+                delete value[ID_FIELD]
+              }
+              return value
+            },
+          }) ?? {}
+        })
+    })
   },
 })
 

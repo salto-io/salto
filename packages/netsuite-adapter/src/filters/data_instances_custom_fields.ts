@@ -21,6 +21,7 @@ import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix, toCustomF
 import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
 import { XSI_TYPE } from '../client/constants'
 import { getDifferentKeys } from './data_instances_diff'
+import { SOAP_SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -35,7 +36,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
         const customFields = Object.fromEntries(
           await awu(makeArray(instance.value.customFieldList?.customField))
             .map(async value => {
-              const fieldName = toCustomFieldName(value.scriptId)
+              const fieldName = toCustomFieldName(value[SOAP_SCRIPT_ID])
               const field = type.fields[fieldName]
               return [fieldName, await castFieldValue(value.value, field)]
             })
@@ -63,7 +64,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
               .filter(([key]) => !differentKeys || differentKeys.has(key))
               .map(([key, customField]) => ({
                 attributes: {
-                  scriptId: removeCustomFieldPrefix(key),
+                  [SOAP_SCRIPT_ID]: removeCustomFieldPrefix(key),
                   [XSI_TYPE]: getSoapType(customField),
                 },
                 'platformCore:value': customField,

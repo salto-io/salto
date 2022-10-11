@@ -53,13 +53,13 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === RECORD_REF)
 
     const transformIds: TransformFunc = async ({ value, field, path }) => {
-      if (!path || value[INTERNAL_ID] === undefined) {
+      if (!path || path.isTopLevel() || value[INTERNAL_ID] === undefined) {
         return value
       }
 
       const originalInternalId = value[INTERNAL_ID]
       const fieldType = await field?.getType()
-      if (!path.isTopLevel()) {
+      if (shouldUseIdField(fieldType, path) || !hasInternalIdHiddenField(fieldType)) {
         value[
           shouldUseIdField(fieldType, path) ? ID_FIELD : INTERNAL_ID
         ] = ACCOUNT_SPECIFIC_VALUE

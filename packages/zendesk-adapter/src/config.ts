@@ -1802,6 +1802,15 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
+    deployRequests: {
+      remove: {
+        url: '/help_center/articles/labels/{labelId}',
+        method: 'delete',
+        urlParamsToFields: {
+          labelId: 'id',
+        },
+      },
+    },
   },
   categories: {
     request: {

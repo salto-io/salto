@@ -22,6 +22,7 @@ import { ChangeValidator, getChangeData, isInstanceChange,
 import { getParent } from '@salto-io/adapter-utils'
 import { ZendeskApiConfig } from '../../config'
 import { getChildAndParentTypeNames } from './utils'
+import { hasRelevantFieldChanged } from '../utils'
 
 const createChildReferencesError = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
@@ -55,16 +56,6 @@ const validateChildParentAnnotation = (
     return createChildReferencesError(parentChange, childFullName)
   }
   return undefined
-}
-
-const hasRelevantFieldChanged = (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  fieldName: string,
-): boolean => {
-  if (isAdditionChange(change)) {
-    return change.data.after.value[fieldName] !== undefined
-  }
-  return !_.isEqual(change.data.before.value[fieldName], change.data.after.value[fieldName])
 }
 
 /**

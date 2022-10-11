@@ -13,5 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+import { AdditionChange, InstanceElement, isAdditionChange, ModificationChange } from '@salto-io/adapter-api'
+
 export const createEmptyFieldErrorMessage = (fullName: string, fieldName: string): string =>
   `Can not change ${fullName}' ${fieldName} to be empty`
+
+export const hasRelevantFieldChanged = (
+  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  fieldName: string,
+): boolean => {
+  if (isAdditionChange(change)) {
+    return change.data.after.value[fieldName] !== undefined
+  }
+  return !_.isEqual(change.data.before.value[fieldName], change.data.after.value[fieldName])
+}

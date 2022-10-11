@@ -315,7 +315,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   const { toEnvs, toAllEnvs, env, elementSelector, force, allowElementDeletions } = input
 
   // Makes sure at least and only one of the env options is given
-  if ((!toEnvs && !toAllEnvs) || (toEnvs && toAllEnvs)) {
+  if ((_.isEmpty(toEnvs) && !toAllEnvs) || (!_.isEmpty(toEnvs) && toAllEnvs)) {
     errorOutputLine(formatInvalidFilters([Prompts.CLONE_TARGET_ENV_ERROR]), output)
     return CliExitCode.UserInputError
   }

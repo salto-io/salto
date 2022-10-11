@@ -75,8 +75,8 @@ import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import customMetadataTypeFilter from './filters/custom_metadata_type'
-import { FetchElements, SalesforceConfig } from './types'
-import { getConfigFromConfigChanges } from './config_change'
+import { FetchElements, SalesforceConfig, MAX_INSTANCES_PER_TYPE } from './types'
+import { getConfigFromConfigChanges, createSkippedListConfigChange } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator } from './filter'
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
@@ -173,6 +173,9 @@ const defaultFilters = allFilters.map(({ creator }) => creator)
 export interface SalesforceAdapterParams {
   // Max items to fetch in one retrieve request
   maxItemsInRetrieveRequest?: number
+
+  // We won't retrieve types with too many instances, to avoid slow requests and workspace
+  maxInstancesPerType?: number
 
   // Metadata types that are being fetched in the filters
   metadataTypesOfInstancesFetchedInFilters?: string[]
@@ -557,6 +560,17 @@ export default class SalesforceAdapter implements AdapterOperations {
     const { elements: fileProps, configChanges } = await listMetadataObjects(
       this.client, typeName, [],
     )
+
+    const instancesCount = fileProps.length
+    // We exclude types with too many instances to avoid slow requests
+    if (instancesCount > this.fetchProfile[MAX_INSTANCES_PER_TYPE]) {
+      log.warn(`${typeName} has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${this.fetchProfile[MAX_INSTANCES_PER_TYPE]}. If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value.`)
+      return {
+        elements: [],
+        configChanges: [...configChanges, createSkippedListConfigChange(typeName)],
+      }
+    }
+
     const instances = await fetchMetadataInstances({
       client: this.client,
       fileProps,

@@ -28,6 +28,7 @@ import filterCreator from '../../src/filters/help_center_section_translation'
 import { paginate } from '../../src/client/pagination'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
+import { removedSectionId } from '../../src/filters/help_center_section'
 
 describe('custom field option restriction filter', () => {
   let client: ZendeskClient
@@ -77,6 +78,7 @@ describe('custom field option restriction filter', () => {
     'instance',
     sectionType,
     {
+      id: 1,
       name: 'name',
       description: 'description',
       source_locale: new ReferenceExpression(
@@ -127,6 +129,21 @@ describe('custom field option restriction filter', () => {
       expect(res.leftoverChanges).toHaveLength(2)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+    it('should consider removed translation if their parent section was removed in appliedChanges', async () => {
+      removedSectionId.push(sectionInstance.value.id)
+      const res = await filter.deploy([
+        { action: 'remove', data: { before: heSectionTranslationInstance } },
+        { action: 'modify', data: { before: enSectionTranslationInstance, after: enSectionTranslationInstance } },
+      ])
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(2)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([
+          { action: 'remove', data: { before: heSectionTranslationInstance } },
+          { action: 'modify', data: { before: enSectionTranslationInstance, after: enSectionTranslationInstance } },
+        ])
     })
   })
 })

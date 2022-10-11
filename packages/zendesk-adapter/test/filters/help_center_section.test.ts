@@ -92,7 +92,7 @@ describe('custom field option restriction filter', () => {
   })
 
   describe('preDeploy', () => {
-    it('should add the name and description fields after deploy', async () => {
+    it('should add the name and description fields before deploy', async () => {
       const sectionInstanceCopy = sectionInstance.clone()
       await filter.onFetch([sectionTranslationInstance, sectionInstanceCopy])
       expect(sectionInstanceCopy).not.toEqual(sectionInstance)

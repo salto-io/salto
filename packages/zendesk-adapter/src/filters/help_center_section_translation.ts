@@ -21,9 +21,15 @@ import {
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
+import { removedSectionId } from './help_center_section'
+
+const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
 
 const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean => {
-  if (!isAdditionChange(change)) {
+  if (
+    !isAdditionChange(change)
+    || (getChangeData(change).elemID.typeName !== SECTION_TRANSLATION_TYPE_NAME)
+  ) {
     return false
   }
   const data = getChangeData(change)
@@ -32,19 +38,30 @@ const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean 
   return parents.find(parent => parent.source_locale?.value.value.id === currentLocale) ?? false
 }
 
+const sectionParentRemoved = (change: Change<InstanceElement>): boolean => {
+  if (getChangeData(change).elemID.typeName !== SECTION_TRANSLATION_TYPE_NAME) {
+    return false
+  }
+  return removedSectionId.includes(getParents(getChangeData(change))[0].id)
+}
+
+const needToOmit = (change: Change<InstanceElement>): boolean =>
+  isDefaultTranslationAddition(change) || sectionParentRemoved(change)
+
 /**
- * a different filter is needed for the default translation as it is deployed during the deployment
- * of the section itself. Therefor, this filter removes the default translation from the
- * leftover changes.
+ * a different filter is needed for the default translation and translations for which the section
+ * has been removed, as they are deployed during the deployment of the section itself. Therefore,
+ * this filter marks these translations as successfully deployed without actually deploying them.
+ * The rest of the translations will be deployed in the default deploy filter.
  */
 const filterCreator: FilterCreator = () => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [sectionDefaultTranslationChanges, leftoverChanges] = _.partition(
+    const [sectionTranslationChangesToRemove, leftoverChanges] = _.partition(
       changes,
-      isDefaultTranslationAddition,
+      needToOmit,
     )
     const deployResult: DeployResult = {
-      appliedChanges: sectionDefaultTranslationChanges,
+      appliedChanges: sectionTranslationChangesToRemove,
       errors: [],
     }
     return { deployResult, leftoverChanges }

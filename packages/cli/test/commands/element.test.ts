@@ -23,6 +23,7 @@ import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
 import { formatTargetEnvRequired } from '../../src/formatter'
+import { MockWorkspace } from '../mocks'
 
 const { awu } = collections.asynciterable
 
@@ -339,6 +340,63 @@ Cloning the specified elements to inactive.
       it('should print failure to console', () => {
         expect(output.stderr.content)
           .toContain(Prompts.INVALID_ENV_TARGET_CURRENT)
+      })
+    })
+
+    describe('clone with -to-all-envs params', () => {
+      const runClone = async ({
+        toEnvs, toAllEnvs, workspace,
+      } : {
+        toEnvs?: string[]
+        toAllEnvs?: boolean
+        workspace?: MockWorkspace
+      }) : Promise<{ result: CliExitCode; output: mocks.MockCliOutput }> => {
+        const cliArgs = mocks.mockCliArgs()
+        const { output } = cliArgs
+        const selector = new ElemID('salto', 'Account')
+        const result = await cloneAction({
+          ...mocks.mockCliCommandArgs(cloneName, cliArgs),
+          input: {
+            elementSelector: [selector.getFullName()],
+            toEnvs,
+            toAllEnvs,
+            env: 'active',
+            force: true,
+            allowElementDeletions: false,
+          },
+          workspace: workspace || mocks.mockWorkspace({}),
+        })
+        return { result, output }
+      }
+
+      it('should fail receiving both toEnvs and toAllEnvs', async () => {
+        const { result, output } = await runClone({ toEnvs: ['env1'], toAllEnvs: true })
+        expect(result).toBe(CliExitCode.UserInputError)
+        expect(output.stderr.content).toContain('Please specify the target environment(s) by passing exactly one of \'--to-envs\' and \'--to-all-envs\' parameters')
+      })
+
+      it('should fail not receiving one of toEnvs or toAllEnvs', async () => {
+        const { result, output } = await runClone({ })
+        expect(result).toBe(CliExitCode.UserInputError)
+        expect(output.stderr.content).toContain('Please specify the target environment(s) by passing exactly one of \'--to-envs\' and \'--to-all-envs\' parameters')
+      })
+
+      it('should fail running toAllEnvs with only current env', async () => {
+        const workspace = mocks.mockWorkspace({ envs: ['active'] })
+        const { result, output } = await runClone({ toAllEnvs: true, workspace })
+        expect(result).toBe(CliExitCode.UserInputError)
+        expect(output.stderr.content).toContain('The target environments cannot be empty')
+      })
+
+      it('should succeed cloning to all envs', async () => {
+        const envsToCloneTo = ['env1', 'env2', 'env3']
+        const workspace = mocks.mockWorkspace({ envs: ['active', ...envsToCloneTo] })
+        const selector = new ElemID('salto', 'Account')
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
+
+        const { result, output } = await runClone({ toAllEnvs: true, workspace })
+        expect(result).toBe(CliExitCode.Success)
+        expect(output.stdout.content).toContain(envsToCloneTo.join(', '))
       })
     })
 

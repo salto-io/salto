@@ -16,6 +16,7 @@
 
 import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
+import { EXCHANGE_RATE } from '../constants'
 import { DEFAULT_EXCHANGE_RATE, getCurrencyAdditionsWithoutExchangeRate } from '../filters/currency_exchange_rate'
 
 
@@ -23,17 +24,12 @@ const { isDefined } = values
 
 const changeValidator: ChangeValidator = async changes => (
   getCurrencyAdditionsWithoutExchangeRate(changes)
-    .map(instance => {
-      if (!instance.value?.exchangeRate) {
-        return {
-          elemID: instance.elemID,
-          severity: 'Warning',
-          message: 'Currency exchangeRate is set with a default value',
-          detailedMessage: `'exchangeRate' is omitted from fetch configuration by default. As this field has to be created in the target environment for this deployment to succeed, it will be deployed with a default value of ${DEFAULT_EXCHANGE_RATE}. Please make sure this value is set to your desired value in the NetSuite UI of the target environment after deploying. See https://docs.salto.io/docs/netsuite#overriding-configuration-values for more details.`,
-        } as ChangeError
-      }
-      return undefined
-    })
+    .map(instance => ({
+      elemID: instance.elemID,
+      severity: 'Warning',
+      message: `Currency ${EXCHANGE_RATE} is set with a default value`,
+      detailedMessage: `'${EXCHANGE_RATE}' is omitted from fetch configuration by default. As this field has to be created in the target environment for this deployment to succeed, it will be deployed with a default value of ${DEFAULT_EXCHANGE_RATE}. Please make sure this value is set to your desired value in the NetSuite UI of the target environment after deploying. See https://docs.salto.io/docs/netsuite#overriding-configuration-values for more details.`,
+    } as ChangeError))
     .filter(isDefined)
 )
 

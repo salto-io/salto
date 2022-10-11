@@ -28,16 +28,16 @@ export const getCurrencyAdditionsWithoutExchangeRate = (
     .filter(isAdditionChange)
     .map(change => getChangeData<InstanceElement>(change))
     .filter(instance => instance.elemID.typeName === CURRENCY)
+    .filter(instance => !instance.value.exchangeRate)
 )
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
   preDeploy: async changes => {
     getCurrencyAdditionsWithoutExchangeRate(changes)
-      .map(instance => {
+      .forEach(instance => {
         if (!instance.value?.exchangeRate) {
           instance.value.exchangeRate = DEFAULT_EXCHANGE_RATE
         }
-        return instance
       })
   },
 })

@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 
-import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
-import { currencyType } from '../change_validators/currency_exchange_rate.test'
+import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator, { DEFAULT_EXCHANGE_RATE } from '../../src/filters/currency_exchange_rate'
-import { CURRENCY } from '../../src/constants'
+import { CURRENCY, NETSUITE } from '../../src/constants'
+
+const currencyType = new ObjectType({ elemID: new ElemID(NETSUITE, CURRENCY) })
 
 describe('currency exchange rate filter', () => {
   const instance = new InstanceElement(

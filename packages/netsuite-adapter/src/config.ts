@@ -29,6 +29,7 @@ import {
   INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS, VALIDATE,
   STRICT_INSTANCE_STRUCTURE,
   FIELDS_TO_OMIT,
+  CURRENCY,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
@@ -179,7 +180,7 @@ export const fetchDefault: FetchParams = {
   },
   fieldsToOmit: [
     {
-      type: 'currency',
+      type: CURRENCY,
       fields: [
         'exchangeRate',
       ],
@@ -187,7 +188,7 @@ export const fetchDefault: FetchParams = {
   ],
   [EXCLUDE]: {
     types: [
-      // Has a definition field which is a long XML and it contains   'translationScriptId'
+      // Has a definition field which is a long XML and it contains 'translationScriptId'
       // value that changes every fetch
       { name: WORKBOOK },
       // Has a definition field which is a long XML and it contains 'translationScriptId'

@@ -14,50 +14,12 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { NETSUITE } from '../../src/constants'
+import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { CURRENCY, EXCHANGE_RATE, NETSUITE } from '../../src/constants'
 import currencyExchangeRateValidator from '../../src/change_validators/currency_exchange_rate'
 
 
-export const currencyType = new ObjectType({
-  elemID: new ElemID(NETSUITE, 'currency'),
-  fields: {
-    name: {
-      refType: BuiltinTypes.STRING,
-    },
-    symbol: {
-      refType: BuiltinTypes.STRING,
-    },
-    isBaseCurrency: {
-      refType: BuiltinTypes.BOOLEAN,
-    },
-    isInactive: {
-      refType: BuiltinTypes.BOOLEAN,
-    },
-    overrideCurrencyFormat: {
-      refType: BuiltinTypes.BOOLEAN,
-    },
-    displaySymbol: {
-      refType: BuiltinTypes.STRING,
-    },
-    symbolPlacement: {
-      refType: BuiltinTypes.STRING,
-    },
-    locale: {
-      refType: BuiltinTypes.STRING,
-    },
-    formatSample: {
-      refType: BuiltinTypes.STRING,
-    },
-    exchangeRate: {
-      refType: BuiltinTypes.NUMBER,
-    },
-    currencyPrecision: {
-      refType: BuiltinTypes.STRING,
-    },
-  },
-  annotations: { source: 'soap' },
-})
+const currencyType = new ObjectType({ elemID: new ElemID(NETSUITE, CURRENCY) })
 
 describe('currency exchange rate validator', () => {
   const instance = new InstanceElement(
@@ -84,7 +46,7 @@ describe('currency exchange rate validator', () => {
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain('\'exchangeRate\' is omitted from fetch')
+    expect(changeErrors[0].detailedMessage).toContain(`'${EXCHANGE_RATE}' is omitted from fetch`)
   })
 
   it('should not have changeError when exchangeRate is specified', async () => {

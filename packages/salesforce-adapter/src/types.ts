@@ -158,7 +158,7 @@ export type FetchParameters = {
   fetchAllCustomSettings?: boolean // TODO - move this into optional features
   optionalFeatures?: OptionalFeatures
   target?: string[]
-  [MAX_INSTANCES_PER_TYPE]?: number
+  maxInstancesPerType?: number
 }
 
 export type DeprecatedMetadataParams = {
@@ -563,7 +563,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     optionalFeatures: { refType: optionalFeaturesType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
     target: { refType: new ListType(BuiltinTypes.STRING) },
-    [MAX_INSTANCES_PER_TYPE]: { refType: BuiltinTypes.NUMBER },
+    maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

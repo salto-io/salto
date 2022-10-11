@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures, MAX_INSTANCES_PER_TYPE } from '../types'
+import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
@@ -25,7 +25,7 @@ export type FetchProfile = {
   readonly dataManagement?: DataManagement
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
-  readonly [MAX_INSTANCES_PER_TYPE]: number
+  readonly maxInstancesPerType: number
 }
 
 export const buildFetchProfile = ({
@@ -40,7 +40,7 @@ export const buildFetchProfile = ({
   dataManagement: data && buildDataManagement(data),
   isFeatureEnabled: name => optionalFeatures?.[name] ?? true,
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
-  [MAX_INSTANCES_PER_TYPE]: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
+  maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
 })
 
 export const validateFetchParameters = (

@@ -15,13 +15,14 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator, { INNER_DATE_FORMAT } from '../../../src/filters/author_information/saved_searches'
+import filterCreator from '../../../src/filters/author_information/saved_searches'
 import { NETSUITE, SAVED_SEARCH } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
+import { INNER_DATE_FORMAT } from '../../../src/filters/author_information/constants'
 
 describe('netsuite saved searches author information tests', () => {
   let filterOpts: FilterOpts
@@ -106,13 +107,22 @@ describe('netsuite saved searches author information tests', () => {
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('01/28/1995')
   })
 
-  it('should add last maodified date for different formats', async () => {
+  it('should add last modified date for different formats', async () => {
     extendedSavedSearch.value.configRecord.data.fields.DATEFORMAT.text = 'D/M/YYYY'
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28/01/1995 6:17am' },
     ])
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('01/28/1995')
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1/28/1995')
+  })
+
+  it('should add last modified date for different format', async () => {
+    extendedSavedSearch.value.configRecord.data.fields.DATEFORMAT.text = 'D Month, YYYY'
+    runSavedSearchQueryMock.mockResolvedValue([
+      { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 1995 6:17am' },
+    ])
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1/28/1995')
   })
 
   it('should not add last modified date when the account date format isnt avaible', async () => {

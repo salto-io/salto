@@ -23,9 +23,10 @@ import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../dat
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { getLastServerTime } from '../../server_time'
-import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, reducedSystemNote } from './constants'
+import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
 import { isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
+import { changeDateFormat } from './saved_searches'
 
 const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
@@ -33,6 +34,7 @@ const log = logger(module)
 const UNDERSCORE = '_'
 export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
 export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
+export const QUERY_DATE_FORMAT = 'YYYY-MM-DD'
 const FILE_TYPE = 'FILE_TYPE'
 const FOLDER_TYPE = 'FOLDER_TYPE'
 
@@ -63,7 +65,7 @@ Promise<EmployeeResult[]> => {
 }
 
 const toDateQuery = (lastFetchTime: Date): string =>
-  `date >= TO_DATE('${toDateString(lastFetchTime)}', 'YYYY-MM-DD')`
+  `date >= TO_DATE('${toDateString(lastFetchTime)}', '${QUERY_DATE_FORMAT}')`
 
 const toRecordTypeWhereQuery = (recordType: string): string =>
   `recordtypeid = '${recordType}'`
@@ -84,7 +86,7 @@ const buildRecordTypeSystemNotesQuery = (
     .map(toRecordTypeWhereQuery)
     .join(' OR ')
   return 'SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid,'
-    + ` TO_CHAR(MAX(date), 'YYYY-MM-DD') as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
+    + ` TO_CHAR(MAX(date), '${QUERY_DATE_FORMAT}') as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
     + ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC'
 }
 
@@ -95,7 +97,7 @@ const buildFieldSystemNotesQuery = (
   const whereQuery = fieldIds
     .map(toFieldWhereQuery)
     .join(' OR ')
-  return 'SELECT name, field, recordid, date from (SELECT name, field, recordid, TO_CHAR(MAX(date), \'YYYY-MM-DD\') AS date'
+  return `SELECT name, field, recordid, date from (SELECT name, field, recordid, TO_CHAR(MAX(date), '${QUERY_DATE_FORMAT}') AS date`
     + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
     + ` AS field, recordid, date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery}))`
     + ' GROUP BY name, field, recordid) ORDER BY name, field, recordid ASC'
@@ -173,7 +175,9 @@ const distinctSortedSystemNotes = (
   .uniqBy(note => getKeyForNote(note))
   .value()
 
-const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, reducedSystemNote> =>
+const indexSystemNotes = (
+  systemNotes: SystemNoteResult[]
+): Record<string, ModificationInformation> =>
   Object.fromEntries(systemNotes.map(
     systemnote => [getKeyForNote(systemnote), { name: systemnote.name, date: systemnote.date }]
   ))
@@ -182,7 +186,7 @@ const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
   lastFetchTime: Date
-): Promise<Record<string, reducedSystemNote>> => {
+): Promise<Record<string, ModificationInformation>> => {
   const systemNotes = await log.time(
     () => querySystemNotes(client, queryIds, lastFetchTime),
     'querySystemNotes'
@@ -282,32 +286,36 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       }
     }
 
+    const setChangedAt = (element: Element, lastModifiedDate: string):void => {
+      if (isDefined(lastModifiedDate)) {
+        const formatedDate = changeDateFormat(lastModifiedDate, QUERY_DATE_FORMAT)
+        element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate })
+      } else if (!_.isEmpty(elemIdToChangeAtIndex)) {
+        const changedAt = elemIdToChangeAtIndex[element.elemID.getFullName()]
+        if (isDefined(changedAt)) {
+          const formatedDate = changeDateFormat(changedAt, QUERY_DATE_FORMAT)
+          element.annotate(
+            { [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate }
+          )
+        }
+      }
+    }
+
     instancesWithInternalId.forEach(instance => {
       const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
         instance.value.internalId,
         TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]
-      )] || {}
+      )] ?? {}
       setChangedBy(instance, employeeId)
-      if (isDefined(lastModifiedDate)) {
-        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: lastModifiedDate })
-      } else if (!_.isEmpty(elemIdToChangeAtIndex)) {
-        const changedAt = elemIdToChangeAtIndex[instance.elemID.getFullName()]
-        if (isDefined(changedAt)) {
-          instance.annotate(
-            { [CORE_ANNOTATIONS.CHANGED_AT]: changedAt }
-          )
-        }
-      }
+      setChangedAt(instance, lastModifiedDate)
     })
     customRecordTypesWithInternalIds.forEach(type => {
       const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
         type.annotations.internalId,
         TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
-      )] || {}
+      )] ?? {}
       setChangedBy(type, employeeId)
-      if (isDefined(lastModifiedDate)) {
-        type.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: lastModifiedDate })
-      }
+      setChangedAt(type, lastModifiedDate)
     })
     await awu(customRecordsWithInternalIds).forEach(async instance => {
       const employeeId = systemNotes[getRecordIdAndTypeStringKey(

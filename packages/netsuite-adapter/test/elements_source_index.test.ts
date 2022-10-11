@@ -246,5 +246,29 @@ describe('createElementsSourceIndex', () => {
         'netsuite.workflow_workflowstates_workflowstate_workflowtransitions.field.workflowtransition': 'scriptid',
         'netsuite.workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters.field.parameter': 'name',
       })
+  it('should create the right elemIdToChangeAtIndex index', async () => {
+    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      new InstanceElement(
+        'inst',
+        type,
+        {},
+        undefined,
+        { [CORE_ANNOTATIONS.CHANGED_AT]: '03/23/2022' }
+      ),
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [CORE_ANNOTATIONS.CHANGED_AT]: '05/26/2022',
+        },
+      }),
+    ]).getAll)
+
+    expect((await createElementsSourceIndex(elementsSource).getIndexes()).elemIdToChangeAtIndex)
+      .toEqual({
+        'netsuite.someType.instance.inst': '03/23/2022',
+        'netsuite.customrecord1': '05/26/2022',
+      })
   })
 })

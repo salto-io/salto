@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+export const INNER_DATE_FORMAT = 'M/D/YYYY'
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
 export const EMPLOYEE_SCHEMA = {
   items: {
@@ -149,7 +150,7 @@ export type SavedSearchesResult = {
   datemodified: string
 }
 
-export type reducedSystemNote = {
+export type ModificationInformation = {
   name: string
   date: string
 }

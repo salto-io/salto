@@ -13,20 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
-import { values } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { SUITEQL_DATE_FORMAT } from '../../changes_detector/date_formats'
+import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
 import { SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
-import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, reducedSystemNote } from './constants'
+import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformation, INNER_DATE_FORMAT } from './constants'
 
 const log = logger(module)
 const { isDefined } = values
-export const INNER_DATE_FORMAT = 'M/D/YYYY'
+const { awu } = collections.asynciterable
+const DELIMITER = '*'
+
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SAVED_SEARCH
 
@@ -49,32 +51,61 @@ const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearches
 
 const getSavedSearchesMap = async (
   client: NetsuiteClient,
-): Promise<Record<string, reducedSystemNote>> => {
+): Promise<Record<string, ModificationInformation>> => {
   const savedSearches = await fetchSavedSearches(client)
   return Object.fromEntries(savedSearches.map(savedSearch => [
     savedSearch.id,
     {
-      name: savedSearch.modifiedby[0]?.text, date: savedSearch.datemodified?.split(' ')[0],
+      name: savedSearch.modifiedby[0]?.text, date: savedSearch.datemodified,
     },
   ]))
 }
 
-const changeDateFormat = (date: string, dateFormat: string): string => {
-  if (dateFormat === INNER_DATE_FORMAT || dateFormat === SUITEQL_DATE_FORMAT) {
-    return date
+const getDateFormatKey = (key: string): string => {
+  if (key.includes('Y')) {
+    return 'YYYY'
   }
-  const dateAsArray = date.split('/')
-  const dateFormatAsArray = dateFormat?.split('/')
+  if (key.includes('M')) {
+    return 'M'
+  }
+  return 'D'
+}
+
+const cleanDateString = (fullDate: string): string => {
+  const splitDate = fullDate.split(' ')
+  return splitDate.length > 2 ? splitDate.slice(0, 3).join('-') : splitDate[0]
+}
+
+export const changeDateFormat = (date: string, dateFormat: string): string => {
+  const cleanDate = cleanDateString(date)
+  if (dateFormat === INNER_DATE_FORMAT) {
+    return cleanDate
+  }
+  const re = /(-|\.| |\/|,)+/g
+  const dateAsArray = cleanDate.replace(re, DELIMITER).split(DELIMITER)
+  const dateFormatAsArray = dateFormat.replace(re, DELIMITER).split(DELIMITER)
   const dateAsMap: Record<string, string> = {}
   dateFormatAsArray.forEach((key, i) => {
-    dateAsMap[key] = dateAsArray[i]
+    const mapKey = getDateFormatKey(key)
+    dateAsMap[mapKey] = dateAsArray[i]
   })
-  return [dateAsMap.M, dateAsMap.D, dateAsMap.YYYY].join('/')
+  const dateObject = new Date([dateAsMap.YYYY, dateAsMap.M, dateAsMap.D].join('-')) // converts month name to number
+  return [dateObject.getMonth() + 1, dateAsMap.D, dateAsMap.YYYY].join('/')
 }
 const isUserPreference = (instance: InstanceElement): boolean =>
-  instance.elemID.typeName === 'userPreferences'
+  instance.elemID.typeName === SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES
 
-const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+const getDateFormatFromElemSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<string> => {
+  const sourcedElements = await elementsSource.getAll()
+  return (await awu(sourcedElements)
+    .filter(isInstanceElement)
+    .toArray())
+    .find(isUserPreference)?.value.configRecord.data.fields?.DATEFORMAT?.text
+}
+
+const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {
@@ -92,9 +123,12 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
       return
     }
 
-    const dateFormat = elements
+    let dateFormat = elements
       .filter(isInstanceElement)
-      .filter(isUserPreference)[0]?.value.configRecord.data.fields?.DATEFORMAT?.text
+      .find(isUserPreference)?.value.configRecord.data.fields?.DATEFORMAT?.text
+    if (!dateFormat && isPartial) {
+      dateFormat = getDateFormatFromElemSource(elementsSource)
+    }
 
     const savedSearchesMap = await getSavedSearchesMap(client)
 

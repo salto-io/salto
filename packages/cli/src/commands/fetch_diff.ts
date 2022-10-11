@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element } from '@salto-io/adapter-api'
+import { DetailedChange, Element, getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
+import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { expressions, elementSource, Workspace, merger } from '@salto-io/workspace'
+import { expressions, elementSource, Workspace, merger, State } from '@salto-io/workspace'
 import { loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import { calcFetchChanges } from '@salto-io/core'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
@@ -45,16 +46,43 @@ const mergeElements = async (
   }
 }
 
+const updateStateElements = async (
+  state: State,
+  changes: DetailedChange[],
+): Promise<void> => {
+  const changesByTopLevelElement = _.groupBy(
+    changes,
+    change => change.id.createTopLevelParentID().parent.getFullName()
+  )
+  await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
+    const elemID = elemChanges[0].id.createTopLevelParentID().parent
+    if (elemChanges[0].id.isEqual(elemID)) {
+      if (isRemovalChange(elemChanges[0])) {
+        await state.remove(elemID)
+      } else if (isAdditionChange(elemChanges[0])) {
+        await state.set(getChangeData(elemChanges[0]))
+      }
+      return
+    }
+
+    const updatedElem = (await state.get(elemID)).clone()
+    applyDetailedChanges(updatedElem, elemChanges)
+    await state.set(updatedElem)
+  })
+}
+
 type FetchDiffArgs = {
   fromDir: string
   toDir: string
   accountName: 'salesforce'
   targetEnvs?: string[]
+  updateStateInEnvs?: string[]
 }
 
 const fetchDiffToWorkspace = async (
   workspace: Workspace,
   input: FetchDiffArgs,
+  updateState: boolean,
   output: CliOutput,
 ): Promise<boolean> => {
   outputLine(`Loading elements from workspace env ${workspace.currentEnv()}`, output)
@@ -111,6 +139,11 @@ const fetchDiffToWorkspace = async (
     errorOutputLine(`Failed to update env ${workspace.currentEnv()} because there are ${conflicts.length} conflicting changes`, output)
     return false
   }
+  if (updateState) {
+    outputLine(`Updating state for environment ${workspace.currentEnv()}`, output)
+    await updateStateElements(workspace.state(), allChanges.map(change => change.change))
+  }
+  outputLine(`Updating NaCl for environment ${workspace.currentEnv()}`, output)
   await workspace.updateNaclFiles(allChanges.map(change => change.change))
   const { status, errors } = await validateWorkspace(workspace)
   if (status === 'Error') {
@@ -128,7 +161,9 @@ export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
   output,
 }) => {
   const targetEnvs = input.targetEnvs ?? workspace.envs()
-  const unknownEnvs = targetEnvs.filter(env => !workspace.envs().includes(env))
+  const unknownEnvs = targetEnvs
+    .concat(input.updateStateInEnvs ?? [])
+    .filter(env => !workspace.envs().includes(env))
   if (unknownEnvs.length > 0) {
     errorOutputLine(`Unknown environments ${unknownEnvs}`, output)
     return CliExitCode.UserInputError
@@ -140,7 +175,8 @@ export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
       return
     }
     await workspace.setCurrentEnv(env, false)
-    success = await fetchDiffToWorkspace(workspace, input, output)
+    const updateState = input.updateStateInEnvs?.includes(env) ?? false
+    success = await fetchDiffToWorkspace(workspace, input, updateState, output)
   })
 
   if (success) {
@@ -174,6 +210,12 @@ const fetchDiffCmd = createWorkspaceCommand({
         alias: 'e',
         type: 'stringsList',
         description: 'Names for environments to apply the changes to, defaults to all environments',
+      },
+      {
+        name: 'updateStateInEnvs',
+        alias: 'u',
+        type: 'stringsList',
+        description: 'Names for environments in which to update the state as well as the NaCls, indicating that the changes were already deployed',
       },
     ],
     positionalOptions: [

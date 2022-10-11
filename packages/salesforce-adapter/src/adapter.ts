@@ -177,7 +177,7 @@ export interface SalesforceAdapterParams {
   maxItemsInRetrieveRequest?: number
 
   // We won't retrieve types with too many instances, to avoid slow requests and workspace
-  maxInstancesPerType?: number
+  [MAX_INSTANCES_PER_TYPE]?: number
 
   // Metadata types that are being fetched in the filters
   metadataTypesOfInstancesFetchedInFilters?: string[]

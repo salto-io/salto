@@ -22,7 +22,7 @@ import { naclCase, buildElementsSourceFromElements } from '@salto-io/adapter-uti
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../src/config'
+import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES } from '../src/config'
 import { ZENDESK, BRAND_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -247,6 +247,10 @@ describe('Zendesk adapter E2E', () => {
         subdomain: createSubdomainName(),
       },
     )
+    const userSegmentInstance = createInstanceElement(
+      'user_segment',
+      { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
+    )
     let groupIdToInstances: Record<string, InstanceElement[]>
 
     beforeAll(async () => {
@@ -261,6 +265,7 @@ describe('Zendesk adapter E2E', () => {
               { type: '.*' },
             ],
             exclude: [],
+            enableGuide: true,
           },
         }
       )
@@ -280,6 +285,7 @@ describe('Zendesk adapter E2E', () => {
         slaPolicyInstance,
         viewInstance,
         brandInstanceToAdd,
+        userSegmentInstance,
       ]
       const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
         .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
@@ -437,6 +443,16 @@ describe('Zendesk adapter E2E', () => {
             .map((ref: ReferenceExpression) => ref.elemID.getFullName()))
             .toContain(instance.elemID.getFullName())
         })
+    })
+    it('should fetch Guide instances and types', async () => {
+      const typesToFetch = Object.keys(GUIDE_SUPPORTED_TYPES)
+      const typeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
+      const instances = elements.filter(isInstanceElement)
+      typesToFetch.forEach(typeName => {
+        expect(typeNames).toContain(typeName)
+        const instance = instances.find(e => e.elemID.typeName === typeName)
+        expect(instance).toBeDefined()
+      })
     })
   })
 })

@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         && isInstanceChange(change)
     )
     const deployResult = await deployChanges(
-      guideBrandedTypesChanges.filter(isInstanceChange),
+      guideBrandedTypesChanges,
       async change => {
         await deployChange(change, client, config.apiDefinitions, ['brand'])
       }

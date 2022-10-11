@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import axios, { AxiosRequestConfig } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, ReferenceExpression, isRemovalChange,
-  AdapterOperations, toChange, ObjectType, ElemID, getChangeData, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, ReferenceExpression,
+  AdapterOperations, toChange, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import defaultBrandMockReplies from './mock_replies/myBrand_mock_replies.json'
@@ -322,7 +322,7 @@ describe('adapter', () => {
           'zendesk.organization_fields',
           'zendesk.organizations',
           'zendesk.permission_group',
-          'zendesk.permission_group.instance.myBrand_Admins',
+          'zendesk.permission_group.instance.Admins',
           'zendesk.permission_groups',
           'zendesk.resource_collection',
           'zendesk.resource_collection.instance.unnamed_0_0',
@@ -490,10 +490,10 @@ describe('adapter', () => {
           'zendesk.user_field_order.instance',
           'zendesk.user_fields',
           'zendesk.user_segment',
-          'zendesk.user_segment.instance.myBrand_Agents_and_admins@uss',
-          'zendesk.user_segment.instance.myBrand_Signed_in_users@ubs',
-          'zendesk.user_segment.instance.myBrand_Tier_3_Articles@uss',
-          'zendesk.user_segment.instance.myBrand_VIP_Customers@us',
+          'zendesk.user_segment.instance.Agents_and_admins@s',
+          'zendesk.user_segment.instance.Signed_in_users@bs',
+          'zendesk.user_segment.instance.Tier_3_Articles@s',
+          'zendesk.user_segment.instance.VIP_Customers@s',
           'zendesk.user_segments',
           'zendesk.view',
           'zendesk.view.instance.All_unsolved_tickets@s',
@@ -768,6 +768,7 @@ describe('adapter', () => {
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, 'group') })
     const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, 'brand') })
     const anotherType = new ObjectType({ elemID: new ElemID(ZENDESK, 'anotherType') })
+
     beforeEach(() => {
       (defaultBrandMockReplies as MockReply[]).forEach(({ url, params, response }) => {
         mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined)
@@ -789,7 +790,7 @@ describe('adapter', () => {
         credentials: new InstanceElement(
           'config',
           usernamePasswordCredentialsType,
-          { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+          { username: 'user123', password: 'pwd456', subdomain: 'myBrand' },
         ),
         config: new InstanceElement(
           'config',
@@ -912,7 +913,7 @@ describe('adapter', () => {
           brandType,
           { key: 2, ref: expect.any(ReferenceExpression) },
           undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/account/brand_management/brands' },
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/account/brand_management/brands' },
         ) }),
         modificationChange,
         toChange({ after: new InstanceElement(
@@ -920,7 +921,7 @@ describe('adapter', () => {
           groupType,
           { id: 1 },
           undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
         ) }),
         toChange({ after: new InstanceElement('inst4', anotherType, { key: 2 }) }),
       ])
@@ -960,7 +961,7 @@ describe('adapter', () => {
           groupType,
           undefined,
           undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
         ) }),
       ])
     })
@@ -980,7 +981,7 @@ describe('adapter', () => {
           groupType,
           undefined,
           undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
         ) }),
       ])
     })
@@ -1000,7 +1001,7 @@ describe('adapter', () => {
           groupType,
           undefined,
           undefined,
-          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+          { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
         ) }),
       ])
     })
@@ -1032,7 +1033,7 @@ describe('adapter', () => {
             }),
             { ...instance.value, id: 1 },
             undefined,
-            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://abc.zendesk.com/admin/people/team/groups' },
+            { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
           ),
         }),
         client: expect.anything(),

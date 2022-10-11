@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isString } from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
@@ -31,7 +31,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
 import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -84,6 +84,7 @@ import articleFilter from './filters/article'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
+import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 
 const log = logger(module)
@@ -153,6 +154,7 @@ export const DEFAULT_FILTERS = [
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
+  deployBrandedGuideTypesFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -199,7 +201,7 @@ const zendeskGuideEntriesFunc = (
           return undefined
         }
         return (response[responseEntryName] as Value[]).forEach(instanceType => {
-          instanceType.brand_id = brandInstance.value.id
+          instanceType.brand = brandInstance.value.id
         })
       })
       return brandPaginatorResponseValues
@@ -209,15 +211,13 @@ const zendeskGuideEntriesFunc = (
   return getZendeskGuideEntriesResponseValues
 }
 
-const getSubdomainsFromElementsSource = async (
+const getBrandsFromElementsSource = async (
   elementsSource: ReadOnlyElementsSource
-): Promise<string[]> => (
+): Promise<InstanceElement[]> => (
   awu(await elementsSource.list())
     .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
     .map(id => elementsSource.get(id))
     .filter(isInstanceElement)
-    .map(brandInstance => brandInstance.value.subdomain)
-    .filter(_.isString)
     .toArray()
 )
 
@@ -413,15 +413,24 @@ export default class ZendeskAdapter implements AdapterOperations {
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(
       resolvedChanges,
-      change => Object.keys(TYPES_TO_HANDLE_BY_BRAND)
-        .includes(getChangeData(change).elemID.typeName)
+      change => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName)
     )
     await runner.preDeploy(supportResolvedChanges)
     const { deployResult } = await runner.deploy(supportResolvedChanges)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await runner.onDeploy(appliedChangesBeforeRestore)
 
-    const subdomainsList = _.uniq(await getSubdomainsFromElementsSource(this.elementsSource))
+    const brandsList = _.uniq(await getBrandsFromElementsSource(this.elementsSource))
+    const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
+      brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]
+    ))
+    const subdomainToGuideChanges = _.groupBy(
+      guideResolvedChanges,
+      change => resolvedBrandIdToSubdomain[getChangeData(change).value.brand]
+    )
+    const subdomainsList = brandsList
+      .map(brandInstance => brandInstance.value.subdomain)
+      .filter(isString)
     const subdomainToPaginator = Object.fromEntries(subdomainsList.map(subdomain => (
       [
         subdomain,
@@ -431,18 +440,14 @@ export default class ZendeskAdapter implements AdapterOperations {
         }),
       ]
     )))
-    const subdomainToGuideChanges = _.groupBy(
-      guideResolvedChanges,
-      change => getChangeData(change).value.brand_id.subdomain
-    )
     const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
       .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
       .map(async ([subdomain, paginator]) => {
         const brandRunner = await this.createFiltersRunner(paginator)
         await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
-        const { deployResult: brandDeployResults } = (await brandRunner.deploy(
+        const { deployResult: brandDeployResults } = await brandRunner.deploy(
           subdomainToGuideChanges[subdomain]
-        ))
+        )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
         await runner.onDeploy(appliedChangesBeforeRestore)
 

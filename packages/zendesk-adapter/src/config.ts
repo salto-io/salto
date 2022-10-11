@@ -1918,7 +1918,7 @@ export const GUIDE_GLOBAL_TYPES = {
   user_segment: ['user_segments'],
 }
 
-const GUIDE_SUPPORTED_TYPES = {
+export const GUIDE_SUPPORTED_TYPES = {
   ...GUIDE_BRAND_SPECIFIC_TYPES,
   ...GUIDE_GLOBAL_TYPES,
 }

@@ -33,6 +33,9 @@ import {
   mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveLocator,
 } from './connection'
 import { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { fetchMetadataInstances } from '../src/fetch'
+import { MetadataQuery } from '../src/fetch_profile/metadata_query'
+import { SalesforceClient } from '../index'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
@@ -1171,6 +1174,27 @@ public class LargeClass${index} {
             },
           }
         )
+      })
+    })
+    describe('with types with more than maxInstancesPerType instances', () => {
+      it('should not fetch the types and add them to the exclude list', async () => {
+        const filePropMock = mockFileProperties({ fullName: 'fullName', type: 'testType' })
+        const fetchResult = await fetchMetadataInstances({
+          client: jest.fn() as unknown as SalesforceClient,
+          metadataType: jest.fn() as unknown as ObjectType,
+          metadataQuery: jest.fn() as unknown as MetadataQuery,
+          fileProps: [filePropMock, filePropMock],
+          maxInstancesPerType: 1,
+        })
+        expect(fetchResult.elements.length).toBe(0)
+        expect(fetchResult.configChanges.length).toBe(1)
+        expect(fetchResult.configChanges[0]).toMatchObject({
+          type: 'metadataExclude',
+          value: {
+            metadataType: 'testType',
+          },
+          reason: "'testType' has 2 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 1.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value.",
+        })
       })
     })
   })

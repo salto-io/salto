@@ -78,6 +78,13 @@ const filterCreator: FilesFilterCreator = ({ files }) => ({
           files.sourceFileNames,
         )
       })
+
+    // TODO: merge system fields into the custom object as well, otherwise we are missing
+    // references in layouts and this can cause conflicts
+
+    // TODO: another issue that is specific to fields - because we don't have the soap API
+    // we output all fields as if they are _hidden_value=true and are not creatable/updatable
+    // this causes the flow of working with custom object records very annoying
   },
 })
 

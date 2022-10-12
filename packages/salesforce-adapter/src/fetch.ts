@@ -142,8 +142,8 @@ export const fetchMetadataInstances = async ({
 
   const typeName = fileProps[0].type
   const instancesCount = fileProps.length
-  // We exclude types with too many instances to avoid unwanted big and slow requests
-  if (maxInstancesPerType && instancesCount > maxInstancesPerType) {
+  // We exclude metadataTypes with too many instances to avoid unwanted big and slow requests
+  if (typeName !== CUSTOM_OBJECT && maxInstancesPerType && instancesCount > maxInstancesPerType) {
     const reason = `'${typeName}' has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
       If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value.`
     const skippedListConfigChange = createSkippedListConfigChange({ type: typeName, reason })

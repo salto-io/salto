@@ -69,7 +69,7 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'Currency contains fields that cannot be deployed. These fields will be skipped from the deployment.',
-    detailedMessage: 'Unable to deploy \'locale\' field. Please set the \'locale\' of the created currency to the desired value in the tartget enviroment.',
+    detailedMessage: 'Unable to deploy \'locale\' field. Once the deployment is completed, set the \'locale\' of the newly created currency to the desired value in the target environment.',
   }
 }
 

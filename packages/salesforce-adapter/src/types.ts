@@ -26,6 +26,7 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -618,7 +619,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,
-          [MAX_INSTANCES_PER_TYPE]: MAX_INSTANCES_PER_TYPE,
+          [MAX_INSTANCES_PER_TYPE]: DEFAULT_MAX_INSTANCES_PER_TYPE,
         },
       },
     },

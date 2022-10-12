@@ -1180,9 +1180,9 @@ public class LargeClass${index} {
       it('should not fetch the types and add them to the exclude list', async () => {
         const filePropMock = mockFileProperties({ fullName: 'fullName', type: 'testType' })
         const fetchResult = await fetchMetadataInstances({
-          client: jest.fn() as unknown as SalesforceClient,
-          metadataType: jest.fn() as unknown as ObjectType,
-          metadataQuery: jest.fn() as unknown as MetadataQuery,
+          client: {} as unknown as SalesforceClient,
+          metadataType: {} as unknown as ObjectType,
+          metadataQuery: {} as unknown as MetadataQuery,
           fileProps: [filePropMock, filePropMock],
           maxInstancesPerType: 1,
         })

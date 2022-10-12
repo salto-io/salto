@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST, MAX_INSTANCES_PER_TYPE } from './types'
 import {
   METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE,
-  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE,
+  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE, CUSTOM_OBJECT,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'

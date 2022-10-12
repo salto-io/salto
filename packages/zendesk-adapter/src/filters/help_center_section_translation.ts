@@ -21,14 +21,15 @@ import {
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { removedSectionId } from './help_center_section'
+import { removedTranslationParentId } from './help_center_section'
 
-const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
+// const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
+const TRANSLATIONS_TYPE_NAME = ['section_translation']
 
 const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean => {
   if (
     !isAdditionChange(change)
-    || (getChangeData(change).elemID.typeName !== SECTION_TRANSLATION_TYPE_NAME)
+    || (!TRANSLATIONS_TYPE_NAME.includes(getChangeData(change).elemID.typeName))
   ) {
     return false
   }
@@ -38,15 +39,15 @@ const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean 
   return parents.find(parent => parent.source_locale?.value.value.id === currentLocale) ?? false
 }
 
-const sectionParentRemoved = (change: Change<InstanceElement>): boolean => {
-  if (getChangeData(change).elemID.typeName !== SECTION_TRANSLATION_TYPE_NAME) {
+const parentRemoved = (change: Change<InstanceElement>): boolean => {
+  if (!TRANSLATIONS_TYPE_NAME.includes(getChangeData(change).elemID.typeName)) {
     return false
   }
-  return removedSectionId.includes(getParents(getChangeData(change))[0].id)
+  return removedTranslationParentId.includes(getParents(getChangeData(change))[0].id)
 }
 
 const needToOmit = (change: Change<InstanceElement>): boolean =>
-  isDefaultTranslationAddition(change) || sectionParentRemoved(change)
+  isDefaultTranslationAddition(change) || parentRemoved(change)
 
 /**
  * a different filter is needed for the default translation and translations for which the section
@@ -56,12 +57,12 @@ const needToOmit = (change: Change<InstanceElement>): boolean =>
  */
 const filterCreator: FilterCreator = () => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [sectionTranslationChangesToRemove, leftoverChanges] = _.partition(
+    const [translationChangesToIgnore, leftoverChanges] = _.partition(
       changes,
       needToOmit,
     )
     const deployResult: DeployResult = {
-      appliedChanges: sectionTranslationChangesToRemove,
+      appliedChanges: translationChangesToIgnore,
       errors: [],
     }
     return { deployResult, leftoverChanges }

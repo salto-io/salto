@@ -27,9 +27,10 @@ import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapt
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
-const SECTION_TYPE_NAME = 'section'
+// const SECTION_TYPE_NAME = 'section' //todo delete
+const PARENTS = ['section']
 
-export const removedSectionId: number[] = []
+export const removedTranslationParentId: number[] = []
 
 type TranslationType = InstanceElement & {
     title: string
@@ -37,7 +38,7 @@ type TranslationType = InstanceElement & {
     locale: string
 }
 
-export type SectionType = InstanceElement & {
+export type ParentType = InstanceElement & {
   // eslint-disable-next-line camelcase
     source_locale: string
     name?: string
@@ -50,7 +51,7 @@ const TRANSLATION_SCHEMA = Joi.object({
   title: Joi.string().required(),
 }).unknown(true).required()
 
-const SECTION_SCHEMA = Joi.object({
+const PARENT_SCHEMA = Joi.object({
   source_locale: Joi.string().required(),
   name: Joi.string(),
   description: Joi.string(),
@@ -60,14 +61,15 @@ export const isTranslation = createSchemeGuard<TranslationType>(
   TRANSLATION_SCHEMA, 'Received an invalid value for translation'
 )
 
-export const isSection = createSchemeGuardForInstance<SectionType>(
-  SECTION_SCHEMA, 'Received an invalid value for section'
+export const isParent = createSchemeGuardForInstance<ParentType>(
+  PARENT_SCHEMA, 'Received an invalid value for section/category'
 )
 
 /**
- * This function is used to add the 'name' and 'description' fields to the section from its default
- * translation. It is needed as we omit these fields during the fetch to avoid data duplication.
- * For the deployment to work these fields need to be added back to the section instance.
+ * This function is used to add the 'name' and 'description' fields to the section/category from its
+ * default translation. It is needed as we omit these fields during the fetch to avoid data
+ * duplication. For the deployment to work these fields need to be added back to the section
+ * instance.
  */
 const addTranslationValues = (change: Change<InstanceElement>): void => {
   const currentLocale = getChangeData(change).value.source_locale
@@ -81,7 +83,7 @@ const addTranslationValues = (change: Change<InstanceElement>): void => {
 }
 
 const removeNameAndDescription = (elem: InstanceElement): void => {
-  if (isSection(elem)) {
+  if (isParent(elem)) {
     delete elem.value.name
     delete elem.value.description
   }
@@ -90,7 +92,7 @@ const removeNameAndDescription = (elem: InstanceElement): void => {
 const addRemovalChangesId = (changes: Change<InstanceElement>[]): void => {
   changes
     .filter(isRemovalChange)
-    .forEach(change => removedSectionId.push(getChangeData(change).value.id))
+    .forEach(change => removedTranslationParentId.push(getChangeData(change).value.id))
 }
 
 /**
@@ -103,22 +105,22 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)
-      .filter(obj => obj.elemID.typeName === SECTION_TYPE_NAME)
+      .filter(obj => PARENTS.includes(obj.elemID.typeName))
       .forEach(removeNameAndDescription)
   },
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
-      .filter(change => getChangeData(change).elemID.typeName === SECTION_TYPE_NAME)
+      .filter(change => PARENTS.includes(getChangeData(change).elemID.typeName))
       .forEach(addTranslationValues)
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [sectionChanges, leftoverChanges] = _.partition(
+    const [parentChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === SECTION_TYPE_NAME,
+      change => PARENTS.includes(getChangeData(change).elemID.typeName),
     )
-    addRemovalChangesId(sectionChanges)
+    addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(
-      sectionChanges,
+      parentChanges,
       async change => {
         await deployChange(change, client, config.apiDefinitions, ['translations'])
       }
@@ -127,7 +129,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
-      .filter(change => getChangeData(change).elemID.typeName === SECTION_TYPE_NAME)
+      .filter(change => PARENTS.includes(getChangeData(change).elemID.typeName))
       .forEach(change => removeNameAndDescription(getChangeData(change)))
   },
 })

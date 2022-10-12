@@ -28,7 +28,7 @@ import filterCreator from '../../src/filters/help_center_section_translation'
 import { paginate } from '../../src/client/pagination'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
-import { removedSectionId } from '../../src/filters/help_center_section'
+import { removedTranslationParentId } from '../../src/filters/help_center_section'
 
 describe('custom field option restriction filter', () => {
   let client: ZendeskClient
@@ -131,7 +131,7 @@ describe('custom field option restriction filter', () => {
       expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
     it('should consider removed translation if their parent section was removed in appliedChanges', async () => {
-      removedSectionId.push(sectionInstance.value.id)
+      removedTranslationParentId.push(sectionInstance.value.id)
       const res = await filter.deploy([
         { action: 'remove', data: { before: heSectionTranslationInstance } },
         { action: 'modify', data: { before: enSectionTranslationInstance, after: enSectionTranslationInstance } },

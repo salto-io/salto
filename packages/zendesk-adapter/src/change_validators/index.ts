@@ -37,3 +37,4 @@ export { requiredAppOwnedParametersValidator } from './required_app_owned_parame
 export { oneTranslationPerLocaleValidator } from './one_translation_per_locale'
 export { articleRemovalValidator } from './article_removal'
 export { brandFieldForBrandBasedElementsValidator } from './brand_field_for_branded_based_elements'
+export { translationForDefaultLocaleValidator } from './translation_for_default_locale'

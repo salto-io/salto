@@ -23,7 +23,6 @@ import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { removedTranslationParentId } from './help_center_section'
 
-// const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
 const TRANSLATIONS_TYPE_NAME = ['section_translation']
 
 const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean => {

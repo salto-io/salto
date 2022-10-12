@@ -39,6 +39,7 @@ import {
   oneTranslationPerLocaleValidator,
   articleRemovalValidator,
   brandFieldForBrandBasedElementsValidator,
+  translationForDefaultLocaleValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -87,6 +88,7 @@ export default ({
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
     brandFieldForBrandBasedElementsValidator,
+    translationForDefaultLocaleValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

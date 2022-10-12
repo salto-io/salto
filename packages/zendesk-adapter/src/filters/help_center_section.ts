@@ -27,22 +27,24 @@ import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapt
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
-// const SECTION_TYPE_NAME = 'section' //todo delete
-const PARENTS = ['section']
+const PARENTS_TYPE_NAMES = ['section']
 
 export const removedTranslationParentId: number[] = []
 
-type TranslationType = InstanceElement & {
+// not an instanceElement as it does not have a value //todo check why it is not a reference
+export type TranslationType = {
     title: string
     body?: string
     locale: string
 }
 
-export type ParentType = InstanceElement & {
-  // eslint-disable-next-line camelcase
+type ParentType = InstanceElement & {
+  value: {
+    // eslint-disable-next-line camelcase
     source_locale: string
     name?: string
     description?: string
+  }
 }
 
 const TRANSLATION_SCHEMA = Joi.object({
@@ -105,18 +107,18 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)
-      .filter(obj => PARENTS.includes(obj.elemID.typeName))
+      .filter(obj => PARENTS_TYPE_NAMES.includes(obj.elemID.typeName))
       .forEach(removeNameAndDescription)
   },
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
-      .filter(change => PARENTS.includes(getChangeData(change).elemID.typeName))
+      .filter(change => PARENTS_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
       .forEach(addTranslationValues)
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [parentChanges, leftoverChanges] = _.partition(
       changes,
-      change => PARENTS.includes(getChangeData(change).elemID.typeName),
+      change => PARENTS_TYPE_NAMES.includes(getChangeData(change).elemID.typeName),
     )
     addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(
@@ -129,7 +131,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
-      .filter(change => PARENTS.includes(getChangeData(change).elemID.typeName))
+      .filter(change => PARENTS_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
       .forEach(change => removeNameAndDescription(getChangeData(change)))
   },
 })

@@ -27,7 +27,7 @@ import { paginate } from '../../src/client/pagination'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
 
-describe('custom field option restriction filter', () => {
+describe('guid section filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType

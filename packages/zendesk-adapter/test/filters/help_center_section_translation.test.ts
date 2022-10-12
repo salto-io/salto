@@ -30,7 +30,7 @@ import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
 import { removedTranslationParentId } from '../../src/filters/help_center_section'
 
-describe('custom field option restriction filter', () => {
+describe('guild section translation filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType

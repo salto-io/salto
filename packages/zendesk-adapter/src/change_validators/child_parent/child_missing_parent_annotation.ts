@@ -13,12 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { values, collections } from '@salto-io/lowerdash'
 import { ChangeValidator, getChangeData, isInstanceChange,
   ChangeError, InstanceElement, ModificationChange, isAdditionOrModificationChange,
-  isReferenceExpression, isInstanceElement, AdditionChange, ReferenceExpression,
-  isAdditionChange } from '@salto-io/adapter-api'
+  isReferenceExpression, isInstanceElement, AdditionChange,
+  ReferenceExpression } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { ZendeskApiConfig } from '../../config'
 import { getChildAndParentTypeNames } from './utils'

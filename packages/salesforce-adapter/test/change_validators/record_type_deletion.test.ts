@@ -22,7 +22,7 @@ import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('record type deletion change validator', () => {
-  const obj = new ObjectType({
+  const objectType = new ObjectType({
     elemID: new ElemID('salesforce', 'obj__c', 'type'),
     annotations: { metadataType: CUSTOM_OBJECT, apiName: 'Obj__c' },
   })
@@ -43,7 +43,7 @@ describe('record type deletion change validator', () => {
   describe('deletion of record type with the deletion of the type', () => {
     it('should have no errors', async () => {
       const changeErrors = await recordTypeChangeValidator(
-        [toChange({ before: obj }), toChange({ before: beforeRecord })]
+        [toChange({ before: objectType }), toChange({ before: beforeRecord })]
       )
       expect(changeErrors).toHaveLength(0)
     })

@@ -15,37 +15,39 @@
 */
 import _ from 'lodash'
 import {
-  ChangeError, Field, getChangeData,
-  ChangeValidator, isRemovalChange, ChangeDataType,
+  ChangeError, getChangeData,
+  ChangeValidator, isRemovalChange, ChangeDataType, InstanceElement, isInstanceChange,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { RECORD_TYPE_METADATA_TYPE } from '../constants'
+import { isInstanceOfType } from '../filters/utils'
 
+const { isDefined } = values
 const { awu } = collections.asynciterable
 
-const isRecordTypeChange = (changedElement: ChangeDataType): changedElement is Field => (
-  (changedElement.elemID.typeName === RECORD_TYPE_METADATA_TYPE)
+const isRecordTypeChange = async (changedElement: ChangeDataType): Promise<boolean> => (
+  isInstanceOfType(RECORD_TYPE_METADATA_TYPE)(changedElement)
 )
 
 const isTypeDeletion = (changedElement: ChangeDataType): boolean => (
-  (changedElement.elemID.idType === 'type')
+  changedElement.elemID.idType === 'type'
 )
 
-const isPartOfDeletedType = (field: Field, deletedTypes: string[]): boolean => {
-  const fullname = _.get(field, 'value.fullName')
-  if (!_.isUndefined(fullname)) {
-    return deletedTypes.includes(fullname.split('.')[0])
+const isPartOfDeletedType = (instance: InstanceElement, deletedTypes: string[]): boolean => {
+  const fullName = _.get(instance, 'value.fullName')
+  if (isDefined(fullName)) {
+    return deletedTypes.includes(fullName.split('.')[0])
   }
   return false
 }
 
 
-const createChangeError = (field: Field): ChangeError =>
+const createChangeError = (instance: InstanceElement): ChangeError =>
   ({
-    elemID: field.elemID,
+    elemID: instance.elemID,
     severity: 'Error',
-    message: `You cannot delete recordType instance. name: ${_.last(field.path)}`,
-    detailedMessage: 'You cannot delete recordType',
+    message: 'Cannot delete RecordType',
+    detailedMessage: `You cannot delete RecordType instance. name: ${_.last(instance.path)}`,
   })
 
 /**
@@ -59,15 +61,14 @@ const changeValidator: ChangeValidator = async changes => {
     .map(obj => obj.elemID.typeName)
     .toArray()
   // We want to allow to delete record type if the entire type is being deleted
-  const recordTypeDeletions = await awu(changes)
+  return awu(changes)
+    .filter(isInstanceChange)
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isRecordTypeChange)
-    .filter(field => !isPartOfDeletedType(field, deletedTypes))
+    .filter(instance => !isPartOfDeletedType(instance, deletedTypes))
     .map(createChangeError)
     .toArray()
-
-  return recordTypeDeletions
 }
 
 export default changeValidator

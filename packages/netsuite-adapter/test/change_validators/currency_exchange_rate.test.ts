@@ -22,26 +22,28 @@ import currencyExchangeRateValidator from '../../src/change_validators/currency_
 const currencyType = new ObjectType({ elemID: new ElemID(NETSUITE, CURRENCY) })
 
 describe('currency exchange rate validator', () => {
-  const instance = new InstanceElement(
-    'currency',
-    currencyType,
-    {
-      name: 'Canadian Dollar',
-      symbol: 'CAD',
-      isBaseCurrency: false,
-      isInactive: false,
-      overrideCurrencyFormat: false,
-      displaySymbol: '$',
-      symbolPlacement: '_beforeNumber',
-      exchangeRate: 40.35,
-    }
-  )
+  let instance: InstanceElement
+  beforeEach(() => {
+    instance = new InstanceElement(
+      'currency',
+      currencyType,
+      {
+        name: 'Canadian Dollar',
+        symbol: 'CAD',
+        isBaseCurrency: false,
+        isInactive: false,
+        overrideCurrencyFormat: false,
+        displaySymbol: '$',
+        symbolPlacement: '_beforeNumber',
+        exchangeRate: 40.35,
+      }
+    )
+  })
 
   it('should have changeError when exchangeRate isn\'t specified', async () => {
-    const after = instance.clone()
-    delete after.value.exchangeRate
+    delete instance.value.exchangeRate
     const changeErrors = await currencyExchangeRateValidator(
-      [toChange({ after })]
+      [toChange({ after: instance })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Warning')
@@ -50,9 +52,8 @@ describe('currency exchange rate validator', () => {
   })
 
   it('should not have changeError when exchangeRate is specified', async () => {
-    const after = instance.clone()
     const changeErrors = await currencyExchangeRateValidator(
-      [toChange({ after })]
+      [toChange({ after: instance })]
     )
     expect(changeErrors).toHaveLength(0)
   })

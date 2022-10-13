@@ -21,31 +21,32 @@ import { CURRENCY, NETSUITE } from '../../src/constants'
 const currencyType = new ObjectType({ elemID: new ElemID(NETSUITE, CURRENCY) })
 
 describe('currency exchange rate filter', () => {
-  const instance = new InstanceElement(
-    CURRENCY,
-    currencyType,
-    {
-      name: 'Canadian Dollar',
-      symbol: 'CAD',
-      isBaseCurrency: false,
-      isInactive: false,
-      overrideCurrencyFormat: false,
-      displaySymbol: '$',
-      symbolPlacement: '_beforeNumber',
-    }
-  )
+  let instance: InstanceElement
+  beforeEach(() => {
+    instance = new InstanceElement(
+      CURRENCY,
+      currencyType,
+      {
+        name: 'Canadian Dollar',
+        symbol: 'CAD',
+        isBaseCurrency: false,
+        isInactive: false,
+        overrideCurrencyFormat: false,
+        displaySymbol: '$',
+        symbolPlacement: '_beforeNumber',
+      }
+    )
+  })
 
   it('should not change instance when exchange rate is specified', async () => {
-    const after = instance.clone()
-    after.value.exchangeRate = 0.35
-    const change = toChange({ after })
+    instance.value.exchangeRate = 0.35
+    const change = toChange({ after: instance })
     await filterCreator().preDeploy([change])
-    expect(getChangeData(change).value).toEqual(after.value)
+    expect(getChangeData(change).value.exchangeRate).toEqual(0.35)
   })
 
   it('should insert exchang rate with default value when it is not specified', async () => {
-    const after = instance.clone()
-    const change = toChange({ after })
+    const change = toChange({ after: instance })
     await filterCreator().preDeploy([change])
     expect(getChangeData(change).value.exchangeRate).toEqual(DEFAULT_EXCHANGE_RATE)
   })

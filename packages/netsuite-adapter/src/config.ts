@@ -30,6 +30,7 @@ import {
   STRICT_INSTANCE_STRUCTURE,
   FIELDS_TO_OMIT,
   CURRENCY,
+  EXCHANGE_RATE,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
@@ -182,7 +183,7 @@ export const fetchDefault: FetchParams = {
     {
       type: CURRENCY,
       fields: [
-        'exchangeRate',
+        EXCHANGE_RATE,
       ],
     },
   ],

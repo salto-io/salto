@@ -70,6 +70,15 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
     severity: 'Warning',
     message: 'Currency contains fields that cannot be deployed. These fields will be skipped from the deployment.',
     detailedMessage: 'Unable to deploy \'locale\' field. Once the deployment is completed, set the \'locale\' of the newly created currency to the desired value in the target environment.',
+    deployActions: {
+      postAction: {
+        title: 'Edit \'locale\' field',
+        description: 'set the \'locale\' of the newly created currency to the desired value',
+        subActions: [
+
+        ],
+      },
+    },
   }
 }
 

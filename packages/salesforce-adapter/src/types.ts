@@ -87,6 +87,8 @@ export type ChangeValidatorName = (
   | 'cpqValidator'
   | 'sbaaApprovalRulesCustomCondition'
   | 'recordTypeDeletion'
+  | 'activeFlowValidator'
+  | 'flowDeletionValidator'
 )
 
 export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
@@ -549,6 +551,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
+    activeFlowValidator: { refType: BuiltinTypes.BOOLEAN },
+    flowDeletionValidator: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

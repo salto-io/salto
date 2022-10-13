@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import path from 'path'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import { InstanceElement, Values } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, isObjectType, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
 import { readTextFile } from '@salto-io/file'
-import { CUSTOM_OBJECT } from '../../constants'
+import { CUSTOM_OBJECT, FIELD_ANNOTATIONS, SALESFORCE } from '../../constants'
 import { isInstanceOfType } from '../../filters/utils'
 import { FilesFilterCreator } from '../../filter'
 import { apiName } from '../../transformers/transformer'
@@ -64,7 +65,32 @@ const getFieldsOfCustomObject = async (
     .toArray()
 }
 
-const filterCreator: FilesFilterCreator = ({ files }) => ({
+const addFieldAccessAnnotations = async (
+  customObjectName: string,
+  fields: Values[],
+  elementsSource: ReadOnlyElementsSource,
+): Promise<Values[]> => {
+  const elem = await elementsSource.get(new ElemID(SALESFORCE, customObjectName))
+  const fieldAnnotations = isObjectType(elem)
+    ? _.mapValues(
+      elem.fields,
+      fieldFromElem => _.pick(
+        fieldFromElem.annotations,
+        [FIELD_ANNOTATIONS.CREATABLE, FIELD_ANNOTATIONS.UPDATEABLE, FIELD_ANNOTATIONS.QUERYABLE],
+      )
+    )
+    : {}
+  return fields.map(field => ({
+    ...field,
+    ...fieldAnnotations[field.fullName] ?? {
+      [FIELD_ANNOTATIONS.CREATABLE]: true,
+      [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      [FIELD_ANNOTATIONS.QUERYABLE]: true,
+    },
+  }))
+}
+
+const filterCreator: FilesFilterCreator = ({ files, config }) => ({
   onFetch: async elements => {
     const customObjects = await awu(elements)
       .filter(isInstanceOfType(CUSTOM_OBJECT))
@@ -72,19 +98,24 @@ const filterCreator: FilesFilterCreator = ({ files }) => ({
 
     await awu(Object.entries(customObjects))
       .forEach(async ([customObjectName, customObjectInstance]) => {
-        customObjectInstance.value.fields = await getFieldsOfCustomObject(
+        const fields = await getFieldsOfCustomObject(
           customObjectName,
           files.baseDirName,
           files.sourceFileNames,
+        )
+        // An issue that is specific to custom fields - because we don't have the soap API
+        // to tell us about the field's access, we get all fields as if we have no access to them
+        // in order to work around this issue, we try to take the values from the existing fields
+        // annotations (from the element source), and assume all new fields have full access
+        customObjectInstance.value.fields = await addFieldAccessAnnotations(
+          customObjectName,
+          fields,
+          config.elementsSource,
         )
       })
 
     // TODO: merge system fields into the custom object as well, otherwise we are missing
     // references in layouts and this can cause conflicts
-
-    // TODO: another issue that is specific to fields - because we don't have the soap API
-    // we output all fields as if they are _hidden_value=true and are not creatable/updatable
-    // this causes the flow of working with custom object records very annoying
   },
 })
 

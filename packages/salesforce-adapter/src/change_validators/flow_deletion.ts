@@ -42,7 +42,7 @@ const createChangeError = (instance: InstanceElement): ChangeError => ({
 
 
 /**
- * Handling active flows changes
+ * We can only delete flows that are currently at draft status
  */
 const changeValidator: ChangeValidator = async changes => awu(changes)
   .filter(isInstanceChange)

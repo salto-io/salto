@@ -233,7 +233,6 @@ export interface ZendeskAdapterParams {
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
-  private createFiltersRunner: (paginator?: clientUtils.Paginator) => Promise<Required<Filter>>
   private client: ZendeskClient
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
@@ -242,6 +241,10 @@ export default class ZendeskAdapter implements AdapterOperations {
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
   private createClientBySubdomain: (subdomain: string) => ZendeskClient
+  private createFiltersRunner: (
+    filterRunnerClient?: ZendeskClient,
+    paginator?: clientUtils.Paginator,
+  ) => Promise<Required<Filter>>
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -271,10 +274,13 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
-    this.createFiltersRunner = async (paginator?: clientUtils.Paginator) => (
+    this.createFiltersRunner = async (
+      filterRunnerClient?: ZendeskClient,
+      paginator?: clientUtils.Paginator,
+    ) => (
       filtersRunner(
         {
-          client: this.client,
+          client: filterRunnerClient ?? this.client,
           paginator: paginator ?? this.paginator,
           config: {
             fetch: config.fetch,
@@ -443,7 +449,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
       .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
       .map(async ([subdomain, paginator]) => {
-        const brandRunner = await this.createFiltersRunner(paginator)
+        const brandRunner = await this.createFiltersRunner(
+          this.createClientBySubdomain(subdomain),
+          paginator,
+        )
         await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
         const { deployResult: brandDeployResults } = await brandRunner.deploy(
           subdomainToGuideChanges[subdomain]

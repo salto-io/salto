@@ -286,16 +286,15 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       }
     }
 
-    const setChangedAt = (element: Element, lastModifiedDate: string):void => {
+    const setChangedAt = (element: Element, lastModifiedDate: string): void => {
       if (isDefined(lastModifiedDate)) {
         const formatedDate = changeDateFormat(lastModifiedDate, QUERY_DATE_FORMAT)
         element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate })
-      } else if (!_.isEmpty(elemIdToChangeAtIndex)) {
+      } else {
         const changedAt = elemIdToChangeAtIndex[element.elemID.getFullName()]
         if (isDefined(changedAt)) {
-          const formatedDate = changeDateFormat(changedAt, QUERY_DATE_FORMAT)
           element.annotate(
-            { [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate }
+            { [CORE_ANNOTATIONS.CHANGED_AT]: changedAt }
           )
         }
       }

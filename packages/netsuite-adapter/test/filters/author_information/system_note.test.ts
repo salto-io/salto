@@ -191,7 +191,7 @@ describe('netsuite system note author information', () => {
             [missingInstance.elemID.getFullName()]: 'another user name',
           },
           elemIdToChangeAtIndex: {
-            [missingInstance.elemID.getFullName()]: '2022-08-19',
+            [missingInstance.elemID.getFullName()]: '8/19/2022',
           },
         }),
       },

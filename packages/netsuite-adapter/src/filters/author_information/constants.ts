@@ -154,3 +154,5 @@ export type ModificationInformation = {
   name: string
   date: string
 }
+
+export type DateKeys = 'YYYY' | 'M' | 'D'

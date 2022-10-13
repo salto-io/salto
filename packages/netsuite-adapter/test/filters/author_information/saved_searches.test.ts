@@ -15,6 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../../src/types'
 import filterCreator from '../../../src/filters/author_information/saved_searches'
 import { NETSUITE, SAVED_SEARCH } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
@@ -29,7 +30,7 @@ describe('netsuite saved searches author information tests', () => {
   let elements: InstanceElement[]
   let savedSearch: InstanceElement
   let missingSavedSearch: InstanceElement
-  let extendedSavedSearch: InstanceElement
+  let userPreferenceInstance: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
@@ -51,26 +52,20 @@ describe('netsuite saved searches author information tests', () => {
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
     missingSavedSearch = new InstanceElement(SAVED_SEARCH,
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
-    extendedSavedSearch = new InstanceElement(SAVED_SEARCH,
-      new ObjectType({ elemID: new ElemID(NETSUITE, 'userPreferences') }))
+    userPreferenceInstance = new InstanceElement(ElemID.CONFIG_NAME,
+      new ObjectType({ elemID: new ElemID(NETSUITE,
+        SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES) }))
     savedSearch.value.scriptid = '1'
-    savedSearch.value.configRecord = { data: {
-      fields: {
-        DATEFORMAT: {
-          text: INNER_DATE_FORMAT,
-        },
-      },
-    } }
     missingSavedSearch.value.scriptid = '2'
-    extendedSavedSearch.value.scriptid = '3'
-    extendedSavedSearch.value.configRecord = { data: {
+    userPreferenceInstance.value.scriptid = '3'
+    userPreferenceInstance.value.configRecord = { data: {
       fields: {
         DATEFORMAT: {
           text: INNER_DATE_FORMAT,
         },
       },
     } }
-    elements = [savedSearch, missingSavedSearch, extendedSavedSearch]
+    elements = [savedSearch, missingSavedSearch, userPreferenceInstance]
     filterOpts = {
       client,
       elementsSourceIndex: {
@@ -108,7 +103,7 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should add last modified date for different formats', async () => {
-    extendedSavedSearch.value.configRecord.data.fields.DATEFORMAT.text = 'D/M/YYYY'
+    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT.text = 'D/M/YYYY'
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28/01/1995 6:17am' },
     ])
@@ -117,7 +112,7 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should add last modified date for different format', async () => {
-    extendedSavedSearch.value.configRecord.data.fields.DATEFORMAT.text = 'D Month, YYYY'
+    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT.text = 'D Month, YYYY'
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 1995 6:17am' },
     ])
@@ -126,9 +121,23 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should not add last modified date when the account date format isnt avaible', async () => {
-    extendedSavedSearch.value.configRecord.data.fields = {}
+    userPreferenceInstance.value.configRecord.data.fields = {}
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toBeUndefined()
+  })
+
+  it('it should get the date format from elementSource', async () => {
+    filterOpts.isPartial = true
+    userPreferenceInstance.value = {
+      DATEFORMAT: {
+        text: 'MM/DD/YYYY',
+        value: 'MM/DD/YYYY',
+      },
+    }
+    filterOpts.elementsSource = buildElementsSourceFromElements(elements)
+    elements = [savedSearch, missingSavedSearch]
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1/28/1995')
   })
 
 

@@ -13,16 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
-import { SAVED_SEARCH } from '../../constants'
+import { NETSUITE, SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
-import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformation, INNER_DATE_FORMAT } from './constants'
+import { SavedSearchesResult,
+  SAVED_SEARCH_RESULT_SCHEMA,
+  ModificationInformation,
+  INNER_DATE_FORMAT,
+  DateKeys } from './constants'
 
 const log = logger(module)
 const { isDefined } = values
@@ -61,7 +65,7 @@ const getSavedSearchesMap = async (
   ]))
 }
 
-const getDateFormatKey = (key: string): string => {
+const getDateFormatKey = (key: string): DateKeys => {
   if (key.includes('Y')) {
     return 'YYYY'
   }
@@ -84,12 +88,16 @@ export const changeDateFormat = (date: string, dateFormat: string): string => {
   const re = /(-|\.| |\/|,)+/g
   const dateAsArray = cleanDate.replace(re, DELIMITER).split(DELIMITER)
   const dateFormatAsArray = dateFormat.replace(re, DELIMITER).split(DELIMITER)
-  const dateAsMap: Record<string, string> = {}
+  const dateAsMap: Record<DateKeys, string> = {
+    YYYY: '',
+    M: '',
+    D: '',
+  }
   dateFormatAsArray.forEach((key, i) => {
     const mapKey = getDateFormatKey(key)
     dateAsMap[mapKey] = dateAsArray[i]
   })
-  const dateObject = new Date([dateAsMap.YYYY, dateAsMap.M, dateAsMap.D].join('-')) // converts month name to number
+  const dateObject = new Date([dateAsMap.YYYY, dateAsMap.M, dateAsMap.D].join('-'))
   return [dateObject.getMonth() + 1, dateAsMap.D, dateAsMap.YYYY].join('/')
 }
 const isUserPreference = (instance: InstanceElement): boolean =>
@@ -98,11 +106,10 @@ const isUserPreference = (instance: InstanceElement): boolean =>
 const getDateFormatFromElemSource = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<string> => {
-  const sourcedElements = await elementsSource.getAll()
-  return (await awu(sourcedElements)
-    .filter(isInstanceElement)
-    .toArray())
-    .find(isUserPreference)?.value.configRecord.data.fields?.DATEFORMAT?.text
+  const elemIdToGet = new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES, 'instance')
+  const sourcedElement = await elementsSource.get(elemIdToGet)
+  console.log(sourcedElement)
+  return sourcedElement?.value?.DATEFORMAT?.text
 }
 
 const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial }): FilterWith<'onFetch'> => ({
@@ -123,14 +130,16 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
       return
     }
 
-    let dateFormat = elements
-      .filter(isInstanceElement)
-      .find(isUserPreference)?.value.configRecord.data.fields?.DATEFORMAT?.text
-    if (!dateFormat && isPartial) {
-      dateFormat = getDateFormatFromElemSource(elementsSource)
+    const savedSearchesMap = await getSavedSearchesMap(client)
+    if (_.isEmpty(savedSearchesMap)) {
+      return
     }
 
-    const savedSearchesMap = await getSavedSearchesMap(client)
+    const dateFormat = elements
+      .filter(isInstanceElement)
+      .find(isUserPreference)?.value.configRecord.data.fields?.DATEFORMAT?.text ?? (
+        isPartial ? await getDateFormatFromElemSource(elementsSource) : undefined
+      )
 
     savedSearchesInstances.forEach(search => {
       if (isDefined(savedSearchesMap[search.value.scriptid])) {

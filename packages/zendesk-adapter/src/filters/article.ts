@@ -19,8 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-
-const ARTICLE_TYPE_NAME = 'article'
+import { ARTICLE_TYPE_NAME } from '../constants'
 
 /**
  * Deploys articles

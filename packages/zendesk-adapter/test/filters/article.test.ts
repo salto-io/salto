@@ -20,7 +20,7 @@ import { client as clientUtils, filterUtils, elements as elementUtils } from '@s
 import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/article'
 
 const mockDeployChange = jest.fn()
@@ -41,7 +41,7 @@ describe('article filter', () => {
   let filter: FilterType
   const articleInstance = new InstanceElement(
     'testArticle',
-    new ObjectType({ elemID: new ElemID(ZENDESK, 'article') }),
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
     {
       author_id: 'author@salto.io',
       comments_disabled: false,

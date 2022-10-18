@@ -13,16 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
   ChangeError, getChangeData,
   ChangeValidator, isRemovalChange, ChangeDataType, InstanceElement, isInstanceChange,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { RECORD_TYPE_METADATA_TYPE } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
+import { apiName } from '../transformers/transformer'
 
-const { isDefined } = values
 const { awu } = collections.asynciterable
 
 const isRecordTypeChange = async (changedElement: ChangeDataType): Promise<boolean> => (
@@ -33,13 +32,8 @@ const isTypeDeletion = (changedElement: ChangeDataType): boolean => (
   changedElement.elemID.idType === 'type'
 )
 
-const isPartOfDeletedType = (instance: InstanceElement, deletedTypes: string[]): boolean => {
-  const fullName = _.get(instance, 'value.fullName')
-  if (isDefined(fullName)) {
-    return deletedTypes.includes(fullName.split('.')[0])
-  }
-  return false
-}
+const isRecordTypeOfDeletedType = async (instance: InstanceElement, deletedTypes: string[]):
+    Promise<boolean> => deletedTypes.includes((await apiName(instance)).split('.')[0])
 
 
 const createChangeError = (instance: InstanceElement): ChangeError =>
@@ -47,26 +41,24 @@ const createChangeError = (instance: InstanceElement): ChangeError =>
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Cannot delete RecordType',
-    detailedMessage: `You cannot delete RecordType instance. name: ${_.last(instance.path)}`,
+    detailedMessage: `You cannot delete RecordType instance. name: ${instance.elemID.name}`,
   })
 
 /**
  * It is not possible to delete a recordType trough SF API's
  */
 const changeValidator: ChangeValidator = async changes => {
-  const deletedTypes = await awu(changes)
-    .filter(isRemovalChange)
+  const deletedTypes = changes.filter(isRemovalChange)
     .map(getChangeData)
     .filter(isTypeDeletion)
     .map(obj => obj.elemID.typeName)
-    .toArray()
   // We want to allow to delete record type if the entire type is being deleted
   return awu(changes)
     .filter(isInstanceChange)
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(isRecordTypeChange)
-    .filter(instance => !isPartOfDeletedType(instance, deletedTypes))
+    .filter(async instance => !(await isRecordTypeOfDeletedType(instance, deletedTypes)))
     .map(createChangeError)
     .toArray()
 }

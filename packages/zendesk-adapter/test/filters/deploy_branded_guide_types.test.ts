@@ -51,6 +51,7 @@ describe('deployBrandedGuideTypes filter', () => {
     'Article',
     new ObjectType({ elemID: new ElemID(ZENDESK, 'article') }),
     {
+      id: 2,
       author_id: 'its.me@mar.io',
       comments_disabled: false,
       draft: true,
@@ -87,6 +88,7 @@ describe('deployBrandedGuideTypes filter', () => {
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'add', data: { after: clonedArticle } },
         client: expect.anything(),
+        endpointDetails: expect.anything(),
         fieldsToIgnore: ['brand'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
@@ -109,6 +111,7 @@ describe('deployBrandedGuideTypes filter', () => {
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'modify', data: { before: clonedArticleBefore, after: clonedArticleAfter } },
         client: expect.anything(),
+        endpointDetails: expect.anything(),
         fieldsToIgnore: ['brand'],
       })
       expect(res.leftoverChanges).toHaveLength(0)

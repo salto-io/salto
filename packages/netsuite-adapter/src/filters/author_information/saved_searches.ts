@@ -25,7 +25,6 @@ import NetsuiteClient from '../../client/client'
 import { SavedSearchesResult,
   SAVED_SEARCH_RESULT_SCHEMA,
   ModificationInformation,
-  INNER_DATE_FORMAT,
   DateKeys } from './constants'
 
 const log = logger(module)

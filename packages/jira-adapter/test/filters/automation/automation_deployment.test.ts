@@ -419,5 +419,56 @@ describe('automationDeploymentFilter', () => {
         }
       )
     })
+    describe('automation label', () => {
+      beforeEach(() => {
+        instance.value.id = 555
+        connection.put.mockImplementation(async url => {
+          if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1'
+           || url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/2'
+           || url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/555') {
+            return {
+              status: 200,
+              data: null,
+            }
+          }
+          throw new Error(`Unexpected url ${url}`)
+        })
+      })
+      it('should add a label to automation', async () => {
+        const modifyInstance = instance.clone()
+        modifyInstance.value.labels = ['1']
+        await filter.deploy([toChange({ before: instance, after: modifyInstance })])
+        expect(connection.put).toHaveBeenCalledTimes(2)
+        expect(connection.put).toHaveBeenCalledWith(
+          '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
+          null,
+          undefined
+        )
+      })
+      it('should delete an automation label ', async () => {
+        const modifyInstance = instance.clone()
+        instance.value.labels = ['1']
+        await filter.deploy([toChange({ before: instance, after: modifyInstance })])
+        expect(connection.delete).toHaveBeenCalledWith(
+          '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
+          undefined,
+        )
+      })
+      it('should modify an automation label', async () => {
+        instance.value.labels = ['1']
+        const modifyInstance = instance.clone()
+        modifyInstance.value.labels = ['2']
+        await filter.deploy([toChange({ before: instance, after: modifyInstance })])
+        expect(connection.put).toHaveBeenCalledWith(
+          '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/2',
+          null,
+          undefined,
+        )
+        expect(connection.delete).toHaveBeenCalledWith(
+          '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
+          undefined,
+        )
+      })
+    })
   })
 })

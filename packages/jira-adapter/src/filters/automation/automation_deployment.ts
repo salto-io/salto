@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -139,6 +139,48 @@ const removeAutomation = async (
   })
 }
 
+const addAutomationLabels = async (
+  instance: InstanceElement,
+  labelsID: string[],
+  client: JiraClient,
+  cloudId: string,
+): Promise<void> => {
+  await Promise.all(labelsID.map(async labelID => client.put({
+    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules/${instance.value.id}/labels/${labelID}`,
+    data: null,
+  })))
+}
+
+const removeAutomationLabels = async (
+  instance: InstanceElement,
+  labelsID: string[],
+  client: JiraClient,
+  cloudId: string,
+): Promise<void> => {
+  await Promise.all(labelsID.map(async labelID => client.delete({
+    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules/${instance.value.id}/labels/${labelID}`,
+  })))
+}
+
+const updateAutomationLabels = async (
+  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
+  client: JiraClient,
+  cloudId: string,
+): Promise<void> => {
+  const labelsBefore = isModificationChange(change) && change.data.before.value.labels
+    ? Array.from(change.data.before.value.labels) : []
+  const labelsAfter = change.data.after.value.labels
+    ? Array.from(change.data.after.value.labels) : []
+  const addedLabels = _.differenceWith(labelsAfter, labelsBefore) as string[]
+  const removedLabels = _.differenceWith(labelsBefore, labelsAfter) as string[]
+  if (addedLabels.length !== 0) {
+    await addAutomationLabels(getChangeData(change), addedLabels, client, cloudId)
+  }
+  if (removedLabels.length !== 0) {
+    await removeAutomationLabels(getChangeData(change), removedLabels, client, cloudId)
+  }
+}
+
 const updateAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
@@ -202,15 +244,16 @@ const filter: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === AUTOMATION_TYPE
     )
 
-
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
         const cloudId = await getCloudId(client)
         if (isAdditionChange(change)) {
           await createAutomation(getChangeData(change), client, cloudId, config)
+          await updateAutomationLabels(change, client, cloudId)
         } else if (isModificationChange(change)) {
           await updateAutomation(getChangeData(change), client, cloudId)
+          await updateAutomationLabels(change, client, cloudId)
         } else {
           await removeAutomation(getChangeData(change), client, cloudId)
         }

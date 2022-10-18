@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType,
   BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/article_body'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 describe('article body filter', () => {
@@ -41,6 +41,12 @@ describe('article body filter', () => {
       id: { refType: BuiltinTypes.NUMBER },
     },
   })
+  const attachmentType = new ObjectType({
+    elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+    },
+  })
   const articleTranslationType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'article_translation'),
     fields: {
@@ -52,15 +58,19 @@ describe('article body filter', () => {
   const brandInstance = new InstanceElement(
     'brand1',
     brandType,
-    // eslint-disable-next-line no-template-curly-in-string
     { id: 7777, brand_url: 'https://coolSubdomain.zendesk.com' },
   )
   const articleInstance = new InstanceElement(
     'refArticle',
     articleType,
-    // eslint-disable-next-line no-template-curly-in-string
     { id: 1666 },
   )
+  const attachmentInstance = new InstanceElement(
+    'refAttachment',
+    attachmentType,
+    { id: 9876 },
+  )
+
   const templatedTranslationInstance = new InstanceElement(
     'article1',
     articleTranslationType,
@@ -70,13 +80,22 @@ describe('article body filter', () => {
   const nonTemplatedTranslationInstance = new InstanceElement(
     'article2',
     articleTranslationType,
-    // eslint-disable-next-line no-template-curly-in-string
     { id: 1004, body: '<a href="https://coolSubdomain.zendesk.com/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>' },
+  )
+  const translationWithAttachments = new InstanceElement(
+    'articleWithAttachments',
+    articleTranslationType,
+    { id: 1005, body: '<p><img src="https://coolSubdomain.zendesk.com/hc/article_attachments/9876" alt="alttext"><img src="https://coolSubdomain.zendesk.com/hc/article_attachments/9876" alt="alttext"></p>' },
   )
 
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
-    brandInstance, articleInstance, templatedTranslationInstance, nonTemplatedTranslationInstance,
+    brandInstance,
+    articleInstance,
+    attachmentInstance,
+    templatedTranslationInstance,
+    nonTemplatedTranslationInstance,
+    translationWithAttachments,
   ]).map(element => element.clone())
 
   describe('on fetch', () => {
@@ -90,7 +109,6 @@ describe('article body filter', () => {
 
     it('should add templates correctly', () => {
       const fetchedTranslation1 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'article1')
-      // eslint-disable-next-line no-template-curly-in-string
       expect(fetchedTranslation1?.value.body).toEqual(new TemplateExpression({ parts: [
         '<p><a href="',
         new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
@@ -105,6 +123,20 @@ describe('article body filter', () => {
     it('should resolve non-template normally', () => {
       const fetchedTranslation2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'article2')
       expect(fetchedTranslation2?.value.body).toEqual('<a href="https://coolSubdomain.zendesk.com/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>')
+    })
+    it('should extract templates for article_attachments', () => {
+      const fetchedTranslation3 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleWithAttachments')
+      expect(fetchedTranslation3?.value.body).toEqual(new TemplateExpression({ parts: [
+        '<p><img src="',
+        new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+        '/hc/article_attachments/',
+        new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+        '" alt="alttext"><img src="',
+        new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+        '/hc/article_attachments/',
+        new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
+        '" alt="alttext"></p>',
+      ] }))
     })
   })
   describe('preDeploy', () => {

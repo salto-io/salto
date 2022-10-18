@@ -197,7 +197,7 @@ describe('article filter', () => {
         change: { action: 'add', data: { after: articleInstance } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: ['translations'],
+        fieldsToIgnore: ['translations', 'attachments'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -221,7 +221,7 @@ describe('article filter', () => {
         change: { action: 'modify', data: { before: clonedArticleBefore, after: clonedArticleAfter } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: ['translations'],
+        fieldsToIgnore: ['translations', 'attachments'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -257,7 +257,7 @@ describe('article filter', () => {
         change: { action: 'add', data: { after: articleInstance } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: ['translations'],
+        fieldsToIgnore: ['translations', 'attachments'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)

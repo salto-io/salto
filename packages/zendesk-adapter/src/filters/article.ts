@@ -125,7 +125,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       articleChanges,
       async change => {
         await deployChange(
-          change, client, config.apiDefinitions, ['translations'],
+          change, client, config.apiDefinitions, ['translations', 'attachments'],
         )
       },
     )

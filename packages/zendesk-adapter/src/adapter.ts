@@ -29,7 +29,7 @@ import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement 
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
+import { FilterCreator, Filter, filtersRunner, FilterResult, BrandIdToClient } from './filter'
 import {
   API_DEFINITIONS_CONFIG,
   FETCH_CONFIG,
@@ -42,6 +42,7 @@ import {
   ZENDESK,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
 } from './constants'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
 import createChangeValidator from './change_validator'
@@ -93,6 +94,7 @@ import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article'
 import helpCenterFetchArticle from './filters/guide_fetch_article'
 import articleBodyFilter from './filters/article_body'
+import articleAttachmentsFilter from './filters/article_attachments'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
@@ -169,6 +171,7 @@ export const DEFAULT_FILTERS = [
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
+  articleAttachmentsFilter,
   articleFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,
@@ -307,10 +310,15 @@ export default class ZendeskAdapter implements AdapterOperations {
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
   private createClientBySubdomain: (subdomain: string) => ZendeskClient
-  private createFiltersRunner: (
-    filterRunnerClient?: ZendeskClient,
-    paginator?: clientUtils.Paginator,
-  ) => Promise<Required<Filter>>
+  private createFiltersRunner: ({
+    filterRunnerClient,
+    paginator,
+    brandIdToClient,
+  } : {
+    filterRunnerClient?: ZendeskClient
+    paginator?: clientUtils.Paginator
+    brandIdToClient?: BrandIdToClient
+  }) => Promise<Required<Filter>>
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -340,10 +348,15 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
-    this.createFiltersRunner = async (
-      filterRunnerClient?: ZendeskClient,
-      paginator?: clientUtils.Paginator,
-    ) => (
+    this.createFiltersRunner = async ({
+      filterRunnerClient,
+      paginator,
+      brandIdToClient = {},
+    } : {
+      filterRunnerClient?: ZendeskClient
+      paginator?: clientUtils.Paginator
+      brandIdToClient?: BrandIdToClient
+    }) => (
       filtersRunner(
         {
           client: filterRunnerClient ?? this.client,
@@ -355,6 +368,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           getElemIdFunc,
           fetchQuery: this.fetchQuery,
           elementsSource,
+          brandIdToClient,
         },
         filterCreators,
         concatObjects,
@@ -446,7 +460,19 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const result = await (await this.createFiltersRunner()).onFetch(elements) as FilterResult
+    const brandsWithHelpCenter = elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+      .filter(brandInstance => brandInstance.value.has_help_center)
+    const brandIdToClient = Object.fromEntries(brandsWithHelpCenter.map(
+      brandInstance => [
+        brandInstance.value.id,
+        this.createClientBySubdomain(brandInstance.value.subdomain),
+      ]
+    ))
+    // This exposes different subdomain clients for Guide related types filters
+    const result = await (await this.createFiltersRunner({ brandIdToClient }))
+      .onFetch(elements) as FilterResult
     const updatedConfig = this.configInstance
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
@@ -472,7 +498,7 @@ export default class ZendeskAdapter implements AdapterOperations {
             config: this.userConfig[API_DEFINITIONS_CONFIG],
           })),
       })) as Change<InstanceElement>[]
-    const runner = await this.createFiltersRunner()
+    const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
         (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
@@ -516,10 +542,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
       .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
       .map(async ([subdomain, paginator]) => {
-        const brandRunner = await this.createFiltersRunner(
-          this.createClientBySubdomain(subdomain),
+        const brandRunner = await this.createFiltersRunner({
+          filterRunnerClient: this.createClientBySubdomain(subdomain),
           paginator,
-        )
+        })
         await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
         const { deployResult: brandDeployResults } = await brandRunner.deploy(
           subdomainToGuideChanges[subdomain]
@@ -566,7 +592,8 @@ export default class ZendeskAdapter implements AdapterOperations {
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
-        typesWithNoDeploy: ['tag', ...GUIDE_ORDER_TYPES],
+        // article_attachment additions supported in a filter
+        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES],
       }),
       dependencyChanger,
       getChangeGroupIds,

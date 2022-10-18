@@ -163,6 +163,8 @@ describe('adapter', () => {
           'zendesk.article_order.instance.myBrand_General_Billing_and_Subscriptions_uuss__@uuuumuu',
           'zendesk.article_order.instance.myBrand_General_FAQ__',
           'zendesk.article_order.instance.myBrand_General_Internal_KB_uus__@uuumuu',
+          'zendesk.article__attachments',
+          'zendesk.article_attachment',
           'zendesk.article_translation',
           'zendesk.article_translation.instance.brandWithGuide_greatCategory_greatSection_Title_Yo___uuussa__en_us_b@uuuuuumuuum',
           'zendesk.article_translation.instance.myBrand_Development_Apex_How_can_agents_leverage_knowledge_to_help_customers__uuusssssssa__en_us_b@uuuuuuuuuuumuuum',

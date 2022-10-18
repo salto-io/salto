@@ -27,7 +27,7 @@ export const articleRemovalValidator: ChangeValidator = async changes => (
       [{
         elemID: instance.elemID,
         severity: 'Warning',
-        message: 'Articles have been archived instead of being deleted',
+        message: 'Article has been archived instead of being deleted',
         detailedMessage: `Permanent deletion of articles must be applied manually, please make sure to delete ${instance.value.name} from the archived list`,
       }]
     ))

@@ -48,7 +48,7 @@ describe('articleRemovalValidator', () => {
     expect(errors).toEqual([{
       elemID: articleInstance.elemID,
       severity: 'Warning',
-      message: 'Articles have been archived instead of being deleted',
+      message: 'Article has been archived instead of being deleted',
       detailedMessage: `Permanent deletion of articles must be applied manually, please make sure to delete ${articleInstance.value.name} from the archived list`,
     }])
   })

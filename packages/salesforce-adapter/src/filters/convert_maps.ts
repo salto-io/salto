@@ -354,6 +354,16 @@ export const findInstancesToConvert = (
   return awu(instances).filter(async e => await metadataType(e) === targetMetadataType).toArray()
 }
 
+export const findTypeToConvert = async (
+  elements: Element[],
+  targetMetadataType: string,
+): Promise<ObjectType | undefined> => {
+  const types = elements.filter(isObjectType)
+  return (await awu(types).filter(
+    async e => await metadataType(e) === targetMetadataType
+  ).toArray())[0]
+}
+
 /**
  * Convert certain instances' fields into maps, so that they are easier to view,
  * could be referenced, and can be split across multiple files.
@@ -362,12 +372,18 @@ const filter: LocalFilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)
-      if (instancesToConvert.length === 0) {
-        return
-      }
+      const typeToConvert = await findTypeToConvert(elements, targetMetadataType)
       const mapFieldDef = metadataTypeToFieldToMapDef[targetMetadataType]
-      const nonUniqueMapFields = await convertInstanceFieldsToMaps(instancesToConvert, mapFieldDef)
-      await updateFieldTypes(await instancesToConvert[0].getType(), nonUniqueMapFields, mapFieldDef)
+      if (isDefined(typeToConvert)) {
+        if (instancesToConvert.length === 0) {
+          await updateFieldTypes(typeToConvert, [], mapFieldDef)
+        } else {
+          const nonUniqueMapFields = await convertInstanceFieldsToMaps(
+            instancesToConvert, mapFieldDef
+          )
+          await updateFieldTypes(typeToConvert, nonUniqueMapFields, mapFieldDef)
+        }
+      }
     })
   },
 

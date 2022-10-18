@@ -172,9 +172,11 @@ export default class NetsuiteClient {
     elements: Element[],
     deployReferencedElements: boolean
   ): Promise<CustomizationInfo[]> {
+    const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
     const fieldsParents = _(elements)
       .filter(isField)
       .map(field => field.parent)
+      .filter(parent => !elemIdSet.has(parent.elemID.getFullName()))
       .uniqBy(parent => parent.elemID.name)
       .value()
 

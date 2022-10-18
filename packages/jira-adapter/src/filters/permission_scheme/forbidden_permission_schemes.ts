@@ -15,8 +15,8 @@
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { FilterCreator } from '../filter'
-import { PERMISSION_SCHEME_TYPE_NAME } from '../constants'
+import { FilterCreator } from '../../filter'
+import { PERMISSION_SCHEME_TYPE_NAME } from '../../constants'
 
 export const isPermissionScheme = (element: Element): boolean =>
   element.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME

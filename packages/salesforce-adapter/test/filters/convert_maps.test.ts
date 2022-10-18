@@ -336,7 +336,8 @@ describe('Convert maps filter', () => {
     let filter: FilterType
     beforeAll(async () => {
       const lwc = createInstanceElement({ fullName: 'lwc', lwcResources: { lwcResource: [{ filePath: 'dir/lwc.js', source: 'lwc.ts' }] } }, mockTypes.LightningComponentBundle)
-      elements = [lwc]
+      const lwcType = mockTypes.LightningComponentBundle
+      elements = [lwc, lwcType]
 
       filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterType
       await filter.onFetch(elements)
@@ -354,6 +355,26 @@ describe('Convert maps filter', () => {
       it('should use the custom mapper to create the key', async () => {
         const lwc = elements[0] as InstanceElement
         expect(Object.keys(lwc.value.lwcResources.lwcResource)[0]).toEqual('lwc_js@v')
+      })
+    })
+  })
+  describe('Convert ObjectType, even without instances', () => {
+    let elements: Element[]
+    type FilterType = FilterWith<'onFetch'>
+    let filter: FilterType
+    beforeAll(async () => {
+      const emailTemplateType = mockTypes.EmailTemplate
+
+      elements = [emailTemplateType]
+
+      filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterType
+      await filter.onFetch(elements)
+    })
+    describe('on fetch', () => {
+      it('should convert field type to map ', async () => {
+        const emailTemplateType = elements[0] as ObjectType
+        const attachmentsType = await emailTemplateType.fields.attachments.getType()
+        expect(isMapType(attachmentsType)).toBeTruthy()
       })
     })
   })

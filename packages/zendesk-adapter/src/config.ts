@@ -1631,6 +1631,31 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/articles/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{sectionId}/articles',
+        method: 'post',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          sectionId: 'section_id',
+        },
+      },
+      modify: {
+        url: '/help_center/articles/{articleId}',
+        method: 'put',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/articles/{articleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+    },
   },
   article_translation: {
     request: {

@@ -15,32 +15,16 @@
 * limitations under the License.
 */
 import { isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
+
 import { walkOnElement } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
+import { IdMap } from '../../users_map'
 
-const { makeArray } = collections.array
-const { toArrayAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 const log = logger(module)
-
-export type IdMap = Record<string, string>
-
-export const createIdToUserMap = async (paginator: clientUtils.Paginator)
-: Promise<IdMap> => {
-  const paginationArgs = {
-    url: '/rest/api/3/users/search',
-    paginationField: 'startAt',
-  }
-  return Object.fromEntries((await toArrayAsync(paginator(
-    paginationArgs,
-    page => makeArray(page) as clientUtils.ResponseValue[]
-  ))).flat().map(
-    user => [user.accountId, user.displayName]
-  ))
-}
 
 const addDisplayName = (idMap: IdMap): WalkOnUsersCallback => (
   { value, fieldName }
@@ -53,15 +37,15 @@ const addDisplayName = (idMap: IdMap): WalkOnUsersCallback => (
 /*
  * A filter to add display names beside account ids. The source is a JIRA query.
  */
-const filter: FilterCreator = ({ paginator, config }) => ({
+const filter: FilterCreator = ({ config, getIdMapFunc }) => ({
   onFetch: async elements => log.time(async () => {
     if (!(config.fetch.showUserDisplayNames ?? true)) {
       return
     }
-    const idMap = await createIdToUserMap(paginator)
-    elements
+    const idMap = await getIdMapFunc()
+    await awu(elements)
       .filter(isInstanceElement)
-      .forEach(element => {
+      .forEach(async element => {
         walkOnElement({ element, func: walkOnUsers(addDisplayName(idMap)) })
       })
   }, 'add_display_name_filter fetch'),

@@ -37,6 +37,7 @@ import {
   automationAllConditionsValidator,
   requiredAppOwnedParametersValidator,
   oneTranslationPerLocaleValidator,
+  articleRemovalValidator,
   zendeskGuideElementsDeploymentValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
@@ -84,6 +85,7 @@ export default ({
     automationAllConditionsValidator,
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
+    articleRemovalValidator,
     // TO DO - remove after supporting on multiple brands deployment - SALTO-2769
     zendeskGuideElementsDeploymentValidator,
   ]

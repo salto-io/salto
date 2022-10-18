@@ -38,7 +38,7 @@ import {
   requiredAppOwnedParametersValidator,
   oneTranslationPerLocaleValidator,
   articleRemovalValidator,
-  zendeskGuideElementsDeploymentValidator,
+  brandFieldForBrandBasedElementsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -86,8 +86,7 @@ export default ({
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
-    // TO DO - remove after supporting on multiple brands deployment - SALTO-2769
-    zendeskGuideElementsDeploymentValidator,
+    brandFieldForBrandBasedElementsValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

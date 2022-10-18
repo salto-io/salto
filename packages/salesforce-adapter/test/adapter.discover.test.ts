@@ -35,7 +35,6 @@ import {
 import { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import { fetchMetadataInstances } from '../src/fetch'
 import { MetadataQuery } from '../src/fetch_profile/metadata_query'
-import { SalesforceClient } from '../index'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
@@ -1177,10 +1176,11 @@ public class LargeClass${index} {
       })
     })
     describe('with types with more than maxInstancesPerType instances', () => {
+      const { client: mockClient } = mockAdapter()
       it('should not fetch the types and add them to the exclude list', async () => {
         const filePropMock = mockFileProperties({ fullName: 'fullName', type: 'testType' })
         const fetchResult = await fetchMetadataInstances({
-          client: {} as unknown as SalesforceClient,
+          client: mockClient,
           metadataType: {} as unknown as ObjectType,
           metadataQuery: {} as unknown as MetadataQuery,
           fileProps: [filePropMock, filePropMock],

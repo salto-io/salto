@@ -31,7 +31,7 @@ const PARENTS_TYPE_NAMES = ['section', 'category']
 
 export const removedTranslationParentId: number[] = []
 
-// not an instanceElement as it does not have a value //todo check why it is not a reference
+// not an instanceElement as it does not have a value
 export type TranslationType = {
     title: string
     body?: string

@@ -132,13 +132,14 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   tagsFilter,
   hcLocalesFilter,
-  hcSectionFilter,
-  hcTranslationFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
   fieldReferencesFilter,
+  // help center filters need to be after fieldReferencesFilter
+  hcSectionFilter,
+  hcTranslationFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appsFilter,

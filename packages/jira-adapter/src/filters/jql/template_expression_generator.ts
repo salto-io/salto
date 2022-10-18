@@ -50,7 +50,7 @@ type FieldInfo = {
 }
 
 export type JqlContext = {
-  typeToInstances: Record<string, Record<string, InstanceElement>>
+  typeToInstances: Record<string, Record<string, InstanceElement[]>>
   fieldsById: Record<string, InstanceElement>
 }
 
@@ -71,16 +71,15 @@ export const removeCustomFieldPrefix = (id: string): string => (
 export const generateJqlContext = (
   instances: InstanceElement[],
 ): JqlContext => ({
-  // TODO: handles better instances with duplicate names SALTO-2729
   typeToInstances: _(instances)
     .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
     .groupBy(instance => instance.elemID.typeName)
-    .mapValues(instanceGroup => Object.fromEntries(instanceGroup
-      .map(instance => {
-        const fieldName = CONTEXT_TYPE_TO_FIELD[instance.elemID.typeName]
-        return [instance.value[fieldName].toLowerCase(), instance]
-      })
-      .filter(([key]) => _.isString(key))))
+    .mapValues(
+      (instanceGroup, typeName) => {
+        const fieldName = CONTEXT_TYPE_TO_FIELD[typeName]
+        return _.groupBy(instanceGroup, instance => instance.value[fieldName].toLowerCase())
+      }
+    )
     .value(),
 
   fieldsById: _(instances)
@@ -139,13 +138,16 @@ const getValuePosition = (node: JqlNode)
 const getFieldInfo = (
   field: JqlField,
   jqlContext: JqlContext,
-): FieldInfo | undefined => {
+): {
+  fieldInfo: FieldInfo | undefined
+  error?: 'ambiguous'
+ } => {
   let fieldIdentifier = field.value.toLowerCase()
 
   const position = getValuePosition(field)
 
   if (position === undefined) {
-    return undefined
+    return { fieldInfo: undefined }
   }
 
   // Custom fields can be addressed in jql by id using `cf[...]` syntax, e.g., `cf[12345]`
@@ -167,33 +169,45 @@ const getFieldInfo = (
 
   if (Object.prototype.hasOwnProperty.call(jqlContext.fieldsById, fieldIdentifier)) {
     return {
-      instance: jqlContext.fieldsById[fieldIdentifier],
-      position,
-      identifier: 'id',
+      fieldInfo: {
+        instance: jqlContext.fieldsById[fieldIdentifier],
+        position,
+        identifier: 'id',
+      },
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(
+  if (!Object.prototype.hasOwnProperty.call(
     jqlContext.typeToInstances[FIELD_TYPE_NAME],
     fieldIdentifier
   )) {
-    return {
-      instance: jqlContext.typeToInstances[FIELD_TYPE_NAME][fieldIdentifier],
-      position,
-      identifier: 'name',
-    }
+    return { fieldInfo: undefined }
   }
 
-  return undefined
+  if (jqlContext.typeToInstances[FIELD_TYPE_NAME][fieldIdentifier].length > 1) {
+    return { fieldInfo: undefined, error: 'ambiguous' }
+  }
+
+  return {
+    fieldInfo: {
+      instance: jqlContext.typeToInstances[FIELD_TYPE_NAME][fieldIdentifier][0],
+      position,
+      identifier: 'name',
+    },
+  }
 }
 
 const getValueTokens = (
   clause: TerminalClause,
   jqlContext: JqlContext,
   fieldInstance: InstanceElement
-): JqlToken[] => {
+): {
+  tokens: JqlToken[]
+  ambiguousTokens: Set<string>
+ } => {
+  const ambiguousTokens = new Set<string>()
   if (clause.operand === undefined) {
-    return []
+    return { tokens: [], ambiguousTokens }
   }
 
   // A heuristic that works for the types in CONTEXT_TYPE_TO_FIELD
@@ -204,9 +218,9 @@ const getValueTokens = (
   ) ? jqlContext.typeToInstances[typeName]
     : undefined
 
-  return getValueOperands(clause.operand)
+  const tokens = getValueOperands(clause.operand)
     .map(operand => {
-      const valueInstance = Object.prototype.hasOwnProperty
+      const valueInstances = Object.prototype.hasOwnProperty
         .call(identifierToInstance ?? {}, operand.value.toLowerCase())
         ? identifierToInstance?.[operand.value.toLowerCase()]
         : undefined
@@ -217,18 +231,29 @@ const getValueTokens = (
         : undefined
 
       const position = getValuePosition(operand)
-      if (valueInstance === undefined || identifier === undefined || position === undefined) {
+      if (valueInstances === undefined || identifier === undefined || position === undefined) {
         return undefined
       }
+
+      if (valueInstances.length > 1) {
+        ambiguousTokens.add(operand.value)
+        return undefined
+      }
+
       return {
         reference: new ReferenceExpression(
-          valueInstance.elemID.createNestedID(identifier),
-          valueInstance.value[identifier]
+          valueInstances[0].elemID.createNestedID(identifier),
+          valueInstances[0].value[identifier]
         ),
         position,
       }
     })
     .filter(values.isDefined)
+
+  return {
+    tokens,
+    ambiguousTokens,
+  }
 }
 
 const fieldInfoToJqlToken = (fieldInfo: FieldInfo): JqlToken => ({
@@ -270,9 +295,14 @@ const createJqlTemplate = (jql: string, tokens: JqlToken[]): TemplateExpression 
 export const generateTemplateExpression = (
   jql: string,
   jqlContext: JqlContext
-): TemplateExpression | undefined => {
+): {
+  template: TemplateExpression | undefined
+  ambiguousTokens: Set<string>
+} => {
   const parsedJql = new JastBuilder().build(jql)
   const jqlTokens: JqlToken[] = []
+
+  const ambiguousTokens = new Set<string>()
 
   try {
     walkAST(
@@ -281,20 +311,34 @@ export const generateTemplateExpression = (
         // e.g., `status = Done`, as opposed to compound clause which is of the
         // form (<clause> AND/OR <anotherClaus>...)
         enterTerminalClause: clause => {
-          const fieldInfo = getFieldInfo(clause.field, jqlContext)
+          const { fieldInfo, error } = getFieldInfo(clause.field, jqlContext)
+
+          if (error === 'ambiguous') {
+            ambiguousTokens.add(clause.field.value)
+          }
 
           if (fieldInfo === undefined) {
             return
           }
           jqlTokens.push(fieldInfoToJqlToken(fieldInfo))
 
-          getValueTokens(clause, jqlContext, fieldInfo.instance)
-            .forEach(token => jqlTokens.push(token))
+          const { tokens, ambiguousTokens: valueAmbiguousTokens } = getValueTokens(
+            clause,
+            jqlContext,
+            fieldInfo.instance
+          )
+
+          tokens.forEach(token => jqlTokens.push(token))
+          valueAmbiguousTokens.forEach(token => ambiguousTokens.add(token))
         },
 
         // For the order by part in the JQL, e.g. `ORDER BY field ASC`
         enterOrderByField: orderBy => {
-          const fieldInfo = getFieldInfo(orderBy.field, jqlContext)
+          const { fieldInfo, error } = getFieldInfo(orderBy.field, jqlContext)
+
+          if (error === 'ambiguous') {
+            ambiguousTokens.add(orderBy.field.value)
+          }
 
           if (fieldInfo === undefined) {
             return
@@ -306,12 +350,21 @@ export const generateTemplateExpression = (
     )
 
     if (_.isEmpty(jqlTokens)) {
-      return undefined
+      return {
+        template: undefined,
+        ambiguousTokens,
+      }
     }
 
-    return createJqlTemplate(jql, jqlTokens)
+    return {
+      template: createJqlTemplate(jql, jqlTokens),
+      ambiguousTokens,
+    }
   } catch (e) {
     log.warn(`Failed parsing jql ${jql}: ${e}`)
-    return undefined
+    return {
+      template: undefined,
+      ambiguousTokens,
+    }
   }
 }

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const INNER_DATE_FORMAT = 'M/D/YYYY'
+export const INNER_DATE_FORMAT = 'YYYY-MM-DD'
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
 export const EMPLOYEE_SCHEMA = {
   items: {

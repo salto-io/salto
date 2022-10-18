@@ -141,11 +141,11 @@ describe('netsuite system note author information', () => {
 
   it('should add dates to elements', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1/01/2022')
-    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '1/01/2022').toBeTruthy()
+    expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2022-01-01T00:00:00.000Z')
+    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00.000Z').toBeTruthy()
     expect(Object.values(missingInstance.annotations)).toHaveLength(0)
-    expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '1/01/2022').toBeTruthy()
-    expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '1/01/2022').toBeTruthy()
+    expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00.000Z').toBeTruthy()
+    expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00.000Z').toBeTruthy()
   })
 
   it('elements will stay the same if there is no author information', async () => {

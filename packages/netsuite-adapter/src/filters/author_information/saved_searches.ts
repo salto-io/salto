@@ -16,8 +16,8 @@
 import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
-import { collections, values } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
+import _, { isUndefined } from 'lodash'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
 import { NETSUITE, SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
@@ -30,7 +30,6 @@ import { SavedSearchesResult,
 
 const log = logger(module)
 const { isDefined } = values
-const { awu } = collections.asynciterable
 const DELIMITER = '*'
 
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
@@ -75,31 +74,28 @@ const getDateFormatKey = (key: string): DateKeys => {
   return 'D'
 }
 
-const cleanDateString = (fullDate: string): string => {
-  const splitDate = fullDate.split(' ')
-  return splitDate.length > 2 ? splitDate.slice(0, 3).join('-') : splitDate[0]
+const getFullTime = (timeArray: string[]): string | undefined => {
+  if (isUndefined(timeArray)) {
+    return undefined
+  }
+  return timeArray[1] === 'am' ? '0'.concat(timeArray[0]) : timeArray[0]
 }
 
 export const changeDateFormat = (date: string, dateFormat: string): string => {
-  const cleanDate = cleanDateString(date)
-  if (dateFormat === INNER_DATE_FORMAT) {
-    return cleanDate
-  }
   const re = /(-|\.| |\/|,)+/g
-  const dateAsArray = cleanDate.replace(re, DELIMITER).split(DELIMITER)
-  const dateFormatAsArray = dateFormat.replace(re, DELIMITER).split(DELIMITER)
-  const dateAsMap: Record<DateKeys, string> = {
-    YYYY: '',
-    M: '',
-    D: '',
-  }
-  dateFormatAsArray.forEach((key, i) => {
-    const mapKey = getDateFormatKey(key)
-    dateAsMap[mapKey] = dateAsArray[i]
+  const dateAsArray = date.replace(re, DELIMITER).split(DELIMITER)
+  const dateFormatKeysArray = dateFormat
+    .replace(re, DELIMITER).split(DELIMITER).map(getDateFormatKey)
+  const dateAsMap: Record<DateKeys, string> = { YYYY: '', M: '', D: '' }
+  dateFormatKeysArray.forEach((key, i) => {
+    dateAsMap[key] = dateAsArray[i]
   })
-  const dateObject = new Date([dateAsMap.YYYY, dateAsMap.M, dateAsMap.D].join('-'))
-  return [dateObject.getMonth() + 1, dateAsMap.D, dateAsMap.YYYY].join('/')
+  const time = dateAsArray.length === 5 ? getFullTime(dateAsArray.slice(3)) : undefined
+  const formatedDate = [dateAsMap.M, dateAsMap.D, dateAsMap.YYYY].join('/')
+  const returnDate = time ? [formatedDate, time].join(' ') : formatedDate
+  return new Date(returnDate.concat('Z')).toISOString()
 }
+
 const isUserPreference = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES
 
@@ -108,7 +104,6 @@ const getDateFormatFromElemSource = async (
 ): Promise<string> => {
   const elemIdToGet = new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES, 'instance')
   const sourcedElement = await elementsSource.get(elemIdToGet)
-  console.log(sourcedElement)
   return sourcedElement?.value?.DATEFORMAT?.text
 }
 

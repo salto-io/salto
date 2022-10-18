@@ -27,7 +27,7 @@ import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapt
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
-const PARENTS_TYPE_NAMES = ['section']
+const PARENTS_TYPE_NAMES = ['section', 'category']
 
 export const removedTranslationParentId: number[] = []
 
@@ -76,7 +76,7 @@ export const isParent = createSchemeGuardForInstance<ParentType>(
 const addTranslationValues = (change: Change<InstanceElement>): void => {
   const currentLocale = getChangeData(change).value.source_locale
   const translation = getChangeData(change).value.translations
-    .filter(isTranslation)
+    .filter(isTranslation) // the translation is not a reverence it is already the value
     .find((tran: TranslationType) => tran.locale === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.name = translation.title

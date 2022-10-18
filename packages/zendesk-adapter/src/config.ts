@@ -1826,6 +1826,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/hc/admin/categories/{id}/edit',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories',
+        method: 'post',
+        deployAsField: 'category',
+      },
+      modify: {
+        url: '/help_center/categories/{category_id}',
+        method: 'put',
+        deployAsField: 'category',
+        urlParamsToFields: {
+          category_id: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/categories/{category_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          category_id: 'id',
+        },
+      },
+    },
   },
   category_translation: {
     request: {
@@ -1843,6 +1865,32 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+    },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories/{category_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          category_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/categories/{category_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          category_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
     },
   },
   permission_groups: {

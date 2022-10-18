@@ -23,7 +23,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { removedTranslationParentId } from './help_center_section'
 
-const TRANSLATIONS_TYPE_NAME = ['section_translation']
+const TRANSLATIONS_TYPE_NAME = ['section_translation', 'category_translation']
 
 const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean => {
   if (
@@ -34,7 +34,7 @@ const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean 
   }
   const data = getChangeData(change)
   const currentLocale = data.value.locale
-  const parents = getParents(data)
+  const parents = getParents(data) // the parent is not a reference expression
   return parents.find(parent => parent.source_locale?.value.value.id === currentLocale) ?? false
 }
 
@@ -42,6 +42,7 @@ const parentRemoved = (change: Change<InstanceElement>): boolean => {
   if (!TRANSLATIONS_TYPE_NAME.includes(getChangeData(change).elemID.typeName)) {
     return false
   }
+  // the parent is not a reference expression
   return removedTranslationParentId.includes(getParents(getChangeData(change))[0].id)
 }
 

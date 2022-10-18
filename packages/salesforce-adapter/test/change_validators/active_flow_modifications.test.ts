@@ -13,36 +13,47 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange } from '@salto-io/adapter-api'
-import activeFlowChangeValidator from '../../src/change_validators/active_flow_editing'
+import { Change, getAllChangeData, toChange } from '@salto-io/adapter-api'
+import activeFlowChangeValidator from '../../src/change_validators/active_flow_modifications'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('active flow editing change validator', () => {
+  let flowChange: Change
   describe('deactivate a flow', () => {
-    const beforeRecord = createInstanceElement({ fullName: 'flow1', status: 'Active' }, mockTypes.Flow)
-    const afterRecord = createInstanceElement({ fullName: 'flow1', status: 'Obsolete' }, mockTypes.Flow)
+    beforeEach(() => {
+      const beforeRecord = createInstanceElement({ fullName: 'flow1', status: 'Active' }, mockTypes.Flow)
+      const afterRecord = beforeRecord.clone()
+      afterRecord.value.status = 'Obsolete'
+      flowChange = toChange({ before: beforeRecord, after: afterRecord })
+    })
 
     it('should have error when trying to deactivate a flow', async () => {
       const changeErrors = await activeFlowChangeValidator(
-        [toChange({ before: beforeRecord, after: afterRecord })]
+        [flowChange]
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(beforeRecord.elemID)
+      const beforeData = getAllChangeData(flowChange)[0]
+      expect(changeError.elemID).toEqual(beforeData?.elemID)
       expect(changeError.severity).toEqual('Error')
     })
   })
-  describe('editing an active flow', () => {
-    const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
-    const afterRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'fast' }, mockTypes.Flow)
+  describe('editing a non draft flow', () => {
+    beforeEach(() => {
+      const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
+      const afterRecord = beforeRecord.clone()
+      afterRecord.value.actionType = 'fast'
+      flowChange = toChange({ before: beforeRecord, after: afterRecord })
+    })
     it('should have info message regarding the new flow version', async () => {
       const changeErrors = await activeFlowChangeValidator(
-        [toChange({ before: beforeRecord, after: afterRecord })]
+        [flowChange]
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(beforeRecord.elemID)
+      const beforeData = getAllChangeData(flowChange)[0]
+      expect(changeError.elemID).toEqual(beforeData?.elemID)
       expect(changeError.severity).toEqual('Info')
     })
   })

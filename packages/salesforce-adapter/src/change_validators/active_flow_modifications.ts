@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeError, getChangeData, ChangeValidator, ChangeDataType,
+  ChangeError, getChangeData, ChangeValidator,
   isInstanceChange, InstanceElement, isModificationChange, ModificationChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -24,17 +24,11 @@ import { isInstanceOfType } from '../filters/utils'
 const { awu } = collections.asynciterable
 const ACTIVE = 'Active'
 
-const isFlowTypeChange = (changedElement: ChangeDataType): Promise<boolean> => (
-  isInstanceOfType(FLOW_METADATA_TYPE)(changedElement)
-)
-
-const isActiveFlow = (instance: InstanceElement): boolean => (
-  instance.value.status === ACTIVE
-)
+const isInstanceOfTypeFlow = isInstanceOfType(FLOW_METADATA_TYPE)
 
 const isActiveFlowChange = async (change: ModificationChange<InstanceElement>):
     Promise<boolean> => (
-  await isFlowTypeChange(change.data.before) && isActiveFlow(change.data.before)
+  await isInstanceOfTypeFlow(change.data.before) && change.data.before.value.status === ACTIVE
 )
 
 const createChangeError = (instance: InstanceElement): ChangeError => {

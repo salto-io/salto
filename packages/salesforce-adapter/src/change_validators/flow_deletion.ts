@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeError, getChangeData, ChangeValidator, ChangeDataType,
+  ChangeError, getChangeData, ChangeValidator,
   isInstanceChange, InstanceElement, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -24,13 +24,7 @@ import { isInstanceOfType } from '../filters/utils'
 const { awu } = collections.asynciterable
 const DRAFT = 'Draft'
 
-const isFlowTypeChange = (changedElement: ChangeDataType): Promise<boolean> => (
-  isInstanceOfType(FLOW_METADATA_TYPE)(changedElement)
-)
-
-const isDraftFlow = (instance: InstanceElement): boolean => (
-  instance.value.status === DRAFT
-)
+const isInstanceOfTypeFlow = isInstanceOfType(FLOW_METADATA_TYPE)
 
 const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
@@ -39,7 +33,6 @@ const createChangeError = (instance: InstanceElement): ChangeError => ({
   detailedMessage: `Cannot delete flow that is not in ‘draft’ state. Flow name: ${instance.elemID.getFullName()}, status: ${instance.value.status} `,
 })
 
-
 /**
  * We can only delete flows that are currently at draft status
  */
@@ -47,8 +40,8 @@ const changeValidator: ChangeValidator = async changes => awu(changes)
   .filter(isInstanceChange)
   .filter(isRemovalChange)
   .map(getChangeData)
-  .filter(isFlowTypeChange)
-  .filter(instance => !isDraftFlow(instance))
+  .filter(isInstanceOfTypeFlow)
+  .filter(instance => instance.value.status !== DRAFT)
   .map(createChangeError)
   .toArray()
 

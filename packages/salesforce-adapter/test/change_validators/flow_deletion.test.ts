@@ -13,31 +13,40 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange } from '@salto-io/adapter-api'
+import { Change, getAllChangeData, toChange } from '@salto-io/adapter-api'
 import flowDeletionChangeValidator from '../../src/change_validators/flow_deletion'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('flow deletion change validator', () => {
+  let flowChange: Change
   describe('delete a draft flow', () => {
-    const beforeRecord = createInstanceElement({ fullName: 'flow1', status: 'Draft' }, mockTypes.Flow)
+    beforeEach(() => {
+      const beforeRecord = createInstanceElement({ fullName: 'flow1', status: 'Draft' }, mockTypes.Flow)
+      flowChange = toChange({ before: beforeRecord })
+    })
 
     it('should have no error when trying to delete a draft flow', async () => {
       const changeErrors = await flowDeletionChangeValidator(
-        [toChange({ before: beforeRecord })]
+        [flowChange]
       )
       expect(changeErrors).toHaveLength(0)
     })
   })
-  describe('delete an active flow', () => {
-    const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active' }, mockTypes.Flow)
-    it('should have error when trying to delete an active flow', async () => {
+  describe('delete a non draft flow', () => {
+    beforeEach(() => {
+      const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active' }, mockTypes.Flow)
+      flowChange = toChange({ before: beforeRecord })
+    })
+
+    it('should have error when trying to delete a non draft flow', async () => {
       const changeErrors = await flowDeletionChangeValidator(
-        [toChange({ before: beforeRecord })]
+        [flowChange]
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(beforeRecord.elemID)
+      const beforeData = getAllChangeData(flowChange)[0]
+      expect(changeError.elemID).toEqual(beforeData?.elemID)
       expect(changeError.severity).toEqual('Error')
     })
   })

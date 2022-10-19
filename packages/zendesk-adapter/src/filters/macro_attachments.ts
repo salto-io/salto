@@ -119,7 +119,7 @@ const createAttachmentInstance = ({
   const name = elementsUtils.ducktype.toNestedTypeName(
     macro.value.title, attachment.filename
   )
-  const pathName = pathNaclCase(name)
+  const pathName = pathNaclCase(naclCase(name))
   return new InstanceElement(
     naclCase(name),
     attachmentType,

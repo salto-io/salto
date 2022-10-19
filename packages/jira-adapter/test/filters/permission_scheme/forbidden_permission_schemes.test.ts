@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../../src/constants'
-import forbiddenPermissionScheme from '../../../src/filters/permission_schemes/forbidden_permission_schemes'
+import forbiddenPermissionScheme from '../../../src/filters/permission_scheme/forbidden_permission_schemes'
 import { getFilterParams } from '../../utils'
 
 describe('forbidden permission scheme', () => {

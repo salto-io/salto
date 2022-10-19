@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
-import permissionSchemeFilter from '../../../src/filters/permission_schemes/sd_portals_permission_scheme'
+import permissionSchemeFilter from '../../../src/filters/permission_scheme/sd_portals_permission_scheme'
 import { Filter } from '../../../src/filter'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'

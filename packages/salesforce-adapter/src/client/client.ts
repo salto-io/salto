@@ -504,7 +504,7 @@ export default class SalesforceClient {
   }
 
   /**
-   * Count the amount instance of a type
+   * Count the amount of instances of a type
    */
   @throttle<ClientRateLimitConfig>({ bucketName: 'read' })
   @logDecorator()

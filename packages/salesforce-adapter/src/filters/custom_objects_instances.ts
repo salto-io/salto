@@ -32,7 +32,7 @@ import {
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import { getNamespace, isMasterDetailField, isLookupField, conditionQueries, queryClient } from './utils'
-import { ConfigChangeSuggestion } from '../types'
+import { ConfigChangeSuggestion, MAX_INSTANCES_PER_TYPE } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 import { UNLIMITED_INSTANCES_VALUE } from '../fetch'
 
@@ -425,20 +425,20 @@ const filterHeavyTypes = async (
     client: SalesforceClient
     })
 : Promise<ConfigChangeSuggestion | undefined> => {
-  // If the max is unlimited, we don't want to make an api call for nothing
+  // If the max is unlimited, we don't want to make an api calls for nothing
   if (maxInstancesPerType === UNLIMITED_INSTANCES_VALUE) {
     return undefined
   }
 
-  const instanceCount = await client.countInstances(typeName)
+  const instancesCount = await client.countInstances(typeName)
 
-  if (instanceCount > maxInstancesPerType) {
-    const value = typeName
-    const reason = value
+  if (instancesCount > maxInstancesPerType) {
     // Remove the type from the fetch
     delete fetchSettings[typeName]
     // Return a config suggestion to exclude that type from the dataObjects
-    return createDataObjectExcludeChange({ value, reason })
+    const reason = `'${typeName}' has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
+      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
+    return createDataObjectExcludeChange({ value: typeName, reason })
   }
 
   return undefined

@@ -21,7 +21,7 @@ import {
   isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { normalizeStaticResourcePath, naclCase, referenceExpressionStringifyReplacer,
-  resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+  resolveChangeElement, safeJsonStringify, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -119,16 +119,18 @@ const createAttachmentInstance = ({
   const name = elementsUtils.ducktype.toNestedTypeName(
     macro.value.title, attachment.filename
   )
-  const pathName = normalizeStaticResourcePath(name)
+  const naclName = naclCase(name)
+  const pathName = pathNaclCase(name)
+  const resourcePathName = normalizeStaticResourcePath(name)
   return new InstanceElement(
-    naclCase(name),
+    naclName,
     attachmentType,
     {
       id: attachment.id,
       filename: attachment.filename,
       contentType: attachment.content_type,
       content: new StaticFile({
-        filepath: `${ZENDESK}/${attachmentType.elemID.name}/${pathName}`,
+        filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
         content,
       }),
     },

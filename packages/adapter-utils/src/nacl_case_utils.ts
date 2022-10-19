@@ -128,19 +128,18 @@ export const naclCase = (name?: string): string => {
 
 export const normalizeStaticResourcePath = (name: string): string => {
   const nameBuffer = Buffer.from(name)
-  const nameByteLength = nameBuffer.byteLength
-  if (nameByteLength <= MAX_PATH_LENGTH) {
-    return naclCase(name)
+  if (nameBuffer.byteLength <= MAX_PATH_LENGTH) {
+    return name
   }
   const nameHash = hashUtils.toMD5(name)
   const extIndex = nameBuffer.lastIndexOf('.')
   // In case the file has a too long extension length or no extension at all
-  if (extIndex === -1 || nameByteLength - extIndex > MAX_PATH_LENGTH) {
-    return naclCase(nameBuffer.slice(0, MAX_PATH_LENGTH).toString().concat(`_${nameHash}`))
+  if (extIndex === -1 || nameBuffer.byteLength - extIndex > MAX_PATH_LENGTH) {
+    return nameBuffer.slice(0, MAX_PATH_LENGTH).toString().concat(`_${nameHash}`)
   }
-  return naclCase(nameBuffer.slice(0, MAX_PATH_LENGTH).toString()
+  return nameBuffer.slice(0, MAX_PATH_LENGTH).toString()
     .concat(`_${nameHash}`)
-    .concat(nameBuffer.slice(extIndex).toString()))
+    .concat(nameBuffer.slice(extIndex).toString())
 }
 
 export const invertNaclCase = (name: string): string => {

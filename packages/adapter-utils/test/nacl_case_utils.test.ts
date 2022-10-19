@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { invertNaclCase, naclCase, pathNaclCase } from '../src/nacl_case_utils'
+import { hash as hashUtils } from '@salto-io/lowerdash'
+import { invertNaclCase, naclCase, normalizeStaticResourcePath, pathNaclCase } from '../src/nacl_case_utils'
 
 describe('naclCase utils', () => {
   const generateRandomChar = (): string =>
@@ -150,6 +151,28 @@ describe('naclCase utils', () => {
 
       it('Should return the first 200 chars', () => {
         expect(pathNaclCase(longString)).toEqual(longString.slice(0, 200))
+      })
+    })
+  })
+
+  describe('normalizeStaticResourcePath func', () => {
+    describe('With a short path', () => {
+      const shortPaths = [
+        'lalala.txt', 'aבגדe.טקסט', 'noExtention',
+      ]
+      it('Should remain the same', () => {
+        shortPaths.forEach(path => expect(normalizeStaticResourcePath(path)).toEqual(path))
+      })
+    })
+    describe('With a very long path', () => {
+      const longString = new Array(30).fill('1234567890_').join('').concat('.extension')
+      const longStringHash = hashUtils.toMD5(longString)
+      it('Should return at most 200 chars', () => {
+        expect(normalizeStaticResourcePath(longString).length).toBeLessThanOrEqual(200 + `_${longStringHash}.extension`.length)
+      })
+
+      it('Should return the first 200 chars and the extension', () => {
+        expect(normalizeStaticResourcePath(longString)).toEqual(longString.slice(0, 200).concat(`_${longStringHash}.extension`))
       })
     })
   })

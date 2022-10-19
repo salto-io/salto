@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.171.0",
+    "@aws-sdk/middleware-retry": "^3.190.0",
     "@salto-io/adapter-api": "0.3.23",
     "@salto-io/adapter-components": "0.3.23",
     "@salto-io/adapter-utils": "0.3.23",
@@ -43,6 +44,7 @@
     "@salto-io/logging": "0.3.23",
     "@salto-io/lowerdash": "0.3.23",
     "@salto-io/netsuite-adapter": "0.3.23",
+    "@salto-io/okta-adapter": "0.3.23",
     "@salto-io/rocksdb": "5.1.1-salto-18",
     "@salto-io/salesforce-adapter": "0.3.23",
     "@salto-io/stripe-adapter": "0.3.23",
@@ -50,7 +52,6 @@
     "@salto-io/workspace": "0.3.23",
     "@salto-io/zendesk-adapter": "0.3.23",
     "@salto-io/zuora-billing-adapter": "0.3.23",
-    "@salto-io/okta-adapter": "0.3.23",
     "async-lock": "^1.2.4",
     "axios": "^0.21.3",
     "bottleneck": "^2.19.5",

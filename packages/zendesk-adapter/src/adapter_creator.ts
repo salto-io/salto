@@ -126,6 +126,7 @@ export const adapter: Adapter = {
       config,
       getElemIdFunc: context.getElemIdFunc,
       configInstance: context.config,
+      elementsSource: context.elementsSource,
     })
 
     return {

@@ -270,6 +270,11 @@ export class ZendeskFieldReferenceResolver extends referenceUtils.FieldReference
 
 const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
   {
+    src: { field: 'brand' },
+    serializationStrategy: 'id',
+    target: { type: BRAND_TYPE_NAME },
+  },
+  {
     src: { field: 'brand_id' },
     serializationStrategy: 'id',
     target: { type: BRAND_TYPE_NAME },

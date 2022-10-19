@@ -70,7 +70,7 @@ export const createUnresolvedRefIdFieldConfigChange = (
   })
 
 export const createSkippedListConfigChange = ({ type, instance, reason }
-  : {type: string; instance?: string; reason?: string }):
+  : { type: string; instance?: string; reason?: string }):
   ConfigChangeSuggestion => {
   if (_.isUndefined(instance)) {
     return {

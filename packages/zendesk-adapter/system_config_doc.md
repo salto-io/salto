@@ -2805,11 +2805,11 @@ zendesk {
       article = {
         transformation = {
           idFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           fileNameFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           standaloneFields = [
@@ -2880,11 +2880,11 @@ zendesk {
         }
         transformation = {
           idFields = [
-            "&brand_id",
+            "&brand",
             "locale",
           ]
           fileNameFields = [
-            "&brand_id",
+            "&brand",
             "locale",
           ]
           sourceTypeName = "article__translations"
@@ -2962,11 +2962,11 @@ zendesk {
       section = {
         transformation = {
           idFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           fileNameFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           standaloneFields = [
@@ -3024,11 +3024,11 @@ zendesk {
         }
         transformation = {
           idFields = [
-            "&brand_id",
+            "&brand",
             "locale",
           ]
           fileNameFields = [
-            "&brand_id",
+            "&brand",
             "locale",
           ]
           sourceTypeName = "section__translations"
@@ -3094,11 +3094,11 @@ zendesk {
       label = {
         transformation = {
           idFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           fileNameFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           sourceTypeName = "labels__labels"
@@ -3147,11 +3147,11 @@ zendesk {
       category = {
         transformation = {
           idFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           fileNameFields = [
-            "&brand_id",
+            "&brand",
             "name",
           ]
           standaloneFields = [
@@ -3209,11 +3209,11 @@ zendesk {
         }
         transformation = {
           idFields = [
-            "&brand_id",
+            "&brand",
             "locale",
           ]
           fileNameFields = [
-            "&brand_id",
+            "&brand",
             "locale",
           ]
           sourceTypeName = "category__translations"
@@ -3278,14 +3278,6 @@ zendesk {
       }
       permission_group = {
         transformation = {
-          idFields = [
-            "&brand_id",
-            "name",
-          ]
-          fileNameFields = [
-            "&brand_id",
-            "name",
-          ]
           sourceTypeName = "permission_groups__permission_groups"
           fieldsToHide = [
             {
@@ -3342,14 +3334,6 @@ zendesk {
       }
       user_segment = {
         transformation = {
-          idFields = [
-            "&brand_id",
-            "name",
-          ]
-          fileNameFields = [
-            "&brand_id",
-            "name",
-          ]
           sourceTypeName = "user_segments__user_segments"
           fieldsToHide = [
             {

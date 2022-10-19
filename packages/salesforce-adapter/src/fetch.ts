@@ -35,6 +35,8 @@ const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
+const UNLIMITED_INSTANCES_VALUE = -1
+
 export const fetchMetadataType = async (
   client: SalesforceClient,
   typeInfo: MetadataObject,
@@ -128,7 +130,7 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 }
 
 export const fetchMetadataInstances = async ({
-  client, metadataType, fileProps, metadataQuery, maxInstancesPerType,
+  client, metadataType, fileProps, metadataQuery, maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
@@ -143,9 +145,12 @@ export const fetchMetadataInstances = async ({
   const typeName = fileProps[0].type
   const instancesCount = fileProps.length
   // We exclude metadataTypes with too many instances to avoid unwanted big and slow requests
-  if (typeName !== CUSTOM_OBJECT && maxInstancesPerType && instancesCount > maxInstancesPerType) {
+  // CustomObjects are checked in another flow
+  if (typeName !== CUSTOM_OBJECT
+      && maxInstancesPerType !== UNLIMITED_INSTANCES_VALUE
+      && instancesCount > maxInstancesPerType) {
     const reason = `'${typeName}' has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
-      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value.`
+      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
     const skippedListConfigChange = createSkippedListConfigChange({ type: typeName, reason })
     return {
       elements: [],

@@ -150,7 +150,7 @@ export const fetchMetadataInstances = async ({
       && maxInstancesPerType !== UNLIMITED_INSTANCES_VALUE
       && instancesCount > maxInstancesPerType) {
     const reason = `'${typeName}' has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
-      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value ${UNLIMITED_INSTANCES_VALUE} for unlimited).`
+      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
     const skippedListConfigChange = createSkippedListConfigChange({ type: typeName, reason })
     return {
       elements: [],

@@ -125,6 +125,14 @@ export const naclCase = (name?: string): string => {
   return `${cleanName}${suffixFromList(specialCharsMappingList)}`
 }
 
+export const elemNameToNaclCasedPath = (name: string): string => {
+  const extIndex = name.lastIndexOf('.')
+  if (extIndex === -1) {
+    return naclCase(name)
+  }
+  return naclCase(name.slice(0, extIndex)).concat(name.slice(extIndex))
+}
+
 export const invertNaclCase = (name: string): string => {
   if (name === '') {
     return ''

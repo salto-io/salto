@@ -20,8 +20,8 @@ import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
   isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase, referenceExpressionStringifyReplacer, resolveChangeElement,
-  safeJsonStringify } from '@salto-io/adapter-utils'
+import { elemNameToNaclCasedPath, naclCase, referenceExpressionStringifyReplacer,
+  resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -119,7 +119,7 @@ const createAttachmentInstance = ({
   const name = elementsUtils.ducktype.toNestedTypeName(
     macro.value.title, attachment.filename
   )
-  const pathName = pathNaclCase(naclCase(name))
+  const pathName = elemNameToNaclCasedPath(name)
   return new InstanceElement(
     naclCase(name),
     attachmentType,

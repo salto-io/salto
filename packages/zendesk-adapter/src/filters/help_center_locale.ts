@@ -17,7 +17,7 @@ import Joi from 'joi'
 import {
   BuiltinTypes, ElemID, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, elemNameToNaclCasedPath, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
@@ -84,7 +84,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         localeName,
         localeType,
         { id: locale, default: locale === defaultLocale },
-        [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(naclCase(locale))],
+        [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, elemNameToNaclCasedPath(locale)],
       )
     })
     elements.push(localeType)

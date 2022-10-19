@@ -30,7 +30,7 @@ describe('flow deletion change validator', () => {
       const changeErrors = await flowDeletionChangeValidator(
         [flowChange]
       )
-      expect(changeErrors).toHaveLength(0)
+      expect(changeErrors).toBeEmpty()
     })
   })
   describe('delete a non draft flow', () => {
@@ -45,7 +45,7 @@ describe('flow deletion change validator', () => {
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      const beforeData = getAllChangeData(flowChange)[0]
+      const [beforeData] = getAllChangeData(flowChange)
       expect(changeError.elemID).toEqual(beforeData?.elemID)
       expect(changeError.severity).toEqual('Error')
     })

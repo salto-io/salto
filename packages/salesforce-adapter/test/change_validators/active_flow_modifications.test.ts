@@ -34,7 +34,7 @@ describe('active flow editing change validator', () => {
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      const beforeData = getAllChangeData(flowChange)[0]
+      const [beforeData] = getAllChangeData(flowChange)
       expect(changeError.elemID).toEqual(beforeData?.elemID)
       expect(changeError.severity).toEqual('Error')
     })
@@ -52,7 +52,7 @@ describe('active flow editing change validator', () => {
       )
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
-      const beforeData = getAllChangeData(flowChange)[0]
+      const [beforeData] = getAllChangeData(flowChange)
       expect(changeError.elemID).toEqual(beforeData?.elemID)
       expect(changeError.severity).toEqual('Info')
     })

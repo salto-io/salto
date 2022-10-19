@@ -20,8 +20,12 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import { automationAllConditionsValidator } from '../../src/change_validators'
+import { DEFAULT_CONFIG } from '../../src/config'
+
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 describe('automationAllConditionsValidator', () => {
   const automationType = new ObjectType({
@@ -232,36 +236,47 @@ describe('automationAllConditionsValidator', () => {
     const ticketFieldType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'ticket_field'),
     })
-    const automationWithReference = new InstanceElement(
-      'Test10',
-      automationType,
+    const ticketFieldInstance = new InstanceElement(
+      'field_test',
+      ticketFieldType,
       {
-        id: 2,
-        title: 'Test10',
-        active: true,
-        actions: [{
-          field: 'Test',
-          value: 'Test',
-        }],
-        conditions: {
-          all: [
-            {
-              field: 'status',
-              operator: 'is',
-              value: 'new',
-            },
-            {
-              field: new ReferenceExpression(
-                ticketFieldType.elemID.createNestedID('instance', 'Test1'),
-                'test ticket field',
-              ),
-              operator: 'is',
-              value: 'new',
-            },
-          ],
-        },
-      },
+        id: 123,
+      }
     )
+    const automationWithReference = replaceInstanceTypeForDeploy({
+      instance: new InstanceElement(
+        'Test10',
+        automationType,
+        {
+          id: 2,
+          title: 'Test10',
+          active: true,
+          actions: [{
+            field: 'Test',
+            value: 'Test',
+          }],
+          conditions: {
+            all: [
+              {
+                field: 'status',
+                operator: 'is',
+                value: 'new',
+              },
+              {
+                field: new ReferenceExpression(
+                  ticketFieldType.elemID.createNestedID('instance', 'Test1'),
+                  ticketFieldInstance,
+                ),
+                operator: 'is',
+                value: 'new',
+              },
+            ],
+          },
+        },
+      ),
+      config: DEFAULT_CONFIG.apiDefinitions,
+    })
+
     const errors = await automationAllConditionsValidator(
       [toChange({ after: automationWithReference })]
     )

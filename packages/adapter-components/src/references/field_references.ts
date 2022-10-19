@@ -171,7 +171,7 @@ export const replaceReferenceValues = async <
       return refExpr
     }
 
-    const reference = await awu(await resolverFinder(field))
+    const reference = await awu(await resolverFinder(field, instance))
       .filter(refResolver => refResolver.target !== undefined)
       .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
@@ -286,7 +286,7 @@ export const generateLookupFunc = <
       return undefined
     }
 
-    const strategies = (await resolverFinder(args.field))
+    const strategies = (await resolverFinder(args.field, args.element))
       .filter(def => def.target?.type === undefined || args.ref.elemID.typeName === def.target.type)
       .map(def => def.serializationStrategy)
 

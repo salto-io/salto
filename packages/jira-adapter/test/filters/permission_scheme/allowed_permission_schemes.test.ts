@@ -18,35 +18,21 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA, PERMISSIONS, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
 import permissionSchemeFilter from '../../../src/filters/permission_scheme/allowed_permission_schemes'
+import * as utils from '../../../src/filters/permission_scheme/omit_permissions_common'
 import { getFilterParams } from '../../utils'
 
-const mockDefaultDeployChange = jest.fn()
+const omitChanges = jest.spyOn(utils, 'omitChanges')
+const addBackPermissions = jest.spyOn(utils, 'addBackPermissions')
 
-jest.mock('../../../src/deployment/standard_deployment', () => ({
-  ...jest.requireActual<{}>('../../../src/deployment/standard_deployment'),
-  defaultDeployChange: jest.fn((...args) => mockDefaultDeployChange(args)),
-}))
 describe('allowed permission scheme', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let elementsSource: ReadOnlyElementsSource
   let elements: InstanceElement[]
+  let fullInstance: InstanceElement
+  let partialInstance: InstanceElement
   const type = new ObjectType({
     elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME),
   })
-  const instance = new InstanceElement(
-    'instance',
-    type,
-    {
-      permissions: [
-        {
-          permission: 'validPermission',
-        },
-        {
-          permission: 'invalidPermission',
-        },
-      ],
-    }
-  )
   const permissionObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSIONS) })
   const permissionsInstance = new InstanceElement('permissions', permissionObject, {
     additionalProperties: [
@@ -56,30 +42,59 @@ describe('allowed permission scheme', () => {
     ],
   })
   beforeEach(async () => {
-    elements = [permissionsInstance, instance]
+    jest.clearAllMocks()
+    fullInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        permissions: [
+          {
+            permission: 'validPermission',
+          },
+          {
+            permission: 'invalidPermission',
+          },
+        ],
+      }
+    )
+    partialInstance = new InstanceElement(
+      'instance',
+      type,
+      {
+        permissions: [
+          {
+            permission: 'validPermission',
+          },
+        ],
+      }
+    )
+    elements = [permissionsInstance, fullInstance]
     elementsSource = buildElementsSourceFromElements(elements)
     const filterParams = Object.assign(getFilterParams(), { elementsSource })
     filter = permissionSchemeFilter(filterParams) as typeof filter
   })
-  it('should deploy instance without invalid permissions', async () => {
-    if (filter.deploy) {
-      await filter.deploy([toChange({ after: instance })])
-      expect(mockDefaultDeployChange)
-        .toHaveBeenCalledWith(expect.arrayContaining([
-          expect.objectContaining({
-            change: expect.objectContaining({
-              data: expect.objectContaining({
-                after: expect.objectContaining({
-                  value: {
-                    permissions: [
-                      { permission: 'validPermission' },
-                    ],
-                  },
-                }),
-              }),
-            }),
-          }),
-        ]))
+  it('should remove invalid permissions in pre-deploy', async () => {
+    const changes = [toChange({ after: fullInstance })]
+    expect(filter.preDeploy).toBeDefined()
+    if (filter.preDeploy) {
+      expect(omitChanges).not.toHaveBeenCalled()
+      await filter.preDeploy(changes)
+      expect(omitChanges).toHaveNthReturnedWith(1, {
+        'jira.PermissionScheme.instance.instance': [{ permission: 'validPermission' }, { permission: 'invalidPermission' }],
+      })
+      expect(changes).toEqual([toChange({ after: partialInstance })])
+    }
+  })
+  it('should put back invalid permissions after deploying', async () => {
+    const changes = [toChange({ after: fullInstance })]
+    expect(filter.preDeploy).toBeDefined()
+    expect(filter.onDeploy).toBeDefined()
+    if (filter.onDeploy && filter.preDeploy) {
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      expect(addBackPermissions).toHaveBeenCalledWith([expect.anything()], {
+        'jira.PermissionScheme.instance.instance': [{ permission: 'validPermission' }, { permission: 'invalidPermission' }],
+      })
     }
   })
 })

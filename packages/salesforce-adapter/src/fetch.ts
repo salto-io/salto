@@ -35,7 +35,7 @@ const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
-const UNLIMITED_INSTANCES_VALUE = -1
+export const UNLIMITED_INSTANCES_VALUE = -1
 
 export const fetchMetadataType = async (
   client: SalesforceClient,

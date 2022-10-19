@@ -34,6 +34,7 @@ import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField }
 import { getNamespace, isMasterDetailField, isLookupField, conditionQueries, queryClient } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
+import { UNLIMITED_INSTANCES_VALUE } from '../fetch'
 
 const { mapValuesAsync, pickAsync } = promises.object
 const { isDefined } = values
@@ -417,22 +418,30 @@ export const getCustomObjectsFetchSettings = async (
 }
 
 const filterHeavyTypes = async (
-  { typeName, maxInstancesPerType, fetchSettings, client, heavyTypesConfigChanges }
+  { typeName, maxInstancesPerType, fetchSettings, client }
 : { typeName: string
     maxInstancesPerType: number
     fetchSettings: Record<string, CustomObjectFetchSetting>
     client: SalesforceClient
-    heavyTypesConfigChanges: ConfigChangeSuggestion[]})
-: Promise<void> => {
+    })
+: Promise<ConfigChangeSuggestion | undefined> => {
+  // If the max is unlimited, we don't want to make an api call for nothing
+  if (maxInstancesPerType === UNLIMITED_INSTANCES_VALUE) {
+    return undefined
+  }
+
   const instanceCount = await client.countInstances(typeName)
 
-  if (instanceCount > maxInstancesPerType * 0 + 5) {
-    delete fetchSettings[typeName]
+  if (instanceCount > maxInstancesPerType) {
     const value = typeName
     const reason = value
+    // Remove the type from the fetch
+    delete fetchSettings[typeName]
     // Return a config suggestion to exclude that type from the dataObjects
-    heavyTypesConfigChanges.push(createDataObjectExcludeChange({ value, reason }))
+    return createDataObjectExcludeChange({ value, reason })
   }
+
+  return undefined
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -455,7 +464,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       setting => apiName(setting.objectType),
     )
 
-    const heavyTypesConfigChanges : ConfigChangeSuggestion[] = []
     // Filter out types with a lot of instances in order to prevent unwanted slow fetching
     const filterHeavyTypesPromises = Object.keys(validChangesFetchSettings).map(
       typeName => filterHeavyTypes({
@@ -463,10 +471,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
         fetchSettings: validChangesFetchSettings,
         client,
-        heavyTypesConfigChanges,
       })
     )
-    await Promise.all(filterHeavyTypesPromises)
+    // Promise.all so they all run parallel
+    const heavyTypesConfigChanges = (await Promise.all(filterHeavyTypesPromises)).filter(isDefined)
 
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,

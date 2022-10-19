@@ -506,7 +506,7 @@ export default class SalesforceClient {
   /**
    * Count the amount instance of a type
    */
-  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
+  @throttle<ClientRateLimitConfig>({ bucketName: 'read' })
   @logDecorator()
   @requiresLogin()
   public async countInstances(typeName: string) : Promise<number> {

@@ -47,6 +47,7 @@
     "@types/moxios": "^0.4.10",
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
+    "@types/truncate-utf8-bytes": "^1.0.0",
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -62,6 +63,7 @@
     "jest-circus": "^27.4.5",
     "jest-each": "^26.6.2",
     "jest-junit": "^12.0.0",
+    "truncate-utf8-bytes": "^1.0.2",
     "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",
     "typescript": "4.1.3"

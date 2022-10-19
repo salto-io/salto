@@ -140,10 +140,10 @@ export const normalizeStaticResourcePath = (name: string): string => {
   // In case the file has a too long extension length or no extension at all
   if (_.isEmpty(extBuffer) || extBuffer.byteLength > MAX_PATH_EXTENSION_LENGTH) {
     const addedSuffix = `_${nameHash}`
-    return nameBuffer.slice(0, MAX_PATH_LENGTH - addedSuffix.length).toString().concat(addedSuffix)
+    return truncate(nameBuffer.toString(), MAX_PATH_LENGTH - addedSuffix.length).concat(addedSuffix)
   }
   const addedSuffix = `_${nameHash}${extBuffer.toString()}`
-  return nameBuffer.slice(0, MAX_PATH_LENGTH - addedSuffix.length).toString().concat(addedSuffix)
+  return truncate(nameBuffer.toString(), MAX_PATH_LENGTH - addedSuffix.length).concat(addedSuffix)
 }
 
 export const invertNaclCase = (name: string): string => {

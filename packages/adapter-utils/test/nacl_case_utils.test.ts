@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import truncate from 'truncate-utf8-bytes'
 import { hash as hashUtils } from '@salto-io/lowerdash'
 import { invertNaclCase, naclCase, normalizeStaticResourcePath, pathNaclCase } from '../src/nacl_case_utils'
 
@@ -167,27 +168,29 @@ describe('naclCase utils', () => {
     describe('With a very long path', () => {
       const longString = new Array(30).fill('123456שבע0_').join('').concat('.extension')
       const longStringHash = hashUtils.toMD5(longString)
-      it('Should return at extacly 200 chars', () => {
-        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength).toEqual(200)
+      it('Should return at extacly 200 chars or less', () => {
+        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength)
+          .toBeLessThanOrEqual(200)
       })
 
       it('Should return the first 200 chars, hash and the extension', () => {
         const addedSuffix = `_${longStringHash}.extension`
         expect(normalizeStaticResourcePath(longString))
-          .toEqual(longString.slice(0, 200 - addedSuffix.length).concat(addedSuffix))
+          .toEqual(truncate(longString.toString(), 200 - addedSuffix.length).concat(addedSuffix))
       })
     })
     describe('With a very long extension', () => {
       const longString = 'aaa.'.concat(new Array(30).fill('1234חמש890_').join(''))
       const longStringHash = hashUtils.toMD5(longString)
-      it('Should return exactly 200 chars', () => {
-        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength).toEqual(200)
+      it('Should return 200 chars or less', () => {
+        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength)
+          .toBeLessThanOrEqual(200)
       })
 
       it('Should return the first 200 chars and hash', () => {
         const addedSuffix = `_${longStringHash}`
         expect(normalizeStaticResourcePath(longString))
-          .toEqual(longString.slice(0, 200 - addedSuffix.length).concat(addedSuffix))
+          .toEqual(truncate(longString.toString(), 200 - addedSuffix.length).concat(addedSuffix))
       })
     })
   })

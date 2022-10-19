@@ -28,6 +28,7 @@ import picklistPromoteValidator from './change_validators/picklist_promote'
 import createCheckOnlyDeployValidator from './change_validators/check_only_deploy'
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
+import recordTypeDeletionValidator from './change_validators/record_type_deletion'
 import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig) => ChangeValidator
@@ -43,6 +44,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
+  recordTypeDeletion: () => recordTypeDeletionValidator,
 }
 
 const checkOnlyChangeValidators

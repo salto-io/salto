@@ -86,6 +86,7 @@ export type ChangeValidatorName = (
   | 'picklistPromote'
   | 'cpqValidator'
   | 'sbaaApprovalRulesCustomCondition'
+  | 'recordTypeDeletion'
 )
 
 export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
@@ -547,6 +548,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
+    recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

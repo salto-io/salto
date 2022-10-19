@@ -105,6 +105,9 @@ export const relativeApiName = (name: string): string => (
   _.last(name.split(API_NAME_SEPARATOR)) as string
 )
 
+export const parentApiName = async (elem: Readonly<Element>):
+    Promise<string> => _.first((await fullApiName(elem)).split(API_NAME_SEPARATOR)) as string
+
 export const apiName = async (elem: Readonly<Element>, relative = false): Promise<string> => {
   const name = await fullApiName(elem)
   return name && relative ? relativeApiName(name) : name

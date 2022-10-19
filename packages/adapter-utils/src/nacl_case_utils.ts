@@ -22,6 +22,7 @@ const NACL_CUSTOM_MAPPING_PREFIX = '_'
 // This can have an effect at a time we add a ~15 chars suffix
 // So we are taking an extra buffer and limit it to 200
 const MAX_PATH_LENGTH = 200
+const MAX_PATH_EXTENSION_LENGTH = 20
 
 export const pathNaclCase = (name?: string): string =>
   (name ? name.split(NACL_ESCAPING_SUFFIX_SEPARATOR)[0] : '').slice(0, MAX_PATH_LENGTH)
@@ -134,10 +135,10 @@ export const normalizeStaticResourcePath = (name: string): string => {
   const nameHash = hashUtils.toMD5(name)
   const extIndex = nameBuffer.lastIndexOf('.')
   // In case the file has a too long extension length or no extension at all
-  if (extIndex === -1 || nameBuffer.byteLength - extIndex > MAX_PATH_LENGTH) {
+  if (extIndex === -1 || nameBuffer.byteLength - extIndex > MAX_PATH_EXTENSION_LENGTH) {
     return nameBuffer.slice(0, MAX_PATH_LENGTH).toString().concat(`_${nameHash}`)
   }
-  return nameBuffer.slice(0, MAX_PATH_LENGTH).toString()
+  return nameBuffer.slice(0, extIndex).toString()
     .concat(`_${nameHash}`)
     .concat(nameBuffer.slice(extIndex).toString())
 }

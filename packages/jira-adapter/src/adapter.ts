@@ -174,7 +174,6 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationSchemeFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
-  permissionSchemeFilter,
   jqlReferencesFilter,
   removeEmptyValuesFilter,
   maskingFilter,

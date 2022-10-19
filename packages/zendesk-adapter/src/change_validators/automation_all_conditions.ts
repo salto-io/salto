@@ -33,7 +33,7 @@ const fieldExist = (field: string): boolean =>
   ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)
 
 
-export const isNotValidData = (instance: InstanceElement): boolean => {
+const isNotValidData = (instance: InstanceElement): boolean => {
   const allConditions = instance.value.conditions?.all ?? []
   return !(isConditions(allConditions)
       && allConditions.some(condition => fieldExist(condition.field)))
@@ -43,9 +43,9 @@ export const automationAllConditionsValidator: ChangeValidator = async changes =
   const relevantInstances = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .map(data => resolveValues(data, lookupFunc))
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
+    .map(data => resolveValues(data, lookupFunc))
     .filter(isNotValidData)
     .toArray()
 

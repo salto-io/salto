@@ -13,7 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+} from '@salto-io/adapter-api'
 import { ZENDESK } from '../../src/constants'
 import { automationAllConditionsValidator } from '../../src/change_validators'
 
@@ -221,5 +227,44 @@ describe('automationAllConditionsValidator', () => {
       the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
       Requester`,
     }])
+  })
+  it('should not return error for reference expression', async () => {
+    const ticketFieldType = new ObjectType({
+      elemID: new ElemID(ZENDESK, 'ticket_field'),
+    })
+    const automationWithReference = new InstanceElement(
+      'Test10',
+      automationType,
+      {
+        id: 2,
+        title: 'Test10',
+        active: true,
+        actions: [{
+          field: 'Test',
+          value: 'Test',
+        }],
+        conditions: {
+          all: [
+            {
+              field: 'status',
+              operator: 'is',
+              value: 'new',
+            },
+            {
+              field: new ReferenceExpression(
+                ticketFieldType.elemID.createNestedID('instance', 'Test1'),
+                'test ticket field',
+              ),
+              operator: 'is',
+              value: 'new',
+            },
+          ],
+        },
+      },
+    )
+    const errors = await automationAllConditionsValidator(
+      [toChange({ after: automationWithReference })]
+    )
+    expect(errors).toHaveLength(0)
   })
 })

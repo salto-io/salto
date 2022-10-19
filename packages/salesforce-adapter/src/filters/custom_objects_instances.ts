@@ -18,7 +18,11 @@ import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
-import { createInvlidIdFieldConfigChange, createUnresolvedRefIdFieldConfigChange } from '../config_change'
+import {
+  createDataObjectExcludeChange,
+  createInvlidIdFieldConfigChange,
+  createUnresolvedRefIdFieldConfigChange,
+} from '../config_change'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
@@ -412,6 +416,25 @@ export const getCustomObjectsFetchSettings = async (
     .toArray()
 }
 
+const filterHeavyTypes = async (
+  { typeName, maxInstancesPerType, fetchSettings, client, heavyTypesConfigChanges }
+: { typeName: string
+    maxInstancesPerType: number
+    fetchSettings: Record<string, CustomObjectFetchSetting>
+    client: SalesforceClient
+    heavyTypesConfigChanges: ConfigChangeSuggestion[]})
+: Promise<void> => {
+  const instanceCount = await client.countInstances(typeName)
+
+  if (instanceCount > maxInstancesPerType * 0 + 5) {
+    delete fetchSettings[typeName]
+    const value = typeName
+    const reason = value
+    // Return a config suggestion to exclude that type from the dataObjects
+    heavyTypesConfigChanges.push(createDataObjectExcludeChange({ value, reason }))
+  }
+}
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
@@ -431,6 +454,20 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       validFetchSettings,
       setting => apiName(setting.objectType),
     )
+
+    const heavyTypesConfigChanges : ConfigChangeSuggestion[] = []
+    // Filter out types with a lot of instances in order to prevent unwanted slow fetching
+    const filterHeavyTypesPromises = Object.keys(validChangesFetchSettings).map(
+      typeName => filterHeavyTypes({
+        typeName,
+        maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
+        fetchSettings: validChangesFetchSettings,
+        client,
+        heavyTypesConfigChanges,
+      })
+    )
+    await Promise.all(filterHeavyTypesPromises)
+
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
       validChangesFetchSettings,
@@ -445,7 +482,11 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ))
       .toArray()
     return {
-      configSuggestions: [...invalidFieldSuggestions, ...configChangeSuggestions],
+      configSuggestions: [
+        ...invalidFieldSuggestions,
+        ...heavyTypesConfigChanges,
+        ...configChangeSuggestions,
+      ],
     }
   },
 })

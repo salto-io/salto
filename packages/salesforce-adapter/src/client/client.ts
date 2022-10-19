@@ -504,6 +504,17 @@ export default class SalesforceClient {
   }
 
   /**
+   * Count the amount instance of a type
+   */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
+  @logDecorator()
+  @requiresLogin()
+  public async countInstances(typeName: string) : Promise<number> {
+    const countResult = await this.conn.query(`SELECT COUNT() FROM ${typeName}`)
+    return countResult.totalSize
+  }
+
+  /**
    * Extract metadata object names
    */
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })

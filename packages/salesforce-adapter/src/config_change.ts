@@ -41,6 +41,14 @@ export const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]):
   return [MESSAGE_INTRO, '', MESSAGE_REASONS_INTRO, ...reasons.map(formatReason), '', MESSAGE_SUMMARY].join('\n')
 }
 
+export const createDataObjectExcludeChange = (
+  { value, reason } : { value: string; reason: string }
+) : ConfigChangeSuggestion => ({
+  type: 'dataObjectsExclude',
+  value,
+  reason,
+})
+
 export const createInvlidIdFieldConfigChange = (
   typeName: string,
   invalidFields: string[]

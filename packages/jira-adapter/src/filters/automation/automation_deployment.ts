@@ -266,5 +266,4 @@ const filter: FilterCreator = ({ client, config }) => ({
     }
   },
 })
-
 export default filter

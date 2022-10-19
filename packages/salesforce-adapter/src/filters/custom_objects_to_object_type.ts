@@ -38,7 +38,7 @@ import {
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE, FLEXI_PAGE_TYPE,
 } from '../constants'
-import { FilterContext, LocalFilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import {
   Types, isCustomObject, apiName, transformPrimitive, MetadataValues,
   formulaTypeName, metadataType, isCustomSettings, metadataAnnotationTypes,
@@ -800,15 +800,6 @@ const removeDuplicateElements = <T extends Element>(elements: T[]): T[] => {
   })
 }
 
-
-const filterHeavyCustomObjects = ({ instance, config }
-    : { instance: InstanceElement; config: FilterContext })
-    : boolean => {
-  const instancesCount = instance.value.listViews?.length || 1
-  return instancesCount > config.fetchProfile.maxInstancesPerType * 0 + 5
-  // TODO: log and exclude
-}
-
 /**
  * Convert custom object instance elements into object types
  */
@@ -829,7 +820,6 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
 
       await awu(customObjectInstances)
-        .filter(instance => filterHeavyCustomObjects({ instance, config }))
         .flatMap(instance => createFromInstance(instance, typesFromInstance, fieldsToSkip))
         // Make sure we do not override existing metadata types with custom objects
         // this can happen with standard objects having the same name as a metadata type

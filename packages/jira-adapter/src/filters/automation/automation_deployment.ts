@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalOrModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard, resolveValues } from '@salto-io/adapter-utils'
 import Joi from 'joi'
+import { getDiffIds } from '../../diff'
 import { AUTOMATION_TYPE } from '../../constants'
 import { addAnnotationRecursively, findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
@@ -167,12 +168,10 @@ const updateAutomationLabels = async (
   client: JiraClient,
   cloudId: string,
 ): Promise<void> => {
-  const labelsBefore = isModificationChange(change) && change.data.before.value.labels
-    ? Array.from(change.data.before.value.labels) : []
-  const labelsAfter = change.data.after.value.labels
-    ? Array.from(change.data.after.value.labels) : []
-  const addedLabels = _.differenceWith(labelsAfter, labelsBefore) as string[]
-  const removedLabels = _.differenceWith(labelsBefore, labelsAfter) as string[]
+  const { addedIds: addedLabels, removedIds: removedLabels } = getDiffIds(
+    isRemovalOrModificationChange(change) ? change.data.before.value.labels ?? [] : [],
+    isAdditionOrModificationChange(change) ? change.data.after.value.labels ?? [] : [],
+  )
   if (addedLabels.length !== 0) {
     await addAutomationLabels(getChangeData(change), addedLabels, client, cloudId)
   }

@@ -167,12 +167,23 @@ describe('naclCase utils', () => {
     describe('With a very long path', () => {
       const longString = new Array(30).fill('1234567890_').join('').concat('.extension')
       const longStringHash = hashUtils.toMD5(longString)
-      it('Should return at most 200 chars', () => {
+      it('Should return at most 200 chars (not included hash + extension)', () => {
         expect(normalizeStaticResourcePath(longString).length).toBeLessThanOrEqual(200 + `_${longStringHash}.extension`.length)
       })
 
-      it('Should return the first 200 chars and the extension', () => {
+      it('Should return the first 200 chars, hash and the extension', () => {
         expect(normalizeStaticResourcePath(longString)).toEqual(longString.slice(0, 200).concat(`_${longStringHash}.extension`))
+      })
+    })
+    describe('With a very long extension', () => {
+      const longString = 'aaa.'.concat(new Array(30).fill('1234567890_').join(''))
+      const longStringHash = hashUtils.toMD5(longString)
+      it('Should return at most 200 chars (not included hash + extension)', () => {
+        expect(normalizeStaticResourcePath(longString).length).toBeLessThanOrEqual(200 + `_${longStringHash}`.length)
+      })
+
+      it('Should return the first 200 chars, hash and the extension', () => {
+        expect(normalizeStaticResourcePath(longString)).toEqual(longString.slice(0, 200).concat(`_${longStringHash}`))
       })
     })
   })

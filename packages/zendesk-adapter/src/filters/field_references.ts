@@ -746,6 +746,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { type: 'tag' },
   },
+  {
+    src: { field: 'parent_section_id', parentTypes: ['section'] },
+    serializationStrategy: 'id',
+    target: { type: 'section' },
+  },
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [

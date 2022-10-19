@@ -168,6 +168,7 @@ const filterCreator: FilterCreator = ({ config }) => {
             return value
           },
           allowEmpty: true,
+          strict: false,
         }) ?? instance.value
       }), 'Dynamic content references filter'),
   })

@@ -26,9 +26,11 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
+export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
 export const METADATA_CONFIG = 'metadata'
@@ -160,6 +162,7 @@ export type FetchParameters = {
   fetchAllCustomSettings?: boolean // TODO - move this into optional features
   optionalFeatures?: OptionalFeatures
   target?: string[]
+  maxInstancesPerType?: number
 }
 
 export type DeprecatedMetadataParams = {
@@ -567,6 +570,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     optionalFeatures: { refType: optionalFeaturesType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
     target: { refType: new ListType(BuiltinTypes.STRING) },
+    maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -621,6 +625,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,
+          [MAX_INSTANCES_PER_TYPE]: DEFAULT_MAX_INSTANCES_PER_TYPE,
         },
       },
     },

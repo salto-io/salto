@@ -101,6 +101,7 @@ import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
+import permissionSchemeFilter2 from './filters/permission_scheme/permission_scheme'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
@@ -198,6 +199,7 @@ export const DEFAULT_FILTERS = [
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
+  permissionSchemeFilter2,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

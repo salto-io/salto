@@ -45,7 +45,7 @@ describe('record type deletion change validator', () => {
       const changeErrors = await recordTypeChangeValidator(
         [toChange({ before: objectType }), toChange({ before: beforeRecord })]
       )
-      expect(changeErrors).toHaveLength(0)
+      expect(changeErrors).toBeEmpty()
     })
   })
 })

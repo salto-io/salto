@@ -24,16 +24,17 @@ import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
-const isRecordTypeChange = async (changedElement: ChangeDataType): Promise<boolean> => (
-  isInstanceOfType(RECORD_TYPE_METADATA_TYPE)(changedElement)
-)
+const isInstanceOfTypeRecordType = isInstanceOfType(RECORD_TYPE_METADATA_TYPE)
 
 const isTypeDeletion = (changedElement: ChangeDataType): boolean => (
   changedElement.elemID.idType === 'type'
 )
 
 const isRecordTypeOfDeletedType = async (instance: InstanceElement, deletedTypes: string[]):
-    Promise<boolean> => deletedTypes.includes((await apiName(instance)).split('.')[0])
+    Promise<boolean> => {
+  const type = (await apiName(instance)).split('.')[0]
+  return deletedTypes.includes(type)
+}
 
 
 const createChangeError = (instance: InstanceElement): ChangeError =>
@@ -57,7 +58,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isInstanceChange)
     .filter(isRemovalChange)
     .map(getChangeData)
-    .filter(isRecordTypeChange)
+    .filter(isInstanceOfTypeRecordType)
     .filter(async instance => !(await isRecordTypeOfDeletedType(instance, deletedTypes)))
     .map(createChangeError)
     .toArray()

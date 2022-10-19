@@ -120,7 +120,7 @@ const createAttachmentInstance = ({
     macro.value.title, attachment.filename
   )
   const naclName = naclCase(name)
-  const pathName = pathNaclCase(name)
+  const pathName = pathNaclCase(naclName)
   const resourcePathName = normalizeStaticResourcePath(name)
   return new InstanceElement(
     naclName,

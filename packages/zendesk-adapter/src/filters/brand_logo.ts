@@ -105,7 +105,7 @@ const getBrandLogo = async ({ client, brand }: {
   const name = elementsUtils.ducktype.toNestedTypeName(
     brand.value.name, logoValues.file_name
   )
-  const pathName = pathNaclCase(name)
+  const pathName = pathNaclCase(naclCase(name))
   const resourcePathName = normalizeStaticResourcePath(name)
 
   const { id, file_name: filename } = brand.value.logo

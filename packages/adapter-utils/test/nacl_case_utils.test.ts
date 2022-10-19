@@ -165,25 +165,29 @@ describe('naclCase utils', () => {
       })
     })
     describe('With a very long path', () => {
-      const longString = new Array(30).fill('1234567890_').join('').concat('.extension')
+      const longString = new Array(30).fill('123456שבע0_').join('').concat('.extension')
       const longStringHash = hashUtils.toMD5(longString)
-      it('Should return at most 200 chars (not included hash + extension)', () => {
-        expect(normalizeStaticResourcePath(longString).length).toBeLessThanOrEqual(200 + `_${longStringHash}.extension`.length)
+      it('Should return at extacly 200 chars', () => {
+        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength).toEqual(200)
       })
 
       it('Should return the first 200 chars, hash and the extension', () => {
-        expect(normalizeStaticResourcePath(longString)).toEqual(longString.slice(0, 200).concat(`_${longStringHash}.extension`))
+        const addedSuffix = `_${longStringHash}.extension`
+        expect(normalizeStaticResourcePath(longString))
+          .toEqual(longString.slice(0, 200 - addedSuffix.length).concat(addedSuffix))
       })
     })
     describe('With a very long extension', () => {
-      const longString = 'aaa.'.concat(new Array(30).fill('1234567890_').join(''))
+      const longString = 'aaa.'.concat(new Array(30).fill('1234חמש890_').join(''))
       const longStringHash = hashUtils.toMD5(longString)
-      it('Should return at most 200 chars (not included hash + extension)', () => {
-        expect(normalizeStaticResourcePath(longString).length).toBeLessThanOrEqual(200 + `_${longStringHash}`.length)
+      it('Should return exactly 200 chars', () => {
+        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength).toEqual(200)
       })
 
-      it('Should return the first 200 chars, hash and the extension', () => {
-        expect(normalizeStaticResourcePath(longString)).toEqual(longString.slice(0, 200).concat(`_${longStringHash}`))
+      it('Should return the first 200 chars and hash', () => {
+        const addedSuffix = `_${longStringHash}`
+        expect(normalizeStaticResourcePath(longString))
+          .toEqual(longString.slice(0, 200 - addedSuffix.length).concat(addedSuffix))
       })
     })
   })

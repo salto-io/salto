@@ -13,6 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+import path from 'path'
+import truncate from 'truncate-utf8-bytes'
 import invert from 'lodash/invert'
 import { hash as hashUtils } from '@salto-io/lowerdash'
 
@@ -133,14 +136,14 @@ export const normalizeStaticResourcePath = (name: string): string => {
     return name
   }
   const nameHash = hashUtils.toMD5(name)
-  const extIndex = nameBuffer.lastIndexOf('.')
+  const extBuffer = Buffer.from(path.extname(name))
   // In case the file has a too long extension length or no extension at all
-  if (extIndex === -1 || nameBuffer.byteLength - extIndex > MAX_PATH_EXTENSION_LENGTH) {
-    return nameBuffer.slice(0, MAX_PATH_LENGTH).toString().concat(`_${nameHash}`)
+  if (_.isEmpty(extBuffer) || extBuffer.byteLength > MAX_PATH_EXTENSION_LENGTH) {
+    const addedSuffix = `_${nameHash}`
+    return nameBuffer.slice(0, MAX_PATH_LENGTH - addedSuffix.length).toString().concat(addedSuffix)
   }
-  return nameBuffer.slice(0, Math.min(MAX_PATH_LENGTH, extIndex)).toString()
-    .concat(`_${nameHash}`)
-    .concat(nameBuffer.slice(extIndex).toString())
+  const addedSuffix = `_${nameHash}${extBuffer.toString()}`
+  return nameBuffer.slice(0, MAX_PATH_LENGTH - addedSuffix.length).toString().concat(addedSuffix)
 }
 
 export const invertNaclCase = (name: string): string => {

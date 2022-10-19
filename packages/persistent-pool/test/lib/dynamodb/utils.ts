@@ -13,23 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DynamoDB } from 'aws-sdk'
+import {
+  DeleteTableCommand,
+  DynamoDBClient,
+} from '@aws-sdk/client-dynamodb'
 import { retry } from '@salto-io/lowerdash'
 import { dbUtils } from '../../../src/lib/dynamodb/utils'
 
 const { withRetry } = retry
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const testDbUtils = (db: DynamoDB) => {
+export const testDbUtils = (db: DynamoDBClient) => {
   const utils = dbUtils(db)
 
   const deleteTable = async (
     tableName: string,
   ): Promise<void> => {
     try {
-      await db.deleteTable({ TableName: tableName }).promise()
+      const deleteCommand = new DeleteTableCommand({ TableName: tableName })
+      await db.send(deleteCommand)
     } catch (e) {
-      if (e.code === 'ResourceNotFoundException') {
+      if (e.toString().includes('ResourceNotFoundException')) {
         return undefined
       }
 

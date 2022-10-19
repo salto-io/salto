@@ -52,7 +52,7 @@ type CompareFieldValueObject = {
   compareFieldValue: {
     multiValue: boolean
     value: string
-    values: string
+    values?: string
     type: string
   }
 }
@@ -117,7 +117,12 @@ const removeInnerIds = async (instance: InstanceElement): Promise<void> => {
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, path }) => (
-      path !== undefined && path.name === 'id' && !path.createParentID().isTopLevel()
+      // We want to remove all the ids besides the id in the of the automation itself
+      // and ids inside component values
+      path !== undefined
+        && path.name === 'id'
+        && !path.getFullNameParts().includes('value')
+        && !path.createParentID().isTopLevel()
         ? undefined
         : value
     ),
@@ -210,7 +215,7 @@ const consolidateLinkTypeFields = async (instance: InstanceElement): Promise<voi
         && isLinkTypeObject(value)
       ) {
         value.linkType = value.linkTypeDirection.concat(':', value.linkType)
-        delete value.linkTypeDirection
+        return _.omit(value, 'linkTypeDirection')
       }
       return value
     },

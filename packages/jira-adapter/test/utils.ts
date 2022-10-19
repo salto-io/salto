@@ -22,6 +22,8 @@ import { Credentials } from '../src/auth'
 import { JiraConfig, configType, getDefaultConfig } from '../src/config/config'
 import JiraClient from '../src/client/client'
 import { FilterCreator } from '../src/filter'
+import { paginate } from '../src/client/pagination'
+import { GetIdMapFunc, getIdMapFuncCreator } from '../src/users_map'
 
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
@@ -52,6 +54,7 @@ type ClientWithMockConnection = {
   client: JiraClient
   paginator: clientUtils.Paginator
   connection: MockInterface<clientUtils.APIConnection>
+  getIdMapFunc: GetIdMapFunc
 }
 export const mockClient = (): ClientWithMockConnection => {
   const connection = mockConnection()
@@ -70,9 +73,10 @@ export const mockClient = (): ClientWithMockConnection => {
     isDataCenter: false,
   })
   const paginator = clientUtils.createPaginator(
-    { paginationFuncCreator: clientUtils.getWithOffsetAndLimit, client }
+    { paginationFuncCreator: paginate, client }
   )
-  return { client, paginator, connection }
+  const getIdMapFunc = getIdMapFuncCreator(paginator)
+  return { client, paginator, connection, getIdMapFunc }
 }
 
 export const getDefaultAdapterConfig = async (): Promise<JiraConfig> => {

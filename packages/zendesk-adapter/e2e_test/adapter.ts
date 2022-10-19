@@ -15,6 +15,7 @@
 */
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import ZendeskClient from '../src/client/client'
 import ZendeskAdapter, { ZendeskAdapterParams } from '../src/adapter'
 import { DEFAULT_CONFIG } from '../src/config'
@@ -31,15 +32,17 @@ export type Reals = {
 export type Opts = {
   adapterParams?: Partial<ZendeskAdapterParams>
   credentials: Credentials
+  elementsSource: ReadOnlyElementsSource
 }
 
-export const realAdapter = ({ adapterParams, credentials }: Opts, config = DEFAULT_CONFIG):
-Reals => {
+export const realAdapter = (
+  { adapterParams, credentials, elementsSource }: Opts, config = DEFAULT_CONFIG
+): Reals => {
   const client = (
     (adapterParams && adapterParams.client)
     || new ZendeskClient({ credentials, config: config.client })
   )
-  const adapter = new ZendeskAdapter({ client, config })
+  const adapter = new ZendeskAdapter({ client, credentials, config, elementsSource })
   return { client, adapter }
 }
 

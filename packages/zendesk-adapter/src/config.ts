@@ -1617,6 +1617,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1629,13 +1631,39 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/articles/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{sectionId}/articles',
+        method: 'post',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          sectionId: 'section_id',
+        },
+      },
+      modify: {
+        url: '/help_center/articles/{articleId}',
+        method: 'put',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/articles/{articleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+    },
   },
   article_translation: {
     request: {
       url: '/help_center/articles/{articleId}/translations',
     },
     transformation: {
-      idFields: ['locale'],
+      idFields: ['&brand', 'locale'],
+      fileNameFields: ['&brand', 'locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1664,6 +1692,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   section: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'sections__sections',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -1681,7 +1711,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/help_center/sections/{sectionId}/translations',
     },
     transformation: {
-      idFields: ['locale'],
+      idFields: ['&brand', 'locale'],
+      fileNameFields: ['&brand', 'locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1703,6 +1734,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   label: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       sourceTypeName: 'labels__labels',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
@@ -1725,6 +1758,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   category: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'categories__categories',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -1742,7 +1777,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/help_center/categories/{categoryId}/translations',
     },
     transformation: {
-      idFields: ['locale'],
+      idFields: ['&brand', 'locale'],
+      fileNameFields: ['&brand', 'locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1868,14 +1904,32 @@ export const SUPPORTED_TYPES = {
   workspace: ['workspaces'],
 }
 
-export const GUIDE_SUPPORTED_TYPES = {
+// Types in Zendesk Guide which relate to a certain brand
+export const GUIDE_BRAND_SPECIFIC_TYPES = {
   article: ['articles'],
   section: ['sections'],
   label: ['labels'],
   category: ['categories'],
+}
+
+// Types in Zendesk Guide that whose instances are shared across all brands
+export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
 }
+
+export const GUIDE_SUPPORTED_TYPES = {
+  ...GUIDE_BRAND_SPECIFIC_TYPES,
+  ...GUIDE_GLOBAL_TYPES,
+}
+
+export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
+  ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
+  'article_translation',
+  'category_translation',
+  'section_translation',
+  'label',
+]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
@@ -1975,3 +2029,16 @@ export type FilterContext = {
 }
 
 export const validateFetchConfig = validateDuckTypeFetchConfig
+
+/**
+ * Validating each Zendesk Guide type has a dataField property in the configuration
+ */
+export const validateGuideTypesConfig = (
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => {
+  const zendeskGuideTypesWithoutDataField = _.values(GUIDE_SUPPORTED_TYPES).flat()
+    .filter(type => adapterApiConfig.types[type].transformation?.dataField === undefined)
+  if (zendeskGuideTypesWithoutDataField.length > 0) {
+    throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
+  }
+}

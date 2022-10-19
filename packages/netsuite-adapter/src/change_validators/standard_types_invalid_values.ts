@@ -27,7 +27,7 @@ import {
   SeverityLevel,
   Value,
 } from '@salto-io/adapter-api'
-import { isCustomType } from '../types'
+import { isStandardType } from '../types'
 
 const { isDefined } = values
 
@@ -82,7 +82,7 @@ const changeValidator: ChangeValidator = async changes => {
     changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
-      .filter(change => isCustomType(getChangeData(change).refType)),
+      .filter(change => isStandardType(getChangeData(change).refType)),
     change => getChangeData(change).elemID.typeName
   )
 

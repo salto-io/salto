@@ -70,6 +70,8 @@ import workflowSchemeFilter from './filters/workflow_scheme'
 import duplicateIdsFilter from './filters/duplicate_ids'
 import unresolvedParentsFilter from './filters/unresolved_parents'
 import fieldNameFilter from './filters/fields/field_name_filter'
+import accountIdFilter from './filters/account_id/account_id_filter'
+import addDisplayNameFilter from './filters/account_id/add_display_name_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
@@ -86,7 +88,7 @@ import securitySchemeFilter from './filters/security_scheme/security_scheme'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import forbiddenPermissionSchemeFilter from './filters/permission_scheme/forbidden_permission_schemes'
-import permissionSchemeFilter from './filters/permission_scheme/permission_scheme'
+import wrongUserPermissionSchemeFilter from './filters/permission_scheme/wrong_user_permission_scheme_filter'
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
@@ -94,11 +96,14 @@ import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
 import { JIRA } from './constants'
-import { removeScopedObjects } from './client/pagination'
+import { paginate, removeScopedObjects } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
-import SDPortalPermissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
+import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
+import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
+import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
+import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
   generateTypes,
@@ -107,10 +112,12 @@ const {
   addDeploymentAnnotations,
 } = elementUtils.swagger
 
-const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  automationLabelFetchFilter,
+  automationLabelDeployFilter,
   automationFetchFilter,
   automationStructureFilter,
   automationDeploymentFilter,
@@ -190,7 +197,13 @@ export const DEFAULT_FILTERS = [
   queryFilter,
   missingDescriptionsFilter,
   smartValueReferenceFilter,
-  SDPortalPermissionSchemeFilter,
+  permissionSchemeFilter,
+  // Must run after user filter
+  accountIdFilter,
+  // Must run after accountIdFilter
+  addDisplayNameFilter,
+  // Must run after accountIdFilter
+  wrongUserPermissionSchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]
@@ -215,6 +228,7 @@ export default class JiraAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
+  private getIdMapFunc: GetIdMapFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -228,7 +242,7 @@ export default class JiraAdapter implements AdapterOperations {
     this.client = client
     const paginator = createPaginator({
       client: this.client,
-      paginationFuncCreator: getWithOffsetAndLimit,
+      paginationFuncCreator: paginate,
       customEntryExtractor: removeScopedObjects,
     })
 
@@ -238,6 +252,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
+    this.getIdMapFunc = getIdMapFuncCreator(paginator)
 
     const filterContext = {}
     this.createFiltersRunner = () => (
@@ -250,6 +265,7 @@ export default class JiraAdapter implements AdapterOperations {
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
+          getIdMapFunc: this.getIdMapFunc,
         },
         filterCreators,
         objects.concatObjects
@@ -372,7 +388,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig),
+      changeValidator: changeValidator(this.client, this.userConfig, this.getIdMapFunc),
       dependencyChanger,
       getChangeGroupIds,
     }

@@ -16,9 +16,10 @@
 
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
-import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_FIELD,
-  AUTOMATION_STATUS, AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
-  AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA, AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION } from '../../constants'
+import { AUTOMATION_PROJECT_TYPE, AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE,
+  AUTOMATION_FIELD, AUTOMATION_STATUS, AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA,
+  AUTOMATION_SUBTASK, AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT,
+  AUTOMATION_COMPARE_VALUE, AUTOMATION_OPERATION, AUTOMATION_COMPONENT_VALUE_TYPE, JIRA } from '../../constants'
 
 export const createAutomationTypes = (): {
   automationType: ObjectType
@@ -28,7 +29,7 @@ export const createAutomationTypes = (): {
     elemID: new ElemID(JIRA, 'AutomationActor'),
     fields: {
       type: { refType: BuiltinTypes.STRING },
-      value: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, 'AutomationActor'],
   })
@@ -211,6 +212,7 @@ export const createAutomationTypes = (): {
       projects: { refType: new ListType(projectType) },
       trigger: { refType: componentType },
       components: { refType: new ListType(componentType) },
+      labels: { refType: new ListType(BuiltinTypes.NUMBER) },
       tags: { refType: new ListType(tagType) },
       canOtherRuleTrigger: { refType: BuiltinTypes.BOOLEAN },
       notifyOnError: { refType: BuiltinTypes.STRING },

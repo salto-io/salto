@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression, MapType, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeData, INSTANCE_ANNOTATIONS, ReferenceExpression, MapType, isRemovalChange, isAdditionChange, ListType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
@@ -524,6 +524,45 @@ describe('handleHiddenChanges', () => {
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)
     })
+  })
+
+  it('should not remove empty values', async () => {
+    const valType = new ObjectType({
+      elemID: new ElemID('adapter', 'valType'),
+      fields: {
+        list: { refType: new ListType(BuiltinTypes.STRING) },
+        obj: { refType: new MapType(BuiltinTypes.STRING) },
+      },
+    })
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      fields: {
+        val: { refType: valType },
+      },
+    })
+    const instance = new InstanceElement(
+      'instance',
+      type,
+      {
+        val: {
+          list: [],
+          obj: {},
+        },
+      }
+    )
+
+    const change: DetailedChange = {
+      id: instance.elemID.createNestedID('val'),
+      action: 'add',
+      data: { after: instance.value.val },
+    }
+    const result = await handleHiddenChanges(
+      [change],
+      mockState([instance]),
+      createInMemoryElementSource([]),
+    )
+    expect(result.visible).toEqual([change])
+    expect(result.hidden.length).toBe(0)
   })
 
   describe('with nested visible change', () => {

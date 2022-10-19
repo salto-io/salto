@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { customtransactiontypeType } from '../../src/autogen/types/custom_types/customtransactiontype'
+import { customtransactiontypeType } from '../../src/autogen/types/standard_types/customtransactiontype'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/custom_transaction_type'
 

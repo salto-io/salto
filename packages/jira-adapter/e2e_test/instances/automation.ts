@@ -15,17 +15,23 @@
 */
 import { ElemID, TemplateExpression, Values, Element } from '@salto-io/adapter-api'
 import { createReference } from '../utils'
-import { JIRA, PRIORITY_TYPE_NAME } from '../../src/constants'
+import { JIRA, PRIORITY_TYPE_NAME, PROJECT_TYPE } from '../../src/constants'
 import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
 
 
 export const createAutomationValues = (name: string, allElements: Element[]): Values => ({
   name,
   state: 'ENABLED',
-  authorAccountId: '61d44bf59ee70a00685fa6b6',
+  authorAccountId: {
+    id: '61d44bf59ee70a00685fa6b6',
+    displayName: 'Testing salto',
+  },
   actor: {
     type: 'ACCOUNT_ID',
-    value: '557058:f58131cb-b67d-43c7-b30d-6b58d40bd077',
+    value: {
+      id: '557058:f58131cb-b67d-43c7-b30d-6b58d40bd077',
+      displayName: 'Automation for Jira',
+    },
   },
   trigger: {
     component: 'TRIGGER',
@@ -182,6 +188,35 @@ export const createAutomationValues = (name: string, allElements: Element[]): Va
         ],
         sendNotifications: false,
       },
+    },
+    {
+      component: 'ACTION',
+      schemaVersion: 1,
+      type: 'jira.lookup.issues',
+      value: {
+        name: {
+          type: 'FREE',
+          value: 'lookupIssues',
+        },
+        type: 'JQL',
+        query: {
+          type: 'SMART',
+          value: new TemplateExpression({ parts: [
+            createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Project__project'), allElements),
+            ' = ',
+            createReference(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'Test_Project@s'), allElements, ['key']),
+            ' ORDER BY ',
+            createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Rank__gh_lexo_rank__c@uubbuu'), allElements, ['name']),
+            ' ASC',
+          ] }),
+        },
+        lazy: false,
+        id: '_customsmartvalue_id_166080756221912123',
+      },
+      children: [
+      ],
+      conditions: [
+      ],
     },
   ],
   canOtherRuleTrigger: false,

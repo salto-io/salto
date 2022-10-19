@@ -1859,6 +1859,23 @@ describe('Test utils.ts', () => {
       expect(filteredInstance?.annotations).toEqual(inst.annotations)
     })
 
+    it('should not filter empty values', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        obj,
+        {
+          emptyList: [],
+          emptyObj: {},
+        },
+      )
+      const filteredInstance = await filterByID(
+        instance.elemID,
+        instance,
+        async () => true
+      )
+      expect(filteredInstance?.value).toEqual({ emptyList: [], emptyObj: {} })
+    })
+
     it('should return undefined if the base item fails the filter func', async () => {
       const filteredInstance = await filterByID(
         inst.elemID,

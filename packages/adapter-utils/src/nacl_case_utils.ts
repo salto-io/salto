@@ -138,7 +138,7 @@ export const normalizeStaticResourcePath = (name: string): string => {
   if (extIndex === -1 || nameBuffer.byteLength - extIndex > MAX_PATH_EXTENSION_LENGTH) {
     return nameBuffer.slice(0, MAX_PATH_LENGTH).toString().concat(`_${nameHash}`)
   }
-  return nameBuffer.slice(0, extIndex).toString()
+  return nameBuffer.slice(0, Math.min(MAX_PATH_LENGTH, extIndex)).toString()
     .concat(`_${nameHash}`)
     .concat(nameBuffer.slice(extIndex).toString())
 }

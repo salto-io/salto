@@ -61,31 +61,34 @@ export const createUnresolvedRefIdFieldConfigChange = (
     reason: `${typeName} has ${unresolvedRefIdFields} (reference) configured as idField. Failed to resolve some of the references.`,
   })
 
-export const createSkippedListConfigChange = (type: string, instance?: string):
+export const createSkippedListConfigChange = ({ type, instance, reason }
+  : { type: string; instance?: string; reason?: string }):
   ConfigChangeSuggestion => {
   if (_.isUndefined(instance)) {
     return {
       type: 'metadataExclude',
       value: { metadataType: type },
+      reason,
     }
   }
   return {
     type: 'metadataExclude',
     value: { metadataType: type, name: instance },
+    reason,
   }
 }
 
 export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery):
-  ConfigChangeSuggestion => createSkippedListConfigChange(res.type, res.folder)
+  ConfigChangeSuggestion => createSkippedListConfigChange({ type: res.type, instance: res.folder })
 
 export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChangeSuggestion[] =>
   makeArray(result.messages)
     .map((msg: Values) => constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg.problem ?? ''))
     .filter(regexRes => !_.isUndefined(regexRes?.groups))
-    .map(regexRes => createSkippedListConfigChange(
-      regexRes?.groups?.type as string,
-      regexRes?.groups?.instance as string
-    ))
+    .map(regexRes => createSkippedListConfigChange({
+      type: regexRes?.groups?.type as string,
+      instance: regexRes?.groups?.instance as string,
+    }))
 
 export type ConfigChange = {
   config: InstanceElement[]

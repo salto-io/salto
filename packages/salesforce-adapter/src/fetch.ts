@@ -19,10 +19,10 @@ import { FileProperties, MetadataInfo, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST } from './types'
+import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST, MAX_INSTANCES_PER_TYPE } from './types'
 import {
   METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE,
-  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE,
+  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE, CUSTOM_OBJECT,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
@@ -34,6 +34,8 @@ const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
+
+const UNLIMITED_INSTANCES_VALUE = -1
 
 export const fetchMetadataType = async (
   client: SalesforceClient,
@@ -128,16 +130,34 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 }
 
 export const fetchMetadataInstances = async ({
-  client, metadataType, fileProps, metadataQuery,
+  client, metadataType, fileProps, metadataQuery, maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
   metadataQuery: MetadataQuery
+  maxInstancesPerType?: number
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
   }
+
+  const typeName = fileProps[0].type
+  const instancesCount = fileProps.length
+  // We exclude metadataTypes with too many instances to avoid unwanted big and slow requests
+  // CustomObjects are checked in another flow
+  if (typeName !== CUSTOM_OBJECT
+      && maxInstancesPerType !== UNLIMITED_INSTANCES_VALUE
+      && instancesCount > maxInstancesPerType) {
+    const reason = `'${typeName}' has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
+      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
+    const skippedListConfigChange = createSkippedListConfigChange({ type: typeName, reason })
+    return {
+      elements: [],
+      configChanges: [skippedListConfigChange],
+    }
+  }
+
   const metadataTypeName = await apiName(metadataType)
 
   const { result: metadataInfos, errors } = await client.readMetadata(
@@ -164,7 +184,7 @@ export const fetchMetadataInstances = async ({
   return {
     elements,
     configChanges: makeArray(errors)
-      .map(e => createSkippedListConfigChange(metadataTypeName, e)),
+      .map(e => createSkippedListConfigChange({ type: metadataTypeName, instance: e })),
   }
 }
 
@@ -265,7 +285,7 @@ export const retrieveMetadataInstances = async ({
     if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
       if (fileProps.length <= 1) {
         configChanges.push(...fileProps.map(fileProp =>
-          createSkippedListConfigChange(fileProp.type, fileProp.fullName)))
+          createSkippedListConfigChange({ type: fileProp.type, instance: fileProp.fullName })))
         log.warn(`retrieve request for ${typesToRetrieve} failed: ${result.errorStatusCode} ${result.errorMessage}, adding to skip list`)
         return []
       }

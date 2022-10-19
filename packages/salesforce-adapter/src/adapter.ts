@@ -559,11 +559,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     const { elements: fileProps, configChanges } = await listMetadataObjects(
       this.client, typeName, [],
     )
+
     const instances = await fetchMetadataInstances({
       client: this.client,
       fileProps,
       metadataType: type,
       metadataQuery: this.fetchProfile.metadataQuery,
+      maxInstancesPerType: this.fetchProfile.maxInstancesPerType,
     })
     return {
       elements: instances.elements,

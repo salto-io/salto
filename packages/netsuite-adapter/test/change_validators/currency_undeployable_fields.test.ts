@@ -96,7 +96,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('Unable to deploy \'locale\' field. Please set the \'locale\' of the created currency to the desired value in the tartget enviroment.',)
+      expect(changeErrors[0].detailedMessage).toContain('Unable to deploy \'locale\' field. Once the deployment is completed, set the \'locale\' of the newly created currency to the desired value in the target environment.')
     })
   })
 

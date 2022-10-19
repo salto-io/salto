@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import invert from 'lodash/invert'
+import { hash as hashUtils } from '@salto-io/lowerdash'
 
 const NACL_ESCAPING_SUFFIX_SEPARATOR = '@'
 const NACL_CUSTOM_MAPPING_PREFIX = '_'
@@ -125,12 +126,21 @@ export const naclCase = (name?: string): string => {
   return `${cleanName}${suffixFromList(specialCharsMappingList)}`
 }
 
-export const elemNameToNaclCasedPath = (name: string): string => {
-  const extIndex = name.lastIndexOf('.')
-  if (extIndex === -1) {
+export const normalizeStaticResourcePath = (name: string): string => {
+  const nameBuffer = Buffer.from(name)
+  const nameByteLength = nameBuffer.byteLength
+  if (nameByteLength <= MAX_PATH_LENGTH) {
     return naclCase(name)
   }
-  return naclCase(name.slice(0, extIndex)).concat(name.slice(extIndex))
+  const nameHash = hashUtils.toMD5(name)
+  const extIndex = nameBuffer.lastIndexOf('.')
+  // In case the file has a too long extension length or no extension at all
+  if (extIndex === -1 || nameByteLength - extIndex > MAX_PATH_LENGTH) {
+    return naclCase(nameBuffer.slice(0, MAX_PATH_LENGTH).toString().concat(`_${nameHash}`))
+  }
+  return naclCase(nameBuffer.slice(0, MAX_PATH_LENGTH).toString()
+    .concat(`_${nameHash}`)
+    .concat(nameBuffer.slice(extIndex).toString()))
 }
 
 export const invertNaclCase = (name: string): string => {

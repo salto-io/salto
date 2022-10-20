@@ -14,8 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import truncate from 'truncate-utf8-bytes'
-import { hash as hashUtils } from '@salto-io/lowerdash'
 import { invertNaclCase, naclCase, normalizeFilePathPart, pathNaclCase } from '../src/nacl_case_utils'
 
 describe('naclCase utils', () => {

@@ -24,24 +24,25 @@ const log = logger(module)
 
 export const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
-): Promise<string[]|undefined> => {
+): Promise<Set<string>|undefined> => {
   const permissionListElementId = await elementSource.get(new ElemID('jira', PERMISSIONS, 'instance', ElemID.CONFIG_NAME))
   if (!permissionListElementId) {
     return undefined
   }
   if (isInstanceElement(permissionListElementId)) {
-    return Object.values(permissionListElementId.value.additionalProperties as { key: string }[])
-      .map(({ key }) => key)
+    return new Set(
+      Object.values(permissionListElementId.value.additionalProperties as { key: string }[])
+        .map(({ key }) => key))
   }
   return undefined
 }
 
 const hasInvalidPermissions = (
   permissionScheme: InstanceElement,
-  allowedPermissions: string[],
+  allowedPermissions: Set<string>,
 ): boolean =>
   permissionScheme.value.permissions.some(
-    (permission: { permission: string }) => !allowedPermissions.includes(permission.permission)
+    (permission: { permission: string }) => !allowedPermissions.has(permission.permission)
   )
 
 const getInvalidPermissionErrorMessage = (

@@ -30,7 +30,7 @@ const filter: FilterCreator = ({ elementsSource }) => {
       } else {
         unsupportedPermissionSchemes = omitChanges(
           changes,
-          (holder: PermissionHolder) => !allowedPermissions.includes(holder.permission)
+          (holder: PermissionHolder) => !allowedPermissions.has(holder.permission)
         )
       }
     },

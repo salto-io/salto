@@ -32,7 +32,8 @@ export const getAllowedPermissionTypes = async (
   if (isInstanceElement(permissionListElementId)) {
     return new Set(
       Object.values(permissionListElementId.value.additionalProperties as { key: string }[])
-        .map(({ key }) => key))
+        .map(({ key }) => key)
+    )
   }
   return undefined
 }
@@ -47,11 +48,11 @@ const hasInvalidPermissions = (
 
 const getInvalidPermissionErrorMessage = (
   permissionScheme: InstanceElement,
-  allowedPermissions: string[],
+  allowedPermissions: Set<string>,
 ): string => {
   const invalidPermissionTypes = Array.from(new Set(permissionScheme.value.permissions
     .filter((permission: { permission: string }) =>
-      !allowedPermissions.includes(permission.permission))
+      !allowedPermissions.has(permission.permission))
     .map((permission: { permission: string }) => permission.permission)))
   return `The permissions ${invalidPermissionTypes.join(', ')} in ${permissionScheme.elemID.getFullName()} does not exist in the current environment and will be excluded during deployment`
 }

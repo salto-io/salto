@@ -654,7 +654,7 @@
     tslib "^2.3.1"
     uuid "^8.3.2"
 
-"@aws-sdk/middleware-retry@^3.190.0":
+"@aws-sdk/middleware-retry@^3.171.0":
   version "3.190.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/middleware-retry/-/middleware-retry-3.190.0.tgz#935d4097d5785ae14b98272af69aed7ff066786b"
   integrity sha512-h1bPopkncf2ue/erJdhqvgR2AEh0bIvkNsIHhx93DckWKotZd/GAVDq0gpKj7/f/7B+teHH8Fg5GDOwOOGyKcg==

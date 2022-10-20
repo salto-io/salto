@@ -607,7 +607,7 @@ export class FieldReferenceResolver {
   async match(field: Field, element?: Element): Promise<boolean> {
     return (
       matchName(field.name, this.src.field)
-      && matchApiName(field.parent, this.src.parentTypes)
+      && await matchApiName(field.parent, this.src.parentTypes)
       && (this.src.instanceTypes === undefined
         || (isInstanceElement(element) && matchInstanceType(element, this.src.instanceTypes)))
     )
@@ -674,13 +674,13 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
     return strategies[0]
   }
 
-  return async ({ ref, path, field }) => {
+  return async ({ ref, path, field, element }) => {
     // We skip resolving instance annotations because they are not deployed to the service
     // and we need the full element context in those
     const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
 
     if (!isInstanceAnnotation) {
-      const strategy = await determineLookupStrategy({ ref, path, field })
+      const strategy = await determineLookupStrategy({ ref, path, field, element })
       if (strategy !== undefined) {
         return strategy.serialize({ ref, field })
       }

@@ -1048,6 +1048,45 @@ describe('Custom Object Instances filter', () => {
       })
     })
   })
+
+  describe('Fetching with MaxInstancesPerType', () => {
+    const element = createCustomObject('testElement')
+    // TODO: Remove this when done
+    // const { client } = mockAdapter({
+    //   adapterParams: {
+    //     getElemIdFunc: mockGetElemIdFunc,
+    //   },
+    // })
+    filter = filterCreator(
+      {
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            data: {
+              includeObjects: [
+                '.*',
+              ],
+              allowReferenceTo: [],
+              saltoIDSettings: {
+                defaultIdFields: [],
+                overrides: [],
+              },
+            },
+            maxInstancesPerType: 2,
+          }),
+        },
+      }
+    ) as FilterType
+    it('Should not fetch CustomObjects with more instances than MaxInstancesPerType', async () => {
+      jest.setTimeout(999999)
+      const result = await filter.onFetch([element, element, element])
+      console.log(result)
+    })
+    it('Should fetch CustomObjects with less instances than MaxInstancesPerType', async () => {
+      // Nothing
+    })
+  })
 })
 
 describe('buildSelectQueries', () => {

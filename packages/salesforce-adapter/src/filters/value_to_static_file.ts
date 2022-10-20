@@ -82,6 +82,7 @@ const extractToStaticFile = async (instance: InstanceElement): Promise<void> => 
       type: await instance.getType(),
       transformFunc,
       strict: false,
+      allowEmpty: true,
     }
   ) ?? values
 }

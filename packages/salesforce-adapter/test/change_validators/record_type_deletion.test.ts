@@ -24,7 +24,7 @@ import { createInstanceElement } from '../../src/transformers/transformer'
 describe('record type deletion change validator', () => {
   const objectType = new ObjectType({
     elemID: new ElemID('salesforce', 'obj__c', 'type'),
-    annotations: { metadataType: CUSTOM_OBJECT, apiName: 'Obj__c' },
+    annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
   })
 
   const beforeRecord = createInstanceElement({ fullName: 'obj__c.record' }, mockTypes.RecordType)

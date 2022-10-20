@@ -31,6 +31,7 @@ import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
 import activeFlowValidator from './change_validators/active_flow_modifications'
 import flowDeletionValidator from './change_validators/flow_deletion'
+
 import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig) => ChangeValidator

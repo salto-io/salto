@@ -1950,6 +1950,74 @@ describe('transformer', () => {
         })).toEqual('Test__c')
       })
     })
+    describe('with field in under FilterItem fields and element as context', () => {
+      const filterItemType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'FilterItem'),
+        annotations: { [METADATA_TYPE]: 'FilterItem' },
+        fields: {
+          // note: does not exactly match the real type
+          field: { refType: BuiltinTypes.STRING },
+        },
+      })
+      describe('with field in SharingRules instance and element as context', () => {
+        const sharingRulesType = new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'SharingRules'),
+          annotations: { [METADATA_TYPE]: 'SharingRules' },
+          fields: {
+            someFilterField: { refType: filterItemType },
+          },
+        })
+        const instance = new InstanceElement(
+          'rule111',
+          sharingRulesType,
+          {},
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(new ElemID(SALESFORCE, 'Lead')),
+            ],
+          },
+        )
+        it('should resolve to relative api name', async () => {
+          const testField = refObject.fields.test
+          expect(await getLookUpName({
+            ref: new ReferenceExpression(testField.elemID, testField, refObject),
+            field: filterItemType.fields.field,
+            path: instance.elemID.createNestedID('someFilterField', 'field'),
+            element: instance,
+          })).toEqual('Test__c')
+        })
+      })
+      describe('with field in non-SharingRules instance and element as context', () => {
+        const nonSharingRulesType = new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'NonSharingRules'),
+          annotations: { [METADATA_TYPE]: 'NonSharingRules' },
+          fields: {
+            someFilterField: { refType: filterItemType },
+          },
+        })
+        const instance = new InstanceElement(
+          'rule222',
+          nonSharingRulesType,
+          {},
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(new ElemID(SALESFORCE, 'Lead')),
+            ],
+          },
+        )
+        it('should resolve to absolute api name', async () => {
+          const testField = refObject.fields.test
+          expect(await getLookUpName({
+            ref: new ReferenceExpression(testField.elemID, testField, refObject),
+            field: filterItemType.fields.field,
+            path: instance.elemID.createNestedID('someFilterField', 'field'),
+            element: instance,
+          })).toEqual('Lead.Test__c')
+        })
+      })
+    })
     describe('with fields in product_rule (custom object) lookup_product_field update instance', () => {
       const mockProductRuleType = new ObjectType(
         {

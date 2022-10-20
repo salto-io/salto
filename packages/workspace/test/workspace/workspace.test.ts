@@ -2162,6 +2162,35 @@ describe('workspace', () => {
       expect(mapFlushCounter['workspace-default-errors']).toEqual(1)
       expect(mapFlushCounter['workspace-default-validationErrors']).toEqual(1)
     })
+    describe('with multiple environments', () => {
+      let workspace: Workspace
+      let env1StateFlush: jest.SpiedFunction<State['flush']>
+      let env2StateFlush: jest.SpiedFunction<State['flush']>
+      beforeEach(async () => {
+        const env1State = mockState()
+        const env2State = mockState()
+        env1StateFlush = jest.spyOn(env1State, 'flush')
+        env2StateFlush = jest.spyOn(env2State, 'flush')
+        workspace = await createWorkspace(
+          mockDirStore(),
+          undefined,
+          mockWorkspaceConfigSource(undefined, true),
+          undefined,
+          undefined,
+          undefined,
+          {
+            default: { naclFiles: createMockNaclFileSource([]), state: env1State },
+            inactive: { naclFiles: createMockNaclFileSource([]), state: env2State },
+            [COMMON_ENV_PREFIX]: { naclFiles: createMockNaclFileSource([]) },
+          },
+        )
+        await workspace.flush()
+      })
+      it('should flush all state files', () => {
+        expect(env1StateFlush).toHaveBeenCalled()
+        expect(env2StateFlush).toHaveBeenCalled()
+      })
+    })
   })
 
   describe('setCurrentEnv', () => {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, isElement, Value, Element, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
+import { Field, isElement, Value, Element, ReferenceExpression, ElemID, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -118,6 +118,8 @@ export type ReferenceContextStrategyName = (
 type SourceDef = {
   field: string | RegExp
   parentTypes: string[]
+  // when available, only consider instances matching one or more of the specified types
+  instanceTypes?: (string | RegExp)[]
 }
 
 /**
@@ -133,7 +135,7 @@ export type FieldReferenceDefinition = {
 
 export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem', 'FieldSetItem', 'FilterItem'] },
+    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem', 'FieldSetItem'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
@@ -153,8 +155,29 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   // note: not all field values under ReportColumn match this rule - but it's ok because
   // only the ones that match are currently extracted (SALTO-1758)
   {
-    src: { field: 'field', parentTypes: ['FilterItem', 'ReportColumn', 'PermissionSetFieldPermissions'] },
+    src: {
+      field: 'field',
+      parentTypes: ['ReportColumn', 'PermissionSetFieldPermissions'],
+    },
     target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'field',
+      parentTypes: ['FilterItem'],
+      // match everything except SharingRules (which uses a different serialization strategy)
+      instanceTypes: [/^(?!SharingRules$).*/],
+    },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'field',
+      parentTypes: ['FilterItem'],
+      instanceTypes: ['SharingRules'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
     src: { field: 'offsetFromField', parentTypes: ['WorkflowTask', 'WorkflowTimeTrigger'] },
@@ -551,15 +574,23 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   ...fieldPermissionEnumDisabledExtraMappingDefs,
 ]
 
-const matchName = (fieldName: string, matcher: string | RegExp): boolean => (
+const matchName = (name: string, matcher: string | RegExp): boolean => (
   _.isString(matcher)
-    ? matcher === fieldName
-    : matcher.test(fieldName)
+    ? matcher === name
+    : matcher.test(name)
 )
 
 const matchApiName = async (elem: Element, types: string[]): Promise<boolean> => (
   types.includes(await apiName(elem))
 )
+
+const matchInstanceType = async (
+  inst: InstanceElement,
+  matchers: (string | RegExp)[],
+): Promise<boolean> => {
+  const typeName = await apiName(await inst.getType())
+  return matchers.some(matcher => matchName(typeName, matcher))
+}
 
 export class FieldReferenceResolver {
   src: SourceDef
@@ -580,15 +611,20 @@ export class FieldReferenceResolver {
     return new FieldReferenceResolver(def)
   }
 
-  async match(field: Field): Promise<boolean> {
+  async match(field: Field, element?: Element): Promise<boolean> {
     return (
       matchName(field.name, this.src.field)
-      && matchApiName(field.parent, this.src.parentTypes)
+      && await matchApiName(field.parent, this.src.parentTypes)
+      && (this.src.instanceTypes === undefined
+        || (isInstanceElement(element) && matchInstanceType(element, this.src.instanceTypes)))
     )
   }
 }
 
-export type ReferenceResolverFinder = (field: Field) => Promise<FieldReferenceResolver[]>
+export type ReferenceResolverFinder = (
+  field: Field,
+  element?: Element,
+) => Promise<FieldReferenceResolver[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
@@ -611,10 +647,10 @@ export const generateReferenceResolverFinder = (
     .mapValues(items => items.map(item => item.def))
     .value()
 
-  return (async field => awu([
+  return (async (field, element) => awu([
     ...(matchersByFieldName[field.name] ?? []),
     ...(regexFieldMatchersByParent[await apiName(field.parent)] || []),
-  ]).filter(resolver => resolver.match(field)).toArray())
+  ]).filter(resolver => resolver.match(field, element)).toArray())
 }
 
 const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc => {
@@ -626,7 +662,7 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
       log.debug('could not determine field for path %s', args.path?.getFullName())
       return undefined
     }
-    const strategies = (await resolverFinder(args.field))
+    const strategies = (await resolverFinder(args.field, args.element))
       .map(def => def.serializationStrategy)
 
     if (strategies.length === 0) {
@@ -645,13 +681,13 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
     return strategies[0]
   }
 
-  return async ({ ref, path, field }) => {
+  return async ({ ref, path, field, element }) => {
     // We skip resolving instance annotations because they are not deployed to the service
     // and we need the full element context in those
     const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
 
     if (!isInstanceAnnotation) {
-      const strategy = await determineLookupStrategy({ ref, path, field })
+      const strategy = await determineLookupStrategy({ ref, path, field, element })
       if (strategy !== undefined) {
         return strategy.serialize({ ref, field })
       }

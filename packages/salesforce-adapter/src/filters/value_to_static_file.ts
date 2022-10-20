@@ -45,7 +45,9 @@ const shouldReplace = async (
   instance: InstanceElement
 ): Promise<boolean> => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
-  return _.isString(value) && hasCodeField(instance) && (await resolverFinder(field)).length > 0
+  return (_.isString(value)
+    && hasCodeField(instance)
+    && (await resolverFinder(field, instance)).length > 0)
 }
 
 

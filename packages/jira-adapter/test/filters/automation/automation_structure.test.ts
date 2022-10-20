@@ -64,6 +64,7 @@ describe('automationStructureFilter', () => {
             id: '2',
             component: 'CONDITION',
             value: {
+              id: 'someId',
               linkType: 'inward:10003',
               value: '123',
             },
@@ -187,6 +188,11 @@ describe('automationStructureFilter', () => {
     it('should remove inner ids', async () => {
       await filter.onFetch([instance])
       expect(instance.value.components[0].id).toBeUndefined()
+    })
+
+    it('should not remove inner ids in components values', async () => {
+      await filter.onFetch([instance])
+      expect(instance.value.components[2].value.id).toBe('someId')
     })
 
     it('should remove redundant keys', async () => {

@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
+import truncate from 'truncate-utf8-bytes'
 import invert from 'lodash/invert'
+import { hash as hashUtils } from '@salto-io/lowerdash'
 
 const NACL_ESCAPING_SUFFIX_SEPARATOR = '@'
 const NACL_CUSTOM_MAPPING_PREFIX = '_'
@@ -21,9 +24,28 @@ const NACL_CUSTOM_MAPPING_PREFIX = '_'
 // This can have an effect at a time we add a ~15 chars suffix
 // So we are taking an extra buffer and limit it to 200
 const MAX_PATH_LENGTH = 200
+const MAX_PATH_EXTENSION_LENGTH = 20
 
 export const pathNaclCase = (name?: string): string =>
   (name ? name.split(NACL_ESCAPING_SUFFIX_SEPARATOR)[0] : '').slice(0, MAX_PATH_LENGTH)
+
+// Trim part of a file name to comply with filesystem restrictions
+// This assumes the filesystem does not allow path parts to be over
+// MAX_PATH_LENGTH long in byte length
+export const normalizeFilePathPart = (name: string): string => {
+  if (Buffer.byteLength(name) <= MAX_PATH_LENGTH) {
+    return name
+  }
+  const nameHash = hashUtils.toMD5(name)
+  let extention = path.extname(name)
+  if (extention.length > MAX_PATH_EXTENSION_LENGTH
+      || Buffer.byteLength(extention) !== extention.length) {
+    // Heurstic guess - a valid extension must be short and ascii
+    extention = ''
+  }
+  const suffix = `_${nameHash}${extention}`
+  return truncate(name, MAX_PATH_LENGTH - suffix.length).concat(suffix)
+}
 
 /* eslint-disable quote-props */
 // Current values in this mapping should not be changed

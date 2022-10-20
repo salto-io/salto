@@ -237,7 +237,7 @@ export const transformValues = async (
       ),
       _.isUndefined
     )
-    return _.isEmpty(result) ? undefined : result
+    return _.isEmpty(result) && !allowEmpty ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = await awu(newVal)
@@ -248,7 +248,7 @@ export const transformValues = async (
       ))
       .filter(value => !_.isUndefined(value))
       .toArray()
-    return result.length === 0 ? undefined : result
+    return result.length === 0 && !allowEmpty ? undefined : result
   }
   return newVal
 }
@@ -856,13 +856,13 @@ export const filterByID = async <T extends Element | Values>(
       ),
       isDefined,
     )
-    return _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
+    return !_.isEmpty(value) && _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
   }
   if (_.isArray(value)) {
     const filteredArray = (await Promise.all(value
       .map(async (item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc))))
       .filter(isDefined)
-    return _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
+    return !_.isEmpty(value) && _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
   }
 
   return value

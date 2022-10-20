@@ -739,6 +739,30 @@ describe('Test utils.ts', () => {
         ])
       })
     })
+
+    describe('with allowEmpty', () => {
+      it('should not remove empty list', async () => {
+        const result = await transformValues({
+          values: [],
+          type: new ListType(BuiltinTypes.NUMBER),
+          transformFunc: ({ value }) => value,
+          allowEmpty: true,
+        })
+
+        expect(result).toEqual([])
+      })
+
+      it('should not remove empty object', async () => {
+        const result = await transformValues({
+          values: {},
+          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          transformFunc: ({ value }) => value,
+          allowEmpty: true,
+        })
+
+        expect(result).toEqual({})
+      })
+    })
   })
 
   describe('transformElement', () => {
@@ -1857,6 +1881,23 @@ describe('Test utils.ts', () => {
       )
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
       expect(filteredInstance?.annotations).toEqual(inst.annotations)
+    })
+
+    it('should not filter empty values', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        obj,
+        {
+          emptyList: [],
+          emptyObj: {},
+        },
+      )
+      const filteredInstance = await filterByID(
+        instance.elemID,
+        instance,
+        async () => true
+      )
+      expect(filteredInstance?.value).toEqual({ emptyList: [], emptyObj: {} })
     })
 
     it('should return undefined if the base item fails the filter func', async () => {

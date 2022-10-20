@@ -17,6 +17,7 @@
 import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
 
 
 export type FetchProfile = {
@@ -24,6 +25,7 @@ export type FetchProfile = {
   readonly dataManagement?: DataManagement
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
+  readonly maxInstancesPerType: number
 }
 
 export const buildFetchProfile = ({
@@ -32,11 +34,13 @@ export const buildFetchProfile = ({
   fetchAllCustomSettings,
   optionalFeatures,
   target,
+  maxInstancesPerType,
 }: FetchParameters): FetchProfile => ({
   metadataQuery: buildMetadataQuery(metadata, target),
   dataManagement: data && buildDataManagement(data),
   isFeatureEnabled: name => optionalFeatures?.[name] ?? true,
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
+  maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
 })
 
 export const validateFetchParameters = (

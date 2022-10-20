@@ -187,6 +187,24 @@ export const mockTypes = {
       attachments: { refType: new ListType(BuiltinTypes.STRING) },
     },
   }),
+  RecordType: createMetadataObjectType({
+    annotations: {
+      metadataType: 'RecordType',
+      dirName: 'RecordType',
+      suffix: 'recordType',
+    },
+  }),
+  Flow: createMetadataObjectType({
+    annotations: {
+      metadataType: 'Flow',
+      suffix: 'flow',
+      dirName: 'flow',
+    },
+    fields: {
+      status: { refType: BuiltinTypes.STRING },
+      actionType: { refType: BuiltinTypes.STRING },
+    },
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

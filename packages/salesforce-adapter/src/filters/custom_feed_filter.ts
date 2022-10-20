@@ -45,6 +45,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       fileProps: fileProps.map(fixCustomFeedFullName),
       metadataType: customFeedFilterType,
       metadataQuery: config.fetchProfile.metadataQuery,
+      maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
     })
     instances.elements.forEach(e => elements.push(e))
     return {

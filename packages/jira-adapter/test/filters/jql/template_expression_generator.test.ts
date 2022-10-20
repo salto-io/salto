@@ -69,50 +69,85 @@ describe('generateTemplateExpression', () => {
 
     const jql = 'status IN (Done, "To Do") AND otherfield = 2 AND issuetype = 3'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeInstanceOf(TemplateExpression)
-    expect((expression as TemplateExpression).parts).toEqual([
-      new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-      ' IN (',
-      new ReferenceExpression(doneInstance.elemID.createNestedID('name'), doneInstance.value.name),
-      ', "',
-      new ReferenceExpression(todoInstance.elemID.createNestedID('name'), todoInstance.value.name),
-      '") AND otherfield = 2 AND ',
-      new ReferenceExpression(issueTypeField.elemID, issueTypeField),
-      ' = 3',
-    ])
+    expect(expression).toEqual({
+      template: new TemplateExpression({ parts: [
+        new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        ' IN (',
+        new ReferenceExpression(doneInstance.elemID.createNestedID('name'), doneInstance.value.name),
+        ', "',
+        new ReferenceExpression(todoInstance.elemID.createNestedID('name'), todoInstance.value.name),
+        '") AND otherfield = 2 AND ',
+        new ReferenceExpression(issueTypeField.elemID, issueTypeField),
+        ' = 3',
+      ] }),
+      ambiguousTokens: new Set(),
+    })
   })
 
   it('should parse correctly jql with orderBy', async () => {
     const jql = 'ORDER BY status ASC'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeInstanceOf(TemplateExpression)
-    expect((expression as TemplateExpression).parts).toEqual([
-      'ORDER BY ',
-      new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-      ' ASC',
-    ])
+    expect(expression).toEqual({
+      template: new TemplateExpression({ parts: [
+        'ORDER BY ',
+        new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        ' ASC',
+      ] }),
+      ambiguousTokens: new Set(),
+    })
+  })
+
+  it('should not parse field in jql if there are another field with the same name', async () => {
+    fieldInstance.value.name = 'duplicate'
+
+
+    const anotherInstance = new InstanceElement(
+      'anotherField',
+      new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) }),
+      {
+        id: 'id',
+        name: 'duplicate',
+      }
+    )
+    const jql = 'ORDER BY duplicate ASC'
+    const expression = generateTemplateExpression(
+      jql,
+      generateJqlContext([anotherInstance, ...instances])
+    )
+    expect(expression).toEqual({
+      template: undefined,
+      ambiguousTokens: new Set(['duplicate']),
+    })
   })
 
   it('should parse correctly jql with orderBy with unknown field', async () => {
     const jql = 'ORDER BY unknown ASC'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeUndefined()
+    expect(expression).toEqual({
+      template: undefined,
+      ambiguousTokens: new Set(),
+    })
   })
 
   it('should parse correctly jql with orderBy with a JS built in name', async () => {
     const jql = 'ORDER BY __proto__ ASC'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeUndefined()
+    expect(expression).toEqual({
+      template: undefined,
+      ambiguousTokens: new Set(),
+    })
   })
 
   it('should ignore functions', async () => {
     const jql = 'status = currentUser()'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeInstanceOf(TemplateExpression)
-    expect((expression as TemplateExpression).parts).toEqual([
-      new ReferenceExpression(fieldInstance.elemID, fieldInstance),
-      ' = currentUser()',
-    ])
+    expect(expression).toEqual({
+      template: new TemplateExpression({ parts: [
+        new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        ' = currentUser()',
+      ] }),
+      ambiguousTokens: new Set(),
+    })
   })
 
   it('should parse correctly jql with customfields', async () => {
@@ -129,14 +164,16 @@ describe('generateTemplateExpression', () => {
 
     const jql = '"Custom Field" = 2 OR cf[12345] = 3'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeInstanceOf(TemplateExpression)
-    expect((expression as TemplateExpression).parts).toEqual([
-      '"',
-      new ReferenceExpression(customField.elemID.createNestedID('name'), 'Custom Field'),
-      '" = 2 OR cf[',
-      new ReferenceExpression(customField.elemID, customField),
-      '] = 3',
-    ])
+    expect(expression).toEqual({
+      template: new TemplateExpression({ parts: [
+        '"',
+        new ReferenceExpression(customField.elemID.createNestedID('name'), 'Custom Field'),
+        '" = 2 OR cf[',
+        new ReferenceExpression(customField.elemID, customField),
+        '] = 3',
+      ] }),
+      ambiguousTokens: new Set(),
+    })
   })
 
   it('should parse correctly jql with field with types', async () => {
@@ -153,12 +190,14 @@ describe('generateTemplateExpression', () => {
 
     const jql = '"Custom Field[number]" = 2'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeInstanceOf(TemplateExpression)
-    expect((expression as TemplateExpression).parts).toEqual([
-      '"',
-      new ReferenceExpression(customField.elemID.createNestedID('name'), 'Custom Field'),
-      '[number]" = 2',
-    ])
+    expect(expression).toEqual({
+      template: new TemplateExpression({ parts: [
+        '"',
+        new ReferenceExpression(customField.elemID.createNestedID('name'), 'Custom Field'),
+        '[number]" = 2',
+      ] }),
+      ambiguousTokens: new Set(),
+    })
   })
 
   it('should not replace fields with escaping', async () => {
@@ -175,6 +214,9 @@ describe('generateTemplateExpression', () => {
 
     const jql = '"a\\"b" = 2'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
-    expect(expression).toBeUndefined()
+    expect(expression).toEqual({
+      template: undefined,
+      ambiguousTokens: new Set(),
+    })
   })
 })

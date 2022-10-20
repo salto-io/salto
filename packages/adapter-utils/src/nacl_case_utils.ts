@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import path from 'path'
 import truncate from 'truncate-utf8-bytes'
 import invert from 'lodash/invert'

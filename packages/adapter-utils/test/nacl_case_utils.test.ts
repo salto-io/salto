@@ -191,5 +191,16 @@ describe('naclCase utils', () => {
         expect(normalizeFilePathPart(longString)).not.toContain(extension)
       })
     })
+    describe('With a short non ascii extension', () => {
+      const extension = '.סיומת'
+      const longString = new Array(17).fill('1234חמש890_').join('').concat(extension)
+      it('Should return 200 chars or less', () => {
+        expect(Buffer.from(normalizeFilePathPart(longString)).byteLength)
+          .toBeLessThanOrEqual(200)
+      })
+      it('Should not contain the full file extension', () => {
+        expect(normalizeFilePathPart(longString)).not.toContain(extension)
+      })
+    })
   })
 })

@@ -24,11 +24,11 @@ import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS } from '../constants'
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-const PERMISSION_INSTANCE_SCHEME = Joi.object({
+const ADDITIONAL_PERMISSION_SCHEME = Joi.object({
   key: Joi.string().required(),
 }).unknown(true)
 
-export const isAdditionalPermissionScheme = createSchemeGuard<{key: string}>(PERMISSION_INSTANCE_SCHEME, 'Found something')
+export const isAdditionalPermissionScheme = createSchemeGuard<{key: string}>(ADDITIONAL_PERMISSION_SCHEME, 'Found an invalid additional permission scheme')
 
 export const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,

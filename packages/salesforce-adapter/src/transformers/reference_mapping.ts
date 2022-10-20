@@ -140,15 +140,6 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
-    src: {
-      field: 'field',
-      parentTypes: ['FilterItem'],
-      instanceTypes: ['SharingRules'],
-    },
-    serializationStrategy: 'relativeApiName',
-    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
-  },
-  {
     src: { field: 'flowName', parentTypes: ['FlowSubflow'] },
     target: { type: 'Flow' },
   },
@@ -166,11 +157,27 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: {
       field: 'field',
-      parentTypes: ['FilterItem', 'ReportColumn', 'PermissionSetFieldPermissions'],
+      parentTypes: ['ReportColumn', 'PermissionSetFieldPermissions'],
+    },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'field',
+      parentTypes: ['FilterItem'],
       // match everything except SharingRules (which uses a different serialization strategy)
       instanceTypes: [/^(?!SharingRules$).*/],
     },
     target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: {
+      field: 'field',
+      parentTypes: ['FilterItem'],
+      instanceTypes: ['SharingRules'],
+    },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
     src: { field: 'offsetFromField', parentTypes: ['WorkflowTask', 'WorkflowTimeTrigger'] },

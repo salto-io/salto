@@ -611,7 +611,7 @@ export class FieldReferenceResolver {
     return new FieldReferenceResolver(def)
   }
 
-  async match(field: Field, element?: Element): Promise<boolean> {
+  async match(field: Field, element: Element): Promise<boolean> {
     return (
       matchName(field.name, this.src.field)
       && await matchApiName(field.parent, this.src.parentTypes)
@@ -623,7 +623,7 @@ export class FieldReferenceResolver {
 
 export type ReferenceResolverFinder = (
   field: Field,
-  element?: Element,
+  element: Element,
 ) => Promise<FieldReferenceResolver[]>
 
 /**
@@ -689,11 +689,11 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
     if (!isInstanceAnnotation) {
       const strategy = await determineLookupStrategy({ ref, path, field, element })
       if (strategy !== undefined) {
-        return strategy.serialize({ ref, field })
+        return strategy.serialize({ ref, field, element })
       }
       if (isElement(ref.value)) {
         const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
-        return defaultStrategy.serialize({ ref })
+        return defaultStrategy.serialize({ ref, element })
       }
     }
     return ref.value

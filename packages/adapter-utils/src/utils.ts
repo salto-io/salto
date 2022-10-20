@@ -439,7 +439,7 @@ export type GetLookupNameFuncArgs = {
   ref: ReferenceExpression
   field?: Field
   path?: ElemID
-  element?: Element
+  element: Element
 }
 export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Promise<Value>
 
@@ -543,7 +543,7 @@ export const restoreValues: RestoreValuesFunc = async (
 
     const ref = allReferencesPaths.get(path.getFullName())
     if (ref !== undefined) {
-      const refValue = await getLookUpName({ ref, field, path })
+      const refValue = await getLookUpName({ ref, field, path, element: targetElement })
       if (isEqualResolvedValues(refValue, value)) {
         return ref
       }

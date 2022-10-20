@@ -1867,7 +1867,8 @@ describe('transformer', () => {
             mockBusinessHoursInstance
           ),
           field: testField,
-          path: new ElemID(SALESFORCE, 'EntitlementProcess'),
+          path: new ElemID(SALESFORCE, 'EntitlementProcess', 'field', 'something'),
+          element: new ObjectType({ elemID: new ElemID(SALESFORCE, 'EntitlementProcess') }),
         })).toEqual('Default')
       })
     })
@@ -1906,6 +1907,7 @@ describe('transformer', () => {
           path: mockLayoutInstance.elemID.createNestedID(
             'layoutSections', '0', 'layoutColumns', '0', 'layoutItems', '0', 'field'
           ),
+          element: mockLayoutInstance,
         })).toEqual('Test__c')
       })
       it('should resolve to current value if referenced value is not an element', async () => {
@@ -1917,10 +1919,12 @@ describe('transformer', () => {
           path: mockLayoutInstance.elemID.createNestedID(
             'layoutSections', '0', 'layoutColumns', '0', 'layoutItems', '0', 'field'
           ),
+          element: mockLayoutInstance,
         })).toEqual(refValue)
         expect(await getLookUpName({
           ref: new ReferenceExpression(testField.elemID, refValue),
           field: mockLayoutItem.fields.field,
+          element: mockLayoutInstance,
         })).toEqual(refValue)
       })
     })
@@ -1947,6 +1951,7 @@ describe('transformer', () => {
           ref: new ReferenceExpression(testField.elemID, testField, refObject),
           field: workflowFieldUpdate.fields.field,
           path: mockWorkflowFieldUpdateInstance.elemID.createNestedID('field'),
+          element: mockWorkflowFieldUpdateInstance,
         })).toEqual('Test__c')
       })
     })
@@ -2048,6 +2053,7 @@ describe('transformer', () => {
           ref: mockProductRuleInst.value[CPQ_LOOKUP_PRODUCT_FIELD],
           field: mockProductRuleType.fields[CPQ_LOOKUP_PRODUCT_FIELD],
           path: mockProductRuleInst.elemID.createNestedID(CPQ_LOOKUP_PRODUCT_FIELD),
+          element: mockProductRuleInst,
         })).toEqual('Test__c')
       })
     })
@@ -2090,6 +2096,7 @@ describe('transformer', () => {
           ref: new ReferenceExpression(mockAlertInstance.elemID, mockAlertInstance),
           field: workflowActionReference.fields.name,
           path: mockWorkflowRuleInstance.elemID.createNestedID('actions', '0', 'name'),
+          element: mockWorkflowRuleInstance,
         })).toEqual('alert1')
       })
     })
@@ -2105,6 +2112,7 @@ describe('transformer', () => {
         expect(await getLookUpName({
           ref: new ReferenceExpression(testField.elemID, testField, refObject),
           path: srcInst.elemID.createNestedID('test'),
+          element: srcInst,
         })).toEqual('Lead.Test__c')
       })
     })
@@ -2121,6 +2129,7 @@ describe('transformer', () => {
           ref: new ReferenceExpression(testField.elemID, testField, refObject),
           field: srcObject.fields.test,
           path: srcInst.elemID.createNestedID('test'),
+          element: srcInst,
         })).toEqual('Lead.Test__c')
       })
     })

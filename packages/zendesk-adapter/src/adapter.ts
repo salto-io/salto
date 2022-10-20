@@ -86,8 +86,8 @@ import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
-import hcSectionFilter from './filters/help_center_section'
-import hcTranslationFilter from './filters/help_center_section_translation'
+import hcSectionFilter from './filters/help_center_section_and_category'
+import hcTranslationFilter from './filters/help_center_translation'
 
 const log = logger(module)
 const { createPaginator } = clientUtils

@@ -24,11 +24,11 @@ import {
   ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import filterCreator from '../../src/filters/help_center_section_translation'
+import filterCreator from '../../src/filters/help_center_translation'
 import { paginate } from '../../src/client/pagination'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
-import { removedTranslationParentId } from '../../src/filters/help_center_section'
+import { removedTranslationParentId } from '../../src/filters/help_center_section_and_category'
 
 describe('guild section translation filter', () => {
   let client: ZendeskClient

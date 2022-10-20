@@ -22,7 +22,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import filterCreator from '../../src/filters/help_center_section'
+import filterCreator from '../../src/filters/help_center_section_and_category'
 import { paginate } from '../../src/client/pagination'
 import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'

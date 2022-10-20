@@ -20,9 +20,9 @@ import {
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
-import { isTranslation, TranslationType } from '../filters/help_center_section'
+import { isTranslation, TranslationType } from '../filters/help_center_section_and_category'
 
-const PARENTS_TYPE_NAMES = ['section']
+const PARENTS_TYPE_NAMES = ['section', 'category']
 
 type ParentType = InstanceElement & {
   value: {

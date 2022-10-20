@@ -139,7 +139,7 @@ const getFieldInfo = (
   field: JqlField,
   jqlContext: JqlContext,
 ): {
-  fieldInfo: FieldInfo | undefined
+  fieldInfo?: FieldInfo
   error?: 'ambiguous'
  } => {
   let fieldIdentifier = field.value.toLowerCase()

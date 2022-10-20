@@ -16,6 +16,7 @@
 import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { isEmpty } from 'lodash'
 import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -38,11 +39,11 @@ export const getAllowedPermissionTypes = async (
   return undefined
 }
 
-const hasInvalidPermissions = (
+const getInvalidPermissions = (
   permissionScheme: InstanceElement,
   allowedPermissions: Set<string>,
-): boolean =>
-  permissionScheme.value.permissions.some(
+): string[] =>
+  permissionScheme.value.permissions.filter(
     (permission: { permission: string }) => !allowedPermissions.has(permission.permission)
   )
 
@@ -50,10 +51,7 @@ const getInvalidPermissionErrorMessage = (
   permissionScheme: InstanceElement,
   allowedPermissions: Set<string>,
 ): string => {
-  const invalidPermissionTypes = Array.from(new Set(permissionScheme.value.permissions
-    .filter((permission: { permission: string }) =>
-      !allowedPermissions.has(permission.permission))
-    .map((permission: { permission: string }) => permission.permission)))
+  const invalidPermissionTypes = getInvalidPermissions(permissionScheme, allowedPermissions)
   return `The permissions ${invalidPermissionTypes.join(', ')} in ${permissionScheme.elemID.getFullName()} does not exist in the current environment and will be excluded during deployment`
 }
 
@@ -72,7 +70,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
-    .filter(instance => hasInvalidPermissions(instance, allowedPermissionTypes))
+    .filter(instance => !isEmpty(getInvalidPermissions(instance, allowedPermissionTypes)))
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Warning' as SeverityLevel,

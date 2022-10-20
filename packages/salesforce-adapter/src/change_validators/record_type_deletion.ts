@@ -19,8 +19,8 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { RECORD_TYPE_METADATA_TYPE } from '../constants'
-import { isInstanceOfType } from '../filters/utils'
-import { apiName, parentApiName } from '../transformers/transformer'
+import { isInstanceOfType, parentApiName } from '../filters/utils'
+import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 

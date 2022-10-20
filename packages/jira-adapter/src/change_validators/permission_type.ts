@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS } from '../constants'
@@ -29,11 +29,11 @@ export const getAllowedPermissionTypes = async (
   if (!permissionListElementId) {
     return undefined
   }
-  return Object.values(
-    (
-    await elementSource.get(permissionListElementId)
-    ).value.additionalProperties as { key: string }[]
-  ).map(({ key }) => key)
+  if (isInstanceElement(permissionListElementId)) {
+    return Object.values(permissionListElementId.value.additionalProperties as { key: string }[])
+      .map(({ key }) => key)
+  }
+  return undefined
 }
 
 const hasInvalidPermissions = (

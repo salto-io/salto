@@ -739,6 +739,30 @@ describe('Test utils.ts', () => {
         ])
       })
     })
+
+    describe('with allowEmpty', () => {
+      it('should not remove empty list', async () => {
+        const result = await transformValues({
+          values: [],
+          type: new ListType(BuiltinTypes.NUMBER),
+          transformFunc: ({ value }) => value,
+          allowEmpty: true,
+        })
+
+        expect(result).toEqual([])
+      })
+
+      it('should not remove empty object', async () => {
+        const result = await transformValues({
+          values: {},
+          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          transformFunc: ({ value }) => value,
+          allowEmpty: true,
+        })
+
+        expect(result).toEqual({})
+      })
+    })
   })
 
   describe('transformElement', () => {

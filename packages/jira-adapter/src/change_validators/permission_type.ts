@@ -52,7 +52,7 @@ const getInvalidPermissionErrorMessage = (
   allowedPermissions: Set<string>,
 ): string => {
   const invalidPermissionTypes = getInvalidPermissions(permissionScheme, allowedPermissions)
-  return `The permissions ${invalidPermissionTypes.join(', ')} in ${permissionScheme.elemID.getFullName()} does not exist in the current environment and will be excluded during deployment`
+  return `The permissions ${invalidPermissionTypes.join(', ')} in ${permissionScheme.elemID.getFullName()} do not exist in the current environment and will be excluded during deployment`
 }
 
 export const permissionTypeValidator: ChangeValidator = async (changes, elementsSource) => {

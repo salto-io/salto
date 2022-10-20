@@ -82,7 +82,7 @@ export const neighborContextGetter = ({
       context.elemID,
       context.value ?? elemByElemID.get(context.elemID.getFullName()),
     )
-    return getLookUpName({ ref: refWithValue, field: contextField, path })
+    return getLookUpName({ ref: refWithValue, field: contextField, path, element: instance })
   }
 
   try {

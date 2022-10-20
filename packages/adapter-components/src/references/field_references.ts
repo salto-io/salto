@@ -149,6 +149,7 @@ export const replaceReferenceValues = async <
               ? await serializer.serialize({
                 ref: new ReferenceExpression(element.elemID, elem),
                 field,
+                element: instance,
               })
               : resolvePath(element, referenceId),
             val,
@@ -313,7 +314,7 @@ export const generateLookupFunc = <
 
     const strategy = await determineLookupStrategy({ ref, path, field, element })
     if (strategy !== undefined && !isRelativeSerializer(strategy)) {
-      return strategy.serialize({ ref, field })
+      return strategy.serialize({ ref, field, element })
     }
 
     if (isInstanceElement(ref.value)) {

@@ -30,6 +30,24 @@ const MAX_PATH_EXTENSION_LENGTH = 20
 export const pathNaclCase = (name?: string): string =>
   (name ? name.split(NACL_ESCAPING_SUFFIX_SEPARATOR)[0] : '').slice(0, MAX_PATH_LENGTH)
 
+// Trim part of a file name to comply with filesystem restrictions
+// This assumes the filesystem does not allow path parts to be over
+// MAX_PATH_LENGTH long in byte length
+export const normalizeFilePathPart = (name: string): string => {
+  if (Buffer.byteLength(name) <= MAX_PATH_LENGTH) {
+    return name
+  }
+  const nameHash = hashUtils.toMD5(name)
+  let extention = path.extname(name)
+  if (extention.length > MAX_PATH_EXTENSION_LENGTH
+      || Buffer.byteLength(extention) !== extention.length) {
+    // Heurstic guess - a valid extension must be short and ascii
+    extention = ''
+  }
+  const suffix = `_${nameHash}${extention}`
+  return truncate(name, MAX_PATH_LENGTH - suffix.length).concat(suffix)
+}
+
 /* eslint-disable quote-props */
 // Current values in this mapping should not be changed
 // Values in the map should be unique
@@ -128,22 +146,6 @@ export const naclCase = (name?: string): string => {
   }
   const cleanName = name.replace(/[^a-zA-Z0-9]/g, replaceChar)
   return `${cleanName}${suffixFromList(specialCharsMappingList)}`
-}
-
-export const normalizeStaticResourcePath = (name: string): string => {
-  const nameBuffer = Buffer.from(name)
-  if (nameBuffer.byteLength <= MAX_PATH_LENGTH) {
-    return name
-  }
-  const nameHash = hashUtils.toMD5(name)
-  const extBuffer = Buffer.from(path.extname(name))
-  // In case the file has a too long extension length or no extension at all
-  if (_.isEmpty(extBuffer) || extBuffer.byteLength > MAX_PATH_EXTENSION_LENGTH) {
-    const addedSuffix = `_${nameHash}`
-    return truncate(nameBuffer.toString(), MAX_PATH_LENGTH - addedSuffix.length).concat(addedSuffix)
-  }
-  const addedSuffix = `_${nameHash}${extBuffer.toString()}`
-  return truncate(nameBuffer.toString(), MAX_PATH_LENGTH - addedSuffix.length).concat(addedSuffix)
 }
 
 export const invertNaclCase = (name: string): string => {

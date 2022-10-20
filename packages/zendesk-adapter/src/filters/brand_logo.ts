@@ -21,7 +21,7 @@ import {
   ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { naclCase, safeJsonStringify, getParent, normalizeStaticResourcePath, pathNaclCase } from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
 import { collections } from '@salto-io/lowerdash'
@@ -106,7 +106,7 @@ const getBrandLogo = async ({ client, brand }: {
     brand.value.name, logoValues.file_name
   )
   const pathName = pathNaclCase(naclCase(name))
-  const resourcePathName = normalizeStaticResourcePath(name)
+  const resourcePathName = normalizeFilePathPart(name)
 
   const { id, file_name: filename } = brand.value.logo
   const content = await getLogoContent(client, id, filename)

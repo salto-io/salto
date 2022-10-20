@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import truncate from 'truncate-utf8-bytes'
 import { hash as hashUtils } from '@salto-io/lowerdash'
-import { invertNaclCase, naclCase, normalizeStaticResourcePath, pathNaclCase } from '../src/nacl_case_utils'
+import { invertNaclCase, naclCase, normalizeFilePathPart, pathNaclCase } from '../src/nacl_case_utils'
 
 describe('naclCase utils', () => {
   const generateRandomChar = (): string =>
@@ -162,35 +162,35 @@ describe('naclCase utils', () => {
         'lalala.txt', 'aבגדe.טקסט', 'noExtention',
       ]
       it('Should remain the same', () => {
-        shortPaths.forEach(path => expect(normalizeStaticResourcePath(path)).toEqual(path))
+        shortPaths.forEach(path => expect(normalizeFilePathPart(path)).toEqual(path))
       })
     })
     describe('With a very long path', () => {
-      const longString = new Array(30).fill('123456שבע0_').join('').concat('.extension')
-      const longStringHash = hashUtils.toMD5(longString)
+      const longPathPrefix = new Array(17).fill('123456שבע0_').join('')
+      const extension = '.extension'
+      const longString = longPathPrefix.concat(extension)
+      const anotherLongString = longPathPrefix.concat('a').concat(extension)
       it('Should return at extacly 200 chars or less', () => {
-        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength)
+        expect(Buffer.from(normalizeFilePathPart(longString)).byteLength)
           .toBeLessThanOrEqual(200)
       })
-
-      it('Should return the first 200 chars, hash and the extension', () => {
-        const addedSuffix = `_${longStringHash}.extension`
-        expect(normalizeStaticResourcePath(longString))
-          .toEqual(truncate(longString.toString(), 200 - addedSuffix.length).concat(addedSuffix))
+      it('Should contain the full file extension', () => {
+        expect(normalizeFilePathPart(longString)).toContain(extension)
+      })
+      it('Should maintain difference between different strings', () => {
+        expect(normalizeFilePathPart(longString))
+          .not.toEqual(normalizeFilePathPart(anotherLongString))
       })
     })
     describe('With a very long extension', () => {
-      const longString = 'aaa.'.concat(new Array(30).fill('1234חמש890_').join(''))
-      const longStringHash = hashUtils.toMD5(longString)
+      const extension = new Array(17).fill('1234חמש890_').join('')
+      const longString = 'aaa.'.concat(extension)
       it('Should return 200 chars or less', () => {
-        expect(Buffer.from(normalizeStaticResourcePath(longString)).byteLength)
+        expect(Buffer.from(normalizeFilePathPart(longString)).byteLength)
           .toBeLessThanOrEqual(200)
       })
-
-      it('Should return the first 200 chars and hash', () => {
-        const addedSuffix = `_${longStringHash}`
-        expect(normalizeStaticResourcePath(longString))
-          .toEqual(truncate(longString.toString(), 200 - addedSuffix.length).concat(addedSuffix))
+      it('Should not contain the full file extension', () => {
+        expect(normalizeFilePathPart(longString)).not.toContain(extension)
       })
     })
   })

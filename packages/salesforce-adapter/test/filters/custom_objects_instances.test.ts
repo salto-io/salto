@@ -14,7 +14,20 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  createRefToElmWithValue,
+  Element,
+  ElemID,
+  FieldDefinition,
+  InstanceElement,
+  isInstanceElement,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  ServiceIds,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
@@ -24,8 +37,15 @@ import Connection from '../../src/client/jsforce'
 import filterCreator, { buildSelectQueries } from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
-  LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
-  OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
+  API_NAME,
+  CUSTOM_OBJECT,
+  FIELD_ANNOTATIONS,
+  INSTALLED_PACKAGES_PATH,
+  LABEL,
+  METADATA_TYPE,
+  OBJECTS_PATH,
+  RECORDS_PATH,
+  SALESFORCE,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
@@ -1050,13 +1070,7 @@ describe('Custom Object Instances filter', () => {
   })
 
   describe('Fetching with MaxInstancesPerType', () => {
-    const element = createCustomObject('testElement')
-    // TODO: Remove this when done
-    // const { client } = mockAdapter({
-    //   adapterParams: {
-    //     getElemIdFunc: mockGetElemIdFunc,
-    //   },
-    // })
+    const testElement = createCustomObject('testElement')
     filter = filterCreator(
       {
         client,
@@ -1079,12 +1093,25 @@ describe('Custom Object Instances filter', () => {
       }
     ) as FilterType
     it('Should not fetch CustomObjects with more instances than MaxInstancesPerType', async () => {
-      jest.setTimeout(999999)
-      const result = await filter.onFetch([element, element, element])
-      console.log(result)
+      const elements = [testElement]
+      client.countInstances = jest.fn().mockReturnValue(3)
+      client.queryAll = jest.fn().mockReturnValue([{ key: 'value' }])
+      const result = await filter.onFetch(elements)
+      expect(elements.length).toBe(1)
+      expect(result).toMatchObject({
+        configSuggestions: [{
+          type: 'dataObjectsExclude',
+          value: 'testElement',
+          reason: "'testElement' has 3 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 2.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
+        }],
+      })
     })
     it('Should fetch CustomObjects with less instances than MaxInstancesPerType', async () => {
-      // Nothing
+      const elements = [testElement]
+      client.countInstances = jest.fn().mockReturnValue(1)
+      const result = await filter.onFetch(elements)
+      expect(elements.length).toBe(2)
+      expect(result).toMatchObject({ configSuggestions: [] })
     })
   })
 })

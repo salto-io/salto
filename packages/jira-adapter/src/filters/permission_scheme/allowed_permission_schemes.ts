@@ -25,13 +25,14 @@ const filter: FilterCreator = ({ elementsSource }) => {
   return ({
     preDeploy: async changes => {
       const allowedPermissions = await getAllowedPermissionTypes(elementsSource)
-      if (allowedPermissions.length === 0) {
+      if (!allowedPermissions) {
         log.warn('Could not find allowed permission types for permission Scheme filter. skipping pre deploy permission scheme validations')
+      } else {
+        unsupportedPermissionSchemes = omitChanges(
+          changes,
+          (holder: PermissionHolder) => !allowedPermissions.includes(holder.permission)
+        )
       }
-      unsupportedPermissionSchemes = omitChanges(
-        changes,
-        (holder: PermissionHolder) => !allowedPermissions.includes(holder.permission)
-      )
     },
     onDeploy: async changes => {
       addBackPermissions(changes, unsupportedPermissionSchemes)

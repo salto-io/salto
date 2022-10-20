@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { isEmpty } from 'lodash'
 import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -25,12 +24,10 @@ const log = logger(module)
 
 export const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
-): Promise<string[]> => {
-  const permissionListElementId = await awu(await elementSource.list())
-    .find(id => id.typeName === PERMISSIONS && id.idType === 'instance')
-
+): Promise<string[]|undefined> => {
+  const permissionListElementId = await elementSource.get(new ElemID('jira', PERMISSIONS, 'instance', ElemID.CONFIG_NAME))
   if (!permissionListElementId) {
-    return []
+    return undefined
   }
   return Object.values(
     (
@@ -64,7 +61,7 @@ export const permissionTypeValidator: ChangeValidator = async (changes, elements
     return []
   }
   const allowedPermissionTypes = await getAllowedPermissionTypes(elementsSource)
-  if (isEmpty(allowedPermissionTypes)) {
+  if (!allowedPermissionTypes) {
     log.warn('Could not find allowed permission types for permissionTypeValidator. Skipping validator')
     return []
   }

@@ -131,6 +131,13 @@ describe('Field references', () => {
       productWithName: { refType: BuiltinTypes.STRING },
       fail: { refType: BuiltinTypes.STRING },
       value: { refType: BuiltinTypes.STRING },
+      ref: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const type2 = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'type2'),
+    fields: {
+      ref: { refType: BuiltinTypes.NUMBER },
     },
   })
   const ticketFieldType = new ObjectType({
@@ -145,6 +152,7 @@ describe('Field references', () => {
     fields: {
       id: { refType: BuiltinTypes.STRING },
       ticket_field_id: { refType: BuiltinTypes.STRING },
+      ref: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -175,6 +183,7 @@ describe('Field references', () => {
     someTypeWithNestedValueList,
     someTypeWithNestedListOfValuesAndValue,
     type1,
+    type2,
     ticketFieldType,
     triggerType,
     new InstanceElement('productABC', productType, { name: 'ABC' }),
@@ -212,9 +221,13 @@ describe('Field references', () => {
       productWithName: 'ABC',
       fail: 'fail',
       value: 'fail',
+      ref: 'ABC',
+    }),
+    new InstanceElement('inst2', type2, {
+      ref: 1001,
     }),
     new InstanceElement('tf1', ticketFieldType, { id: '3001', value: 'field1' }),
-    new InstanceElement('trigger1', triggerType, { id: '3002', ticket_field_id: '3001' }),
+    new InstanceElement('trigger1', triggerType, { id: '3002', ticket_field_id: '3001', ref: 'ABC' }),
     new InstanceElement('trigger2', triggerType, { id: '3003', ticket_field_id: '3111' }),
     new InstanceElement('trigger3', triggerType, { id: '3004', ticket_field_id: '' }),
   ])
@@ -278,6 +291,22 @@ describe('Field references', () => {
         target: { type: 'ticket_field' },
         missingRefStrategy: 'typeAndValue',
       },
+      // rules with conflicting serialization strategy that don't overlap due to instanceTypes
+      {
+        src: { field: 'ref', instanceTypes: ['type1'] },
+        serializationStrategy: 'nameWithPath',
+        target: { type: 'product' },
+      },
+      {
+        src: { field: 'ref', instanceTypes: ['type2'] },
+        serializationStrategy: 'id',
+        target: { type: 'brand' },
+      },
+      {
+        src: { field: 'ref', instanceTypes: [/^(?!type).*$/] },
+        serializationStrategy: 'name',
+        target: { type: 'product' },
+      },
     ]
 
     beforeAll(async () => {
@@ -332,6 +361,23 @@ describe('Field references', () => {
       )[0] as InstanceElement
       expect(inst.value.basedOnRef).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.basedOnRef.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
+    })
+    it('should choose rules based on instanceTypes when specified', () => {
+      const inst1 = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'inst1'
+      )[0] as InstanceElement
+      expect(inst1.value.ref).toBeInstanceOf(ReferenceExpression)
+      expect(inst1.value.ref.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC.name')
+      const trigger1 = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'trigger1'
+      )[0] as InstanceElement
+      expect(trigger1.value.ref).toBeInstanceOf(ReferenceExpression)
+      expect(trigger1.value.ref.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC')
+      const inst2 = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'inst2'
+      )[0] as InstanceElement
+      expect(inst2.value.ref).toBeInstanceOf(ReferenceExpression)
+      expect(inst2.value.ref.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
     it('should not resolve fields in unexpected types even if field name matches', () => {
       const collections = elements.filter(

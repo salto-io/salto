@@ -14,14 +14,21 @@
 * limitations under the License.
 */
 import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import { isEmpty } from 'lodash'
 import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS } from '../constants'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
+const PERMISSION_INSTANCE_SCHEME = Joi.object({
+  key: Joi.string().required(),
+}).unknown(true)
+
+export const isAdditionalPermissionScheme = createSchemeGuard<{key: string}>(PERMISSION_INSTANCE_SCHEME, 'Found something')
 
 export const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
@@ -32,7 +39,8 @@ export const getAllowedPermissionTypes = async (
   }
   if (isInstanceElement(permissionListElementId)) {
     return new Set(
-      Object.values(permissionListElementId.value.additionalProperties as { key: string }[])
+      Object.values(permissionListElementId.value.additionalProperties)
+        .filter(isAdditionalPermissionScheme)
         .map(({ key }) => key)
     )
   }

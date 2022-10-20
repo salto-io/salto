@@ -84,7 +84,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         localeName,
         localeType,
         { id: locale, default: locale === defaultLocale },
-        [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(naclCase(locale))],
+        [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(localeName)],
       )
     })
     elements.push(localeType)

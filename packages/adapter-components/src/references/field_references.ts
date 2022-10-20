@@ -306,12 +306,12 @@ export const generateLookupFunc = <
     return strategies[0]
   }
 
-  return async ({ ref, path, field }) => {
+  return async ({ ref, path, field, element }) => {
     if (!isElement(ref.value)) {
       return ref.value
     }
 
-    const strategy = await determineLookupStrategy({ ref, path, field })
+    const strategy = await determineLookupStrategy({ ref, path, field, element })
     if (strategy !== undefined && !isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field })
     }

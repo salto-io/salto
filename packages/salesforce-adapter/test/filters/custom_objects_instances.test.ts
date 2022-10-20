@@ -1071,27 +1071,34 @@ describe('Custom Object Instances filter', () => {
 
   describe('Fetching with MaxInstancesPerType', () => {
     const testElement = createCustomObject('testElement')
-    filter = filterCreator(
-      {
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({
-            data: {
-              includeObjects: [
-                '.*',
-              ],
-              allowReferenceTo: [],
-              saltoIDSettings: {
-                defaultIdFields: [],
-                overrides: [],
+    // eslint-disable-next-line @typescript-eslint/no-shadow
+    const { client } = mockAdapter()
+    beforeAll(() => {
+      filter = filterCreator(
+        {
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              data: {
+                includeObjects: [
+                  '.*',
+                ],
+                allowReferenceTo: [],
+                saltoIDSettings: {
+                  defaultIdFields: [],
+                  overrides: [],
+                },
               },
-            },
-            maxInstancesPerType: 2,
-          }),
-        },
-      }
-    ) as FilterType
+              maxInstancesPerType: 2,
+            }),
+          },
+        }
+      ) as FilterType
+    })
+    afterAll(() => {
+      jest.resetAllMocks()
+    })
     it('Should not fetch CustomObjects with more instances than MaxInstancesPerType', async () => {
       const elements = [testElement]
       client.countInstances = jest.fn().mockReturnValue(3)

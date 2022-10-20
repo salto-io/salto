@@ -16,10 +16,11 @@
 import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement,
   isTemplateExpression,
-  ReferenceExpression, TemplateExpression, TemplatePart, Values,
+  ReferenceExpression, SaltoError, TemplateExpression, TemplatePart, Values,
 } from '@salto-io/adapter-api'
 import { createSchemeGuard, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import { AUTOMATION_TYPE } from '../../../constants'
@@ -84,38 +85,55 @@ const getPossibleSmartValues = (automation: AutomationInstance): SmartValueConta
       return containers
     }).value()
 
-const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
+const replaceFormulasWithTemplates = async (instances: InstanceElement[])
+: Promise<SaltoError[]> => {
   const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
-  // TODO: handle better multiple fields with the same name (SALTO-2729)
-  const fieldInstancesByName = _.keyBy(
-    fieldInstances.filter(instance => _.isString(instance.value.name)),
-    (instance: InstanceElement): string => instance.value.name
-  )
+  const fieldInstancesByName = _(fieldInstances)
+    .filter(instance => _.isString(instance.value.name))
+    .groupBy(instance => instance.value.name)
+    .value()
+
   const fieldInstancesById = _.keyBy(fieldInstances.filter(instance => instance.value.id),
     (instance: InstanceElement): number => instance.value.id)
 
 
-  filterAutomations(instances).forEach(instance => {
-    getPossibleSmartValues(instance)
-      .filter(({ obj, key }) => {
-        if (!_.isString(obj[key])) {
-          log.debug(`'${key}' in ${instance.elemID.getFullName()} key is not a string`)
-          return false
-        }
-        return true
-      })
-      .forEach(({ obj, key }) => {
-        try {
-          obj[key] = stringToTemplate({
-            referenceStr: obj[key],
-            fieldInstancesByName,
-            fieldInstancesById,
-          })
-        } catch (e) {
-          log.error(`Error parsing templates in fetch ${e}, stack: ${e.stack}`)
-        }
-      })
-  })
+  const ambiguousTokensWarnings = filterAutomations(instances)
+    .map(instance => {
+      const allAmbiguousTokens = new Set<string>()
+      getPossibleSmartValues(instance)
+        .filter(({ obj, key }) => {
+          if (!_.isString(obj[key])) {
+            log.debug(`'${key}' in ${instance.elemID.getFullName()} key is not a string`)
+            return false
+          }
+          return true
+        })
+        .forEach(({ obj, key }) => {
+          try {
+            const { template, ambiguousTokens } = stringToTemplate({
+              referenceStr: obj[key],
+              fieldInstancesByName,
+              fieldInstancesById,
+            })
+            obj[key] = template
+            ambiguousTokens.forEach(token => allAmbiguousTokens.add(token))
+          } catch (e) {
+            log.error(`Error parsing templates in fetch ${e}, stack: ${e.stack}`)
+          }
+        })
+
+      if (allAmbiguousTokens.size === 0) {
+        return undefined
+      }
+
+      return {
+        message: `Automation ${instance.elemID.getFullName()} has smart values that cannot be translated to a Salto reference because there is more than one field with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(allAmbiguousTokens).join(', ')}.`,
+        severity: 'Warning' as const,
+      }
+    })
+    .filter(values.isDefined)
+
+  return ambiguousTokensWarnings
 }
 
 const prepRef = (part: ReferenceExpression): TemplatePart => {
@@ -137,9 +155,12 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async (elements: Element[]) => log.time(async () => {
       if (config.fetch.parseTemplateExpressions === false) {
         log.debug('Parsing smart values template expressions was disabled')
-        return
+        return {}
       }
-      await replaceFormulasWithTemplates(elements.filter(isInstanceElement))
+      const warnings = await replaceFormulasWithTemplates(elements.filter(isInstanceElement))
+      return {
+        errors: warnings,
+      }
     }, 'Smart values creation filter'),
 
     preDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {

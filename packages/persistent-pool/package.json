@@ -27,16 +27,12 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.171.0",
-    "@aws-sdk/lib-dynamodb": "^3.171.0",
     "@salto-io/logging": "0.3.23",
     "@salto-io/lowerdash": "0.3.23",
     "aws-sdk": "^2.863.0",
-    "@salto-io/test-utils": "0.3.23",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
-    "@aws-sdk/types": "^3.171.0",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",

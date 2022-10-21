@@ -13,33 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  CreateTableCommand,
-  CreateTableCommandInput,
-  DeleteRequest,
-  DescribeTableCommand,
-  DynamoDBClient,
-  ScalarAttributeType,
-} from '@aws-sdk/client-dynamodb'
-import {
-  BatchWriteCommand,
-  DynamoDBDocumentClient,
-  QueryCommand,
-  QueryCommandInput,
-} from '@aws-sdk/lib-dynamodb'
-
+import { DynamoDB } from 'aws-sdk'
 import { retry } from '@salto-io/lowerdash'
 
 const { withRetry } = retry
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const dbUtils = (db: DynamoDBClient) => {
+export const dbUtils = (db: DynamoDB) => {
   const tableStatus = async (tableName: string): Promise<string | undefined> => {
     try {
-      const description = await db.send(new DescribeTableCommand({ TableName: tableName }))
+      const description = await db.describeTable({ TableName: tableName }).promise()
       return description && description.Table && description.Table.TableStatus
     } catch (e) {
-      if (e.toString().includes('ResourceNotFoundException')) {
+      if (e.code === 'ResourceNotFoundException') {
         return undefined
       }
       throw e
@@ -51,15 +37,13 @@ export const dbUtils = (db: DynamoDBClient) => {
   ): Promise<boolean> => await tableStatus(tableName) === 'ACTIVE'
 
   const ensureTableExists = async (
-    tableParams: CreateTableCommandInput & { TableName: string},
+    tableParams: DynamoDB.Types.CreateTableInput,
     waitOpts?: retry.RetryOpts,
   ): Promise<void> => {
     try {
-      await db.send(new CreateTableCommand(tableParams))
+      await db.createTable(tableParams).promise()
     } catch (e) {
-      if (!e.toString().includes('ResourceInUseException')) {
-        throw e
-      }
+      if (e.code !== 'ResourceInUseException') throw e
     }
     await withRetry(() => tableExists(tableParams.TableName), waitOpts)
   }
@@ -73,19 +57,15 @@ export const dbUtils = (db: DynamoDBClient) => {
 export type QueryOpts = Omit<retry.RetryOpts, 'description'>
 export type BatchDeleteOpts = Omit<retry.RetryOpts, 'description'>
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Key = Record<string, any> | undefined
-type AttributeMap = Record<string, ScalarAttributeType>
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const dbDocUtils = (dbDoc: DynamoDBDocumentClient) => {
-  const queryBatchIterator = <TReturn extends {} = AttributeMap>(
-    input: QueryCommandInput,
+export const dbDocUtils = (dbDoc: DynamoDB.DocumentClient) => {
+  const queryBatchIterator = <TReturn extends {} = DynamoDB.AttributeMap>(
+    input: DynamoDB.DocumentClient.QueryInput,
     opts?: QueryOpts,
   ): AsyncIterator<TReturn[], void> => {
     let done = false
     let items: TReturn[]
-    let startKey: Key
+    let startKey: DynamoDB.Key | undefined
 
     return {
       next: async () => {
@@ -94,10 +74,10 @@ export const dbDocUtils = (dbDoc: DynamoDBDocumentClient) => {
         }
 
         await withRetry(async (): Promise<boolean> => {
-          const queryResults = await dbDoc.send(new QueryCommand({
+          const queryResults = await dbDoc.query({
             ...input,
             ExclusiveStartKey: startKey,
-          }))
+          }).promise()
 
           startKey = queryResults.LastEvaluatedKey
 
@@ -114,8 +94,8 @@ export const dbDocUtils = (dbDoc: DynamoDBDocumentClient) => {
     }
   }
 
-  const queryIterator = <TReturn extends {} = AttributeMap>(
-    input: QueryCommandInput,
+  const queryIterator = <TReturn extends {} = DynamoDB.AttributeMap>(
+    input: DynamoDB.DocumentClient.QueryInput,
     opts?: QueryOpts,
   ): AsyncIterator<TReturn, void> => {
     const batchIter = queryBatchIterator<TReturn>(input, opts)
@@ -139,20 +119,20 @@ export const dbDocUtils = (dbDoc: DynamoDBDocumentClient) => {
 
   const batchDelete = async (
     tableName: string,
-    keysToDelete: Key[],
+    keysToDelete: DynamoDB.Key[],
     opts: BatchDeleteOpts,
   ): Promise<void> => {
     await withRetry(async () => {
       const keysToSend = keysToDelete.splice(0, MAX_ITEMS_PER_BATCH_WRITE)
 
-      const deleteResult = await dbDoc.send(new BatchWriteCommand({
+      const deleteResult = await dbDoc.batchWrite({
         RequestItems: {
           [tableName]: keysToSend.map(r => ({ DeleteRequest: { Key: r } })),
         },
-      }))
+      }).promise()
 
       const unprocessed = (deleteResult.UnprocessedItems?.[tableName] ?? [])
-        .map(r => (r.DeleteRequest as DeleteRequest).Key)
+        .map(r => (r.DeleteRequest as DynamoDB.DeleteRequest).Key)
 
       keysToDelete.push(...unprocessed)
 

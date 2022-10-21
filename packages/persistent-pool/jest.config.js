@@ -27,10 +27,10 @@ module.exports = deepMerge(
     testEnvironment: './dist/test/lib/dynamodb/environment',
     coverageThreshold: {
       global: {
-        branches: 90,
-        functions: 97,
-        lines: 97,
-        statements: 97,
+        branches: 100,
+        functions: 100,
+        lines: 100,
+        statements: 100,
       },
     },
   }

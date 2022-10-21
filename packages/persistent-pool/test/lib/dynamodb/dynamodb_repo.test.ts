@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ListTablesCommand,
-} from '@aws-sdk/client-dynamodb'
+import { DynamoDB } from 'aws-sdk'
 import { retry } from '@salto-io/lowerdash'
 import {
   repo as makeRepo,
@@ -68,7 +66,7 @@ describe('dynamoDB repo', () => {
     })
 
     it('should create the table', async () => {
-      await dynamo.db.send(new ListTablesCommand({}))
+      await dynamo.db.listTables().promise()
       expect(await dbUtils.tableExists(tableName)).toBeTruthy()
     })
 
@@ -167,6 +165,21 @@ describe('dynamoDB repo', () => {
           )
         })
       })
+
+      describe('when an unknown exception occurs', () => {
+        let e: Error
+
+        beforeEach(async () => {
+          jest.spyOn(dynamo.dbDoc, 'put').mockImplementationOnce(() => ({
+            promise() { e = new Error('testing'); return Promise.reject(e) },
+          } as ReturnType<typeof dynamo.dbDoc.put>))
+        })
+
+        it(
+          'should throw it',
+          () => expect(pool.register(myVal)).rejects.toEqual(e)
+        )
+      })
     })
 
     describe('unregister', () => {
@@ -192,6 +205,21 @@ describe('dynamoDB repo', () => {
         it('should not be available for lease', async () => {
           expect(await pool.lease(timeout)).toBeNull()
         })
+      })
+
+      describe('when an unknown exception occurs', () => {
+        let e: Error
+
+        beforeEach(async () => {
+          jest.spyOn(dynamo.dbDoc, 'delete').mockImplementationOnce(() => ({
+            promise() { e = new Error('testing'); return Promise.reject(e) },
+          } as ReturnType<typeof dynamo.dbDoc.delete>))
+        })
+
+        it(
+          'should throw it',
+          () => expect(pool.unregister('doesntmatter')).rejects.toEqual(e)
+        )
       })
     })
 
@@ -239,6 +267,112 @@ describe('dynamoDB repo', () => {
             })
           })
         })
+      })
+
+      describe('when there is a race condition', () => {
+        let updateItemMock: jest.MockInstance<
+          ReturnType<typeof dynamo.dbDoc.update>, Parameters<typeof dynamo.dbDoc.update>
+        >
+
+        beforeEach(async () => {
+          await pool.register(myVal, registeredId)
+          const original = dynamo.dbDoc.update
+          // simulate another call to lease just after the first lease call's "query" is completed,
+          // at the "update" call.
+          updateItemMock = jest.spyOn(dynamo.dbDoc, 'update').mockImplementationOnce(
+            function mock(
+              this: DynamoDB,
+              ...args: Parameters<typeof original>
+            ) {
+              const promise = async (): Promise<unknown> => {
+                expect(await pool.lease(timeout)).not.toBeNull()
+                return original.apply(this, args).promise()
+              }
+              return { promise } as ReturnType<typeof dynamo.dbDoc.update>
+            }
+          )
+        })
+
+        describe('when optimisticLockMaxRetries has been exceeded', () => {
+          let lease: Promise<unknown>
+
+          beforeEach(async () => {
+            repo = await makeRepo({ ...repoOpts(), optimisticLockMaxRetries: 0 })
+            pool = await repo.pool(myTypeName)
+
+            lease = pool.lease(timeout)
+          })
+
+          it(
+            'should throw',
+            () => expect(lease).rejects.toHaveProperty('code', 'ConditionalCheckFailedException')
+          )
+        })
+
+        describe('when optimisticLockMaxRetries has not been exceeded', () => {
+          let lease: Lease<MyType> | null
+
+          beforeEach(async () => {
+            lease = await pool.lease(timeout)
+            expect(updateItemMock).toHaveBeenCalled()
+          })
+
+          it('should return null', async () => {
+            expect(lease).toBeNull()
+          })
+        })
+      })
+    })
+
+    describe('waitForLease', () => {
+      const registeredId = 'id1'
+      let result: unknown
+
+      describe('when the retry succeeds', () => {
+        let queryMock: jest.MockInstance<
+          ReturnType<typeof dynamo.dbDoc.query>, Parameters<typeof dynamo.dbDoc.query>
+        >
+
+        beforeEach(async () => {
+          const original = dynamo.dbDoc.query
+          // simulate another call to register just after the first lease call's "query" is
+          // completed, so an instance is registered and ready for the next retry
+          queryMock = jest.spyOn(dynamo.dbDoc, 'query').mockImplementationOnce(
+            function mock(this: DynamoDB, ...args: Parameters<typeof original>) {
+              const promise = async (): Promise<unknown> => {
+                const originalResult = await original.apply(this, args).promise()
+                await pool.register(myVal, registeredId)
+                return originalResult
+              }
+              return { promise } as ReturnType<typeof dynamo.dbDoc.query>
+            }
+          )
+          result = await pool.waitForLease(timeout, retryStrategies.intervals({
+            maxRetries: 1,
+            interval: 1,
+          }))
+          expect(queryMock).toHaveBeenCalled()
+        })
+
+        it('should return an instance', async () => {
+          expect(result).not.toBeNull()
+        })
+      })
+
+      describe('when the retry fails', () => {
+        beforeEach(() => {
+          result = pool.waitForLease(timeout, retryStrategies.intervals({
+            maxRetries: 1,
+            interval: 1,
+          }))
+        })
+
+        it(
+          'should throw',
+          () => expect(result).rejects.toThrow(
+            'Error while waiting for waiting for available lease: max retries 1 exceeded'
+          ),
+        )
       })
     })
 
@@ -375,6 +509,57 @@ describe('dynamoDB repo', () => {
             expect(lease.id).toEqual(id)
           })
         })
+
+        describe('when there is a race condition', () => {
+          beforeEach(async () => {
+            await pool.lease(timeout)
+          })
+
+          beforeEach(async () => {
+            const original = dynamo.dbDoc.update
+            // simulate another call to return just after the first return call's "get" is
+            // completed, at the "update" call.
+            jest.spyOn(dynamo.dbDoc, 'update').mockImplementationOnce(
+              function mock(
+                this: DynamoDB,
+                ...args: Parameters<typeof original>
+              ) {
+                const promise = async (): Promise<unknown> => {
+                  await pool.return(id)
+                  return original.apply(this, args).promise()
+                }
+                return { promise } as ReturnType<typeof dynamo.dbDoc.update>
+              }
+            )
+          })
+
+          let result: Promise<void>
+
+          beforeEach(() => {
+            result = pool.return(id)
+          })
+
+          it(
+            'should throw a InstanceNotLeasedError',
+            () => expect(result).rejects.toThrow(InstanceNotLeasedError)
+          )
+
+          it(
+            'should throw an error with the correct message',
+            () => expect(result).rejects.toThrow(
+              new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`)
+            )
+          )
+
+          it(
+            'should throw an error with the specified id and typeName',
+            () => expect(result).rejects.toMatchObject({
+              id,
+              typeName: myTypeName,
+              clientId: CLIENT_ID,
+            })
+          )
+        })
       })
     })
 
@@ -509,6 +694,57 @@ describe('dynamoDB repo', () => {
             expect(lease).toBeNull()
           })
         })
+
+        describe('when there is a race condition', () => {
+          beforeEach(async () => {
+            await pool.lease(0)
+          })
+
+          beforeEach(async () => {
+            const original = dynamo.dbDoc.update
+            // simulate another call to update just after the first return call's "get" is
+            // completed, at the "update" call.
+            jest.spyOn(dynamo.dbDoc, 'update').mockImplementationOnce(
+              function mock(
+                this: DynamoDB,
+                ...args: Parameters<typeof original>
+              ) {
+                const promise = async (): Promise<unknown> => {
+                  await pool.return(id)
+                  return original.apply(this, args).promise()
+                }
+                return { promise } as ReturnType<typeof dynamo.dbDoc.update>
+              }
+            )
+          })
+
+          let result: Promise<void>
+
+          beforeEach(() => {
+            result = pool.updateTimeout(id, timeout)
+          })
+
+          it(
+            'should throw a InstanceNotLeasedError',
+            () => expect(result).rejects.toThrow(InstanceNotLeasedError)
+          )
+
+          it(
+            'should throw an error with the correct message',
+            () => expect(result).rejects.toThrow(
+              new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`)
+            )
+          )
+
+          it(
+            'should throw an error with the specified id and typeName',
+            () => expect(result).rejects.toMatchObject({
+              id,
+              typeName: myTypeName,
+              clientId: CLIENT_ID,
+            })
+          )
+        })
       })
     })
 
@@ -624,6 +860,57 @@ describe('dynamoDB repo', () => {
             expect(lease).toBeNull()
           })
         })
+
+        describe('when there is a race condition', () => {
+          beforeEach(async () => {
+            await pool.lease(timeout)
+          })
+
+          beforeEach(async () => {
+            const original = dynamo.dbDoc.update
+            // simulate another call to update just after the first return call's "get" is
+            // completed, at the "update" call.
+            jest.spyOn(dynamo.dbDoc, 'update').mockImplementationOnce(
+              function mock(
+                this: DynamoDB,
+                ...args: Parameters<typeof original>
+              ) {
+                const promise = async (): Promise<unknown> => {
+                  await pool.return(id)
+                  return original.apply(this, args).promise()
+                }
+                return { promise } as ReturnType<typeof dynamo.dbDoc.update>
+              }
+            )
+          })
+
+          let result: Promise<void>
+
+          beforeEach(() => {
+            result = pool.updateTimeout(id, timeout)
+          })
+
+          it(
+            'should throw a InstanceNotLeasedError',
+            () => expect(result).rejects.toThrow(InstanceNotLeasedError)
+          )
+
+          it(
+            'should throw an error with the correct message',
+            () => expect(result).rejects.toThrow(
+              new RegExp(`Instance "${id}" of type "${myTypeName}": not leased by client "${CLIENT_ID}"`)
+            )
+          )
+
+          it(
+            'should throw an error with the specified id and typeName',
+            () => expect(result).rejects.toMatchObject({
+              id,
+              typeName: myTypeName,
+              clientId: CLIENT_ID,
+            })
+          )
+        })
       })
     })
 
@@ -648,6 +935,76 @@ describe('dynamoDB repo', () => {
           id = await pool.register(myVal)
           listResult = await asyncToArray(pool);
           [details] = listResult
+        })
+
+        it('should return the instance details', () => {
+          expect(details).toMatchObject({
+            status: 'available',
+            id,
+            value: myVal,
+          })
+        })
+      })
+
+      describe('when the DB returns an empty result (empty Items) with LastEvaluatedKey', () => {
+        let id: InstanceId
+        let details: LeaseWithStatus<MyType>
+
+        beforeEach(async () => {
+          id = await pool.register(myVal)
+
+          const original = dynamo.dbDoc.query
+          const spy = jest.spyOn(dynamo.dbDoc, 'query').mockImplementationOnce(
+            function mock(this: DynamoDB, ...args: Parameters<typeof original>) {
+              const promise = async (): Promise<unknown> => {
+                const result = await original.apply(this, args).promise()
+                if (!result.Items) return result
+                result.Items = []
+                result.LastEvaluatedKey = { id: id.slice(0, 1), type: myTypeName }
+                return result
+              }
+              return { promise } as ReturnType<typeof dynamo.dbDoc.query>
+            }
+          )
+
+          listResult = await asyncToArray(pool);
+          [details] = listResult
+          expect(spy).toHaveBeenCalled()
+        })
+
+        it('should return the instance details', () => {
+          expect(details).toMatchObject({
+            status: 'available',
+            id,
+            value: myVal,
+          })
+        })
+      })
+
+      describe('when the DB returns an empty result (no Items) with LastEvaluatedKey', () => {
+        let id: InstanceId
+        let details: LeaseWithStatus<MyType>
+
+        beforeEach(async () => {
+          id = await pool.register(myVal)
+
+          const original = dynamo.dbDoc.query
+          const spy = jest.spyOn(dynamo.dbDoc, 'query').mockImplementationOnce(
+            function mock(this: DynamoDB, ...args: Parameters<typeof original>) {
+              const promise = async (): Promise<unknown> => {
+                const result = await original.apply(this, args).promise()
+                if (!result.Items) return result
+                delete result.Items
+                result.LastEvaluatedKey = { id: id.slice(0, 1), type: myTypeName }
+                return result
+              }
+              return { promise } as ReturnType<typeof dynamo.dbDoc.query>
+            }
+          )
+
+          listResult = await asyncToArray(pool);
+          [details] = listResult
+          expect(spy).toHaveBeenCalled()
         })
 
         it('should return the instance details', () => {
@@ -753,6 +1110,61 @@ describe('dynamoDB repo', () => {
 
         it('does not delete entries for the type associated with the pool', async () => {
           expect(await asyncToArray(pool2)).toHaveLength(NUM_ENTRIES_OF_OTHER_TYPE)
+        })
+      })
+
+      describe('when the delete request is throttled', () => {
+        const NUM_UNPROCESSED_ITEMS = 2
+
+        beforeEach(async () => {
+          const original = dynamo.dbDoc.batchWrite
+          const spy = jest.spyOn(dynamo.dbDoc, 'batchWrite').mockImplementationOnce(
+            function mock(this: DynamoDB, ...args: Parameters<typeof original>) {
+              const promise = async (): Promise<unknown> => {
+                const unprocessed = args[0].RequestItems[tableName].splice(0, NUM_UNPROCESSED_ITEMS)
+                const result = await original.apply(this, args).promise()
+                if (!result.UnprocessedItems) {
+                  result.UnprocessedItems = {}
+                }
+                if (!result.UnprocessedItems[tableName]) {
+                  result.UnprocessedItems[tableName] = []
+                }
+                result.UnprocessedItems[tableName].push(...unprocessed)
+                return result
+              }
+              return { promise } as ReturnType<typeof dynamo.dbDoc.batchWrite>
+            }
+          )
+
+          await pool.clear()
+          expect(spy).toHaveBeenCalled()
+        })
+
+        it('deletes all entries for the type associated with the pool', async () => {
+          expect(await asyncToArray(pool)).toHaveLength(0)
+        })
+      })
+
+      describe('when the delete request response does not contain UnprocessedItems', () => {
+        beforeEach(async () => {
+          const original = dynamo.dbDoc.batchWrite
+          const spy = jest.spyOn(dynamo.dbDoc, 'batchWrite').mockImplementationOnce(
+            function mock(this: DynamoDB, ...args: Parameters<typeof original>) {
+              const promise = async (): Promise<unknown> => {
+                const result = await original.apply(this, args).promise()
+                delete result.UnprocessedItems
+                return result
+              }
+              return { promise } as ReturnType<typeof dynamo.dbDoc.batchWrite>
+            }
+          )
+
+          await pool.clear()
+          expect(spy).toHaveBeenCalled()
+        })
+
+        it('deletes all entries for the type associated with the pool', async () => {
+          expect(await asyncToArray(pool)).toHaveLength(0)
         })
       })
     })

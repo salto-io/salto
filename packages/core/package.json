@@ -32,7 +32,7 @@
     "generate": "./generate.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.171.0",
+    "@aws-sdk/client-s3": "^3.38.0",
     "@salto-io/adapter-api": "0.3.23",
     "@salto-io/adapter-components": "0.3.23",
     "@salto-io/adapter-utils": "0.3.23",

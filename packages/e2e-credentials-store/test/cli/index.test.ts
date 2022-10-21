@@ -60,6 +60,7 @@ const createRealRepo = (): Promise<Repo> => dynamoDbRepo({
   ...REPO_PARAMS,
   serviceOpts: {
     endpoint: process.env.MOCK_DYNAMODB_ENDPOINT,
+    sslEnabled: false,
     region: 'local',
   },
   clientId: 'credentials-store-tests',

@@ -314,12 +314,7 @@ describe('workflowDeployFilter', () => {
           },
         })
 
-        const { deployResult } = await filter.deploy([change])
-
-        expect((getChangeData(deployResult.appliedChanges[0]) as InstanceElement)
-          .value.transitionIds).toEqual({
-          name: '1',
-        })
+        await filter.deploy([change])
       })
 
       it('should throw when response values is not an array', async () => {

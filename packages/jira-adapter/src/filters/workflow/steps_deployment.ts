@@ -14,11 +14,64 @@
 * limitations under the License.
 */
 import { isReferenceExpression } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import JiraClient from '../../client/client'
 import { WorkflowInstance } from './types'
 
 const { awu } = collections.asynciterable
+
+const log = logger(module)
+
+type StatusesResponse = {
+  layout: {
+    statuses: {
+      stepId: number
+      statusId?: string
+    }[]
+  }
+}
+
+const isValidStatusesResponse = (response: unknown): response is StatusesResponse => {
+  const { error } = Joi.object({
+    layout: Joi.object({
+      statuses: Joi.array().items(Joi.object({
+        stepId: Joi.number().required(),
+        statusId: Joi.number(),
+      }).unknown(true)),
+    }).unknown(true).required(),
+  }).unknown(true).required().validate(response)
+
+  if (error !== undefined) {
+    log.error(`Received invalid statuses response from Jira: ${error}. ${safeJsonStringify(response)}`)
+    return false
+  }
+  return true
+}
+
+const getStatusIdToStepId = async (
+  workflowName: string,
+  client: JiraClient,
+): Promise<Record<string, string>> => {
+  const response = await client.getPrivate({
+    url: '/rest/workflowDesigner/1.0/workflows',
+    queryParams: {
+      name: workflowName,
+    },
+  })
+
+  if (!isValidStatusesResponse(response.data)) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    response.data.layout.statuses
+      .filter(({ statusId }) => statusId !== undefined)
+      .map(status => [status.statusId, status.stepId.toString()])
+  )
+}
 
 export const deploySteps = async (
   instance: WorkflowInstance,
@@ -31,6 +84,8 @@ export const deploySteps = async (
   if (workflowName === undefined) {
     throw new Error(`Workflow name is missing from ${instance.elemID.getFullName()}`)
   }
+
+  const statusIdToStepId = await getStatusIdToStepId(workflowName, client)
 
   await awu(statuses)
     .filter(status => !isReferenceExpression(status.id)
@@ -45,7 +100,7 @@ export const deploySteps = async (
         throw new Error(`status id is missing for ${status.name} in ${instance.elemID.getFullName()}`)
       }
 
-      const stepId = instance.value.stepIds?.[statusId]
+      const stepId = statusIdToStepId[statusId]
       if (stepId === undefined) {
         throw new Error(`step id is missing for ${status.name} in ${instance.elemID.getFullName()}`)
       }

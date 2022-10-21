@@ -50,6 +50,18 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get'],
     url: '/rest/api/3/screens',
   },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/workflow/search',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/workflow',
+  },
+  {
+    httpMethods: ['delete'],
+    url: '/rest/api/3/workflow/\\d+',
+  },
 ]
 
 

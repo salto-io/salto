@@ -451,7 +451,7 @@ export type ResolveValuesFunc = <T extends Element>(
 ) => Promise<T>
 
 export const resolveValues: ResolveValuesFunc = async (
-  element, getLookUpName, elementsSource, allowEmpty = false,
+  element, getLookUpName, elementsSource, allowEmpty = true,
 ) => {
   const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
     if (isReferenceExpression(value)) {

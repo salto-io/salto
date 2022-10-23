@@ -13,35 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, InstanceElement,
-  isInstanceElement, ReferenceExpression,
-} from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { GUIDE_BRAND_SPECIFIC_TYPES } from '../config'
+import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
-const BRAND_TYPE = 'brand'
+const PARENTS_TYPE_NAMES = ['section', 'category']
+
+const removeNameAndDescription = (elem: InstanceElement): void => {
+  delete elem.value.name
+  delete elem.value.description
+}
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const brandsRecord: Record<number, InstanceElement> = _.keyBy(
-      elements
-        .filter(isInstanceElement)
-        .filter(obj => BRAND_TYPE === obj.elemID.typeName),
-      'value.id'
-    )
     elements
       .filter(isInstanceElement)
-      .filter(obj => Object.keys(GUIDE_BRAND_SPECIFIC_TYPES).includes(obj.elemID.typeName))
-      .forEach(elem => {
-        const brandId = elem.value.brand
-        elem.value.brand = new ReferenceExpression(
-          brandsRecord[brandId].elemID,
-          brandsRecord[brandId]
-        )
-      })
+      .filter(obj => PARENTS_TYPE_NAMES.includes(obj.elemID.typeName))
+      .forEach(removeNameAndDescription)
   },
 })
-
 export default filterCreator

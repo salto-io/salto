@@ -15,11 +15,9 @@
 */
 import {
   Change,
-  Element,
   getChangeData,
   InstanceElement,
-  isInstanceElement,
-  isRemovalChange,
+  isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -35,7 +33,7 @@ export const removedTranslationParentId: number[] = []
 export type TranslationType = {
   title: string
   body?: string
-  locale: string
+  locale: ReferenceExpression
 }
 
 type ParentType = InstanceElement & {
@@ -48,7 +46,7 @@ type ParentType = InstanceElement & {
 }
 
 const TRANSLATION_SCHEMA = Joi.object({
-  locale: Joi.string().required(),
+  locale: Joi.object().required(),
   body: Joi.string(),
   title: Joi.string().required(),
 }).unknown(true).required()
@@ -77,7 +75,7 @@ const addTranslationValues = (change: Change<InstanceElement>): void => {
   const currentLocale = getChangeData(change).value.source_locale
   const translation = getChangeData(change).value.translations
     .filter(isTranslation) // the translation is not a reference it is already the value
-    .find((tran: TranslationType) => tran.locale === currentLocale)
+    .find((tran: TranslationType) => tran.locale.value.value.id === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.name = translation.title
     getChangeData(change).value.description = translation.body ?? ''
@@ -104,12 +102,6 @@ const addRemovalChangesId = (changes: Change<InstanceElement>[]): void => {
  * discards the 'name' and 'description' fields from the section again.
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
-    elements
-      .filter(isInstanceElement)
-      .filter(obj => PARENTS_TYPE_NAMES.includes(obj.elemID.typeName))
-      .forEach(removeNameAndDescription)
-  },
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
       .filter(change => PARENTS_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))

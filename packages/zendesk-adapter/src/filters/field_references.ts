@@ -655,7 +655,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       field: 'locale',
       parentTypes: [
         'article', 'section', 'category',
-        // 'section_translation', 'category_translation', 'article_translation',
+        'section_translation', 'category_translation', 'article_translation',
       ],
     },
     serializationStrategy: 'id',

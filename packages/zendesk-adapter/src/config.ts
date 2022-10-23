@@ -1662,8 +1662,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/help_center/articles/{articleId}/translations',
     },
     transformation: {
-      idFields: ['&brand', 'locale'],
-      fileNameFields: ['&brand', 'locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1736,8 +1736,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/help_center/sections/{sectionId}/translations',
     },
     transformation: {
-      idFields: ['&brand', 'locale'],
-      fileNameFields: ['&brand', 'locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -1777,6 +1777,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           translation_id: 'id',
         },
       },
+    },
+  },
+  // needed until SALTO-2867 is solved
+  help_center_locale: {
+    transformation: {
+      idFields: ['id'],
+      fileNameFields: ['id'],
     },
   },
   labels: {
@@ -1854,8 +1861,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/help_center/categories/{categoryId}/translations',
     },
     transformation: {
-      idFields: ['&brand', 'locale'],
-      fileNameFields: ['&brand', 'locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),

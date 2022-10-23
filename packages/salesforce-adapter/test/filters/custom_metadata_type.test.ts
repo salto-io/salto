@@ -18,35 +18,45 @@
 import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_metadata_type'
 import { defaultFilterContext } from '../utils'
-import { API_NAME, SALESFORCE } from '../../src/constants'
+import {
+  API_NAME,
+  CUSTOM_METADATA, FIELD_ANNOTATIONS,
+  METADATA_TYPE,
+  SALESFORCE,
+} from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 
 describe('customMetadataTypeFilter', () => {
-  const CUSTOM_METADATA_TYPE_NAME = 'TestCustomMetadataType__mdt'
+  const CUSTOM_METADATA_RECORD_TYPE_NAME = 'TestCustomMetadataType__mdt'
   const filter = (): FilterWith<'onFetch' | 'preDeploy'> => filterCreator({
     config: defaultFilterContext,
   }) as FilterWith<'onFetch' | 'preDeploy'>
 
   describe('onFetch', () => {
-    let elements: ObjectType[]
-    describe('when custom metadata type contains a non deployable field', () => {
-      beforeEach(async () => {
-        const customMetadataTypeWithNonDeployableField = new ObjectType({
-          elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
-          fields: {
-            Language: { refType: BuiltinTypes.STRING },
-            DeployableField: { refType: BuiltinTypes.NUMBER },
-          },
-          annotations: {
-            [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
-          },
-        })
-        elements = [customMetadataTypeWithNonDeployableField]
-        await filter().onFetch(elements)
+    let customMetadataRecordType: ObjectType
+    beforeEach(async () => {
+      customMetadataRecordType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_RECORD_TYPE_NAME),
+        fields: {
+          customField__c: { refType: BuiltinTypes.NUMBER },
+        },
+        annotations: {
+          [API_NAME]: CUSTOM_METADATA_RECORD_TYPE_NAME,
+        },
       })
-      it('should omit the field from the ObjectType', () => {
-        expect(Object.keys(elements[0].fields)).toEqual(['DeployableField'])
-      })
+      const elements = [customMetadataRecordType]
+      await filter().onFetch(elements)
+    })
+    it('should change the CustomMetadataRecordType metadata type to "CustomMetadata"', () => {
+      expect(customMetadataRecordType.annotations[METADATA_TYPE]).toEqual(CUSTOM_METADATA)
+    })
+    it('should make the custom field modifiable', () => {
+      const customField = customMetadataRecordType.fields.customField__c
+      expect(customField).toBeDefined()
+      expect(customField.annotations).toContainAllEntries([
+        [FIELD_ANNOTATIONS.CREATABLE, true],
+        [FIELD_ANNOTATIONS.UPDATEABLE, true],
+      ])
     })
   })
 })

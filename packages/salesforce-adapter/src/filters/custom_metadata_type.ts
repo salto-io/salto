@@ -14,27 +14,36 @@
 * limitations under the License.
 */
 import { isObjectType, ObjectType } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith, LocalFilterCreator } from '../filter'
-import { isCustomMetadataType } from './utils'
+import { isCustomMetadataRecordType } from './utils'
+import {
+  CUSTOM_METADATA, FIELD_ANNOTATIONS,
+  METADATA_TYPE,
+  SALESFORCE_CUSTOM_SUFFIX,
+} from '../constants'
 
 const { awu } = collections.asynciterable
 
-const NON_DEPLOYABLE_FIELDS = [
-  'Language',
-]
-
-const omitNonDeployableFields = (customMetadataType: ObjectType): void => {
-  customMetadataType.fields = _.omit(customMetadataType.fields, NON_DEPLOYABLE_FIELDS)
+const setCustomFieldsAsModifiable = (customMetadataType: ObjectType): void => {
+  Object.values(customMetadataType.fields)
+    .filter(field => field.name.endsWith(SALESFORCE_CUSTOM_SUFFIX))
+    .forEach(field => {
+      field.annotations[FIELD_ANNOTATIONS.CREATABLE] = true
+      field.annotations[FIELD_ANNOTATIONS.UPDATEABLE] = true
+    })
 }
 
 const filterCreator: LocalFilterCreator = () : FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isObjectType)
-      .filter(isCustomMetadataType)
-      .forEach(omitNonDeployableFields)
+      .filter(isCustomMetadataRecordType)
+      .forEach(customMetadataRecordType => {
+        // Fixing the type from CustomObject to CustomMetadata
+        customMetadataRecordType.annotations[METADATA_TYPE] = CUSTOM_METADATA
+        setCustomFieldsAsModifiable(customMetadataRecordType)
+      })
   },
 })
 

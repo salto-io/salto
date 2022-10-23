@@ -144,10 +144,11 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: dataInstancesAuthorFilter, addsNewInformation: true },
   { creator: sharingRulesAuthorFilter, addsNewInformation: true },
   { creator: validationRulesAuthorFilter, addsNewInformation: true },
+  { creator: customMetadataTypeFilter },
+  // customMetadataTypeFilter should run before hideReadOnlyValuesFilter
   { creator: hideReadOnlyValuesFilter },
   { creator: currencyIsoCodeFilter },
   { creator: splitCustomLabels },
-  { creator: customMetadataTypeFilter },
   { creator: xmlAttributesFilter },
   { creator: profileDeployFilter },
   // The following filters should remain last in order to make sure they fix all elements

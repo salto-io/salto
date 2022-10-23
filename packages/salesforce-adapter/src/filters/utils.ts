@@ -41,9 +41,16 @@ const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
 
-export const isCustomMetadataType = async (elem: ObjectType): Promise<boolean> => {
+export const isCustomMetadataRecordType = async (elem: ObjectType): Promise<boolean> => {
   const elementApiName = await apiName(elem)
   return elementApiName?.endsWith('__mdt') ?? false
+}
+
+export const isCustomMetadataRecordInstance = async (
+  instance: InstanceElement
+): Promise<boolean> => {
+  const instanceType = await instance.getType()
+  return isCustomMetadataRecordType(instanceType)
 }
 
 export const boolValue = (val: JSONBool):
@@ -121,7 +128,7 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
     addMetadataType(elem)
     addLabel(elem)
     await awu(Object.values(elem.fields)).forEach(addFieldDefaults)
-    if (!isCustomSettingsObject(elem) && !(await isCustomMetadataType(elem))) {
+    if (!isCustomSettingsObject(elem) && !(await isCustomMetadataRecordType(elem))) {
       const defaults: Partial<CustomObject> = {
         deploymentStatus: 'Deployed',
         pluralLabel: `${elem.annotations.label}s`,

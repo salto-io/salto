@@ -15,7 +15,15 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
+import {
+  SALESFORCE,
+  INSTANCE_FULL_NAME_FIELD,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  WORKFLOW_METADATA_TYPE,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+  SETTINGS_METADATA_TYPE,
+  API_NAME, METADATA_TYPE, CUSTOM_METADATA,
+} from '../src/constants'
 import { MetadataTypeAnnotations, MetadataObjectType, createInstanceElement } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
@@ -185,6 +193,14 @@ export const mockTypes = {
     fields: {
       content: { refType: BuiltinTypes.STRING },
       attachments: { refType: new ListType(BuiltinTypes.STRING) },
+    },
+  }),
+  // CustomMetadataRecordType with name MDType__mdt
+  CustomMetadataRecordType: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'MDType__mdt'),
+    annotations: {
+      [API_NAME]: 'MDType__mdt',
+      [METADATA_TYPE]: CUSTOM_METADATA,
     },
   }),
 }

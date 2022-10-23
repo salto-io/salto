@@ -300,7 +300,8 @@ const shouldCloneElements = async (
 // Clone
 type ElementCloneArgs = {
   elementSelector: string[]
-  toEnvs: string[]
+  toEnvs?: string[]
+  toAllEnvs?: boolean
   force?: boolean
   allowElementDeletions: boolean
 } & EnvArg
@@ -311,14 +312,24 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { toEnvs, elementSelector, force, allowElementDeletions } = input
+  const { toEnvs, toAllEnvs, env, elementSelector, force, allowElementDeletions } = input
+
+  // Makes sure at least and only one of the env options is given
+  if ((!toEnvs && !toAllEnvs) || (toEnvs && toAllEnvs)) {
+    errorOutputLine(formatInvalidFilters([Prompts.CLONE_TARGET_ENV_ERROR]), output)
+    return CliExitCode.UserInputError
+  }
+
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
+
+  const fromEnv = env ?? workspace.currentEnv()
+  const envsToCloneTo = toEnvs || [...workspace.envs()].filter(e => e !== fromEnv)
   await validateAndSetEnv(workspace, input, output)
-  if (!validateEnvs(output, workspace, toEnvs)) {
+  if (!validateEnvs(output, workspace, envsToCloneTo)) {
     return CliExitCode.UserInputError
   }
 
@@ -335,11 +346,11 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
     ).toArray()
 
     const elemIdsToRemove = allowElementDeletions
-      ? await getEnvsDeletionsDiff(workspace, sourceElemIds, toEnvs, validSelectors)
+      ? await getEnvsDeletionsDiff(workspace, sourceElemIds, envsToCloneTo, validSelectors)
       : {}
 
     if (!await shouldCloneElements(
-      toEnvs,
+      envsToCloneTo,
       sourceElemIds,
       elemIdsToRemove,
       output,
@@ -348,7 +359,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
       return CliExitCode.Success
     }
 
-    await workspace.sync(sourceElemIds, elemIdsToRemove, toEnvs)
+    await workspace.sync(sourceElemIds, elemIdsToRemove, envsToCloneTo)
     await workspace.flush()
     return CliExitCode.Success
   } catch (e) {
@@ -370,13 +381,19 @@ const cloneDef = createWorkspaceCommand({
       },
     ],
     keyedOptions: [
+      ENVIRONMENT_OPTION,
       {
         name: 'toEnvs',
         description: 'The environment(s) to clone to',
         type: 'stringsList',
-        required: true,
       },
-      ENVIRONMENT_OPTION,
+      {
+        name: 'toAllEnvs',
+        description: 'Clone to all environments',
+        type: 'boolean',
+        alias: 'a',
+
+      },
       // TODO: Check if needed
       {
         name: 'force',

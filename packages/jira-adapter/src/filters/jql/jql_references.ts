@@ -16,7 +16,7 @@
 import { Change, ElemID, InstanceElement, isInstanceChange, isInstanceElement, isReferenceExpression, isTemplateExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { AUTOMATION_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
@@ -94,7 +94,7 @@ const filter: FilterCreator = ({ config }) => {
     onFetch: async elements => log.time(async () => {
       if (config.fetch.parseTemplateExpressions === false) {
         log.debug('Parsing JQL template expression was disabled')
-        return
+        return {}
       }
 
       const instances = elements.filter(isInstanceElement)
@@ -112,14 +112,29 @@ const filter: FilterCreator = ({ config }) => {
 
       const idToInstance = _.keyBy(instances, instance => instance.elemID.getFullName())
 
-      jqls
-        .filter(({ jql }) => jqlToTemplate[jql] !== undefined)
-        .forEach(({ jql, path }) => {
+      const ambiguityWarnings = jqls
+        .map(({ jql, path }) => {
           const instance = idToInstance[path.createTopLevelParentID().parent.getFullName()]
-          const templateExpression = jqlToTemplate[jql]
+          const { template, ambiguousTokens } = jqlToTemplate[jql]
 
-          setPath(instance, path, templateExpression)
+          if (template !== undefined) {
+            setPath(instance, path, template)
+          }
+
+          if (ambiguousTokens.size !== 0) {
+            return {
+              message: `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`,
+              severity: 'Warning' as const,
+            }
+          }
+
+          return undefined
         })
+        .filter(values.isDefined)
+
+      return {
+        errors: ambiguityWarnings,
+      }
     }, 'jqlReferencesFilter'),
 
     preDeploy: async changes => {

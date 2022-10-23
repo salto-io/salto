@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isString } from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
   isInstanceElement,
   Value,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -30,7 +31,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES, ZendeskConfig, CLIENT_CONFIG } from './config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
 import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -79,9 +80,11 @@ import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
+import articleFilter from './filters/article'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
+import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 
 const log = logger(module)
@@ -142,6 +145,7 @@ export const DEFAULT_FILTERS = [
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
+  articleFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
@@ -150,6 +154,7 @@ export const DEFAULT_FILTERS = [
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
+  deployBrandedGuideTypesFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -196,7 +201,7 @@ const zendeskGuideEntriesFunc = (
           return undefined
         }
         return (response[responseEntryName] as Value[]).forEach(instanceType => {
-          instanceType.brand_id = brandInstance.value.id
+          instanceType.brand = brandInstance.value.id
         })
       })
       return brandPaginatorResponseValues
@@ -206,25 +211,40 @@ const zendeskGuideEntriesFunc = (
   return getZendeskGuideEntriesResponseValues
 }
 
+const getBrandsFromElementsSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<InstanceElement[]> => (
+  awu(await elementsSource.list())
+    .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
+    .map(id => elementsSource.get(id))
+    .filter(isInstanceElement)
+    .toArray()
+)
+
 export interface ZendeskAdapterParams {
   filterCreators?: FilterCreator[]
   client: ZendeskClient
   credentials: Credentials
   config: ZendeskConfig
+  elementsSource: ReadOnlyElementsSource
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   configInstance?: InstanceElement
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Promise<Required<Filter>>
   private client: ZendeskClient
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
   private configInstance?: InstanceElement
+  private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
   private createClientBySubdomain: (subdomain: string) => ZendeskClient
+  private createFiltersRunner: (
+    filterRunnerClient?: ZendeskClient,
+    paginator?: clientUtils.Paginator,
+  ) => Promise<Required<Filter>>
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -233,11 +253,13 @@ export default class ZendeskAdapter implements AdapterOperations {
     getElemIdFunc,
     config,
     configInstance,
+    elementsSource,
   }: ZendeskAdapterParams) {
     this.userConfig = config
     this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
+    this.elementsSource = elementsSource
     this.paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -252,11 +274,14 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
-    this.createFiltersRunner = async () => (
+    this.createFiltersRunner = async (
+      filterRunnerClient?: ZendeskClient,
+      paginator?: clientUtils.Paginator,
+    ) => (
       filtersRunner(
         {
-          client: this.client,
-          paginator: this.paginator,
+          client: filterRunnerClient ?? this.client,
+          paginator: paginator ?? this.paginator,
           config: {
             fetch: config.fetch,
             apiDefinitions: config.apiDefinitions,
@@ -273,8 +298,12 @@ export default class ZendeskAdapter implements AdapterOperations {
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
-    const { supportedTypes } = this.userConfig.apiDefinitions
-    const zendeskSupportElements = await getAllElements({
+    const { supportedTypes: supportSupportedTypes } = this.userConfig.apiDefinitions
+    const supportedTypes = isGuideDisabled
+      ? supportSupportedTypes
+      : { ...supportSupportedTypes, ...GUIDE_GLOBAL_TYPES }
+    // Zendesk Support and (if enabled) global Zendesk Guide types
+    const defaultSubdomainElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: isGuideDisabled,
@@ -288,10 +317,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
 
     if (isGuideDisabled) {
-      return zendeskSupportElements
+      return defaultSubdomainElements
     }
 
-    const brandsList = zendeskSupportElements.elements
+    const brandsList = defaultSubdomainElements.elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
       .filter(brandInstance => brandInstance.value.has_help_center)
@@ -310,7 +339,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: false,
-      supportedTypes: GUIDE_SUPPORTED_TYPES,
+      supportedTypes: GUIDE_BRAND_SPECIFIC_TYPES,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,
@@ -322,17 +351,17 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     // Remaining types should be added once to avoid overlaps between the generated elements,
     // so we add them once after all elements are generated
-    const zendeskElements = zendeskSupportElements.elements.concat(zendeskGuideElements.elements)
+    const zendeskElements = defaultSubdomainElements.elements.concat(zendeskGuideElements.elements)
     addRemainingTypes({
       adapterName: ZENDESK,
       elements: zendeskElements,
       typesConfig: this.userConfig.apiDefinitions.types,
-      supportedTypes: _.merge(supportedTypes, GUIDE_SUPPORTED_TYPES),
+      supportedTypes: _.merge(supportedTypes, GUIDE_BRAND_SPECIFIC_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
 
     return {
-      configChanges: zendeskSupportElements.configChanges
+      configChanges: defaultSubdomainElements.configChanges
         .concat(zendeskGuideElements.configChanges),
       elements: zendeskElements,
     }
@@ -388,17 +417,65 @@ export default class ZendeskAdapter implements AdapterOperations {
               resolveValues(element, getLookUpName, elementsSource, true),
           )))
       .toArray()
-    await runner.preDeploy(resolvedChanges)
-    const { deployResult } = await runner.deploy(resolvedChanges)
+    const [guideResolvedChanges, supportResolvedChanges] = _.partition(
+      resolvedChanges,
+      change => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName)
+    )
+    await runner.preDeploy(supportResolvedChanges)
+    const { deployResult } = await runner.deploy(supportResolvedChanges)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await runner.onDeploy(appliedChangesBeforeRestore)
+
+    const brandsList = _.uniq(await getBrandsFromElementsSource(this.elementsSource))
+    const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
+      brandInstance => [brandInstance.value.id, brandInstance.value.subdomain]
+    ))
+    const subdomainToGuideChanges = _.groupBy(
+      guideResolvedChanges,
+      change => resolvedBrandIdToSubdomain[getChangeData(change).value.brand]
+    )
+    const subdomainsList = brandsList
+      .map(brandInstance => brandInstance.value.subdomain)
+      .filter(isString)
+    const subdomainToPaginator = Object.fromEntries(subdomainsList.map(subdomain => (
+      [
+        subdomain,
+        createPaginator({
+          client: this.createClientBySubdomain(subdomain),
+          paginationFuncCreator: paginate,
+        }),
+      ]
+    )))
+    const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
+      .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
+      .map(async ([subdomain, paginator]) => {
+        const brandRunner = await this.createFiltersRunner(
+          this.createClientBySubdomain(subdomain),
+          paginator,
+        )
+        await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
+        const { deployResult: brandDeployResults } = await brandRunner.deploy(
+          subdomainToGuideChanges[subdomain]
+        )
+        const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
+        await runner.onDeploy(appliedChangesBeforeRestore)
+
+        return {
+          appliedChanges: guideChangesBeforeRestore,
+          errors: brandDeployResults.errors,
+        }
+      })
+      .toArray()
 
     const sourceChanges = _.keyBy(
       changesToDeploy,
       change => getChangeData(change).elemID.getFullName(),
     )
 
-    const appliedChanges = await awu(appliedChangesBeforeRestore)
+    const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
+      guideDeployResults.flatMap(result => result.appliedChanges)
+    )
+    const appliedChanges = await awu(allChangesBeforeRestore)
       .map(change => restoreChangeElement(
         change,
         sourceChanges,
@@ -411,7 +488,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       appliedChanges,
       originalInstanceChanges: instanceChanges,
     })
-    return { appliedChanges: restoredAppliedChanges, errors: deployResult.errors }
+    return {
+      appliedChanges: restoredAppliedChanges,
+      errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)),
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

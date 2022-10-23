@@ -143,6 +143,14 @@ describe('smart_value_reference_filter', () => {
         await filter.onFetch(elements)
         expect(automation.value).toEqual(originalAutomation.value)
       })
+
+      it('should not parse if there are two fields with the same name', async () => {
+        const auto = automationInstance.clone()
+        const field = fieldInstance.clone()
+        field.value.id = 'id'
+        await filter.onFetch([auto, field, field])
+        expect(auto.value.components[0].value.inner).toBe('Field is: {{issue.fieldOne}} {{issue.fieldId}} ending')
+      })
     })
     describe('preDeploy', () => {
       let elementsBeforeFetch: (InstanceElement | ObjectType)[]

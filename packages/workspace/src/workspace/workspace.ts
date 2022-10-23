@@ -1148,7 +1148,8 @@ export const loadWorkspace = async (
       await currentWSState.mergeManager.flush()
       await (await getLoadedNaclFilesSource()).flush()
       await adaptersConfig.flush()
-      await state().flush()
+      await awu(Object.values(environmentsSources.sources))
+        .forEach(envSource => envSource.state?.flush())
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(environmentsSources.sources, source =>

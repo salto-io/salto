@@ -149,6 +149,7 @@ export const replaceReferenceValues = async <
               ? await serializer.serialize({
                 ref: new ReferenceExpression(element.elemID, elem),
                 field,
+                element: instance,
               })
               : resolvePath(element, referenceId),
             val,
@@ -171,7 +172,7 @@ export const replaceReferenceValues = async <
       return refExpr
     }
 
-    const reference = await awu(await resolverFinder(field))
+    const reference = await awu(await resolverFinder(field, instance))
       .filter(refResolver => refResolver.target !== undefined)
       .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
@@ -286,7 +287,7 @@ export const generateLookupFunc = <
       return undefined
     }
 
-    const strategies = (await resolverFinder(args.field))
+    const strategies = (await resolverFinder(args.field, args.element))
       .filter(def => def.target?.type === undefined || args.ref.elemID.typeName === def.target.type)
       .map(def => def.serializationStrategy)
 
@@ -306,14 +307,14 @@ export const generateLookupFunc = <
     return strategies[0]
   }
 
-  return async ({ ref, path, field }) => {
+  return async ({ ref, path, field, element }) => {
     if (!isElement(ref.value)) {
       return ref.value
     }
 
-    const strategy = await determineLookupStrategy({ ref, path, field })
+    const strategy = await determineLookupStrategy({ ref, path, field, element })
     if (strategy !== undefined && !isRelativeSerializer(strategy)) {
-      return strategy.serialize({ ref, field })
+      return strategy.serialize({ ref, field, element })
     }
 
     if (isInstanceElement(ref.value)) {

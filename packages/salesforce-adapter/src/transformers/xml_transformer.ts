@@ -333,6 +333,7 @@ const cloneValuesWithAttributePrefixes = async (instance: InstanceElement): Prom
     transformFunc: createPathsSetCallback,
     pathID: instance.elemID,
     strict: false,
+    allowEmpty: true,
   })
 
   const addAttributePrefixFunc: MapKeyFunc = ({ key, pathID }) => {

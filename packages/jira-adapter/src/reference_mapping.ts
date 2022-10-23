@@ -407,7 +407,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'nameWithPath',
     target: { type: 'Group' },
   },
-  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
+  // Overlapping rules, serialization strategies guarantee no conflict
   {
     src: { field: 'value', parentTypes: [AUTOMATION_FIELD] },
     serializationStrategy: 'id',
@@ -418,7 +418,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'nameWithPath',
     target: { type: 'Field' },
   },
-  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
+  // Overlapping rules, serialization strategies guarantee no conflict
   {
     src: { field: 'value', parentTypes: [AUTOMATION_STATUS] },
     serializationStrategy: 'id',
@@ -454,7 +454,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'nameWithPath',
     target: { type: 'ProjectRole' },
   },
-  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
+  // Overlapping rules, serialization strategies guarantee no conflict
   {
     src: { field: 'value', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',
@@ -465,7 +465,7 @@ ReferenceContextStrategyName
     serializationStrategy: 'nameWithPath',
     target: { typeContext: 'parentSelectedFieldType' },
   },
-  // Overlapping rules, serialization strategy is determined by getAutomationValuesLookupFunc
+  // Overlapping rules, serialization strategies guarantee no conflict
   {
     src: { field: 'values', parentTypes: [AUTOMATION_COMPARE_VALUE] },
     serializationStrategy: 'id',

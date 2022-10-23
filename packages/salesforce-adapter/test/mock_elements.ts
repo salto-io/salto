@@ -15,15 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import {
-  SALESFORCE,
-  INSTANCE_FULL_NAME_FIELD,
-  ASSIGNMENT_RULES_METADATA_TYPE,
-  WORKFLOW_METADATA_TYPE,
-  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
-  SETTINGS_METADATA_TYPE,
-  API_NAME, METADATA_TYPE, CUSTOM_METADATA,
-} from '../src/constants'
+import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE, CUSTOM_METADATA } from '../src/constants'
 import { MetadataTypeAnnotations, MetadataObjectType, createInstanceElement } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
@@ -193,6 +185,48 @@ export const mockTypes = {
     fields: {
       content: { refType: BuiltinTypes.STRING },
       attachments: { refType: new ListType(BuiltinTypes.STRING) },
+    },
+  }),
+  RecordType: createMetadataObjectType({
+    annotations: {
+      metadataType: 'RecordType',
+      dirName: 'RecordType',
+      suffix: 'recordType',
+    },
+  }),
+  Flow: createMetadataObjectType({
+    annotations: {
+      metadataType: 'Flow',
+      suffix: 'flow',
+      dirName: 'flow',
+    },
+    fields: {
+      status: { refType: BuiltinTypes.STRING },
+      actionType: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  QuickAction: createMetadataObjectType({
+    annotations: {
+      metadataType: 'QuickAction',
+      dirName: 'quickActions',
+      suffix: 'quickAction',
+    },
+    fields: {
+      quickActionLayout: {
+        refType: createMetadataObjectType({
+          annotations: {
+            metadataType: 'QuickActionLayout',
+          },
+          fields: {
+            quickActionLayoutColumns: {
+              refType: new ListType(createMetadataObjectType(
+                { annotations: { metadataType: 'QuickActionLayoutColumn' } }
+              )),
+            },
+          },
+        }),
+      },
+
     },
   }),
   // CustomMetadataRecordType with name MDType__mdt

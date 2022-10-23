@@ -15,13 +15,13 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange, getChangeData } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getFilterParams, mockClient } from '../utils'
-import permissionSchemeFilter from '../../src/filters/sd_portals_permission_scheme'
-import { Filter } from '../../src/filter'
-import { getDefaultConfig, JiraConfig } from '../../src/config/config'
-import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
-import JiraClient from '../../src/client/client'
-import { UNSUPPORTED_PERMISSION_SCHEME } from '../../src/change_validators/sd_portals_permission_scheme'
+import { getFilterParams, mockClient } from '../../utils'
+import permissionSchemeFilter from '../../../src/filters/permission_scheme/sd_portals_permission_scheme'
+import { Filter } from '../../../src/filter'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
+import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
+import JiraClient from '../../../src/client/client'
+import { UNSUPPORTED_PERMISSION_SCHEME } from '../../../src/change_validators/sd_portals_permission_scheme'
 
 const PERMISSION_SCHEME = {
   holder: {

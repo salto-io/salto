@@ -1617,8 +1617,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1631,14 +1631,39 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/articles/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{sectionId}/articles',
+        method: 'post',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          sectionId: 'section_id',
+        },
+      },
+      modify: {
+        url: '/help_center/articles/{articleId}',
+        method: 'put',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/articles/{articleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+    },
   },
   article_translation: {
     request: {
       url: '/help_center/articles/{articleId}/translations',
     },
     transformation: {
-      idFields: ['&brand_id', 'locale'],
-      fileNameFields: ['&brand_id', 'locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1667,8 +1692,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   section: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'sections__sections',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -1686,8 +1711,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/help_center/sections/{sectionId}/translations',
     },
     transformation: {
-      idFields: ['&brand_id', 'locale'],
-      fileNameFields: ['&brand_id', 'locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1709,8 +1734,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   label: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       sourceTypeName: 'labels__labels',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
@@ -1733,8 +1758,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   category: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'categories__categories',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -1752,8 +1777,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/help_center/categories/{categoryId}/translations',
     },
     transformation: {
-      idFields: ['&brand_id', 'locale'],
-      fileNameFields: ['&brand_id', 'locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1775,8 +1800,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   permission_group: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
       sourceTypeName: 'permission_groups__permission_groups',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
@@ -1815,8 +1838,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   user_segment: {
     transformation: {
-      idFields: ['&brand_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand_id', ...DEFAULT_FILENAME_FIELDS],
       sourceTypeName: 'user_segments__user_segments',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
@@ -1883,17 +1904,27 @@ export const SUPPORTED_TYPES = {
   workspace: ['workspaces'],
 }
 
-export const GUIDE_SUPPORTED_TYPES = {
+// Types in Zendesk Guide which relate to a certain brand
+export const GUIDE_BRAND_SPECIFIC_TYPES = {
   article: ['articles'],
   section: ['sections'],
   label: ['labels'],
   category: ['categories'],
+}
+
+// Types in Zendesk Guide that whose instances are shared across all brands
+export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
 }
 
-export const GUIDE_INSTANCE_TYPES = [
-  ...Object.keys(GUIDE_SUPPORTED_TYPES),
+export const GUIDE_SUPPORTED_TYPES = {
+  ...GUIDE_BRAND_SPECIFIC_TYPES,
+  ...GUIDE_GLOBAL_TYPES,
+}
+
+export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
+  ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
   'article_translation',
   'category_translation',
   'section_translation',

@@ -339,6 +339,8 @@ ${Prompts.LIST_IDS(ids)}
     error: string
   ): string => `Failed to clone the specified elements to the target environments: ${error}`
 
+  public static readonly CLONE_TARGET_ENV_ERROR = 'Please specify the target environment(s) by passing exactly one of \'--to-envs\' and \'--to-all-envs\' parameters'
+
   public static readonly UNKNOWN_STATE_SALTO_VERSION = 'Can not determine the Salto version that was when the state of the accounts was last fetched. It is highly recommended to run the fetch command before proceeding - do you want to cancel?'
   public static readonly OLD_STATE_SALTO_VERSION = (
     stateSaltoVersion: string

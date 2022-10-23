@@ -56,7 +56,6 @@ describe('netsuite saved searches author information tests', () => {
         SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES) }))
     savedSearch.value.scriptid = '1'
     missingSavedSearch.value.scriptid = '2'
-    userPreferenceInstance.value.scriptid = '3'
     userPreferenceInstance.value.configRecord = { data: {
       fields: {
         DATEFORMAT: {

@@ -491,6 +491,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  GroupName: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'groupId' },
+      ],
+    },
+  },
   IssueTypeSchemes: {
     request: {
       url: '/rest/api/3/issuetypescheme',

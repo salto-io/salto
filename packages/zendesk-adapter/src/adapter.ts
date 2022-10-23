@@ -105,6 +105,7 @@ const {
 } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
+const SECTIONS_TYPE_NAME = 'sections'
 
 export const DEFAULT_FILTERS = [
   ticketFieldFilter,
@@ -221,6 +222,17 @@ const zendeskGuideEntriesFunc = (
         responseEntries.forEach(entry => {
           entry.brand = brandInstance.value.id
         })
+        if (responseEntryName === SECTIONS_TYPE_NAME) {
+          responseEntries.forEach(entry => {
+            if (entry.parent_section_id !== null) {
+              entry.directParent = entry.parent_section_id
+              entry.parentType = 'section'
+            } else {
+              entry.directParent = entry.category_id
+              entry.parentType = 'category'
+            }
+          })
+        }
         if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
           return responseEntries
         }

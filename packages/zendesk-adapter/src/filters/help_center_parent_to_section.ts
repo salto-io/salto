@@ -14,32 +14,12 @@
 * limitations under the License.
 */
 import { isInstanceElement } from '@salto-io/adapter-api'
-import { FilterCreator } from '../filter'
-
-const SECTION_TYPE_NAME = 'section'
-
-
-// type SectionType = InstanceElement & {
-//   value: {
-//     // eslint-disable-next-line camelcase
-//     source_locale: string
-//     name?: string
-//     description?: string
-//   }
-// }
-
-
-// const addParent = (elem: InstanceElement): void => {
+// import { FilterCreator } from '../filter'
 //
-// }
-
-const filterCreator: FilterCreator = () => ({
-  onFetch: async elements => {
-    elements
-      .filter(isInstanceElement)
-      .filter(obj => obj.elemID.typeName === SECTION_TYPE_NAME)
-      // .filter(isSection)
-      // .forEach(removeNameAndDescription)
-  },
-})
-export default filterCreator
+// const SECTION_TYPE_NAME = 'section'
+//
+//
+// const filterCreator: FilterCreator = () => ({
+//
+// })
+// export default filterCreator

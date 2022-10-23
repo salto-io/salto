@@ -223,6 +223,7 @@ export type ReferenceContextStrategyName = 'neighborField'
   | 'neighborReferenceUserAndOrgField'
   | 'neighborSubjectReferenceTicketField'
   | 'neighborSubjectReferenceUserAndOrgField'
+  | 'neighborParentType'
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
@@ -237,6 +238,7 @@ export const contextStrategyLookup: Record<
   neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
+  neighborParentType: neighborContextFunc({ contextFieldName: 'parentType' }),
   parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: getValueLookupType }),
   neighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: getValueLookupType }),
   parentTitle: neighborContextFunc({ contextFieldName: 'title', levelsUp: 1, contextValueMapper: getValueLookupType }),
@@ -750,6 +752,16 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'parent_section_id', parentTypes: ['section'] },
     serializationStrategy: 'id',
     target: { type: 'section' },
+  },
+  {
+    src: {
+      field: 'directParent',
+      parentTypes: [
+        'section',
+      ],
+    },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborParentType' },
   },
 ]
 

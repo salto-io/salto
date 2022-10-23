@@ -27,7 +27,7 @@ import {
 import { FilterWith } from '../../src/filter'
 
 describe('customMetadataTypeFilter', () => {
-  const CUSTOM_METADATA_RECORD_TYPE_NAME = 'TestCustomMetadataType__mdt'
+  const CUSTOM_METADATA_RECORD_TYPE_NAME = 'MDType__mdt'
   const filter = (): FilterWith<'onFetch' | 'preDeploy'> => filterCreator({
     config: defaultFilterContext,
   }) as FilterWith<'onFetch' | 'preDeploy'>

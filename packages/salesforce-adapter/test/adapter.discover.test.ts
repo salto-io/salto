@@ -1179,15 +1179,15 @@ public class LargeClass${index} {
       const metadataType = {
         annotations: { apiName: 'test' },
         elemID: {
-          name: 'hey',
+          name: 'test',
           createNestedID: jest.fn(),
           getFullName: jest.fn(),
-          isTopLevel: jest.fn(() => true),
+          isTopLevel: jest.fn(),
         },
       } as unknown as ObjectType
       const metadataQuery = {
         isTypeMatch: jest.fn(),
-        isInstanceMatch: jest.fn().mockReturnValue(true),
+        isInstanceMatch: jest.fn(),
         isPartialFetch: jest.fn(),
       }
       const excludeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'excludeMe' })
@@ -1195,9 +1195,7 @@ public class LargeClass${index} {
 
       const MOCK_METADATA_LENGTH = 5
       const { client } = mockAdapter()
-      client.readMetadata = jest.fn().mockResolvedValue({
-        result: new Array(MOCK_METADATA_LENGTH).fill(includeFilePropMock),
-      })
+
       const fetchResult = (fileProps: FileProperties[], maxInstancesPerType: number)
           : Promise<FetchElements<InstanceElement[]>> =>
         fetchMetadataInstances({
@@ -1207,6 +1205,13 @@ public class LargeClass${index} {
           fileProps,
           maxInstancesPerType,
         })
+
+      beforeAll(() => {
+        client.readMetadata = jest.fn().mockResolvedValue({
+          result: new Array(MOCK_METADATA_LENGTH).fill(includeFilePropMock),
+        })
+        metadataType.elemID.isTopLevel = jest.fn().mockReturnValue(true)
+      })
 
       it('should not fetch the types with many instances and add them to the exclude list', async () => {
         const excludeFilePropMocks = new Array(3).fill(excludeFilePropMock)

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import { collections, values } from '@salto-io/lowerdash'
 import { ObjectType, isInstanceElement, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS } from '../constants'
+import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS, CUSTOM_METADATA_SUFFIX } from '../constants'
 import { RemoteFilterCreator } from '../filter'
 import { getSObjectFieldElement, apiName, toCustomField } from '../transformers/transformer'
 import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
@@ -139,6 +139,9 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       const objectNamesToDescribe = availableObjects
         .map(objDesc => objDesc.name)
         .filter(name => potentialObjectNames.has(name))
+        // Since we receive the records of CustomMetadata types through the Metadata API only,
+        // no extra data is needed from the SOAP API.
+        .filter(name => !name.endsWith(CUSTOM_METADATA_SUFFIX))
 
       const sObjects = await client.describeSObjects(objectNamesToDescribe)
 

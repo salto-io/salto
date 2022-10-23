@@ -21,6 +21,7 @@ import { isCustom, isCustomObject, apiName } from '../transformers/transformer'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import { getObjectDirectoryPath } from './custom_objects_to_object_type'
 import { OBJECT_FIELDS_PATH } from '../constants'
+import { isCustomMetadataRecordType } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -93,7 +94,10 @@ const customObjectToSplitElements = async (
 
 const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
-    const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
+    const customObjects = await awu(elements)
+      .filter(isObjectType)
+      .filter(async e => await isCustomObject(e) || isCustomMetadataRecordType(e))
+      .toArray()
     const newSplitCustomObjects = await awu(customObjects)
       .flatMap(customObject => customObjectToSplitElements(
         customObject, config.separateFieldToFiles ?? []

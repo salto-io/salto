@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
   Change,
   Element,
@@ -22,12 +21,28 @@ import {
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { mockTypes, mockInstances } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 import makeFilter, { ServiceMDTRecordValue } from '../../src/filters/custom_metadata'
 import { FilterWith } from '../../src/filter'
-import { MetadataInstanceElement, createInstanceElement, MetadataValues, Types } from '../../src/transformers/transformer'
-import { API_NAME, CUSTOM_METADATA, METADATA_TYPE, SALESFORCE, XML_ATTRIBUTE_PREFIX } from '../../src/constants'
+import {
+  MetadataInstanceElement,
+  createInstanceElement,
+  MetadataValues,
+  Types,
+  apiName,
+} from '../../src/transformers/transformer'
+import {
+  API_NAME,
+  CUSTOM_METADATA,
+  INSTANCE_FULL_NAME_FIELD,
+  METADATA_TYPE,
+  SALESFORCE,
+  XML_ATTRIBUTE_PREFIX,
+} from '../../src/constants'
+
+const { awu } = collections.asynciterable
 
 type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 describe('CustomMetadata filter', () => {
@@ -35,8 +50,19 @@ describe('CustomMetadata filter', () => {
   const customMetadataRecordType = new ObjectType({
     elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_RECORD_TYPE_NAME),
     fields: {
-      textField__c: { refType: Types.primitiveDataTypes.Text },
-      nullableNumberField__c: { refType: Types.primitiveDataTypes.Number },
+      longTextArea__c: { refType: Types.primitiveDataTypes.LongTextArea },
+      metadataRelationship__c: { refType: Types.primitiveDataTypes.MetadataRelationship },
+      checkbox__c: { refType: Types.primitiveDataTypes.Checkbox },
+      date__c: { refType: Types.primitiveDataTypes.Date },
+      dateTime__c: { refType: Types.primitiveDataTypes.DateTime },
+      email__c: { refType: Types.primitiveDataTypes.Email },
+      number__c: { refType: Types.primitiveDataTypes.Number },
+      percent__c: { refType: Types.primitiveDataTypes.Percent },
+      phone__c: { refType: Types.primitiveDataTypes.Phone },
+      picklist__c: { refType: Types.primitiveDataTypes.Picklist },
+      text__c: { refType: Types.primitiveDataTypes.Text },
+      textArea__c: { refType: Types.primitiveDataTypes.TextArea },
+      url__c: { refType: Types.primitiveDataTypes.Url },
     },
     annotations: {
       [API_NAME]: CUSTOM_METADATA_RECORD_TYPE_NAME,
@@ -51,6 +77,12 @@ describe('CustomMetadata filter', () => {
       mockTypes.CustomMetadata,
     )
   )
+
+  const getInstanceByApiName = (
+    elements: Element[],
+    instanceApiName: string
+  ): Promise<MetadataInstanceElement> => awu(elements)
+    .find(async e => await apiName(e) === instanceApiName) as Promise<MetadataInstanceElement>
 
   describe('onFetch', () => {
     let filter: FilterType
@@ -74,35 +106,38 @@ describe('CustomMetadata filter', () => {
       })
     })
     describe('with custom metadata records', () => {
+      const SINGLE_VALUE_INSTANCE_NAME = 'MDType.InstWithSingleValue'
+      const NULL_VALUE_INSTANCE_NAME = 'MDType.InstWithNullValue'
+
       let singleValueInstance: MetadataInstanceElement
       let nullValueInstance: MetadataInstanceElement
+
       beforeEach(async () => {
         singleValueInstance = createCustomMetadataInstanceFromService({
-          fullName: 'MDType.InstWithSingleValue',
-          values: { field: 'textField__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+          [INSTANCE_FULL_NAME_FIELD]: SINGLE_VALUE_INSTANCE_NAME,
+          values: { field: 'text__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
         })
         nullValueInstance = createCustomMetadataInstanceFromService({
-          fullName: 'MDType.InstWithNullValue',
+          [INSTANCE_FULL_NAME_FIELD]: NULL_VALUE_INSTANCE_NAME,
           values: [
-            { field: 'textField__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
-            { field: 'nullableNumberField__c', value: { 'attr_xsi:nil': 'true' } },
+            { field: 'text__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+            { field: 'number__c', value: { 'attr_xsi:nil': 'true' } },
           ],
         })
         const elements = [mockTypes.CustomMetadata, singleValueInstance,
           nullValueInstance, customMetadataRecordType]
         await filter.onFetch(elements)
-        singleValueInstance = elements
-          .find(e => _.get(e, 'value.fullName') === singleValueInstance.value.fullName) as MetadataInstanceElement
-        nullValueInstance = elements
-          .find(e => _.get(e, 'value.fullName') === nullValueInstance.value.fullName) as MetadataInstanceElement
+        singleValueInstance = await getInstanceByApiName(elements, SINGLE_VALUE_INSTANCE_NAME)
+        nullValueInstance = await getInstanceByApiName(elements, NULL_VALUE_INSTANCE_NAME)
       })
-      it('should convert instance.value.values to fields', () => {
+      it('should create fields from "values"', () => {
         expect(singleValueInstance.value.values).toBeUndefined()
-        expect(singleValueInstance.value.textField__c).toEqual('value')
+        expect(singleValueInstance.value.text__c).toEqual('value')
       })
       it('should not convert null values to fields', async () => {
         expect(nullValueInstance.value.values).toBeUndefined()
-        expect(nullValueInstance.value.nullableNumberField__c).toBeUndefined()
+        expect(nullValueInstance.value.text__c).toEqual('value')
+        expect(nullValueInstance.value.number__c).toBeUndefined()
       })
       it('should remove XML namespace attributes', () => {
         expect(nullValueInstance.value).not.toContainKey(
@@ -119,7 +154,19 @@ describe('CustomMetadata filter', () => {
   describe('preDeploy and onDeploy', () => {
     const naclValues = {
       fullName: 'MDType.InstWithNullValue',
-      textField__c: 'value',
+      longTextArea__c: 'value',
+      metadataRelationship__c: 'value',
+      checkbox__c: true,
+      date__c: '2022-10-12',
+      dateTime__c: '2022-10-12T12:21:00.000Z',
+      email__c: 'test@user.com',
+      // number__c is not defined in order to cover null value handling
+      percent__c: 23,
+      phone__c: '972547771234',
+      picklist__c: '1',
+      text__c: 'value',
+      textArea__c: 'value',
+      url__c: 'https://www.google.com',
     }
     let filter: FilterType
     beforeAll(() => {
@@ -144,9 +191,19 @@ describe('CustomMetadata filter', () => {
       })
       it('should create "values" from custom fields', () => {
         expect(afterPreDeployInstance.value.values).toEqual([
-          { field: 'textField__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
-          // Should handle null values
-          { field: 'nullableNumberField__c', value: { 'attr_xsi:nil': 'true' } },
+          { field: 'longTextArea__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+          { field: 'metadataRelationship__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+          { field: 'checkbox__c', value: { 'attr_xsi:type': 'xsd:boolean', '#text': true } },
+          { field: 'date__c', value: { 'attr_xsi:type': 'xsd:date', '#text': '2022-10-12' } },
+          { field: 'dateTime__c', value: { 'attr_xsi:type': 'xsd:dateTime', '#text': '2022-10-12T12:21:00.000Z' } },
+          { field: 'email__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'test@user.com' } },
+          { field: 'number__c', value: { 'attr_xsi:nil': 'true' } }, // null value handling
+          { field: 'percent__c', value: { 'attr_xsi:type': 'xsd:double', '#text': 23 } },
+          { field: 'phone__c', value: { 'attr_xsi:type': 'xsd:string', '#text': '972547771234' } },
+          { field: 'picklist__c', value: { 'attr_xsi:type': 'xsd:string', '#text': '1' } },
+          { field: 'text__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+          { field: 'textArea__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'value' } },
+          { field: 'url__c', value: { 'attr_xsi:type': 'xsd:string', '#text': 'https://www.google.com' } },
         ])
       })
       it('should convert deployed instance type to CustomMetadata', async () => {

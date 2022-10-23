@@ -18,7 +18,19 @@ import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { DescribeSObjectResult } from 'jsforce'
 import Connection from '../../src/client/jsforce'
-import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, LOOKUP_FILTER_FIELDS, FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS, CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS } from '../../src/constants'
+import {
+  FIELD_ANNOTATIONS,
+  FILTER_ITEM_FIELDS,
+  CUSTOM_OBJECT,
+  INSTANCE_FULL_NAME_FIELD,
+  LABEL,
+  LOOKUP_FILTER_FIELDS,
+  FIELD_DEPENDENCY_FIELDS,
+  VALUE_SETTINGS_FIELDS,
+  VALUE_SET_FIELDS,
+  CUSTOM_VALUE,
+  VALUE_SET_DEFINITION_FIELDS,
+} from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, defaultFilterContext } from '../utils'
 import filterCreator from '../../src/filters/custom_objects_from_soap_describe'
@@ -29,6 +41,7 @@ import { mockSObjectDescribeGlobal, mockSObjectDescribe, mockFileProperties } fr
 
 describe('Custom Objects from describe filter', () => {
   let connection: MockInterface<Connection>
+  let describeSObjectsSpy: jest.SpyInstance
   let customObjectType: ObjectType
   let testInstanceElement: InstanceElement
   let filter: FilterWith<'onFetch'>
@@ -171,6 +184,7 @@ describe('Custom Objects from describe filter', () => {
       },
     )
     const adapter = mockAdapter({})
+    describeSObjectsSpy = jest.spyOn(adapter.client, 'describeSObjects')
     connection = adapter.connection
     filter = filterCreator({
       config: {
@@ -442,6 +456,41 @@ describe('Custom Objects from describe filter', () => {
             )
           })
         })
+      })
+    })
+    describe('when fetching CustomMetadata record types', () => {
+      const CUSTOM_METADATA_RECORD_TYPE_NAME = 'MDType__mdt'
+      let customMetadataRecordTypeInstance: InstanceElement
+      beforeEach(async () => {
+        mockSingleSObject({
+          name: CUSTOM_METADATA_RECORD_TYPE_NAME,
+          label: CUSTOM_METADATA_RECORD_TYPE_NAME,
+          fields: [
+            {
+              name: 'DeveloperName',
+              type: 'string',
+              nameField: true,
+            },
+          ],
+        })
+        customMetadataRecordTypeInstance = new InstanceElement(
+          CUSTOM_METADATA_RECORD_TYPE_NAME,
+          customObjectType,
+          {
+            [INSTANCE_FULL_NAME_FIELD]: CUSTOM_METADATA_RECORD_TYPE_NAME,
+            fields: [
+              {
+                name: 'picklist__c',
+                type: 'picklist',
+              },
+            ],
+          }
+        )
+        const elements = [customObjectType, customMetadataRecordTypeInstance]
+        await filter.onFetch(elements)
+      })
+      it('should not describeSObjects on the CustomMetadata record type', () => {
+        expect(describeSObjectsSpy).toHaveBeenCalledWith([])
       })
     })
   })

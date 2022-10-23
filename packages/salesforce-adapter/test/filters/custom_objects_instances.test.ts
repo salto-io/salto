@@ -1071,8 +1071,6 @@ describe('Custom Object Instances filter', () => {
 
   describe('Fetching with MaxInstancesPerType', () => {
     const testElement = createCustomObject('testElement')
-    // WHY doesn't the regular client works?!?!
-    // eslint-disable-next-line @typescript-eslint/no-shadow
     beforeEach(() => {
       client.queryAll = jest.fn().mockResolvedValue([{ key: 'value' }])
       filter = filterCreator(

@@ -19,7 +19,7 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceElement,
-  isRemovalChange,
+  isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -41,7 +41,7 @@ export type TranslationType = {
 type ParentType = InstanceElement & {
   value: {
     // eslint-disable-next-line camelcase
-    source_locale: string
+    source_locale: ReferenceExpression
     name?: string
     description?: string
   }
@@ -54,9 +54,9 @@ const TRANSLATION_SCHEMA = Joi.object({
 }).unknown(true).required()
 
 const PARENT_SCHEMA = Joi.object({
-  source_locale: Joi.string().required(),
+  source_locale: Joi.object().required(),
   name: Joi.string(),
-  description: Joi.string(),
+  description: Joi.string().allow(''),
 }).unknown(true).required()
 
 export const isTranslation = createSchemeGuard<TranslationType>(

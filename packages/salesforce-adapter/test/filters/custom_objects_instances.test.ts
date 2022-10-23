@@ -1071,9 +1071,10 @@ describe('Custom Object Instances filter', () => {
 
   describe('Fetching with MaxInstancesPerType', () => {
     const testElement = createCustomObject('testElement')
+    // WHY doesn't the regular client works?!?!
     // eslint-disable-next-line @typescript-eslint/no-shadow
-    const { client } = mockAdapter()
-    beforeAll(() => {
+    beforeEach(() => {
+      client.queryAll = jest.fn().mockResolvedValue([{ key: 'value' }])
       filter = filterCreator(
         {
           client,
@@ -1096,13 +1097,9 @@ describe('Custom Object Instances filter', () => {
         }
       ) as FilterType
     })
-    afterAll(() => {
-      jest.resetAllMocks()
-    })
     it('Should not fetch CustomObjects with more instances than MaxInstancesPerType', async () => {
       const elements = [testElement]
-      client.countInstances = jest.fn().mockReturnValue(3)
-      client.queryAll = jest.fn().mockReturnValue([{ key: 'value' }])
+      client.countInstances = jest.fn().mockResolvedValue(3)
       const result = await filter.onFetch(elements)
       expect(elements.length).toBe(1)
       expect(result).toMatchObject({
@@ -1115,7 +1112,7 @@ describe('Custom Object Instances filter', () => {
     })
     it('Should fetch CustomObjects with less instances than MaxInstancesPerType', async () => {
       const elements = [testElement]
-      client.countInstances = jest.fn().mockReturnValue(1)
+      client.countInstances = jest.fn().mockResolvedValue(1)
       const result = await filter.onFetch(elements)
       expect(elements.length).toBe(2)
       expect(result).toMatchObject({ configSuggestions: [] })

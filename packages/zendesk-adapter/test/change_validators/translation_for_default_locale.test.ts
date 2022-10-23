@@ -20,8 +20,12 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
+import { elements as elementUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import { translationForDefaultLocaleValidator } from '../../src/change_validators'
+import { DEFAULT_CONFIG } from '../../src/config'
+
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 describe('translationForDefaultLocaleValidator',
   () => {
@@ -54,22 +58,37 @@ describe('translationForDefaultLocaleValidator',
         body: 'description',
       }
     )
+    const heSectionTranslationInstance = new InstanceElement(
+      'instance',
+      sectionTranslationType,
+      {
+        locale: 'he',
+        title: 'name',
+        body: 'description',
+      }
+    )
 
     it('should return an error when section does not have translation for source_locale',
       async () => {
-        const invalidSectionInstance = new InstanceElement(
-          'instance',
-          sectionType,
-          {
-            id: 1,
-            name: 'name',
-            description: 'description',
-            source_locale: new ReferenceExpression(
-              helpCenterLocaleType.elemID.createNestedID('instance', 'Test1'), helpCenterLocaleInstance
-            ),
-            translations: [],
-          }
-        )
+        const invalidSectionInstance = replaceInstanceTypeForDeploy({
+          instance: new InstanceElement(
+            'instance',
+            sectionType,
+            {
+              id: 1,
+              name: 'name',
+              description: 'description',
+              source_locale: new ReferenceExpression(
+                helpCenterLocaleType.elemID.createNestedID('instance', 'Test1'), helpCenterLocaleInstance
+              ),
+              translations: [new ReferenceExpression(
+                heSectionTranslationInstance.elemID.createNestedID('instance', 'Test1'),
+                heSectionTranslationInstance
+              )],
+            }
+          ),
+          config: DEFAULT_CONFIG.apiDefinitions,
+        })
         const errors = await translationForDefaultLocaleValidator(
           [toChange({ after: invalidSectionInstance })]
         )
@@ -78,7 +97,7 @@ describe('translationForDefaultLocaleValidator',
           severity: 'Error',
           message: `Instance ${invalidSectionInstance.elemID.getFullName()} does not have a translation for the source locale`,
           detailedMessage: `Instance ${invalidSectionInstance.elemID.getFullName()} does not have a 
-      translation for the source local ${invalidSectionInstance.value.source_locale.value.value.id}`,
+      translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
         }])
       })
 

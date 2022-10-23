@@ -19,7 +19,7 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceElement,
-  isRemovalChange, ReferenceExpression,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
@@ -33,15 +33,15 @@ export const removedTranslationParentId: number[] = []
 
 // not an instanceElement as it does not have a value
 export type TranslationType = {
-    title: string
-    body?: string
-    locale: string
+  title: string
+  body?: string
+  locale: string
 }
 
 type ParentType = InstanceElement & {
   value: {
     // eslint-disable-next-line camelcase
-    source_locale: ReferenceExpression
+    source_locale: string
     name?: string
     description?: string
   }
@@ -54,7 +54,7 @@ const TRANSLATION_SCHEMA = Joi.object({
 }).unknown(true).required()
 
 const PARENT_SCHEMA = Joi.object({
-  source_locale: Joi.object().required(),
+  source_locale: Joi.string().required(),
   name: Joi.string(),
   description: Joi.string().allow(''),
 }).unknown(true).required()
@@ -76,7 +76,7 @@ export const isParent = createSchemeGuardForInstance<ParentType>(
 const addTranslationValues = (change: Change<InstanceElement>): void => {
   const currentLocale = getChangeData(change).value.source_locale
   const translation = getChangeData(change).value.translations
-    .filter(isTranslation) // the translation is not a reverence it is already the value
+    .filter(isTranslation) // the translation is not a reference it is already the value
     .find((tran: TranslationType) => tran.locale === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.name = translation.title

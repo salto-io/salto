@@ -88,6 +88,7 @@ import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import hcSectionFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
+import brandReferenceFilter from './filters/brand_reference'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -103,6 +104,7 @@ const { awu } = collections.asynciterable
 const { concatObjects } = objects
 
 export const DEFAULT_FILTERS = [
+  brandReferenceFilter,
   ticketFieldFilter,
   userFieldFilter,
   viewFilter,
@@ -136,10 +138,10 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
-  fieldReferencesFilter,
-  // help center filters need to be after fieldReferencesFilter
+  // help center filters need to be before fieldReferencesFilter
   hcSectionFilter,
   hcTranslationFilter,
+  fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appsFilter,

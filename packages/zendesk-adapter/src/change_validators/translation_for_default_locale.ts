@@ -16,24 +16,27 @@
 import {
   ChangeValidator,
   getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceElement, ReferenceExpression,
+  isAdditionOrModificationChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { createSchemeGuardForInstance, resolveValues } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { isTranslation, TranslationType } from '../filters/help_center_section_and_category'
+import { lookupFunc } from '../filters/field_references'
 
+const { awu } = collections.asynciterable
 const PARENTS_TYPE_NAMES = ['section', 'category']
 
 type ParentType = InstanceElement & {
   value: {
     // eslint-disable-next-line camelcase
-    source_locale: ReferenceExpression
-    translations: ReferenceExpression[]
+    source_locale: string
+    translations: TranslationType[]
   }
 }
 
 const PARENT_SCHEMA = Joi.object({
-  source_locale: Joi.object().required(),
+  source_locale: Joi.string().required(),
   translations: Joi.array().required(),
 }).unknown(true).required()
 
@@ -48,21 +51,22 @@ const noTranslationForDefaultLocale = (instance: InstanceElement): boolean => {
   if (!isParent(instance)) {
     return false
   }
-  const sourceLocale = instance.value.source_locale.value.value.id
+  const sourceLocale = instance.value.source_locale
   const translation = instance.value.translations
-    .map(translationReference => translationReference.value.value)
     .filter(isTranslation)
-    .find((tran: TranslationType) => tran.locale === sourceLocale)
+    .find(tran => tran.locale === sourceLocale)
   return (translation === undefined) // no translation for the source_locale
 }
 
 export const translationForDefaultLocaleValidator: ChangeValidator = async changes => {
-  const relevantInstances = changes
+  const relevantInstances = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => PARENTS_TYPE_NAMES.includes(instance.elemID.typeName))
+    .map(data => resolveValues(data, lookupFunc))
     .filter(noTranslationForDefaultLocale)
+    .toArray()
 
   return relevantInstances
     .flatMap(instance => [{
@@ -70,6 +74,6 @@ export const translationForDefaultLocaleValidator: ChangeValidator = async chang
       severity: 'Error',
       message: `Instance ${instance.elemID.getFullName()} does not have a translation for the source locale`,
       detailedMessage: `Instance ${instance.elemID.getFullName()} does not have a 
-      translation for the source local ${instance.value.source_locale.value.value.id}`,
+      translation for the source locale ${instance.value.source_locale}`,
     }])
 }

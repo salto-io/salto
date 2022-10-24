@@ -96,6 +96,7 @@ const replaceInstanceValues = async (
       type: await instance.getType(),
       transformFunc,
       strict: false,
+      allowEmpty: true,
     }
   ) ?? values
 }

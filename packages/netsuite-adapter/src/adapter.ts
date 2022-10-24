@@ -59,6 +59,7 @@ import configFeaturesFilter from './filters/config_features'
 import omitSdfUntypedValues from './filters/omit_sdf_untyped_values'
 import omitFieldsFilter from './filters/omit_fields'
 import addFieldsToCustomRecordType from './filters/custom_record_type_fields'
+import currencyExchangeRate from './filters/currency_exchange_rate'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -151,6 +152,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesReferences,
       dataInstancesInternalId,
       suiteAppInternalIds,
+      currencyExchangeRate,
       // AuthorInformation filters must run after SDFInternalIds filter
       systemNoteAuthorInformation,
       savedSearchesAuthorInformation,

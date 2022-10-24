@@ -1124,7 +1124,12 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
   if (isContainerType(fieldType) && _.isEmpty(value)) {
     return undefined
   }
-
+  if (isObjectType(fieldType) && value === '') {
+    // Salesforce returns empty objects in XML as <quickAction></quickAction> for example
+    // We treat them as "" (empty string), and we don't want to delete them
+    // We should replace them with {} (empty object)
+    return {}
+  }
   if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
@@ -1315,6 +1320,7 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
     element,
     transformFunc: removeLocalOnly,
     strict: false,
+    allowEmpty: true,
   })
 }
 

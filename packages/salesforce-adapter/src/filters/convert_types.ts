@@ -48,6 +48,7 @@ const filterCreator: LocalFilterCreator = () => ({
             type: await instance.getType(),
             transformFunc: transformPrimitive,
             strict: false,
+            allowEmpty: true,
           }
         ) || {}
       })

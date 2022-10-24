@@ -257,6 +257,7 @@ export const transformFieldAnnotations = async (
       type: annotationsType,
       transformFunc: transformPrimitive,
       strict: false,
+      allowEmpty: true,
     }
   ) || {}
 }
@@ -270,6 +271,7 @@ const transformObjectAnnotationValues = (instance: InstanceElement,
       values: instance.value,
       type: annotationsObject,
       transformFunc: transformPrimitive,
+      allowEmpty: true,
     }
   )
 }

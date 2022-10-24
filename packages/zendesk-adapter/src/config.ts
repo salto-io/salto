@@ -1705,6 +1705,31 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/sections/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories/{category_id}/sections',
+        method: 'post',
+        deployAsField: 'section',
+        urlParamsToFields: {
+          category_id: 'category_id',
+        },
+      },
+      modify: {
+        url: '/help_center/sections/{section_id}',
+        method: 'put',
+        deployAsField: 'section',
+        urlParamsToFields: {
+          section_id: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/sections/{section_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          section_id: 'id',
+        },
+      },
+    },
   },
   section_translation: {
     request: {
@@ -1715,13 +1740,50 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+    },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{section_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          section_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/sections/{section_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          section_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
+    },
+  },
+  // needed until SALTO-2867 is solved
+  help_center_locale: {
+    transformation: {
+      idFields: ['id'],
+      fileNameFields: ['id'],
     },
   },
   labels: {
@@ -1771,6 +1833,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/hc/admin/categories/{id}/edit',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories',
+        method: 'post',
+        deployAsField: 'category',
+      },
+      modify: {
+        url: '/help_center/categories/{category_id}',
+        method: 'put',
+        deployAsField: 'category',
+        urlParamsToFields: {
+          category_id: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/categories/{category_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          category_id: 'id',
+        },
+      },
+    },
   },
   category_translation: {
     request: {
@@ -1788,6 +1872,32 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+    },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories/{category_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          category_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/categories/{category_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          category_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
     },
   },
   permission_groups: {

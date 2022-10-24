@@ -48,17 +48,7 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['get'],
-    // for example: '/rest/api/3/screens/123/tabs/456/fields'
-    url: '/rest/api/3/screens/\\d+/tabs/\\d+/fields',
-  },
-  {
-    httpMethods: ['get'],
     url: '/rest/api/3/screens',
-  },
-  {
-    httpMethods: ['get'],
-    // for example: '/rest/api/3/screens/screenTabs/123/tabs'
-    url: '/rest/api/3/screens/screenTabs/\\d+/tabs',
   },
 ]
 

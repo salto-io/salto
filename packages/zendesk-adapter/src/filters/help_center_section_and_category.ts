@@ -25,7 +25,7 @@ import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapt
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
-const PARENTS_TYPE_NAMES = ['section', 'category']
+export const TRANSLATION_PARENT_TYPE_NAMES = ['section', 'category']
 
 export const removedTranslationParentId: number[] = []
 
@@ -82,11 +82,9 @@ const addTranslationValues = (change: Change<InstanceElement>): void => {
   }
 }
 
-const removeNameAndDescription = (elem: InstanceElement): void => {
-  if (isParent(elem)) {
-    delete elem.value.name
-    delete elem.value.description
-  }
+export const removeNameAndDescription = (elem: InstanceElement): void => {
+  delete elem.value.name
+  delete elem.value.description
 }
 
 const addRemovalChangesId = (changes: Change<InstanceElement>[]): void => {
@@ -96,21 +94,24 @@ const addRemovalChangesId = (changes: Change<InstanceElement>[]): void => {
 }
 
 /**
- * This filter works as follows: onFetch it discards the 'name' and 'description' fields to avoid
- * data duplication with the default translation. The preDeploy adds these fields for the deployment
- * to work properly. The Deploy ignores the 'translations' fields in the deployment. The onDeploy
+ * This filter works as follows:  The preDeploy adds the 'name' and 'description' fields that where
+ * removed during fetch in the help_center_fetch_section_and_category filter for the deployment to
+ * work properly.
+ * The Deploy ignores the 'translations' fields in the deployment. The onDeploy
  * discards the 'name' and 'description' fields from the section again.
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
-      .filter(change => PARENTS_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+      .filter(change => TRANSLATION_PARENT_TYPE_NAMES.includes(
+        getChangeData(change).elemID.typeName
+      ))
       .forEach(addTranslationValues)
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [parentChanges, leftoverChanges] = _.partition(
       changes,
-      change => PARENTS_TYPE_NAMES.includes(getChangeData(change).elemID.typeName),
+      change => TRANSLATION_PARENT_TYPE_NAMES.includes(getChangeData(change).elemID.typeName),
     )
     addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(
@@ -123,7 +124,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
-      .filter(change => PARENTS_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
+      .filter(change => TRANSLATION_PARENT_TYPE_NAMES.includes(
+        getChangeData(change).elemID.typeName
+      ))
       .forEach(change => removeNameAndDescription(getChangeData(change)))
   },
 })

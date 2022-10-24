@@ -13,21 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
+import { TRANSLATION_PARENT_TYPE_NAMES, removeNameAndDescription } from './help_center_section_and_category'
 
-const PARENTS_TYPE_NAMES = ['section', 'category']
-
-const removeNameAndDescription = (elem: InstanceElement): void => {
-  delete elem.value.name
-  delete elem.value.description
-}
-
+/**
+ * This filter works as follows: onFetch it discards the 'name' and 'description' fields to avoid
+ * data duplication with the default translation.It is separated from
+ * help_center_section_and_category as the removal needs to happen after the reference expressions
+ * are created.
+ */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)
-      .filter(obj => PARENTS_TYPE_NAMES.includes(obj.elemID.typeName))
+      .filter(obj => TRANSLATION_PARENT_TYPE_NAMES.includes(obj.elemID.typeName))
       .forEach(removeNameAndDescription)
   },
 })

@@ -63,11 +63,14 @@ const getRenamedInstance = (
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter,
 ): InstanceElement => {
-  const name = getInstanceName(instance, config, getElemIdFunc)
+  const elementName = getInstanceName(instance, config, getElemIdFunc)
+  const originalName = instance.value.name
+  const match = instance.value.name.match(GROUP_NAME_REGEX)
+  const newName = match ? match[1] : instance.value.name
   return new InstanceElement(
-    name,
+    elementName,
     instance.refType,
-    instance.value,
+    { ...instance.value, name: newName, originalName },
     instance.path,
     instance.annotations,
   )

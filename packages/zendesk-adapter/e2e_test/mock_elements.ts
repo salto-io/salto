@@ -226,4 +226,13 @@ export const mockDefaultValues: Record<string, Values> = {
     active: true,
     system: false,
   },
+  user_segment: {
+    user_type: 'signed_in_users',
+    built_in: false,
+  },
+  article: {
+    title: 'Article Title',
+    name: 'Article Name',
+    body: '<p>Article Body!</p>',
+  },
 }

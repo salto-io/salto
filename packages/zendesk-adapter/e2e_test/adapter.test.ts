@@ -34,6 +34,13 @@ const { awu } = collections.asynciterable
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
 
+// This is an actual brand with activated help center
+const NON_DEFAULT_BRAND_ID = 9471362949911
+const NON_DEFAULT_BRAND_WITH_HELP_CENTER_SUBDOMAIN = 'nonDefaultHelpCenterBrand'
+const NON_DEFAULT_BRAND_ANNOUNCEMENT_SECTION_ID = 9471349831831
+const NON_DEFAULT_BRAND_USER_SEGMENT_ID = 9471365500567
+const NON_DEFAULT_BRAND_PERMISSION_GROUP_ID = 9471349831191
+
 const createInstanceElement = (
   type: string, valuesOverride: Values, fields?: Record<string, FieldDefinition>
 ): InstanceElement => {
@@ -249,14 +256,32 @@ describe('Zendesk adapter E2E', () => {
     )
     const userSegmentInstance = createInstanceElement(
       'user_segment',
-      { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
+      { name: createName('user_segment') },
+    )
+    const articleName = createName('article')
+    const articleInstance = createInstanceElement(
+      'article',
+      {
+        name: articleName,
+        title: articleName,
+        locale: 'en-us',
+        section_id: NON_DEFAULT_BRAND_ANNOUNCEMENT_SECTION_ID,
+        user_segment_id: NON_DEFAULT_BRAND_USER_SEGMENT_ID,
+        permission_group_id: NON_DEFAULT_BRAND_PERMISSION_GROUP_ID,
+        '&brand': NON_DEFAULT_BRAND_WITH_HELP_CENTER_SUBDOMAIN,
+      },
     )
     let groupIdToInstances: Record<string, InstanceElement[]>
 
     beforeAll(async () => {
       credLease = await credsLease()
       adapterAttr = realAdapter(
-        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
+        {
+          credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements([
+            createInstanceElement('brand', { id: NON_DEFAULT_BRAND_ID, subdomain: NON_DEFAULT_BRAND_WITH_HELP_CENTER_SUBDOMAIN }),
+          ]),
+        },
         {
           ...DEFAULT_CONFIG,
           [FETCH_CONFIG]: {
@@ -286,6 +311,7 @@ describe('Zendesk adapter E2E', () => {
         viewInstance,
         brandInstanceToAdd,
         userSegmentInstance,
+        articleInstance,
       ]
       const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
         .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
@@ -383,7 +409,7 @@ describe('Zendesk adapter E2E', () => {
     it('should fetch the newly deployed instances', async () => {
       const instances = Object.values(groupIdToInstances).flat()
       instances
-        .filter(inst => !['ticket_field', 'user_field'].includes(inst.elemID.typeName))
+        .filter(inst => !['ticket_field', 'user_field', 'article'].includes(inst.elemID.typeName))
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
           expect(instance).toBeDefined()

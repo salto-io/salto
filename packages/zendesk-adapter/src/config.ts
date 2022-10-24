@@ -1768,8 +1768,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'sections__sections',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'directParent' }, // directParent and parentType are created to avoid collisions
-        { fieldName: 'parentType', fieldType: 'string' }
+        // directParent and parentType are created to avoid collisions
+        // { fieldName: 'directParent' },
+        // { fieldName: 'parentType', fieldType: 'string' }
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(

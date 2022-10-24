@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Joi from 'joi'
 import {
   BuiltinTypes, ElemID, InstanceElement, ObjectType,
@@ -87,6 +88,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(localeName)],
       )
     })
+    const localeTypeFullID = localeType.elemID.getFullName()
+    // the type was added already as part of addRemainingTypes. this will be fixed in SALTO-2869
+    _.remove(elements, e => e.elemID.getFullName() === localeTypeFullID)
     elements.push(localeType)
     locales.forEach(locale => {
       elements.push(locale)

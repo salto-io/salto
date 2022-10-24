@@ -121,7 +121,7 @@ const createAttachmentInstance = ({
   )
   const naclName = naclCase(name)
   const pathName = pathNaclCase(naclName)
-  const resourcePathName = normalizeFilePathPart(name)
+  const resourcePathName = `${normalizeFilePathPart(macro.value.title)}/${normalizeFilePathPart(attachment.filename)}`
   return new InstanceElement(
     naclName,
     attachmentType,

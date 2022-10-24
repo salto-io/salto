@@ -114,7 +114,7 @@ describe('brand logo filter', () => {
         filename,
         contentType: 'image/png',
         content: new StaticFile({
-          filepath: 'zendesk/brand_logo/test__brand1_logo.png', encoding: 'binary', content,
+          filepath: 'zendesk/brand_logo/test/brand1_logo.png', encoding: 'binary', content,
         }),
       })
     })
@@ -166,7 +166,7 @@ describe('brand logo filter', () => {
           filename: 'test.png',
           contentType: 'image/png',
           content: new StaticFile({
-            filepath: 'zendesk/brand_logo/test__test.png', encoding: 'binary', content,
+            filepath: 'zendesk/brand_logo/test/test.png', encoding: 'binary', content,
           }),
         },
       )
@@ -223,7 +223,7 @@ describe('brand logo filter', () => {
       const beforeLogo = logoInstance.clone()
       const afterLogo = logoInstance.clone()
       afterLogo.value.content = new StaticFile({
-        filepath: 'zendesk/brand_logo/test__test2.png',
+        filepath: 'zendesk/brand_logo/test/test2.png',
         encoding: 'binary',
         content: Buffer.from('changes!'),
       })

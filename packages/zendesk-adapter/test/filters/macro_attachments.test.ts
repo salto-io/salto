@@ -136,7 +136,7 @@ describe('macro attachment filter', () => {
         filename,
         contentType: 'text/plain',
         content: new StaticFile({
-          filepath: 'zendesk/macro_attachment/test__test.txt', encoding: 'binary', content,
+          filepath: 'zendesk/macro_attachment/test/test.txt', encoding: 'binary', content,
         }),
       })
     })
@@ -258,7 +258,7 @@ describe('macro attachment filter', () => {
           filename,
           contentType: 'text/plain',
           content: new StaticFile({
-            filepath: 'zendesk/macro_attachment/test__test.txt', encoding: 'binary', content,
+            filepath: 'zendesk/macro_attachment/test/test.txt', encoding: 'binary', content,
           }),
         },
       )

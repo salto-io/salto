@@ -106,7 +106,7 @@ const getBrandLogo = async ({ client, brand }: {
     brand.value.name, logoValues.file_name
   )
   const pathName = pathNaclCase(naclCase(name))
-  const resourcePathName = normalizeFilePathPart(name)
+  const resourcePathName = `${normalizeFilePathPart(brand.value.name)}/${normalizeFilePathPart(logoValues.file_name)}`
 
   const { id, file_name: filename } = brand.value.logo
   const content = await getLogoContent(client, id, filename)

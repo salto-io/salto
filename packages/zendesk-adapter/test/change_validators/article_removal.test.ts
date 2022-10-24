@@ -52,7 +52,7 @@ describe('articleRemovalValidator', () => {
       detailedMessage: `Permanent deletion of articles must be applied manually, please make sure to delete ${articleInstance.value.name} from the archived list`,
     }])
   })
-  it('should not return an error if the brand was modified', async () => {
+  it('should not return a warning if the brand was modified', async () => {
     const clonedBeforeArticle = articleInstance.clone()
     const clonedAfterArticle = articleInstance.clone()
     clonedAfterArticle.value.title = 'newTitle!'
@@ -61,7 +61,7 @@ describe('articleRemovalValidator', () => {
     )
     expect(errors).toHaveLength(0)
   })
-  it('should not return an error if the brand was created', async () => {
+  it('should not return a warning if the brand was created', async () => {
     const errors = await articleRemovalValidator(
       [toChange({ after: articleInstance })],
     )

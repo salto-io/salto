@@ -40,6 +40,7 @@ import {
   brandFieldForBrandBasedElementsValidator,
   translationForDefaultLocaleValidator,
   articleRemovalValidator,
+  articleLabelAdditionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -87,6 +88,7 @@ export default ({
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
+    articleLabelAdditionValidator,
     brandFieldForBrandBasedElementsValidator,
     translationForDefaultLocaleValidator,
   ]

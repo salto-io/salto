@@ -63,7 +63,7 @@ const getStatusIdToStepId = async (
   })
 
   if (!isValidStatusesResponse(response.data)) {
-    return {}
+    throw new Error(`Failed to get step ids for workflow ${workflowName}`)
   }
 
   return Object.fromEntries(

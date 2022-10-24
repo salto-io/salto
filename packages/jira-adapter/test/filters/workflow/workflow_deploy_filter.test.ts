@@ -284,39 +284,6 @@ describe('workflowDeployFilter', () => {
     })
 
     describe('transitionIds', () => {
-      it('should add transition ids to workflow', async () => {
-        const change = toChange({
-          after: new InstanceElement(
-            'instance',
-            workflowType,
-            {
-              name: 'workflowName',
-              transitions: [
-                {
-                  name: 'name',
-                  type: 'initial',
-                },
-              ],
-            },
-          ),
-        })
-
-        mockConnection.get.mockResolvedValue({
-          status: 200,
-          data: {
-            values: [
-              {
-                transitions: [
-                  { id: '1', name: 'name' },
-                ],
-              },
-            ],
-          },
-        })
-
-        await filter.deploy([change])
-      })
-
       it('should throw when response values is not an array', async () => {
         const change = toChange({
           after: new InstanceElement(
@@ -440,6 +407,36 @@ describe('workflowDeployFilter', () => {
 
         expect(deployResult.errors).toHaveLength(1)
       })
+    })
+
+    it('should not send request when data center', async () => {
+      const change = toChange({
+        after: new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'workflowName',
+            transitions: [
+              {
+                name: 'name',
+                type: 'initial',
+              },
+            ],
+          },
+        ),
+      })
+
+
+      const { client: cli, paginator, connection } = mockClient(true)
+
+      filter = workflowFilter(getFilterParams({
+        client: cli,
+        paginator,
+      })) as typeof filter
+
+      await filter.deploy([change])
+
+      expect(connection.get).not.toHaveBeenCalled()
     })
   })
 })

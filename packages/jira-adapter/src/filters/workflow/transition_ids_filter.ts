@@ -18,7 +18,11 @@ import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { isWorkflowInstance } from './types'
 
-
+/**
+ * A filter that deletes the transition ids from all the workflows.
+ * We delete the ids since they are not env friendly and not needed
+ * (since we implement modification of a workflow with addition and removal)
+ */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     elements

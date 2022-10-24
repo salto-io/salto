@@ -101,7 +101,7 @@ export const deployWorkflow = async (
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: path => path.name === 'triggers'
       // Matching here the 'name' of status inside the statuses array
-      // In DC we support passin the step name as part of the request
+      // In DC we support passing the step name as part of the request
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
@@ -111,7 +111,9 @@ export const deployWorkflow = async (
     getChangeData(change).value.operations = { canEdit: true }
 
     if (config.client.usePrivateAPI && !client.isDataCenter) {
+      // No need to run in DC since there are not triggers in DC
       await deployTriggers(resolvedChange, client)
+      // No need to run in DC since the main deployment requests already supports deploying steps
       await deploySteps(getChangeData(change), client)
     }
   }

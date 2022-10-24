@@ -90,6 +90,8 @@ import { Credentials } from './auth'
 import hcSectionCategoryFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
+import hcParentSection from './filters/help_center_parent_to_section'
+
 
 
 const { makeArray } = collections.array
@@ -164,6 +166,7 @@ export const DEFAULT_FILTERS = [
   fetchCategorySection,
   helpCenterFetchArticle,
   articleBodyFilter,
+  hcParentSection,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,

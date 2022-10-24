@@ -1810,6 +1810,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       idFields: ['&locale'],
+      extendsParentId: true,
       fileNameFields: ['&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',

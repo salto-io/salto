@@ -180,13 +180,8 @@ export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
   })
 
   if (success) {
-    // unfortunately we must flush each environment because the workspace flush
-    // does not handle updates to multiple environments at once
-    await awu(targetEnvs).forEach(async env => {
-      outputLine(`Flushing environment ${env}`, output)
-      await workspace.setCurrentEnv(env, false)
-      await workspace.flush()
-    })
+    outputLine('Flushing workspace', output)
+    await workspace.flush()
   }
   return success ? CliExitCode.Success : CliExitCode.AppError
 }

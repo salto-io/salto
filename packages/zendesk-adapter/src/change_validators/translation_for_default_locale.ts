@@ -44,9 +44,7 @@ const isParent = createSchemeGuardForInstance<ParentType>(
   PARENT_SCHEMA, 'Received an invalid value for section/category'
 )
 
-/**
- * This function checks if there is no translation for the source_locale
- */
+
 const noTranslationForDefaultLocale = (instance: InstanceElement): boolean => {
   if (!isParent(instance)) {
     return false
@@ -58,6 +56,9 @@ const noTranslationForDefaultLocale = (instance: InstanceElement): boolean => {
   return (translation === undefined) // no translation for the source_locale
 }
 
+/**
+ * This validator checks if there is no translation for the source_locale
+ */
 export const translationForDefaultLocaleValidator: ChangeValidator = async changes => {
   const relevantInstances = await awu(changes)
     .filter(isAdditionOrModificationChange)
@@ -73,7 +74,7 @@ export const translationForDefaultLocaleValidator: ChangeValidator = async chang
       elemID: instance.elemID,
       severity: 'Error',
       message: `Instance ${instance.elemID.getFullName()} does not have a translation for the source locale`,
-      detailedMessage: `Instance ${instance.elemID.getFullName()} does not have a 
+      detailedMessage: `${instance.elemID.typeName} instance "${instance.elemID.name}" must have a 
       translation for the source locale ${instance.value.source_locale}`,
     }])
 }

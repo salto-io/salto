@@ -409,7 +409,7 @@ describe('Zendesk adapter E2E', () => {
     it('should fetch the newly deployed instances', async () => {
       const instances = Object.values(groupIdToInstances).flat()
       instances
-        .filter(inst => !['ticket_field', 'user_field', 'article'].includes(inst.elemID.typeName))
+        .filter(inst => !['ticket_field', 'user_field'].includes(inst.elemID.typeName))
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
           expect(instance).toBeDefined()

@@ -509,7 +509,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
-        typesWithNoDeploy: ['tag'],
+        typesWithNoDeploy: ['tag', 'label'],
       }),
       dependencyChanger,
       getChangeGroupIds,

@@ -29,6 +29,8 @@ import {
   INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS, VALIDATE,
   STRICT_INSTANCE_STRUCTURE,
   FIELDS_TO_OMIT,
+  CURRENCY,
+  EXCHANGE_RATE,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
@@ -177,6 +179,14 @@ export const fetchDefault: FetchParams = {
       '^/Templates.*',
     ],
   },
+  fieldsToOmit: [
+    {
+      type: CURRENCY,
+      fields: [
+        EXCHANGE_RATE,
+      ],
+    },
+  ],
   [EXCLUDE]: {
     types: [
       // Has a definition field which is a long XML and it contains 'translationScriptId'

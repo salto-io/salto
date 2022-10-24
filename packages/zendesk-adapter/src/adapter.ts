@@ -86,6 +86,9 @@ import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
+import hcSectionCategoryFilter from './filters/help_center_section_and_category'
+import hcTranslationFilter from './filters/help_center_translation'
+import fetchCategorySection from './filters/fetch_section_and_category'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -134,6 +137,9 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
+  // help center filters need to be before fieldReferencesFilter (assume fields are strings)
+  hcSectionCategoryFilter,
+  hcTranslationFilter,
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
@@ -150,6 +156,8 @@ export const DEFAULT_FILTERS = [
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   referencedIdFieldsFilter,
+  // need to be after referencedIdFieldsFilter as 'name' is removed
+  fetchCategorySection,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
@@ -458,7 +466,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           subdomainToGuideChanges[subdomain]
         )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await runner.onDeploy(appliedChangesBeforeRestore)
+        await runner.onDeploy(guideChangesBeforeRestore)
 
         return {
           appliedChanges: guideChangesBeforeRestore,

@@ -73,7 +73,7 @@ export const translationForDefaultLocaleValidator: ChangeValidator = async chang
     .flatMap(instance => [{
       elemID: instance.elemID,
       severity: 'Error',
-      message: `Instance ${instance.elemID.getFullName()} does not have a translation for the source locale`,
+      message: `${instance.elemID.typeName} instance does not have a translation for the source locale`,
       detailedMessage: `${instance.elemID.typeName} instance "${instance.elemID.name}" must have a 
       translation for the source locale ${instance.value.source_locale}`,
     }])

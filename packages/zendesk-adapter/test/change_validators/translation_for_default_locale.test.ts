@@ -95,7 +95,7 @@ describe('translationForDefaultLocaleValidator',
         expect(errors).toEqual([{
           elemID: invalidSectionInstance.elemID,
           severity: 'Error',
-          message: `Instance ${invalidSectionInstance.elemID.getFullName()} does not have a translation for the source locale`,
+          message: `${invalidSectionInstance.elemID.typeName} instance does not have a translation for the source locale`,
           detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a 
       translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
         }])

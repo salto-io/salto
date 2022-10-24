@@ -83,10 +83,8 @@ const addTranslationValues = (change: Change<InstanceElement>): void => {
 }
 
 const removeNameAndDescription = (elem: InstanceElement): void => {
-  if (isParent(elem)) {
-    delete elem.value.name
-    delete elem.value.description
-  }
+  delete elem.value.name
+  delete elem.value.description
 }
 
 const addRemovalChangesId = (changes: Change<InstanceElement>[]): void => {

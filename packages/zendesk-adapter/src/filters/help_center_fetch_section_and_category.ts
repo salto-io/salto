@@ -13,14 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { TRANSLATION_PARENT_TYPE_NAMES } from './help_center_section_and_category'
-
-const removeNameAndDescription = (elem: InstanceElement): void => {
-  delete elem.value.name
-  delete elem.value.description
-}
+import { TRANSLATION_PARENT_TYPE_NAMES, removeNameAndDescription } from './help_center_section_and_category'
 
 /**
  * This filter works as follows: onFetch it discards the 'name' and 'description' fields to avoid

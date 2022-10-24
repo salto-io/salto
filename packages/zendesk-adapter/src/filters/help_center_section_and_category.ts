@@ -82,7 +82,7 @@ const addTranslationValues = (change: Change<InstanceElement>): void => {
   }
 }
 
-const removeNameAndDescription = (elem: InstanceElement): void => {
+export const removeNameAndDescription = (elem: InstanceElement): void => {
   delete elem.value.name
   delete elem.value.description
 }

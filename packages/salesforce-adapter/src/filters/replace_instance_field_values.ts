@@ -68,9 +68,9 @@ const getRelevantFieldMapping = async (
   })
 }
 
-const shouldReplace = async (field: Field): Promise<boolean> => {
+const shouldReplace = async (field: Field, instance: InstanceElement): Promise<boolean> => {
   const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
-  return (await resolverFinder(field)).length > 0
+  return (await resolverFinder(field, instance)).length > 0
 }
 
 const replaceInstanceValues = async (
@@ -78,7 +78,7 @@ const replaceInstanceValues = async (
   nameLookup: multiIndex.Index<[string], string>
 ): Promise<void> => {
   const transformFunc: TransformFunc = async ({ value, field }) => {
-    if (_.isUndefined(field) || !(await shouldReplace(field))) {
+    if (_.isUndefined(field) || !(await shouldReplace(field, instance))) {
       return value
     }
 
@@ -96,6 +96,7 @@ const replaceInstanceValues = async (
       type: await instance.getType(),
       transformFunc,
       strict: false,
+      allowEmpty: true,
     }
   ) ?? values
 }

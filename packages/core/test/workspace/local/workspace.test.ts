@@ -306,7 +306,32 @@ describe('local workspace', () => {
         wsElemSrcs = elemSource
         return {
           demoteAll: jest.fn(),
+          currentEnv: () => 'default',
         }
+      })
+    })
+
+    describe('without current env', () => {
+      beforeAll(() => {
+        const getConf = repoDirStore.get as jest.Mock
+        getConf.mockResolvedValue({ buffer: `
+        salto {
+          uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+          name = "test"
+          envs = [
+              {
+                name = "default"
+              }
+          ]
+        }
+        `,
+        filename: '' })
+      })
+
+      it('should successfully demote all without crashing', async () => {
+        const workspace = await loadLocalWorkspace({ path: '/west' })
+        await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
+        await workspace.demoteAll()
       })
     })
 

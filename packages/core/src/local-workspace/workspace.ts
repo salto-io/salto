@@ -25,7 +25,7 @@ import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, rem
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
-import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
+import { CONFIG_DIR_NAME, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
@@ -83,7 +83,7 @@ const getNaclFilesSourceParams = ({
   staticFileSource: staticFiles.StaticFilesSource
 } => {
   const dirPathToIgnore = (dirPath: string): boolean =>
-    !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirPath)
+    !(excludeDirs.concat(path.join(path.resolve(sourceBaseDir), CONFIG_DIR_NAME))).includes(dirPath)
 
   const naclFilesStore = localDirectoryStore({
     baseDir: sourceBaseDir,
@@ -159,7 +159,7 @@ export const createEnvironmentSource = async ({
     remoteMapCreator,
   ),
   state: localState(
-    path.join(getConfigDir(baseDir), STATES_DIR_NAME, env),
+    path.join(path.resolve(baseDir), CONFIG_DIR_NAME, STATES_DIR_NAME, env),
     env,
     remoteMapCreator,
     stateStaticFilesSource ?? state.buildOverrideStateStaticFilesSource(localDirectoryStore({
@@ -307,7 +307,7 @@ const loadLocalWorkspaceImpl = async ({
       const allEnvSourcesEmpty = envSources.length === 1 && await envSources[0].naclFiles.isEmpty()
       if (allEnvSourcesEmpty) {
         const commonSource = elemSources.sources[elemSources.commonSourceName].naclFiles
-        const { currentEnv } = (await workspaceConfig.getWorkspaceConfig())
+        const currentEnv = ws.currentEnv()
         return commonSource.rename(getLocalEnvName(currentEnv))
       }
       return ws.demoteAll()

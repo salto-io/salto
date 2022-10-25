@@ -44,6 +44,7 @@ const replaceWorkflowInScheme = async (
   const instance = await transformElement({
     element: scheme,
     strict: false,
+    allowEmpty: true,
     elementsSource,
     transformFunc: ({ value }) => {
       if (isReferenceExpression(value) && value.elemID.isEqual(beforeWorkflow.elemID)) {
@@ -140,7 +141,7 @@ const deployWorkflowModification = async ({
     })
   } catch (err) {
     await cleanTempInstance()
-    if (err.response?.data?.errorMessages?.some((message: string) => message.includes('is missing the mappings required for statuses with IDs'))) {
+    if (err.response?.data?.errorMessages?.some((message: string) => message.includes('is missing the mappings required for statuses with'))) {
       throw new Error(`Modification to an active workflow ${getChangeData(change).elemID.getFullName()} is not backward compatible`)
     }
     throw err

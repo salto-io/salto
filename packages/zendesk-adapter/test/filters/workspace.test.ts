@@ -134,12 +134,12 @@ describe('workspace filter', () => {
       mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
       const res = await filter.deploy([{ action: 'add', data: { after: workspace } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: workspace } },
-        expect.anything(),
-        expect.anything(),
-        ['selected_macros'],
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: workspace } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['selected_macros'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -158,12 +158,12 @@ describe('workspace filter', () => {
       const res = await filter
         .deploy([{ action: 'modify', data: { before: clonedWSBefore, after: clonedWSAfter } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'modify', data: { before: clonedWSBefore, after: clonedWSAfter } },
-        expect.anything(),
-        expect.anything(),
-        ['selected_macros']
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedWSBefore, after: clonedWSAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['selected_macros'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.deployResult.appliedChanges).toHaveLength(1)
@@ -194,12 +194,12 @@ describe('workspace filter', () => {
       })
       const res = await filter.deploy([{ action: 'add', data: { after: workspace } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
-      expect(mockDeployChange).toHaveBeenCalledWith(
-        { action: 'add', data: { after: workspace } },
-        expect.anything(),
-        expect.anything(),
-        ['selected_macros'],
-      )
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: workspace } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['selected_macros'],
+      })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)

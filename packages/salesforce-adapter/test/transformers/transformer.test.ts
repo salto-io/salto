@@ -37,6 +37,7 @@ import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, CPQ_PRODUCT_RULE,
   CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION, BUSINESS_HOURS_METADATA_TYPE,
   SALESFORCE_DATE_PLACEHOLDER,
+  FORMULA,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
   SalesforceRecord } from '../../src/client/types'
@@ -45,7 +46,7 @@ import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
 import { createValueSetEntry } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
-import { mockValueTypeField, mockDescribeValueResult, mockFileProperties } from '../connection'
+import { mockValueTypeField, mockDescribeValueResult, mockFileProperties, mockSObjectField } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 import { convertRawMissingFields } from '../../src/transformers/missing_fields'
 
@@ -104,6 +105,7 @@ describe('transformer', () => {
   describe('getSObjectFieldElement', () => {
     const dummyElem = new ObjectType({ elemID: new ElemID('adapter', 'dummy') })
     const serviceIds = { [API_NAME]: 'Dummy' }
+
     describe('reference field transformation', () => {
       const origSalesforceReferenceField: SalesforceField = {
         aggregatable: false,
@@ -334,6 +336,87 @@ describe('transformer', () => {
         expect(await fieldElement.getType()).toEqual(Types.primitiveDataTypes.Number)
       })
     })
+
+    describe('multi-picklist field transformation', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          custom: true,
+          label: 'my_picklist',
+          name: 'my_picklist__c',
+          soapType: 'xsd:string',
+          defaultValueFormula: '"b"',
+          type: 'multipicklist',
+          picklistValues: [
+            { active: true, defaultValue: false, value: 'a' },
+            { active: true, defaultValue: false, label: 'b', value: 'b' },
+          ],
+          restrictedPicklist: true,
+          precision: 3,
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+      })
+      it('should add value set annotation', () => {
+        expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.VALUE_SET, [
+          { isActive: true, default: false, label: 'a', fullName: 'a' },
+          { isActive: true, default: false, label: 'b', fullName: 'b' },
+        ])
+      })
+      it('should set restricted annotation', () => {
+        expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.RESTRICTED, true)
+      })
+      it('should set visible lines according to precision', () => {
+        expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.VISIBLE_LINES, 3)
+      })
+    })
+
+    describe('plain textarea field transformation', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          name: 'longtext__c',
+          soapType: 'xsd:string',
+          type: 'textarea',
+          extraTypeInfo: 'plaintextarea',
+          length: 5000,
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+      })
+      it('should get long text area field type', () => {
+        expect(field.refType.type).toBe(Types.primitiveDataTypes.LongTextArea)
+      })
+    })
+    describe('rich textarea field transformation', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          name: 'longtext__c',
+          soapType: 'xsd:string',
+          type: 'textarea',
+          extraTypeInfo: 'richtextarea',
+          length: 5000,
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+      })
+      it('should get html field type', () => {
+        expect(field.refType.type).toBe(Types.primitiveDataTypes.Html)
+      })
+    })
+    describe('encrypted string field transformation', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          name: 'secret__c',
+          soapType: 'xsd:string',
+          type: 'encryptedstring',
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, {})
+      })
+      it('should get html field type', () => {
+        expect(field.refType.type).toBe(Types.primitiveDataTypes.EncryptedText)
+      })
+    })
+
 
     describe('address (compound) field transformation', () => {
       const origSalesforceAddressField: SalesforceField = {
@@ -616,6 +699,90 @@ describe('transformer', () => {
       })
       it('should create a field with a valid name', () => {
         expect(field.name).not.toInclude('%')
+      })
+    })
+
+    describe('when field has calculated formula', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          custom: true,
+          label: 'formula',
+          name: 'formula__c',
+          calculated: true,
+          calculatedFormula: 'asd',
+          soapType: 'xsd:string',
+          type: 'string',
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+      })
+      it('should have a type of formula', () => {
+        expect(field.refType.type?.elemID.name).toEqual('FormulaText')
+      })
+      it('should have the formula in an annotation', () => {
+        expect(field.annotations).toHaveProperty(FORMULA, 'asd')
+      })
+    })
+
+    describe('when field has a default value with a type', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          createable: true,
+          custom: true,
+          filterable: true,
+          label: 'yooo',
+          name: 'yooo__c',
+          nillable: true,
+          defaultValue: {
+            $: { 'xsi:type': 'xsd:boolean' },
+            _: 'true',
+          },
+          soapType: 'xsd:boolean',
+          type: 'boolean',
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+      })
+      it('should set the _default annotation on the field', () => {
+        expect(field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toEqual(true)
+      })
+    })
+    describe('when field has a default value without a type', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          createable: true,
+          custom: true,
+          filterable: true,
+          label: 'yooo',
+          name: 'yooo__c',
+          nillable: false,
+          defaultValue: false,
+          soapType: 'xsd:boolean',
+          type: 'boolean',
+          updateable: true,
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds)
+      })
+      it('should set the _default annotation on the field', () => {
+        expect(field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toEqual(false)
+      })
+    })
+
+    describe('with system field', () => {
+      let field: Field
+      beforeEach(() => {
+        const fieldDefinition = mockSObjectField({
+          name: 'LastModifiedDate',
+          type: 'datetime',
+        })
+        field = getSObjectFieldElement(dummyElem, fieldDefinition, serviceIds, {}, ['LastModifiedDate'])
+      })
+      it('should create a field that is hidden and not required, creatable and updatable', () => {
+        expect(field.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
+        expect(field.annotations[FIELD_ANNOTATIONS.CREATABLE]).toBeFalsy()
+        expect(field.annotations[FIELD_ANNOTATIONS.UPDATEABLE]).toBeFalsy()
+        expect(field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
       })
     })
   })
@@ -1781,6 +1948,74 @@ describe('transformer', () => {
           field: workflowFieldUpdate.fields.field,
           path: mockWorkflowFieldUpdateInstance.elemID.createNestedID('field'),
         })).toEqual('Test__c')
+      })
+    })
+    describe('with field in under FilterItem fields and element as context', () => {
+      const filterItemType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'FilterItem'),
+        annotations: { [METADATA_TYPE]: 'FilterItem' },
+        fields: {
+          // note: does not exactly match the real type
+          field: { refType: BuiltinTypes.STRING },
+        },
+      })
+      describe('with field in SharingRules instance and element as context', () => {
+        const sharingRulesType = new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'SharingRules'),
+          annotations: { [METADATA_TYPE]: 'SharingRules' },
+          fields: {
+            someFilterField: { refType: filterItemType },
+          },
+        })
+        const instance = new InstanceElement(
+          'rule111',
+          sharingRulesType,
+          {},
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(new ElemID(SALESFORCE, 'Lead')),
+            ],
+          },
+        )
+        it('should resolve to relative api name', async () => {
+          const testField = refObject.fields.test
+          expect(await getLookUpName({
+            ref: new ReferenceExpression(testField.elemID, testField, refObject),
+            field: filterItemType.fields.field,
+            path: instance.elemID.createNestedID('someFilterField', 'field'),
+            element: instance,
+          })).toEqual('Test__c')
+        })
+      })
+      describe('with field in non-SharingRules instance and element as context', () => {
+        const nonSharingRulesType = new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'NonSharingRules'),
+          annotations: { [METADATA_TYPE]: 'NonSharingRules' },
+          fields: {
+            someFilterField: { refType: filterItemType },
+          },
+        })
+        const instance = new InstanceElement(
+          'rule222',
+          nonSharingRulesType,
+          {},
+          undefined,
+          {
+            [CORE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(new ElemID(SALESFORCE, 'Lead')),
+            ],
+          },
+        )
+        it('should resolve to absolute api name', async () => {
+          const testField = refObject.fields.test
+          expect(await getLookUpName({
+            ref: new ReferenceExpression(testField.elemID, testField, refObject),
+            field: filterItemType.fields.field,
+            path: instance.elemID.createNestedID('someFilterField', 'field'),
+            element: instance,
+          })).toEqual('Lead.Test__c')
+        })
       })
     })
     describe('with fields in product_rule (custom object) lookup_product_field update instance', () => {

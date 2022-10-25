@@ -13,22 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Change, ElemID, InstanceElement, isInstanceChange, isInstanceElement, isReferenceExpression, isTemplateExpression, TemplateExpression } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { AUTOMATION_TYPE } from '../../constants'
-import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
-import { extractReferences, generateJqlContext } from './references_extractor'
-import { isJqlParseResponse, ParsedJql } from './types'
+import { generateTemplateExpression, generateJqlContext, removeCustomFieldPrefix } from './template_expression_generator'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-
-const JQL_CHUNK_SIZE = 1000
 
 const JQL_FIELDS = [
   { type: 'Filter', path: ['jql'] },
@@ -37,9 +33,12 @@ const JQL_FIELDS = [
 ]
 
 type JqlDetails = {
-  jql: string
+  jql: string | TemplateExpression
   path: ElemID
 }
+
+type StringJqlDetails = JqlDetails & { jql: string }
+type TemplateJqlDetails = JqlDetails & { jql: TemplateExpression }
 
 const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
   // maps between the automation component type (which is determined by 'type' field)
@@ -57,11 +56,11 @@ const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
-      const jqlRelativePaths = AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE[value.type]
+      const jqlRelativePaths = AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE[value?.type]
       if (jqlRelativePaths !== undefined) {
         jqlRelativePaths.forEach(relativePath => {
           const jqlValue = _.get(value, relativePath)
-          if (_.isString(jqlValue)) {
+          if (_.isString(jqlValue) || isTemplateExpression(jqlValue)) {
             jqlPaths.push({
               path: path.createNestedID(...relativePath),
               jql: jqlValue,
@@ -75,7 +74,7 @@ const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
   return jqlPaths
 }
 
-const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> => {
+const getJqls = (instance: InstanceElement): JqlDetails[] => {
   if (instance.elemID.typeName === AUTOMATION_TYPE) {
     return getAutomationJqls(instance)
   }
@@ -85,87 +84,113 @@ const getJqls = async (instance: InstanceElement): Promise<JqlDetails[]> => {
       path: instance.elemID.createNestedID(...path),
       jql: _.get(instance.value, path),
     }))
-    .filter(({ jql }) => _.isString(jql))
+    .filter(({ jql }) => jql !== undefined)
 }
 
-const requestJqlsStructure = async (jqls: string[], client: JiraClient)
-: Promise<Required<ParsedJql>[]> => {
-  log.debug(`About to request JQL structure for ${jqls.length} unique JQLs`)
+const filter: FilterCreator = ({ config }) => {
+  const jqlToTemplateExpression: Record<string, TemplateExpression> = {}
 
-  const responses = (await Promise.all(_.chunk(jqls, JQL_CHUNK_SIZE).map(async queries => {
-    try {
-      const response = await client.post({
-        url: '/rest/api/3/jql/parse',
-        data: {
-          queries,
-        },
-        queryParams: {
-          validation: 'none',
-        },
-      })
-
-      if (!isJqlParseResponse(response.data)) {
-        // isJqlParseResponse already logs the error
-        return []
+  return {
+    onFetch: async elements => log.time(async () => {
+      if (config.fetch.parseTemplateExpressions === false) {
+        log.debug('Parsing JQL template expression was disabled')
+        return {}
       }
 
-      return response.data.queries
-    } catch (err) {
-      log.error(`Failed to request JQL structure ${err}`)
-      return []
-    }
-  }))).flat()
+      const instances = elements.filter(isInstanceElement)
 
-  responses
-    .filter(response => (response.errors ?? []).length !== 0)
-    .forEach(response => {
-      log.error(`Failed to parse JQL '${response.query}': ${response.errors?.join(', ')}`)
-    })
+      const jqls = instances
+        .flatMap(getJqls)
+        .filter((jql): jql is StringJqlDetails => _.isString(jql.jql))
 
-  return responses
-    .filter(
-      (response): response is ParsedJql
-        & { structure: Record<string, unknown> } => response.structure !== undefined
-    )
-    .map(response => ({
-      query: response.query,
-      structure: response.structure,
-      errors: response.errors ?? [],
-    }))
+      const jqlContext = generateJqlContext(instances)
+
+      log.debug(`About to parse ${jqls.length} unique JQLs`)
+
+      const jqlToTemplate = Object.fromEntries(jqls
+        .map(jql => [jql.jql, generateTemplateExpression(jql.jql, jqlContext)]))
+
+      const idToInstance = _.keyBy(instances, instance => instance.elemID.getFullName())
+
+      const ambiguityWarnings = jqls
+        .map(({ jql, path }) => {
+          const instance = idToInstance[path.createTopLevelParentID().parent.getFullName()]
+          const { template, ambiguousTokens } = jqlToTemplate[jql]
+
+          if (template !== undefined) {
+            setPath(instance, path, template)
+          }
+
+          if (ambiguousTokens.size !== 0) {
+            return {
+              message: `JQL in ${path.getFullName()} has tokens that cannot be translated to a Salto reference because there is more than one instance with the token name and there is no way to tell which one is applied. The ambiguous tokens: ${Array.from(ambiguousTokens).join(', ')}.`,
+              severity: 'Warning' as const,
+            }
+          }
+
+          return undefined
+        })
+        .filter(values.isDefined)
+
+      return {
+        errors: ambiguityWarnings,
+      }
+    }, 'jqlReferencesFilter'),
+
+    preDeploy: async changes => {
+      await awu(changes)
+        .filter(isInstanceChange)
+        .forEach(async change => {
+          await applyFunctionToChangeData<Change<InstanceElement>>(
+            change,
+            async instance => {
+              getJqls(instance)
+                .filter((jql): jql is TemplateJqlDetails =>
+                  isTemplateExpression(jql.jql))
+                .forEach(jql => {
+                  const resolvedJql = jql.jql.parts.map(part => {
+                    if (!isReferenceExpression(part)) {
+                      return part
+                    }
+
+                    if (part.elemID.isTopLevel()) {
+                      return removeCustomFieldPrefix(part.value.value.id)
+                    }
+
+                    return part.value
+                  }).join('')
+
+
+                  jqlToTemplateExpression[jql.path.getFullName()] = jql.jql
+
+                  setPath(instance, jql.path, resolvedJql)
+                })
+              return instance
+            }
+          )
+        })
+    },
+
+    onDeploy: async changes => {
+      await awu(changes)
+        .filter(isInstanceChange)
+        .forEach(async change => {
+          await applyFunctionToChangeData<Change<InstanceElement>>(
+            change,
+            async instance => {
+              getJqls(instance)
+                .filter((jql): jql is JqlDetails & { jql: string } =>
+                  _.isString(jql.jql))
+                .filter(jql => jqlToTemplateExpression[jql.path.getFullName()] !== undefined)
+                .forEach(jql => {
+                  setPath(instance, jql.path, jqlToTemplateExpression[jql.path.getFullName()])
+                })
+              return instance
+            }
+          )
+        })
+    },
+  }
 }
-
-const filter: FilterCreator = ({ client }) => ({
-  onFetch: async elements => log.time(async () => {
-    const instances = elements.filter(isInstanceElement)
-
-    const jqls = await awu(instances)
-      .flatMap(getJqls)
-      .toArray()
-
-    const JqlsStructure = await requestJqlsStructure(
-      _(jqls).map(({ jql }) => jql).uniq().value(),
-      client
-    )
-
-    const jqlContext = generateJqlContext(instances)
-
-    const jqlToReferences: Record<string, ReferenceExpression[]> = Object.fromEntries(JqlsStructure
-      .map(parsedJql => [parsedJql.query, extractReferences(parsedJql.structure, jqlContext)]))
-
-    const idToInstance = _.keyBy(instances, instance => instance.elemID.getFullName())
-
-    jqls
-      .filter(({ jql }) => jqlToReferences[jql] !== undefined)
-      .forEach(({ jql, path }) => {
-        const instance = idToInstance[path.createTopLevelParentID().parent.getFullName()]
-        const references = jqlToReferences[jql]
-
-        extendGeneratedDependencies(instance, references.map(reference => ({
-          reference,
-          location: new ReferenceExpression(path, jql),
-        })))
-      })
-  }, 'jqlReferencesFilter'),
-})
 
 export default filter

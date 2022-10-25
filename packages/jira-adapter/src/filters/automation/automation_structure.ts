@@ -18,7 +18,7 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
-import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
@@ -52,7 +52,7 @@ type CompareFieldValueObject = {
   compareFieldValue: {
     multiValue: boolean
     value: string
-    values: string
+    values?: string
     type: string
   }
 }
@@ -117,7 +117,12 @@ const removeInnerIds = async (instance: InstanceElement): Promise<void> => {
     strict: false,
     allowEmpty: true,
     transformFunc: async ({ value, path }) => (
-      path !== undefined && path.name === 'id' && !path.createParentID().isTopLevel()
+      // We want to remove all the ids besides the id in the of the automation itself
+      // and ids inside component values
+      path !== undefined
+        && path.name === 'id'
+        && !path.getFullNameParts().includes('value')
+        && !path.createParentID().isTopLevel()
         ? undefined
         : value
     ),
@@ -210,7 +215,7 @@ const consolidateLinkTypeFields = async (instance: InstanceElement): Promise<voi
         && isLinkTypeObject(value)
       ) {
         value.linkType = value.linkTypeDirection.concat(':', value.linkType)
-        delete value.linkTypeDirection
+        return _.omit(value, 'linkTypeDirection')
       }
       return value
     },
@@ -270,7 +275,8 @@ const filter: FilterCreator = () => {
         .forEach(async instance => {
           instance.value = await elementUtils.removeNullValues(
             instance.value,
-            await instance.getType()
+            await instance.getType(),
+            true,
           )
           await removeRedundantKeys(instance)
           await removeInnerIds(instance)
@@ -300,7 +306,7 @@ const filter: FilterCreator = () => {
           applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             async instance => {
-              const resolvedInstance = await resolveValues(instance, getLookUpName)
+              const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
               await consolidateLinkTypeFields(resolvedInstance)
               await changeRawValueFieldsToValue(resolvedInstance)
               await revertCompareFieldValueStructure(resolvedInstance)
@@ -331,7 +337,17 @@ const filter: FilterCreator = () => {
         .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
 
       const automationChangesToReturn = await awu(automationChanges)
-        .map(async change => restoreChangeElement(change, originalAutomationChanges, getLookUpName))
+        .map(async change => restoreChangeElement(
+          change,
+          originalAutomationChanges,
+          getLookUpName,
+          (source, targetElement, lookUpNameFunc, allowEmpty = true) => restoreValues(
+            source,
+            targetElement,
+            lookUpNameFunc,
+            allowEmpty,
+          )
+        ))
         .toArray()
       _.pullAll(changes, automationChanges)
       changes.push(...automationChangesToReturn)

@@ -33,6 +33,11 @@ import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
 import { globalProjectContextsValidator } from './global_project_contexts'
 import { systemFieldsValidator } from './system_fields'
+import { workflowPropertiesValidator } from './workflow_properties'
+import { permissionSchemeValidator } from './sd_portals_permission_scheme'
+import { accountIdValidator } from './account_id'
+import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
+import { GetIdMapFunc } from '../users_map'
 
 const {
   deployTypesNotSupportedValidator,
@@ -40,7 +45,7 @@ const {
 
 
 export default (
-  client: JiraClient, config: JiraConfig
+  client: JiraClient, config: JiraConfig, getIdMapFunc: GetIdMapFunc
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     deployTypesNotSupportedValidator,
@@ -59,6 +64,10 @@ export default (
     lockedFieldsValidator,
     globalProjectContextsValidator,
     systemFieldsValidator,
+    workflowPropertiesValidator,
+    permissionSchemeValidator,
+    wrongUserPermissionSchemeValidator(client, config, getIdMapFunc),
+    accountIdValidator(client, config, getIdMapFunc),
   ]
 
   return createChangeValidator(validators)

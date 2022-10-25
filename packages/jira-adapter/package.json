@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/jira-adapter",
-  "version": "0.3.22",
+  "version": "0.3.24",
   "license": "Apache-2.0",
   "description": "Salto JIRA adapter",
   "repository": {
@@ -31,12 +31,13 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.22",
-    "@salto-io/adapter-components": "0.3.22",
-    "@salto-io/adapter-utils": "0.3.22",
-    "@salto-io/e2e-credentials-store": "0.3.22",
-    "@salto-io/logging": "0.3.22",
-    "@salto-io/lowerdash": "0.3.22",
+    "@atlassianlabs/jql-ast": "^1.0.0",
+    "@salto-io/adapter-api": "0.3.24",
+    "@salto-io/adapter-components": "0.3.24",
+    "@salto-io/adapter-utils": "0.3.24",
+    "@salto-io/e2e-credentials-store": "0.3.24",
+    "@salto-io/logging": "0.3.24",
+    "@salto-io/lowerdash": "0.3.24",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
     "uuid": "^8.3.0",
@@ -44,7 +45,7 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.22",
+    "@salto-io/test-utils": "0.3.24",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",
@@ -65,6 +66,6 @@
     "jest-junit": "^12.0.0",
     "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "3.9.3"
+    "typescript": "4.1.3"
   }
 }

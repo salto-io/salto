@@ -820,8 +820,8 @@ describe('service command group', () => {
         })
       })
       describe('when called with login parameters', () => {
-        it('should succeed when called with valid parameters', async () => {
-          const exitCode = await loginAction({
+        const doLogin = async ({ token = 'token=testToken', sandbox = true }): Promise<CliExitCode> =>
+          loginAction({
             ...cliCommandArgs,
             input: {
               accountName: 'salesforce',
@@ -829,46 +829,28 @@ describe('service command group', () => {
               loginParameters: [
                 'username=testUser',
                 'password=testPassword',
-                'token=testToken',
-                'sandbox=y',
+                token,
+                sandbox ? 'sandbox=y' : '',
               ],
             },
             workspace,
           })
+        it('should succeed when called with valid parameters', async () => {
+          const exitCode = await doLogin({})
           expect(exitCode).toEqual(CliExitCode.Success)
         })
         it('should fail when called with missing parameter', async () => {
-          const exitCode = await loginAction({
-            ...cliCommandArgs,
-            input: {
-              accountName: 'salesforce',
-              authType: 'basic',
-              loginParameters: [
-                'username=testUser',
-                'password=testPassword',
-                'token=testToken',
-              ],
-            },
-            workspace,
-          })
+          const exitCode = await doLogin({ sandbox: false })
           expect(exitCode).toEqual(CliExitCode.AppError)
         })
         it('should fail when called with malformed parameter', async () => {
-          const exitCode = await loginAction({
-            ...cliCommandArgs,
-            input: {
-              accountName: 'salesforce',
-              authType: 'basic',
-              loginParameters: [
-                'username=testUser',
-                'password=testPassword',
-                'testToken',
-                'sandbox=y',
-              ],
-            },
-            workspace,
-          })
+          const exitCode = await doLogin({ token: 'testToken' })
           expect(exitCode).toEqual(CliExitCode.AppError)
+        })
+        it('should not ask for credentials', async () => {
+          await doLogin({})
+          // In case the message will change a bit, we check for a specific basic word
+          expect(output.stdout.content).not.toContain('credentials')
         })
       })
     })

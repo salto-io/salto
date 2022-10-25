@@ -237,7 +237,7 @@ export const transformValues = async (
       ),
       _.isUndefined
     )
-    return _.isEmpty(result) ? undefined : result
+    return _.isEmpty(result) && !allowEmpty ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = await awu(newVal)
@@ -248,7 +248,7 @@ export const transformValues = async (
       ))
       .filter(value => !_.isUndefined(value))
       .toArray()
-    return result.length === 0 ? undefined : result
+    return result.length === 0 && !allowEmpty ? undefined : result
   }
   return newVal
 }
@@ -451,7 +451,7 @@ export type ResolveValuesFunc = <T extends Element>(
 ) => Promise<T>
 
 export const resolveValues: ResolveValuesFunc = async (
-  element, getLookUpName, elementsSource, allowEmpty = false,
+  element, getLookUpName, elementsSource, allowEmpty = true,
 ) => {
   const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
     if (isReferenceExpression(value)) {
@@ -856,13 +856,13 @@ export const filterByID = async <T extends Element | Values>(
       ),
       isDefined,
     )
-    return _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
+    return !_.isEmpty(value) && _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
   }
   if (_.isArray(value)) {
     const filteredArray = (await Promise.all(value
       .map(async (item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc))))
       .filter(isDefined)
-    return _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
+    return !_.isEmpty(value) && _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
   }
 
   return value
@@ -1078,6 +1078,19 @@ export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage?: strin
     if (error !== undefined) {
       if (errorMessage !== undefined) {
         log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(value)}`)
+      }
+      return false
+    }
+    return true
+  }
+export const createSchemeGuardForInstance = <T extends InstanceElement>(
+  scheme: Joi.AnySchema, errorMessage?: string
+):
+    (instance: InstanceElement) => instance is T => (instance): instance is T => {
+    const { error } = scheme.validate(instance.value)
+    if (error !== undefined) {
+      if (errorMessage !== undefined) {
+        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(instance)}`)
       }
       return false
     }

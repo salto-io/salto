@@ -56,11 +56,17 @@ export enum FIELD_TYPE_NAMES {
   LOOKUP = 'Lookup',
   MASTER_DETAIL = 'MasterDetail',
   ROLLUP_SUMMARY = 'Summary',
+  HIERARCHY = 'Hierarchy',
+  METADATA_RELATIONSHIP = 'MetadataRelationship',
+  EXTERNAL_LOOKUP = 'ExternalLookup',
+  INDIRECT_LOOKUP = 'IndirectLookup',
+  FILE = 'File',
 }
 
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',
+  SERVICE_ID = 'serviceid',
 }
 
 export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES
@@ -82,16 +88,9 @@ export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
   }
 
 // target types for creating / updating custom fields:
-export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES = [
+export const CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES: string[] = [
   ...Object.values(FIELD_TYPE_NAMES),
   COMPOUND_FIELD_TYPE_NAMES.LOCATION,
-  // The following types are valid according to the documentation
-  // TODO - support these field types
-  'MetadataRelationship',
-  'ExternalLookup',
-  'IndirectLookup',
-  'Hierarchy',
-  'File',
 ]
 
 export const FIELD_SOAP_TYPE_NAMES:
@@ -190,7 +189,6 @@ export const FIELD_ANNOTATIONS = {
   TRACK_HISTORY: 'trackHistory',
   CREATABLE: 'createable',
   UPDATEABLE: 'updateable',
-  // indicates whether a field is queryable by SOQL (default true)
   QUERYABLE: 'queryable',
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
@@ -293,6 +291,7 @@ export const DEFAULT_MAX_CONCURRENT_API_REQUESTS = {
   deploy: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
 }
 export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
+export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const MAX_QUERY_LENGTH = 2000
@@ -347,6 +346,7 @@ export const CUSTOM_LABELS_METADATA_TYPE = 'CustomLabels'
 export const ROLE_METADATA_TYPE = 'Role'
 export const GROUP_METADATA_TYPE = 'Group'
 export const FLOW_METADATA_TYPE = 'Flow'
+export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

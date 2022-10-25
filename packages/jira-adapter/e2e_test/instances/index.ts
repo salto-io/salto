@@ -33,6 +33,7 @@ import { createNotificationSchemeValues } from './notificationScheme'
 import { createAutomationValues } from './automation'
 import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
+import { createFilterValues } from './filter'
 
 export const createInstances = (fetchedElements: Element[]): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
@@ -141,10 +142,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const filter = new InstanceElement(
     randomString,
     findType('Filter', fetchedElements),
-    {
-      name: randomString,
-      jql: 'project = TP ORDER BY Rank ASC',
-    },
+    createFilterValues(randomString, fetchedElements),
   )
 
   const issueLinkType = new InstanceElement(
@@ -215,12 +213,12 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const automation = new InstanceElement(
     randomString,
     findType(AUTOMATION_TYPE, fetchedElements),
-    createAutomationValues(randomString),
+    createAutomationValues(randomString, fetchedElements),
   )
   const webhook = new InstanceElement(
     randomString,
     findType(WEBHOOK_TYPE, fetchedElements),
-    createWebhookValues(randomString),
+    createWebhookValues(randomString, fetchedElements),
   )
 
   const group = new InstanceElement(

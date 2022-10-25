@@ -20,7 +20,7 @@ import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
 import { isDataObjectType } from '../types'
 import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
-import { CUSTOM_FIELD_PREFIX } from './data_types_custom_fields'
+import { CUSTOM_FIELD_PREFIX } from '../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array

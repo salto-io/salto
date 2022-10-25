@@ -18,24 +18,26 @@ import {
   PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
   OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
   isInstanceElement,
+  ElemIDType,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  LAST_FETCH_TIME,
   APPLICATION_ID,
   SETTINGS_PATH,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isCustomType, isFileCabinetType } from './types'
+import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -45,16 +47,24 @@ const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_F
 // don't load hidden files to the workspace in the core.
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
-export const createInstanceElement = async (customizationInfo: CustomizationInfo, type: ObjectType,
-  getElemIdFunc?: ElemIdGetter, fetchTime?: Date): Promise<InstanceElement> => {
+export const getServiceId = (instance: InstanceElement): string =>
+  instance.value[isStandardType(instance.refType) ? SCRIPT_ID : PATH]
+
+export const createInstanceElement = async (
+  customizationInfo: CustomizationInfo,
+  type: ObjectType,
+  getElemIdFunc?: ElemIdGetter,
+  fetchTime?: Date,
+  serverTimeInstance?: InstanceElement,
+): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
     if (isSDFConfigType(type)) {
       return ElemID.CONFIG_NAME
     }
-    if (!isCustomType(type) && !isFileCabinetType(type)) {
+    if (!isStandardType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    const serviceIdFieldName = isCustomType(type) ? SCRIPT_ID : PATH
+    const serviceIdFieldName = isStandardType(type) ? SCRIPT_ID : PATH
     const serviceIds: ServiceIds = {
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
       [OBJECT_SERVICE_ID]: toServiceIdsString({
@@ -139,26 +149,27 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
       content: customizationInfo.fileContent,
     })
   }
-
-  const lastFetchTimeValue = fetchTime !== undefined ? {
-    [LAST_FETCH_TIME]: fetchTime.toJSON(),
-  } : {}
-
-  const transformedValues = await transformValues({
+  const values = await transformValues({
     values: valuesWithTransformedAttrs,
     type,
     transformFunc: transformPrimitive,
     strict: false,
-  }) as Values
-  return new InstanceElement(
+  })
+  const instance = new InstanceElement(
     instanceName,
     type,
-    {
-      ...transformedValues,
-      ...lastFetchTimeValue,
-    },
+    values,
     getInstancePath(instanceFileName),
   )
+  if (fetchTime !== undefined && serverTimeInstance !== undefined) {
+    const serviceId = getServiceId(instance)
+    if (serviceId !== undefined) {
+      serverTimeInstance.value.instancesFetchTime[serviceId] = fetchTime.toJSON()
+    } else {
+      log.warn('Instance %s has no serviceId so cannot save it\'s fetchTime', instance.elemID.getFullName())
+    }
+  }
+  return instance
 }
 
 export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID):
@@ -269,13 +280,12 @@ export const toCustomizationInfo = async (
     return { typeName, values, path } as FolderCustomizationInfo
   }
 
-  delete values[LAST_FETCH_TIME]
   delete values[APPLICATION_ID]
 
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
-    && isCustomType(instance.refType)) {
+    && isStandardType(instance.refType)) {
     const fileContent = values[fileContentField.name]
     delete values[fileContentField.name]
     return {
@@ -289,31 +299,44 @@ export const toCustomizationInfo = async (
   return { typeName, values, scriptId } as CustomTypeInfo
 }
 
-export const getServiceId = (instance: InstanceElement): string =>
-  instance.value[isCustomType(instance.refType) ? SCRIPT_ID : PATH]
-
-const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {
+const getScriptIdParts = (
+  values: Partial<Record<ElemIDType, Values>>,
+  elemId: ElemID
+): string[] => {
   if (elemId.isTopLevel()) {
-    return [topLevelParent.value[SCRIPT_ID]]
+    return [values[elemId.idType]?.[SCRIPT_ID]]
   }
   const relativePath = elemId.createTopLevelParentID().path
-  const value = _.get(topLevelParent.value, relativePath)
+  const value = _.get(values[elemId.idType], relativePath)
   if (_.has(value, SCRIPT_ID)) {
-    return [...getScriptIdParts(topLevelParent, elemId.createParentID()), value[SCRIPT_ID]]
+    return [...getScriptIdParts(values, elemId.createParentID()), value[SCRIPT_ID]]
   }
-  return getScriptIdParts(topLevelParent, elemId.createParentID())
+  return getScriptIdParts(values, elemId.createParentID())
 }
 
 export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
   const { elemID, value, topLevelParent } = ref
+  if (
+    isObjectType(topLevelParent)
+    && isCustomRecordType(topLevelParent)
+    && elemID.name === SCRIPT_ID
+  ) {
+    return `[${SCRIPT_ID}=${getScriptIdParts({
+      type: topLevelParent.annotations,
+      attr: topLevelParent.annotations,
+      field: _.mapValues(topLevelParent.fields, field => field.annotations),
+    }, elemID).join('.')}]`
+  }
   if (!isInstanceElement(topLevelParent)) {
     return value
   }
   if (isFileCabinetType(topLevelParent.refType) && elemID.name === PATH) {
     return `[${value}]`
   }
-  if (isCustomType(topLevelParent.refType) && elemID.name === SCRIPT_ID) {
-    return `[${SCRIPT_ID}=${getScriptIdParts(topLevelParent, elemID).join('.')}]`
+  if (isStandardType(topLevelParent.refType) && elemID.name === SCRIPT_ID) {
+    return `[${SCRIPT_ID}=${getScriptIdParts({
+      instance: topLevelParent.value,
+    }, elemID).join('.')}]`
   }
   return value
 }

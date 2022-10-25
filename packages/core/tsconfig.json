@@ -3,16 +3,6 @@
     "compilerOptions": {
         "outDir": "dist",
         "baseUrl": ".",
-        "declaration": true,
-        "declarationMap": true,
-        "paths": {
-            "jsforce": [
-                "../../node_modules/jsforce-types"
-            ],
-            "@salto-io/suitecloud-cli": [
-              "../netsuite-adapter/types/suitecloud-cli"
-            ]
-        },
         "resolveJsonModule": true
     },
     "include": [
@@ -32,6 +22,7 @@
         { "path": "../logging" },
         { "path": "../lowerdash" },
         { "path": "../netsuite-adapter" },
+        { "path": "../okta-adapter" },
         { "path": "../salesforce-adapter" },
         { "path": "../stripe-adapter" },
         { "path": "../test-utils" },

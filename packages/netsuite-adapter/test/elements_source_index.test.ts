@@ -16,8 +16,8 @@
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
-import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
-import { LAST_FETCH_TIME, NETSUITE, PATH } from '../src/constants'
+import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
+import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
 import { createElementsSourceIndex } from '../src/elements_source_index/elements_source_index'
 
 
@@ -44,44 +44,39 @@ describe('createElementsSourceIndex', () => {
     expect(index).toBe(anotherIndex)
     expect(getAllMock).toHaveBeenCalledTimes(1)
   })
-
-  it('should create the right service ids index', async () => {
-    getAllMock.mockImplementation(buildElementsSourceFromElements([
-      new InstanceElement(
-        'name',
-        new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') }),
-        { [PATH]: 'path', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
-        [],
-      ),
-    ]).getAll)
-
-    const elementsSourceIndex = createElementsSourceIndex(elementsSource)
-    const index = (await elementsSourceIndex.getIndexes()).serviceIdsIndex
-    expect(index.path).toEqual({ lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name', PATH) })
-  })
-
   it('should create the right internal ids index', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
+    getMock.mockImplementation(buildElementsSourceFromElements([
+      type,
+    ]).get)
     getAllMock.mockImplementation(buildElementsSourceFromElements([
       new InstanceElement(
         'name',
         type,
-        { internalId: '4', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
+        { internalId: '4' },
       ),
       new InstanceElement(
         'name2',
         type,
-        { internalId: '5', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z', isSubInstance: true },
+        { internalId: '5', isSubInstance: true },
       ),
       type,
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord1',
+          [INTERNAL_ID]: '2',
+        },
+      }),
     ]).getAll)
-    getMock.mockImplementation(buildElementsSourceFromElements([
-      type,
-    ]).get)
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
     const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
-    expect(index).toEqual({ 'someType-4': { lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name') } })
+    expect(index).toEqual({
+      'someType-4': new ElemID(NETSUITE, 'someType', 'instance', 'name'),
+      'customrecord1-2': new ElemID(NETSUITE, 'customrecord1'),
+    })
   })
 
   it('should create the right custom fields index', async () => {
@@ -118,10 +113,27 @@ describe('createElementsSourceIndex', () => {
 
   it('should create the right elemIdToChangeByIndex index', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
-    const instance = new InstanceElement('inst', type, {}, undefined, { [CORE_ANNOTATIONS.CHANGED_BY]: 'user name' })
-    getAllMock.mockImplementation(buildElementsSourceFromElements([instance]).getAll)
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      new InstanceElement(
+        'inst',
+        type,
+        {},
+        undefined,
+        { [CORE_ANNOTATIONS.CHANGED_BY]: 'user name' }
+      ),
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [CORE_ANNOTATIONS.CHANGED_BY]: 'user name2',
+        },
+      }),
+    ]).getAll)
 
     expect((await createElementsSourceIndex(elementsSource).getIndexes()).elemIdToChangeByIndex)
-      .toEqual({ 'netsuite.someType.instance.inst': 'user name' })
+      .toEqual({
+        'netsuite.someType.instance.inst': 'user name',
+        'netsuite.customrecord1': 'user name2',
+      })
   })
 })

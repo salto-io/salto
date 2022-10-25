@@ -25,10 +25,14 @@ import standardFieldLabelValidator from './change_validators/standard_field_labe
 import profileMapKeysValidator from './change_validators/profile_map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
-import createValidateOnlyFlagValidator from './change_validators/validate_only_flag'
+import createCheckOnlyDeployValidator from './change_validators/check_only_deploy'
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
-import { ChangeValidatorName, SalesforceConfig } from './types'
+import recordTypeDeletionValidator from './change_validators/record_type_deletion'
+import activeFlowValidator from './change_validators/active_flow_modifications'
+import flowDeletionValidator from './change_validators/flow_deletion'
+
+import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig) => ChangeValidator
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
@@ -41,15 +45,29 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   profileMapKeys: () => profileMapKeysValidator,
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
-  validateOnlyFlag: createValidateOnlyFlagValidator,
   cpqValidator: () => cpqValidator,
   sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
+  recordTypeDeletion: () => recordTypeDeletionValidator,
+  activeFlowValidator: () => activeFlowValidator,
+  flowDeletionValidator: () => flowDeletionValidator,
 }
 
+const checkOnlyChangeValidators
+  : Record<CheckOnlyChangeValidatorName, ChangeValidatorCreator> = {
+    checkOnlyDeploy: createCheckOnlyDeployValidator,
+  }
 
-const createSalesforceChangeValidator = (config: SalesforceConfig): ChangeValidator => {
+
+const createSalesforceChangeValidator = ({ config, checkOnly }: {
+  config: SalesforceConfig
+  checkOnly: boolean
+}): ChangeValidator => {
+  const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
   const [activeValidators, disabledValidators] = _.partition(
-    Object.entries(changeValidators),
+    // SALTO-2700: Separate Validators
+    Object.entries(isCheckOnly
+      ? { ...checkOnlyChangeValidators, ...changeValidators }
+      : changeValidators),
     ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
   )
   return createChangeValidator(

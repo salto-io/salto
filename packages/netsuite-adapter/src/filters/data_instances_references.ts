@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, isInstanceElement, isListType, isReferenceExpression, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
+import { ElemID, isInstanceElement, isListType, isObjectType, isReferenceExpression, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
@@ -26,15 +26,15 @@ const { awu } = collections.asynciterable
 const generateReference = (
   value: Value,
   type: TypeElement,
-  elementsMap: Record<string, { elemID: ElemID }>,
+  elementsMap: Record<string, ElemID>,
 ): ReferenceExpression | undefined =>
   value.internalId
   && elementsMap[getDataInstanceId(value.internalId, type)]
-  && new ReferenceExpression(elementsMap[getDataInstanceId(value.internalId, type)].elemID)
+  && new ReferenceExpression(elementsMap[getDataInstanceId(value.internalId, type)])
 
-const replaceReference: (
-  elementsMap: Record<string, { elemID: ElemID }>
-) => TransformFunc = elementsMap => async ({ value, path, field }) => {
+const replaceReference = (
+  elementsMap: Record<string, ElemID>
+): TransformFunc => async ({ value, path, field }) => {
   if (path?.isTopLevel()) {
     return value
   }
@@ -59,19 +59,28 @@ const replaceReference: (
 
 const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
+    const types = elements.filter(isObjectType)
     const instances = elements.filter(isInstanceElement)
-    const dataInstancesMap: Record<string, { elemID: ElemID }> = isPartial ? _.clone(
-      (await elementsSourceIndex.getIndexes()).internalIdsIndex
+    const elementsMap: Record<string, ElemID> = isPartial ? _.clone(
+      (await elementsSourceIndex.getIndexes()).internalIdsIndex ?? {}
     ) : {}
 
-    _.assign(
-      dataInstancesMap,
-      await awu(instances.filter(instance => instance.value.internalId !== undefined))
-        .keyBy(async instance => getDataInstanceId(
-          instance.value.internalId,
-          await instance.getType(),
-        ))
-    )
+    const instancesWithInternalId = instances
+      .filter(instance => instance.value.internalId !== undefined)
+    await awu(instancesWithInternalId).forEach(async instance => {
+      const instanceId = getDataInstanceId(
+        instance.value.internalId,
+        await instance.getType(),
+      )
+      elementsMap[instanceId] = instance.elemID
+    })
+
+    types
+      .filter(type => type.annotations.internalId !== undefined)
+      .forEach(type => {
+        const typeId = getDataInstanceId(type.annotations.internalId, type)
+        elementsMap[typeId] = type.elemID
+      })
 
     await awu(instances)
       .filter(async e => isDataObjectType(await e.getType()))
@@ -79,7 +88,7 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
         const values = await transformValues({
           values: instance.value,
           type: await instance.getType(),
-          transformFunc: replaceReference(dataInstancesMap),
+          transformFunc: replaceReference(elementsMap),
           strict: false,
           pathID: instance.elemID,
         }) ?? instance.value

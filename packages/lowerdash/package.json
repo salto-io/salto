@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/lowerdash",
-  "version": "0.3.22",
+  "version": "0.3.24",
   "license": "Apache-2.0",
   "description": "Salto utils - stuff that isn't in lodash",
   "repository": {
@@ -35,7 +35,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.22",
+    "@salto-io/test-utils": "0.3.24",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
@@ -54,6 +54,6 @@
     "jest-junit": "^12.0.0",
     "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "3.9.3"
+    "typescript": "4.1.3"
   }
 }

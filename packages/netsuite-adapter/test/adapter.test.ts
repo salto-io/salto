@@ -46,7 +46,7 @@ import { SDF_CHANGE_GROUP_ID } from '../src/group_changes'
 import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
-import { getCustomTypesNames } from '../src/autogen/types'
+import { getStandardTypesNames } from '../src/autogen/types'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   additionalDependencies: {
@@ -79,7 +79,7 @@ getChangeValidatorMock.mockImplementation(({}: {
 
 jest.mock('../src/reference_dependencies')
 const getReferencedInstancesMock = referenceDependenciesModule
-  .getReferencedInstances as jest.Mock
+  .getReferencedElements as jest.Mock
 getReferencedInstancesMock
   .mockImplementation((
     sourceInstances: ReadonlyArray<InstanceElement>,
@@ -135,8 +135,8 @@ describe('Adapter', () => {
     progressReporter: { reportProgress: jest.fn() },
   }
 
-  const { customTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ customTypes, enums, additionalTypes, fieldTypes })
+  const { standardTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes })
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -203,7 +203,7 @@ describe('Adapter', () => {
       expect(isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
-      expect(_.pull(getCustomTypesNames(), ...typesToSkip)
+      expect(_.pull(getStandardTypesNames(), ...typesToSkip)
         .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
       expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
       expect(customObjectsQuery.isTypeMatch('subsidiary')).toBeFalsy()
@@ -428,7 +428,7 @@ describe('Adapter', () => {
 
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
-        expect(_.pull(getCustomTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+        expect(_.pull(getStandardTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
       })
 
@@ -561,7 +561,7 @@ describe('Adapter', () => {
 
   describe('deploy', () => {
     const origInstance = new InstanceElement('elementName',
-      customTypes[ENTITY_CUSTOM_FIELD].type, {
+      standardTypes[ENTITY_CUSTOM_FIELD].type, {
         label: 'elementName',
         [SCRIPT_ID]: 'custentity_my_script_id',
         description: new StaticFile({
@@ -1001,32 +1001,6 @@ describe('Adapter', () => {
       )).toHaveLength(0)
     })
 
-    it('should not create serverTime elements when fetchTarget parameter was passed', async () => {
-      const suiteAppClient = {
-        getSystemInformation: getSystemInformationMock,
-        getNetsuiteWsdl: () => undefined,
-        getConfigRecords: () => [],
-      } as unknown as SuiteAppClient
-
-      adapter = new NetsuiteAdapter({
-        client: new NetsuiteClient(client, suiteAppClient),
-        elementsSource,
-        filtersCreators: [firstDummyFilter, secondDummyFilter],
-        config: {
-          ...config,
-          [FETCH_TARGET]: {
-            types: {},
-            filePaths: [],
-          },
-        },
-        getElemIdFunc: mockGetElemIdFunc,
-      })
-
-      const { elements } = await adapter.fetch(mockFetchOpts)
-      expect(elements.filter(
-        e => e.elemID.getFullName().includes(SERVER_TIME_TYPE_NAME)
-      )).toHaveLength(0)
-    })
     it('should create the serverTime elements when getSystemInformation returns the time', async () => {
       const { elements } = await adapter.fetch(mockFetchOpts)
       expect(elements.filter(

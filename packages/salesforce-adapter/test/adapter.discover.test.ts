@@ -26,7 +26,6 @@ import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
 import { findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
-import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
@@ -34,6 +33,8 @@ import {
   mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveLocator,
 } from './connection'
 import { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { fetchMetadataInstances } from '../src/fetch'
+import { MetadataQuery } from '../src/fetch_profile/metadata_query'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
@@ -240,10 +241,9 @@ describe('SalesforceAdapter fetch', () => {
 
       const { elements: result } = await adapter.fetch(mockFetchOpts)
 
-      expect(result).toHaveLength(_.concat(
-        Object.keys(Types.primitiveDataTypes),
-        Object.keys(Types.compoundDataTypes),
-        Object.keys(Types.formulaDataTypes),
+      const elementNames = result.map(x => x.elemID.getFullName())
+      expect(elementNames).toHaveLength(_.concat(
+        Object.keys(Types.getAllFieldTypes()),
         Object.keys(Types.getAllMissingTypes()),
       ).length
         + 2 /* LookupFilter & filter items */
@@ -259,18 +259,18 @@ describe('SalesforceAdapter fetch', () => {
         + 2 /* field dependency & value settings */
         + 7 /* range restrictions */)
 
-      const elementsMap = _.assign({}, ...result.map(t => ({ [id(t)]: t })))
-      const nestingType = elementsMap['salesforce.NestingType']
-      const nestedType = elementsMap['salesforce.NestedType']
-      const singleField = elementsMap['salesforce.SingleFieldType']
-      expect(nestingType).toBeDefined()
+      const elementsMap = _.keyBy(result, element => element.elemID.getFullName())
+      const nestingType = elementsMap['salesforce.NestingType'] as ObjectType
+      const nestedType = elementsMap['salesforce.NestedType'] as ObjectType
+      const singleField = elementsMap['salesforce.SingleFieldType'] as ObjectType
+      expect(nestingType).toBeInstanceOf(ObjectType)
       expect(nestingType.fields.field.refType.elemID).toEqual(nestedType.elemID)
       expect(nestingType.fields.otherField.refType.elemID).toEqual(singleField.elemID)
-      expect(nestedType).toBeDefined()
+      expect(nestedType).toBeInstanceOf(ObjectType)
       expect(nestedType.fields.nestedStr.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
       expect(nestedType.fields.nestedNum.refType.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
       expect(nestedType.fields.doubleNested.refType.elemID).toEqual(singleField.elemID)
-      expect(singleField).toBeDefined()
+      expect(singleField).toBeInstanceOf(ObjectType)
       expect(singleField.fields.str.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
     })
 
@@ -549,11 +549,10 @@ describe('SalesforceAdapter fetch', () => {
         expect(layout).toBeDefined()
         expect((await layout.getType()).elemID).toEqual(LAYOUT_TYPE_ID)
         expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
-        expect(layout.value.layoutSections.length).toBe(3)
+        expect(layout.value.layoutSections.length).toBe(4)
         expect(layout.value.layoutSections[0].label).toBe('Description Information')
         expect(layout.value.layoutSections[0].layoutColumns[0].layoutItems[0].behavior).toBe('Edit')
         expect(layout.value.layoutSections[0].layoutColumns[1].layoutItems[0].field).toBe('Description2')
-        expect(layout.value.layoutSections[1].layoutColumns).toBeUndefined()
         expect(layout.value.layoutSections[1].label).toBe('Additional Information')
         expect(layout.value.layoutSections[2].style).toBe('CustomLinks')
         expect(
@@ -562,7 +561,6 @@ describe('SalesforceAdapter fetch', () => {
         ).toBe('string')
         expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
         // empty objects should be omitted
-        expect(layout.value.processMetadataValues[1].value).toBeUndefined()
         expect(layout.value.processMetadataValues[2].name).toBe('leftHandSideReferenceTo2')
         // empty strings should be kept
         expect(layout.value.processMetadataValues[2].value).toEqual({ stringValue: '' })
@@ -1173,6 +1171,28 @@ public class LargeClass${index} {
             },
           }
         )
+      })
+    })
+    describe('with types with more than maxInstancesPerType instances', () => {
+      const { client: mockClient } = mockAdapter()
+      it('should not fetch the types and add them to the exclude list', async () => {
+        const filePropMock = mockFileProperties({ fullName: 'fullName', type: 'testType' })
+        const fetchResult = await fetchMetadataInstances({
+          client: mockClient,
+          metadataType: {} as unknown as ObjectType,
+          metadataQuery: {} as unknown as MetadataQuery,
+          fileProps: [filePropMock, filePropMock],
+          maxInstancesPerType: 1,
+        })
+        expect(fetchResult.elements.length).toBe(0)
+        expect(fetchResult.configChanges.length).toBe(1)
+        expect(fetchResult.configChanges[0]).toMatchObject({
+          type: 'metadataExclude',
+          value: {
+            metadataType: 'testType',
+          },
+          reason: "'testType' has 2 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 1.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
+        })
       })
     })
   })

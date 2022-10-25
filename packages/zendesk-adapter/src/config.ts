@@ -656,6 +656,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
       ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'display_name', fieldType: 'string' },
+        { fieldName: 'name', fieldType: 'string' }
+      ),
       serviceUrl: '/admin/objects-rules/tickets/ticket-forms/edit/{id}',
     },
     deployRequests: {
@@ -685,11 +689,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
-      idFields: ['title', 'type'],
-      fileNameFields: ['title', 'type'],
+      idFields: ['raw_title', 'type'],
+      fileNameFields: ['raw_title', 'type'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'position', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'position', fieldType: 'number' },
+        { fieldName: 'title', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' },
+        { fieldName: 'title_in_portal', fieldType: 'string' }
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/tickets/ticket-fields/{id}',
     },
@@ -760,6 +769,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'title', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' }
+      ),
       serviceUrl: '/agent/admin/user_fields/{id}',
     },
     deployRequests: {
@@ -840,6 +853,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'title', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' }
+      ),
       serviceUrl: '/agent/admin/organization_fields/{id}',
     },
     deployRequests: {
@@ -871,6 +888,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'name', fieldType: 'string' }),
     },
   },
   organization_field_order: {
@@ -1599,6 +1617,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1611,13 +1631,39 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/articles/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{sectionId}/articles',
+        method: 'post',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          sectionId: 'section_id',
+        },
+      },
+      modify: {
+        url: '/help_center/articles/{articleId}',
+        method: 'put',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/articles/{articleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      },
+    },
   },
   article_translation: {
     request: {
       url: '/help_center/articles/{articleId}/translations',
     },
     transformation: {
-      idFields: ['locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1646,6 +1692,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   section: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'sections__sections',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -1657,22 +1705,85 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/knowledge/sections/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories/{category_id}/sections',
+        method: 'post',
+        deployAsField: 'section',
+        urlParamsToFields: {
+          category_id: 'category_id',
+        },
+      },
+      modify: {
+        url: '/help_center/sections/{section_id}',
+        method: 'put',
+        deployAsField: 'section',
+        urlParamsToFields: {
+          section_id: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/sections/{section_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          section_id: 'id',
+        },
+      },
+    },
   },
   section_translation: {
     request: {
       url: '/help_center/sections/{sectionId}/translations',
     },
     transformation: {
-      idFields: ['locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'section__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+    },
+    deployRequests: {
+      add: {
+        url: '/help_center/sections/{section_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          section_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/sections/{section_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          section_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
+    },
+  },
+  // needed until SALTO-2867 is solved
+  help_center_locale: {
+    transformation: {
+      idFields: ['id'],
+      fileNameFields: ['id'],
     },
   },
   labels: {
@@ -1685,6 +1796,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   label: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       sourceTypeName: 'labels__labels',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
@@ -1707,6 +1820,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   category: {
     transformation: {
+      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'categories__categories',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -1718,13 +1833,36 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       serviceUrl: '/hc/admin/categories/{id}/edit',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories',
+        method: 'post',
+        deployAsField: 'category',
+      },
+      modify: {
+        url: '/help_center/categories/{category_id}',
+        method: 'put',
+        deployAsField: 'category',
+        urlParamsToFields: {
+          category_id: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/categories/{category_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          category_id: 'id',
+        },
+      },
+    },
   },
   category_translation: {
     request: {
       url: '/help_center/categories/{categoryId}/translations',
     },
     transformation: {
-      idFields: ['locale'],
+      idFields: ['&locale'],
+      fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1734,6 +1872,32 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+    },
+    deployRequests: {
+      add: {
+        url: '/help_center/categories/{category_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          category_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/categories/{category_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          category_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
     },
   },
   permission_groups: {
@@ -1789,6 +1953,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
       serviceUrl: '/knowledge/user_segments/edit/{id}',
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/user_segments',
+        deployAsField: 'user_segment',
+        method: 'post',
+      },
+      modify: {
+        url: '/help_center/user_segments/{userSegmentId}',
+        method: 'put',
+        deployAsField: 'user_segment',
+        urlParamsToFields: {
+          userSegmentId: 'id',
+        },
+      },
+      remove: {
+        url: '/help_center/user_segments/{userSegmentId}',
+        method: 'delete',
+        urlParamsToFields: {
+          userSegmentId: 'id',
+        },
+      },
+    },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
@@ -1828,14 +2014,32 @@ export const SUPPORTED_TYPES = {
   workspace: ['workspaces'],
 }
 
-export const GUIDE_SUPPORTED_TYPES = {
+// Types in Zendesk Guide which relate to a certain brand
+export const GUIDE_BRAND_SPECIFIC_TYPES = {
   article: ['articles'],
   section: ['sections'],
   label: ['labels'],
   category: ['categories'],
+}
+
+// Types in Zendesk Guide that whose instances are shared across all brands
+export const GUIDE_GLOBAL_TYPES = {
   permission_group: ['permission_groups'],
   user_segment: ['user_segments'],
 }
+
+export const GUIDE_SUPPORTED_TYPES = {
+  ...GUIDE_BRAND_SPECIFIC_TYPES,
+  ...GUIDE_GLOBAL_TYPES,
+}
+
+export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
+  ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
+  'article_translation',
+  'category_translation',
+  'section_translation',
+  'label',
+]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
@@ -1935,3 +2139,16 @@ export type FilterContext = {
 }
 
 export const validateFetchConfig = validateDuckTypeFetchConfig
+
+/**
+ * Validating each Zendesk Guide type has a dataField property in the configuration
+ */
+export const validateGuideTypesConfig = (
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => {
+  const zendeskGuideTypesWithoutDataField = _.values(GUIDE_SUPPORTED_TYPES).flat()
+    .filter(type => adapterApiConfig.types[type].transformation?.dataField === undefined)
+  if (zendeskGuideTypesWithoutDataField.length > 0) {
+    throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
+  }
+}

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { workflowType } from '../../src/autogen/types/custom_types/workflow'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import workflowAccountSpecificValidator from '../../src/change_validators/workflow_account_specific_values'
 import { SCRIPT_ID } from '../../src/constants'
 

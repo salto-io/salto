@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { config as configUtils } from '@salto-io/adapter-components'
-import { AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
+import { AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
 
@@ -491,6 +491,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  GroupName: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'groupId' },
+      ],
+    },
+  },
   IssueTypeSchemes: {
     request: {
       url: '/rest/api/3/issuetypescheme',
@@ -651,10 +658,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'user', fieldType: 'User' },
         { fieldName: 'id', fieldType: 'string' },
         { fieldName: 'notificationType', fieldType: 'string' },
+        { fieldName: 'parameter', fieldType: 'unknown' },
       ],
       fieldsToOmit: [
         { fieldName: 'value' },
         { fieldName: 'expand' },
+        { fieldName: 'user' },
       ],
     },
   },
@@ -718,7 +727,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/project/search',
       paginationField: 'startAt',
       queryParams: {
-        expand: 'description,lead,url,projectKeys,permissions',
+        expand: 'description,lead,url',
       },
       recurseInto: [
         {
@@ -827,6 +836,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         {
           fieldName: 'id',
         },
+      ],
+      fieldsToOmit: [
+        { fieldName: 'style' },
+        { fieldName: 'simplified' },
+        { fieldName: 'isPrivate' },
+        { fieldName: 'expand' },
       ],
       standaloneFields: [
         {
@@ -1554,11 +1569,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         method: 'post',
       },
       modify: {
-        url: '/rest/api/3/priority/{priorityId}',
+        url: '/rest/api/3/priority/{id}',
         method: 'put',
-        urlParamsToFields: {
-          priorityId: 'id',
-        },
       },
     },
   },
@@ -1683,6 +1695,7 @@ const SUPPORTED_TYPES = {
   Group: ['Groups'],
   Automation: [],
   Webhook: [],
+  [AUTOMATION_LABEL_TYPE]: [],
 }
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {

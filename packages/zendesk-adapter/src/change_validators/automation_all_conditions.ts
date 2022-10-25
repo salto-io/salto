@@ -20,12 +20,18 @@ import {
   isAdditionOrModificationChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 
+import { resolveValues } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { isConditions } from '../filters/utils'
+import { lookupFunc } from '../filters/field_references'
 
+
+const { awu } = collections.asynciterable
 export const AUTOMATION_TYPE_NAME = 'automation'
 
 const fieldExist = (field: string): boolean =>
   ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)
+
 
 const isNotValidData = (instance: InstanceElement): boolean => {
   const allConditions = instance.value.conditions?.all ?? []
@@ -34,12 +40,14 @@ const isNotValidData = (instance: InstanceElement): boolean => {
 }
 
 export const automationAllConditionsValidator: ChangeValidator = async changes => {
-  const relevantInstances = changes
+  const relevantInstances = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
+    .map(data => resolveValues(data, lookupFunc))
     .filter(isNotValidData)
+    .toArray()
 
   return relevantInstances
     .flatMap(instance => [{

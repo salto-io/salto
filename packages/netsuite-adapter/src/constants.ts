@@ -20,6 +20,7 @@ export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 export const FIELD_TYPES_PATH = 'fieldTypes'
 export const SETTINGS_PATH = 'Settings'
+export const CUSTOM_RECORDS_PATH = 'CustomRecords'
 
 // Type names
 export const ADDRESS_FORM = 'addressForm'
@@ -48,14 +49,21 @@ export const FILE = 'file'
 export const FOLDER = 'folder'
 export const SELECT_OPTION = 'selectOption'
 export const CONFIG_FEATURES = 'companyFeatures'
+export const CURRENCY = 'currency'
+
+// Type Annotations
+export const SOURCE = 'source'
+export const METADATA_TYPE = 'metadataType'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'
+export const INTERNAL_ID = 'internalId'
 export const PATH = 'path'
 export const PERMITTED_ROLE = 'permittedrole'
 export const RECORD_TYPE = 'recordType'
-export const LAST_FETCH_TIME = '_lastfetchtime'
 export const APPLICATION_ID = 'application_id'
+export const CUSTOM_FIELD_PREFIX = 'custom_'
+export const EXCHANGE_RATE = 'exchangeRate'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'

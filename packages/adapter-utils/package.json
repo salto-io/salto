@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/adapter-utils",
-  "version": "0.3.22",
+  "version": "0.3.24",
   "license": "Apache-2.0",
   "description": "Salto Adapter Utils",
   "repository": {
@@ -30,22 +30,24 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.22",
-    "@salto-io/dag": "0.3.22",
-    "@salto-io/logging": "0.3.22",
-    "@salto-io/lowerdash": "0.3.22",
+    "@salto-io/adapter-api": "0.3.24",
+    "@salto-io/dag": "0.3.24",
+    "@salto-io/logging": "0.3.24",
+    "@salto-io/lowerdash": "0.3.24",
     "fast-safe-stringify": "^2.0.7",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
+    "truncate-utf8-bytes": "^1.0.2",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.22",
+    "@salto-io/test-utils": "0.3.24",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/moxios": "^0.4.10",
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
+    "@types/truncate-utf8-bytes": "^1.0.0",
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -63,6 +65,6 @@
     "jest-junit": "^12.0.0",
     "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "3.9.3"
+    "typescript": "4.1.3"
   }
 }

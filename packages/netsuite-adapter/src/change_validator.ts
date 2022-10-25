@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
-import removeCustomTypesValidator from './change_validators/remove_custom_types'
+import removeStandardTypesValidator from './change_validators/remove_standard_types'
 import removeFileCabinetValidator from './change_validators/remove_file_cabinet'
 import removeListItemValidator from './change_validators/remove_list_item'
 import instanceChangesValidator from './change_validators/instance_changes'
@@ -25,7 +25,7 @@ import saveSearchMoveEnvironment from './change_validators/saved_search_move_env
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
-import customTypesInvalidValuesValidator from './change_validators/custom_types_invalid_values'
+import standardTypesInvalidValuesValidator from './change_validators/standard_types_invalid_values'
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
 import mappedListsIndexesValidator from './change_validators/mapped_lists_indexes'
 import configChangesValidator from './change_validators/config_changes'
@@ -34,23 +34,25 @@ import undeployableConfigFeaturesValidator from './change_validators/undeployabl
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 import notYetSupportedValuesValidator from './change_validators/not_yet_supported_values'
 import workflowAccountSpecificValuesValidator from './change_validators/workflow_account_specific_values'
+import exchangeRateValidator from './change_validators/currency_exchange_rate'
 import netsuiteClientValidation from './change_validators/client_validation'
 import NetsuiteClient from './client/client'
 import { AdditionalDependencies } from './client/types'
 
 
 const changeValidators: ChangeValidator[] = [
+  exchangeRateValidator,
   workflowAccountSpecificValuesValidator,
   accountSpecificValuesValidator,
   dataAccountSpecificValuesValidator,
-  removeCustomTypesValidator,
+  removeStandardTypesValidator,
   instanceChangesValidator,
   saveSearchMoveEnvironment,
   immutableChangesValidator,
   removeListItemValidator,
   fileValidator,
   subInstancesValidator,
-  customTypesInvalidValuesValidator,
+  standardTypesInvalidValuesValidator,
   mappedListsIndexesValidator,
   notYetSupportedValuesValidator,
   configChangesValidator,

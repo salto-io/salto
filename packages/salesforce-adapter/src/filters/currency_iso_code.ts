@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
 import { SALESFORCE, FIELD_ANNOTATIONS, RECORDS_PATH, SETTINGS_PATH, CUSTOM_VALUE, CURRENCY_CODE_TYPE_NAME } from '../constants'
@@ -24,11 +24,6 @@ const currencyCodeType = new ObjectType(
     elemID: new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME),
     fields: {
       [FIELD_ANNOTATIONS.VALUE_SET]: { refType: new ListType(Types.valueSetType) },
-    },
-    annotations: {
-      [CORE_ANNOTATIONS.CREATABLE]: false,
-      [CORE_ANNOTATIONS.DELETABLE]: false,
-      [CORE_ANNOTATIONS.UPDATABLE]: false,
     },
     isSettings: true,
     path: getTypePath(CURRENCY_CODE_TYPE_NAME),
@@ -43,7 +38,7 @@ type CurrencyIsoCodeType = ObjectType & {
   fields: {
     [CURRENCY_CODE_FIELD_NAME]: {
       annotations: {
-        valueSet: ValueSet[]
+        valueSet?: ValueSet[]
         valueSetName?: ReferenceExpression
       }
     }
@@ -80,7 +75,7 @@ const transformCurrencyIsoCodes = (
   element.fields.CurrencyIsoCode.annotations.valueSetName = currencyIsoCodesRef
 }
 
-const createCurrencyCodesInstance = (supportedCurrencies: ValueSet): InstanceElement => (
+const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceElement => (
   new InstanceElement(
     ElemID.CONFIG_NAME,
     currencyCodeType,

@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ATTRIBUTE_PREFIX } from '../../src/client/constants'
-import { translationcollectionType } from '../../src/autogen/types/custom_types/translationcollection'
+import { translationcollectionType } from '../../src/autogen/types/standard_types/translationcollection'
 import filterCreator from '../../src/filters/translation_converter'
+import { NETSUITE } from '../../src/constants'
 
 
 describe('translation_converter filter', () => {
@@ -46,6 +47,38 @@ describe('translation_converter filter', () => {
       await filterCreator().onFetch([instance])
       expect(instance.value).toEqual({ name: 'name' })
     })
+
+    it('should transform value in customRecordType', async () => {
+      const customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        fields: {
+          custom_field: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              label: {
+                '#text': 'label',
+                translate: true,
+              },
+            },
+          },
+        },
+        annotations: {
+          name: {
+            '#text': 'Custom Record',
+            translate: true,
+          },
+          metadataType: 'customrecordtype',
+        },
+      })
+      await filterCreator().onFetch([customRecordType])
+      expect(customRecordType.annotations).toEqual({
+        name: 'Custom Record',
+        nameTranslate: true,
+        metadataType: 'customrecordtype',
+      })
+      expect(customRecordType.fields.custom_field.annotations)
+        .toEqual({ label: 'label', labelTranslate: true })
+    })
   })
 
   describe('preDeploy', () => {
@@ -67,6 +100,50 @@ describe('translation_converter filter', () => {
       })
       await filterCreator().preDeploy([toChange({ after: instance })])
       expect(instance.value).toEqual({ name: 'name' })
+    })
+
+    it('should transform value in customRecordType', async () => {
+      const customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          name: 'Custom Record',
+          nameTranslate: true,
+          metadataType: 'customrecordtype',
+        },
+      })
+      await filterCreator().preDeploy([toChange({ after: customRecordType })])
+      expect(customRecordType.annotations).toEqual({
+        name: {
+          '#text': 'Custom Record',
+          [`${ATTRIBUTE_PREFIX}translate`]: 'T',
+        },
+        metadataType: 'customrecordtype',
+      })
+    })
+
+    it('should transform value in customRecordType field', async () => {
+      const customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        fields: {
+          custom_field: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              label: 'label',
+              labelTranslate: true,
+            },
+          },
+        },
+        annotations: {
+          metadataType: 'customrecordtype',
+        },
+      })
+      await filterCreator().preDeploy([toChange({ after: customRecordType })])
+      expect(customRecordType.fields.custom_field.annotations).toEqual({
+        label: {
+          '#text': 'label',
+          [`${ATTRIBUTE_PREFIX}translate`]: 'T',
+        },
+      })
     })
   })
 })

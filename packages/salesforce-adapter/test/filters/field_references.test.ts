@@ -22,7 +22,7 @@ import filterCreator, { addReferences } from '../../src/filters/field_references
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
 import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
 import { metadataType, apiName } from '../../src/transformers/transformer'
-import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
+import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
 import { defaultFilterContext } from '../utils'
 
 const { awu } = collections.asynciterable
@@ -114,156 +114,192 @@ const generateObjectAndInstance = ({
 describe('FieldReferences filter', () => {
   const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
-  const generateElements = (
-  ): Element[] => ([
-    customObjectType,
-    ...generateObjectAndInstance({
-      type: 'Account',
-      fieldName: 'name',
-    }),
-    ...generateObjectAndInstance({
-      type: 'SBQQ__QuoteLine__c',
-      fieldName: 'name',
-    }),
-    ...generateObjectAndInstance({
-      type: 'SBQQ__Quote__c',
-      fieldName: 'SBQQ__Account__c',
-    }),
+  const generateElements = (): Element[] => {
+    const filterItemType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'FilterItem'),
+      annotations: { [METADATA_TYPE]: 'FilterItem' },
+      fields: {
+        // note: does not exactly match the real type
+        field: { refType: BuiltinTypes.STRING },
+      },
+    })
 
-    // site1.authorizationRequiredPage should point to page1
-    ...generateObjectAndInstance({
-      type: 'ApexPage',
-      objType: 'ApexPage',
-      instanceName: 'page1',
-      fieldName: 'any',
-      fieldValue: 'aaa',
-    }),
-    ...generateObjectAndInstance({
-      type: 'ApexClass',
-      objType: 'ApexClass',
-      instanceName: 'class5',
-      fieldName: 'any',
-      fieldValue: 'aaa',
-    }),
-    ...generateObjectAndInstance({
-      type: 'CustomSite',
-      objType: 'CustomSite',
-      instanceName: 'site1',
-      fieldName: 'authorizationRequiredPage',
-      fieldValue: 'page1',
-    }),
-    // report53.reportType should point to Account
-    ...generateObjectAndInstance({
-      type: 'Report',
-      objType: 'Report',
-      instanceName: 'report53',
-      fieldName: 'reportType',
-      fieldValue: 'Account',
-    }),
-    // filterItem643.field should point to Account.name (default strategy)
-    ...generateObjectAndInstance({
-      type: 'FilterItem',
-      objType: 'FilterItem',
-      instanceName: 'filterItem643',
-      fieldName: 'field',
-      fieldValue: 'Account.name',
-    }),
-    // fieldUpdate54.field should point to Account.name (instanceParent)
-    ...generateObjectAndInstance({
-      type: 'WorkflowFieldUpdate',
-      objType: 'WorkflowFieldUpdate',
-      instanceName: 'fieldUpdate54',
-      fieldName: 'field',
-      fieldValue: 'name',
-      parentType: 'Account',
-    }),
-    // customScript1[CPQ_QUOTE_LINE_FIELDS] should point to SBQQ__QuoteLine__c.name (target parent)
-    ...generateObjectAndInstance({
-      type: CPQ_CUSTOM_SCRIPT,
-      objType: CPQ_CUSTOM_SCRIPT,
-      instanceName: 'customScript1',
-      fieldName: CPQ_QUOTE_LINE_FIELDS,
-      fieldValue: ['name'],
-    }),
-    ...generateObjectAndInstance({
-      type: CPQ_CONFIGURATION_ATTRIBUTE,
-      objType: CPQ_CONFIGURATION_ATTRIBUTE,
-      instanceName: 'configAttr1',
-      fieldName: CPQ_DEFAULT_OBJECT_FIELD,
-      fieldValue: 'Quote__c',
-    }),
-    ...generateObjectAndInstance({
-      type: CPQ_DISCOUNT_SCHEDULE,
-      objType: CPQ_DISCOUNT_SCHEDULE,
-      instanceName: 'discountSchedule1',
-      fieldName: CPQ_CONSTRAINT_FIELD,
-      fieldValue: 'Account__c',
-    }),
-    ...generateObjectAndInstance({
-      type: CPQ_LOOKUP_QUERY,
-      objType: CPQ_LOOKUP_QUERY,
-      instanceName: 'lookupQuery1',
-      fieldName: CPQ_TESTED_OBJECT,
-      fieldValue: 'Quote',
-    }),
-    // name should point to ApexPage.instance.page1 (neighbor context)
-    ...generateObjectAndInstance({
-      type: 'AppMenuItem',
-      objType: 'AppMenuItem',
-      instanceName: 'appMenuItem',
-      fieldName: 'name',
-      fieldValue: 'page1',
-      contextFieldName: 'type',
-      contextFieldValue: 'ApexPage',
-    }),
-    // actionName should point to ApexClass.instance.class5 (neighbor context with reference)
-    new InstanceElement('apex', customObjectType, { [INSTANCE_FULL_NAME_FIELD]: 'apex' }), // fake instance so we have a reference
-    ...generateObjectAndInstance({
-      type: 'FlowActionCall',
-      objType: 'FlowActionCall',
-      instanceName: 'flowAction',
-      fieldName: 'actionName',
-      fieldValue: 'class5',
-      contextFieldName: 'actionType',
-      contextFieldValue: new ReferenceExpression(customObjectType.elemID.createNestedID('instance', 'apex')),
-    }),
-    // layoutItem436.field will remain the same (Account.fffff doesn't exist)
-    ...generateObjectAndInstance({
-      type: 'LayoutItem',
-      objType: 'LayoutItem',
-      instanceName: 'layoutItem436',
-      fieldName: 'field',
-      fieldValue: 'fffff',
-      parentType: 'Account',
-    }),
-    // shareTo should point to salesforce.Role.instance.CFO (neighbor context)
-    ...generateObjectAndInstance({
-      type: 'Role',
-      objType: 'Role',
-      instanceName: 'CFO',
-      fieldName: 'fullName',
-      fieldValue: 'CFO',
-    }),
-    ...generateObjectAndInstance({
-      type: 'FolderShare',
-      objType: 'FolderShare',
-      instanceName: 'folderShare',
-      fieldName: 'sharedTo',
-      fieldValue: 'CFO',
-      contextFieldName: 'sharedToType',
-      contextFieldValue: 'Role',
-    }),
-    // field should point to salesforce.Account.field.Id (neighbor context)
-    ...generateObjectAndInstance({
-      type: 'ReportTypeColumn',
-      objType: 'ReportTypeColumn',
-      instanceName: 'reportTypeColumn',
-      fieldName: 'field',
-      fieldValue: 'Id',
-      contextFieldName: 'table',
-      contextFieldValue: 'Account',
-    }),
-  ])
+    const sharingRulesType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'SharingRules'),
+      annotations: { [METADATA_TYPE]: 'SharingRules' },
+      fields: {
+        someFilterField: { refType: filterItemType },
+      },
+    })
+    return [
+      customObjectType,
+      // sharingRules555 should point to Account.name (rule contains instanceTypes constraint)
+      filterItemType,
+      sharingRulesType,
+      new InstanceElement(
+        'sharingRules555',
+        sharingRulesType,
+        {
+          someFilterField: {
+            field: 'name',
+          },
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [
+            new ReferenceExpression(new ElemID(SALESFORCE, 'Account')),
+          ],
+        },
+      ),
+      ...generateObjectAndInstance({
+        type: 'Account',
+        fieldName: 'name',
+      }),
+      ...generateObjectAndInstance({
+        type: 'SBQQ__QuoteLine__c',
+        fieldName: 'name',
+      }),
+      ...generateObjectAndInstance({
+        type: 'SBQQ__Quote__c',
+        fieldName: 'SBQQ__Account__c',
+      }),
+
+      // site1.authorizationRequiredPage should point to page1
+      ...generateObjectAndInstance({
+        type: 'ApexPage',
+        objType: 'ApexPage',
+        instanceName: 'page1',
+        fieldName: 'any',
+        fieldValue: 'aaa',
+      }),
+      ...generateObjectAndInstance({
+        type: 'ApexClass',
+        objType: 'ApexClass',
+        instanceName: 'class5',
+        fieldName: 'any',
+        fieldValue: 'aaa',
+      }),
+      ...generateObjectAndInstance({
+        type: 'CustomSite',
+        objType: 'CustomSite',
+        instanceName: 'site1',
+        fieldName: 'authorizationRequiredPage',
+        fieldValue: 'page1',
+      }),
+      // report53.reportType should point to Account
+      ...generateObjectAndInstance({
+        type: 'Report',
+        objType: 'Report',
+        instanceName: 'report53',
+        fieldName: 'reportType',
+        fieldValue: 'Account',
+      }),
+      // filterItem643.field should point to Account.name (default strategy)
+      ...generateObjectAndInstance({
+        type: 'FilterItem',
+        objType: 'FilterItem',
+        instanceName: 'filterItem643',
+        fieldName: 'field',
+        fieldValue: 'Account.name',
+      }),
+      // fieldUpdate54.field should point to Account.name (instanceParent)
+      ...generateObjectAndInstance({
+        type: 'WorkflowFieldUpdate',
+        objType: 'WorkflowFieldUpdate',
+        instanceName: 'fieldUpdate54',
+        fieldName: 'field',
+        fieldValue: 'name',
+        parentType: 'Account',
+      }),
+      // customScript1[CPQ_QUOTE_LINE_FIELDS] should point to SBQQ__QuoteLine__c.name
+      // (target parent)
+      ...generateObjectAndInstance({
+        type: CPQ_CUSTOM_SCRIPT,
+        objType: CPQ_CUSTOM_SCRIPT,
+        instanceName: 'customScript1',
+        fieldName: CPQ_QUOTE_LINE_FIELDS,
+        fieldValue: ['name'],
+      }),
+      ...generateObjectAndInstance({
+        type: CPQ_CONFIGURATION_ATTRIBUTE,
+        objType: CPQ_CONFIGURATION_ATTRIBUTE,
+        instanceName: 'configAttr1',
+        fieldName: CPQ_DEFAULT_OBJECT_FIELD,
+        fieldValue: 'Quote__c',
+      }),
+      ...generateObjectAndInstance({
+        type: CPQ_DISCOUNT_SCHEDULE,
+        objType: CPQ_DISCOUNT_SCHEDULE,
+        instanceName: 'discountSchedule1',
+        fieldName: CPQ_CONSTRAINT_FIELD,
+        fieldValue: 'Account__c',
+      }),
+      ...generateObjectAndInstance({
+        type: CPQ_LOOKUP_QUERY,
+        objType: CPQ_LOOKUP_QUERY,
+        instanceName: 'lookupQuery1',
+        fieldName: CPQ_TESTED_OBJECT,
+        fieldValue: 'Quote',
+      }),
+      // name should point to ApexPage.instance.page1 (neighbor context)
+      ...generateObjectAndInstance({
+        type: 'AppMenuItem',
+        objType: 'AppMenuItem',
+        instanceName: 'appMenuItem',
+        fieldName: 'name',
+        fieldValue: 'page1',
+        contextFieldName: 'type',
+        contextFieldValue: 'ApexPage',
+      }),
+      // actionName should point to ApexClass.instance.class5 (neighbor context with reference)
+      new InstanceElement('apex', customObjectType, { [INSTANCE_FULL_NAME_FIELD]: 'apex' }), // fake instance so we have a reference
+      ...generateObjectAndInstance({
+        type: 'FlowActionCall',
+        objType: 'FlowActionCall',
+        instanceName: 'flowAction',
+        fieldName: 'actionName',
+        fieldValue: 'class5',
+        contextFieldName: 'actionType',
+        contextFieldValue: new ReferenceExpression(customObjectType.elemID.createNestedID('instance', 'apex')),
+      }),
+      // layoutItem436.field will remain the same (Account.fffff doesn't exist)
+      ...generateObjectAndInstance({
+        type: 'LayoutItem',
+        objType: 'LayoutItem',
+        instanceName: 'layoutItem436',
+        fieldName: 'field',
+        fieldValue: 'fffff',
+        parentType: 'Account',
+      }),
+      // shareTo should point to salesforce.Role.instance.CFO (neighbor context)
+      ...generateObjectAndInstance({
+        type: 'Role',
+        objType: 'Role',
+        instanceName: 'CFO',
+        fieldName: 'fullName',
+        fieldValue: 'CFO',
+      }),
+      ...generateObjectAndInstance({
+        type: 'FolderShare',
+        objType: 'FolderShare',
+        instanceName: 'folderShare',
+        fieldName: 'sharedTo',
+        fieldValue: 'CFO',
+        contextFieldName: 'sharedToType',
+        contextFieldValue: 'Role',
+      }),
+      // field should point to salesforce.Account.field.Id (neighbor context)
+      ...generateObjectAndInstance({
+        type: 'ReportTypeColumn',
+        objType: 'ReportTypeColumn',
+        instanceName: 'reportTypeColumn',
+        fieldName: 'field',
+        fieldValue: 'Id',
+        contextFieldName: 'table',
+        contextFieldValue: 'Account',
+      }),
+    ]
+  }
 
   describe('on fetch', () => {
     let elements: Element[]
@@ -306,6 +342,13 @@ describe('FieldReferences filter', () => {
       ) as InstanceElement
       expect(inst.value.field).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.field?.elemID.getFullName()).toEqual('salesforce.Account.field.name')
+    })
+    it('should resolve fields with relative value based on instanceType condition', async () => {
+      const inst = await awu(elements).find(
+        async e => isInstanceElement(e) && await metadataType(e) === 'SharingRules'
+      ) as InstanceElement
+      expect(inst.value.someFilterField.field).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.someFilterField.field?.elemID.getFullName()).toEqual('salesforce.Account.field.name')
     })
 
     it('should resolve field with relative value array using parent target', async () => {

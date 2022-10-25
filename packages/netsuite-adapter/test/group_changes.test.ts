@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
 import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
-import { APPLICATION_ID, NETSUITE } from '../src/constants'
-import { entitycustomfieldType } from '../src/autogen/types/custom_types/entitycustomfield'
+import { APPLICATION_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../src/constants'
+import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../src/types/file_cabinet_types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from '../src/types'
 
@@ -33,6 +33,17 @@ describe('Group Changes without Salto suiteApp', () => {
     { [APPLICATION_ID]: 'a.b.c' },
   )
 
+  const customRecordTypeFromSuiteApp = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'customrecord1'),
+    fields: {
+      custom_field: { refType: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      [APPLICATION_ID]: 'a.b.c',
+    },
+  })
+
   const fileInstance = new InstanceElement('fileInstance', file)
 
   const dummyType = new ObjectType({ elemID: new ElemID(NETSUITE, 'dummytype') })
@@ -47,6 +58,14 @@ describe('Group Changes without Salto suiteApp', () => {
         customFieldFromSuiteAppInstance.elemID.getFullName(),
         toChange({ after: customFieldFromSuiteAppInstance }),
       ],
+      [
+        customRecordTypeFromSuiteApp.elemID.getFullName(),
+        toChange({ after: customRecordTypeFromSuiteApp }),
+      ],
+      [
+        customRecordTypeFromSuiteApp.fields.custom_field.elemID.getFullName(),
+        toChange({ after: customRecordTypeFromSuiteApp.fields.custom_field }),
+      ],
       [nonSdfInstance.elemID.getFullName(), toChange({ after: nonSdfInstance })],
       [dummyType.elemID.getFullName(), toChange({ after: dummyType })],
     ]))).changeGroupIdMap
@@ -57,9 +76,14 @@ describe('Group Changes without Salto suiteApp', () => {
       .toEqual(SDF_CHANGE_GROUP_ID)
   })
 
-  it('should set correct group id for custom types instances from suiteapps', () => {
+  it('should set correct group id for custom types elements from suiteapps', () => {
     expect(changeGroupIds.get(customFieldFromSuiteAppInstance.elemID.getFullName()))
       .toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
+    expect(changeGroupIds.get(customRecordTypeFromSuiteApp.elemID.getFullName()))
+      .toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
+    expect(changeGroupIds.get(
+      customRecordTypeFromSuiteApp.fields.custom_field.elemID.getFullName()
+    )).toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
   })
 
   it('should set correct group id for file cabinet types instances', () => {

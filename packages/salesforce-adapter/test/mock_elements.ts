@@ -98,6 +98,10 @@ export const mockTypes = {
         refType: allMissingSubTypes.find(t => t.elemID.typeName === 'TargetConfigs') as TypeElement
         ,
       },
+      lwcResources: { refType: createMetadataObjectType({ annotations: { metadataType: 'LwcResources' },
+        fields: {
+          lwcResource: { refType: new ListType(BuiltinTypes.STRING) },
+        } }) },
     },
   }),
   Layout: createMetadataObjectType({
@@ -170,6 +174,59 @@ export const mockTypes = {
       metadataType: 'CustomMetadata',
       dirName: 'customMetadata',
       suffix: 'md',
+    },
+  }),
+  EmailTemplate: createMetadataObjectType({
+    annotations: {
+      metadataType: 'EmailTemplate',
+      suffix: 'email',
+      dirName: 'emails',
+    },
+    fields: {
+      content: { refType: BuiltinTypes.STRING },
+      attachments: { refType: new ListType(BuiltinTypes.STRING) },
+    },
+  }),
+  RecordType: createMetadataObjectType({
+    annotations: {
+      metadataType: 'RecordType',
+      dirName: 'RecordType',
+      suffix: 'recordType',
+    },
+  }),
+  Flow: createMetadataObjectType({
+    annotations: {
+      metadataType: 'Flow',
+      suffix: 'flow',
+      dirName: 'flow',
+    },
+    fields: {
+      status: { refType: BuiltinTypes.STRING },
+      actionType: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  QuickAction: createMetadataObjectType({
+    annotations: {
+      metadataType: 'QuickAction',
+      dirName: 'quickActions',
+      suffix: 'quickAction',
+    },
+    fields: {
+      quickActionLayout: {
+        refType: createMetadataObjectType({
+          annotations: {
+            metadataType: 'QuickActionLayout',
+          },
+          fields: {
+            quickActionLayoutColumns: {
+              refType: new ListType(createMetadataObjectType(
+                { annotations: { metadataType: 'QuickActionLayoutColumn' } }
+              )),
+            },
+          },
+        }),
+      },
+
     },
   }),
 }

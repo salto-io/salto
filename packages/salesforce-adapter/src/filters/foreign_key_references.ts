@@ -58,6 +58,7 @@ const resolveReferences = async (
     type: await instance.getType(),
     transformFunc: transformPrimitive,
     strict: false,
+    allowEmpty: true,
   }) ?? instance.value
 }
 

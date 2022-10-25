@@ -13,34 +13,34 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Field, isInstanceElement, isListType, isObjectType, ListType } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { Field, isInstanceElement, isListType, isObjectType, ListType } from '@salto-io/adapter-api'
+import { walkOnElement } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
+import { walkOnUsers, WalkOnUsersCallback } from './account_id/account_id_filter'
+import { accountIdInfoType } from './account_id/types'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 const USER_TYPE_NAMES = ['User', 'UserBean', 'Board_admins_users']
 
+const simplifyUsers: WalkOnUsersCallback = ({ value, fieldName }): void => {
+  if (value[fieldName]?.accountId !== undefined) {
+    value[fieldName] = value[fieldName].accountId
+  }
+}
+
 /**
- * Replaces the user obj with only the display name
+ * Replaces the user obj with only the account id
  */
 const filter: FilterCreator = () => ({
-  onFetch: async elements => {
+  onFetch: async elements => log.time(async () => {
     await awu(elements)
       .filter(isInstanceElement)
-      .forEach(async instance => {
-        instance.value = await transformValues({
-          values: instance.value,
-          type: await instance.getType(),
-          strict: false,
-          transformFunc: ({ value, field }) => {
-            if (USER_TYPE_NAMES.includes(field?.refType.elemID.typeName ?? '')) {
-              return value.displayName
-            }
-            return value
-          },
-        }) ?? instance.value
+      .forEach(async element => {
+        walkOnElement({ element, func: walkOnUsers(simplifyUsers) })
       })
 
     await awu(elements)
@@ -56,7 +56,7 @@ const filter: FilterCreator = () => ({
                 ? [fieldName, new Field(
                   type,
                   field.name,
-                  isListType(fieldType) ? new ListType(BuiltinTypes.STRING) : BuiltinTypes.STRING,
+                  isListType(fieldType) ? new ListType(accountIdInfoType) : accountIdInfoType,
                   field.annotations
                 )]
                 : [fieldName, field])
@@ -64,7 +64,7 @@ const filter: FilterCreator = () => ({
             .toArray()
         )
       })
-  },
+  }, 'user_filter'),
 })
 
 export default filter

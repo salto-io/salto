@@ -123,13 +123,15 @@ export const generateInstanceNameFromConfig = (
 
 export const removeNullValues = async (
   values: Values,
-  type: ObjectType
+  type: ObjectType,
+  allowEmpty = false,
 ): Promise<Values> =>
   await transformValues({
     values,
     type,
     transformFunc: ({ value }) => (value === null ? undefined : value),
     strict: false,
+    allowEmpty,
   }) ?? {}
 
 export const createServiceIds = (

@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, Variable, VariableExpression, StaticFile } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isInstanceElement, ChangeGroupIdFunction, ElemID, ObjectType, BuiltinTypes, ReferenceExpression, StaticFile, Variable, VariableExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
+import wu from 'wu'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
 import { createElementSource } from '../../common/helpers'
@@ -187,7 +188,7 @@ describe('getPlan', () => {
     })
   })
 
-  it('when instances have inner references and there is no change should create empty plan', async () => {
+  it('when instances have inner references and there is no change should create empty plan when compareReferencesByValue is on', async () => {
     const innerType = new ObjectType({
       elemID: new ElemID('adapter', 'inner'),
       fields: {
@@ -302,11 +303,12 @@ describe('getPlan', () => {
       after: createElementSource(
         [secondInstance1, secondInstance2, secondInstance3, secondInstance4, type, innerType]
       ),
+      compareOptions: { compareReferencesByValue: true },
     })
     expect(plan.size).toBe(0)
   })
 
-  it('when instances use variables and there is no change should create empty plan', async () => {
+  it('when instances use variables and there is no change should create empty plan when compareReferencesByValue is on', async () => {
     const variableObject = new Variable(
       new ElemID('var', 'a'),
       5
@@ -338,6 +340,7 @@ describe('getPlan', () => {
     const plan = await getPlan({
       before: createElementSource([stateInstance, type]),
       after: createElementSource([instance, type, variableObject]),
+      compareOptions: { compareReferencesByValue: true },
     })
     expect(plan.size).toBe(0)
   })
@@ -406,6 +409,177 @@ describe('getPlan', () => {
       after: createElementSource([changedInstance, type]),
     })
     expect(plan.size).toBe(1)
+  })
+
+  describe('compareReferencesByValue', () => {
+    let type: ObjectType
+    let instanceBefore: InstanceElement
+    let instanceAfter: InstanceElement
+    let referencedBefore: InstanceElement
+    let referencedAfter: InstanceElement
+
+    beforeEach(() => {
+      type = new ObjectType({
+        elemID: new ElemID('adapter', 'type'),
+        fields: {
+          a: { refType: BuiltinTypes.NUMBER },
+          b: { refType: BuiltinTypes.NUMBER },
+          ref: { refType: BuiltinTypes.NUMBER },
+        },
+      })
+
+      referencedBefore = new InstanceElement(
+        'instance2',
+        type,
+        {
+          a: 1,
+        }
+      )
+
+      instanceBefore = new InstanceElement(
+        'instance',
+        type,
+        {
+          a: 5,
+          b: 5,
+          ref: new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
+        }
+      )
+
+      referencedAfter = new InstanceElement(
+        'instance2',
+        type,
+        {
+          a: 2,
+        }
+      )
+
+      instanceAfter = new InstanceElement(
+        'instance',
+        type,
+        {
+          a: 5,
+          b: 5,
+          ref: new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
+        }
+      )
+    })
+
+    it('when true should add a change to plan when a value of a reference to inner property is changed', async () => {
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+        compareOptions: { compareReferencesByValue: true },
+      })
+      expect(plan.size).toBe(2)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(2)
+    })
+
+    it('by default should not add a change to plan when a value of a reference to inner property is changed', async () => {
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+      })
+      expect(plan.size).toBe(1)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(1)
+    })
+
+    it('when true should not add a change to plan when a value of a reference to inner property is changed from its resolved value', async () => {
+      instanceBefore.value.ref = 2
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+        compareOptions: { compareReferencesByValue: true },
+      })
+      expect(plan.size).toBe(1)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(1)
+    })
+
+    it('by default should add a change to plan when a value of a reference to inner property is changed from its resolved value', async () => {
+      instanceBefore.value.ref = 2
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+      })
+      expect(plan.size).toBe(2)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(2)
+    })
+
+    it('when true should add a change to plan when a value of a reference to inner property in template expression is changed', async () => {
+      instanceBefore.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      instanceAfter.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+        compareOptions: { compareReferencesByValue: true },
+      })
+      expect(plan.size).toBe(2)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(2)
+    })
+
+    it('when true should not add a change to plan when a value of a reference to inner property in template expression is not changed', async () => {
+      referencedAfter.value.a = 1
+
+      instanceBefore.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedBefore.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      instanceAfter.value.ref = new TemplateExpression({ parts: [
+        'a',
+        new ReferenceExpression(referencedAfter.elemID.createNestedID('a')),
+        'b',
+      ] })
+
+      const plan = await getPlan({
+        before: createElementSource([instanceBefore, referencedBefore, type]),
+        after: createElementSource([instanceAfter, referencedAfter, type]),
+        compareOptions: { compareReferencesByValue: true },
+      })
+      expect(plan.size).toBe(0)
+
+      const changes = wu(plan.itemsByEvalOrder())
+        .map(item => item.detailedChanges())
+        .flatten()
+        .toArray()
+      expect(changes.length).toBe(0)
+    })
   })
 
   it('when reference in instance points to a whole element should have a change in plan', async () => {

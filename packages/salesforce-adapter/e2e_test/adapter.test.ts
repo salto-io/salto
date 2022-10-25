@@ -26,7 +26,6 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 
-import { testHelpers } from '../index'
 import * as constants from '../src/constants'
 import {
   INSTANCE_TYPE_FIELD, NESTED_INSTANCE_TYPE_NAME,
@@ -64,6 +63,7 @@ import {
   customObjectWithFieldsName, gvsName, removeCustomObjectsWithVariousFields,
   summaryFieldName, verifyElementsExist,
 } from './setup'
+import { testHelpers } from './index'
 
 const { awu } = collections.asynciterable
 

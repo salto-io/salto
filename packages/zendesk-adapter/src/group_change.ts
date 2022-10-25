@@ -17,6 +17,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { Change, ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId,
   isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
+import { SECTION_TYPE_NAME } from './filters/help_center_parent_to_section'
 
 const { awu } = collections.asynciterable
 
@@ -55,8 +56,15 @@ const recurseIntoInstanceChangeToGroupId: ChangeIdFunction = async change => {
 const typeNameChangeGroupId: ChangeIdFunction = async change =>
   getChangeData(change).elemID.typeName
 
+const SectionChangeGroupId: ChangeIdFunction = async change =>
+  ((getChangeData(change).elemID.typeName === SECTION_TYPE_NAME)
+    ? getChangeData(change).elemID.getFullName()
+    : undefined)
+
+
 const changeIdProviders: ChangeIdFunction[] = [
   recurseIntoInstanceChangeToGroupId,
+  SectionChangeGroupId,
   typeNameChangeGroupId,
 ]
 

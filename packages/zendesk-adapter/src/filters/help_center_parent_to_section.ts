@@ -24,7 +24,7 @@ import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './help_center_section_and_category'
 
-const SECTION_TYPE_NAME = 'section'
+export const SECTION_TYPE_NAME = 'section'
 
 const deleteParentFields = (elem: InstanceElement): void => {
   delete elem.value.direct_parent

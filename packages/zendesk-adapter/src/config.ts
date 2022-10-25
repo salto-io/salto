@@ -1786,23 +1786,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['id'],
     },
   },
-  labels: {
-    request: {
-      url: '/help_center/articles/labels',
-    },
-    transformation: {
-      dataField: 'labels',
-    },
-  },
-  label: {
-    transformation: {
-      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
-      sourceTypeName: 'labels__labels',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-    },
-  },
   categories: {
     request: {
       url: '/help_center/categories',
@@ -2018,7 +2001,6 @@ export const SUPPORTED_TYPES = {
 export const GUIDE_BRAND_SPECIFIC_TYPES = {
   article: ['articles'],
   section: ['sections'],
-  label: ['labels'],
   category: ['categories'],
 }
 
@@ -2038,7 +2020,6 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   'article_translation',
   'category_translation',
   'section_translation',
-  'label',
 ]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {

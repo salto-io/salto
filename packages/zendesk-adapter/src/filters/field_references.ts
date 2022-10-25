@@ -755,7 +755,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   },
   {
     src: {
-      field: 'directParent',
+      field: 'direct_parent',
       parentTypes: [
         'section',
       ],

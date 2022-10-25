@@ -1762,14 +1762,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   section: {
     transformation: {
-      idFields: ['&directParent', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&directParent', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&direct_parent', ...DEFAULT_ID_FIELDS],
+      fileNameFields: ['&direct_parent', ...DEFAULT_FILENAME_FIELDS],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'sections__sections',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
         // directParent and parentType are created to avoid collisions
-        { fieldName: 'directParent' },
+        // { fieldName: 'direct_parent' },
         // { fieldName: 'parent_type', fieldType: 'string' }
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],

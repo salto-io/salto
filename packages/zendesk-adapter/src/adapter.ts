@@ -228,11 +228,11 @@ const zendeskGuideEntriesFunc = (
         if (responseEntryName === SECTIONS_TYPE_NAME) {
           responseEntries.forEach(entry => {
             if (entry.parent_section_id !== null) {
-              entry.directParent = entry.parent_section_id
-              entry.parentType = 'section'
+              entry.direct_parent = entry.parent_section_id
+              entry.parent_type = 'section'
             } else {
-              entry.directParent = entry.category_id
-              entry.parentType = 'category'
+              entry.direct_parent = entry.category_id
+              entry.parent_type = 'category'
             }
           })
         }

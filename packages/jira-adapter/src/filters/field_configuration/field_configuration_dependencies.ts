@@ -72,7 +72,6 @@ const filter: FilterCreator = () => ({
           instance,
           fieldConfigItems.map(item => ({
             reference: new ReferenceExpression(item.elemID, item),
-            location: new ReferenceExpression(instance.elemID.createNestedID('fieldConfigurationScheme'), instance.value.fieldConfigurationScheme),
           }))
         )
       })

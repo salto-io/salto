@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils,
+  filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import {
   ElemID,
   InstanceElement,
-  ObjectType, ReferenceExpression,
+  ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
@@ -40,7 +41,7 @@ describe('guid section filter', () => {
     sectionType,
     {
       parent_section_id: 123,
-      direct_parent: 456,
+      direct_parent: 123,
       parent_type: 'section',
     }
   )
@@ -49,9 +50,25 @@ describe('guid section filter', () => {
     sectionType,
     {
       category_id: 789,
-      id: 456,
+      id: 123,
       direct_parent: 789,
       parent_type: 'category',
+    }
+  )
+
+  const InnerSectionInstanceNoFields = new InstanceElement(
+    'instance',
+    sectionType,
+    {
+      parent_section_id: 123,
+    }
+  )
+  const OuterSectionInstanceNoFields = new InstanceElement(
+    'instance',
+    sectionType,
+    {
+      category_id: 789,
+      id: 123,
     }
   )
 
@@ -72,26 +89,32 @@ describe('guid section filter', () => {
   })
 
   describe('preDeploy', () => {
-    it('should remove name and description fields before deploy', async () => {
-      const sectionInstanceCopy = sectionInstance.clone()
-      await filter.preDeploy([toChange({ after: sectionInstanceCopy })])
-      sectionInstance.value.name = sectionTranslationInstance.value.title
-      sectionInstance.value.description = sectionTranslationInstance.value.body
-      expect(sectionInstanceCopy).toEqual(sectionInstance)
+    it('should remove direct_parent and parent_type fields before deploy', async () => {
+      const InnerSectionInstanceCopy = InnerSectionInstance.clone()
+      const OuterSectionInstanceCopy = OuterSectionInstance.clone()
+      await filter.preDeploy([
+        toChange({ after: InnerSectionInstanceCopy }),
+        toChange({ after: OuterSectionInstanceCopy }),
+      ])
+      expect(InnerSectionInstanceCopy).toEqual(InnerSectionInstanceNoFields)
+      expect(OuterSectionInstanceCopy).toEqual(OuterSectionInstanceNoFields)
     })
   })
 
   describe('onDeploy', () => {
-    it('should omit the name and description fields after deploy', async () => {
-      const sectionInstanceCopy = sectionInstance.clone()
-      await filter.preDeploy([toChange({ after: sectionInstanceCopy })])
-      await filter.onDeploy([toChange({ after: sectionInstanceCopy })])
-      expect(sectionInstanceCopy.value).toEqual({
-        source_locale: 'he',
-        translations: [
-          sectionTranslationInstance.value,
-        ],
-      })
+    it('should remove direct_parent and parent_type fields after deploy', async () => {
+      const InnerSectionInstanceCopy = InnerSectionInstance.clone()
+      const OuterSectionInstanceCopy = OuterSectionInstance.clone()
+      await filter.preDeploy([
+        toChange({ after: InnerSectionInstanceCopy }),
+        toChange({ after: OuterSectionInstanceCopy }),
+      ])
+      await filter.onDeploy([
+        toChange({ after: InnerSectionInstanceCopy }),
+        toChange({ after: OuterSectionInstanceCopy }),
+      ])
+      expect(InnerSectionInstanceCopy).toEqual(InnerSectionInstance)
+      expect(OuterSectionInstanceCopy).toEqual(OuterSectionInstance)
     })
   })
 })

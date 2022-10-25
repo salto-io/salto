@@ -1770,7 +1770,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         // directParent and parentType are created to avoid collisions
         { fieldName: 'directParent' },
-        { fieldName: 'parentType', fieldType: 'string' }
+        // { fieldName: 'parent_type', fieldType: 'string' }
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(

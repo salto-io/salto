@@ -28,16 +28,16 @@ const SECTION_TYPE_NAME = 'section'
 
 const deleteParentFields = (elem: InstanceElement): void => {
   delete elem.value.directParent
-  delete elem.value.parentType
+  delete elem.value.parent_type
 }
 
 const addParentFields = (elem: InstanceElement): void => {
   if (elem.value.parent_section_id !== undefined) {
     elem.value.directParent = elem.value.parent_section_id
-    elem.value.parentType = 'section'
+    elem.value.parent_type = 'section'
   } else {
     elem.value.directParent = elem.value.category_id
-    elem.value.parentType = 'category'
+    elem.value.parent_type = 'category'
   }
 }
 

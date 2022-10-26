@@ -23,7 +23,6 @@ import { FilterCreator } from '../../filter'
 import { WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { isWorkflowInstance, triggerSchema } from './types'
 import { triggerType } from './triggers_types'
-import { getTransitionKey } from './transition_ids_filter'
 
 const log = logger(module)
 
@@ -65,11 +64,9 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(workflow => workflow.value.name !== undefined)
       .map(async instance => {
         try {
-          const transitionIds = instance.value.transitionIds ?? {}
           await Promise.all(
             (instance.value.transitions ?? []).map(async transition => {
-              const transitionId = transitionIds[getTransitionKey(transition)]
-              if (transitionId === undefined) {
+              if (transition.id === undefined) {
                 log.warn(`Did not find transition id of transition ${safeJsonStringify(transition)}`)
                 return
               }
@@ -78,7 +75,7 @@ const filter: FilterCreator = ({ client, config }) => ({
                 url: '/rest/triggers/1.0/workflow/config',
                 queryParams: {
                   workflowName: instance.value.name as string,
-                  actionId: transitionId,
+                  actionId: transition.id,
                 },
               })
 

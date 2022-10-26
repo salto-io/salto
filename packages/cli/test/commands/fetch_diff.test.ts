@@ -60,6 +60,7 @@ describe('fetch-diff command', () => {
           fromDir: 'a',
           toDir: 'b',
           accountName: 'salesforce',
+          mode: 'default',
         },
         workspace,
       })
@@ -78,6 +79,7 @@ describe('fetch-diff command', () => {
           toDir: 'b',
           targetEnvs: ['no_such_env'],
           accountName: 'salesforce',
+          mode: 'default',
         },
         workspace,
       })
@@ -110,6 +112,7 @@ describe('fetch-diff command', () => {
           toDir: 'b',
           targetEnvs: ['env1', 'env2'],
           accountName: 'salesforce',
+          mode: 'default',
         },
         workspace,
       })

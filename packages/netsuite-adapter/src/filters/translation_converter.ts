@@ -121,12 +121,23 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   },
 
   preDeploy: async changes => {
-    await awu(changes)
-      .flatMap(change => Object.values(change.data))
-      .map(element => (isField(element) ? element.parent : element))
+    const [fields, elements] = _.partition(
+      changes.flatMap(change => Object.values(change.data)),
+      isField
+    )
+    const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
+    const fieldParents = _.uniqBy(
+      fields
+        .map(field => field.parent)
+        .filter(parent => !elemIdSet.has(parent.elemID.getFullName())),
+      parent => parent.elemID.name
+    )
+    const elementsToTransform = elements
+      .concat(fieldParents)
       .filter(element => isInstanceElement(element) || (
         isObjectType(element) && isCustomRecordType(element)
       ))
+    await awu(elementsToTransform)
       .forEach(async element => {
         await transformAnnotationsAndValues(element, ({ value }) => {
           if (!_.isPlainObject(value)) {

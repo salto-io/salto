@@ -1856,26 +1856,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['id'],
     },
   },
-<<<<<<< Updated upstream
-=======
-  labels: {
-    request: {
-      url: '/api/v2/help_center/articles/labels',
-    },
-    transformation: {
-      dataField: 'labels',
-    },
-  },
-  label: {
-    transformation: {
-      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
-      sourceTypeName: 'labels__labels',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-    },
-  },
->>>>>>> Stashed changes
   categories: {
     request: {
       url: '/api/v2/help_center/categories',

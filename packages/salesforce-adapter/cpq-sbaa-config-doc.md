@@ -1,21 +1,26 @@
-# Managing CPQ with Salto
-Salesforce CPQ configration includes both metadata items (e.g. Custom Objects, Apex classes, Triggers, ...) as well as data records of various object types (e.g. Product2, PriceAction__c, PriceCondition__c, ...)
-Salto users are able to manage their CPQ metadata as well as relevant data records from a single place - the Salto workspace.
+# Managing CPQ and Advanced Approvals with Salto
+Salesforce CPQ and Advanced Approvals configuration includes both metadata items (e.g. Custom Objects, Apex classes, Triggers, ...) as well as data records of various object types (e.g. Product2, PriceAction__c, PriceCondition__c, ...)
+Salto users are able to manage their CPQ and Advanced Approvals metadata as well as relevant data records from a single place - the Salto workspace.
 
 ## Configuring Salto for CPQ 
 By default, Salto's salesforce configuration includes only metadata items that belong to the default package and does not include any data records.
-Users that would like to manage their CPQ configuration using Salto needs to:
-1. Configure Salto to manage metadata items that belong to the `SBQQ` salesforce package
+Users that would like to manage their CPQ and Advanced Approvals configuration using Salto needs to:
+1. Configure Salto to manage metadata items that belong to the `SBQQ` & `sbaa` salesforce packages
 2. Configure Salto to manage relevant CPQ related data records
 
 This can be achieved by editing the `/salto.config/adapters/salesforce.nacl` file within the salto workspace.
 
-### Adding the `SBQQ` package to the Salto Workspace
+### Adding the `SBQQ` and `sbaa` package to the Salto Workspace
 Paste the following configuration snippet under the include fetch metadata section in `/salto.config/adapters/salesforce.nacl` (see full example below)
 ```
 {
     metadataType = ".*"
     namespace = "SBQQ"
+    name = ".*"
+}
+{
+    metadataType = ".*"
+    namespace = "sbaa"
     name = ".*"
 }
 ```
@@ -43,6 +48,11 @@ salesforce {
         {
           metadataType = ".*"
           namespace = "SBQQ"
+          name = ".*"
+        },
+        {
+          metadataType = ".*"
+          namespace = "sbaa"
           name = ".*"
         },
       ]
@@ -113,6 +123,13 @@ salesforce {
     data = {
         includeObjects = [
           "SBQQ__.*",
+          "sbaa__ApprovalChain__c",
+          "sbaa__ApprovalCondition__c",
+          "sbaa__ApprovalRule__c",
+          "sbaa__ApprovalVariable__c",
+          "sbaa__Approver__c",
+          "sbaa__EmailTemplate__c",
+          "sbaa__TrackedField__c",
         ]
         excludeObjects = [
           "SBQQ__ContractedPrice__c",
@@ -229,10 +246,65 @@ salesforce {
                 "Family",
               ]
             },
+            {
+              objectsRegex = "sbaa__ApprovalRule__c"
+              idFields = [
+                "Name",
+                "sbaa__TargetObject__c",
+                "sbaa__ApprovalChain__c",
+                "sbaa__Approver__c",
+                "sbaa__ApproverField__c",
+              ]
+            },
+            {
+              objectsRegex = "sbaa__Approver__c"
+              idFields = [
+                "Name",
+              ]
+            },
+            {
+              objectsRegex = "sbaa__EmailTemplate__c"
+              idFields = [
+                "Name",
+                "sbaa__TemplateId__c",
+              ]
+            },
+            {
+              objectsRegex = "sbaa__ApprovalCondition__c"
+              idFields = [
+                "sbaa__ApprovalRule__c",
+                "sbaa__Index__c",
+              ]
+            },
+            {
+              objectsRegex = "sbaa__ApprovalChain__c"
+              idFields = [
+                "sbaa__TargetObject__c",
+                "Name",
+              ]
+            },
+            {
+              objectsRegex = "sbaa__ApprovalVariable__c"
+              idFields = [
+                "sbaa__TargetObject__c",
+                "Name",
+              ]
+            },
+            {
+              objectsRegex = "sbaa__TrackedField__c"
+              idFields = [
+                "sbaa__ApprovalRule__c",
+                "sbaa__RecordField__c",
+                "sbaa__TrackedField__c",
+                "sbaa__TrackedObject__c",
+                "sbaa__TrackingType__c",
+              ]
+            },
           ]
         }
     }
   }
+  fetchAllCustomSettings = false
   maxItemsInRetrieveRequest = 2500
 }
 ```

@@ -252,7 +252,6 @@ describe('adapter', () => {
           'zendesk.group.instance.Support5',
           'zendesk.groups',
           'zendesk.help_center_locale',
-          'zendesk.help_center_locale',
           'zendesk.help_center_locale.instance.en_us@b',
           'zendesk.help_center_locale.instance.he',
           'zendesk.locale',

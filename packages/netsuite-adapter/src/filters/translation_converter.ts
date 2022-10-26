@@ -121,18 +121,18 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   },
 
   preDeploy: async changes => {
-    const [fields, elements] = _.partition(
+    const [fields, typesAndInstances] = _.partition(
       changes.flatMap(change => Object.values(change.data)),
       isField
     )
-    const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
+    const elemIdSet = new Set(typesAndInstances.map(element => element.elemID.getFullName()))
     const fieldParents = _.uniqBy(
       fields
         .map(field => field.parent)
         .filter(parent => !elemIdSet.has(parent.elemID.getFullName())),
       parent => parent.elemID.name
     )
-    const elementsToTransform = elements
+    const elementsToTransform = typesAndInstances
       .concat(fieldParents)
       .filter(element => isInstanceElement(element) || (
         isObjectType(element) && isCustomRecordType(element)

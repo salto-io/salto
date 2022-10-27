@@ -29,6 +29,7 @@ import { getApprovedChanges, getUserBooleanInput } from '../callbacks'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts } from './common/accounts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
+import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
 
 const { awu } = collections.asynciterable
 
@@ -71,8 +72,7 @@ type RestoreArgs = {
     dryRun: boolean
     detailedPlan: boolean
     listPlannedChanges: boolean
-    mode: nacl.RoutingMode
-} & AccountsArg & EnvArg
+} & AccountsArg & EnvArg & UpdateModeArg
 
 const applyLocalChangesToWorkspace = async (
   changes: LocalChange[],
@@ -256,16 +256,7 @@ const restoreDef = createWorkspaceCommand({
       },
       ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,
-      {
-        name: 'mode',
-        alias: 'm',
-        required: false,
-        description: 'Choose a restore mode. Options - [default, align]',
-        type: 'string',
-        // 'override' and 'isolated' are undocumented
-        choices: ['default', 'align', 'override', 'isolated'],
-        default: 'default',
-      },
+      UPDATE_MODE_OPTION,
     ],
   },
   action,

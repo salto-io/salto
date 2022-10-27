@@ -18,13 +18,14 @@ import { DetailedChange, Element, getChangeData, isAdditionChange, isRemovalChan
 import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { expressions, elementSource, Workspace, merger, State, nacl } from '@salto-io/workspace'
+import { expressions, elementSource, Workspace, merger, State } from '@salto-io/workspace'
 import { loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import { calcFetchChanges } from '@salto-io/core'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
 import { CliExitCode, CliOutput } from '../types'
+import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -75,10 +76,9 @@ type FetchDiffArgs = {
   fromDir: string
   toDir: string
   accountName: 'salesforce'
-  mode: nacl.RoutingMode // TODO: extract this to be a common option like envs?
   targetEnvs?: string[]
   updateStateInEnvs?: string[]
-}
+} & UpdateModeArg
 
 const fetchDiffToWorkspace = async (
   workspace: Workspace,
@@ -208,21 +208,12 @@ const fetchDiffCmd = createWorkspaceCommand({
         description: 'Names for environments to apply the changes to, defaults to all environments',
       },
       {
-        name: 'mode',
-        alias: 'm',
-        required: false,
-        description: 'Choose a fetch mode. Options - [default, align]',
-        type: 'string',
-        // 'override' and 'isolated' are undocumented
-        choices: ['default', 'align', 'override', 'isolated'],
-        default: 'default',
-      },
-      {
         name: 'updateStateInEnvs',
         alias: 'u',
         type: 'stringsList',
         description: 'Names for environments in which to update the state as well as the NaCls, indicating that the changes were already deployed',
       },
+      UPDATE_MODE_OPTION,
     ],
     positionalOptions: [
       {

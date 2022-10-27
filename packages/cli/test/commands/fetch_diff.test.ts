@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { loadElementsFromFolder } from '@salto-io/salesforce-adapter'
 import { updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import * as mocks from '../mocks'
@@ -47,6 +47,59 @@ describe('fetch-diff command', () => {
       envs: ['env1', 'env2'],
       accounts: ['salesforce'],
       getElements: () => baseElements,
+    })
+  })
+
+  describe('when there is a difference between the folders', () => {
+    let exitCode: CliExitCode
+    let originalInstance: InstanceElement
+    let updatedInstance: InstanceElement
+    let newInstance: InstanceElement
+    beforeEach(async () => {
+      const type = baseElements[3] as ObjectType
+      originalInstance = baseElements[4] as InstanceElement
+      updatedInstance = originalInstance.clone()
+      updatedInstance.value.newVal = 'asd'
+      newInstance = new InstanceElement('new', type, { val: 1 }, ['path'])
+      const beforeElements = [originalInstance]
+      const afterElements = [updatedInstance, newInstance]
+      // Response for env1
+      mockLoadElementsFromFolder
+        .mockResolvedValueOnce(beforeElements)
+        .mockResolvedValueOnce(afterElements)
+      // Response for env2
+      mockLoadElementsFromFolder
+        .mockResolvedValueOnce(beforeElements)
+        .mockResolvedValueOnce(afterElements)
+
+      exitCode = await fetchDiffAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          toDir: 'b',
+          updateStateInEnvs: ['env2'],
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+    })
+    it('should flush the workspace and succeed', () => {
+      expect(workspace.flush).toHaveBeenCalled()
+      expect(exitCode).toEqual(CliExitCode.Success)
+    })
+    it('should update the state in the requested environment', async () => {
+      const updatedInstanceFromState = await workspace.state('env2').get(updatedInstance.elemID)
+      expect(updatedInstanceFromState.value).toEqual(updatedInstance.value)
+      const newInstanceFromState = await workspace.state('env2').get(newInstance.elemID)
+      expect(newInstanceFromState).toBeDefined()
+      expect(newInstanceFromState.value).toEqual(newInstance.value)
+    })
+    it('should not update state in other environments', async () => {
+      const instFromState = await workspace.state('env1').get(updatedInstance.elemID)
+      expect(instFromState.value).toEqual(originalInstance.value)
+      expect(await workspace.state('env1').has(newInstance.elemID)).toBeFalsy()
     })
   })
 

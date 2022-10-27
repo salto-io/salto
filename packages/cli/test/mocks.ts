@@ -290,26 +290,28 @@ export const mockWorkspace = ({
   accounts = ['salesforce', 'netsuite'],
   getElements = elements,
 }: MockWorkspaceArgs): MockWorkspace => {
-  const state = wsState.buildInMemState(
-    async () => ({
-      elements: createInMemoryElementSource(getElements()),
-      pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-      accountsUpdateDate: new InMemoryRemoteMap(),
-      saltoMetadata: new InMemoryRemoteMap([
-        { key: 'version', value: currentVersion },
-      ] as {key: wsState.StateMetadataKey; value: string}[]),
-      staticFilesSource: mockStateStaticFilesSource(),
-    })
+  const mockStateData = async (): Promise<wsState.StateData> => ({
+    elements: createInMemoryElementSource(getElements()),
+    pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
+    accountsUpdateDate: new InMemoryRemoteMap(),
+    saltoMetadata: new InMemoryRemoteMap([
+      { key: 'version', value: currentVersion },
+    ] as {key: wsState.StateMetadataKey; value: string}[]),
+    staticFilesSource: mockStateStaticFilesSource(),
+  })
+  const stateByEnv = Object.fromEntries(
+    envs.map(env => [env, wsState.buildInMemState(mockStateData)])
   )
+  let currentEnv = envs[0]
   return {
     uid,
     name,
     elements: mockFunction<Workspace['elements']>().mockResolvedValue(
       createInMemoryElementSource(getElements())
     ),
-    state: mockFunction<Workspace['state']>().mockReturnValue(state),
+    state: mockFunction<Workspace['state']>().mockImplementation(env => stateByEnv[env ?? currentEnv]),
     envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),
-    currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue(envs[0]),
+    currentEnv: mockFunction<Workspace['currentEnv']>().mockImplementation(() => currentEnv),
     accounts: mockFunction<Workspace['accounts']>().mockReturnValue(accounts),
     services: mockFunction<Workspace['services']>().mockReturnValue(accounts),
     accountCredentials: mockFunction<Workspace['accountCredentials']>().mockResolvedValue({}),
@@ -360,7 +362,7 @@ export const mockWorkspace = ({
     addEnvironment: mockFunction<Workspace['addEnvironment']>(),
     deleteEnvironment: mockFunction<Workspace['deleteEnvironment']>(),
     renameEnvironment: mockFunction<Workspace['renameEnvironment']>(),
-    setCurrentEnv: mockFunction<Workspace['setCurrentEnv']>(),
+    setCurrentEnv: mockFunction<Workspace['setCurrentEnv']>().mockImplementation(async env => { currentEnv = env }),
     updateAccountCredentials: mockFunction<Workspace['updateAccountCredentials']>(),
     updateServiceCredentials: mockFunction<Workspace['updateServiceCredentials']>(),
     updateAccountConfig: mockFunction<Workspace['updateAccountConfig']>(),

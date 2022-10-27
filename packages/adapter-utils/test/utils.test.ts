@@ -32,7 +32,7 @@ import {
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
   transformElement, toObjectType, getParents, resolveTypeShallow,
-  referenceExpressionStringifyReplacer,
+  elementExpressionStringifyReplacer,
   createSchemeGuard,
   getParent,
 } from '../src/utils'
@@ -2229,17 +2229,10 @@ describe('Test utils.ts', () => {
         )
       })
       it('should replace the reference expression object with a serialized representation', () => {
-        const res = safeJsonStringify(inst, referenceExpressionStringifyReplacer, 2)
+        const res = safeJsonStringify(inst, elementExpressionStringifyReplacer, 2)
         expect(res).not.toEqual(safeJsonStringify(inst))
         expect(res).toEqual(`{
-  "elemID": {
-    "adapter": "salto",
-    "typeName": "obj",
-    "idType": "instance",
-    "nameParts": [
-      "test2"
-    ]
-  },
+  "elemID": "ElemID(salto.obj.instance.test2)",
   "annotations": {},
   "annotationRefTypes": {},
   "value": {

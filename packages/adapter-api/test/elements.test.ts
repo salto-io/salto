@@ -294,20 +294,6 @@ describe('Test elements.ts', () => {
     const nestedListId = new ListType(new TypeReference(listId)).elemID
 
     describe('constructor', () => {
-      it('should throw error on variables not in the var namespace', () => {
-        expect((() => new ElemID('salesforce', 'varName',
-          'var'))).toThrow(/.*salesforce\.varName[^.].*/)
-      })
-      it('should throw error on id types which are not \'var\' in the var namespace', () => {
-        expect((() => new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName',
-          'type'))).toThrow(/.*var\.varName[^.].*/)
-        expect((() => new ElemID(ElemID.VARIABLES_NAMESPACE, 't', 'instance',
-          'name'))).toThrow(/.*var\.t\.instance\.name[^.].*/)
-      })
-      it('should throw error on nested variables', () => {
-        expect((() => new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName', 'var',
-          'k'))).toThrow(/.*var\.varName\.k[^.].*/)
-      })
       it('should create a variable when no type is provided but the namespace is var', () => {
         expect(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName').idType).toEqual('var')
       })

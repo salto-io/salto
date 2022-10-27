@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, Element, Values, getAnnotationValue, isObjectTypeChange, InstanceElement,
+  ObjectType, Element, Values, isObjectTypeChange, InstanceElement,
   isAdditionOrModificationChange, getChangeData, isAdditionChange, isModificationChange,
   ElemID, toChange,
 } from '@salto-io/adapter-api'
@@ -33,8 +33,8 @@ const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 
 export const DEFAULT_ENABLE_TOPICS_VALUE = false
 
-const getTopicsForObjects = (obj: ObjectType): Values => getAnnotationValue(obj,
-  TOPICS_FOR_OBJECTS_ANNOTATION)
+const getTopicsForObjects = (obj: ObjectType): Values =>
+  obj.annotations[TOPICS_FOR_OBJECTS_ANNOTATION] || {}
 
 const setTopicsForObjects = (object: ObjectType, enableTopics: boolean): void => {
   object.annotate({ [TOPICS_FOR_OBJECTS_ANNOTATION]: { [ENABLE_TOPICS]: enableTopics } })

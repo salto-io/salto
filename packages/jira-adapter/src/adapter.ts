@@ -61,7 +61,6 @@ import workflowStructureFilter from './filters/workflow/workflow_structure_filte
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties_filter'
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
-import stepIdsFilter from './filters/workflow/step_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
 import workflowGroupsFilter from './filters/workflow/groups_filter'
@@ -138,9 +137,8 @@ export const DEFAULT_FILTERS = [
   avatarsFilter,
   iconUrlFilter,
   workflowStructureFilter,
-  transitionIdsFilter,
-  stepIdsFilter,
   triggersFilter,
+  transitionIdsFilter,
   resolutionPropertyFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,

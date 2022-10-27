@@ -17,17 +17,14 @@ import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChang
 import _ from 'lodash'
 import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
 import { FilterCreator } from '../../filter'
-import { isPostFetchWorkflowInstance, Transition, Workflow, WorkflowInstance, workflowSchema } from './types'
+import { isPostFetchWorkflowInstance, WorkflowInstance } from './types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
-import { addTransitionIds } from './transition_ids_filter'
 import { deployTriggers } from './triggers_deployment'
-import { addStepIds } from './step_ids_filter'
 import { deploySteps } from './steps_deployment'
 import { fixGroupNames } from './groups_filter'
 
@@ -63,38 +60,6 @@ const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void 
         (_validator, index) => index === createIssuePermissionValidatorIndex,
       )
     })
-}
-
-const isValidTransitionResponse = (response: unknown): response is { values: [Workflow] } => {
-  const { error } = Joi.object({
-    values: Joi.array().min(1).max(1).items(workflowSchema),
-  }).unknown(true).required().validate(response)
-
-  if (error !== undefined) {
-    log.warn(`Unexpected workflows response from Jira: ${error}. ${safeJsonStringify(response)}`)
-    return false
-  }
-  return true
-}
-
-const getTransitionsFromService = async (
-  client: JiraClient,
-  workflowName: string,
-): Promise<Transition[]> => {
-  const response = await client.getSinglePage({
-    url: '/rest/api/3/workflow/search',
-    queryParams: {
-      expand: 'transitions',
-      workflowName,
-    },
-  })
-
-  if (!isValidTransitionResponse(response.data)) {
-    return []
-  }
-
-  const workflowValues = response.data.values[0]
-  return workflowValues.transitions ?? []
 }
 
 const changeIdsToString = (
@@ -136,22 +101,19 @@ export const deployWorkflow = async (
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: path => path.name === 'triggers'
       // Matching here the 'name' of status inside the statuses array
-      || (path.name === 'name' && path.getFullNameParts().includes('statuses')),
+      // In DC we support passing the step name as part of the request
+      || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
   if (isAdditionChange(resolvedChange)) {
-    const transitions = await getTransitionsFromService(client, instance.value.name)
-    addTransitionIds(instance, transitions)
-    await addStepIds(instance, client, config)
-
     getChangeData(change).value.entityId = instance.value.entityId
-    getChangeData(change).value.transitionIds = instance.value.transitionIds
-    getChangeData(change).value.stepIds = instance.value.stepIds
     // If we created the workflow we can edit it
     getChangeData(change).value.operations = { canEdit: true }
 
-    if (config.client.usePrivateAPI) {
+    if (config.client.usePrivateAPI && !client.isDataCenter) {
+      // No need to run in DC since there are not triggers in DC
       await deployTriggers(resolvedChange, client)
+      // No need to run in DC since the main deployment requests already supports deploying steps
       await deploySteps(getChangeData(change), client)
     }
   }

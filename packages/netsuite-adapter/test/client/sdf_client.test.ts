@@ -1324,55 +1324,7 @@ describe('sdf client', () => {
         await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(errorMessage))
       })
-      it('should throw ObjectsDeployError when deploy failed on object validation', async () => {
-        const errorMessage = `
-The deployment process has encountered an error.
-Deploying to TSTDRV2259448 - Salto Extended Dev - Administrator.
-2022-03-31 05:36:02 (PST) Installation started
-Info -- Account [(PRODUCTION) Salto Extended Dev]
-Info -- Account Customization Project [TempSdfProject-5492f41d-307d-4fc9-bc78-ef0834e9a197]
-Info -- Framework Version [1.0]
-Validate manifest -- Success
-Validate deploy file -- Success
-Validate configuration -- Success
-Validate objects -- Failed
-Validate files -- Success
-Validate folders -- Success
-Validate translation imports -- Success
-Validation of referenceability from custom objects to translations collection strings in progress. -- Success
-Validate preferences -- Success
-Validate flags -- Success
-Validate for circular dependencies -- Success
-*** ERROR ***
 
-Validation failed.
-
-An error occurred during custom object validation. (custform_114_t1441298_782)
-File: ~/Objects/custform_114_t1441298_782.xml
-`
-        mockExecuteAction.mockImplementation(({ commandName }) => {
-          if (commandName === COMMANDS.DEPLOY_PROJECT) {
-            throw errorMessage
-          }
-          return { isSuccess: () => true }
-        })
-        let isRejected: boolean
-        try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
-          isRejected = false
-        } catch (e) {
-          isRejected = true
-          expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
-        }
-        expect(isRejected).toBe(true)
-      })
       it('should throw ObjectsDeployError when deploy failed with error object message', async () => {
         const errorMessage = `
 The deployment process has encountered an error.
@@ -1794,19 +1746,36 @@ File: ~/AccountConfiguration/features.xml`
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
       })
       it('should throw ObjectsValidationError', async () => {
-        let projectPath: string
         let errorMessage: string
-        const objectErrorMessage = 'some validation error message.'
+        const objectErrorMessage = 'An error occurred during custom object validation. (failObject)'
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            projectPath = context.arguments.parentdirectory
             return Promise.resolve({ isSuccess: () => true })
           }
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
-            errorMessage = `
-Errors for file ${projectPath}/src/Objects/${failObject}.xml.
-     Line 1 - Error Message: ${objectErrorMessage}
-Errors for file ${projectPath}/src/Objects/${failObject}.xml.`
+            errorMessage = `The validation process has encountered an error.
+Validating against TSTDRV2257860 - Salto Development - Administrator.
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Failed
+WARNING -- One or more potential issues were found during custom object validation. (${failObject})
+Details: Missing or invalid field attribute value for field label. When specifying a scriptid as the field value, set translate = T.
+File: ~/Objects/${failObject}.xml
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+*** ERROR ***
+
+Validation failed.
+
+An error occurred during custom object validation. (${failObject})
+Details: The availableexternally field must be set to a valid Boolean value, 'T' or 'F'.
+File: ~/Objects/${failObject}.xml`
             throw new Error(errorMessage)
           }
           return Promise.resolve({ isSuccess: () => true })
@@ -1823,19 +1792,38 @@ Errors for file ${projectPath}/src/Objects/${failObject}.xml.`
         }
       })
       it('should throw ManifestValidationError', async () => {
-        let projectPath: string
         let errorMessage: string
-        const manifestErrorMessage = 'some manifest validation error message.'
+        const errorReferenceName = 'someRefName'
+        const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            projectPath = context.arguments.parentdirectory
             return Promise.resolve({ isSuccess: () => true })
           }
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
-            errorMessage = `
-Errors for file ${projectPath}/src/manifest.xml.
-     Line 1 - Error Message: ${manifestErrorMessage}
-`
+            errorMessage = `Warning: The validation process has encountered an error.
+Validating against TSTDRV2257860 - Salto Development - Administrator.
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Success
+
+WARNING -- One or more potential issues were found during custom object validation. (${failObject})
+Details: Missing or invalid field attribute value for field label. When specifying a scriptid as the field value, set translate = T.
+File: ~/Objects/${failObject}.xml
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+Validate account settings -- Failed
+*** ERROR ***
+
+Validation of account settings failed.
+
+An error occurred during account settings validation.
+Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
             throw new Error(errorMessage)
           }
           return Promise.resolve({ isSuccess: () => true })

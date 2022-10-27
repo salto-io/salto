@@ -69,7 +69,7 @@ describe('client validation', () => {
       detailedMessage,
       elemID: getChangeData(changes[0]).elemID,
       message: 'SDF Objects Validation Error',
-      severity: 'Warning',
+      severity: 'Error',
     })
   })
   it('should have SDF Objects Validation Error for customRecordType', async () => {
@@ -85,7 +85,7 @@ describe('client validation', () => {
       detailedMessage,
       elemID: getChangeData(changes[1]).elemID,
       message: 'SDF Objects Validation Error',
-      severity: 'Warning',
+      severity: 'Error',
     })
   })
   it('should have SDF Manifest Validation Error', async () => {
@@ -99,7 +99,7 @@ describe('client validation', () => {
       detailedMessage,
       elemID: getChangeData(changes[0]).elemID,
       message: 'SDF Manifest Validation Error',
-      severity: 'Warning',
+      severity: 'Error',
     })
   })
   it('should have general Validation Error', async () => {
@@ -113,7 +113,7 @@ describe('client validation', () => {
       detailedMessage,
       elemID: getChangeData(changes[0]).elemID,
       message: 'Validation Error on SDF',
-      severity: 'Warning',
+      severity: 'Error',
     })
   })
 })

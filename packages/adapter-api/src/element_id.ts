@@ -119,7 +119,7 @@ export class ElemID {
   readonly typeName: string
   readonly idType: ElemIDType
   private readonly nameParts: ReadonlyArray<string>
-  private fullName: string
+  private readonly fullName: string
   constructor(
     adapter: string,
     typeName?: string,

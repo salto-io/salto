@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       brandChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD])
+        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, 'categories'])
       }
     )
     return { deployResult, leftoverChanges }

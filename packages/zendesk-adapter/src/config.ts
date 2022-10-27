@@ -1674,6 +1674,32 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_type', fieldType: 'string' },
       ),
     },
+    deployRequests: {
+      add: {
+        url: '/api/v2/help_center/articles/{article_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          article_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v2/help_center/articles/{article_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          article_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/api/v2/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
+    },
   },
   sections: {
     request: {

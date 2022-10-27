@@ -141,7 +141,7 @@ function isSerializedClass(value: any): value is SerializedClass {
     && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serialize = async <T extends { elemID: ElemID } = Element>(
+export const serialize = async <T = Element>(
   elements: T[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
   storeStaticFile?: (file: StaticFile) => Promise<void>
@@ -221,15 +221,8 @@ export const serialize = async <T extends { elemID: ElemID } = Element>(
   }
   const cloneElements = elements.map(element => {
     const clone = _.cloneDeepWith(element, replacer)
-    return {
-      element: isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone,
-      id: element.elemID,
-    }
+    return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
   })
-  const sortedElements = _(cloneElements)
-    .sortBy(({ id }) => id.getFullName())
-    .map(({ element }) => element)
-    .value()
 
   // Avoiding Promise.all to not reach Promise.all limit
   await awu(promises).forEach(promise => promise)
@@ -237,7 +230,7 @@ export const serialize = async <T extends { elemID: ElemID } = Element>(
   // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
   // circles
   // eslint-disable-next-line no-restricted-syntax
-  return JSON.stringify(sortedElements)
+  return JSON.stringify(cloneElements)
 }
 
 export type StaticFileReviver =

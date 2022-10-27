@@ -236,7 +236,10 @@ describe('State/cache serialization', () => {
       createInMemoryElementSource(elementsToSerialize)
     )
     const serialized = await serialize(await awu(resolved).toArray(), 'keepRef')
-    const deserialized = await deserialize(serialized)
+    const deserialized = _.sortBy(
+      await deserialize(serialized),
+      element => element.elemID.getFullName()
+    )
     const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
     const sortedElementsWithoutRefs = sortedElements
       // we need to make sure the types are empty as well... Not just the refs
@@ -292,12 +295,6 @@ describe('State/cache serialization', () => {
     expect(innerRefsInst.value.a).toBeInstanceOf(ReferenceExpression)
     expect(innerRefsInst.value.b.b).toBeInstanceOf(ReferenceExpression)
     expect(innerRefsInst.value.c).toBe(2)
-  })
-
-  it('should create the same result for the same input regardless of elements order', async () => {
-    const serialized = await serialize(elements)
-    const shuffledSer = await serialize(_.shuffle(elements))
-    expect(serialized).toEqual(shuffledSer)
   })
 
   it('should throw error if trying to deserialize a non element object', async () => {

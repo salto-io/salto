@@ -155,6 +155,7 @@ export const DEFAULT_FILTERS = [
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
+  articleFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
@@ -471,7 +472,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           subdomainToGuideChanges[subdomain]
         )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await brandRunner.onDeploy(guideChangesBeforeRestore)
+        await runner.onDeploy(guideChangesBeforeRestore)
 
         return {
           appliedChanges: guideChangesBeforeRestore,

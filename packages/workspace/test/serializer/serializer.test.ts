@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression, StaticFile, MapType, BuiltinTypes, isContainerType, isObjectType,
+  VariableExpression, StaticFile, MapType, BuiltinTypes, isObjectType,
   Element,
   isReferenceExpression,
   TypeReference,
@@ -229,35 +229,20 @@ describe('State/cache serialization', () => {
   })
 
   it('should not serialize resolved values', async () => {
-    // TemplateExpressions are discarded
-    const elementsToSerialize = _.sortBy(elements.filter(e => e.elemID.name !== 'also_me_template'), element => element.elemID.getFullName())
     const resolved = await resolve(
-      elementsToSerialize,
-      createInMemoryElementSource(elementsToSerialize)
+      [model],
+      createInMemoryElementSource(elements)
     )
     const serialized = await serialize(await awu(resolved).toArray(), 'keepRef')
     const deserialized = await deserialize(serialized)
-    const elementsWithoutRefs = elementsToSerialize
-      // we need to make sure the types are empty as well... Not just the refs
-      .map(e => {
-        if (isInstanceElement(e)) {
-          e.refType = new TypeReference(e.refType.elemID)
-        }
-        if (isContainerType(e)) {
-          e.refInnerType = new TypeReference(e.refInnerType.elemID)
-        }
-        if (isObjectType(e)) {
-          Object.values(e.fields).forEach(field => {
-            field.refType = new TypeReference(field.refType.elemID)
-          })
-        }
-        e.annotationRefTypes = _.mapValues(
-          e.annotationRefTypes,
-          refType => new TypeReference(refType.elemID)
-        )
-        return e
-      })
-    expect(deserialized[5]).toEqual(elementsWithoutRefs[5])
+    Object.values(model.fields).forEach(field => {
+      field.refType = new TypeReference(field.refType.elemID)
+    })
+    model.annotationRefTypes = _.mapValues(
+      model.annotationRefTypes,
+      refType => new TypeReference(refType.elemID)
+    )
+    expect(deserialized[0]).toEqual(model)
   })
 
   // Serializing our nacls to the state file should be the same as serializing the result of fetch

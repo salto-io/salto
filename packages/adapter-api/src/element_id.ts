@@ -153,9 +153,10 @@ export class ElemID {
   }
 
   private fullNameParts(): string[] {
-    return ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
+    const parts = ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
       ? [this.adapter, this.typeName]
       : [this.adapter, this.typeName, this.idType, ...this.nameParts]
+    return parts.filter(part => !_.isEmpty(part)) as string[]
   }
 
   private generateFullName(): string {

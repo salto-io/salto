@@ -36,6 +36,7 @@
     "@salto-io/adapter-components": "0.3.24",
     "@salto-io/adapter-utils": "0.3.24",
     "@salto-io/e2e-credentials-store": "0.3.24",
+    "@salto-io/file": "0.3.24",
     "@salto-io/logging": "0.3.24",
     "@salto-io/lowerdash": "0.3.24",
     "bottleneck": "^2.19.5",
@@ -46,6 +47,7 @@
     "jszip": "^3.2.2",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.27",
+    "readdirp": "^3.1.1",
     "requestretry": "^7.1.0",
     "wu": "^2.1.0"
   },

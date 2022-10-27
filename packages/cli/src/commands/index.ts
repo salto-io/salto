@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import fetchDef from './fetch'
+import fetchDiffDef from './fetch_diff'
 import envGroupDef from './env'
 import serviceGroupDef from './service'
 import deployDef from './deploy'
@@ -28,6 +29,7 @@ export default [
   envGroupDef,
   serviceGroupDef,
   fetchDef,
+  fetchDiffDef,
   deployDef,
   restoreDef,
   elementGroupDef,

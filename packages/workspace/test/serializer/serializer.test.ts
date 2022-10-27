@@ -213,9 +213,9 @@ describe('State/cache serialization', () => {
     expect(serialized).not.toMatch(subInstance.constructor.name)
   })
 
-  it('should serialize and deserialize elem id correctly', async () => {
+  it('should serialize and deserialize elem id correctly without saving the fullname', async () => {
     const serialized = await serialize([subInstance])
-    expect(serialized).toBe('[{"elemID":{"adapter":"salesforce","typeName":"test","idType":"instance","nameParts":["sub_me"]},"annotations":{"test":"annotation"},"annotationRefTypes":{},"path":["path","test"],"value":{"name":"me","num":7},"refType":{"elemID":{"adapter":"salesforce","typeName":"test","idType":"type","nameParts":[],"fullName":"salesforce.test"},"_salto_class":"TypeReference"},"_salto_class":"InstanceElement"}]')
+    expect(serialized).not.toContain(subInstance.elemID.getFullName())
     const deserialized = await deserialize(serialized)
     expect(deserialized[0].elemID.getFullName()).toBe(subInstance.elemID.getFullName())
   })
@@ -230,18 +230,14 @@ describe('State/cache serialization', () => {
 
   it('should not serialize resolved values', async () => {
     // TemplateExpressions are discarded
-    const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
+    const elementsToSerialize = _.sortBy(elements.filter(e => e.elemID.name !== 'also_me_template'), element => element.elemID.getFullName())
     const resolved = await resolve(
       elementsToSerialize,
       createInMemoryElementSource(elementsToSerialize)
     )
     const serialized = await serialize(await awu(resolved).toArray(), 'keepRef')
-    const deserialized = _.sortBy(
-      await deserialize(serialized),
-      element => element.elemID.getFullName()
-    )
-    const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
-    const sortedElementsWithoutRefs = sortedElements
+    const deserialized = await deserialize(serialized)
+    const elementsWithoutRefs = elementsToSerialize
       // we need to make sure the types are empty as well... Not just the refs
       .map(e => {
         if (isInstanceElement(e)) {
@@ -261,7 +257,7 @@ describe('State/cache serialization', () => {
         )
         return e
       })
-    expect(deserialized[5]).toEqual(sortedElementsWithoutRefs[5])
+    expect(deserialized[5]).toEqual(elementsWithoutRefs[5])
   })
 
   // Serializing our nacls to the state file should be the same as serializing the result of fetch
@@ -295,6 +291,13 @@ describe('State/cache serialization', () => {
     expect(innerRefsInst.value.a).toBeInstanceOf(ReferenceExpression)
     expect(innerRefsInst.value.b.b).toBeInstanceOf(ReferenceExpression)
     expect(innerRefsInst.value.c).toBe(2)
+  })
+
+  it('should keep the order of the elements the same', async () => {
+    const shuffledElements = _.shuffle(elements)
+    const shuffledDeserializedElements = await deserialize(await serialize(shuffledElements))
+    expect(shuffledDeserializedElements.map(e => e.elemID.getFullName()))
+      .toEqual(shuffledElements.map(e => e.elemID.getFullName()))
   })
 
   it('should throw error if trying to deserialize a non element object', async () => {

@@ -124,7 +124,7 @@ const getCacheSources = async (
   metadata: await getMetadata(cacheName, remoteMapCreator, persistent),
   elements: await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'elements'),
-    serialize: async (elements: Element[]) => serialize(_.sortBy(elements ?? [], element => element.elemID.getFullName()), 'keepRef'),
+    serialize: async (elements: Element[]) => serialize(elements ?? [], 'keepRef'),
     deserialize: async data => (deserialize(
       data,
       async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding),

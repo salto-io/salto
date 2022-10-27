@@ -219,7 +219,7 @@ export const serialize = async <T = Element>(
     }
     return undefined
   }
-  const cloneElements = elements.map(element => {
+  const clonedElements = elements.map(element => {
     const clone = _.cloneDeepWith(element, replacer)
     return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
   })
@@ -230,7 +230,7 @@ export const serialize = async <T = Element>(
   // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
   // circles
   // eslint-disable-next-line no-restricted-syntax
-  return JSON.stringify(cloneElements)
+  return JSON.stringify(clonedElements)
 }
 
 export type StaticFileReviver =

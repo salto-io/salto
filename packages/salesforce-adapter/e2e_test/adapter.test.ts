@@ -1515,7 +1515,7 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
               deploymentStatus: 'Deployed',
               pluralLabel: 'Tests',
-              sharingModel: 'ReadWrite',
+              sharingModel: 'ControlledByParent',
               nameField: { type: 'Text', label: 'Name' },
             },
             annotationRefsOrTypes: { ...customFieldsObject.annotationRefTypes,

@@ -63,7 +63,7 @@ import {
   customObjectWithFieldsName, gvsName, removeCustomObjectsWithVariousFields,
   summaryFieldName, verifyElementsExist,
 } from './setup'
-import { testHelpers } from './index'
+import { testHelpers } from './jest_environment'
 
 const { awu } = collections.asynciterable
 

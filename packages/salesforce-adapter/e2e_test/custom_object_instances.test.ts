@@ -32,7 +32,7 @@ import customObjectsInstancesFilter from '../src/filters/custom_objects_instance
 import { createCustomSettingsObject } from '../test/utils'
 import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
-import { testHelpers } from './index'
+import { testHelpers } from './jest_environment'
 
 const { awu } = collections.asynciterable
 

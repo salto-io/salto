@@ -39,7 +39,7 @@ import {
   getMetadataInstance, getMetadata, removeMetadataIfAlreadyExists, createAndVerify,
   removeElementAndVerify, fetchTypes, runFiltersOnFetch,
 } from './utils'
-import { testHelpers } from './index'
+import { testHelpers } from './jest_environment'
 
 describe('workflow filter', () => {
   // Set long timeout as we communicate with salesforce API

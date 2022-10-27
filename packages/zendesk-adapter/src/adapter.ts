@@ -90,6 +90,7 @@ import { Credentials } from './auth'
 import hcSectionCategoryFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
+import categoriesOrderFilter from './filters/categories_order'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -165,6 +166,7 @@ export const DEFAULT_FILTERS = [
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
   deployBrandedGuideTypesFilter,
+  categoriesOrderFilter,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

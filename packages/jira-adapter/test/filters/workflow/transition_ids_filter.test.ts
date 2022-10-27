@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -37,15 +37,7 @@ describe('transitionIdsFilter', () => {
   })
 
   describe('onFetch', () => {
-    it('should add transitionIds field to the type', async () => {
-      await filter.onFetch([workflowType])
-      expect(workflowType.fields.transitionIds).toBeDefined()
-      expect(workflowType.fields.transitionIds.annotations).toEqual({
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      })
-    })
-
-    it('should add transitionIds value', async () => {
+    it('should remove transition ids', async () => {
       const instance = new InstanceElement(
         'instance',
         workflowType,
@@ -59,11 +51,6 @@ describe('transitionIdsFilter', () => {
       )
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
-        transitionIds: {
-          '4-5-transition1': '1',
-          transition2: '2',
-          '6-7-': '3',
-        },
         transitions: [
           { name: 'transition1', from: ['4', '5'] },
           { name: 'transition2' },
@@ -72,18 +59,14 @@ describe('transitionIdsFilter', () => {
       })
     })
 
-    it('if there are no transitions should do nothing', async () => {
+    it('should do nothing if there are no transitions', async () => {
       const instance = new InstanceElement(
         'instance',
         workflowType,
-        {
-          name: 'name',
-        },
+        {},
       )
       await filter.onFetch([instance])
-      expect(instance.value).toEqual({
-        name: 'name',
-      })
+      expect(instance.value).toEqual({})
     })
   })
 })

@@ -20,7 +20,7 @@ import {
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { collections } from '@salto-io/lowerdash'
 import { SalesforceRecord } from '../src/client/types'
-import SalesforceAdapter, { testHelpers } from '../index'
+import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
@@ -32,6 +32,7 @@ import customObjectsInstancesFilter from '../src/filters/custom_objects_instance
 import { createCustomSettingsObject } from '../test/utils'
 import { CUSTOM_OBJECT, LIST_CUSTOM_SETTINGS_TYPE } from '../src/constants'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { testHelpers } from './jest_environment'
 
 const { awu } = collections.asynciterable
 

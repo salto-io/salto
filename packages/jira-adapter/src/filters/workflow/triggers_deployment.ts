@@ -17,13 +17,51 @@ import { AdditionChange, getChangeData } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
+import _ from 'lodash'
 import JiraClient from '../../client/client'
-import { getTransitionKey } from './transition_ids_filter'
-import { WorkflowInstance } from './types'
+import { Transition, Workflow, WorkflowInstance, workflowSchema } from './types'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
+
+const isValidTransitionResponse = (response: unknown): response is { values: [Workflow] } => {
+  const { error } = Joi.object({
+    values: Joi.array().min(1).max(1).items(workflowSchema),
+  }).unknown(true).required().validate(response)
+
+  if (error !== undefined) {
+    log.warn(`Unexpected workflows response from Jira: ${error}. ${safeJsonStringify(response)}`)
+    return false
+  }
+  return true
+}
+
+const getTransitionsFromService = async (
+  client: JiraClient,
+  workflowName: string,
+): Promise<Transition[]> => {
+  const response = await client.getSinglePage({
+    url: '/rest/api/3/workflow/search',
+    queryParams: {
+      expand: 'transitions',
+      workflowName,
+    },
+  })
+
+  if (!isValidTransitionResponse(response.data)) {
+    return []
+  }
+
+  const workflowValues = response.data.values[0]
+  return workflowValues.transitions ?? []
+}
+
+export const getTransitionKey = (transition: Transition): string => [
+  ..._.sortBy(transition.from ?? []),
+  transition.name ?? '',
+].join('-')
 
 export const deployTriggers = async (
   change: AdditionChange<WorkflowInstance>,
@@ -37,8 +75,11 @@ export const deployTriggers = async (
     throw new Error('Cannot deploy a workflow without a name')
   }
 
+  const transitions = await getTransitionsFromService(client, workflowName)
+  const keyToTransition = _.keyBy(transitions, getTransitionKey)
+
   await awu(instance.value.transitions ?? []).forEach(async transition => {
-    const transitionId = instance.value.transitionIds?.[getTransitionKey(transition)]
+    const transitionId = keyToTransition[getTransitionKey(transition)]?.id
 
     if (transitionId === undefined) {
       log.error(`Could not find the id of the transition ${transition.name} to deploy: ${safeJsonStringify(instance.value)}`)

@@ -2238,7 +2238,8 @@ describe('Test utils.ts', () => {
     "idType": "instance",
     "nameParts": [
       "test2"
-    ]
+    ],
+    "fullName": "salto.obj.instance.test2"
   },
   "annotations": {},
   "annotationRefTypes": {},

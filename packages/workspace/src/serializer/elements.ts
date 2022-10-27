@@ -141,7 +141,7 @@ function isSerializedClass(value: any): value is SerializedClass {
     && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serialize = async <T = Element>(
+export const serialize = async <T extends { elemID: ElemID } = Element>(
   elements: T[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
   storeStaticFile?: (file: StaticFile) => Promise<void>
@@ -162,6 +162,10 @@ export const serialize = async <T = Element>(
     }
     return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding')
   }
+
+  const elemIdReplacer = (id: ElemID): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> =>
+    _.pick(id, 'adapter', 'typeName', 'idType', 'nameParts')
+
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {
     if (e.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(e)) {
@@ -209,14 +213,23 @@ export const serialize = async <T = Element>(
       if (isSaltoSerializable(v)) {
         return saltoClassReplacer(_.cloneDeepWith(v, replacer))
       }
+      if (v instanceof ElemID) {
+        return elemIdReplacer(v)
+      }
     }
     return undefined
   }
   const cloneElements = elements.map(element => {
     const clone = _.cloneDeepWith(element, replacer)
-    return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
+    return {
+      element: isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone,
+      id: element.elemID,
+    }
   })
-  const sortedElements = _.sortBy(cloneElements, e => e.elemID.getFullName())
+  const sortedElements = _(cloneElements)
+    .sortBy(({ id }) => id.getFullName())
+    .map(({ element }) => element)
+    .value()
 
   // Avoiding Promise.all to not reach Promise.all limit
   await awu(promises).forEach(promise => promise)

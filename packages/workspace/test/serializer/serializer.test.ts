@@ -213,6 +213,13 @@ describe('State/cache serialization', () => {
     expect(serialized).not.toMatch(subInstance.constructor.name)
   })
 
+  it('should serialize and deserialize elem id correctly', async () => {
+    const serialized = await serialize([subInstance])
+    expect(serialized).toBe('[{"elemID":{"adapter":"salesforce","typeName":"test","idType":"instance","nameParts":["sub_me"]},"annotations":{"test":"annotation"},"annotationRefTypes":{},"path":["path","test"],"value":{"name":"me","num":7},"refType":{"elemID":{"adapter":"salesforce","typeName":"test","idType":"type","nameParts":[],"fullName":"salesforce.test"},"_salto_class":"TypeReference"},"_salto_class":"InstanceElement"}]')
+    const deserialized = await deserialize(serialized)
+    expect(deserialized[0].elemID.getFullName()).toBe(subInstance.elemID.getFullName())
+  })
+
   it('should call the static files handler with the static files', async () => {
     const file = new StaticFile({ filepath: 'filepath', content: Buffer.from('content') })
     subInstance.value.a = file

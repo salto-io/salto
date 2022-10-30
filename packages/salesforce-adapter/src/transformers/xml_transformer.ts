@@ -45,7 +45,7 @@ export const metadataTypesWithAttributes = [
 ]
 
 
-const PACKAGE = 'unpackaged'
+export const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'
 const METADATA_XML_SUFFIX = '-meta.xml'
 const UNFILED_PUBLIC_FOLDER = 'unfiled$public'
@@ -104,6 +104,7 @@ type ComplexType = {
     Record<FieldName, Record<FileName, Content>>
   sortMetadataValues?(metadataValues: Values): Values
   getMetadataFilePath(instanceName: string, values?: Values): string
+  folderName: string
 }
 
 type ComplexTypesMap = {
@@ -134,7 +135,7 @@ const auraTypeToFileSuffix: Record<string, string> = {
   Tokens: '.tokens',
 }
 
-const complexTypesMap: ComplexTypesMap = {
+export const complexTypesMap: ComplexTypesMap = {
   /**
    * AuraDefinitionBundle has several base64Binary content fields. We should use its content fields
    * suffix in order to set their content to the correct field
@@ -184,6 +185,7 @@ const complexTypesMap: ComplexTypesMap = {
       }
       return `${PACKAGE}/aura/${instanceName}/${instanceName}${auraTypeToFileSuffix[type]}${METADATA_XML_SUFFIX}`
     },
+    folderName: 'aura',
   },
   /**
    * LightningComponentBundle has array of base64Binary content fields under LWC_RESOURCES field.
@@ -212,13 +214,14 @@ const complexTypesMap: ComplexTypesMap = {
         .concat([[TARGET_CONFIGS, metadataValues[TARGET_CONFIGS]]])),
     getMetadataFilePath: (instanceName: string) =>
       `${PACKAGE}/lwc/${instanceName}/${instanceName}.js${METADATA_XML_SUFFIX}`,
+    folderName: 'lwc',
   },
 }
 
-const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
+export const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
   Object.keys(complexTypesMap).includes(typeName)
 
-const xmlToValues = (xmlAsString: string, type: string): Values => {
+export const xmlToValues = (xmlAsString: string): { values: Values; typeName: string } => {
   const parsedXml = parser.parse(
     xmlAsString,
     {
@@ -228,13 +231,21 @@ const xmlToValues = (xmlAsString: string, type: string): Values => {
     }
   )
 
-  const values = parsedXml[type]
+  const parsedEntries = Object.entries<Values>(parsedXml)
+  if (parsedEntries.length !== 1) {
+    // Should never happen
+    log.debug('Found %d root nodes in xml: %s', parsedEntries.length, Object.keys(parsedXml).join(','))
+    if (parsedEntries.length === 0) {
+      return { typeName: '', values: {} }
+    }
+  }
+  const [typeName, values] = parsedEntries[0]
   if (!_.isPlainObject(values)) {
-    log.debug('Could not find values for type %s in xml:\n%s', type, xmlAsString)
-    return {}
+    log.debug('Could not find values for type %s in xml:\n%s', typeName, xmlAsString)
+    return { typeName, values: {} }
   }
   const xmlnsAttributes = ['xmlns', 'xmlns:xsi'].map(attr => `${XML_ATTRIBUTE_PREFIX}${attr}`)
-  return _.omit(values, xmlnsAttributes)
+  return { typeName, values: _.omit(values, xmlnsAttributes) }
 }
 
 const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
@@ -271,7 +282,7 @@ export const fromRetrieveResult = async (
     }
     const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
     const metadataValues = Object.assign(
-      xmlToValues(instanceValuesBuffer.toString(), file.type),
+      xmlToValues(instanceValuesBuffer.toString()).values,
       { [INSTANCE_FULL_NAME_FIELD]: file.fullName }
     )
 

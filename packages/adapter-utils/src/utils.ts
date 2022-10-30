@@ -439,7 +439,7 @@ export type GetLookupNameFuncArgs = {
   ref: ReferenceExpression
   field?: Field
   path?: ElemID
-  element?: Element
+  element: Element
 }
 export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Promise<Value>
 
@@ -543,7 +543,7 @@ export const restoreValues: RestoreValuesFunc = async (
 
     const ref = allReferencesPaths.get(path.getFullName())
     if (ref !== undefined) {
-      const refValue = await getLookUpName({ ref, field, path })
+      const refValue = await getLookUpName({ ref, field, path, element: targetElement })
       if (isEqualResolvedValues(refValue, value)) {
         return ref
       }
@@ -975,12 +975,15 @@ export const createDefaultInstanceFromType = async (name: string, objectType: Ob
 
 type Replacer = (key: string, value: Value) => Value
 
-export const referenceExpressionStringifyReplacer: Replacer = (_key, value) => {
+export const elementExpressionStringifyReplacer: Replacer = (_key, value) => {
   if (isReferenceExpression(value)) {
     return `ReferenceExpression(${value.elemID.getFullName()}, ${value.value ? '<omitted>' : '<no value>'})`
   }
   if (isTypeReference(value)) {
     return `TypeReference(${value.elemID.getFullName()}, ${value.type ? '<omitted>' : '<no value>'})`
+  }
+  if (value instanceof ElemID) {
+    return `ElemID(${value.getFullName()})`
   }
   return value
 }

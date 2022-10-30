@@ -27,6 +27,7 @@ import { deployChange, deployChanges } from '../deployment'
 
 export const TRANSLATION_PARENT_TYPE_NAMES = ['section', 'category']
 
+// saves the id, should work between brands as id is unique.
 export const removedTranslationParentId: number[] = []
 
 // not an instanceElement as it does not have a value
@@ -87,7 +88,7 @@ export const removeNameAndDescription = (elem: InstanceElement): void => {
   delete elem.value.description
 }
 
-const addRemovalChangesId = (changes: Change<InstanceElement>[]): void => {
+export const addRemovalChangesId = (changes: Change<InstanceElement>[]): void => {
   changes
     .filter(isRemovalChange)
     .forEach(change => removedTranslationParentId.push(getChangeData(change).value.id))

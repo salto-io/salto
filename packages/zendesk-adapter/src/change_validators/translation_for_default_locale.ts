@@ -25,7 +25,7 @@ import { isTranslation, TranslationType } from '../filters/help_center_section_a
 import { lookupFunc } from '../filters/field_references'
 
 const { awu } = collections.asynciterable
-const PARENTS_TYPE_NAMES = ['section', 'category']
+const PARENTS_TYPE_NAMES = ['section', 'category', 'article']
 
 type ParentType = InstanceElement & {
   value: {

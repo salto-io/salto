@@ -28,7 +28,7 @@ import {
 } from '../src/filters/custom_object_split'
 import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
-import { allSystemFields } from '../src/adapter'
+import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 export const findElements = (
@@ -287,7 +287,7 @@ export const createCustomSettingsObject = (
 }
 
 export const defaultFilterContext: FilterContext = {
-  systemFields: allSystemFields,
+  systemFields: SYSTEM_FIELDS,
   fetchProfile: buildFetchProfile({}),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,

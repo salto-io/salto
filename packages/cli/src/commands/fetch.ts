@@ -32,6 +32,7 @@ import { updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } 
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
 import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
+import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
 
 const log = logger(module)
 const { series } = promises.array
@@ -250,12 +251,11 @@ const shouldRecommendAlignMode = async (
 type FetchArgs = {
   force: boolean
   stateOnly: boolean
-  mode: nacl.RoutingMode
   regenerateSaltoIds: boolean
   fromWorkspace?: string
   fromEnv?: string
   fromState: boolean
-} & AccountsArg & EnvArg
+} & AccountsArg & EnvArg & UpdateModeArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
   input,
@@ -348,16 +348,7 @@ const fetchDef = createWorkspaceCommand({
       },
       ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,
-      {
-        name: 'mode',
-        alias: 'm',
-        required: false,
-        description: 'Choose a fetch mode. Options - [default, align]',
-        type: 'string',
-        // 'override' and 'isolated' are undocumented
-        choices: ['default', 'align', 'override', 'isolated'],
-        default: 'default',
-      },
+      UPDATE_MODE_OPTION,
       {
         name: 'regenerateSaltoIds',
         alias: 'r',

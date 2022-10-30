@@ -31,7 +31,11 @@ import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
 import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
-import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
+import {
+  ZENDESK,
+  BRAND_LOGO_TYPE_NAME,
+  BRAND_TYPE_NAME,
+} from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -90,7 +94,7 @@ import { Credentials } from './auth'
 import hcSectionCategoryFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
-import hcParentSection from './filters/help_center_parent_to_section'
+import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 
 
 
@@ -225,15 +229,11 @@ const zendeskGuideEntriesFunc = (
         responseEntries.forEach(entry => {
           entry.brand = brandInstance.value.id
         })
+        // need to add direct parent to a section as it is possible to have a section inside
+        // a section and therefore the elemeID will change accordingly.
         if (responseEntryName === SECTIONS_TYPE_NAME) {
           responseEntries.forEach(entry => {
-            if (entry.parent_section_id !== null) {
-              entry.direct_parent = entry.parent_section_id
-              entry.parent_type = 'section'
-            } else {
-              entry.direct_parent = entry.category_id
-              entry.parent_type = 'category'
-            }
+            addParentFields(entry)
           })
         }
         if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {

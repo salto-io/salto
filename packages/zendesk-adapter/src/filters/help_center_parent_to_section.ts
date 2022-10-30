@@ -17,30 +17,32 @@ import {
   Change,
   getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, toChange,
+  isAdditionOrModificationChange, toChange, Values,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './help_center_section_and_category'
-
-export const SECTION_TYPE_NAME = 'section'
+import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
 
 const deleteParentFields = (elem: InstanceElement): void => {
   delete elem.value.direct_parent
   delete elem.value.parent_type
 }
 
-const addParentFields = (elem: InstanceElement): void => {
-  if (elem.value.parent_section_id !== undefined) {
-    elem.value.direct_parent = elem.value.parent_section_id
-    elem.value.parent_type = 'section'
+export const addParentFields = (value: Values): void => {
+  if (value.parent_section_id === undefined || value.parent_section_id === null) {
+    value.direct_parent = value.category_id
+    value.parent_type = CATEGORY_TYPE_NAME
   } else {
-    elem.value.direct_parent = elem.value.category_id
-    elem.value.parent_type = 'category'
+    value.direct_parent = value.parent_section_id
+    value.parent_type = SECTION_TYPE_NAME
   }
 }
 
+// the fields 'direct_parent' and 'parent_type' are created during fetch, therefore this filter
+// omits these fields in preDeploy. and adds them in onDeploy. During deploy, the field
+// 'parent_section_id' is ignored and is deployed as modification change separately later.
 const filterCreator: FilterCreator = ({ client, config }) => ({
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
@@ -60,7 +62,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         await deployChange(change, client, config.apiDefinitions, ['translations', 'parent_section_id'])
       }
     )
-    // need to deploy separately parent_section_id if exists
+    // need to deploy separately parent_section_id if exists since zendesk API does not support
+    // parent_section_id if the data request has more fields in it.
     await deployChanges(
       parentChanges,
       async change => {
@@ -88,7 +91,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     changes
       .filter(change => getChangeData(change).elemID.typeName === SECTION_TYPE_NAME)
       .map(getChangeData)
-      .forEach(addParentFields)
+      .forEach(elem => addParentFields(elem.value))
   },
 })
 export default filterCreator

@@ -110,6 +110,7 @@ const CUSTOM_OBJECT_VALIDATION_ERROR = 'An error occurred during custom object v
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
 const objectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\(([a-z0-9A-Z_]+)\\)`, 'gm')
+const deployObjectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 const manifestErrorRegex = RegExp('^Details: The manifest ([a-z0-9_ ]+)', 'm')
@@ -950,7 +951,7 @@ export default class SdfClient {
       // we'll get here when the deploy failed in the validation phase.
       // in this case we're looking for validation error message lines.
       const validationErrorObjects = getGroupItemFromRegex(
-        errorMessage, objectValidationErrorRegex, OBJECT_ID
+        errorMessage, deployObjectValidationErrorRegex, OBJECT_ID
       )
       return validationErrorObjects.length > 0
         ? new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))

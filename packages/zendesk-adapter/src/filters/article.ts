@@ -20,6 +20,7 @@ import {
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { ARTICLE_TYPE_NAME } from '../constants'
+import { addRemovalChangesId } from './help_center_section_and_category'
 
 /**
  * Deploys articles
@@ -32,6 +33,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         (getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
         && !isRemovalChange(change),
     )
+    addRemovalChangesId(articleChanges)
     const deployResult = await deployChanges(
       articleChanges,
       async change => {

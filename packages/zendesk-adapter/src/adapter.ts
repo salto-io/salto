@@ -138,6 +138,7 @@ export const DEFAULT_FILTERS = [
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
+  articleFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,
   fieldReferencesFilter,
@@ -151,7 +152,6 @@ export const DEFAULT_FILTERS = [
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
-  articleFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,

@@ -1676,7 +1676,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/api/v2/help_center/articles/{article_id}/translations',
+        url: '/help_center/articles/{article_id}/translations',
         method: 'post',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1684,7 +1684,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/api/v2/help_center/articles/{article_id}/translations/{locale}',
+        url: '/help_center/articles/{article_id}/translations/{locale}',
         method: 'put',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1693,7 +1693,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/api/v2/help_center/translations/{translation_id}',
+        url: '/help_center/translations/{translation_id}',
         method: 'delete',
         urlParamsToFields: {
           translation_id: 'id',

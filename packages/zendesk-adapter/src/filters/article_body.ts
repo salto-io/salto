@@ -69,7 +69,7 @@ const updateArticleBody = (
   const processedArticleBody = extractTemplate(
     originalArticleBody,
     [ARTICLE_REF_URL_REGEX],
-    articleUrl => referenceArticleUrl({ articleUrl, brandInstances, articleInstances}),
+    articleUrl => referenceArticleUrl({ articleUrl, brandInstances, articleInstances }),
   )
   articleInstace.value.body = processedArticleBody
 }

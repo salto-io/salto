@@ -140,7 +140,7 @@ describe('brand logo filter', () => {
     beforeEach(() => {
       mockGet = jest.spyOn(client, 'getResource')
       mockGet.mockImplementation(params => {
-        if (params.url === `/brands/${logoId}/test.png`) {
+        if (params.url === `/api/v2/brands/${logoId}/test.png`) {
           return {
             status: 200,
             data: content,
@@ -150,7 +150,7 @@ describe('brand logo filter', () => {
       })
       mockBrandGet = jest.spyOn(client, 'getSinglePage')
       mockBrandGet.mockImplementation(params => {
-        if (params.url === `/brands/${brandId}`) {
+        if (params.url === `/api/v2/brands/${brandId}`) {
           return {
             status: 200,
             data: { brand: { logo: { id: logoId } } },
@@ -203,7 +203,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -235,7 +235,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(1)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -260,7 +260,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(1)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -291,7 +291,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -321,7 +321,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })

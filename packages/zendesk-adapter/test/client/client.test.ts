@@ -33,7 +33,7 @@ describe('client', () => {
     it('should return an empty result when there is a 404 response', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet().replyOnce(404)
-      const res = await client.getSinglePage({ url: '/routing/attributes' })
+      const res = await client.getSinglePage({ url: '/api/v2/routing/attributes' })
       expect(res.data).toEqual([])
       expect(res.status).toEqual(404)
     })
@@ -54,13 +54,13 @@ describe('client', () => {
     it('should throw when there is a 403 response but we did not ask for workspaces or custom statuses', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
-      await expect(client.getSinglePage({ url: '/routing/attributes' })).rejects.toThrow()
+      await expect(client.getSinglePage({ url: '/api/v2/routing/attributes' })).rejects.toThrow()
     })
     it('should throw if there is no status in the error', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet().replyOnce(() => { throw new Error('Err') })
       await expect(
-        client.getSinglePage({ url: '/routing/attributes' })
+        client.getSinglePage({ url: '/api/v2/routing/attributes' })
       ).rejects.toThrow()
     })
   })

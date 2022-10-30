@@ -61,7 +61,7 @@ Promise<void> => {
     if (isValidIntervals(intervals)) {
       try {
         await client.put({
-          url: `/business_hours/schedules/${changedElement.value.id}/workweek`,
+          url: `/api/v2/business_hours/schedules/${changedElement.value.id}/workweek`,
           data: { workweek: { intervals } },
         })
       } catch (e) {

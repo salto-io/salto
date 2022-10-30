@@ -95,7 +95,7 @@ describe('macro attachment filter', () => {
     it('should create macro attachment instances', async () => {
       mockGet = jest.spyOn(client, 'getSinglePage')
       mockGet.mockImplementation(params => {
-        if (params.url === `/macros/${macroInstance.value.id}/attachments`) {
+        if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
           return {
             status: 200,
             data: {
@@ -110,7 +110,7 @@ describe('macro attachment filter', () => {
             },
           }
         }
-        if (params.url === `/macros/attachments/${attachmentId}/content`) {
+        if (params.url === `/api/v2/macros/attachments/${attachmentId}/content`) {
           return {
             status: 200,
             data: content,
@@ -144,7 +144,7 @@ describe('macro attachment filter', () => {
       it('should return no attachments if response is an array', async () => {
         mockGet = jest.spyOn(client, 'getSinglePage')
         mockGet.mockImplementation(params => {
-          if (params.url === `/macros/${macroInstance.value.id}/attachments`) {
+          if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
             return {
               status: 200,
               data: [{
@@ -159,7 +159,7 @@ describe('macro attachment filter', () => {
               }],
             }
           }
-          if (params.url === `/macros/attachments/${attachmentId}/content`) {
+          if (params.url === `/api/v2/macros/attachments/${attachmentId}/content`) {
             return {
               status: 200,
               data: content,
@@ -179,7 +179,7 @@ describe('macro attachment filter', () => {
       it('should return no attachments if attachment response is in invalid format', async () => {
         mockGet = jest.spyOn(client, 'getSinglePage')
         mockGet.mockImplementation(params => {
-          if (params.url === `/macros/${macroInstance.value.id}/attachments`) {
+          if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
             return {
               status: 200,
               data: {
@@ -193,7 +193,7 @@ describe('macro attachment filter', () => {
               },
             }
           }
-          if (params.url === `/macros/attachments/${attachmentId}/content`) {
+          if (params.url === `/api/v2/macros/attachments/${attachmentId}/content`) {
             return {
               status: 200,
               data: content,
@@ -213,7 +213,7 @@ describe('macro attachment filter', () => {
       it('should not return attachment if its content is invalid', async () => {
         mockGet = jest.spyOn(client, 'getSinglePage')
         mockGet.mockImplementation(params => {
-          if (params.url === `/macros/${macroInstance.value.id}/attachments`) {
+          if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
             return {
               status: 200,
               data: {
@@ -228,7 +228,7 @@ describe('macro attachment filter', () => {
               },
             }
           }
-          if (params.url === `/macros/attachments/${attachmentId}/content`) {
+          if (params.url === `/api/v2/macros/attachments/${attachmentId}/content`) {
             return {
               status: 200,
               data: 123456,
@@ -305,7 +305,7 @@ describe('macro attachment filter', () => {
       ])
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(mockPost).toHaveBeenCalledWith({
-        url: '/macros/attachments',
+        url: '/api/v2/macros/attachments',
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -372,7 +372,7 @@ describe('macro attachment filter', () => {
       ])
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(mockPost).toHaveBeenCalledWith({
-        url: '/macros/attachments',
+        url: '/api/v2/macros/attachments',
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -444,7 +444,7 @@ describe('macro attachment filter', () => {
       ])
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(mockPost).toHaveBeenCalledWith({
-        url: '/macros/attachments',
+        url: '/api/v2/macros/attachments',
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -531,7 +531,7 @@ describe('macro attachment filter', () => {
       ])
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(mockPost).toHaveBeenCalledWith({
-        url: '/macros/attachments',
+        url: '/api/v2/macros/attachments',
         data: expect.any(FormData),
         headers: expect.anything(),
       })

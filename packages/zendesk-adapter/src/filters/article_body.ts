@@ -25,24 +25,36 @@ const BODY_FIELD = 'body'
 
 const ARTICLE_REF_URL_REGEX = /(https:\/\/.*\.zendesk\.com\/hc\/.*\/articles\/\d*)/g
 const BASE_URL_REGEX = /(https:\/\/.*\.zendesk\.com)/
+const ARTICLE_ID_URL_REGEX = /\/articles\/(\d*)/
 
-const referenceArticleUrl = (articleUrl: string, brandInstances: InstanceElement[]): string => {
-  const brand = brandInstances
-    .find(brandInstance => brandInstance.value.brand_url === articleUrl.match(BASE_URL_REGEX))
-  return `\${${brand?.elemID.getFullName()}}/hc...`
+// const BRANDS_SKIP_LIST = ['https://support.zendesk.com']
+
+const referenceArticleUrl = (
+  articleUrl: string,
+  brandInstances: InstanceElement[],
+  articleInstances: InstanceElement[],
+): string => {
+  const urlSubdomain = articleUrl.match(BASE_URL_REGEX)?.pop()
+  const urlBrand = brandInstances
+    .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
+  const urlArticleId = articleUrl.match(ARTICLE_ID_URL_REGEX)?.pop()
+  const referencedArticle = articleInstances
+    .find(articleInstance => articleInstance.value.id.toString() === urlArticleId)
+  return `\${${urlBrand?.elemID.getFullName()}}/hc/en-us/articles/\${${referencedArticle?.elemID.getFullName()}}`
 }
 
 const updateArticleBody = (
   articleInstace: InstanceElement,
   brandInstances: InstanceElement[],
+  articleInstances: InstanceElement[],
 ): void => {
   const originalArticleBody = articleInstace.value[BODY_FIELD]
   if (!_.isString(originalArticleBody)) {
     return
   }
-  const processedArticleBody = originalArticleBody.replaceAll(
+  const processedArticleBody = originalArticleBody.replace(
     ARTICLE_REF_URL_REGEX,
-    articleUrl => referenceArticleUrl(articleUrl, brandInstances),
+    articleUrl => referenceArticleUrl(articleUrl, brandInstances, articleInstances),
   )
   articleInstace.value.body = processedArticleBody
 }
@@ -55,11 +67,15 @@ const filterCreator: FilterCreator = () => ({
     const brandInstances = elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
+    const articleInstances = elements
+      .filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
     elements
       .filter(isInstanceElement)
       .filter(instance => ARTICLE_TYPES.includes(instance.elemID.typeName))
       .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
-      .forEach(articleInstance => updateArticleBody(articleInstance, brandInstances))
+      .forEach(articleInstance => (
+        updateArticleBody(articleInstance, brandInstances, articleInstances)))
   },
 })
 

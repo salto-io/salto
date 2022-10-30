@@ -3791,7 +3791,7 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('Deploy QuickAction', () => {
       let quickAction: InstanceElement
       beforeAll(async () => {
-        quickAction = createInstanceElement({ fullName: 'onec', quickActionLayout: { quickActionLayoutColumns: [{ field: 'Title', uiBehavior: 'Edit' }, {}] } }, mockTypes.QuickAction)
+        quickAction = createInstanceElement({ fullName: 'onec', optionsCreateFeedItem: true, standardLabel: 'LogACall', type: 'LogACall', targetObject: 'Task', quickActionLayout: { layoutSectionStyle: 'TwoColumnsLeftToRight', quickActionLayoutColumns: [{ quickActionLayoutItems: [{ field: 'Subject', uiBehavior: 'Edit' }] }, {}] } }, mockTypes.QuickAction)
       })
       it('should deploy empty quickActionLayoutColumns without deleting it', async () => {
         const changes: Change[] = [{

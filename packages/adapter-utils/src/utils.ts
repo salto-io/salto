@@ -514,7 +514,7 @@ const isEqualResolvedValues = (
 )
 
 export const restoreValues: RestoreValuesFunc = async (
-  source, targetElement, getLookUpName, allowEmpty = false
+  source, targetElement, getLookUpName, allowEmpty = true
 ) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()

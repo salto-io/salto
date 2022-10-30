@@ -472,6 +472,7 @@ describe('Field references', () => {
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_client_id', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
 
       expect(res).toEqual(2)
@@ -485,6 +486,7 @@ describe('Field references', () => {
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_client_id', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
 
       expect(res).toEqual(3)
@@ -498,6 +500,7 @@ describe('Field references', () => {
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_collection_ids', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
 
       expect(res).toEqual('name')
@@ -511,6 +514,7 @@ describe('Field references', () => {
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'api_access_profile') }), 'api_collection_ids', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
 
       expect(res).toEqual(2)
@@ -524,6 +528,7 @@ describe('Field references', () => {
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'someType') }), 'api_collection_ids', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
 
       expect(res).toEqual({ id: 2, name: 'name' })
@@ -536,6 +541,7 @@ describe('Field references', () => {
           { id: 2, name: 'name' },
         ),
         path: new ElemID('adapter', 'somePath'),
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
 
       expect(res).toEqual({ id: 2, name: 'name' })
@@ -579,6 +585,7 @@ describe('Field references', () => {
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'obj2') }), 'refValue', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
       })
 
       expect(res).toEqual(2)

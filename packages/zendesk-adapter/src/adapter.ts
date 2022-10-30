@@ -140,7 +140,6 @@ export const DEFAULT_FILTERS = [
   removeBrandLogoFieldFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
-  articleBodyFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,
   fieldReferencesFilter,
@@ -160,6 +159,7 @@ export const DEFAULT_FILTERS = [
   referencedIdFieldsFilter,
   // need to be after referencedIdFieldsFilter as 'name' is removed
   fetchCategorySection,
+  articleBodyFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,

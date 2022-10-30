@@ -81,6 +81,7 @@ import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import articleFilter from './filters/article'
+import articleBodyFilter from './filters/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
@@ -139,6 +140,7 @@ export const DEFAULT_FILTERS = [
   removeBrandLogoFieldFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
+  articleBodyFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,
   fieldReferencesFilter,

@@ -468,7 +468,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           subdomainToGuideChanges[subdomain]
         )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await runner.onDeploy(guideChangesBeforeRestore)
+        await brandRunner.onDeploy(guideChangesBeforeRestore)
 
         return {
           appliedChanges: guideChangesBeforeRestore,

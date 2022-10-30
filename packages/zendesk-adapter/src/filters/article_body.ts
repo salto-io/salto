@@ -15,10 +15,15 @@
 */
 import _ from 'lodash'
 import {
-  InstanceElement, isInstanceElement,
+  Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
+  isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
+
+const { awu } = collections.asynciterable
 
 const ARTICLE_TYPES = [ARTICLE_TYPE_NAME, 'article_translation']
 const BODY_FIELD = 'body'
@@ -33,14 +38,21 @@ const referenceArticleUrl = (
   articleUrl: string,
   brandInstances: InstanceElement[],
   articleInstances: InstanceElement[],
-): string => {
+): TemplatePart[] => {
   const urlSubdomain = articleUrl.match(BASE_URL_REGEX)?.pop()
   const urlBrand = brandInstances
     .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
   const urlArticleId = articleUrl.match(ARTICLE_ID_URL_REGEX)?.pop()
   const referencedArticle = articleInstances
     .find(articleInstance => articleInstance.value.id.toString() === urlArticleId)
-  return `\${${urlBrand?.elemID.getFullName()}}/hc/en-us/articles/\${${referencedArticle?.elemID.getFullName()}}`
+  if (!isInstanceElement(urlBrand) || !isInstanceElement(referencedArticle)) {
+    return [articleUrl]
+  }
+  return [
+    new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url),
+    '/hc/en-us/articles/',
+    new ReferenceExpression(referencedArticle.elemID, referencedArticle),
+  ]
 }
 
 const updateArticleBody = (
@@ -52,31 +64,83 @@ const updateArticleBody = (
   if (!_.isString(originalArticleBody)) {
     return
   }
-  const processedArticleBody = originalArticleBody.replace(
-    ARTICLE_REF_URL_REGEX,
-    articleUrl => referenceArticleUrl(articleUrl, brandInstances, articleInstances),
+  const processedArticleBody = extractTemplate(
+    originalArticleBody,
+    [ARTICLE_REF_URL_REGEX],
+    expression => referenceArticleUrl(expression, brandInstances, articleInstances),
   )
   articleInstace.value.body = processedArticleBody
+}
+
+const prepRef = (part: ReferenceExpression): TemplatePart => {
+  if (part.elemID.isTopLevel()) {
+    return part.value.value.id.toString()
+  }
+  if (!_.isString(part.value)) {
+    throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
+  }
+  return part.value
 }
 
 /**
  * Process body value in article instances to reference other objects
  */
-const filterCreator: FilterCreator = () => ({
-  onFetch: async elements => {
-    const brandInstances = elements
-      .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
-    const articleInstances = elements
-      .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => ARTICLE_TYPES.includes(instance.elemID.typeName))
-      .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
-      .forEach(articleInstance => (
-        updateArticleBody(articleInstance, brandInstances, articleInstances)))
-  },
-})
+const filterCreator: FilterCreator = () => {
+  const deployTemplateMapping: Record<string, TemplateExpression> = {}
+  return {
+    onFetch: async elements => {
+      const brandInstances = elements
+        .filter(isInstanceElement)
+        .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
+      const articleInstances = elements
+        .filter(isInstanceElement)
+        .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
+      elements
+        .filter(isInstanceElement)
+        .filter(instance => ARTICLE_TYPES.includes(instance.elemID.typeName))
+        .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
+        .forEach(articleInstance => (
+          updateArticleBody(articleInstance, brandInstances, articleInstances)))
+    },
+    preDeploy: async (changes: Change<InstanceElement>[]) => {
+      await awu(changes)
+        .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+        .forEach(async change => {
+          await applyFunctionToChangeData<Change<InstanceElement>>(
+            change,
+            instance => {
+              replaceTemplatesWithValues(
+                { values: [instance.value], fieldName: 'body' },
+                deployTemplateMapping,
+                prepRef,
+              )
+              return instance
+            }
+          )
+        })
+    },
+
+    onDeploy: async (changes: Change<InstanceElement>[]) => {
+      await awu(changes)
+        .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+        .forEach(async change => {
+          await applyFunctionToChangeData<Change<InstanceElement>>(
+            change,
+            instance => {
+              resolveTemplates(
+                { values: [instance.value], fieldName: 'body' },
+                deployTemplateMapping,
+              )
+              return instance
+            }
+          )
+        })
+    },
+  }
+}
 
 export default filterCreator

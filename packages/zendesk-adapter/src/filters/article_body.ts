@@ -106,7 +106,7 @@ const filterCreator: FilterCreator = () => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+        .filter(change => ARTICLE_TYPES.includes(getChangeData(change).elemID.typeName))
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,
@@ -126,7 +126,7 @@ const filterCreator: FilterCreator = () => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+        .filter(change => ARTICLE_TYPES.includes(getChangeData(change).elemID.typeName))
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,

@@ -120,8 +120,7 @@ describe('translationForDefaultLocaleValidator',
           elemID: invalidSectionInstance.elemID,
           severity: 'Error',
           message: `${invalidSectionInstance.elemID.typeName} instance does not have a translation for the source locale`,
-          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a 
-      translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
+          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
         }])
       })
 
@@ -180,8 +179,7 @@ describe('translationForDefaultLocaleValidator',
           elemID: invalidArticleInstance.elemID,
           severity: 'Error',
           message: `${invalidArticleInstance.elemID.typeName} instance does not have a translation for the source locale`,
-          detailedMessage: `${invalidArticleInstance.elemID.typeName} instance "${invalidArticleInstance.elemID.name}" must have a 
-      translation for the source locale ${invalidArticleInstance.value.source_locale.value.value.id}`,
+          detailedMessage: `${invalidArticleInstance.elemID.typeName} instance "${invalidArticleInstance.elemID.name}" must have a translation for the source locale ${invalidArticleInstance.value.source_locale.value.value.id}`,
         }])
       })
 

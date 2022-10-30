@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
   isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
@@ -23,9 +24,9 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
-const ARTICLE_TYPES = [ARTICLE_TYPE_NAME, 'article_translation']
 const BODY_FIELD = 'body'
 
 const ARTICLE_REF_URL_REGEX = /(https:\/\/.*\.zendesk\.com\/hc\/.*\/articles\/\d*)/g
@@ -97,7 +98,7 @@ const filterCreator: FilterCreator = () => {
       const articleInstances = instances
         .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
       instances
-        .filter(instance => ARTICLE_TYPES.includes(instance.elemID.typeName))
+        .filter(instance => instance.elemID.typeName === 'article_translation')
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
           updateArticleBody(articleInstance, brandInstances, articleInstances)))
@@ -106,16 +107,20 @@ const filterCreator: FilterCreator = () => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => ARTICLE_TYPES.includes(getChangeData(change).elemID.typeName))
+        .filter(change => getChangeData(change).elemID.typeName === 'article_translation')
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,
             instance => {
-              replaceTemplatesWithValues(
-                { values: [instance.value], fieldName: 'body' },
-                deployTemplateMapping,
-                prepRef,
-              )
+              try {
+                replaceTemplatesWithValues(
+                  { values: [instance.value], fieldName: 'body' },
+                  deployTemplateMapping,
+                  prepRef,
+                )
+              } catch (e) {
+                log.error('Error parsing article body value in deployment', e)
+              }
               return instance
             }
           )
@@ -126,7 +131,7 @@ const filterCreator: FilterCreator = () => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => ARTICLE_TYPES.includes(getChangeData(change).elemID.typeName))
+        .filter(change => getChangeData(change).elemID.typeName === 'article_translation')
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,

@@ -81,7 +81,7 @@ describe('dynamic content references filter', () => {
       'instance',
       type,
       {
-        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} {{dc.somePlaceholder}}',
+        raw_value: '{{dc.somePlaceholder}} {{notExistsPlaceholder}} {{dc.somePlaceholder}} {{somethingElse.someOtherPlaceholder}}',
         empty_value: [],
       }
     )
@@ -116,7 +116,7 @@ describe('dynamic content references filter', () => {
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}} {{notExistsPlaceholder}} {{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}'],
+          '}} {{somethingElse.someOtherPlaceholder}}'],
       }))
       expect(instance.value.empty_value).toEqual([])
       expect(secondInstance.value.raw_value).toEqual(new TemplateExpression({
@@ -181,7 +181,7 @@ describe('dynamic content references filter', () => {
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
           '}} {{notExistsPlaceholder}} {{',
           new ReferenceExpression(dynamicContentInstance.elemID, dynamicContentInstance),
-          '}}'],
+          '}} {{somethingElse.someOtherPlaceholder}}'],
       }))
       expect(instanceCopy.value.empty_value).toEqual([])
 

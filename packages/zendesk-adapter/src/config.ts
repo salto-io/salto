@@ -1656,6 +1656,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
         { fieldName: 'edited_at' },
+        { fieldName: 'title' },
+        { fieldName: 'body' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
       serviceUrl: '/knowledge/articles/{id}',

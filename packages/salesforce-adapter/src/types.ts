@@ -83,7 +83,7 @@ export type ChangeValidatorName = (
   | 'unknownField'
   | 'customFieldType'
   | 'standardFieldLabel'
-  | 'profileMapKeys'
+  | 'mapKeys'
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'cpqValidator'
@@ -548,7 +548,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownField: { refType: BuiltinTypes.BOOLEAN },
     customFieldType: { refType: BuiltinTypes.BOOLEAN },
     standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
-    profileMapKeys: { refType: BuiltinTypes.BOOLEAN },
+    mapKeys: { refType: BuiltinTypes.BOOLEAN },
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },

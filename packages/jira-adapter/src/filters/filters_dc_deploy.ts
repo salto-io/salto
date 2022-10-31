@@ -36,11 +36,13 @@ const filter: FilterCreator = ({ client }) => ({
     if (!client.isDataCenter) {
       return
     }
-    changes
+    const filters = changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(isFilterInstance)
+
+    filters
       .filter(hasSharePermissions)
       .forEach(element => {
         element.value.sharePermissions
@@ -49,11 +51,8 @@ const filter: FilterCreator = ({ client }) => ({
             sharePermission.view = true
           })
       })
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(isFilterInstance)
+
+    filters
       .filter(hasEditPermissions)
       .forEach(element => {
         if (element.value.sharePermissions === undefined) {

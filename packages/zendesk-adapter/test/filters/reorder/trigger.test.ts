@@ -18,7 +18,6 @@ import {
   ReferenceExpression, ModificationChange,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../../src/client/client'
 import { ZENDESK } from '../../../src/constants'
 import filterCreator, { TRIGGER_CATEGORY_TYPE_NAME, TYPE_NAME as TRIGGER_TYPE_NAME } from '../../../src/filters/reorder/trigger'
 import { createOrderTypeName } from '../../../src/filters/reorder/creator'
@@ -37,7 +36,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('trigger reorder filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
   let filter: FilterType
   const triggerTypeName = TRIGGER_TYPE_NAME
@@ -56,10 +54,7 @@ describe('trigger reorder filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

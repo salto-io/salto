@@ -16,7 +16,6 @@
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
-import ZendeskClient from '../../src/client/client'
 import { TARGET_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/target'
 
@@ -33,7 +32,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('target filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const target = new InstanceElement(
@@ -51,10 +49,7 @@ describe('target filter', () => {
   )
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
   describe('deploy', () => {
     it('should pass the correct params to deployChange on create - no auth', async () => {

@@ -21,14 +21,12 @@ import {
   InstanceElement,
   ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import ZendeskClient from '../../src/client/client'
 import filterCreator from '../../src/filters/help_center_translation'
 import { createFilterCreatorParams } from '../utils'
 import { ZENDESK } from '../../src/constants'
 import { removedTranslationParentId } from '../../src/filters/help_center_section_and_category'
 
 describe('guild section translation filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
 
@@ -92,10 +90,7 @@ describe('guild section translation filter', () => {
   enSectionTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [sectionInstance.value]
 
   beforeEach(async () => {
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('deploy', () => {

@@ -17,7 +17,6 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/account_settings'
 import { createFilterCreatorParams } from '../utils'
@@ -35,7 +34,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('account settings filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const accountSettings = new InstanceElement(
@@ -59,10 +57,7 @@ describe('account settings filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
   it('should remove autorouting_tag if it is empty', async () => {
     const clonedAfter = accountSettings.clone()

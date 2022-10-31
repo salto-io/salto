@@ -15,13 +15,11 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/add_restriction'
 import { createFilterCreatorParams } from '../utils'
 
 describe('custom field option restriction filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   const typeName = 'ticket_field__custom_field_options'
@@ -44,10 +42,7 @@ describe('custom field option restriction filter', () => {
     BuiltinTypes.STRING,
   )
   beforeEach(async () => {
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

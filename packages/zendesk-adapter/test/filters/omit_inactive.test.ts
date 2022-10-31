@@ -16,14 +16,12 @@
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_inactive'
 import { FilterResult } from '../../src/filter'
 import { createFilterCreatorParams } from '../utils'
 
 describe('omit inactive', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch', FilterResult>
   let filter: FilterType
   const objType1 = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
@@ -41,11 +39,7 @@ describe('omit inactive', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
     filter = filterCreator(createFilterCreatorParams({
-      client,
       config: {
         ...DEFAULT_CONFIG,
         [API_DEFINITIONS_CONFIG]: {

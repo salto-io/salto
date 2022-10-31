@@ -21,8 +21,18 @@ import { DEFAULT_CONFIG, ZendeskConfig } from '../src/config'
 import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 
+type FilterCreatorParams = {
+    client: ZendeskClient
+    paginator: clientUtils.Paginator
+    config: ZendeskConfig
+    fetchQuery: elementUtils.query.ElementQuery
+    elementsSource: ReadOnlyElementsSource
+}
+
 export const createFilterCreatorParams = ({
-  client,
+  client = new ZendeskClient({
+    credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+  }),
   paginator = clientUtils.createPaginator({
     client,
     paginationFuncCreator: paginate,
@@ -30,20 +40,6 @@ export const createFilterCreatorParams = ({
   config = DEFAULT_CONFIG,
   fetchQuery = elementUtils.query.createMockQuery(),
   elementsSource = buildElementsSourceFromElements([]),
-} :
-{
-  client: ZendeskClient
-  paginator?: clientUtils.Paginator
-  config?: ZendeskConfig
-  fetchQuery?: elementUtils.query.ElementQuery
-  elementsSource?: ReadOnlyElementsSource
-}) :
-{
-    client: ZendeskClient
-    paginator: clientUtils.Paginator
-    config?: ZendeskConfig
-    fetchQuery?: elementUtils.query.ElementQuery
-    elementsSource?: ReadOnlyElementsSource
-} => ({
+} : Partial<FilterCreatorParams>) : FilterCreatorParams => ({
   client, paginator, config, fetchQuery, elementsSource,
 })

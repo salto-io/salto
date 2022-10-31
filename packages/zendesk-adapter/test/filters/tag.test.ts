@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData, ReferenceExpression } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, { TAG_TYPE_NAME } from '../../src/filters/tag'
+import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -34,7 +33,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('tags filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy' | 'deploy'>
   let filter: FilterType
   const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK, 'sla_policy') })
@@ -140,9 +138,6 @@ describe('tags filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
     mockPaginator = mockFunction<clientUtils.Paginator>()
       .mockImplementationOnce(async function *get() {
         yield [
@@ -155,12 +150,9 @@ describe('tags filter', () => {
           ] },
         ]
       })
-    filter = filterCreator({
-      client,
+    filter = filterCreator(createFilterCreatorParams({
       paginator: mockPaginator,
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    }))as FilterType
   })
 
   describe('onFetch', () => {

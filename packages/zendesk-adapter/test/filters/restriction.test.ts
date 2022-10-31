@@ -16,14 +16,12 @@
 import { ObjectType, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 
 import filterCreator, { RESTRICTION_FIELD_NAME } from '../../src/filters/restriction'
 import { createFilterCreatorParams } from '../utils'
 
 describe('restriction filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   const viewObjType = new ObjectType({ elemID: new ElemID(ZENDESK, 'view') })
@@ -61,10 +59,7 @@ describe('restriction filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

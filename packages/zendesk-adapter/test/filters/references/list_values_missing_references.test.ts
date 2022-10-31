@@ -17,7 +17,6 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
   BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../../src/filters/references/list_values_missing_references'
-import ZendeskClient from '../../../src/client/client'
 import { ZENDESK } from '../../../src/constants'
 import { createFilterCreatorParams } from '../../utils'
 
@@ -26,10 +25,7 @@ describe('list values missing references filter', () => {
   let filter: FilterType
 
   beforeAll(() => {
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'c' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   const triggerType = new ObjectType({

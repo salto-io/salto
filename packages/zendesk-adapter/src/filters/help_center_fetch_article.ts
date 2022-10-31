@@ -18,8 +18,8 @@ import { ARTICLE_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 export const removeTitleAndBody = (elem: InstanceElement): void => {
-  delete elem.value.name
-  delete elem.value.description
+  delete elem.value.title
+  delete elem.value.body
 }
 
 /**

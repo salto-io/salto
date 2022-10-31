@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionChange, isRemovalChange, ReferenceExpression,
+  Change, getChangeData, InstanceElement, isAdditionChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -38,7 +38,7 @@ const TRANSLATION_SCHEMA = Joi.object({
 export type TranslationType = {
   title: string
   body?: string
-  locale: ReferenceExpression
+  locale: { id: string }
 }
 
 export const isTranslation = createSchemeGuard<TranslationType>(
@@ -49,11 +49,11 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
   const currentLocale = getChangeData(resolvedChange).value.source_locale
   const translation = getChangeData(resolvedChange).value.translations
-    .filter(isTranslation) // the translation is not a reference it is already the value
-    .find((tran: TranslationType) => tran.locale.value.value.id === currentLocale)
+    // .filter(isTranslation) // the translation is not a reference it is already the value
+    .find((tran: TranslationType) => tran.locale?.id === currentLocale)
   if (translation !== undefined) {
-    getChangeData(resolvedChange).value.title = translation.title
-    getChangeData(resolvedChange).value.body = translation.body ?? ''
+    getChangeData(change).value.title = translation.title
+    getChangeData(change).value.body = translation.body ?? ''
   }
 }
 

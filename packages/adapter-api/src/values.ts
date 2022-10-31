@@ -32,6 +32,7 @@ export interface Values {
 
 export type CompareOptions = {
   compareReferencesByValue?: boolean
+  compareListItems?: boolean
 }
 
 export const calculateStaticFileHash = (content: Buffer): string =>

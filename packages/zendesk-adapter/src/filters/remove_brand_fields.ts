@@ -21,8 +21,9 @@ import { BRAND_TYPE_NAME } from '../constants'
 import { LOGO_FIELD } from './brand_logo'
 
 /**
- * Ignores the logo field from brand instances when deploying,
- * for they are covered as brand_logo instances
+ * Ignores the logo and categories field from brand instances when deploying,
+ * logos are covered as brand_logo instances
+ * categories are covered in brandFilter.ts filter
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {

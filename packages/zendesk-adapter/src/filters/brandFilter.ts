@@ -20,7 +20,6 @@ import {
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-// import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 import { FilterCreator } from '../filter'
 import { BRAND_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'

@@ -40,7 +40,7 @@ export const createFilterCreatorParams = ({
 }) :
 {
     client: ZendeskClient
-    paginator?: clientUtils.Paginator
+    paginator: clientUtils.Paginator
     config?: ZendeskConfig
     fetchQuery?: elementUtils.query.ElementQuery
     elementsSource?: ReadOnlyElementsSource

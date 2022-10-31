@@ -16,11 +16,10 @@
 import {
   Change, Element, getChangeData,
   InstanceElement, isAdditionOrRemovalChange,
-  isInstanceElement,
+  isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-// import { awu } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
 import { FilterCreator } from '../filter'
 import { BRAND_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
@@ -39,12 +38,9 @@ const compareCategoriesPosition = (a: InstanceElement, b: InstanceElement) : num
 }
 
 /* Split the changes into 3 groups:
-  onlyOrderChanges - Brands with only categories order changes
-    They will be returned in deployResult
-  mixedChanges - Brands with categories order and other changes
-    They will be returned in leftoverChanges
+  onlyOrderChanges    - Brands with only categories order changes
+  mixedChanges        - Brands with categories order and other changes
   onlyNonOrderChanges - Brands without any categories order changes
-  They will be ignored here and returned in leftoverChanges
  */
 const sortBrandChanges = (changes: Change<InstanceElement>[]) :
     [Change<InstanceElement>[], Change<InstanceElement>[], Change<InstanceElement>[]] => {
@@ -89,9 +85,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         c.value.brand === brand.value.id).sort(compareCategoriesPosition)
 
       // TODO: don't do anything if 'guide' isn't enabled
-
-      // the ids are defined in field_references.ts to be become a reference to the category
-      brand.value.categories = brandsCategories.map(c => c.value.id)
+      brand.value.categories = brandsCategories.map(c => new ReferenceExpression(c.elemID, c))
     }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -100,18 +94,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
 
-    // const a = awu(await elementsSource.getAll()).toArray()
-    // const b = awu(await elementsSource.list()).toArray()
-    //
-    // // eslint-disable-next-line no-console
-    // console.log(a, b)
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     const [onlyOrderChanges, mixedChanges, onlyNonOrderChanges] = sortBrandChanges(brandChanges)
 
     const changesToApply: Change<InstanceElement>[] = []
     for (const brandChange of [...onlyOrderChanges, ...mixedChanges]) {
+      // TODO
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const { categories } = brandChange.data.after.value
@@ -119,12 +106,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         // We only need to update the category position if it was changed
         // If the position matched the index in the list, nothing needs to be done
         if (category.value.position !== i) {
-          category.value.position = i
+          const modifiedCategory = category.clone()
+          modifiedCategory.value.position = i
           changesToApply.push({
             action: 'modify',
             data: {
-              before: category, // TODO: clone before? does it matter?
-              after: category,
+              before: category,
+              after: modifiedCategory,
             },
           })
         }

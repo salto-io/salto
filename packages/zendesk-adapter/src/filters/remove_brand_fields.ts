@@ -23,7 +23,7 @@ import { LOGO_FIELD } from './brand_logo'
 /**
  * Ignores the logo and categories field from brand instances when deploying,
  * logos are covered as brand_logo instances
- * categories are covered in brandFilter.ts filter
+ * categories are covered in brand_filter.ts filter
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {

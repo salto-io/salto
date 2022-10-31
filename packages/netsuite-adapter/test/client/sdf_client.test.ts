@@ -1747,7 +1747,7 @@ File: ~/AccountConfiguration/features.xml`
       })
       it('should throw ObjectsValidationError', async () => {
         let errorMessage: string
-        const objectErrorMessage = 'An error occurred during custom object validation. (failObject)'
+        const objectErrorMessage = 'An error occurred during custom object validation. Details: The availableexternally field must be set to a valid Boolean value, \'T\' or \'F\'.'
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.CREATE_PROJECT) {
             return Promise.resolve({ isSuccess: () => true })

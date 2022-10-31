@@ -73,6 +73,8 @@ export type SdfClientOpts = {
   globalLimiter: Bottleneck
 }
 
+type getValidationErrorParams = 'objectValidationError' | 'manifestValidationError'
+
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
   SAVE_TOKEN: 'account:savetoken',
@@ -197,7 +199,7 @@ const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string
     .filter(isDefined)
     .map(groups => groups[item])
 
-type ErrorMatcher = { getValidationErrorMessage: (filePath: string) => string }
+type ErrorMatcher = { getValidationErrorMessage: (errorType: getValidationErrorParams) => string }
 const createErrorMatcher = (lines: string[]): ErrorMatcher => {
   const indicesMap = new Map<string, number[]>()
   lines.forEach((line, index) => {
@@ -214,7 +216,7 @@ const createErrorMatcher = (lines: string[]): ErrorMatcher => {
         const errorMessageLine = lines[errorIndex + ERROR_MESSAGE_LINE_OFFSET]
         const detailedErrorMessageLine = lines[errorIndex + DETAILED_ERROR_MESSAGE_OFFSET]
         if (errorType === 'objectValidationError' && errorMessageLine.match(objectValidationErrorRegex)?.length === 1) {
-          return errorMessageLine
+          return detailedErrorMessageLine
         }
         if (errorType === 'manifestValidationError' && manifestErrorRegex.test(detailedErrorMessageLine)) {
           return detailedErrorMessageLine
@@ -991,7 +993,7 @@ export default class SdfClient {
       .map((custInfo): [string, string] | undefined => {
         const errorMessage = errorMatcher
           .getValidationErrorMessage('objectValidationError')
-        return errorMessage ? [custInfo.scriptId, CUSTOM_OBJECT_VALIDATION_ERROR.concat(` (${custInfo.scriptId})`)] : undefined
+        return errorMessage ? [custInfo.scriptId, CUSTOM_OBJECT_VALIDATION_ERROR.concat(` ${errorMessage}`)] : undefined
       })
       .filter(isDefined)
     return failedObjects.length > 0

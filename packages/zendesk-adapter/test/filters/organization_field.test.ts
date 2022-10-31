@@ -19,7 +19,6 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 
 import filterCreator, {
@@ -40,7 +39,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('organization field filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const parentTypeName = ORG_FIELD_TYPE_NAME
@@ -54,10 +52,7 @@ describe('organization field filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
   describe('deploy', () => {
     const resolvedParent = new InstanceElement(

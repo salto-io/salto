@@ -15,7 +15,6 @@
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, { WEBHOOK_TYPE_NAME, AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA } from '../../src/filters/webhook'
 import { createFilterCreatorParams } from '../utils'
@@ -33,7 +32,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('webhook filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const webhook = new InstanceElement(
@@ -57,10 +55,7 @@ describe('webhook filter', () => {
   )
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
   describe('deploy', () => {
     it('should pass the correct params to deployChange on create - basic_auth', async () => {

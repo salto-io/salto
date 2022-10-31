@@ -15,14 +15,12 @@
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_definition_instances'
 import { FilterResult } from '../../src/filter'
 import { createFilterCreatorParams } from '../utils'
 
 describe('remove definition instances', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch', FilterResult>
   let filter: FilterType
   const randomObjType = new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') })
@@ -34,10 +32,7 @@ describe('remove definition instances', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

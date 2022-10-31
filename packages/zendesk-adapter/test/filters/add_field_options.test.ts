@@ -17,7 +17,6 @@ import {
   ObjectType, ElemID, InstanceElement, toChange,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/add_field_options'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME, ORG_FIELD_TYPE_NAME } from '../../src/filters/organization_field'
@@ -25,16 +24,12 @@ import { USER_FIELD_TYPE_NAME } from '../../src/filters/custom_field_options/use
 import { createFilterCreatorParams } from '../utils'
 
 describe('add field options filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
   let filter: FilterType
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
   describe('preDeploy', () => {
     it.each([USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME])('should add null as id for new childs of %s', async fieldTypeName => {

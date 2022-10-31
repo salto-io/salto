@@ -18,7 +18,6 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, { SLA_POLICY_TYPE_NAME } from '../../src/filters/sla_policy'
 
@@ -35,7 +34,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('sla policy filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const slaPolicyType = new ObjectType({
@@ -83,10 +81,7 @@ describe('sla policy filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('deploy', () => {

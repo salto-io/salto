@@ -19,7 +19,6 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, {
   DYNAMIC_CONTENT_ITEM_TYPE_NAME, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME, VARIANTS_FIELD_NAME,
@@ -38,7 +37,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('dynmaic content filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const parentTypeName = DYNAMIC_CONTENT_ITEM_TYPE_NAME
@@ -118,10 +116,7 @@ describe('dynmaic content filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('preDeploy', () => {

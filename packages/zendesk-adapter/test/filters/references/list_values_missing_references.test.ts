@@ -22,7 +22,6 @@ import { ZENDESK } from '../../../src/constants'
 import { createFilterCreatorParams } from '../../utils'
 
 describe('list values missing references filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
 

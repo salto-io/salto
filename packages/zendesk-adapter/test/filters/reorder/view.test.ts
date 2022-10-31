@@ -19,7 +19,6 @@ import {
   toChange, getChangeData,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../../src/client/client'
 import { ZENDESK } from '../../../src/constants'
 import filterCreator, { ORDER_FIELD_NAME } from '../../../src/filters/reorder/view'
 import { VIEW_TYPE_NAME } from '../../../src/filters/view'
@@ -39,7 +38,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('view reorder filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const typeName = VIEW_TYPE_NAME
@@ -51,10 +49,7 @@ describe('view reorder filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

@@ -17,7 +17,6 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../../src/client/client'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_brand_logo_field'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
@@ -36,7 +35,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('remove brand logo field filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const brandType = new ObjectType({
@@ -66,10 +64,7 @@ describe('remove brand logo field filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   it('should pass the correct params to deployChange and client on create', async () => {

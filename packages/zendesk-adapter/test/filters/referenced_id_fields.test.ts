@@ -16,14 +16,12 @@
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 
 import filterCreator from '../../src/filters/referenced_id_fields'
 import { createFilterCreatorParams } from '../utils'
 
 describe('referenced id fields filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   const localeObj = new ObjectType({ elemID: new ElemID(ZENDESK, 'locales') })
@@ -36,16 +34,13 @@ describe('referenced id fields filter', () => {
   )
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
   })
 
   // Will be unskipped after SALTO-2312
   // eslint-disable-next-line jest/no-disabled-tests
   it.skip('should resolve ids in instances names if & exist in the config', async () => {
     const elements = [dynamicContentItemVarIns].map(e => e.clone())
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
     await filter.onFetch(elements)
     expect(elements.map(e => e.elemID.getFullName()).sort())
       .toEqual(['zendesk.dynamic_content_item__variants.instance.es'])
@@ -53,7 +48,6 @@ describe('referenced id fields filter', () => {
   it('should not add referenced id fields if & is not in the config', async () => {
     const elements = [dynamicContentItemVarIns].map(e => e.clone())
     filter = filterCreator(createFilterCreatorParams({
-      client,
       config: {
         fetch: DEFAULT_CONFIG[FETCH_CONFIG],
         apiDefinitions: {

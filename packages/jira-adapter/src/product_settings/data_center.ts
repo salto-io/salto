@@ -87,6 +87,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/screens/\\d+',
   },
   {
+    httpMethods: ['get', 'post'],
+    url: '/rest/api/3/screenscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/screenscheme/\\d+',
+  },
+  {
     httpMethods: ['get'],
     url: '/rest/api/3/events',
   },

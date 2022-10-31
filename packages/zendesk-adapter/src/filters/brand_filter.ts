@@ -15,8 +15,8 @@
 */
 import {
   Change, Element, getChangeData,
-  InstanceElement, isAdditionOrRemovalChange,
-  isInstanceElement, ReferenceExpression,
+  InstanceElement, isAdditionChange,
+  isInstanceElement, isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -49,8 +49,12 @@ const sortBrandChanges = (changes: Change<InstanceElement>[]) :
   const onlyNonOrderChanges : Change<InstanceElement>[] = []
 
   changes.forEach(change => {
+    if (isRemovalChange(change)) {
+      onlyNonOrderChanges.push(change)
+      return
+    }
     // TODO: currently can't handle it since categories can't exist before brand
-    if (isAdditionOrRemovalChange(change)) {
+    if (isAdditionChange(change)) {
       onlyNonOrderChanges.push(change)
       return
     }

@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
+import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/collision_errors'
 import { FilterResult } from '../../src/filter'
 
@@ -36,15 +35,7 @@ describe('collision errors', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('onFetch', () => {

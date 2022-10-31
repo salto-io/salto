@@ -16,14 +16,13 @@
 import {
   ObjectType, ElemID, InstanceElement, toChange,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/add_field_options'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME, ORG_FIELD_TYPE_NAME } from '../../src/filters/organization_field'
 import { USER_FIELD_TYPE_NAME } from '../../src/filters/custom_field_options/user_field'
+import { createFilterCreatorParams } from '../utils'
 
 describe('add field options filter', () => {
   let client: ZendeskClient
@@ -35,15 +34,7 @@ describe('add field options filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
   describe('preDeploy', () => {
     it.each([USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME])('should add null as id for new childs of %s', async fieldTypeName => {

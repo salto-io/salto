@@ -12,14 +12,12 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
-import {
+*/import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
+import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, { SLA_POLICY_TYPE_NAME } from '../../src/filters/sla_policy'
 
@@ -87,15 +85,7 @@ describe('sla policy filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('deploy', () => {

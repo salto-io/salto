@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/omit_inactive'
 import { FilterResult } from '../../src/filter'
+import { createFilterCreatorParams } from '../utils'
 
 describe('omit inactive', () => {
   let client: ZendeskClient
@@ -44,7 +45,7 @@ describe('omit inactive', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
+    filter = filterCreator(createFilterCreatorParams({
       client,
       paginator: clientUtils.createPaginator({
         client,
@@ -78,8 +79,7 @@ describe('omit inactive', () => {
           },
         },
       },
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    })) as FilterType
   })
 
   describe('onFetch', () => {

@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
+import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 import { APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
+
 import filterCreator, { AppOwnedParameter } from '../../src/filters/app_owned_convert_list_to_map'
 
 describe('appOwnedConvertListToMap filter', () => {
@@ -74,15 +74,7 @@ describe('appOwnedConvertListToMap filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('onFetch', () => {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import {
   ElemID,
   InstanceElement,
@@ -21,9 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
 import filterCreator from '../../src/filters/help_center_fetch_section_and_category'
-import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
+import { createFilterCreatorParams } from '../utils'
 
 describe('guid section filter', () => {
   let client: ZendeskClient
@@ -42,15 +41,7 @@ describe('guid section filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('onFetch', () => {

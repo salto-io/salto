@@ -16,12 +16,11 @@
 import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/account_settings'
+import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -63,15 +62,7 @@ describe('account settings filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
   it('should remove autorouting_tag if it is empty', async () => {
     const clonedAfter = accountSettings.clone()

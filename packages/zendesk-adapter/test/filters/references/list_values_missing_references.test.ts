@@ -12,15 +12,13 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
+*/import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
   BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../../src/filters/references/list_values_missing_references'
 import ZendeskClient from '../../../src/client/client'
-import { paginate } from '../../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../../src/config'
 import { ZENDESK } from '../../../src/constants'
+import { createFilterCreatorParams } from '../../utils'
 
 describe('list values missing references filter', () => {
   let client: ZendeskClient
@@ -31,15 +29,7 @@ describe('list values missing references filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'c' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   const triggerType = new ObjectType({

@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
+
 import filterCreator from '../../src/filters/referenced_id_fields'
+import { createFilterCreatorParams } from '../utils'
 
 describe('referenced id fields filter', () => {
   let client: ZendeskClient
@@ -44,27 +45,15 @@ describe('referenced id fields filter', () => {
   // eslint-disable-next-line jest/no-disabled-tests
   it.skip('should resolve ids in instances names if & exist in the config', async () => {
     const elements = [dynamicContentItemVarIns].map(e => e.clone())
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
     await filter.onFetch(elements)
     expect(elements.map(e => e.elemID.getFullName()).sort())
       .toEqual(['zendesk.dynamic_content_item__variants.instance.es'])
   })
   it('should not add referenced id fields if & is not in the config', async () => {
     const elements = [dynamicContentItemVarIns].map(e => e.clone())
-    filter = filterCreator({
+    filter = filterCreator(createFilterCreatorParams({
       client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
       config: {
         fetch: DEFAULT_CONFIG[FETCH_CONFIG],
         apiDefinitions: {
@@ -83,8 +72,7 @@ describe('referenced id fields filter', () => {
           supportedTypes: SUPPORTED_TYPES,
         },
       },
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    })) as FilterType
     await filter.onFetch(elements)
     expect(elements.map(e => e.elemID.getFullName()).sort())
       .toEqual(['zendesk.dynamic_content_item__variants.instance.123'])

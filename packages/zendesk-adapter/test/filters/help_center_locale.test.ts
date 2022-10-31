@@ -19,7 +19,9 @@ import { MockInterface } from '@salto-io/test-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import filterCreator from '../../src/filters/help_center_locale'
+import { createFilterCreatorParams } from '../utils'
 import { paginate } from '../../src/client/pagination'
+
 
 describe('help center locale filter', () => {
   let mockClient: MockInterface<ZendeskClient>
@@ -32,7 +34,7 @@ describe('help center locale filter', () => {
     mockClient = {
       getSinglePage: mockGetSinglePage,
     } as unknown as MockInterface<ZendeskClient>
-    filter = filterCreator({
+    filter = filterCreator(createFilterCreatorParams({
       client: mockClient as unknown as ZendeskClient,
       paginator: clientUtils.createPaginator({
         client: mockClient as unknown as ZendeskClient,
@@ -45,8 +47,7 @@ describe('help center locale filter', () => {
           enableGuide: true,
         },
       },
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    })) as FilterType
   })
 
   describe('onFetch', () => {

@@ -16,13 +16,12 @@
 import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_brand_logo_field'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
+import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -70,15 +69,7 @@ describe('remove brand logo field filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('should pass the correct params to deployChange and client on create', async () => {

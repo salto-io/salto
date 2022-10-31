@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/omit_inactive'
 import { FilterResult } from '../../src/filter'
 import { createFilterCreatorParams } from '../utils'
@@ -47,10 +46,6 @@ describe('omit inactive', () => {
     })
     filter = filterCreator(createFilterCreatorParams({
       client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
       config: {
         ...DEFAULT_CONFIG,
         [API_DEFINITIONS_CONFIG]: {

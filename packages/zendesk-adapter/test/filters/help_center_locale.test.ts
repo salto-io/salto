@@ -36,10 +36,6 @@ describe('help center locale filter', () => {
     } as unknown as MockInterface<ZendeskClient>
     filter = filterCreator(createFilterCreatorParams({
       client: mockClient as unknown as ZendeskClient,
-      paginator: clientUtils.createPaginator({
-        client: mockClient as unknown as ZendeskClient,
-        paginationFuncCreator: paginate,
-      }),
       config: {
         ...DEFAULT_CONFIG,
         [FETCH_CONFIG]: {

@@ -21,7 +21,6 @@ import { DEFAULT_CONFIG, ZendeskConfig } from '../src/config'
 import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createFilterCreatorParams = ({
   client,
   paginator = clientUtils.createPaginator({

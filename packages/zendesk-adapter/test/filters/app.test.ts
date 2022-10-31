@@ -51,7 +51,7 @@ describe('app installation filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('should remove settings object on fetch', async () => {

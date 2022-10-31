@@ -1540,6 +1540,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   IssueEvent: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'templateName', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',

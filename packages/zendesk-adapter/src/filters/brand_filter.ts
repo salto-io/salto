@@ -80,13 +80,15 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
 
     // Insert the categories of that brand to the brand, sorted
-    for (const brand of brands) {
+    brands.forEach(brand => {
+      // If the brand doesn't have Guide activated, do nothing
+      if (!brand.value.has_help_center) { return }
+
       const brandsCategories = categories.filter(c =>
         c.value.brand === brand.value.id).sort(compareCategoriesPosition)
 
-      // TODO: don't do anything if 'guide' isn't enabled
       brand.value.categories = brandsCategories.map(c => new ReferenceExpression(c.elemID, c))
-    }
+    })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandChanges, leftoverChanges] = _.partition(
@@ -96,7 +98,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const [onlyOrderChanges, mixedChanges, onlyNonOrderChanges] = sortBrandChanges(brandChanges)
 
-    const changesToApply: Change<InstanceElement>[] = []
+    const orderChangesToApply: Change<InstanceElement>[] = []
     for (const brandChange of [...onlyOrderChanges, ...mixedChanges]) {
       // TODO
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -108,7 +110,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         if (category.value.position !== i) {
           const modifiedCategory = category.clone()
           modifiedCategory.value.position = i
-          changesToApply.push({
+          orderChangesToApply.push({
             action: 'modify',
             data: {
               before: category,
@@ -122,7 +124,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     // Ignores the logo and categories field from brand instances when deploying,
     // logos are covered as brand_logo instances, categories were converted to other changesToApply
     const deployResult = await deployChanges(
-      [...changesToApply, ...mixedChanges, ...onlyNonOrderChanges],
+      [...orderChangesToApply, ...mixedChanges, ...onlyNonOrderChanges],
       async change => {
         await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, 'categories'])
       }

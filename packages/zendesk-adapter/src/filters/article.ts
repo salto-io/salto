@@ -49,7 +49,7 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
   const currentLocale = getChangeData(resolvedChange).value.source_locale
   const translation = getChangeData(resolvedChange).value.translations
-    // .filter(isTranslation) // the translation is not a reference it is already the value
+    .filter(isTranslation) // the translation is not a reference it is already the value
     .find((tran: TranslationType) => tran.locale?.id === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.title = translation.title

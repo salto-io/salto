@@ -38,6 +38,7 @@ import {
   requiredAppOwnedParametersValidator,
   oneTranslationPerLocaleValidator,
   brandFieldForBrandBasedElementsValidator,
+  translationForDefaultLocaleValidator,
   articleRemovalValidator,
   articleLabelNamesRemovalValidator,
 } from './change_validators'
@@ -89,6 +90,7 @@ export default ({
     articleRemovalValidator,
     articleLabelNamesRemovalValidator,
     brandFieldForBrandBasedElementsValidator,
+    translationForDefaultLocaleValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

@@ -15,24 +15,18 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
   BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
-import ZendeskClient from '../../src/client/client'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
-import { paginate } from '../../src/client/pagination'
 
 describe('References by id filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
 
   beforeAll(() => {
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'c' },
-    })
-    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   const brandType = new ObjectType({
@@ -436,11 +430,6 @@ describe('References by id filter', () => {
       })
       it('should not create missing references if enable missing references is false', async () => {
         const newFilter = filterCreator(createFilterCreatorParams({
-          client,
-          paginator: clientUtils.createPaginator({
-            client,
-            paginationFuncCreator: paginate,
-          }),
           config: {
             ...DEFAULT_CONFIG,
             fetch: {
@@ -448,7 +437,6 @@ describe('References by id filter', () => {
               enableMissingReferences: false,
             },
           },
-          fetchQuery: elementUtils.query.createMockQuery(),
         })) as FilterType
         const clonedElements = originalElements.map(element => element.clone())
         await newFilter.onFetch(clonedElements)

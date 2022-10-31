@@ -15,31 +15,17 @@
 */
 import { ElemID, InstanceElement, ObjectType,
   BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/article_body'
-import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { createFilterCreatorParams } from '../utils'
 
 describe('article body filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
   let filter: FilterType
 
   beforeAll(() => {
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'c' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   const brandType = new ObjectType({

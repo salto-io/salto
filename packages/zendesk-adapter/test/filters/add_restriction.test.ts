@@ -20,7 +20,6 @@ import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/add_restriction'
 import { createFilterCreatorParams } from '../utils'
 
-
 describe('custom field option restriction filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>

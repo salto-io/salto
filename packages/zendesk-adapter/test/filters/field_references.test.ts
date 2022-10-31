@@ -12,7 +12,8 @@
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
-*/import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
+*/
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
   BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'

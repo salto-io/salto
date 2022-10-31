@@ -1646,8 +1646,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
-      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&brand', 'title'],
+      fileNameFields: ['&brand', 'title'],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1656,8 +1656,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
         { fieldName: 'edited_at' },
-        { fieldName: 'title' },
-        { fieldName: 'body' },
+        { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
       serviceUrl: '/knowledge/articles/{id}',

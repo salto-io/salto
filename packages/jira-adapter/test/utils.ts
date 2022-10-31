@@ -56,7 +56,7 @@ type ClientWithMockConnection = {
   connection: MockInterface<clientUtils.APIConnection>
   getIdMapFunc: GetIdMapFunc
 }
-export const mockClient = (): ClientWithMockConnection => {
+export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new JiraClient({
     credentials: {
@@ -70,7 +70,7 @@ export const mockClient = (): ClientWithMockConnection => {
         ...connection,
       }),
     },
-    isDataCenter: false,
+    isDataCenter,
   })
   const paginator = clientUtils.createPaginator(
     { paginationFuncCreator: paginate, client }

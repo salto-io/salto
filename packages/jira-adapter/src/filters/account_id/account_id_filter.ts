@@ -27,10 +27,10 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
-export const NON_DEPLOYABLE_TYPES = [...OWNER_STYLE_TYPES, 'Board']
+export const NON_DEPLOYABLE_TYPES = ['Dashboard', 'Board']
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
 export const DEPLOYABLE_TYPES = [...PARAMETER_STYLE_TYPES,
-  'Automation', 'Project', 'ProjectComponent', 'ProjectRole']
+  'Automation', 'Project', 'ProjectComponent', 'ProjectRole', 'Filter']
 export const ACCOUNT_ID_TYPES = [...NON_DEPLOYABLE_TYPES, ...DEPLOYABLE_TYPES]
 
 const USER_TYPE = 'user'

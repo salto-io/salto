@@ -20,7 +20,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES } from '../constants'
 import { isFieldOfCustomObject, fieldTypeName } from '../transformers/transformer'
-import { allSystemFields } from '../adapter'
+import { SYSTEM_FIELDS } from '../adapter'
 
 const { awu } = collections.asynciterable
 
@@ -28,7 +28,7 @@ const isInvalidTypeChange = async (change: Change<Field>): Promise<boolean> => {
   const changeData = getChangeData(change)
   const afterFieldType = fieldTypeName(changeData.refType.elemID.name)
   const isAfterTypeAllowed = CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES.includes(afterFieldType)
-  const isSystemField = allSystemFields.includes(changeData.name)
+  const isSystemField = SYSTEM_FIELDS.includes(changeData.name)
   if (isSystemField || isAfterTypeAllowed) {
     return false
   } if (isAdditionChange(change)) {

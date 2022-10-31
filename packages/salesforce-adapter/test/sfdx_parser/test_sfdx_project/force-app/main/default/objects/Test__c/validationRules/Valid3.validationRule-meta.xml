@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Valid3</fullName>
+    <active>true</active>
+    <errorConditionFormula>Two__c &gt; 11</errorConditionFormula>
+    <errorDisplayField>Two__c</errorDisplayField>
+    <errorMessage>two is not bigger than 11</errorMessage>
+</ValidationRule>

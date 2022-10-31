@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange } from '@salto-io/adapter-api'
+import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange, isIndexPathPart } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData, applyDetailedChanges } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
@@ -25,6 +26,8 @@ import { NaclFilesSource, RoutingMode, toPathHint } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
 
 const { awu } = collections.asynciterable
+
+const log = logger(module)
 
 export interface RoutedChangesByRole {
   primarySource?: DetailedChange[]
@@ -47,11 +50,13 @@ export const getMergeableParentID = (
   }
   const nameParts = id.getFullNameParts()
   for (let i = 1; i < nameParts.length; i += 1) {
-    // Its okay to avoid checking the entire id since we will return it anyways
-    const mergeableID = ElemID.fromFullNameParts(nameParts.slice(0, i))
-    const valuesAtMergeableID = topLevelFragments.map(elem => resolvePath(elem, mergeableID))
-    if (valuesAtMergeableID.some(_.isArray)) {
-      return { mergeableID, path: nameParts.slice(i) }
+    if (isIndexPathPart(nameParts[i])) {
+      // Its okay to avoid checking the entire id since we will return it anyways
+      const mergeableID = ElemID.fromFullNameParts(nameParts.slice(0, i))
+      const valuesAtMergeableID = topLevelFragments.map(elem => resolvePath(elem, mergeableID))
+      if (valuesAtMergeableID.some(_.isArray)) {
+        return { mergeableID, path: nameParts.slice(i) }
+      }
     }
   }
   return { mergeableID: id, path: [] }
@@ -161,7 +166,7 @@ const addToSource = async ({
   targetSource: NaclFilesSource
   overrideTargetElements?: boolean
   valuesOverrides?: Record<string, Value>
-}): Promise<DetailedChange[]> => {
+}): Promise<DetailedChange[]> => log.time(async () => {
   const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
   const fullChanges = await awu(Object.values(idsByParent)).flatMap(async gids => {
     const topLevelGid = gids[0].createTopLevelParentID().parent
@@ -214,7 +219,7 @@ const addToSource = async ({
     change.action === 'remove' ? targetSource : originSource
   )).toArray()
   return fullChanges
-}
+}, 'addToSource')
 
 const createUpdateChanges = async (
   changes: DetailedChange[],

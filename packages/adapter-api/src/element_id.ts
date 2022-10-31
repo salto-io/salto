@@ -119,6 +119,7 @@ export class ElemID {
   readonly typeName: string
   readonly idType: ElemIDType
   private readonly nameParts: ReadonlyArray<string>
+  private readonly fullName: string
   constructor(
     adapter: string,
     typeName?: string,
@@ -129,26 +130,7 @@ export class ElemID {
     this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : typeName as string
     this.idType = idType || ElemID.getDefaultIdType(adapter)
     this.nameParts = name
-    this.validateVariable()
-  }
-
-  private validateVariable(): void {
-    if (this.adapter === ElemID.VARIABLES_NAMESPACE && this.idType !== 'var'
-      && this.typeName !== ElemID.CONFIG_NAME) {
-      throw new Error(`Cannot create ID ${this.getFullName()
-      } - type must be 'var', not '${this.idType}'`)
-    }
-    if (this.idType === 'var') {
-      if (this.adapter !== ElemID.VARIABLES_NAMESPACE) {
-        throw new Error(`Cannot create ID for variable ${this.getFullName()
-        } -  it must be in the ${ElemID.VARIABLES_NAMESPACE
-        } namespace, not in ${this.adapter}`)
-      }
-      if (!_.isEmpty(this.nameParts)) {
-        throw new Error(`Cannot create ID ${this.getFullName()
-        }.${this.nameParts.join(ElemID.NAMESPACE_SEPARATOR)} - object variables are not supported`)
-      }
-    }
+    this.fullName = this.generateFullName()
   }
 
   get name(): string {
@@ -177,17 +159,21 @@ export class ElemID {
     return parts.filter(part => !_.isEmpty(part)) as string[]
   }
 
-  getFullName(): string {
+  private generateFullName(): string {
     const nameParts = this.fullNameParts()
-    return this.fullNameParts()
+    return nameParts
       // If the last part of the name is empty we can omit it
       .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
       .join(ElemID.NAMESPACE_SEPARATOR)
   }
 
+  getFullName(): string {
+    return this.fullName
+  }
+
   getFullNameParts(): string[] {
     const nameParts = this.fullNameParts()
-    return this.fullNameParts()
+    return nameParts
       // If the last part of the name is empty we can omit it
       .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
   }
@@ -295,7 +281,7 @@ export class ElemID {
       } - ${this.getFullName()} is not parent of ${other.getFullName()}`)
     }
     const relPath = other.createTopLevelParentID().path.slice(this.nestingLevel)
-    return ['attr', 'annotation', 'field'].includes(other.idType)
+    return this.idType === 'type' && ['attr', 'annotation', 'field'].includes(other.idType)
       ? [other.idType as string].concat(relPath)
       : relPath
   }

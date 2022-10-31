@@ -49,6 +49,7 @@ export const FILE = 'file'
 export const FOLDER = 'folder'
 export const SELECT_OPTION = 'selectOption'
 export const CONFIG_FEATURES = 'companyFeatures'
+export const CURRENCY = 'currency'
 
 // Type Annotations
 export const SOURCE = 'source'
@@ -62,6 +63,7 @@ export const PERMITTED_ROLE = 'permittedrole'
 export const RECORD_TYPE = 'recordType'
 export const APPLICATION_ID = 'application_id'
 export const CUSTOM_FIELD_PREFIX = 'custom_'
+export const EXCHANGE_RATE = 'exchangeRate'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'

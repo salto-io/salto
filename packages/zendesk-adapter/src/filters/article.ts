@@ -14,17 +14,60 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import Joi from 'joi'
+import { collections } from '@salto-io/lowerdash'
 import {
-  Change, getChangeData, InstanceElement, isRemovalChange,
+  Change, getChangeData, InstanceElement, isAdditionChange, isRemovalChange,
 } from '@salto-io/adapter-api'
+import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { ARTICLE_TYPE_NAME } from '../constants'
+import { addRemovalChangesId } from './help_center_section_and_category'
+import { lookupFunc } from './field_references'
+import { removeTitleAndBody } from './help_center_fetch_article'
+
+const { awu } = collections.asynciterable
+
+const TRANSLATION_SCHEMA = Joi.object({
+  locale: Joi.object().required(),
+  body: Joi.string(),
+  title: Joi.string().required(),
+}).unknown(true).required()
+
+export type TranslationType = {
+  title: string
+  body?: string
+  locale: { id: string }
+}
+
+export const isTranslation = createSchemeGuard<TranslationType>(
+  TRANSLATION_SCHEMA, 'Received an invalid value for translation'
+)
+
+const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
+  const resolvedChange = await resolveChangeElement(change, lookupFunc)
+  const currentLocale = getChangeData(resolvedChange).value.source_locale
+  const translation = getChangeData(resolvedChange).value.translations
+    .filter(isTranslation) // the translation is not a reference it is already the value
+    .find((tran: TranslationType) => tran.locale?.id === currentLocale)
+  if (translation !== undefined) {
+    getChangeData(change).value.title = translation.title
+    getChangeData(change).value.body = translation.body ?? ''
+  }
+}
 
 /**
  * Deploys articles
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+    await awu(changes)
+      .filter(isAdditionChange)
+      .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+      .forEach(addTranslationValues)
+  },
+
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [articleChanges, leftoverChanges] = _.partition(
       changes,
@@ -32,6 +75,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         (getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
         && !isRemovalChange(change),
     )
+    addRemovalChangesId(articleChanges)
     const deployResult = await deployChanges(
       articleChanges,
       async change => {
@@ -41,6 +85,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       },
     )
     return { deployResult, leftoverChanges }
+  },
+
+  onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+    changes
+      .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+      .forEach(change => removeTitleAndBody(getChangeData(change)))
   },
 })
 

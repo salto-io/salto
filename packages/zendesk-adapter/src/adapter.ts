@@ -81,11 +81,16 @@ import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import articleFilter from './filters/article'
+import helpCenterFetchArticle from './filters/help_center_fetch_article'
+import articleBodyFilter from './filters/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
+import hcSectionCategoryFilter from './filters/help_center_section_and_category'
+import hcTranslationFilter from './filters/help_center_translation'
+import fetchCategorySection from './filters/help_center_fetch_section_and_category'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -134,6 +139,10 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
+  // help center filters need to be before fieldReferencesFilter (assume fields are strings)
+  articleFilter,
+  hcSectionCategoryFilter,
+  hcTranslationFilter,
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
@@ -145,11 +154,14 @@ export const DEFAULT_FILTERS = [
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
-  articleFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   referencedIdFieldsFilter,
+  // need to be after referencedIdFieldsFilter as 'name' and 'title' is removed
+  fetchCategorySection,
+  helpCenterFetchArticle,
+  articleBodyFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
@@ -458,7 +470,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           subdomainToGuideChanges[subdomain]
         )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await runner.onDeploy(appliedChangesBeforeRestore)
+        await brandRunner.onDeploy(guideChangesBeforeRestore)
 
         return {
           appliedChanges: guideChangesBeforeRestore,

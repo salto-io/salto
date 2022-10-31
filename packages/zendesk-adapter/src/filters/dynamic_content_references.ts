@@ -57,7 +57,7 @@ const transformDynamicContentDependencies = async (
       if (!enableMissingReference) {
         return [part]
       }
-      const matches = placeholder[0].match(/.*\.([a-zA-Z0-9_]+)\}\}/)
+      const matches = placeholder[0].match(/dc\.([a-zA-Z0-9_-]+)\}\}/)
       // matches can return null
       if (!matches || matches.length < 2) {
         return [part]

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression, StaticFile, MapType, BuiltinTypes, isContainerType, isObjectType,
+  VariableExpression, StaticFile, MapType, BuiltinTypes, isObjectType,
   Element,
   isReferenceExpression,
   TypeReference,
@@ -213,6 +213,13 @@ describe('State/cache serialization', () => {
     expect(serialized).not.toMatch(subInstance.constructor.name)
   })
 
+  it('should serialize and deserialize elem id correctly without saving the fullname', async () => {
+    const serialized = await serialize([subInstance])
+    expect(serialized).not.toContain(subInstance.elemID.getFullName())
+    const deserialized = await deserialize(serialized)
+    expect(deserialized[0].elemID.getFullName()).toBe(subInstance.elemID.getFullName())
+  })
+
   it('should call the static files handler with the static files', async () => {
     const file = new StaticFile({ filepath: 'filepath', content: Buffer.from('content') })
     subInstance.value.a = file
@@ -222,36 +229,20 @@ describe('State/cache serialization', () => {
   })
 
   it('should not serialize resolved values', async () => {
-    // TemplateExpressions are discarded
-    const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
     const resolved = await resolve(
-      elementsToSerialize,
-      createInMemoryElementSource(elementsToSerialize)
+      [model],
+      createInMemoryElementSource(elements)
     )
     const serialized = await serialize(await awu(resolved).toArray(), 'keepRef')
     const deserialized = await deserialize(serialized)
-    const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
-    const sortedElementsWithoutRefs = sortedElements
-      // we need to make sure the types are empty as well... Not just the refs
-      .map(e => {
-        if (isInstanceElement(e)) {
-          e.refType = new TypeReference(e.refType.elemID)
-        }
-        if (isContainerType(e)) {
-          e.refInnerType = new TypeReference(e.refInnerType.elemID)
-        }
-        if (isObjectType(e)) {
-          Object.values(e.fields).forEach(field => {
-            field.refType = new TypeReference(field.refType.elemID)
-          })
-        }
-        e.annotationRefTypes = _.mapValues(
-          e.annotationRefTypes,
-          refType => new TypeReference(refType.elemID)
-        )
-        return e
-      })
-    expect(deserialized[5]).toEqual(sortedElementsWithoutRefs[5])
+    Object.values(model.fields).forEach(field => {
+      field.refType = new TypeReference(field.refType.elemID)
+    })
+    model.annotationRefTypes = _.mapValues(
+      model.annotationRefTypes,
+      refType => new TypeReference(refType.elemID)
+    )
+    expect(deserialized[0]).toEqual(model)
   })
 
   // Serializing our nacls to the state file should be the same as serializing the result of fetch
@@ -287,10 +278,11 @@ describe('State/cache serialization', () => {
     expect(innerRefsInst.value.c).toBe(2)
   })
 
-  it('should create the same result for the same input regardless of elements order', async () => {
-    const serialized = await serialize(elements)
-    const shuffledSer = await serialize(_.shuffle(elements))
-    expect(serialized).toEqual(shuffledSer)
+  it('should keep the order of the elements the same', async () => {
+    const shuffledElements = _.shuffle(elements)
+    const shuffledDeserializedElements = await deserialize(await serialize(shuffledElements))
+    expect(shuffledDeserializedElements.map(e => e.elemID.getFullName()))
+      .toEqual(shuffledElements.map(e => e.elemID.getFullName()))
   })
 
   it('should throw error if trying to deserialize a non element object', async () => {

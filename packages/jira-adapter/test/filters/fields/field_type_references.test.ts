@@ -154,6 +154,7 @@ describe('fields_references', () => {
         new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME, 'instance', 'name', 'options', 'a1'),
         { value: 'a1', id: '1' },
       ),
+      element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
     })).toBe('1')
 
     expect(await getFieldsLookUpName({
@@ -162,6 +163,7 @@ describe('fields_references', () => {
         new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME, 'instance', 'name', 'options', 'a1'),
         { value: 'a1', id: '1' },
       ),
+      element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
     })).toBe('1')
 
     expect(await getFieldsLookUpName({
@@ -170,6 +172,7 @@ describe('fields_references', () => {
         new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME, 'instance', 'name', 'options', 'c1'),
         { value: 'c1', id: '3' },
       ),
+      element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
     })).toBe('3')
 
     expect(await getFieldsLookUpName({
@@ -178,6 +181,7 @@ describe('fields_references', () => {
         new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME, 'instance', 'name', 'options', 'c1'),
         { value: 'c1', id: '3' },
       ),
+      element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
     })).toBeInstanceOf(ReferenceExpression)
   })
 })

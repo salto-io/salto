@@ -26,28 +26,11 @@ import {
   API_NAME,
   METADATA_TYPE,
 } from '../src/constants'
-import { MetadataTypeAnnotations, MetadataObjectType, createInstanceElement } from '../src/transformers/transformer'
+import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
 
-
-type ObjectTypeCtorParam = ConstructorParameters<typeof ObjectType>[0]
-type CreateMetadataObjectTypeParams = Omit<ObjectTypeCtorParam, 'elemID'> & {
-  annotations: MetadataTypeAnnotations
-}
-export const createMetadataObjectType = (
-  params: CreateMetadataObjectTypeParams
-): MetadataObjectType => new ObjectType({
-  elemID: new ElemID(SALESFORCE, params.annotations.metadataType),
-  ...params,
-  fields: {
-    [INSTANCE_FULL_NAME_FIELD]: {
-      refType: BuiltinTypes.SERVICE_ID,
-    },
-    ...params.fields,
-  },
-}) as MetadataObjectType
 
 export const mockTypes = {
   ApexClass: createMetadataObjectType({

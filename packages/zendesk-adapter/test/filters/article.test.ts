@@ -79,6 +79,85 @@ describe('article filter', () => {
     }) as FilterType
   })
 
+
+  describe('preDeploy', () => {
+    it('should pass the correct params to deployChange on create', async () => {
+      const id = 2
+      mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
+      const res = await filter.deploy([{ action: 'add', data: { after: articleInstance } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: articleInstance } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['translations'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([{ action: 'add', data: { after: articleInstance } }])
+    })
+
+    it('should pass the correct params to deployChange on update', async () => {
+      const id = 2
+      const clonedArticleBefore = articleInstance.clone()
+      const clonedArticleAfter = articleInstance.clone()
+      clonedArticleBefore.value.id = id
+      clonedArticleAfter.value.id = id
+      clonedArticleAfter.value.title = 'newTitle!'
+      mockDeployChange.mockImplementation(async () => ({}))
+      const res = await filter
+        .deploy([{ action: 'modify', data: { before: clonedArticleBefore, after: clonedArticleAfter } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedArticleBefore, after: clonedArticleAfter } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['translations'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([
+          {
+            action: 'modify',
+            data: { before: clonedArticleBefore, after: clonedArticleAfter },
+          },
+        ])
+    })
+
+    it('should pass the correct params to deployChange on remove', async () => {
+      const id = 2
+      const clonedArticle = articleInstance.clone()
+      clonedArticle.value.id = id
+      mockDeployChange.mockImplementation(async () => ({}))
+      const res = await filter.deploy([{ action: 'remove', data: { before: clonedArticle } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+
+    it('should return error if deployChange failed', async () => {
+      mockDeployChange.mockImplementation(async () => {
+        throw new Error('err')
+      })
+      const res = await filter.deploy([{ action: 'add', data: { after: articleInstance } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: articleInstance } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['translations'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+  })
+
   describe('deploy', () => {
     it('should pass the correct params to deployChange on create', async () => {
       const id = 2

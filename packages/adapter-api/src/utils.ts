@@ -14,13 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TypeElement, ObjectType, Element, PrimitiveType, isContainerType, Field, isObjectType, isField, isListType, isMapType, ReadOnlyElementsSource } from './elements'
-import { Values } from './values'
-
-interface AnnoRef {
-  annoType?: TypeElement
-  annoName?: string
-}
+import { TypeElement, ObjectType, PrimitiveType, isContainerType, Field, isObjectType, isField, isListType, isMapType, ReadOnlyElementsSource } from './elements'
 
 type SubElementSearchResult = {
   field?: Field
@@ -39,7 +33,7 @@ export const getDeepInnerType = async (
   return getDeepInnerType(await type.getInnerType(elementsSource), elementsSource)
 }
 
-export const getSubElement = async (
+const getSubElement = async (
   baseType: TypeElement,
   pathParts: ReadonlyArray<string>,
   elementsSource?: ReadOnlyElementsSource,
@@ -51,7 +45,6 @@ export const getSubElement = async (
     if ((isIndexPathPart(key) && isListType(type)) || isMapType(type)) {
       return type.getInnerType(elementsSource)
     }
-    if (type.annotationRefTypes[key]) return (await type.getAnnotationTypes(elementsSource))?.[key]
     if (isObjectType(type)) return type.fields[key]
     return undefined
   }
@@ -142,14 +135,3 @@ export const getFieldNames = async (
   }
   return []
 }
-
-export const getAnnotationKey = (annotations: {[key: string]: TypeElement}, path: string[]):
-  AnnoRef => {
-  // Looking for the longest key in annotations that start with pathParts
-  const annoName = path[0]
-  const annoType = (annoName) ? annotations[annoName] : undefined
-  return { annoName, annoType }
-}
-
-export const getAnnotationValue = (element: Element, annotation: string): Values =>
-  (element.annotations[annotation] || {})

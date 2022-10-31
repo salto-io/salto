@@ -78,7 +78,7 @@ import splitCustomLabels from './filters/split_custom_labels'
 import customMetadataTypeFilter from './filters/custom_metadata_type'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
-import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator } from './filter'
+import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
@@ -91,15 +91,6 @@ const { partition } = promises.array
 const { concatObjects } = objects
 
 const log = logger(module)
-
-type RemoteFilterCreatorDefinition = {
-  creator: RemoteFilterCreator
-  addsNewInformation: true
-}
-type LocalFilterCreatorDefinition = {
-  creator: LocalFilterCreator
-  addsNewInformation?: false
-}
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
   { creator: settingsFilter, addsNewInformation: true },
@@ -210,7 +201,7 @@ export interface SalesforceAdapterParams {
   elementsSource: ReadOnlyElementsSource
 }
 
-const metadataToRetrieveAndDeploy = [
+const METADATA_TO_RETRIEVE = [
   // Metadata with content - we use retrieve to get the StaticFiles properly
   'ApexClass', // contains encoded zip content
   'ApexComponent', // contains encoded zip content
@@ -245,7 +236,7 @@ const metadataToRetrieveAndDeploy = [
 ]
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
-export const allSystemFields = [
+export const SYSTEM_FIELDS = [
   'ConnectionReceivedId',
   'ConnectionSentId',
   'CreatedById',
@@ -265,6 +256,11 @@ export const allSystemFields = [
   'SetupOwnerId',
 ]
 
+export const UNSUPPORTED_SYSTEM_FIELDS = [
+  'LastReferencedDate',
+  'LastViewedDate',
+]
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -278,7 +274,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-    metadataToRetrieve = metadataToRetrieveAndDeploy,
+    metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {
       CustomLabels: {
         nestedInstanceFields: ['labels'],
@@ -322,11 +318,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     client,
     getElemIdFunc,
     elementsSource,
-    systemFields = allSystemFields,
-    unsupportedSystemFields = [
-      'LastReferencedDate',
-      'LastViewedDate',
-    ],
+    systemFields = SYSTEM_FIELDS,
+    unsupportedSystemFields = UNSUPPORTED_SYSTEM_FIELDS,
     config,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest

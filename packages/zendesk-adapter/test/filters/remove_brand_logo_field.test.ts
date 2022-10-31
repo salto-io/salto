@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/remove_brand_logo_field'
+import filterCreator from '../../src/filters/remove_brand_fields'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
 

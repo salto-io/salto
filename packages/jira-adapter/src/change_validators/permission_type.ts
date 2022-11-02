@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { isEmpty } from 'lodash'
-import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS } from '../constants'
+import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS, JIRA } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -33,7 +33,7 @@ export const isAdditionalPermissionScheme = createSchemeGuard<{key: string}>(ADD
 export const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<Set<string>|undefined> => {
-  const permissionListElementId = await elementSource.get(new ElemID('jira', PERMISSIONS, 'instance', ElemID.CONFIG_NAME))
+  const permissionListElementId = await elementSource.get(new ElemID(JIRA, PERMISSIONS, 'instance', ElemID.CONFIG_NAME))
   if (!permissionListElementId) {
     return undefined
   }
@@ -51,9 +51,9 @@ const getInvalidPermissions = (
   permissionScheme: InstanceElement,
   allowedPermissions: Set<string>,
 ): string[] =>
-  permissionScheme.value.permissions.filter(
-    (permission: { permission: string }) => !allowedPermissions.has(permission.permission)
-  )
+  permissionScheme.value.permissions
+    .map((permission: { permission: string }) => permission.permission)
+    .filter((permission: string) => !allowedPermissions.has(permission))
 
 const getInvalidPermissionErrorMessage = (
   permissionScheme: InstanceElement,

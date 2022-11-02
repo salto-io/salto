@@ -22,12 +22,12 @@ describe('permissionType change validator', () => {
   let elementsSource: ReadOnlyElementsSource
   let elements: InstanceElement[]
   const permissionObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSIONS) })
-  const permissionsInstance = new InstanceElement('permissions', permissionObject, {
-    additionalProperties: [
-      {
+  const permissionsInstance = new InstanceElement('_config', permissionObject, {
+    additionalProperties: {
+      validPermission: {
         key: 'validPermission',
       },
-    ],
+    },
   })
   const permissionSchemeObject = new ObjectType({ elemID: new ElemID(JIRA,
     PERMISSION_SCHEME_TYPE_NAME) })
@@ -64,7 +64,7 @@ describe('permissionType change validator', () => {
           elemID: invalidPermissionScheme.elemID,
           severity: 'Warning',
           message: 'Invalid permission type in permission scheme',
-          detailedMessage: 'The permissions inValidPermission in jira.PermissionScheme.instance.instance1 does not exist in the current environment and will be excluded during deployment',
+          detailedMessage: 'The permissions inValidPermission in jira.PermissionScheme.instance.instance1 do not exist in the current environment and will be excluded during deployment',
         },
       ])
   })

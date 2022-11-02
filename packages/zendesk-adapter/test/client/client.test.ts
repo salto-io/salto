@@ -40,14 +40,14 @@ describe('client', () => {
     it('should return an empty result when there is a 403 response and we asked for workspaces', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
-      const res = await client.getSinglePage({ url: '/workspaces' })
+      const res = await client.getSinglePage({ url: '/api/v2/workspaces' })
       expect(res.data).toEqual([])
       expect(res.status).toEqual(403)
     })
     it('should return an empty result when there is a 403 response and we asked for custom statuses', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
-      const res = await client.getSinglePage({ url: '/custom_statuses' })
+      const res = await client.getSinglePage({ url: '/api/v2/custom_statuses' })
       expect(res.data).toEqual([])
       expect(res.status).toEqual(403)
     })

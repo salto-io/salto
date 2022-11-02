@@ -48,6 +48,25 @@ describe('article filter', () => {
       promoted: false,
       position: 0,
       section_id: '12345',
+      source_locale: 'en-us',
+      locale: 'en-us',
+      outdated: false,
+      permission_group_id: '666',
+      translations: [
+        '9999999',
+      ],
+      brand: '1',
+    }
+  const articleTranslationInstance = new InstanceElement(
+    'testArticle',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+    {
+      author_id: 'author@salto.io',
+      comments_disabled: false,
+      draft: false,
+      promoted: false,
+      position: 0,
+      section_id: '12345',
       name: 'The name of the article',
       title: 'The title of the article',
       source_locale: 'en-us',
@@ -55,9 +74,6 @@ describe('article filter', () => {
       outdated: false,
       permission_group_id: '666',
       body: '<p>ppppp</p>',
-      translations: [
-        '9999999',
-      ],
       brand: '1',
     }
   )

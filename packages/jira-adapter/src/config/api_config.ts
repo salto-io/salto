@@ -443,7 +443,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/filter/search',
       queryParams: {
-        expand: 'description,owner,jql,sharePermissions,subscriptions',
+        expand: 'description,owner,jql,sharePermissions',
       },
       paginationField: 'startAt',
       recurseInto: [
@@ -463,7 +463,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'columns', fieldType: 'list<ColumnItem>' },
         { fieldName: 'expand', fieldType: 'string' },
-        { fieldName: 'subscriptions', fieldType: 'list<FilterSubscription>' },
       ],
       fieldsToHide: [
         {
@@ -472,7 +471,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       fieldsToOmit: [
         { fieldName: 'expand' },
-        { fieldName: 'subscriptions' },
       ],
       serviceUrl: '/issues/?filter={id}',
     },
@@ -489,6 +487,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         url: '/rest/api/3/filter/{id}',
         method: 'delete',
       },
+    },
+  },
+  GroupName: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: 'groupId' },
+      ],
     },
   },
   IssueTypeSchemes: {
@@ -1533,6 +1538,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   IssueEvent: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'templateName', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' },
+      ],
       fieldsToHide: [
         {
           fieldName: 'id',

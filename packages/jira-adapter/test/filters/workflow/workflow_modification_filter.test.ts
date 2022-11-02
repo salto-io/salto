@@ -222,7 +222,7 @@ describe('workflowModificationFilter', () => {
       deployWorkflowSchemeMock.mockRejectedValueOnce({
         response: {
           data: {
-            errorMessages: ['is missing the mappings required for statuses with IDs'],
+            errorMessages: ['is missing the mappings required for statuses with'],
           },
         },
       })

@@ -61,7 +61,6 @@ import workflowStructureFilter from './filters/workflow/workflow_structure_filte
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties_filter'
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
-import stepIdsFilter from './filters/workflow/step_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
 import workflowGroupsFilter from './filters/workflow/groups_filter'
@@ -104,6 +103,7 @@ import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permi
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
+import filtersDcDeployFilter from './filters/filters_dc_deploy'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
@@ -139,9 +139,8 @@ export const DEFAULT_FILTERS = [
   avatarsFilter,
   iconUrlFilter,
   workflowStructureFilter,
-  transitionIdsFilter,
-  stepIdsFilter,
   triggersFilter,
+  transitionIdsFilter,
   resolutionPropertyFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,
@@ -199,6 +198,8 @@ export const DEFAULT_FILTERS = [
   smartValueReferenceFilter,
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
+  // Must run before account id
+  filtersDcDeployFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

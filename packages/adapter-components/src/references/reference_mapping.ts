@@ -163,7 +163,7 @@ export class FieldReferenceResolver<T extends string> {
     return new FieldReferenceResolver<S>(def)
   }
 
-  async match(field: Field, element?: Element): Promise<boolean> {
+  async match(field: Field, element: Element): Promise<boolean> {
     return (
       matchName(field.name, this.src.field)
       && (
@@ -178,7 +178,7 @@ export class FieldReferenceResolver<T extends string> {
 
 export type ReferenceResolverFinder<T extends string> = (
   field: Field,
-  element?: Element,
+  element: Element,
 ) => Promise<FieldReferenceResolverDetails<T>[]>
 
 /**

@@ -20,7 +20,7 @@ import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
   isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
-import { normalizeFilePathPart, naclCase, referenceExpressionStringifyReplacer,
+import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
   resolveChangeElement, safeJsonStringify, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -78,7 +78,7 @@ const replaceAttachmentId = (
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
-      safeJsonStringify(attachments, referenceExpressionStringifyReplacer)}`)
+      safeJsonStringify(attachments, elementExpressionStringifyReplacer)}`)
     throw new Error('Failed to deploy macro because its attachment field has an invalid format')
   }
   parentInstance.value[ATTACHMENTS_FIELD_NAME] = attachments

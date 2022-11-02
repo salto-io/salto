@@ -14,16 +14,13 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
+import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/remove_definition_instances'
 import { FilterResult } from '../../src/filter'
+import { createFilterCreatorParams } from '../utils'
 
 describe('remove definition instances', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch', FilterResult>
   let filter: FilterType
   const randomObjType = new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') })
@@ -35,18 +32,7 @@ describe('remove definition instances', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

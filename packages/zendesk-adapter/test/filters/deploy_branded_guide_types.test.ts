@@ -16,10 +16,8 @@
 import {
   ObjectType, ElemID, InstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
+import { filterUtils } from '@salto-io/adapter-components'
+import { createFilterCreatorParams } from '../utils'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/deploy_branded_guide_types'
 
@@ -36,7 +34,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('deployBrandedGuideTypes filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const brandInstnace = new InstanceElement(
@@ -64,18 +61,7 @@ describe('deployBrandedGuideTypes filter', () => {
   )
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('deploy', () => {

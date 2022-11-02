@@ -50,7 +50,7 @@ export const JSP_API_HEADERS = {
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
-  private isDataCenter: boolean
+  readonly isDataCenter: boolean
 
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>

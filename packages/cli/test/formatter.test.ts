@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
-  PrimitiveTypes, BuiltinTypes, StaticFile,
+  PrimitiveTypes, BuiltinTypes, StaticFile, ListType,
 } from '@salto-io/adapter-api'
 import { EOL } from 'os'
 import { FetchChange } from '@salto-io/core'
@@ -405,13 +405,8 @@ describe('formatter', () => {
       describe('with array of objects', () => {
         const formatedObjectsExpectedResults = `[
           {
-            name: "salsal"
+            name: "sal"
             nicknames: ["o","s","s"]
-            office: 
-                {
-                  label: "1"
-                  name: "2"
-                }
           },
           {
             name: "to"
@@ -423,9 +418,30 @@ describe('formatter', () => {
                 }
           }]`
         beforeAll(async () => {
-          const instanceBefore = allElements[6] as InstanceElement
-          const instanceAfter = allElements[7] as InstanceElement
-          const instanceChange = detailedChange('modify', instanceBefore.elemID, instanceBefore, instanceAfter)
+          const saltoEmployee = allElements[3] as ObjectType
+          const objectFormatTesting = new ObjectType({
+            elemID: new ElemID('salto', 'test1'),
+            fields: {
+              country: { refType: new ListType(saltoEmployee) },
+            },
+          })
+          const instanceAfter = new InstanceElement('myinstance', objectFormatTesting, {
+            country: [
+              {
+                name: 'sal',
+                nicknames: ['o', 's', 's'],
+              },
+              {
+                name: 'to',
+                nicknames: ['s', 'a', 'a', 's'],
+                office: {
+                  label: 'a',
+                  name: 'b',
+                },
+              },
+            ],
+          })
+          const instanceChange = detailedChange('add', instanceAfter.elemID, undefined, instanceAfter)
           output = await formatChange(instanceChange, true)
         })
         it('should match expected value', () => {

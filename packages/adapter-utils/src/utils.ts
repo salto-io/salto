@@ -237,7 +237,7 @@ export const transformValues = async (
       ),
       _.isUndefined
     )
-    return _.isEmpty(result) ? undefined : result
+    return _.isEmpty(result) && !allowEmpty ? undefined : result
   }
   if (_.isArray(newVal)) {
     const result = await awu(newVal)
@@ -248,7 +248,7 @@ export const transformValues = async (
       ))
       .filter(value => !_.isUndefined(value))
       .toArray()
-    return result.length === 0 ? undefined : result
+    return result.length === 0 && !allowEmpty ? undefined : result
   }
   return newVal
 }
@@ -439,7 +439,7 @@ export type GetLookupNameFuncArgs = {
   ref: ReferenceExpression
   field?: Field
   path?: ElemID
-  element?: Element
+  element: Element
 }
 export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Promise<Value>
 
@@ -451,7 +451,7 @@ export type ResolveValuesFunc = <T extends Element>(
 ) => Promise<T>
 
 export const resolveValues: ResolveValuesFunc = async (
-  element, getLookUpName, elementsSource, allowEmpty = false,
+  element, getLookUpName, elementsSource, allowEmpty = true,
 ) => {
   const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
     if (isReferenceExpression(value)) {
@@ -543,7 +543,7 @@ export const restoreValues: RestoreValuesFunc = async (
 
     const ref = allReferencesPaths.get(path.getFullName())
     if (ref !== undefined) {
-      const refValue = await getLookUpName({ ref, field, path })
+      const refValue = await getLookUpName({ ref, field, path, element: targetElement })
       if (isEqualResolvedValues(refValue, value)) {
         return ref
       }
@@ -975,12 +975,15 @@ export const createDefaultInstanceFromType = async (name: string, objectType: Ob
 
 type Replacer = (key: string, value: Value) => Value
 
-export const referenceExpressionStringifyReplacer: Replacer = (_key, value) => {
+export const elementExpressionStringifyReplacer: Replacer = (_key, value) => {
   if (isReferenceExpression(value)) {
     return `ReferenceExpression(${value.elemID.getFullName()}, ${value.value ? '<omitted>' : '<no value>'})`
   }
   if (isTypeReference(value)) {
     return `TypeReference(${value.elemID.getFullName()}, ${value.type ? '<omitted>' : '<no value>'})`
+  }
+  if (value instanceof ElemID) {
+    return `ElemID(${value.getFullName()})`
   }
   return value
 }

@@ -162,6 +162,10 @@ export const serialize = async <T = Element>(
     }
     return _.pick(saltoClassReplacer(e), SALTO_CLASS_FIELD, 'filepath', 'hash', 'encoding')
   }
+
+  const elemIdReplacer = (id: ElemID): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> =>
+    _.pick(id, 'adapter', 'typeName', 'idType', 'nameParts')
+
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {
     if (e.value === undefined || referenceSerializerMode === 'keepRef' || !isVariableExpression(e)) {
@@ -209,14 +213,16 @@ export const serialize = async <T = Element>(
       if (isSaltoSerializable(v)) {
         return saltoClassReplacer(_.cloneDeepWith(v, replacer))
       }
+      if (v instanceof ElemID) {
+        return elemIdReplacer(v)
+      }
     }
     return undefined
   }
-  const cloneElements = elements.map(element => {
+  const clonedElements = elements.map(element => {
     const clone = _.cloneDeepWith(element, replacer)
     return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
   })
-  const sortedElements = _.sortBy(cloneElements, e => e.elemID.getFullName())
 
   // Avoiding Promise.all to not reach Promise.all limit
   await awu(promises).forEach(promise => promise)
@@ -224,7 +230,7 @@ export const serialize = async <T = Element>(
   // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
   // circles
   // eslint-disable-next-line no-restricted-syntax
-  return JSON.stringify(sortedElements)
+  return JSON.stringify(clonedElements)
 }
 
 export type StaticFileReviver =

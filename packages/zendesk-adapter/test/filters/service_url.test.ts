@@ -14,15 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
+import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/service_url'
+import { createFilterCreatorParams } from '../utils'
 
 describe('service url filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy'>
   let filter: FilterType
   const roleObjType = new ObjectType({ elemID: new ElemID(ZENDESK, 'custom_role') })
@@ -32,18 +29,7 @@ describe('service url filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

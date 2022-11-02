@@ -15,32 +15,18 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/handle_template_expressions'
-import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import { DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
 import { createMissingInstance } from '../../src/filters/references/missing_references'
+import { createFilterCreatorParams } from '../utils'
 
 describe('handle templates filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
   let filter: FilterType
 
   beforeAll(() => {
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'c' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   const testType = new ObjectType({
@@ -91,6 +77,10 @@ describe('handle templates filter', () => {
     placeholder: '{{dc.dynamic_content_test}}',
   })
 
+  const hyphenDynamicContentRecord = new InstanceElement('dynamic-content-test', dynamicContentType, {
+    placeholder: '{{dc.dynamic-content-test}}',
+  })
+
   const webhookType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'webhook'),
     fields: {
@@ -139,6 +129,7 @@ describe('handle templates filter', () => {
   )
 
   const macroWithDC = new InstanceElement('macroDynamicContent', testType, { id: 1033, actions: [{ value: 'dynamic content ref {{dc.dynamic_content_test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+  const macroWithHyphenDC = new InstanceElement('macroHyphenDynamicContent', testType, { id: 1034, actions: [{ value: 'dynamic content ref {{dc.dynamic-content-test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
 
   const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}', field: 'comment_value_html' }] })
   const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
@@ -158,8 +149,9 @@ describe('handle templates filter', () => {
     placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
     macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
     automation, automationType, dynamicContent, dynamicContentItemType, appInstallation,
-    appInstallationType, macroWithDC, dynamicContentRecord, macroComplicated,
-    macroDifferentBracket, macroWithSideConversationTicketTemplate, placeholder3])
+    appInstallationType, macroWithDC, macroWithHyphenDC, dynamicContentRecord,
+    hyphenDynamicContentRecord, macroComplicated, macroDifferentBracket,
+    macroWithSideConversationTicketTemplate, placeholder3])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -230,6 +222,16 @@ describe('handle templates filter', () => {
         new TemplateExpression({ parts: [
           'dynamic content ref {{',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
+          '}} and {{',
+          new ReferenceExpression(placeholder2.elemID, placeholder2),
+          '}}'] })
+      )
+
+      const fetchedHyphenDCMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroHyphenDynamicContent')
+      expect(fetchedHyphenDCMacro?.value.actions[0].value).toEqual(
+        new TemplateExpression({ parts: [
+          'dynamic content ref {{',
+          new ReferenceExpression(hyphenDynamicContentRecord.elemID, hyphenDynamicContentRecord),
           '}} and {{',
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}'] })

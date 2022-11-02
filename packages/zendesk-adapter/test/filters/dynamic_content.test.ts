@@ -17,11 +17,9 @@ import {
   ObjectType, ElemID, InstanceElement,
   ReferenceExpression, CORE_ANNOTATIONS, toChange,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
+import { filterUtils } from '@salto-io/adapter-components'
+import { createFilterCreatorParams } from '../utils'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import filterCreator, {
   DYNAMIC_CONTENT_ITEM_TYPE_NAME, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME, VARIANTS_FIELD_NAME,
 } from '../../src/filters/dynamic_content'
@@ -39,7 +37,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('dynmaic content filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const parentTypeName = DYNAMIC_CONTENT_ITEM_TYPE_NAME
@@ -119,18 +116,7 @@ describe('dynmaic content filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('preDeploy', () => {

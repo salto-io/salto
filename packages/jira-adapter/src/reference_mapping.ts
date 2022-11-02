@@ -378,6 +378,11 @@ ReferenceContextStrategyName
     target: { type: 'Group' },
   },
   {
+    src: { field: 'name', parentTypes: ['GroupName'] },
+    serializationStrategy: 'nameWithPath',
+    target: { type: 'Group' },
+  },
+  {
     src: { field: 'boardId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'Board' },

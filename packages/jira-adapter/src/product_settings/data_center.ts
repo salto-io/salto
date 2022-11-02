@@ -90,6 +90,26 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get'],
     url: '/rest/api/3/events',
   },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/field/search',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/field/.*/context',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/field/.*/context/issuetypemapping',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/field/.*/context/projectmapping',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/field/.*/context/.*/option',
+  },
 ]
 
 

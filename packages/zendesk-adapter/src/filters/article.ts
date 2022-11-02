@@ -34,7 +34,7 @@ const { awu } = collections.asynciterable
 
 const TRANSLATION_SCHEMA = Joi.object({
   locale: Joi.object().required(),
-  body: Joi.object(),
+  body: [Joi.string(), Joi.object()],
   title: Joi.string().required(),
 }).unknown(true).required()
 
@@ -65,11 +65,11 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-    // We add the title and the resolved body values for articles creation
     await awu(changes)
       .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
       .forEach(async change => {
+        // We add the title and the resolved body values for articles creation
         await addTranslationValues(change)
         const instance = getChangeData(change)
         try {

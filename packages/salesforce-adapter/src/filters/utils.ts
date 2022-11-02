@@ -29,12 +29,12 @@ import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
   MAX_QUERY_LENGTH,
 } from '../constants'
-import { JSONBool, CustomObject, SalesforceRecord } from '../client/types'
-import { metadataType, apiName, defaultApiName, Types, isCustomSettingsObject, isCustomObject } from '../transformers/transformer'
+import { JSONBool, SalesforceRecord } from '../client/types'
+import { metadataType, apiName, defaultApiName, Types, isCustomObject } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
@@ -121,22 +121,6 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
     addMetadataType(elem)
     addLabel(elem)
     await awu(Object.values(elem.fields)).forEach(addFieldDefaults)
-    if (!isCustomSettingsObject(elem) && !(await isCustomMetadataType(elem))) {
-      const defaults: Partial<CustomObject> = {
-        deploymentStatus: 'Deployed',
-        pluralLabel: `${elem.annotations.label}s`,
-        sharingModel: Object.values(elem.fields).some(isMasterDetailField)
-          ? 'ControlledByParent'
-          : 'ReadWrite',
-        nameField: { type: 'Text', label: 'Name' },
-      }
-      const nameFieldType = new ObjectType({ elemID: new ElemID(SALESFORCE, CUSTOM_FIELD) })
-      Object.entries(defaults).forEach(([name, value]) => {
-        setAnnotationDefault(
-          elem, name, value, name === 'nameField' ? nameFieldType : BuiltinTypes.STRING
-        )
-      })
-    }
   }
   if (isInstanceElement(element)) {
     await addInstanceDefaults(element)

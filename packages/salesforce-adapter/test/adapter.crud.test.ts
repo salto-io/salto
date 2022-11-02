@@ -323,17 +323,6 @@ describe('SalesforceAdapter CRUD', () => {
         expect(objAnnotations.label).toEqual('Test')
         expect(result.annotationRefTypes.label.elemID)
           .toEqual(BuiltinTypes.STRING.elemID)
-        expect(objAnnotations.deploymentStatus).toEqual('Deployed')
-        expect(result.annotationRefTypes.deploymentStatus.elemID)
-          .toEqual(BuiltinTypes.STRING.elemID)
-        expect(objAnnotations.nameField).toEqual({ type: 'Text', label: 'Name' })
-        expect(result.annotationRefTypes.nameField.elemID).toEqual(
-          new ElemID(constants.SALESFORCE, constants.CUSTOM_FIELD)
-        )
-        expect(objAnnotations.pluralLabel).toEqual('Tests')
-        expect(result.annotationRefTypes.pluralLabel.elemID).toEqual(BuiltinTypes.STRING.elemID)
-        expect(objAnnotations.sharingModel).toEqual('ReadWrite')
-        expect(result.annotationRefTypes.sharingModel.elemID).toEqual(BuiltinTypes.STRING.elemID)
         expect(
           result.fields.description.annotations[constants.API_NAME]
         ).toBe('Test__c.description__c')

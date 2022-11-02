@@ -16,13 +16,18 @@
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { JIRA, PERMISSIONS, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
+import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
 import permissionSchemeFilter from '../../../src/filters/permission_scheme/allowed_permission_schemes'
 import * as utils from '../../../src/filters/permission_scheme/omit_permissions_common'
 import { getFilterParams } from '../../utils'
 
 const omitChanges = jest.spyOn(utils, 'omitChanges')
 const addBackPermissions = jest.spyOn(utils, 'addBackPermissions')
+const mockGetAllowedPermissionTypes = jest.fn()
+jest.mock('../../../src/change_validators/permission_type', () => ({
+  ...jest.requireActual<{}>('../../../src/change_validators/permission_type'),
+  getAllowedPermissionTypes: jest.fn(args => mockGetAllowedPermissionTypes(args)),
+}))
 
 describe('allowed permission scheme', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
@@ -33,16 +38,9 @@ describe('allowed permission scheme', () => {
   const type = new ObjectType({
     elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME),
   })
-  const permissionObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSIONS) })
-  const permissionsInstance = new InstanceElement('permissions', permissionObject, {
-    additionalProperties: [
-      {
-        key: 'validPermission',
-      },
-    ],
-  })
   beforeEach(async () => {
     jest.clearAllMocks()
+    mockGetAllowedPermissionTypes.mockResolvedValue(new Set(['validPermission']))
     fullInstance = new InstanceElement(
       'instance',
       type,
@@ -68,7 +66,7 @@ describe('allowed permission scheme', () => {
         ],
       }
     )
-    elements = [permissionsInstance, fullInstance]
+    elements = [fullInstance]
     elementsSource = buildElementsSourceFromElements(elements)
     const filterParams = Object.assign(getFilterParams(), { elementsSource })
     filter = permissionSchemeFilter(filterParams) as typeof filter

@@ -23,7 +23,7 @@ import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials
 const log = logger(module)
 
 export const instanceUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com`
-const baseUrl = (subdomain: string): string => (new URL('/api/v2', instanceUrl(subdomain))).href
+const baseUrl = instanceUrl
 // A URL for resource files
 const resourceUrl = (subdomain: string): string => (new URL('/system', instanceUrl(subdomain))).href
 
@@ -42,7 +42,7 @@ export const validateCredentials = async ({ credentials, connection }: {
   connection: clientUtils.APIConnection
 }): Promise<AccountId> => {
   try {
-    await connection.get('/account/settings')
+    await connection.get('/api/v2/account/settings')
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)

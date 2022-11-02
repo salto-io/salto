@@ -25,7 +25,7 @@ import { isTranslation, TranslationType } from '../filters/help_center_section_a
 import { lookupFunc } from '../filters/field_references'
 
 const { awu } = collections.asynciterable
-const PARENTS_TYPE_NAMES = ['section', 'category', 'article']
+const PARENTS_TYPE_NAMES = ['section', 'category']
 
 type ParentType = InstanceElement & {
   value: {
@@ -74,7 +74,6 @@ export const translationForDefaultLocaleValidator: ChangeValidator = async chang
       elemID: instance.elemID,
       severity: 'Error',
       message: `${instance.elemID.typeName} instance does not have a translation for the source locale`,
-      detailedMessage: `${instance.elemID.typeName} instance "${instance.elemID.name}" must have a 
-      translation for the source locale ${instance.value.source_locale}`,
+      detailedMessage: `${instance.elemID.typeName} instance "${instance.elemID.name}" must have a translation for the source locale ${instance.value.source_locale}`,
     }])
 }

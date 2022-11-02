@@ -686,6 +686,33 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  custom_statuses: {
+    request: {
+      url: '/custom_statuses',
+    },
+    transformation: {
+      dataField: 'custom_statuses',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
+  custom_status: {
+    transformation: {
+      sourceTypeName: 'custom_statuses__custom_statuses',
+      idFields: ['status_category', 'raw_agent_label'],
+      fileNameFields: ['status_category', 'raw_agent_label'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'agent_label', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' },
+        { fieldName: 'end_user_description', fieldType: 'string' },
+        { fieldName: 'end_user_label', fieldType: 'string' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/objects-rules/tickets/ticket_statuses/edit/{id}',
+    },
+    // TODO add deploy SALTO-2895
+  },
+
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
@@ -697,7 +724,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'position', fieldType: 'number' },
         { fieldName: 'title', fieldType: 'string' },
         { fieldName: 'description', fieldType: 'string' },
-        { fieldName: 'title_in_portal', fieldType: 'string' }
+        { fieldName: 'title_in_portal', fieldType: 'string' },
+        // TODO may want to add back as part of SALTO-2895
+        { fieldName: 'custom_statuses' },
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/tickets/ticket-fields/{id}',
@@ -1617,8 +1646,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
-      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&brand', 'title'],
+      fileNameFields: ['&brand', 'title'],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1627,6 +1656,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
         { fieldName: 'edited_at' },
+        { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
       serviceUrl: '/knowledge/articles/{id}',
@@ -1666,7 +1696,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1996,6 +2030,7 @@ export const SUPPORTED_TYPES = {
   brand: ['brands'],
   business_hours_schedule: ['business_hours_schedules'],
   custom_role: ['custom_roles'],
+  custom_status: ['custom_statuses'],
   dynamic_content_item: ['dynamic_content_item'],
   group: ['groups'],
   locale: ['locales'],

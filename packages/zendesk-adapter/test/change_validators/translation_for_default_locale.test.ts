@@ -82,15 +82,6 @@ describe('translationForDefaultLocaleValidator',
         body: 'description',
       }
     )
-    const heArticleTranslationInstance = new InstanceElement(
-      'instance',
-      articleTranslationType,
-      {
-        locale: 'he',
-        title: 'name',
-        body: 'description',
-      }
-    )
 
     it('should return an error when section does not have translation for source_locale',
       async () => {
@@ -120,8 +111,7 @@ describe('translationForDefaultLocaleValidator',
           elemID: invalidSectionInstance.elemID,
           severity: 'Error',
           message: `${invalidSectionInstance.elemID.typeName} instance does not have a translation for the source locale`,
-          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a 
-      translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
+          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
         }])
       })
 
@@ -151,38 +141,6 @@ describe('translationForDefaultLocaleValidator',
           [toChange({ after: validSectionInstance })]
         )
         expect(errors).toHaveLength(0)
-      })
-    it('should return an error when article does not have translation for source_locale',
-      async () => {
-        const invalidArticleInstance = replaceInstanceTypeForDeploy({
-          instance: new InstanceElement(
-            'instance',
-            articleType,
-            {
-              id: 1,
-              name: 'name',
-              description: 'description',
-              source_locale: new ReferenceExpression(
-                helpCenterLocaleType.elemID.createNestedID('instance', 'Test1'), helpCenterLocaleInstance
-              ),
-              translations: [new ReferenceExpression(
-                heArticleTranslationInstance.elemID.createNestedID('instance', 'Test1'),
-                heArticleTranslationInstance
-              )],
-            }
-          ),
-          config: DEFAULT_CONFIG.apiDefinitions,
-        })
-        const errors = await translationForDefaultLocaleValidator(
-          [toChange({ after: invalidArticleInstance })]
-        )
-        expect(errors).toEqual([{
-          elemID: invalidArticleInstance.elemID,
-          severity: 'Error',
-          message: `${invalidArticleInstance.elemID.typeName} instance does not have a translation for the source locale`,
-          detailedMessage: `${invalidArticleInstance.elemID.typeName} instance "${invalidArticleInstance.elemID.name}" must have a 
-      translation for the source locale ${invalidArticleInstance.value.source_locale.value.value.id}`,
-        }])
       })
 
     it('should not return an error when article has translation for source_locale',

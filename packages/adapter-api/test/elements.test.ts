@@ -441,6 +441,12 @@ describe('Test elements.ts', () => {
         const nestedID = elemID.createNestedID(...nested)
         expect(elemID.getRelativePath(nestedID)).toEqual(nested)
       })
+      it('should return the correct relative path - both nested in field', () => {
+        const nested = ['b', 'c']
+        const elemID = new ElemID('adapter', 'typeName', 'field', 'test', 'a')
+        const nestedID = elemID.createNestedID(...nested)
+        expect(elemID.getRelativePath(nestedID)).toEqual(nested)
+      })
       it('should return the correct relative path - field', () => {
         const elemID = new ElemID('adapter', 'typeName')
         const nestedID = new ElemID('adapter', 'typeName', 'field', 'f1')

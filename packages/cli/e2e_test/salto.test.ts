@@ -219,8 +219,23 @@ describe.each([
         annotations {
           serviceid metadataType {
           }
+          salesforce.CustomField nameField {
+          }
+          string pluralLabel {
+          }
+          string sharingModel {
+          }
+          string deploymentStatus {
+          }
         }
         metadataType = "CustomObject"
+        nameField = {
+          label = "Name"
+          type = "Text"
+        }
+        pluralLabel = "TestDiffObjozkjqxojoxhfs"
+        sharingModel = "ReadWrite"
+        deploymentStatus = "Deployed"
         ${accountName}.Text Alpha {
           label = "Alpha"
           _required = false

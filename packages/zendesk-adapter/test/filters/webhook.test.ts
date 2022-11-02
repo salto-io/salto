@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
+import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, { WEBHOOK_TYPE_NAME, AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA } from '../../src/filters/webhook'
+import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -34,7 +32,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('webhook filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const webhook = new InstanceElement(
@@ -58,18 +55,7 @@ describe('webhook filter', () => {
   )
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
   describe('deploy', () => {
     it('should pass the correct params to deployChange on create - basic_auth', async () => {

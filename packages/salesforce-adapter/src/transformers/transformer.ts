@@ -1379,6 +1379,24 @@ export const isMetadataObjectType = (elem?: Element): elem is MetadataObjectType
   isObjectType(elem) && elem.annotations[METADATA_TYPE] !== undefined
 )
 
+type ObjectTypeCtorParam = ConstructorParameters<typeof ObjectType>[0]
+type CreateMetadataObjectTypeParams = Omit<ObjectTypeCtorParam, 'elemID'> & {
+  annotations: MetadataTypeAnnotations
+}
+export const createMetadataObjectType = (
+  params: CreateMetadataObjectTypeParams
+): MetadataObjectType => new ObjectType({
+  elemID: new ElemID(SALESFORCE, params.annotations.metadataType),
+  ...params,
+  fields: {
+    [INSTANCE_FULL_NAME_FIELD]: {
+      refType: BuiltinTypes.SERVICE_ID,
+    },
+    ...params.fields,
+  },
+}) as MetadataObjectType
+
+
 export type MetadataValues = MetadataInfo & Values
 
 export type MetadataInstanceElement = InstanceElement & {

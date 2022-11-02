@@ -179,9 +179,6 @@ describe('fieldConfigurationItemsFilter', () => {
       ])
       expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(1)
 
-      expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][0]
-        .occurrences[0].location.elemID).toEqual(projectInstance.elemID.createNestedID('fieldConfigurationScheme'))
-
       expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES][0].reference
         .elemID).toEqual(fieldConfigurationItems[0].elemID)
     })

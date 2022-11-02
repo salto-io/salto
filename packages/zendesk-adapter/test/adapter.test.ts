@@ -49,14 +49,14 @@ jest.mock('@salto-io/adapter-components', () => {
 const callbackResponseFunc = (config: AxiosRequestConfig): any => {
   const { baseURL, url, params } = config
   const requestParams = !_.isEmpty(params) ? { params } : undefined
-  if (baseURL === 'https://mybrand.zendesk.com/api/v2') {
+  if (baseURL?.toLowerCase() === 'https://mybrand.zendesk.com') {
     return [
       200,
       (defaultBrandMockReplies as MockReply[])
         .find(reply => reply.url === url && reply.params === requestParams)?.response || [],
     ]
   }
-  if (baseURL === 'https://brandwithguide.zendesk.com/api/v2') {
+  if (baseURL?.toLowerCase() === 'https://brandwithguide.zendesk.com') {
     return [
       200,
       (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response
@@ -71,7 +71,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/account/settings').replyOnce(200, { settings: {} })
+    mockAxiosAdapter.onGet('/api/v2/account/settings').replyOnce(200, { settings: {} })
   })
 
   afterEach(() => {
@@ -149,10 +149,10 @@ describe('adapter', () => {
           'zendesk.app_owned__parameters',
           'zendesk.apps_owned',
           'zendesk.article',
-          'zendesk.article.instance.brandWithGuide_This_is_the_name_of_the_article@ussssss',
+          'zendesk.article.instance.brandWithGuide_Title_Yo__@ussa',
           'zendesk.article.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers_@usssssssa',
           'zendesk.article_translation',
-          'zendesk.article_translation.instance.brandWithGuide_This_is_the_name_of_the_article_ussssss__en_us_b@uuuuuuumuuum',
+          'zendesk.article_translation.instance.brandWithGuide_Title_Yo___ussa__en_us_b@uuuumuuum',
           'zendesk.article_translation.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers__usssssssa__en_us_b@uuuuuuuuumuuum',
           'zendesk.article_translation__translations',
           'zendesk.articles',
@@ -237,6 +237,12 @@ describe('adapter', () => {
           'zendesk.custom_role.instance.Team_lead@s',
           'zendesk.custom_role__configuration',
           'zendesk.custom_roles',
+          'zendesk.custom_status',
+          'zendesk.custom_status.instance.new___zd_status_new__@u_00123_00123vu_00125_00125',
+          'zendesk.custom_status.instance.open___zd_status_open__@u_00123_00123vu_00125_00125',
+          'zendesk.custom_status.instance.open_test_n1',
+          'zendesk.custom_status.instance.open_test_n1@ub',
+          'zendesk.custom_statuses',
           'zendesk.dynamic_content_item',
           'zendesk.dynamic_content_item.instance.Dynamic_content_item_title_543@s',
           'zendesk.dynamic_content_item.instance.dynamic_content_item_544@s',
@@ -251,15 +257,17 @@ describe('adapter', () => {
           'zendesk.group.instance.Support4',
           'zendesk.group.instance.Support5',
           'zendesk.groups',
-          'zendesk.help_center_locale',
+          'zendesk.guide_settings',
+          'zendesk.guide_settings.instance.brandWithGuide',
+          'zendesk.guide_settings.instance.myBrand',
+          'zendesk.guide_settings__help_center',
+          'zendesk.guide_settings__help_center__feature_restrictions',
+          'zendesk.guide_settings__help_center__settings',
+          'zendesk.guide_settings__help_center__settings__preferences',
+          'zendesk.guide_settings__help_center__text_filter',
           'zendesk.help_center_locale',
           'zendesk.help_center_locale.instance.en_us@b',
           'zendesk.help_center_locale.instance.he',
-          'zendesk.label',
-          'zendesk.label.instance.myBrand_KCTemplate',
-          'zendesk.label.instance.myBrand_TestLabel',
-          'zendesk.label.instance.myBrand_heb',
-          'zendesk.labels',
           'zendesk.locale',
           'zendesk.locale.instance.en_US@b',
           'zendesk.locale.instance.es',
@@ -589,7 +597,7 @@ describe('adapter', () => {
                   },
                   groups: {
                     request: {
-                      url: '/groups',
+                      url: '/api/v2/groups',
                     },
                     transformation: {
                       dataField: 'groups',
@@ -652,7 +660,7 @@ describe('adapter', () => {
                 },
                 groups: {
                   request: {
-                    url: '/groups',
+                    url: '/api/v2/groups',
                   },
                   transformation: {
                     dataField: 'groups',
@@ -699,7 +707,7 @@ describe('adapter', () => {
         previous_page: null,
         count: 1,
       }
-      mockAxiosAdapter.onGet('/groups').replyOnce(
+      mockAxiosAdapter.onGet('/api/v2/groups').replyOnce(
         200, response
       )
       const usersResponse = {
@@ -750,7 +758,7 @@ describe('adapter', () => {
         previous_page: null,
         count: 1,
       }
-      mockAxiosAdapter.onGet('/users').replyOnce(
+      mockAxiosAdapter.onGet('/api/v2/users').replyOnce(
         200, usersResponse
       )
       const { elements: newElements } = await operations
@@ -813,12 +821,12 @@ describe('adapter', () => {
                 group: {
                   deployRequests: {
                     add: {
-                      url: '/groups',
+                      url: '/api/v2/groups',
                       deployAsField: 'group',
                       method: 'post',
                     },
                     modify: {
-                      url: '/groups/{groupId}',
+                      url: '/api/v2/groups/{groupId}',
                       method: 'put',
                       deployAsField: 'group',
                       urlParamsToFields: {
@@ -826,7 +834,7 @@ describe('adapter', () => {
                       },
                     },
                     remove: {
-                      url: '/groups/{groupId}',
+                      url: '/api/v2/groups/{groupId}',
                       method: 'delete',
                       deployAsField: 'group',
                       urlParamsToFields: {
@@ -841,7 +849,7 @@ describe('adapter', () => {
                   },
                   deployRequests: {
                     add: {
-                      url: '/brands',
+                      url: '/api/v2/brands',
                       method: 'post',
                     },
                   },
@@ -852,14 +860,14 @@ describe('adapter', () => {
                   },
                   deployRequests: {
                     add: {
-                      url: '/anotherType',
+                      url: '/api/v2/anotherType',
                       method: 'post',
                     },
                   },
                 },
                 groups: {
                   request: {
-                    url: '/groups',
+                    url: '/api/v2/groups',
                   },
                   transformation: {
                     dataField: 'groups',
@@ -867,7 +875,7 @@ describe('adapter', () => {
                 },
                 brands: {
                   request: {
-                    url: '/brands',
+                    url: '/api/v2/brands',
                   },
                   transformation: {
                     dataField: 'brands',

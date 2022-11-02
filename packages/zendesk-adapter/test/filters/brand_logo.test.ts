@@ -18,12 +18,11 @@ import {
   ObjectType, ElemID, InstanceElement, isInstanceElement, StaticFile, ReferenceExpression,
   CORE_ANNOTATIONS, getChangeData,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/brand_logo'
-import { DEFAULT_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { createFilterCreatorParams } from '../utils'
 
 jest.useFakeTimers()
 
@@ -52,15 +51,7 @@ describe('brand logo filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
   describe('onFetch', () => {
@@ -140,7 +131,7 @@ describe('brand logo filter', () => {
     beforeEach(() => {
       mockGet = jest.spyOn(client, 'getResource')
       mockGet.mockImplementation(params => {
-        if (params.url === `/brands/${logoId}/test.png`) {
+        if (params.url === `/api/v2/brands/${logoId}/test.png`) {
           return {
             status: 200,
             data: content,
@@ -150,7 +141,7 @@ describe('brand logo filter', () => {
       })
       mockBrandGet = jest.spyOn(client, 'getSinglePage')
       mockBrandGet.mockImplementation(params => {
-        if (params.url === `/brands/${brandId}`) {
+        if (params.url === `/api/v2/brands/${brandId}`) {
           return {
             status: 200,
             data: { brand: { logo: { id: logoId } } },
@@ -203,7 +194,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -235,7 +226,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(1)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -260,7 +251,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(1)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -291,7 +282,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })
@@ -321,7 +312,7 @@ describe('brand logo filter', () => {
 
       expect(mockPut).toHaveBeenCalledTimes(5)
       expect(mockPut).toHaveBeenCalledWith({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: expect.any(FormData),
         headers: expect.anything(),
       })

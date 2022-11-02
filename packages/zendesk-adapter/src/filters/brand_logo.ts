@@ -139,7 +139,7 @@ const fetchBrand = async (
   brandId: string,
 ): Promise<Brand | undefined> => {
   const response = await client.getSinglePage({
-    url: `/brands/${brandId}`,
+    url: `/api/v2/brands/${brandId}`,
   })
   if (response === undefined) {
     log.error('Received empty response from Zendesk API. Not adding brand logo')
@@ -168,7 +168,7 @@ const deployBrandLogo = async (
       form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
       // eslint-disable-next-line no-await-in-loop
       const putResult = await client.put({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: form,
         headers: { ...form.getHeaders() },
       })

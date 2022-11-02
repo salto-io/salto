@@ -13,32 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
-import { logger } from '@salto-io/logging'
-import { credsSpec } from './e2e_test/jest_environment'
-import { UsernamePasswordCredentials } from './src/types'
-import { CUSTOM_OBJECT } from './src/constants'
-import { CustomObject as tCustomObject } from './src/client/types'
 
 export { default } from './src/adapter'
 export { adapter } from './src/adapter_creator'
 export { default as SalesforceClient } from './src/client/client'
 export { UsernamePasswordCredentials, OauthAccessTokenCredentials } from './src/types'
 export { getAllInstances } from './src/filters/custom_objects_instances'
-
-const log = logger(module)
-
-export type TestHelpers = {
-  credentials: (envName?: string) => Promise<CredsLease<UsernamePasswordCredentials>>
-  CUSTOM_OBJECT: string
-}
-
-export const testHelpers = (): TestHelpers => ({
-  CUSTOM_OBJECT,
-  credentials: (envName?: string) => creds(credsSpec(envName), log),
-})
-
-// eslint-disable-next-line @typescript-eslint/no-namespace
-export namespace testTypes {
-  export type CustomObject = tCustomObject
-}
+export { testTypes } from './e2e_test/jest_environment'
+export { testHelpers } from './e2e_test/jest_environment'
+export { TestHelpers } from './e2e_test/jest_environment'
+export { loadElementsFromFolder } from './src/sfdx_parser/sfdx_parser'

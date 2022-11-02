@@ -36,6 +36,12 @@ describe('translationForDefaultLocaleValidator',
     const sectionTranslationType = new ObjectType(
       { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
     )
+    const articleTypeName = 'article'
+    const articleTranslationTypename = 'article_translation'
+    const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, articleTypeName) })
+    const articleTranslationType = new ObjectType(
+      { elemID: new ElemID(ZENDESK, articleTranslationTypename) }
+    )
     const helpCenterLocaleType = new ObjectType(
       { elemID: new ElemID(ZENDESK, helpCenterLocaleTypename) }
     )
@@ -52,6 +58,15 @@ describe('translationForDefaultLocaleValidator',
     const enSectionTranslationInstance = new InstanceElement(
       'instance',
       sectionTranslationType,
+      {
+        locale: 'en-us',
+        title: 'name',
+        body: 'description',
+      }
+    )
+    const enArticleTranslationInstance = new InstanceElement(
+      'instance',
+      articleTranslationType,
       {
         locale: 'en-us',
         title: 'name',
@@ -96,8 +111,7 @@ describe('translationForDefaultLocaleValidator',
           elemID: invalidSectionInstance.elemID,
           severity: 'Error',
           message: `${invalidSectionInstance.elemID.typeName} instance does not have a translation for the source locale`,
-          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a 
-      translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
+          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
         }])
       })
 
@@ -125,6 +139,34 @@ describe('translationForDefaultLocaleValidator',
         )
         const errors = await translationForDefaultLocaleValidator(
           [toChange({ after: validSectionInstance })]
+        )
+        expect(errors).toHaveLength(0)
+      })
+
+    it('should not return an error when article has translation for source_locale',
+      async () => {
+        const validArticleInstance = new InstanceElement(
+          'instance',
+          articleType,
+          {
+            id: 1,
+            name: 'name',
+            description: 'description',
+            source_locale: new ReferenceExpression(
+              helpCenterLocaleType.elemID.createNestedID('instance', 'Test1'),
+              helpCenterLocaleInstance
+            ),
+            translations:
+          [
+            new ReferenceExpression(
+              enArticleTranslationInstance.elemID.createNestedID('instance', 'Test1'),
+              enArticleTranslationInstance
+            ),
+          ],
+          }
+        )
+        const errors = await translationForDefaultLocaleValidator(
+          [toChange({ after: validArticleInstance })]
         )
         expect(errors).toHaveLength(0)
       })

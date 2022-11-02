@@ -32,7 +32,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
-const DYNAMIC_CONTENT_REGEX = /(dc\.[\w]+)/g
+const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   'ticket.ticket_field': 'ticket_field',

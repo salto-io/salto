@@ -551,7 +551,7 @@ export const getAdaptersFirstFetchPartial = async (
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all account elements should be consider as "add" changes.
-const calcFetchChanges = async (
+export const calcFetchChanges = async (
   accountElements: ReadonlyArray<Element>,
   mergedAccountElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,

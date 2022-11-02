@@ -20,7 +20,7 @@ import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
   isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
-import { normalizeFilePathPart, naclCase, referenceExpressionStringifyReplacer,
+import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
   resolveChangeElement, safeJsonStringify, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -78,7 +78,7 @@ const replaceAttachmentId = (
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
-      safeJsonStringify(attachments, referenceExpressionStringifyReplacer)}`)
+      safeJsonStringify(attachments, elementExpressionStringifyReplacer)}`)
     throw new Error('Failed to deploy macro because its attachment field has an invalid format')
   }
   parentInstance.value[ATTACHMENTS_FIELD_NAME] = attachments
@@ -99,7 +99,7 @@ ReturnType<typeof client.post> => {
   form.append('filename', instance.value.filename)
   try {
     return await client.post({
-      url: '/macros/attachments',
+      url: '/api/v2/macros/attachments',
       data: form,
       headers: { ...form.getHeaders() },
     })
@@ -163,7 +163,7 @@ const getAttachmentContent = async ({
   attachmentType: ObjectType
 }): Promise<InstanceElement | undefined> => {
   const res = await client.getSinglePage({
-    url: `/macros/attachments/${attachment.id}/content`,
+    url: `/api/v2/macros/attachments/${attachment.id}/content`,
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
@@ -184,7 +184,7 @@ const getMacroAttachments = async ({
   // We are ok with calling getSinglePage here
   //  because a macro can be associated with up to five attachments.
   const response = await client.getSinglePage({
-    url: `/macros/${macro.value.id}/attachments`,
+    url: `/api/v2/macros/${macro.value.id}/attachments`,
   })
   if (Array.isArray(response.data)) {
     log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)

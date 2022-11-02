@@ -641,11 +641,6 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'permission_group' },
   },
   {
-    src: { field: 'label_names', parentTypes: ['article'] },
-    serializationStrategy: 'name',
-    target: { type: 'label' },
-  },
-  {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
     serializationStrategy: 'id',
     target: { type: 'help_center_locale' },
@@ -968,6 +963,6 @@ const filter: FilterCreator = ({ config }) => ({
     )
     await addReferences(secondIterationFieldNameToTypeMappingDefs)
   }, 'Field reference filter'),
-})
 
+})
 export default filter

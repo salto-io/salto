@@ -81,12 +81,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/groups',
+        url: '/api/v2/groups',
         deployAsField: 'group',
         method: 'post',
       },
       modify: {
-        url: '/groups/{groupId}',
+        url: '/api/v2/groups/{groupId}',
         method: 'put',
         deployAsField: 'group',
         urlParamsToFields: {
@@ -94,7 +94,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/groups/{groupId}',
+        url: '/api/v2/groups/{groupId}',
         method: 'delete',
         deployAsField: 'group',
         urlParamsToFields: {
@@ -117,12 +117,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/custom_roles',
+        url: '/api/v2/custom_roles',
         deployAsField: 'custom_role',
         method: 'post',
       },
       modify: {
-        url: '/custom_roles/{customRoleId}',
+        url: '/api/v2/custom_roles/{customRoleId}',
         method: 'put',
         deployAsField: 'custom_role',
         urlParamsToFields: {
@@ -130,7 +130,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/custom_roles/{customRoleId}',
+        url: '/api/v2/custom_roles/{customRoleId}',
         method: 'delete',
         deployAsField: 'custom_role',
         urlParamsToFields: {
@@ -151,12 +151,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/organizations',
+        url: '/api/v2/organizations',
         deployAsField: 'organization',
         method: 'post',
       },
       modify: {
-        url: '/organizations/{organizationId}',
+        url: '/api/v2/organizations/{organizationId}',
         method: 'put',
         deployAsField: 'organization',
         urlParamsToFields: {
@@ -164,7 +164,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/organizations/{organizationId}',
+        url: '/api/v2/organizations/{organizationId}',
         method: 'delete',
         deployAsField: 'organization',
         urlParamsToFields: {
@@ -184,12 +184,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/views',
+        url: '/api/v2/views',
         deployAsField: 'view',
         method: 'post',
       },
       modify: {
-        url: '/views/{viewId}',
+        url: '/api/v2/views/{viewId}',
         method: 'put',
         deployAsField: 'view',
         urlParamsToFields: {
@@ -197,7 +197,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/views/{viewId}',
+        url: '/api/v2/views/{viewId}',
         method: 'delete',
         deployAsField: 'view',
         urlParamsToFields: {
@@ -209,7 +209,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   view_order: {
     deployRequests: {
       modify: {
-        url: '/views/update_many',
+        url: '/api/v2/views/update_many',
         method: 'put',
       },
     },
@@ -232,12 +232,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/triggers',
+        url: '/api/v2/triggers',
         deployAsField: 'trigger',
         method: 'post',
       },
       modify: {
-        url: '/triggers/{triggerId}',
+        url: '/api/v2/triggers/{triggerId}',
         method: 'put',
         deployAsField: 'trigger',
         urlParamsToFields: {
@@ -245,7 +245,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/triggers/{triggerId}',
+        url: '/api/v2/triggers/{triggerId}',
         method: 'delete',
         deployAsField: 'trigger',
         urlParamsToFields: {
@@ -266,12 +266,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/trigger_categories',
+        url: '/api/v2/trigger_categories',
         deployAsField: 'trigger_category',
         method: 'post',
       },
       modify: {
-        url: '/trigger_categories/{triggerCategoryId}',
+        url: '/api/v2/trigger_categories/{triggerCategoryId}',
         method: 'patch',
         deployAsField: 'trigger_category',
         urlParamsToFields: {
@@ -279,7 +279,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/trigger_categories/{triggerCategoryId}',
+        url: '/api/v2/trigger_categories/{triggerCategoryId}',
         method: 'delete',
         deployAsField: 'trigger_category',
         urlParamsToFields: {
@@ -291,7 +291,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   trigger_order: {
     deployRequests: {
       modify: {
-        url: '/trigger_categories/jobs',
+        url: '/api/v2/trigger_categories/jobs',
         method: 'post',
         deployAsField: 'job',
       },
@@ -313,12 +313,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/automations',
+        url: '/api/v2/automations',
         deployAsField: 'automation',
         method: 'post',
       },
       modify: {
-        url: '/automations/{automationId}',
+        url: '/api/v2/automations/{automationId}',
         method: 'put',
         deployAsField: 'automation',
         urlParamsToFields: {
@@ -326,7 +326,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/automations/{automationId}',
+        url: '/api/v2/automations/{automationId}',
         method: 'delete',
         deployAsField: 'automation',
         urlParamsToFields: {
@@ -338,7 +338,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   automation_order: {
     deployRequests: {
       modify: {
-        url: '/automations/update_many',
+        url: '/api/v2/automations/update_many',
         method: 'put',
       },
     },
@@ -354,12 +354,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/slas/policies',
+        url: '/api/v2/slas/policies',
         deployAsField: 'sla_policy',
         method: 'post',
       },
       modify: {
-        url: '/slas/policies/{slaPolicyId}',
+        url: '/api/v2/slas/policies/{slaPolicyId}',
         method: 'put',
         deployAsField: 'sla_policy',
         urlParamsToFields: {
@@ -367,7 +367,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/slas/policies/{slaPolicyId}',
+        url: '/api/v2/slas/policies/{slaPolicyId}',
         method: 'delete',
         deployAsField: 'sla_policy',
         urlParamsToFields: {
@@ -379,7 +379,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   sla_policy_order: {
     deployRequests: {
       modify: {
-        url: '/slas/policies/reorder',
+        url: '/api/v2/slas/policies/reorder',
         method: 'put',
       },
     },
@@ -401,12 +401,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/targets',
+        url: '/api/v2/targets',
         deployAsField: 'target',
         method: 'post',
       },
       modify: {
-        url: '/targets/{targetId}',
+        url: '/api/v2/targets/{targetId}',
         method: 'put',
         deployAsField: 'target',
         urlParamsToFields: {
@@ -414,7 +414,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/targets/{targetId}',
+        url: '/api/v2/targets/{targetId}',
         method: 'delete',
         deployAsField: 'target',
         urlParamsToFields: {
@@ -435,12 +435,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/macros',
+        url: '/api/v2/macros',
         deployAsField: 'macro',
         method: 'post',
       },
       modify: {
-        url: '/macros/{macroId}',
+        url: '/api/v2/macros/{macroId}',
         method: 'put',
         deployAsField: 'macro',
         urlParamsToFields: {
@@ -448,7 +448,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/macros/{macroId}',
+        url: '/api/v2/macros/{macroId}',
         method: 'delete',
         deployAsField: 'macro',
         urlParamsToFields: {
@@ -497,12 +497,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/brands',
+        url: '/api/v2/brands',
         deployAsField: 'brand',
         method: 'post',
       },
       modify: {
-        url: '/brands/{brandId}',
+        url: '/api/v2/brands/{brandId}',
         method: 'put',
         deployAsField: 'brand',
         urlParamsToFields: {
@@ -510,7 +510,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/brands/{brandId}',
+        url: '/api/v2/brands/{brandId}',
         method: 'delete',
         deployAsField: 'brand',
         urlParamsToFields: {
@@ -530,7 +530,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   business_hours_schedules: {
     request: {
-      url: '/business_hours/schedules',
+      url: '/api/v2/business_hours/schedules',
       recurseInto: [
         {
           type: 'business_hours_schedule_holiday',
@@ -553,12 +553,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/business_hours/schedules',
+        url: '/api/v2/business_hours/schedules',
         deployAsField: 'schedule',
         method: 'post',
       },
       modify: {
-        url: '/business_hours/schedules/{scheduleId}',
+        url: '/api/v2/business_hours/schedules/{scheduleId}',
         method: 'put',
         deployAsField: 'schedule',
         urlParamsToFields: {
@@ -566,7 +566,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/business_hours/schedules/{scheduleId}',
+        url: '/api/v2/business_hours/schedules/{scheduleId}',
         method: 'delete',
         deployAsField: 'schedule',
         urlParamsToFields: {
@@ -587,12 +587,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/sharing_agreements',
+        url: '/api/v2/sharing_agreements',
         deployAsField: 'sharing_agreement',
         method: 'post',
       },
       modify: {
-        url: '/sharing_agreements/{sharingAgreementId}',
+        url: '/api/v2/sharing_agreements/{sharingAgreementId}',
         method: 'put',
         deployAsField: 'sharing_agreement',
         urlParamsToFields: {
@@ -600,7 +600,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/sharing_agreements/{sharingAgreementId}',
+        url: '/api/v2/sharing_agreements/{sharingAgreementId}',
         method: 'delete',
         deployAsField: 'sharing_agreement',
         urlParamsToFields: {
@@ -627,12 +627,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/recipient_addresses',
+        url: '/api/v2/recipient_addresses',
         deployAsField: 'recipient_address',
         method: 'post',
       },
       modify: {
-        url: '/recipient_addresses/{supportAddressId}',
+        url: '/api/v2/recipient_addresses/{supportAddressId}',
         method: 'put',
         deployAsField: 'recipient_address',
         urlParamsToFields: {
@@ -640,7 +640,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/recipient_addresses/{supportAddressId}',
+        url: '/api/v2/recipient_addresses/{supportAddressId}',
         method: 'delete',
         deployAsField: 'recipient_address',
         urlParamsToFields: {
@@ -664,12 +664,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/ticket_forms',
+        url: '/api/v2/ticket_forms',
         deployAsField: 'ticket_form',
         method: 'post',
       },
       modify: {
-        url: '/ticket_forms/{ticketFormId}',
+        url: '/api/v2/ticket_forms/{ticketFormId}',
         method: 'put',
         deployAsField: 'ticket_form',
         urlParamsToFields: {
@@ -677,7 +677,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/ticket_forms/{ticketFormId}',
+        url: '/api/v2/ticket_forms/{ticketFormId}',
         method: 'delete',
         deployAsField: 'ticket_form',
         urlParamsToFields: {
@@ -686,6 +686,33 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  custom_statuses: {
+    request: {
+      url: '/api/v2/custom_statuses',
+    },
+    transformation: {
+      dataField: 'custom_statuses',
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+    },
+  },
+  custom_status: {
+    transformation: {
+      sourceTypeName: 'custom_statuses__custom_statuses',
+      idFields: ['status_category', 'raw_agent_label'],
+      fileNameFields: ['status_category', 'raw_agent_label'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'agent_label', fieldType: 'string' },
+        { fieldName: 'description', fieldType: 'string' },
+        { fieldName: 'end_user_description', fieldType: 'string' },
+        { fieldName: 'end_user_label', fieldType: 'string' },
+      ),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      serviceUrl: '/admin/objects-rules/tickets/ticket_statuses/edit/{id}',
+    },
+    // TODO add deploy SALTO-2895
+  },
+
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
@@ -697,19 +724,21 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'position', fieldType: 'number' },
         { fieldName: 'title', fieldType: 'string' },
         { fieldName: 'description', fieldType: 'string' },
-        { fieldName: 'title_in_portal', fieldType: 'string' }
+        { fieldName: 'title_in_portal', fieldType: 'string' },
+        // TODO may want to add back as part of SALTO-2895
+        { fieldName: 'custom_statuses' },
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/tickets/ticket-fields/{id}',
     },
     deployRequests: {
       add: {
-        url: '/ticket_fields',
+        url: '/api/v2/ticket_fields',
         deployAsField: 'ticket_field',
         method: 'post',
       },
       modify: {
-        url: '/ticket_fields/{ticketFieldId}',
+        url: '/api/v2/ticket_fields/{ticketFieldId}',
         method: 'put',
         deployAsField: 'ticket_field',
         urlParamsToFields: {
@@ -717,7 +746,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/ticket_fields/{ticketFieldId}',
+        url: '/api/v2/ticket_fields/{ticketFieldId}',
         method: 'delete',
         deployAsField: 'ticket_field',
         urlParamsToFields: {
@@ -729,7 +758,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_field__custom_field_options: {
     deployRequests: {
       add: {
-        url: '/ticket_fields/{ticketFieldId}/options',
+        url: '/api/v2/ticket_fields/{ticketFieldId}/options',
         method: 'post',
         deployAsField: 'custom_field_option',
         urlParamsToFields: {
@@ -737,7 +766,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/ticket_fields/{ticketFieldId}/options',
+        url: '/api/v2/ticket_fields/{ticketFieldId}/options',
         method: 'post',
         deployAsField: 'custom_field_option',
         urlParamsToFields: {
@@ -745,7 +774,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/ticket_fields/{ticketFieldId}/options/{ticketFieldOptionId}',
+        url: '/api/v2/ticket_fields/{ticketFieldId}/options/{ticketFieldOptionId}',
         method: 'delete',
         urlParamsToFields: {
           ticketFieldId: '_parent.0.id',
@@ -777,12 +806,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/user_fields',
+        url: '/api/v2/user_fields',
         deployAsField: 'user_field',
         method: 'post',
       },
       modify: {
-        url: '/user_fields/{userFieldId}',
+        url: '/api/v2/user_fields/{userFieldId}',
         method: 'put',
         deployAsField: 'user_field',
         urlParamsToFields: {
@@ -790,7 +819,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/user_fields/{userFieldId}',
+        url: '/api/v2/user_fields/{userFieldId}',
         method: 'delete',
         deployAsField: 'user_field',
         urlParamsToFields: {
@@ -802,7 +831,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_field__custom_field_options: {
     deployRequests: {
       add: {
-        url: '/user_fields/{userFieldId}/options',
+        url: '/api/v2/user_fields/{userFieldId}/options',
         method: 'post',
         deployAsField: 'custom_field_option',
         urlParamsToFields: {
@@ -810,7 +839,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/user_fields/{userFieldId}/options',
+        url: '/api/v2/user_fields/{userFieldId}/options',
         method: 'post',
         deployAsField: 'custom_field_option',
         urlParamsToFields: {
@@ -818,7 +847,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/user_fields/{userFieldId}/options/{userFieldOptionId}',
+        url: '/api/v2/user_fields/{userFieldId}/options/{userFieldOptionId}',
         method: 'delete',
         urlParamsToFields: {
           userFieldId: '_parent.0.id',
@@ -838,7 +867,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_field_order: {
     deployRequests: {
       modify: {
-        url: '/user_fields/reorder',
+        url: '/api/v2/user_fields/reorder',
         method: 'put',
       },
     },
@@ -861,12 +890,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/organization_fields',
+        url: '/api/v2/organization_fields',
         deployAsField: 'organization_field',
         method: 'post',
       },
       modify: {
-        url: '/organization_fields/{organizationFieldId}',
+        url: '/api/v2/organization_fields/{organizationFieldId}',
         method: 'put',
         deployAsField: 'organization_field',
         urlParamsToFields: {
@@ -874,7 +903,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/organization_fields/{organizationFieldId}',
+        url: '/api/v2/organization_fields/{organizationFieldId}',
         method: 'delete',
         deployAsField: 'organization_field',
         urlParamsToFields: {
@@ -897,7 +926,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       modify: {
-        url: '/organization_fields/reorder',
+        url: '/api/v2/organization_fields/reorder',
         method: 'put',
       },
     },
@@ -914,12 +943,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/routing/attributes',
+        url: '/api/v2/routing/attributes',
         deployAsField: 'attribute',
         method: 'post',
       },
       modify: {
-        url: '/routing/attributes/{attributeId}',
+        url: '/api/v2/routing/attributes/{attributeId}',
         method: 'put',
         deployAsField: 'attribute',
         urlParamsToFields: {
@@ -927,7 +956,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/routing/attributes/{attributeId}',
+        url: '/api/v2/routing/attributes/{attributeId}',
         method: 'delete',
         deployAsField: 'attribute',
         urlParamsToFields: {
@@ -955,12 +984,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/workspaces',
+        url: '/api/v2/workspaces',
         deployAsField: 'workspace',
         method: 'post',
       },
       modify: {
-        url: '/workspaces/{workspaceId}',
+        url: '/api/v2/workspaces/{workspaceId}',
         method: 'put',
         deployAsField: 'workspace',
         urlParamsToFields: {
@@ -968,7 +997,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/workspaces/{workspaceId}',
+        url: '/api/v2/workspaces/{workspaceId}',
         method: 'delete',
         deployAsField: 'workspace',
         urlParamsToFields: {
@@ -997,7 +1026,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   workspace_order: {
     deployRequests: {
       modify: {
-        url: '/workspaces/reorder',
+        url: '/api/v2/workspaces/reorder',
         method: 'put',
       },
     },
@@ -1016,18 +1045,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/apps/installations',
+        url: '/api/v2/apps/installations',
         method: 'post',
       },
       modify: {
-        url: '/apps/installations/{appInstallationId}',
+        url: '/api/v2/apps/installations/{appInstallationId}',
         method: 'put',
         urlParamsToFields: {
           appInstallationId: 'id',
         },
       },
       remove: {
-        url: '/apps/installations/{appInstallationId}',
+        url: '/api/v2/apps/installations/{appInstallationId}',
         method: 'delete',
         urlParamsToFields: {
           appInstallationId: 'id',
@@ -1065,12 +1094,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/oauth/clients',
+        url: '/api/v2/oauth/clients',
         deployAsField: 'client',
         method: 'post',
       },
       modify: {
-        url: '/oauth/clients/{oauthClientId}',
+        url: '/api/v2/oauth/clients/{oauthClientId}',
         method: 'put',
         deployAsField: 'client',
         urlParamsToFields: {
@@ -1078,7 +1107,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/oauth/clients/{oauthClientId}',
+        url: '/api/v2/oauth/clients/{oauthClientId}',
         method: 'delete',
         deployAsField: 'client',
         urlParamsToFields: {
@@ -1102,7 +1131,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       modify: {
-        url: '/account/settings',
+        url: '/api/v2/account/settings',
         method: 'put',
         deployAsField: 'settings',
       },
@@ -1127,7 +1156,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // api types
   groups: {
     request: {
-      url: '/groups',
+      url: '/api/v2/groups',
     },
     transformation: {
       dataField: 'groups',
@@ -1136,7 +1165,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   custom_roles: {
     request: {
-      url: '/custom_roles',
+      url: '/api/v2/custom_roles',
     },
     transformation: {
       dataField: 'custom_roles',
@@ -1144,7 +1173,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   organizations: {
     request: {
-      url: '/organizations',
+      url: '/api/v2/organizations',
     },
     transformation: {
       dataField: 'organizations',
@@ -1152,7 +1181,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   views: {
     request: {
-      url: '/views',
+      url: '/api/v2/views',
     },
     transformation: {
       dataField: 'views',
@@ -1161,12 +1190,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   triggers: {
     request: {
-      url: '/triggers',
+      url: '/api/v2/triggers',
     },
   },
   trigger_definitions: {
     request: {
-      url: '/triggers/definitions',
+      url: '/api/v2/triggers/definitions',
     },
     transformation: {
       dataField: 'definitions',
@@ -1181,7 +1210,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   trigger_categories: {
     request: {
-      url: '/trigger_categories',
+      url: '/api/v2/trigger_categories',
       paginationField: 'links.next',
     },
     transformation: {
@@ -1190,7 +1219,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   automations: {
     request: {
-      url: '/automations',
+      url: '/api/v2/automations',
     },
     transformation: {
       dataField: 'automations',
@@ -1199,13 +1228,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   sla_policies: {
     request: {
-      url: '/slas/policies',
+      url: '/api/v2/slas/policies',
     },
   },
   // eslint-disable-next-line camelcase
   sla_policies_definitions: {
     request: {
-      url: '/slas/policies/definitions',
+      url: '/api/v2/slas/policies/definitions',
     },
     transformation: {
       dataField: 'value',
@@ -1213,12 +1242,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   targets: {
     request: {
-      url: '/targets',
+      url: '/api/v2/targets',
     },
   },
   macros: {
     request: {
-      url: '/macros',
+      url: '/api/v2/macros',
     },
     transformation: {
       dataField: 'macros',
@@ -1227,7 +1256,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   macros_actions: {
     request: {
-      url: '/macros/actions',
+      url: '/api/v2/macros/actions',
     },
     transformation: {
       // no unique identifier for individual items
@@ -1239,7 +1268,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   macro_categories: {
     request: {
-      url: '/macros/categories',
+      url: '/api/v2/macros/categories',
     },
     transformation: {
       isSingleton: true,
@@ -1249,7 +1278,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   macros_definitions: { // has some overlaps with macro_actions
     request: {
-      url: '/macros/definitions',
+      url: '/api/v2/macros/definitions',
     },
     transformation: {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1264,7 +1293,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   brands: {
     request: {
-      url: '/brands',
+      url: '/api/v2/brands',
     },
     transformation: {
       dataField: 'brands',
@@ -1273,7 +1302,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   dynamic_content_item: {
     request: {
-      url: '/dynamic_content/items',
+      url: '/api/v2/dynamic_content/items',
     },
     transformation: {
       dataField: '.',
@@ -1284,12 +1313,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/dynamic_content/items',
+        url: '/api/v2/dynamic_content/items',
         deployAsField: 'item',
         method: 'post',
       },
       modify: {
-        url: '/dynamic_content/items/{dynamicContentItemId}',
+        url: '/api/v2/dynamic_content/items/{dynamicContentItemId}',
         method: 'put',
         deployAsField: 'item',
         urlParamsToFields: {
@@ -1297,7 +1326,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/dynamic_content/items/{dynamicContentItemId}',
+        url: '/api/v2/dynamic_content/items/{dynamicContentItemId}',
         method: 'delete',
         deployAsField: 'item',
         urlParamsToFields: {
@@ -1314,7 +1343,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/dynamic_content/items/{dynamicContentItemId}/variants',
+        url: '/api/v2/dynamic_content/items/{dynamicContentItemId}/variants',
         deployAsField: 'variant',
         method: 'post',
         urlParamsToFields: {
@@ -1322,7 +1351,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
+        url: '/api/v2/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
         deployAsField: 'variant',
         method: 'put',
         urlParamsToFields: {
@@ -1331,7 +1360,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
+        url: '/api/v2/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}',
         method: 'delete',
         urlParamsToFields: {
           dynammicContentVariantId: 'id',
@@ -1342,7 +1371,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   locales: {
     request: {
-      url: '/locales',
+      url: '/api/v2/locales',
     },
     transformation: {
       dataField: 'locales',
@@ -1351,11 +1380,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   business_hours_schedule_holiday: {
     request: {
-      url: '/business_hours/schedules/{scheduleId}/holidays',
+      url: '/api/v2/business_hours/schedules/{scheduleId}/holidays',
     },
     deployRequests: {
       add: {
-        url: '/business_hours/schedules/{scheduleId}/holidays',
+        url: '/api/v2/business_hours/schedules/{scheduleId}/holidays',
         deployAsField: 'holiday',
         method: 'post',
         urlParamsToFields: {
@@ -1363,7 +1392,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/business_hours/schedules/{scheduleId}/holidays/{holidayId}',
+        url: '/api/v2/business_hours/schedules/{scheduleId}/holidays/{holidayId}',
         deployAsField: 'holiday',
         method: 'put',
         urlParamsToFields: {
@@ -1372,7 +1401,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/business_hours/schedules/{scheduleId}/holidays/{holidayId}',
+        url: '/api/v2/business_hours/schedules/{scheduleId}/holidays/{holidayId}',
         method: 'delete',
         urlParamsToFields: {
           holidayId: 'id',
@@ -1390,13 +1419,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   sharing_agreements: {
     request: {
-      url: '/sharing_agreements',
+      url: '/api/v2/sharing_agreements',
     },
   },
   // eslint-disable-next-line camelcase
   support_addresses: {
     request: {
-      url: '/recipient_addresses',
+      url: '/api/v2/recipient_addresses',
     },
     transformation: {
       sourceTypeName: 'recipient_addresses',
@@ -1407,7 +1436,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_forms: {
     // not always available
     request: {
-      url: '/ticket_forms',
+      url: '/api/v2/ticket_forms',
     },
     transformation: {
       dataField: 'ticket_forms',
@@ -1416,7 +1445,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_form_order: {
     deployRequests: {
       modify: {
-        url: '/ticket_forms/reorder',
+        url: '/api/v2/ticket_forms/reorder',
         method: 'put',
       },
     },
@@ -1424,7 +1453,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   ticket_fields: {
     request: {
-      url: '/ticket_fields',
+      url: '/api/v2/ticket_fields',
     },
     transformation: {
       dataField: 'ticket_fields',
@@ -1435,22 +1464,22 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   user_fields: {
     request: {
-      url: '/user_fields',
+      url: '/api/v2/user_fields',
     },
   },
   // eslint-disable-next-line camelcase
   organization_fields: {
     request: {
-      url: '/organization_fields',
+      url: '/api/v2/organization_fields',
     },
   },
   routing_attribute_value: {
     request: {
-      url: '/routing/attributes/{attributeId}/values',
+      url: '/api/v2/routing/attributes/{attributeId}/values',
     },
     deployRequests: {
       add: {
-        url: '/routing/attributes/{attributeId}/values',
+        url: '/api/v2/routing/attributes/{attributeId}/values',
         deployAsField: 'attribute_value',
         method: 'post',
         urlParamsToFields: {
@@ -1458,7 +1487,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/routing/attributes/{attributeId}/values/{attributeValueId}',
+        url: '/api/v2/routing/attributes/{attributeId}/values/{attributeValueId}',
         deployAsField: 'attribute_value',
         method: 'put',
         urlParamsToFields: {
@@ -1467,7 +1496,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/routing/attributes/{attributeId}/values/{attributeValueId}',
+        url: '/api/v2/routing/attributes/{attributeId}/values/{attributeValueId}',
         method: 'delete',
         urlParamsToFields: {
           attributeValueId: 'id',
@@ -1486,7 +1515,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   routing_attributes: {
     request: {
-      url: '/routing/attributes',
+      url: '/api/v2/routing/attributes',
       recurseInto: [
         {
           type: 'routing_attribute_value',
@@ -1499,7 +1528,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   routing_attribute_definitions: {
     request: {
-      url: '/routing/attributes/definitions',
+      url: '/api/v2/routing/attributes/definitions',
     },
     transformation: {
       dataField: 'definitions',
@@ -1508,37 +1537,37 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   workspaces: {
     // not always available
     request: {
-      url: '/workspaces',
+      url: '/api/v2/workspaces',
     },
   },
   // eslint-disable-next-line camelcase
   app_installations: {
     request: {
-      url: '/apps/installations',
+      url: '/api/v2/apps/installations',
     },
   },
   // eslint-disable-next-line camelcase
   apps_owned: {
     request: {
-      url: '/apps/owned',
+      url: '/api/v2/apps/owned',
     },
   },
   // eslint-disable-next-line camelcase
   oauth_clients: {
     request: {
-      url: '/oauth/clients',
+      url: '/api/v2/oauth/clients',
     },
   },
   // eslint-disable-next-line camelcase
   oauth_global_clients: {
     request: {
-      url: '/oauth/global_clients',
+      url: '/api/v2/oauth/global_clients',
     },
   },
   // eslint-disable-next-line camelcase
   account_settings: {
     request: {
-      url: '/account/settings',
+      url: '/api/v2/account/settings',
     },
     transformation: {
       dataField: 'settings',
@@ -1547,18 +1576,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   // eslint-disable-next-line camelcase
   resource_collections: {
     request: {
-      url: '/resource_collections',
+      url: '/api/v2/resource_collections',
     },
   },
   // eslint-disable-next-line camelcase
   monitored_twitter_handles: {
     request: {
-      url: '/channels/twitter/monitored_twitter_handles',
+      url: '/api/v2/channels/twitter/monitored_twitter_handles',
     },
   },
   webhooks: {
     request: {
-      url: '/webhooks',
+      url: '/api/v2/webhooks',
       paginationField: 'links.next',
     },
     transformation: {
@@ -1579,12 +1608,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/webhooks',
+        url: '/api/v2/webhooks',
         deployAsField: 'webhook',
         method: 'post',
       },
       modify: {
-        url: '/webhooks/{webhookId}',
+        url: '/api/v2/webhooks/{webhookId}',
         method: 'patch',
         deployAsField: 'webhook',
         urlParamsToFields: {
@@ -1592,7 +1621,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/webhooks/{webhookId}',
+        url: '/api/v2/webhooks/{webhookId}',
         method: 'delete',
         urlParamsToFields: {
           webhookId: 'id',
@@ -1602,7 +1631,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   articles: {
     request: {
-      url: '/help_center/articles',
+      url: '/api/v2/help_center/articles',
       recurseInto: [
         {
           type: 'article_translation',
@@ -1617,8 +1646,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
-      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
+      idFields: ['&brand', 'title'],
+      fileNameFields: ['&brand', 'title'],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1627,13 +1656,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
         { fieldName: 'edited_at' },
+        { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
       serviceUrl: '/knowledge/articles/{id}',
     },
     deployRequests: {
       add: {
-        url: '/help_center/sections/{sectionId}/articles',
+        url: '/api/v2/help_center/sections/{sectionId}/articles',
         method: 'post',
         deployAsField: 'article',
         urlParamsToFields: {
@@ -1641,7 +1671,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/help_center/articles/{articleId}',
+        url: '/api/v2/help_center/articles/{articleId}',
         method: 'put',
         deployAsField: 'article',
         urlParamsToFields: {
@@ -1649,7 +1679,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/articles/{articleId}',
+        url: '/api/v2/help_center/articles/{articleId}',
         method: 'delete',
         urlParamsToFields: {
           articleId: 'id',
@@ -1659,14 +1689,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article_translation: {
     request: {
-      url: '/help_center/articles/{articleId}/translations',
+      url: '/api/v2/help_center/articles/{articleId}/translations',
     },
     transformation: {
       idFields: ['&locale'],
       fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'number' },
+        { fieldName: 'updated_by_id', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1674,10 +1708,46 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_type', fieldType: 'string' },
       ),
     },
+    deployRequests: {
+      add: {
+        url: '/help_center/articles/{article_id}/translations',
+        method: 'post',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          article_id: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/help_center/articles/{article_id}/translations/{locale}',
+        method: 'put',
+        deployAsField: 'translation',
+        urlParamsToFields: {
+          article_id: '_parent.0.id',
+          locale: 'locale',
+        },
+      },
+      remove: {
+        url: '/help_center/translations/{translation_id}',
+        method: 'delete',
+        urlParamsToFields: {
+          translation_id: 'id',
+        },
+      },
+    },
+  },
+  guide_settings: {
+    request: {
+      url: '/hc/api/internal/general_settings',
+    },
+    transformation: {
+      idFields: ['&brand'],
+      fileNameFields: ['&brand'],
+      dataField: '.',
+    },
   },
   sections: {
     request: {
-      url: '/help_center/sections',
+      url: '/api/v2/help_center/sections',
       recurseInto: [
         {
           type: 'section_translation',
@@ -1707,7 +1777,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/help_center/categories/{category_id}/sections',
+        url: '/api/v2/help_center/categories/{category_id}/sections',
         method: 'post',
         deployAsField: 'section',
         urlParamsToFields: {
@@ -1715,7 +1785,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/help_center/sections/{section_id}',
+        url: '/api/v2/help_center/sections/{section_id}',
         method: 'put',
         deployAsField: 'section',
         urlParamsToFields: {
@@ -1723,7 +1793,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/sections/{section_id}',
+        url: '/api/v2/help_center/sections/{section_id}',
         method: 'delete',
         urlParamsToFields: {
           section_id: 'id',
@@ -1733,7 +1803,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   section_translation: {
     request: {
-      url: '/help_center/sections/{sectionId}/translations',
+      url: '/api/v2/help_center/sections/{sectionId}/translations',
     },
     transformation: {
       idFields: ['&locale'],
@@ -1754,7 +1824,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/help_center/sections/{section_id}/translations',
+        url: '/api/v2/help_center/sections/{section_id}/translations',
         method: 'post',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1762,7 +1832,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/help_center/sections/{section_id}/translations/{locale}',
+        url: '/api/v2/help_center/sections/{section_id}/translations/{locale}',
         method: 'put',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1771,7 +1841,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/translations/{translation_id}',
+        url: '/api/v2/help_center/translations/{translation_id}',
         method: 'delete',
         urlParamsToFields: {
           translation_id: 'id',
@@ -1786,26 +1856,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['id'],
     },
   },
-  labels: {
-    request: {
-      url: '/help_center/articles/labels',
-    },
-    transformation: {
-      dataField: 'labels',
-    },
-  },
-  label: {
-    transformation: {
-      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
-      sourceTypeName: 'labels__labels',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-    },
-  },
   categories: {
     request: {
-      url: '/help_center/categories',
+      url: '/api/v2/help_center/categories',
       recurseInto: [
         {
           type: 'category_translation',
@@ -1835,12 +1888,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/help_center/categories',
+        url: '/api/v2/help_center/categories',
         method: 'post',
         deployAsField: 'category',
       },
       modify: {
-        url: '/help_center/categories/{category_id}',
+        url: '/api/v2/help_center/categories/{category_id}',
         method: 'put',
         deployAsField: 'category',
         urlParamsToFields: {
@@ -1848,7 +1901,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/categories/{category_id}',
+        url: '/api/v2/help_center/categories/{category_id}',
         method: 'delete',
         urlParamsToFields: {
           category_id: 'id',
@@ -1858,7 +1911,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   category_translation: {
     request: {
-      url: '/help_center/categories/{categoryId}/translations',
+      url: '/api/v2/help_center/categories/{categoryId}/translations',
     },
     transformation: {
       idFields: ['&locale'],
@@ -1875,7 +1928,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/help_center/categories/{category_id}/translations',
+        url: '/api/v2/help_center/categories/{category_id}/translations',
         method: 'post',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1883,7 +1936,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/help_center/categories/{category_id}/translations/{locale}',
+        url: '/api/v2/help_center/categories/{category_id}/translations/{locale}',
         method: 'put',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1892,7 +1945,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/translations/{translation_id}',
+        url: '/api/v2/help_center/translations/{translation_id}',
         method: 'delete',
         urlParamsToFields: {
           translation_id: 'id',
@@ -1902,7 +1955,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   permission_groups: {
     request: {
-      url: '/guide/permission_groups',
+      url: '/api/v2/guide/permission_groups',
     },
     transformation: {
       dataField: 'permission_groups',
@@ -1917,12 +1970,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/guide/permission_groups',
+        url: '/api/v2/guide/permission_groups',
         deployAsField: 'permission_group',
         method: 'post',
       },
       modify: {
-        url: '/guide/permission_groups/{permissionGroupId}',
+        url: '/api/v2/guide/permission_groups/{permissionGroupId}',
         method: 'put',
         deployAsField: 'permission_group',
         urlParamsToFields: {
@@ -1930,7 +1983,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/guide/permission_groups/{permissionGroupId}',
+        url: '/api/v2/guide/permission_groups/{permissionGroupId}',
         method: 'delete',
         urlParamsToFields: {
           permissionGroupId: 'id',
@@ -1940,7 +1993,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   user_segments: {
     request: {
-      url: '/help_center/user_segments',
+      url: '/api/v2/help_center/user_segments',
     },
     transformation: {
       dataField: 'user_segments',
@@ -1955,12 +2008,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/help_center/user_segments',
+        url: '/api/v2/help_center/user_segments',
         deployAsField: 'user_segment',
         method: 'post',
       },
       modify: {
-        url: '/help_center/user_segments/{userSegmentId}',
+        url: '/api/v2/help_center/user_segments/{userSegmentId}',
         method: 'put',
         deployAsField: 'user_segment',
         urlParamsToFields: {
@@ -1968,7 +2021,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/user_segments/{userSegmentId}',
+        url: '/api/v2/help_center/user_segments/{userSegmentId}',
         method: 'delete',
         urlParamsToFields: {
           userSegmentId: 'id',
@@ -1987,6 +2040,7 @@ export const SUPPORTED_TYPES = {
   brand: ['brands'],
   business_hours_schedule: ['business_hours_schedules'],
   custom_role: ['custom_roles'],
+  custom_status: ['custom_statuses'],
   dynamic_content_item: ['dynamic_content_item'],
   group: ['groups'],
   locale: ['locales'],
@@ -2018,8 +2072,8 @@ export const SUPPORTED_TYPES = {
 export const GUIDE_BRAND_SPECIFIC_TYPES = {
   article: ['articles'],
   section: ['sections'],
-  label: ['labels'],
   category: ['categories'],
+  guide_settings: ['guide_settings'],
 }
 
 // Types in Zendesk Guide that whose instances are shared across all brands
@@ -2038,7 +2092,6 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   'article_translation',
   'category_translation',
   'section_translation',
-  'label',
 ]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {

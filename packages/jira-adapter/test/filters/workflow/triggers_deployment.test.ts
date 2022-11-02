@@ -33,7 +33,6 @@ describe('triggersDeployment', () => {
       workflowType,
       {
         name: 'workflowName',
-        transitionIds: { name: '1' },
         transitions: [{
           name: 'name',
           rules: {
@@ -49,6 +48,22 @@ describe('triggersDeployment', () => {
     const { client: cli, connection } = mockClient()
     client = cli
     mockConnection = connection
+
+    mockConnection.get.mockResolvedValue({
+      status: 200,
+      data: {
+        values: [
+          {
+            transitions: [
+              {
+                name: 'name',
+                id: '1',
+              },
+            ],
+          },
+        ],
+      },
+    })
   })
 
   it('should call the deploy triggers endpoint', async () => {
@@ -68,5 +83,12 @@ describe('triggersDeployment', () => {
         },
       },
     )
+  })
+
+  it('should throw when workflow does not have a name', async () => {
+    delete instance.value.name
+    await expect(
+      deployTriggers(toChange({ after: instance }) as AdditionChange<InstanceElement>, client)
+    ).rejects.toThrow()
   })
 })

@@ -18,7 +18,6 @@ import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
   isInstanceElement,
-  Value,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
@@ -81,6 +80,8 @@ import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import articleFilter from './filters/article'
+import helpCenterFetchArticle from './filters/help_center_fetch_article'
+import articleBodyFilter from './filters/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
@@ -90,6 +91,8 @@ import hcSectionCategoryFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
 
+
+const { makeArray } = collections.array
 const log = logger(module)
 const { createPaginator } = clientUtils
 const { findDataField, computeGetArgs } = elementUtils
@@ -138,6 +141,7 @@ export const DEFAULT_FILTERS = [
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandLogoFieldFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
+  articleFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,
   fieldReferencesFilter,
@@ -151,13 +155,14 @@ export const DEFAULT_FILTERS = [
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
-  articleFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   referencedIdFieldsFilter,
-  // need to be after referencedIdFieldsFilter as 'name' is removed
+  // need to be after referencedIdFieldsFilter as 'name' and 'title' is removed
   fetchCategorySection,
+  helpCenterFetchArticle,
+  articleBodyFilter,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
@@ -203,16 +208,27 @@ const zendeskGuideEntriesFunc = (
         typesConfig,
       })).flat()
       // Defining Zendesk Guide element to its corresponding help center (= subdomain)
-      brandPaginatorResponseValues.forEach(response => {
+      return brandPaginatorResponseValues.flatMap(response => {
         const responseEntryName = typesConfig[typeName].transformation?.dataField
         if (responseEntryName === undefined) {
-          return undefined
+          return makeArray(response)
         }
-        return (response[responseEntryName] as Value[]).forEach(instanceType => {
-          instanceType.brand = brandInstance.value.id
+        const responseEntries = makeArray(
+          (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
+            ? response[responseEntryName]
+            : response
+        ) as clientUtils.ResponseValue[]
+        responseEntries.forEach(entry => {
+          entry.brand = brandInstance.value.id
         })
-      })
-      return brandPaginatorResponseValues
+        if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
+          return responseEntries
+        }
+        return {
+          ...response,
+          [responseEntryName]: responseEntries,
+        }
+      }) as clientUtils.ResponseValue[]
     }).toArray()).flat()
   }
 
@@ -466,7 +482,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           subdomainToGuideChanges[subdomain]
         )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await runner.onDeploy(guideChangesBeforeRestore)
+        await brandRunner.onDeploy(guideChangesBeforeRestore)
 
         return {
           appliedChanges: guideChangesBeforeRestore,

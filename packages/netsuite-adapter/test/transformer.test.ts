@@ -747,7 +747,10 @@ describe('Transformer', () => {
         fileInstance.value[PATH],
         fileInstance
       )
-      expect(getLookUpName({ ref })).toEqual('[/Templates/file.name]')
+      expect(getLookUpName({
+        ref,
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+      })).toEqual('[/Templates/file.name]')
     })
 
     it('should resolve to netsuite scriptid reference representation', async () => {
@@ -756,7 +759,10 @@ describe('Transformer', () => {
         workflowInstance.value[PATH],
         workflowInstance
       )
-      expect(getLookUpName({ ref })).toEqual('[scriptid=top_level]')
+      expect(getLookUpName({
+        ref,
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+      })).toEqual('[scriptid=top_level]')
     })
 
     it('should resolve to netsuite scriptid reference representation with nesting levels', async () => {
@@ -765,7 +771,10 @@ describe('Transformer', () => {
         'two_nesting',
         workflowInstance
       )
-      expect(getLookUpName({ ref })).toEqual('[scriptid=top_level.one_nesting.two_nesting]')
+      expect(getLookUpName({
+        ref,
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+      })).toEqual('[scriptid=top_level.one_nesting.two_nesting]')
     })
 
     it('should resolve custom record type to netsuite scriptid reference', async () => {
@@ -774,7 +783,10 @@ describe('Transformer', () => {
         'record1',
         customRecordType
       )
-      expect(getLookUpName({ ref })).toEqual('[scriptid=customrecord1.record1]')
+      expect(getLookUpName({
+        ref,
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+      })).toEqual('[scriptid=customrecord1.record1]')
     })
 
     it('should resolve custom record type field to netsuite scriptid reference', async () => {
@@ -783,7 +795,10 @@ describe('Transformer', () => {
         'record1',
         customRecordType
       )
-      expect(getLookUpName({ ref })).toEqual('[scriptid=customrecord1.custom_field]')
+      expect(getLookUpName({
+        ref,
+        element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+      })).toEqual('[scriptid=customrecord1.custom_field]')
     })
 
     describe('when the resolved value should be returned', () => {
@@ -793,7 +808,10 @@ describe('Transformer', () => {
           'resolved_value',
           await workflowInstance.getType(),
         )
-        expect(getLookUpName({ ref })).toEqual(ref.value)
+        expect(getLookUpName({
+          ref,
+          element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+        })).toEqual(ref.value)
       })
 
       it('should return value when reference is on FileCabinetType but not on PATH field', async () => {
@@ -802,7 +820,10 @@ describe('Transformer', () => {
           fileInstance.value[description],
           fileInstance
         )
-        expect(getLookUpName({ ref })).toEqual(ref.value)
+        expect(getLookUpName({
+          ref,
+          element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+        })).toEqual(ref.value)
       })
 
       it('should return value when reference is on CustomType but not on SCRIPT_ID field', async () => {
@@ -811,7 +832,10 @@ describe('Transformer', () => {
           workflowInstance.value.workflowstates,
           workflowInstance
         )
-        expect(getLookUpName({ ref })).toEqual(ref.value)
+        expect(getLookUpName({
+          ref,
+          element: new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'some_type') }), {}),
+        })).toEqual(ref.value)
       })
     })
   })

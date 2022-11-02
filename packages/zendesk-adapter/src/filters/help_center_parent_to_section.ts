@@ -71,7 +71,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       async change => {
         if (isAdditionOrModificationChange(change)
           && getChangeData(change).value.parent_section_id !== undefined) {
-          const parentSectionInstance = new InstanceElement(
+          const parentSectionInstanceAfter = new InstanceElement(
             getChangeData(change).elemID.name,
             await getChangeData(change).getType(),
             {
@@ -79,8 +79,15 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
               [PARENT_SECTION_ID_FIELD]: getChangeData(change).value.parent_section_id,
             }
           )
+          const parentSectionInstanceBefore = new InstanceElement(
+            getChangeData(change).elemID.name,
+            await getChangeData(change).getType(),
+            {
+              id: getChangeData(change).value.id,
+            }
+          )
           await deployChange(
-            toChange({ before: parentSectionInstance, after: parentSectionInstance }),
+            toChange({ before: parentSectionInstanceBefore, after: parentSectionInstanceAfter }),
             client,
             config.apiDefinitions
           )

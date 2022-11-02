@@ -96,8 +96,6 @@ import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
 import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 
-
-
 const { makeArray } = collections.array
 const log = logger(module)
 const { createPaginator } = clientUtils

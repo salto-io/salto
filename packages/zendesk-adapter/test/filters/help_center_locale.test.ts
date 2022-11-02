@@ -20,7 +20,6 @@ import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import filterCreator from '../../src/filters/help_center_locale'
 import { createFilterCreatorParams } from '../utils'
-import { paginate } from '../../src/client/pagination'
 
 describe('help center locale filter', () => {
   let mockClient: MockInterface<ZendeskClient>

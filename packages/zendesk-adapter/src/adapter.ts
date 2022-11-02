@@ -91,7 +91,7 @@ import { Credentials } from './auth'
 import hcSectionCategoryFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
-import categoriesOrderFilter from './filters/brand_filter'
+import brandsFilter from './filters/brand_filter'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -137,7 +137,7 @@ export const DEFAULT_FILTERS = [
   tagsFilter,
   hcLocalesFilter,
   macroAttachmentsFilter,
-  categoriesOrderFilter,
+  brandsFilter,
   brandLogoFilter,
   // removeBrandLogoFieldFilter should be after brandLogoFilter
   removeBrandFieldsFilter,

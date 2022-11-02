@@ -25,6 +25,16 @@ import { BRAND_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 import { LOGO_FIELD } from './brand_logo'
 
+const extractCategoriesFromChange = (brandChange : Change<InstanceElement>)
+    : InstanceElement[] => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  const categoryObject = brandChange.data.after.value.categories[0]
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  return categoryObject.brand.resValue.value.categories.map((c : ReferenceExpression) => c.resValue)
+}
+
 // Lowest position index first, if there is a tie - the newer is first
 const compareCategoriesPosition = (a: InstanceElement, b: InstanceElement) : number => {
   const { position: aPosition, createAt: aCreatedAt } = a.value
@@ -53,7 +63,7 @@ const sortBrandChanges = (changes: Change<InstanceElement>[]) :
       onlyNonOrderChanges.push(change)
       return
     }
-    // TODO: currently can't handle it since categories can't exist before brand
+    // currently isn't supported since categories can't exist before brand
     if (isAdditionChange(change)) {
       onlyNonOrderChanges.push(change)
       return
@@ -75,11 +85,12 @@ const sortBrandChanges = (changes: Change<InstanceElement>[]) :
 }
 
 /**
- * something
+ * Handle everything related to brands
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  /** Insert the brand's categories into a field in it */
   onFetch: async (elements: Element[]) => {
-    const categories = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'category') // TODO: is category a const somewhere?
+    const categories = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'category')
     const brands = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
 
@@ -94,6 +105,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       brand.value.categories = brandsCategories.map(c => new ReferenceExpression(c.elemID, c))
     })
   },
+  /** Change the categories positions according to their order in the brand, and deploy the brand */
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandChanges, leftoverChanges] = _.partition(
       changes,
@@ -102,40 +114,52 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const [onlyOrderChanges, mixedChanges, onlyNonOrderChanges] = sortBrandChanges(brandChanges)
 
+    const fieldsToIgnore: Set<string> = new Set<string>()
     const orderChangesToApply: Change<InstanceElement>[] = []
     for (const brandChange of [...onlyOrderChanges, ...mixedChanges]) {
-      // TODO
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const { categories } = brandChange.data.after.value
+      const categories = extractCategoriesFromChange(brandChange)
       categories.forEach((category: InstanceElement, i : number) => {
-        // We only need to update the category position if it was changed
-        // If the position matched the index in the list, nothing needs to be done
-        if (category.value.position !== i) {
-          const modifiedCategory = category.clone()
-          modifiedCategory.value.position = i
-          orderChangesToApply.push({
-            action: 'modify',
-            data: {
-              before: category,
-              after: modifiedCategory,
-            },
-          })
-        }
+        const beforeCategory = category.clone()
+        category.value.position = i
+
+        orderChangesToApply.push({
+          action: 'modify',
+          data: {
+            before: beforeCategory,
+            after: category,
+          },
+        })
+        Object.keys(category.value).forEach(k => fieldsToIgnore.add(k))
       })
     }
 
+    // We want to only update position, so we ignore any other change
+    fieldsToIgnore.delete('position')
+    const orderChangesDeployResult = await deployChanges(
+      orderChangesToApply,
+      async change => {
+        await deployChange(change, client, config.apiDefinitions, Array.from(fieldsToIgnore))
+      }
+    )
+
     // Ignores the logo and categories field from brand instances when deploying,
-    // logos are covered as brand_logo instances, categories were converted to other changesToApply
-    const deployResult = await deployChanges(
-      [...orderChangesToApply, ...mixedChanges, ...onlyNonOrderChanges],
+    // logos are covered as brand_logo instances, categories were converted to orderChangesToApply
+    const brandChangesDeployResult = await deployChanges(
+      [...onlyOrderChanges, ...mixedChanges, ...onlyNonOrderChanges],
       async change => {
         await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, 'categories'])
       }
     )
 
     return {
-      deployResult,
+      deployResult: {
+        // Without orderChangesDeployResult since they are internal 'fake' changes and did not exist
+        appliedChanges: brandChangesDeployResult.appliedChanges,
+        errors: [
+          ...orderChangesDeployResult.errors,
+          ...brandChangesDeployResult.errors,
+        ],
+      },
       leftoverChanges,
     }
   },

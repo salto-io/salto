@@ -1744,6 +1744,51 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&brand'],
       dataField: '.',
     },
+    deployRequests: {
+      modify: {
+        url: '/hc/api/internal/general_settings',
+        method: 'put',
+      },
+      add: {
+        url: '/hc/api/internal/general_settings',
+        method: 'put', // put as there is no addition
+      },
+      remove: {
+        url: '/hc/api/internal/general_settings',
+        method: 'delete',
+      },
+    },
+  },
+  guide_settings__help_center: {
+    transformation: {
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'feature_restrictions' },
+      ),
+    },
+  },
+  guide_settings__help_center__settings: {
+    transformation: {
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'id' },
+        { fieldName: 'account_id', fieldType: 'number' },
+        { fieldName: 'help_center_id', fieldType: 'number' },
+        { fieldName: 'created_at', fieldType: 'string' },
+        { fieldName: 'updated_at', fieldType: 'string' },
+        { fieldName: 'draft', fieldType: 'boolean' },
+        { fieldName: 'kind', fieldType: 'string' },
+      ),
+    },
+  },
+  guide_settings__help_center__text_filter: {
+    transformation: {
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'id' },
+        { fieldName: 'account_id', fieldType: 'number' },
+        { fieldName: 'help_center_id', fieldType: 'number' },
+        { fieldName: 'created_at', fieldType: 'string' },
+        { fieldName: 'updated_at', fieldType: 'string' },
+      ),
+    },
   },
   sections: {
     request: {

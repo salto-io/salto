@@ -14,17 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   Change, getChangeData, InstanceElement, isAdditionChange, isRemovalChange,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
+import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { ARTICLE_TYPE_NAME } from '../constants'
-import { addRemovalChangesId } from './help_center_section_and_category'
+import { addRemovalChangesId, isTranslation } from './help_center_section_and_category'
 import { lookupFunc } from './field_references'
 import { removeTitleAndBody } from './help_center_fetch_article'
 import { prepRef } from './article_body'
@@ -32,21 +31,11 @@ import { prepRef } from './article_body'
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const TRANSLATION_SCHEMA = Joi.object({
-  locale: Joi.object().required(),
-  body: [Joi.string(), Joi.object()],
-  title: Joi.string().required(),
-}).unknown(true).required()
-
 export type TranslationType = {
   title: string
   body?: string
   locale: { id: string }
 }
-
-export const isTranslation = createSchemeGuard<TranslationType>(
-  TRANSLATION_SCHEMA, 'Received an invalid value for translation'
-)
 
 const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)

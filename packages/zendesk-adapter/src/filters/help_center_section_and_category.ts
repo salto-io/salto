@@ -49,7 +49,7 @@ type ParentType = InstanceElement & {
 
 const TRANSLATION_SCHEMA = Joi.object({
   locale: Joi.object().required(),
-  body: Joi.string(),
+  body: [Joi.string(), Joi.object()],
   title: Joi.string().required(),
 }).unknown(true).required()
 

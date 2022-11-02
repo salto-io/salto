@@ -29,6 +29,7 @@ describe('manifest.xml utils', () => {
       values: {
         '@_scriptid': 'scriptid1',
         key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__',
+        // 'somescriptid' should be added to the manifest
         ref: '[scriptid=somescriptid]',
       },
     },
@@ -37,11 +38,20 @@ describe('manifest.xml utils', () => {
       values: {
         '@_scriptid': 'workflow1',
         key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__',
+        // 'secondscriptid' should be added to the manifest
         ref: '[scriptid=secondscriptid]',
+        // 'scriptid1' shouldn't be added to the manifest since it is in the SDF project
         ref2: '[scriptid=scriptid1]',
+        // 'workflow1.innerscriptid' shouldn't be added to the manifest since
+        // 'workflow1' is in the SDF project
         ref3: '[scriptid=workflow1.innerscriptid]',
+        // 'external_script_id' shouldn't be added to the manifest since it has appid
         ref4: '[appid=com.salto, scriptid=external_script_id]',
+        // '/SuiteScripts/test.js' shouldn't be added to the manifest since we add only scriptids
         fileRef: '[/SuiteScripts/test.js]',
+        // 'customrecord_test.cseg1' shouldn't be added to the manifest since
+        // it is a wrong customsegment scriptid
+        customSegmentRef: '[scriptid=customrecord_test.cseg1]',
       },
     },
   ]

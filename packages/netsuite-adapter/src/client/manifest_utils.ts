@@ -31,7 +31,7 @@ const TEXT_ATTRIBUTE = '#text'
 const REQUIRED_ATTRIBUTE = '@_required'
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
 
-// customrecordABC.csegXYZ is not a real object in NS -
+// customrecord*.cseg* is not a real object in NS -
 // It is used as a reference but it shouldn’t be included in the manifest.
 const wrongCustomSegmentDependencyRegex = RegExp('customrecord[a-z0-9_]+\\.cseg[a-z0-9_]+')
 

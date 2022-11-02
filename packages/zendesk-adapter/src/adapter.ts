@@ -79,7 +79,6 @@ import handleTemplateExpressionFilter from './filters/handle_template_expression
 import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
-import removeBrandFieldsFilter from './filters/remove_brand_fields'
 import articleFilter from './filters/article'
 import helpCenterFetchArticle from './filters/help_center_fetch_article'
 import articleBodyFilter from './filters/article_body'
@@ -139,8 +138,6 @@ export const DEFAULT_FILTERS = [
   macroAttachmentsFilter,
   brandsFilter,
   brandLogoFilter,
-  // removeBrandLogoFieldFilter should be after brandLogoFilter
-  removeBrandFieldsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
   hcSectionCategoryFilter,
@@ -156,7 +153,6 @@ export const DEFAULT_FILTERS = [
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
-  articleFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
@@ -474,7 +470,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           subdomainToGuideChanges[subdomain]
         )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await runner.onDeploy(guideChangesBeforeRestore)
+        await brandRunner.onDeploy(guideChangesBeforeRestore)
 
         return {
           appliedChanges: guideChangesBeforeRestore,

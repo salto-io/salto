@@ -85,8 +85,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       if (
         status === 404
         || (status === 403 && [
-          '/workspaces',
-          '/custom_statuses',
+          '/api/v2/workspaces',
+          '/api/v2/custom_statuses',
         ].includes(args.url))
       ) {
         log.warn('Suppressing %d error %o', status, e)

@@ -963,6 +963,6 @@ const filter: FilterCreator = ({ config }) => ({
     )
     await addReferences(secondIterationFieldNameToTypeMappingDefs)
   }, 'Field reference filter'),
-})
 
+})
 export default filter

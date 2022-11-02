@@ -281,7 +281,7 @@ export class ElemID {
       } - ${this.getFullName()} is not parent of ${other.getFullName()}`)
     }
     const relPath = other.createTopLevelParentID().path.slice(this.nestingLevel)
-    return ['attr', 'annotation', 'field'].includes(other.idType)
+    return this.idType === 'type' && ['attr', 'annotation', 'field'].includes(other.idType)
       ? [other.idType as string].concat(relPath)
       : relPath
   }

@@ -25,23 +25,25 @@ import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './help_center_section_and_category'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
 
+const PARENT_SECTION_ID_FIELD = 'parent_section_id'
+
 const deleteParentFields = (elem: InstanceElement): void => {
-  delete elem.value.direct_parent
-  delete elem.value.parent_type
+  delete elem.value.direct_parent_id
+  delete elem.value.direct_parent_type
 }
 
 export const addParentFields = (value: Values): void => {
   if (value.parent_section_id === undefined || value.parent_section_id === null) {
-    value.direct_parent = value.category_id
-    value.parent_type = CATEGORY_TYPE_NAME
+    value.direct_parent_id = value.category_id
+    value.direct_parent_type = CATEGORY_TYPE_NAME
   } else {
-    value.direct_parent = value.parent_section_id
-    value.parent_type = SECTION_TYPE_NAME
+    value.direct_parent_id = value.parent_section_id
+    value.direct_parent_type = SECTION_TYPE_NAME
   }
 }
 
-// the fields 'direct_parent' and 'parent_type' are created during fetch, therefore this filter
-// omits these fields in preDeploy. and adds them in onDeploy. During deploy, the field
+// the fields 'direct_parent_id' and 'direct_parent_type' are created during fetch, therefore this
+// filter omits these fields in preDeploy. and adds them in onDeploy. During deploy, the field
 // 'parent_section_id' is ignored and is deployed as modification change separately later.
 const filterCreator: FilterCreator = ({ client, config }) => ({
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
@@ -59,7 +61,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       parentChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, ['translations', 'parent_section_id'])
+        await deployChange(change, client, config.apiDefinitions, ['translations', PARENT_SECTION_ID_FIELD])
       }
     )
     // need to deploy separately parent_section_id if exists since zendesk API does not support
@@ -69,16 +71,16 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       async change => {
         if (isAdditionOrModificationChange(change)
           && getChangeData(change).value.parent_section_id !== undefined) {
-          const ParentSectionInstance = new InstanceElement(
+          const parentSectionInstance = new InstanceElement(
             getChangeData(change).elemID.name,
             await getChangeData(change).getType(),
             {
               id: getChangeData(change).value.id,
-              parent_section_id: getChangeData(change).value.parent_section_id,
+              [PARENT_SECTION_ID_FIELD]: getChangeData(change).value.parent_section_id,
             }
           )
           await deployChange(
-            toChange({ before: ParentSectionInstance, after: ParentSectionInstance }),
+            toChange({ before: parentSectionInstance, after: parentSectionInstance }),
             client,
             config.apiDefinitions
           )

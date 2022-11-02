@@ -41,8 +41,8 @@ describe('guid section filter', () => {
     sectionType,
     {
       parent_section_id: 123,
-      direct_parent: 123,
-      parent_type: 'section',
+      direct_parent_id: 123,
+      direct_parent_type: 'section',
     }
   )
   const OuterSectionInstance = new InstanceElement(
@@ -51,8 +51,8 @@ describe('guid section filter', () => {
     {
       category_id: 789,
       id: 123,
-      direct_parent: 789,
-      parent_type: 'category',
+      direct_parent_id: 789,
+      direct_parent_type: 'category',
     }
   )
 
@@ -89,7 +89,7 @@ describe('guid section filter', () => {
   })
 
   describe('preDeploy', () => {
-    it('should remove direct_parent and parent_type fields before deploy', async () => {
+    it('should remove direct_parent_id and direct_parent_type fields before deploy', async () => {
       const InnerSectionInstanceCopy = InnerSectionInstance.clone()
       const OuterSectionInstanceCopy = OuterSectionInstance.clone()
       await filter.preDeploy([
@@ -102,7 +102,7 @@ describe('guid section filter', () => {
   })
 
   describe('onDeploy', () => {
-    it('should remove direct_parent and parent_type fields after deploy', async () => {
+    it('should remove direct_parent_id and direct_parent_type fields after deploy', async () => {
       const InnerSectionInstanceCopy = InnerSectionInstance.clone()
       const OuterSectionInstanceCopy = OuterSectionInstance.clone()
       await filter.preDeploy([

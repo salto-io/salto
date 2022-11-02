@@ -58,7 +58,7 @@ const typeNameChangeGroupId: ChangeIdFunction = async change =>
   getChangeData(change).elemID.typeName
 
 // sections need to be grouped separately as there are dependencies with 'parent_section_id'
-const SectionChangeGroupId: ChangeIdFunction = async change =>
+const sectionChangeGroupId: ChangeIdFunction = async change =>
   ((getChangeData(change).elemID.typeName === SECTION_TYPE_NAME)
     ? getChangeData(change).elemID.getFullName()
     : undefined)
@@ -66,7 +66,7 @@ const SectionChangeGroupId: ChangeIdFunction = async change =>
 
 const changeIdProviders: ChangeIdFunction[] = [
   recurseIntoInstanceChangeToGroupId,
-  SectionChangeGroupId,
+  sectionChangeGroupId,
   typeNameChangeGroupId,
 ]
 

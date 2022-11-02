@@ -34,7 +34,6 @@
     "@salto-io/adapter-api": "0.3.24",
     "@salto-io/adapter-components": "0.3.24",
     "@salto-io/adapter-utils": "0.3.24",
-    "@salto-io/e2e-credentials-store": "0.3.24",
     "@salto-io/logging": "0.3.24",
     "@salto-io/lowerdash": "0.3.24",
     "form-data": "^4.0.0",
@@ -43,6 +42,7 @@
     "uuid": "^8.3.0"
   },
   "devDependencies": {
+    "@salto-io/e2e-credentials-store": "0.3.24",
     "@salto-io/test-utils": "0.3.24",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",

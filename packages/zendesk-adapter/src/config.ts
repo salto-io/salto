@@ -688,7 +688,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   custom_statuses: {
     request: {
-      url: '/api/v2/custom_statuses',
+      url: '/custom_statuses',
     },
     transformation: {
       dataField: 'custom_statuses',

@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
+import { filterUtils } from '@salto-io/adapter-components'
+
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
+
 import filterCreator, { RESTRICTION_FIELD_NAME } from '../../src/filters/restriction'
+import { createFilterCreatorParams } from '../utils'
 
 describe('restriction filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
   const viewObjType = new ObjectType({ elemID: new ElemID(ZENDESK, 'view') })
@@ -60,18 +59,7 @@ describe('restriction filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

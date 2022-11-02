@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
+import { createFilterCreatorParams } from '../utils'
+
 
 describe('user filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
@@ -246,9 +245,6 @@ describe('user filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
     mockPaginator = mockFunction<clientUtils.Paginator>()
       .mockImplementationOnce(async function *get() {
         yield [
@@ -261,12 +257,9 @@ describe('user filter', () => {
           ] },
         ]
       })
-    filter = filterCreator({
-      client,
-      paginator: mockPaginator,
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(
+      createFilterCreatorParams({ paginator: mockPaginator })
+    ) as FilterType
   })
 
   describe('onFetch', () => {
@@ -461,12 +454,9 @@ describe('user filter', () => {
             ] },
           ]
         })
-      const newFilter = filterCreator({
-        client,
-        paginator,
-        config: DEFAULT_CONFIG,
-        fetchQuery: elementUtils.query.createMockQuery(),
-      }) as FilterType
+      const newFilter = filterCreator(
+        createFilterCreatorParams({ paginator })
+      ) as FilterType
       await newFilter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
@@ -502,12 +492,9 @@ describe('user filter', () => {
             ] },
           ]
         })
-      const newFilter = filterCreator({
-        client,
-        paginator,
-        config: DEFAULT_CONFIG,
-        fetchQuery: elementUtils.query.createMockQuery(),
-      }) as FilterType
+      const newFilter = filterCreator(
+        createFilterCreatorParams({ paginator })
+      ) as FilterType
       await newFilter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const macro = instances.find(e => e.elemID.typeName === 'macro')
@@ -717,12 +704,9 @@ describe('user filter', () => {
             ] },
           ]
         })
-      const newFilter = filterCreator({
-        client,
-        paginator,
-        config: DEFAULT_CONFIG,
-        fetchQuery: elementUtils.query.createMockQuery(),
-      }) as FilterType
+      const newFilter = filterCreator(
+        createFilterCreatorParams({ paginator })
+      ) as FilterType
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings
       await newFilter.preDeploy(changes)

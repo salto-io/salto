@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 
-import { client as clientUtils, elements as elementUtils, filterUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { BuiltinTypes, ElemID, InstanceElement, MapType, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/handle_app_installations'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
+import { createFilterCreatorParams } from '../utils'
 
 describe('handle app installations filter', () => {
   let client: ZendeskClient
@@ -91,15 +91,7 @@ after
     field2, option1, option2, group1, group2]
 
   const initFilterAndFetch = async (config = DEFAULT_CONFIG): Promise<void> => {
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client, config })) as FilterType
     await filter.onFetch([app, ...SUPPORTING_ELEMENTS])
   }
 

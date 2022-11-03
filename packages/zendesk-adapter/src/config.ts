@@ -490,7 +490,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'ticket_form_ids' }),
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
-        { fieldName: 'id', fieldType: 'number' }, { fieldName: 'categories', fieldType: 'number' },
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'categories', fieldType: 'list<unkown>' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       serviceUrl: '/admin/account/brand_management/brands',
@@ -1928,7 +1929,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'categories__categories',
       fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' }, { fieldName: 'position', fieldType: 'number' },
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'position', fieldType: 'number' },
       ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(

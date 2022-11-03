@@ -16,7 +16,7 @@
 import { Change, getAllChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from '../../src/filter'
-import filterCreator, { LAYOUT_ASSIGNMENTS_FIELD, LOGIN_IP_RANGES_FIELD } from '../../src/filters/profile_deploy'
+import filterCreator, { LAYOUT_ASSIGNMENTS_FIELD, LOGIN_IP_RANGES_FIELD } from '../../src/filters/profile_permission_set_deploy'
 import { defaultFilterContext } from '../utils'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 

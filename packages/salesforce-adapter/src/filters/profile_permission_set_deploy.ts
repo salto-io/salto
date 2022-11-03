@@ -27,7 +27,7 @@ import _ from 'lodash'
 import { detailedCompare, getPath } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isInstanceOfType } from './utils'
-import { INSTANCE_FULL_NAME_FIELD, PROFILE_METADATA_TYPE } from '../constants'
+import { INSTANCE_FULL_NAME_FIELD, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const isInstanceOfTypeProfile = isInstanceOfType(PROFILE_METADATA_TYPE)
@@ -43,7 +43,7 @@ const isProfileRelatedChange = async (change: Change): Promise<boolean> => (
   isInstanceOfTypeProfile(getChangeData(change))
 )
 
-const toMinifiedChange = (
+const toMinifiedProfileChange = (
   change: Change<InstanceElement>,
 ): Change<InstanceElement> => {
   const [before, after] = getAllChangeData(change)
@@ -89,6 +89,37 @@ const toMinifiedChange = (
   })
 }
 
+const toMinifiedPermissionSetChange = (
+  change: Change<InstanceElement>,
+): Change<InstanceElement> => {
+  const [before, after] = getAllChangeData(change)
+  const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
+  const minifiedAfter = after.clone()
+  minifiedAfter.value = {
+    [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
+  }
+  detailedChanges
+    .filter(isAdditionOrModificationChange)
+    .forEach(detailedChange => {
+      const changePath = getPath(before, detailedChange.id)
+      if (_.isUndefined(changePath)) {
+        return
+      }
+      const minifiedValuePath = changePath.length > 2
+        ? changePath.slice(0, -1)
+        : changePath
+      const afterChange = _.get(after, minifiedValuePath)
+      if (isDefined(afterChange)) {
+        _.set(minifiedAfter, minifiedValuePath, afterChange)
+      }
+    })
+
+  return toChange({
+    before,
+    after: minifiedAfter,
+  })
+}
+
 const filterCreator: LocalFilterCreator = () => {
   let originalChanges: Record<string, Change>
   return {
@@ -98,10 +129,17 @@ const filterCreator: LocalFilterCreator = () => {
         .filter(isModificationChange)
         .filter(isProfileRelatedChange)
         .toArray()
-      originalChanges = await keyByAsync(profileChanges, change => apiName(getChangeData(change)))
+      const PermissionSetChanges = await awu(changes)
+        .filter(isInstanceChange)
+        .filter(isModificationChange)
+        .filter(change => isInstanceOfType(PERMISSION_SET_METADATA_TYPE)(getChangeData(change)))
+        .toArray()
+      originalChanges = await keyByAsync([...profileChanges, ...PermissionSetChanges],
+        change => apiName(getChangeData(change)))
 
-      _.pullAll(changes, profileChanges)
-      changes.push(...profileChanges.map(toMinifiedChange))
+      _.pullAll(changes, [...profileChanges, ...PermissionSetChanges])
+      changes.push(...profileChanges.map(toMinifiedProfileChange),
+        ...PermissionSetChanges.map(toMinifiedPermissionSetChange))
     },
     onDeploy: async changes => {
       const appliedProfileChanges = await awu(changes)

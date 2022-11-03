@@ -25,7 +25,7 @@ import {
   config as configUtils,
   elements as elementUtils,
 } from '@salto-io/adapter-components'
-import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement, restoreValues } from '@salto-io/adapter-utils'
+import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -504,8 +504,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         change,
         sourceChanges,
         lookupFunc,
-        async (source, targetElement, getLookUpName) =>
-          restoreValues(source, targetElement, getLookUpName, true),
       ))
       .toArray()
     const restoredAppliedChanges = restoreInstanceTypeFromDeploy({

@@ -35,8 +35,8 @@ const changeValidator: ChangeValidator = async changes => (
     .map(element => ({
       elemID: element.elemID,
       severity: 'Error',
-      message: 'Instances with values set to \'NOT_YET_SUPPORTED\' cannot be deployed.',
-      detailedMessage: 'Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for more details.',
+      message: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed',
+      detailedMessage: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for more details.',
     } as ChangeError))
     .toArray()
 )

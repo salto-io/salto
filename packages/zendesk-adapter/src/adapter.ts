@@ -90,7 +90,7 @@ import { Credentials } from './auth'
 import hcSectionCategoryFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
-import brandsFilter from './filters/brand_filter'
+import brandsFilter from './filters/brands_filter'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -175,6 +175,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
+  'brand',
 ]
 
 /**

@@ -16,7 +16,7 @@
 import {
   Change, Element, getChangeData,
   InstanceElement, isAdditionChange,
-  isInstanceElement, isRemovalChange, ReferenceExpression,
+  isInstanceElement, isRemovalChange, ModificationChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -25,15 +25,7 @@ import { BRAND_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 import { LOGO_FIELD } from './brand_logo'
 
-const extractCategoriesFromChange = (brandChange : Change<InstanceElement>)
-    : InstanceElement[] => {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const categoryObject = brandChange.data.after.value.categories[0]
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  return categoryObject.brand.resValue.value.categories.map((c : ReferenceExpression) => c.resValue)
-}
+export const CATEGORIES_FIELD = 'categories'
 
 // Lowest position index first, if there is a tie - the newer is first
 const compareCategoriesPosition = (a: InstanceElement, b: InstanceElement) : number => {
@@ -53,9 +45,11 @@ const compareCategoriesPosition = (a: InstanceElement, b: InstanceElement) : num
   onlyNonOrderChanges - Brands without any categories order changes
  */
 const sortBrandChanges = (changes: Change<InstanceElement>[]) :
-    [Change<InstanceElement>[], Change<InstanceElement>[], Change<InstanceElement>[]] => {
-  const onlyOrderChanges : Change<InstanceElement>[] = []
-  const mixedChanges : Change<InstanceElement>[] = []
+    [ ModificationChange<InstanceElement>[],
+      ModificationChange<InstanceElement>[],
+      Change<InstanceElement>[]] => {
+  const onlyOrderChanges : ModificationChange<InstanceElement>[] = []
+  const mixedChanges : ModificationChange<InstanceElement>[] = []
   const onlyNonOrderChanges : Change<InstanceElement>[] = []
 
   changes.forEach(change => {
@@ -63,14 +57,16 @@ const sortBrandChanges = (changes: Change<InstanceElement>[]) :
       onlyNonOrderChanges.push(change)
       return
     }
-    // currently isn't supported since categories can't exist before brand
+    // currently isn't supported because categories can't exist before brand
     if (isAdditionChange(change)) {
       onlyNonOrderChanges.push(change)
       return
     }
     const brandChanges = detailedCompare(change.data.before, change.data.after)
-    const hasAnyOrderChanges = brandChanges.some(c => c.id.getFullNameParts().includes('categories'))
-    const hasOnlyOrderChanges = brandChanges.every(c => c.id.getFullNameParts().includes('categories'))
+    const hasAnyOrderChanges = brandChanges.some(c =>
+      c.id.getFullNameParts().includes(CATEGORIES_FIELD))
+    const hasOnlyOrderChanges = brandChanges.every(c =>
+      c.id.getFullNameParts().includes(CATEGORIES_FIELD))
 
     if (hasOnlyOrderChanges) {
       onlyOrderChanges.push(change)
@@ -117,8 +113,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const fieldsToIgnore: Set<string> = new Set<string>()
     const orderChangesToApply: Change<InstanceElement>[] = []
     for (const brandChange of [...onlyOrderChanges, ...mixedChanges]) {
-      const categories = extractCategoriesFromChange(brandChange)
+      const brandValue = brandChange.data.after.value
+      const categories = brandValue.categories.map((c: ReferenceExpression) => c.value)
+
       categories.forEach((category: InstanceElement, i : number) => {
+        // Create a 'fake' change of the category's position
         const beforeCategory = category.clone()
         category.value.position = i
 
@@ -133,7 +132,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       })
     }
 
-    // We want to only update position, so we ignore any other change
+    // We want to only update position, so we ignore any other field
     fieldsToIgnore.delete('position')
     const orderChangesDeployResult = await deployChanges(
       orderChangesToApply,

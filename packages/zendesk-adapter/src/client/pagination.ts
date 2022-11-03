@@ -18,7 +18,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 const { getWithCursorPagination } = clientUtils
 
 const pathChecker: clientUtils.PathCheckerFunc = (current, next) => (
-  next === `/api/v2${current}.json` || next === `/api/v2${current}`
+  next === `${current}.json` || next === `${current}`
 )
 export const paginate: clientUtils.PaginationFuncCreator = () => (
   getWithCursorPagination(pathChecker)

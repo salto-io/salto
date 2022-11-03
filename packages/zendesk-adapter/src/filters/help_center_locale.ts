@@ -49,7 +49,7 @@ const getLocales = async (
   client: ZendeskClient,
 ): Promise<LocalesResponse | undefined> => {
   const response = await client.getSinglePage({
-    url: '/help_center/locales',
+    url: '/api/v2/help_center/locales',
   })
   if (!isLocalesResponse(response.data)) {
     log.error('Failed to get the help center locales')

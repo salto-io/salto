@@ -26,6 +26,7 @@ import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 
 export const TRANSLATION_PARENT_TYPE_NAMES = ['section', 'category']
+const CATEGORY_TYPE_NAME = 'category'
 
 // saves the id, should work between brands as id is unique.
 export const removedTranslationParentId: number[] = []
@@ -109,10 +110,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       ))
       .forEach(addTranslationValues)
   },
+  // deploy only category, section is deployed in help_center_parent_to_section filter since
+  // parent_section_id needs to be deployed separately
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [parentChanges, leftoverChanges] = _.partition(
       changes,
-      change => TRANSLATION_PARENT_TYPE_NAMES.includes(getChangeData(change).elemID.typeName),
+      change => CATEGORY_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
     addRemovalChangesId(parentChanges)
     const deployResult = await deployChanges(

@@ -98,7 +98,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       const brandsCategories = categories.filter(c =>
         c.value.brand === brand.value.id).sort(compareCategoriesPosition)
 
-      brand.value.categories = brandsCategories.map(c => new ReferenceExpression(c.elemID, c))
+      brand.value[CATEGORIES_FIELD] = brandsCategories.map(
+        c => new ReferenceExpression(c.elemID, c)
+      )
     })
   },
   /** Change the categories positions according to their order in the brand, and deploy the brand */
@@ -112,6 +114,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const fieldsToIgnore: Set<string> = new Set<string>()
     const orderChangesToApply: Change<InstanceElement>[] = []
+
     for (const brandChange of [...onlyOrderChanges, ...mixedChanges]) {
       const brandValue = brandChange.data.after.value
       const categories = brandValue.categories.map((c: ReferenceExpression) => c.value)
@@ -146,7 +149,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const brandChangesDeployResult = await deployChanges(
       [...onlyOrderChanges, ...mixedChanges, ...onlyNonOrderChanges],
       async change => {
-        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, 'categories'])
+        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
       }
     )
 

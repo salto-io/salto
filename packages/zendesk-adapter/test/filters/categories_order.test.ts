@@ -82,6 +82,7 @@ describe('categories order in brand', () => {
         const brandWithGuide = createBrandInstance()
         const categories = [createCategory(), createCategory()]
         await filter.onFetch([brandWithGuide, ...categories])
+
         expect(brandWithGuide.value.categories.length).toBe(2)
         expect(brandWithGuide.value.categories)
           .toMatchObject(categories.map(c => new ReferenceExpression(c.elemID, c)))
@@ -91,6 +92,7 @@ describe('categories order in brand', () => {
         const brandWithoutGuide = createBrandInstance(false)
         const categories = [createCategory(), createCategory()]
         await filter.onFetch([brandWithoutGuide, ...categories])
+
         expect(brandWithoutGuide.value.categories).toBeUndefined()
       })
     })
@@ -101,20 +103,24 @@ describe('categories order in brand', () => {
       const firstCategory = createCategory()
       const secondCategory = createCategory()
 
-      const beforeCategory = firstCategory.clone()
-
+      const beforeFirstCategory = firstCategory.clone()
+      const beforeSecondCategory = secondCategory.clone()
       const afterFirstCategory = firstCategory.clone()
-      const afterSecondCategory = firstCategory.clone()
-      afterFirstCategory.value.position = 0
-      afterSecondCategory.value.position = 1
+      const afterSecondCategory = secondCategory.clone()
+
+      beforeFirstCategory.value.position = 0
+      beforeSecondCategory.value.position = 1
+      afterFirstCategory.value.position = 1
+      afterSecondCategory.value.position = 0
 
       beforeBrand.value.categories = [firstCategory, secondCategory].map(
         c => new ReferenceExpression(c.elemID, c)
       )
 
       beforeEach(() => {
-        delete firstCategory.value.position
-        delete secondCategory.value.position
+        mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
+        firstCategory.value.position = 0
+        secondCategory.value.position = 1
       })
 
       it(`with only ${CATEGORIES_FIELD} order change`, async () => {
@@ -124,15 +130,14 @@ describe('categories order in brand', () => {
           c => new ReferenceExpression(c.elemID, c)
         )
 
-        mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
         const res = await filter.deploy([{
           action: 'modify',
           data: { before: beforeBrand, after: afterBrand },
         }])
 
         expect(mockDeployChange).toHaveBeenCalledTimes(3)
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeCategory, after: afterFirstCategory } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeCategory, after: afterSecondCategory } }))
+        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstCategory, after: afterFirstCategory } }))
+        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondCategory, after: afterSecondCategory } }))
         expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: afterBrand } }))
         expect(res.deployResult.appliedChanges).toHaveLength(1)
       })
@@ -145,7 +150,7 @@ describe('categories order in brand', () => {
         afterBrand.value.categories = [secondCategory, firstCategory].map(
           c => new ReferenceExpression(c.elemID, c)
         )
-        afterBrand.value.subdomain = 'changed'
+        modifyBrand.value.subdomain = 'changed'
 
         const res = await filter.deploy([
           { action: 'modify', data: { before: beforeBrand, after: afterBrand } },
@@ -153,8 +158,8 @@ describe('categories order in brand', () => {
         ])
 
         expect(mockDeployChange).toHaveBeenCalledTimes(4)
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeCategory, after: afterFirstCategory } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeCategory, after: afterSecondCategory } }))
+        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstCategory, after: afterFirstCategory } }))
+        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondCategory, after: afterSecondCategory } }))
         expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: afterBrand } }))
         expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: modifyBrand } }))
         expect(res.deployResult.appliedChanges).toHaveLength(2)
@@ -168,7 +173,6 @@ describe('categories order in brand', () => {
         )
         afterBrand.value.subdomain = 'changed'
 
-        mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
         const res = await filter.deploy([
           { action: 'add', data: { after: beforeBrand } },
           { action: 'remove', data: { before: beforeBrand } },

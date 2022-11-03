@@ -111,8 +111,7 @@ const OBJECT_ID = 'objectId'
 const CUSTOM_OBJECT_VALIDATION_ERROR = 'An error occurred during custom object validation.'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
-const objectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\(([a-z0-9A-Z_]+)\\)`, 'gm')
-const deployObjectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
+const objectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\((?<${OBJECT_ID}>[a-z0-9A-Z_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 const manifestErrorRegex = RegExp('^Details: The manifest ([a-z0-9_ ]+)', 'm')
@@ -215,7 +214,7 @@ const createErrorMatcher = (lines: string[]): ErrorMatcher => {
       if (errorIndex) {
         const errorMessageLine = lines[errorIndex + ERROR_MESSAGE_LINE_OFFSET]
         const detailedErrorMessageLine = lines[errorIndex + DETAILED_ERROR_MESSAGE_OFFSET]
-        if (errorType === 'objectValidationError' && errorMessageLine.match(objectValidationErrorRegex)?.length === 1) {
+        if (errorType === 'objectValidationError' && objectValidationErrorRegex.test(errorMessageLine)) {
           return detailedErrorMessageLine
         }
         if (errorType === 'manifestValidationError' && manifestErrorRegex.test(detailedErrorMessageLine)) {
@@ -953,7 +952,7 @@ export default class SdfClient {
       // we'll get here when the deploy failed in the validation phase.
       // in this case we're looking for validation error message lines.
       const validationErrorObjects = getGroupItemFromRegex(
-        errorMessage, deployObjectValidationErrorRegex, OBJECT_ID
+        errorMessage, objectValidationErrorRegex, OBJECT_ID
       )
       return validationErrorObjects.length > 0
         ? new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
@@ -1010,12 +1009,15 @@ export default class SdfClient {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
     try {
-      const custCommandArguments = validateOnly ? { accountspecificvalues: 'WARNING', server: true } : { accountspecificvalues: 'WARNING' }
+      const custCommandArguments: Values = validateOnly ? { server: true } : {}
+      if (type === 'AccountCustomization') {
+        custCommandArguments.accountspecificvalues = 'Warning'
+      }
       await this.executeProjectAction(
         validateOnly ? COMMANDS.VALIDATE_PROJECT : COMMANDS.DEPLOY_PROJECT,
         // SuiteApp project type can't contain account specific values
         // and thus the flag is not supported
-        type === 'AccountCustomization' ? custCommandArguments : {},
+        custCommandArguments,
         executor
       )
     } catch (e) {

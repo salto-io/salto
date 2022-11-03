@@ -1222,7 +1222,7 @@ describe('Test utils.ts', () => {
       it('should transform instanceElement', () => {
         expect(resolvedInstance.value.name).toEqual(instance.value.name)
         expect(resolvedInstance.value.refValue).toEqual(regValue)
-        expect(resolvedInstance.value.arrayValues).toHaveLength(2)
+        expect(resolvedInstance.value.arrayValues).toHaveLength(3)
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
         expect(Object.values(resolvedInstance.value.mapValues)).toHaveLength(2)
@@ -1242,10 +1242,6 @@ describe('Test utils.ts', () => {
         expect(restoredInstance.value.mapValues.valueRef).toBeInstanceOf(ReferenceExpression)
         expect(restoredInstance.value.fileValue).toBeInstanceOf(StaticFile)
         expect(restoredInstance.value.into).toBeInstanceOf(TemplateExpression)
-      })
-
-      it('should not modify instance with empty field as value', () => {
-
       })
     })
 

@@ -53,8 +53,8 @@ describe('categories order in brand', () => {
     const createBrandInstance = (has_help_center = true): InstanceElement =>
       new InstanceElement('brand', brandType, { id: BRAND_ID, has_help_center, subdomain: 'test' })
 
-    const createCategory = (index = 0): InstanceElement =>
-      new InstanceElement(`category${index}`, categoryType, { brand: BRAND_ID, testField: 'test' })
+    const createCategory = (id = 0): InstanceElement =>
+      new InstanceElement(`category${id}`, categoryType, { brand: BRAND_ID, testField: 'test', id })
 
     const regularDeployChangeParam = (change: Change) : {} => ({
       change,
@@ -67,9 +67,11 @@ describe('categories order in brand', () => {
       change,
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: ['brand', 'testField'],
     })
 
+    const removeNonRelevantFields = (categories: InstanceElement[]) : void => {
+      categories.forEach(c => { c.value = { id: c.value.id, position: c.value.position } })
+    }
 
     beforeEach(async () => {
       jest.clearAllMocks()
@@ -80,12 +82,23 @@ describe('categories order in brand', () => {
       it('with Guide active', async () => {
         // Should create categories order field
         const brandWithGuide = createBrandInstance()
-        const categories = [createCategory(), createCategory()]
+        const categories = [createCategory(), createCategory(), createCategory(), createCategory()]
+        categories[0].value.position = 0
+        categories[1].value.position = 0
+        categories[2].value.position = 1
+        categories[3].value.position = 1
+
+        categories[0].value.created_at = '0'
+        categories[1].value.created_at = '1'
+        categories[2].value.created_at = '1'
+        categories[3].value.created_at = '0'
+
         await filter.onFetch([brandWithGuide, ...categories])
 
-        expect(brandWithGuide.value.categories.length).toBe(2)
+        expect(brandWithGuide.value.categories.length).toBe(4)
         expect(brandWithGuide.value.categories)
-          .toMatchObject(categories.map(c => new ReferenceExpression(c.elemID, c)))
+          .toMatchObject([categories[1], categories[0], categories[2], categories[3]]
+            .map(c => new ReferenceExpression(c.elemID, c)))
       })
       it('with Guide not active', async () => {
         // Should not create categories order field at all
@@ -113,6 +126,14 @@ describe('categories order in brand', () => {
       afterFirstCategory.value.position = 1
       afterSecondCategory.value.position = 0
 
+      // The code shouldn't deploy non-relevant fields, so we remove them from the testing elements
+      removeNonRelevantFields([
+        beforeFirstCategory,
+        beforeSecondCategory,
+        afterFirstCategory,
+        afterSecondCategory,
+      ])
+
       beforeBrand.value.categories = [firstCategory, secondCategory].map(
         c => new ReferenceExpression(c.elemID, c)
       )
@@ -135,9 +156,10 @@ describe('categories order in brand', () => {
           data: { before: beforeBrand, after: afterBrand },
         }])
 
+
         expect(mockDeployChange).toHaveBeenCalledTimes(3)
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstCategory, after: afterFirstCategory } }))
         expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondCategory, after: afterSecondCategory } }))
+        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstCategory, after: afterFirstCategory } }))
         expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: afterBrand } }))
         expect(res.deployResult.appliedChanges).toHaveLength(1)
       })

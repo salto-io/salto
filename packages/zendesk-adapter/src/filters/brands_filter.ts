@@ -87,7 +87,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       // Lowest position index first, if there is a tie - the newer is first
       const brandsCategories = _.sortBy(
         categories.filter(c => c.value.brand === brand.value.id),
-        (c => [c.value.position, -c.value.createdAt])
+        (c => [c.value.position, -c.value.created_at])
       )
 
       brand.value[CATEGORIES_FIELD] = brandsCategories

@@ -26,7 +26,6 @@ import { FilterCreator } from '../filter'
 
 export const HELP_CENTER_TYPE = 'guide_settings__help_center'
 export const GUIDE_SETTINGS_PREFERENCE_TYPE = 'guide_settings__help_center__settings__preferences'
-export const HELP_CENTER_GENERAL_SETTINGS_ATTRIBUTES = 'guide_settings__help_center__general_settings_attributes'
 const GUIDE_SETTINGS_TYPE = 'guide_settings'
 
 

@@ -24,7 +24,7 @@ export type FilterResult = {
   errors?: SaltoError[]
 }
 
-export type FilterAdditionParams = {
+export type FilterAdditionalParams = {
   elementsSource: ReadOnlyElementsSource
 }
 
@@ -34,4 +34,4 @@ export type FilterCreator = filterUtils.FilterCreator<
     ZendeskClient,
     FilterContext,
     FilterResult,
-    FilterAdditionParams>
+    FilterAdditionalParams>

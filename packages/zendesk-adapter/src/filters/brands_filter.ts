@@ -21,23 +21,11 @@ import {
 import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { BRAND_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 import { LOGO_FIELD } from './brand_logo'
 
 export const CATEGORIES_FIELD = 'categories'
-
-// Lowest position index first, if there is a tie - the newer is first
-const compareCategoriesPosition = (a: InstanceElement, b: InstanceElement) : number => {
-  const { position: aPosition, createAt: aCreatedAt } = a.value
-  const { position: bPosition, createAt: bCreatedAt } = b.value
-  if (aPosition !== bPosition) {
-    // Smallest position is first
-    return aPosition < bPosition ? 0 : 1
-  }
-  // Newest is first
-  return aCreatedAt > bCreatedAt ? 0 : 1
-}
 
 /* Split the changes into 3 groups:
   onlyOrderChanges    - Brands with only categories order changes
@@ -86,7 +74,8 @@ const sortBrandChanges = (changes: Change<InstanceElement>[]) :
 const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Insert the brand's categories into a field in it */
   onFetch: async (elements: Element[]) => {
-    const categories = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'category')
+    const categories = elements.filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
     const brands = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
 
@@ -95,12 +84,14 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       // If the brand doesn't have Guide activated, do nothing
       if (!brand.value.has_help_center) { return }
 
-      const brandsCategories = categories.filter(c =>
-        c.value.brand === brand.value.id).sort(compareCategoriesPosition)
-
-      brand.value[CATEGORIES_FIELD] = brandsCategories.map(
-        c => new ReferenceExpression(c.elemID, c)
+      // Lowest position index first, if there is a tie - the newer is first
+      const brandsCategories = _.sortBy(
+        categories.filter(c => c.value.brand === brand.value.id),
+        (c => [c.value.position, -c.value.createdAt])
       )
+
+      brand.value[CATEGORIES_FIELD] = brandsCategories
+        .map(c => new ReferenceExpression(c.elemID, c))
     })
   },
   /** Change the categories positions according to their order in the brand, and deploy the brand */
@@ -112,35 +103,37 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const [onlyOrderChanges, mixedChanges, onlyNonOrderChanges] = sortBrandChanges(brandChanges)
 
-    const fieldsToIgnore: Set<string> = new Set<string>()
     const orderChangesToApply: Change<InstanceElement>[] = []
 
-    for (const brandChange of [...onlyOrderChanges, ...mixedChanges]) {
+    const orderChanges = [...onlyOrderChanges, ...mixedChanges]
+    orderChanges.forEach(brandChange => {
       const brandValue = brandChange.data.after.value
       const categories = brandValue.categories.map((c: ReferenceExpression) => c.value)
 
       categories.forEach((category: InstanceElement, i : number) => {
         // Create a 'fake' change of the category's position
-        const beforeCategory = category.clone()
-        category.value.position = i
+        const beforeCategory = new InstanceElement(
+          category.elemID.name,
+          category.refType,
+          { id: category.value.id, position: category.value.position }
+        )
+        const afterCategory = beforeCategory.clone()
+        afterCategory.value.position = i
 
         orderChangesToApply.push({
           action: 'modify',
           data: {
             before: beforeCategory,
-            after: category,
+            after: afterCategory,
           },
         })
-        Object.keys(category.value).forEach(k => fieldsToIgnore.add(k))
       })
-    }
+    })
 
-    // We want to only update position, so we ignore any other field
-    fieldsToIgnore.delete('position')
     const orderChangesDeployResult = await deployChanges(
       orderChangesToApply,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, Array.from(fieldsToIgnore))
+        await deployChange(change, client, config.apiDefinitions)
       }
     )
 

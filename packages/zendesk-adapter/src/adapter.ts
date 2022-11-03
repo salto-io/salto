@@ -143,8 +143,9 @@ export const DEFAULT_FILTERS = [
   tagsFilter,
   hcLocalesFilter,
   macroAttachmentsFilter,
-  brandsFilter,
   brandLogoFilter,
+  // brandsFilter should be after brandLogoFilter
+  brandsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
   hcSectionCategoryFilter,

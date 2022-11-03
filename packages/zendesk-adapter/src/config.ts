@@ -1744,6 +1744,52 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&brand'],
       dataField: '.',
     },
+    deployRequests: {
+      modify: {
+        url: '/hc/api/internal/general_settings',
+        method: 'put',
+      },
+      // TO DO - need to check what happens when help center is created or removed (SALTO-2914)
+      // add: {
+      //   url: '/hc/api/internal/general_settings',
+      //   method: 'post',
+      // },
+      // remove: {
+      //   url: '/hc/api/internal/general_settings',
+      //   method: 'delete',
+      // },
+    },
+  },
+  guide_settings__help_center: {
+    transformation: {
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'feature_restrictions' }, // omited as it does not appear in the http request
+      ),
+    },
+  },
+  guide_settings__help_center__settings: {
+    transformation: {
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'id' },
+        { fieldName: 'account_id', fieldType: 'number' },
+        { fieldName: 'help_center_id', fieldType: 'number' },
+        { fieldName: 'created_at', fieldType: 'string' },
+        { fieldName: 'updated_at', fieldType: 'string' },
+        { fieldName: 'draft', fieldType: 'boolean' },
+        { fieldName: 'kind', fieldType: 'string' },
+      ),
+    },
+  },
+  guide_settings__help_center__text_filter: {
+    transformation: {
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'id' },
+        { fieldName: 'account_id', fieldType: 'number' },
+        { fieldName: 'help_center_id', fieldType: 'number' },
+        { fieldName: 'created_at', fieldType: 'string' },
+        { fieldName: 'updated_at', fieldType: 'string' },
+      ),
+    },
   },
   sections: {
     request: {

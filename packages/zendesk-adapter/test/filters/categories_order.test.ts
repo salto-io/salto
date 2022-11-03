@@ -53,8 +53,8 @@ describe('categories order in brand', () => {
     const createBrandInstance = (has_help_center = true): InstanceElement =>
       new InstanceElement('brand', brandType, { id: BRAND_ID, has_help_center, subdomain: 'test' })
 
-    const createCategory = (): InstanceElement =>
-      new InstanceElement('category', categoryType, { brand: BRAND_ID, testField: 'test' })
+    const createCategory = (index = 0): InstanceElement =>
+      new InstanceElement(`category${index}`, categoryType, { brand: BRAND_ID, testField: 'test' })
 
     const regularDeployChangeParam = (change: Change) : {} => ({
       change,
@@ -100,8 +100,8 @@ describe('categories order in brand', () => {
     describe('on deploy', () => {
       const beforeBrand = createBrandInstance()
 
-      const firstCategory = createCategory()
-      const secondCategory = createCategory()
+      const firstCategory = createCategory(0)
+      const secondCategory = createCategory(1)
 
       const beforeFirstCategory = firstCategory.clone()
       const beforeSecondCategory = secondCategory.clone()
@@ -145,24 +145,20 @@ describe('categories order in brand', () => {
       it(`with ${CATEGORIES_FIELD} change and regular change`, async () => {
         // should deploy categories position change and regular deploy, and return appliedChanges
         const afterBrand = beforeBrand.clone()
-        const modifyBrand = beforeBrand.clone()
-
         afterBrand.value.categories = [secondCategory, firstCategory].map(
           c => new ReferenceExpression(c.elemID, c)
         )
-        modifyBrand.value.subdomain = 'changed'
+        afterBrand.value.subdomain = 'changed'
 
         const res = await filter.deploy([
           { action: 'modify', data: { before: beforeBrand, after: afterBrand } },
-          { action: 'modify', data: { before: beforeBrand, after: modifyBrand } },
         ])
 
-        expect(mockDeployChange).toHaveBeenCalledTimes(4)
+        expect(mockDeployChange).toHaveBeenCalledTimes(3)
         expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstCategory, after: afterFirstCategory } }))
         expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondCategory, after: afterSecondCategory } }))
         expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: afterBrand } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: modifyBrand } }))
-        expect(res.deployResult.appliedChanges).toHaveLength(2)
+        expect(res.deployResult.appliedChanges).toHaveLength(1)
       })
 
       it('with only non-order changes', async () => {

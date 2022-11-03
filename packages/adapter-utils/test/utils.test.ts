@@ -179,6 +179,8 @@ describe('Test utils.ts', () => {
             },
           },
         },
+        {
+        },
       ],
       objWithInnerObj: {
         innerObj: {
@@ -1126,6 +1128,7 @@ describe('Test utils.ts', () => {
         arrayValues: [
           regValue,
           valueRef,
+          {},
         ],
         mapValues: {
           regValue,
@@ -1240,6 +1243,10 @@ describe('Test utils.ts', () => {
         expect(restoredInstance.value.fileValue).toBeInstanceOf(StaticFile)
         expect(restoredInstance.value.into).toBeInstanceOf(TemplateExpression)
       })
+
+      it('should not modify instance with empty field as value', () => {
+
+      })
     })
 
     describe('resolveValues on primitive', () => {
@@ -1351,16 +1358,21 @@ describe('Test utils.ts', () => {
       })
       describe('with addition change', () => {
         let sourceChange: AdditionChange<InstanceElement>
+        let restoredChange: AdditionChange<InstanceElement>
         beforeEach(async () => {
           sourceChange = { action: 'add', data: { after: afterData.clone() } }
           const sourceChanges = _.keyBy(
             [sourceChange],
             c => getChangeData(c).elemID.getFullName(),
           )
-          await restoreChangeElement(additionChange, sourceChanges, getName, mockRestore)
+          restoredChange = await restoreChangeElement(additionChange,
+            sourceChanges, getName, mockRestore) as AdditionChange<InstanceElement>
         })
         it('should call restore func on the after data', () => {
           expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
+        })
+        it('should return the after data from the source change', () => {
+          expect(restoredChange.data.after).toStrictEqual(sourceChange.data.after)
         })
       })
       describe('with removal change', () => {

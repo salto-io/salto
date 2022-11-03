@@ -1751,7 +1751,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
       add: {
         url: '/hc/api/internal/general_settings',
-        method: 'put', // put as there is no addition
+        method: 'post',
       },
       remove: {
         url: '/hc/api/internal/general_settings',

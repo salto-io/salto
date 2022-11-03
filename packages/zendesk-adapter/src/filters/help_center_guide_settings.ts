@@ -27,9 +27,9 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
 
-const HELP_CENTER_TYPE = 'guide_settings__help_center'
-const GUIDE_SETTINGS_PREFERENCE_TYPE = 'guide_settings__help_center__settings__preferences'
-const HELP_CENTER_GENERAL_SETTINGS_ATTRIBUTES = 'guide_settings__help_center__general_settings_attributes'
+export const HELP_CENTER_TYPE = 'guide_settings__help_center'
+export const GUIDE_SETTINGS_PREFERENCE_TYPE = 'guide_settings__help_center__settings__preferences'
+export const HELP_CENTER_GENERAL_SETTINGS_ATTRIBUTES = 'guide_settings__help_center__general_settings_attributes'
 const GUIDE_SETTINGS_TYPE = 'guide_settings'
 
 
@@ -77,13 +77,14 @@ const addGeneralSettingsAttributesToObjectType = (objects: ObjectType[]): void =
   )
   delete helpCenter.fields.settings
 }
-// need to omit changes which are  removal of guide_settings
+// need to omit changes which are addition or removal of guide_settings
 const needToOmit = (change: Change<InstanceElement>): boolean =>
   getChangeData(change).elemID.typeName === GUIDE_SETTINGS_TYPE && isAdditionOrRemovalChange(change)
 
 // this filter adds a field of 'general_settings_attributes' to 'help_center' and removes the
-// setting field. This is done as this arrangement of the instance is necessary for deploy.
-// For deploy, this filter ignores addition or removal of guide_settings.
+// 'settings' field. This is done as this arrangement of the instance is necessary for deploy.
+// For deploy, this filter ignores addition or removal of guide_settings. (need to check what
+// happens when a help center is created or deleted.)
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements

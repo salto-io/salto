@@ -1749,20 +1749,21 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         url: '/hc/api/internal/general_settings',
         method: 'put',
       },
-      add: {
-        url: '/hc/api/internal/general_settings',
-        method: 'post',
-      },
-      remove: {
-        url: '/hc/api/internal/general_settings',
-        method: 'delete',
-      },
+      // TO DO - need to check what happens when help center is created or removed (SALTO-2914)
+      // add: {
+      //   url: '/hc/api/internal/general_settings',
+      //   method: 'post',
+      // },
+      // remove: {
+      //   url: '/hc/api/internal/general_settings',
+      //   method: 'delete',
+      // },
     },
   },
   guide_settings__help_center: {
     transformation: {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'feature_restrictions' },
+        { fieldName: 'feature_restrictions' }, // omited as it does not appear in the http request
       ),
     },
   },

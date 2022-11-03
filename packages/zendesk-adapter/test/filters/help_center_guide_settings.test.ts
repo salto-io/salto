@@ -22,24 +22,12 @@ import {
 } from '@salto-io/adapter-api'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, {
-  GUIDE_SETTINGS_PREFERENCE_TYPE, HELP_CENTER_GENERAL_SETTINGS_ATTRIBUTES,
+  GUIDE_SETTINGS_PREFERENCE_TYPE,
   HELP_CENTER_TYPE,
 } from '../../src/filters/help_center_guide_settings'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 
-
-const mockDeployChange = jest.fn()
-jest.mock('@salto-io/adapter-components', () => {
-  const actual = jest.requireActual('@salto-io/adapter-components')
-  return {
-    ...actual,
-    deployment: {
-      ...actual.deployment,
-      deployChange: jest.fn((...args) => mockDeployChange(...args)),
-    },
-  }
-})
 
 describe('guide_settings filter', () => {
   let client: ZendeskClient
@@ -48,9 +36,6 @@ describe('guide_settings filter', () => {
 
   const guideSettingsTypeName = 'guide_settings'
   const guideSettingsType = new ObjectType({ elemID: new ElemID(ZENDESK, guideSettingsTypeName) })
-  const GeneralSettingsAttributesType = new ObjectType(
-    { elemID: new ElemID(ZENDESK, HELP_CENTER_GENERAL_SETTINGS_ATTRIBUTES) }
-  )
   const guideSettingsPreferencesType = new ObjectType(
     { elemID: new ElemID(ZENDESK, GUIDE_SETTINGS_PREFERENCE_TYPE) }
   )
@@ -61,7 +46,7 @@ describe('guide_settings filter', () => {
     },
   })
   guideSettingsHelpCenterValideType.fields.general_settings_attributes = new Field(
-    GeneralSettingsAttributesType,
+    guideSettingsHelpCenterValideType,
     'general_settings_attributes',
     guideSettingsPreferencesType,
   )
@@ -86,7 +71,6 @@ describe('guide_settings filter', () => {
   )
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
     })
@@ -132,47 +116,6 @@ describe('guide_settings filter', () => {
       )
       expect(invalidGuideSettingsInstance.value).toEqual(validGuideSettingsInstance.value)
       expect(guideSettingsHelpCenterInvalideType).toEqual(guideSettingsHelpCenterValideType)
-    })
-  })
-
-  describe('deploy', () => {
-    it('should pass the correct params to deployChange on addition', async () => {
-      const validGuideSettingsInstanceClone = validGuideSettingsInstance.clone()
-      mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter.deploy([{ action: 'add', data: { after: validGuideSettingsInstanceClone } }])
-      expect(mockDeployChange).toHaveBeenCalledTimes(0) // as deployChange is not called
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'add', data: { after: validGuideSettingsInstance } }])
-    })
-    it('should pass the correct params to deployChange on removal', async () => {
-      const validGuideSettingsInstanceClone = validGuideSettingsInstance.clone()
-      mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter.deploy([{ action: 'remove', data: { before: validGuideSettingsInstanceClone } }])
-      expect(mockDeployChange).toHaveBeenCalledTimes(0) // as deployChange is not called
-      expect(res.leftoverChanges).toHaveLength(0)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([{ action: 'remove', data: { before: validGuideSettingsInstance } }])
-    })
-    it('should pass the correct params to deployChange on modification', async () => {
-      const validGuideSettingsInstanceClone = validGuideSettingsInstance.clone()
-      mockDeployChange.mockImplementation(async () => ({}))
-      const res = await filter.deploy([
-        {
-          action: 'modify',
-          data: { before: validGuideSettingsInstanceClone, after: validGuideSettingsInstanceClone },
-        },
-      ])
-      expect(mockDeployChange).toHaveBeenCalledTimes(0) // as deployChange is not called
-      expect(res.leftoverChanges).toHaveLength(1)
-      expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
-      expect(res.deployResult.appliedChanges)
-        .toEqual([])
     })
   })
 })

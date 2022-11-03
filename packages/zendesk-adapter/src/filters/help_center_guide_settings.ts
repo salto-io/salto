@@ -14,18 +14,15 @@
 * limitations under the License.
 */
 import {
-  Change, DeployResult,
-  Element, ElemID, Field, getChangeData,
-  InstanceElement, isAdditionOrRemovalChange,
+  Element, Field,
+  InstanceElement,
   isInstanceElement,
   isObjectType,
   ObjectType,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { ZENDESK } from '../constants'
 
 export const HELP_CENTER_TYPE = 'guide_settings__help_center'
 export const GUIDE_SETTINGS_PREFERENCE_TYPE = 'guide_settings__help_center__settings__preferences'
@@ -53,7 +50,7 @@ const GUIDE_SETTINGS_SCHEMA = Joi.object({
 }).unknown(true).required()
 
 const isGuideSettings = createSchemeGuardForInstance<GuideSettingsType>(
-  GUIDE_SETTINGS_SCHEMA, 'Received an invalid value for section/category'
+  GUIDE_SETTINGS_SCHEMA, 'Received an invalid value for guide settings'
 )
 
 const addGeneralSettingsAttributesToInstance = (elem: InstanceElement): void => {
@@ -67,24 +64,19 @@ const addGeneralSettingsAttributesToObjectType = (objects: ObjectType[]): void =
   if (preference === undefined || helpCenter === undefined) {
     return
   }
-  const GeneralSettingsAttributesType = new ObjectType(
-    { elemID: new ElemID(ZENDESK, HELP_CENTER_GENERAL_SETTINGS_ATTRIBUTES) }
-  )
+
   helpCenter.fields.general_settings_attributes = new Field(
-    GeneralSettingsAttributesType,
+    helpCenter,
     'general_settings_attributes',
     preference,
   )
   delete helpCenter.fields.settings
 }
-// need to omit changes which are addition or removal of guide_settings
-const needToOmit = (change: Change<InstanceElement>): boolean =>
-  getChangeData(change).elemID.typeName === GUIDE_SETTINGS_TYPE && isAdditionOrRemovalChange(change)
 
-// this filter adds a field of 'general_settings_attributes' to 'help_center' and removes the
-// 'settings' field. This is done as this arrangement of the instance is necessary for deploy.
-// For deploy, this filter ignores addition or removal of guide_settings. (need to check what
-// happens when a help center is created or deleted.)
+/**
+ * this filter adds a field of 'general_settings_attributes' to 'help_center' and removes the
+ * 'settings' field. This is done as this arrangement of the instance is necessary for deploy.
+ */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
@@ -98,17 +90,5 @@ const filterCreator: FilterCreator = () => ({
         .includes(obj.elemID.typeName))
     addGeneralSettingsAttributesToObjectType(guideSettingsObjectTypes)
   },
-  deploy: async (changes: Change<InstanceElement>[]) => {
-    const [GuideSettingsChangesToIgnore, leftoverChanges] = _.partition(
-      changes,
-      needToOmit,
-    )
-    const deployResult: DeployResult = {
-      appliedChanges: GuideSettingsChangesToIgnore,
-      errors: [],
-    }
-    return { deployResult, leftoverChanges }
-  },
-
 })
 export default filterCreator

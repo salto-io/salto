@@ -27,6 +27,7 @@ const CLOUD_REST_PREFIX = '/rest/api/3/'
 const DATA_REST_CENTER_PREFIX = '/rest/api/2/'
 const PLUGIN_REST_PREFIX = '/rest/salto/1.0/'
 
+
 // A list to describe the endpoints we implemented with the plugin
 // to know when to use the plugin prefix
 const PLUGIN_URL_PATTERNS: UrlPattern[] = [
@@ -85,6 +86,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['put', 'delete'],
     url: '/rest/api/3/screens/\\d+',
+  },
+  {
+    httpMethods: ['get', 'post'],
+    url: '/rest/api/3/screenscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/screenscheme/\\d+',
   },
   {
     httpMethods: ['get'],

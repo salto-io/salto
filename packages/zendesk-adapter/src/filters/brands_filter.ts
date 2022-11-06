@@ -16,7 +16,7 @@
 import {
   Change, Element, getChangeData,
   InstanceElement, isAdditionChange, isAdditionOrModificationChange,
-  isInstanceElement, isRemovalChange, ReferenceExpression, Value,
+  isInstanceElement, isRemovalChange, ReferenceExpression, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'

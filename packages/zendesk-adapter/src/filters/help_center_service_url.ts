@@ -49,7 +49,7 @@ const replaceUrlParamsBrand = (url: string, instance: InstanceElement): string =
     PARAM_MATCH,
     val => {
       let replacement
-      if (val.slice(1, -1).startsWith('_')) {
+      if (val.slice(1, -1).startsWith('_')) { // meaning that it refers to an annotation
         replacement = _.get(instance.annotations, val.slice(1, -1)) ?? val
       } else {
         replacement = instance.value[val.slice(1, -1)] ?? val
@@ -66,6 +66,11 @@ const createServiceUrl = (instance: InstanceElement, baseUrl:string): void => {
   instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, baseUrl)).href
 }
 
+/**
+ * this filter creates the serviceUrl annotation for guide elements. It first determines the baseUrl
+ * (category_translation and guide_settings have different ones depending on the brand). Then the
+ * filter replaces url params and creates the service url accordingly.
+ */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const brandList = elements
@@ -79,6 +84,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(instance => Object.keys(SERVICE_URL_FOR_GUIDE).includes(instance.elemID.typeName))
       .forEach(instance => {
         let baseUrl
+        // only some have different baseUrl according to brand
         if (DIFFERENT_BASE_URL_TYPES.includes(instance.elemID.typeName)) {
           baseUrl = brandToUrl[instance.value.brand]
         } else {

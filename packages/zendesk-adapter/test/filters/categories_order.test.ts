@@ -53,8 +53,14 @@ describe('categories order in brand', () => {
     const createBrandInstance = (has_help_center = true): InstanceElement =>
       new InstanceElement('brand', brandType, { id: BRAND_ID, has_help_center, subdomain: 'test' })
 
-    const createCategory = (id = 0): InstanceElement =>
-      new InstanceElement(`category${id}`, categoryType, { brand: BRAND_ID, testField: 'test', id })
+    const createCategory = (id = 0, position?: number, createdAt?: string): InstanceElement =>
+      new InstanceElement(`category${id}`, categoryType, {
+        brand: BRAND_ID,
+        testField: 'test',
+        id,
+        position,
+        created_at: createdAt,
+      })
 
     const regularDeployChangeParam = (change: Change) : {} => ({
       change,
@@ -82,16 +88,13 @@ describe('categories order in brand', () => {
       it('with Guide active', async () => {
         // Should create categories order field
         const brandWithGuide = createBrandInstance()
-        const categories = [createCategory(), createCategory(), createCategory(), createCategory()]
-        categories[0].value.position = 0
-        categories[1].value.position = 0
-        categories[2].value.position = 1
-        categories[3].value.position = 1
-
-        categories[0].value.created_at = '0'
-        categories[1].value.created_at = '1'
-        categories[2].value.created_at = '1'
-        categories[3].value.created_at = '0'
+        const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
+        const LATE_CREATED_AT = '2022-11-30T12:00:00Z'
+        const categories = [
+          createCategory(0, 0, EARLY_CREATED_AT),
+          createCategory(1, 0, LATE_CREATED_AT),
+          createCategory(2, 1, LATE_CREATED_AT),
+          createCategory(3, 1, EARLY_CREATED_AT)]
 
         await filter.onFetch([brandWithGuide, ...categories])
 
@@ -112,21 +115,18 @@ describe('categories order in brand', () => {
 
     describe('on deploy', () => {
       const beforeBrand = createBrandInstance()
+      const FIRST_ID = 0
+      const SECOND_ID = 1
 
-      const firstCategory = createCategory(0)
-      const secondCategory = createCategory(1)
+      const firstCategory = createCategory(FIRST_ID)
+      const secondCategory = createCategory(SECOND_ID)
 
-      const beforeFirstCategory = firstCategory.clone()
-      const beforeSecondCategory = secondCategory.clone()
-      const afterFirstCategory = firstCategory.clone()
-      const afterSecondCategory = secondCategory.clone()
+      const beforeFirstCategory = createCategory(FIRST_ID, 0)
+      const beforeSecondCategory = createCategory(SECOND_ID, 1)
+      const afterFirstCategory = createCategory(FIRST_ID, 1)
+      const afterSecondCategory = createCategory(SECOND_ID, 0)
 
-      beforeFirstCategory.value.position = 0
-      beforeSecondCategory.value.position = 1
-      afterFirstCategory.value.position = 1
-      afterSecondCategory.value.position = 0
-
-      // The code shouldn't deploy non-relevant fields, so we remove them from the testing elements
+      // The code shouldn't deploy non-relevant fields, so we remove them from the result elements
       removeNonRelevantFields([
         beforeFirstCategory,
         beforeSecondCategory,

@@ -491,7 +491,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'categories', fieldType: 'list<unkown>' },
+        { fieldName: 'categories', fieldType: 'list<unknown>' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       serviceUrl: '/admin/account/brand_management/brands',

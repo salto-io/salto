@@ -18,9 +18,10 @@ import _ from 'lodash'
 import {
   Element, isInstanceElement,
 } from '@salto-io/adapter-api'
-import { FilterContext, GUIDE_BRAND_SPECIFIC_TYPES } from '../config'
+import { FilterContext } from '../config'
 import { FilterCreator, FilterResult } from '../filter'
 import ZendeskClient from '../client/client'
+
 
 const filter: FilterCreator = params => {
   const commonFilter = filters.serviceUrlFilterCreator<ZendeskClient, FilterContext, FilterResult>(
@@ -37,7 +38,7 @@ const filter: FilterCreator = params => {
         .filter(isInstanceElement)
         .forEach(instance => {
           let baseUrl = ''
-          if (Object.keys(GUIDE_BRAND_SPECIFIC_TYPES).includes(instance.elemID.typeName)) {
+          if (''.includes(instance.elemID.typeName)) {
             baseUrl = brandToUrl[instance.value.brand.value.value.id]
           } else {
             baseUrl = params.client.getUrl().href

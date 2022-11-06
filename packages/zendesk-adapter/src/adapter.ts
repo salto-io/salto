@@ -96,6 +96,7 @@ import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
 import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 import hcGuideSettings from './filters/help_center_guide_settings'
+import hcServiceUrl from './filters/help_center_service_url'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -151,6 +152,7 @@ export const DEFAULT_FILTERS = [
   hcSectionCategoryFilter,
   hcTranslationFilter,
   hcGuideSettings,
+  hcServiceUrl,
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,

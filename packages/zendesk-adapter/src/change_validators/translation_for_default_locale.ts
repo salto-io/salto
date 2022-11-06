@@ -23,9 +23,10 @@ import { createSchemeGuardForInstance, resolveValues } from '@salto-io/adapter-u
 import { collections } from '@salto-io/lowerdash'
 import { isTranslation, TranslationType } from '../filters/help_center_section_and_category'
 import { lookupFunc } from '../filters/field_references'
+import { ARTICLE_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
-const PARENTS_TYPE_NAMES = ['section', 'category']
+const PARENTS_TYPE_NAMES = ['section', 'category', ARTICLE_TYPE_NAME]
 
 type ParentType = InstanceElement & {
   value: {

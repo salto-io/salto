@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/remove_brand_logo_field'
+import filterCreator, { CATEGORIES_FIELD } from '../../src/filters/brands_filter'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
 
@@ -76,7 +76,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'add', data: { after: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -100,7 +100,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'modify', data: { before: clonedBeforeBrand, after: clonedAfterBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -120,7 +120,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'remove', data: { before: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -137,7 +137,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'add', data: { after: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)

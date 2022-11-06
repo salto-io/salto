@@ -28,8 +28,7 @@ import { LOGO_FIELD } from './brand_logo'
 export const CATEGORIES_FIELD = 'categories'
 
 /* Split the changes into 3 groups:
-  onlyOrderChanges    - Brands with only categories order changes
-  mixedChanges        - Brands with categories order and other changes
+  withOrderChanges    - Brands with categories order changes
   onlyNonOrderChanges - Brands without any categories order changes
  */
 const sortBrandChanges = (changes: Change<InstanceElement>[]) :

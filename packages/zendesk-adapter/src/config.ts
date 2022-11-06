@@ -1743,6 +1743,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
+      serviceUrl: '/hc/admin/general_settings',
     },
     deployRequests: {
       modify: {
@@ -1822,7 +1823,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/knowledge/sections/{id}',
+      serviceUrl: '/knowledge/arrange/sections/{id}',
     },
     deployRequests: {
       add: {
@@ -1934,7 +1935,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/hc/admin/categories/{id}/edit',
+      serviceUrl: '/knowledge/arrange/categories/{id}',
     },
     deployRequests: {
       add: {

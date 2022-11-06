@@ -14,13 +14,38 @@
 * limitations under the License.
 */
 import { filters } from '@salto-io/adapter-components'
-import { FilterContext } from '../config'
+import _ from 'lodash'
+import {
+  Element, isInstanceElement,
+} from '@salto-io/adapter-api'
+import { FilterContext, GUIDE_BRAND_SPECIFIC_TYPES } from '../config'
 import { FilterCreator, FilterResult } from '../filter'
 import ZendeskClient from '../client/client'
 
-const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<ZendeskClient, FilterContext, FilterResult>(
+const filter: FilterCreator = params => {
+  const commonFilter = filters.serviceUrlFilterCreator<ZendeskClient, FilterContext, FilterResult>(
     params.client.getUrl().href
   )(params)
-
+  return {
+    onFetch: async (elements: Element[]): Promise<void> => {
+      const brandList = elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === 'brand')
+        .map(brand => brand.value)
+      const brandToUrl: Record<number, string> = _.mapValues(_.keyBy(brandList, 'id'), 'brand_url')
+      elements
+        .filter(isInstanceElement)
+        .forEach(instance => {
+          let baseUrl = ''
+          if (Object.keys(GUIDE_BRAND_SPECIFIC_TYPES).includes(instance.elemID.typeName)) {
+            baseUrl = brandToUrl[instance.value.brand.value.value.id]
+          } else {
+            baseUrl = params.client.getUrl().href
+          }
+          filters.addUrlToInstance(instance, baseUrl, params.config)
+        })
+    },
+    onDeploy: commonFilter.onDeploy,
+  }
+}
 export default filter

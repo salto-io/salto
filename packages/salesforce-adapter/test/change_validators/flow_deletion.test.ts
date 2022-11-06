@@ -20,26 +20,13 @@ import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('flow deletion change validator', () => {
   let flowChange: Change
-  describe('delete a draft flow', () => {
-    beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'flow1', status: 'Draft' }, mockTypes.Flow)
-      flowChange = toChange({ before: beforeRecord })
-    })
-
-    it('should have no error when trying to delete a draft flow', async () => {
-      const changeErrors = await flowDeletionChangeValidator(
-        [flowChange]
-      )
-      expect(changeErrors).toBeEmpty()
-    })
-  })
-  describe('delete a non draft flow', () => {
+  describe('delete flow', () => {
     beforeEach(() => {
       const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active' }, mockTypes.Flow)
       flowChange = toChange({ before: beforeRecord })
     })
 
-    it('should have error when trying to delete a non draft flow', async () => {
+    it('should have error when trying to delete a flow', async () => {
       const changeErrors = await flowDeletionChangeValidator(
         [flowChange]
       )

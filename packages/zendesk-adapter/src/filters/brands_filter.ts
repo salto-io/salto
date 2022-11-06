@@ -107,7 +107,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     withOrderChanges.filter(isAdditionOrModificationChange).forEach(brandChange => {
       const brandValue = brandChange.data.after.value
 
-      if (brandValue.categories.some((c: Value) => !(c instanceof ReferenceExpression))) {
+      if (!brandValue.categories.every(isReferenceExpression)) {
         orderChangeErrors.push(new Error(`Error updating categories positions of '${brandValue.name}' - some values in the list are not a reference`))
         return
       }

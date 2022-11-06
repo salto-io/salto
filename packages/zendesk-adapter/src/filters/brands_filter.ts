@@ -16,7 +16,7 @@
 import {
   Change, Element, getChangeData,
   InstanceElement, isAdditionChange, isAdditionOrModificationChange,
-  isInstanceElement, isRemovalChange, ReferenceExpression,
+  isInstanceElement, isRemovalChange, ReferenceExpression, Value,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -33,8 +33,10 @@ export const CATEGORIES_FIELD = 'categories'
   onlyNonOrderChanges - Brands without any categories order changes
  */
 const sortBrandChanges = (changes: Change<InstanceElement>[]) :
-    [ Change<InstanceElement>[],
-      Change<InstanceElement>[]] => {
+    {
+      withOrderChanges : Change<InstanceElement>[]
+      onlyNonOrderChanges : Change<InstanceElement>[]
+    } => {
   const withOrderChanges : Change<InstanceElement>[] = []
   const onlyNonOrderChanges : Change<InstanceElement>[] = []
 
@@ -59,7 +61,7 @@ const sortBrandChanges = (changes: Change<InstanceElement>[]) :
     }
   })
 
-  return [withOrderChanges, onlyNonOrderChanges]
+  return { withOrderChanges, onlyNonOrderChanges }
 }
 
 /**
@@ -97,12 +99,18 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
 
-    const [withOrderChanges, onlyNonOrderChanges] = sortBrandChanges(brandChanges)
+    const { withOrderChanges, onlyNonOrderChanges } = sortBrandChanges(brandChanges)
 
     const orderChangesToApply: Change<InstanceElement>[] = []
+    const orderChangeErrors: Error[] = []
 
     withOrderChanges.filter(isAdditionOrModificationChange).forEach(brandChange => {
       const brandValue = brandChange.data.after.value
+
+      if (brandValue.categories.some((c: Value) => !(c instanceof ReferenceExpression))) {
+        orderChangeErrors.push(new Error(`Error updating categories positions of '${brandValue.name}' - some values in the list are not a reference`))
+        return
+      }
       const categories = brandValue.categories.map((c: ReferenceExpression) => c.value)
 
       categories.forEach((category: InstanceElement, i : number) => {
@@ -148,6 +156,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         errors: [
           ...orderChangesDeployResult.errors,
           ...brandChangesDeployResult.errors,
+          ...orderChangeErrors,
         ],
       },
       leftoverChanges,

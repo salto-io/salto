@@ -22,13 +22,12 @@ import {
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
+import { ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
-const ARTICLE_TYPES = [ARTICLE_TYPE_NAME, 'article_translation']
 
 const ARTICLE_REF_URL_REGEX = /(https:\/\/.*\.zendesk\.com\/hc\/.*\/articles\/\d*)/g
 const BASE_URL_REGEX = /(https:\/\/.*\.zendesk\.com)/
@@ -76,7 +75,10 @@ const updateArticleBody = (
   articleInstace.value.body = processedArticleBody
 }
 
-const prepRef = (part: ReferenceExpression): TemplatePart => {
+/**
+ * Process template Expression references by the id type
+ */
+export const prepRef = (part: ReferenceExpression): TemplatePart => {
   if (part.elemID.isTopLevel()) {
     return part.value.value.id.toString()
   }
@@ -99,7 +101,7 @@ const filterCreator: FilterCreator = () => {
       const articleInstances = instances
         .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
       instances
-        .filter(instance => ARTICLE_TYPES.includes(instance.elemID.typeName))
+        .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
           updateArticleBody(articleInstance, brandInstances, articleInstances)))
@@ -108,7 +110,7 @@ const filterCreator: FilterCreator = () => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => ARTICLE_TYPES.includes(getChangeData(change).elemID.typeName))
+        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,
@@ -132,7 +134,7 @@ const filterCreator: FilterCreator = () => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => ARTICLE_TYPES.includes(getChangeData(change).elemID.typeName))
+        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .forEach(async change => {
           await applyFunctionToChangeData<Change<InstanceElement>>(
             change,

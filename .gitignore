@@ -17,8 +17,11 @@ Thumbs.db
 # test results
 junit.xml
 
-# all logs
-*.log
+# yarn
+yarn-error.log
+
+# salto logs
+logsalto.log
 
 # jest
 /.jest_cache

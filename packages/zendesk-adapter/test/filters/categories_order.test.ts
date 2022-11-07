@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/brands_filter'
+import brandOrderFilter from '../../src/filters/brands_filter'
 import { LOGO_FIELD } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
 import { CATEGORIES_FIELD } from '../../src/filters/guide_order_utils'
@@ -41,6 +41,8 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
+
 type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
 const brandType = new ObjectType({
   elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
@@ -85,8 +87,14 @@ const BRAND_ID = 96
 const createBrandInstance = (has_help_center = true): InstanceElement =>
   new InstanceElement('brand', brandType, { id: BRAND_ID, has_help_center, subdomain: 'test' })
 
-const createCategoryInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
-  new InstanceElement(`category${id}`, categoryType, {
+const createChildInstance = (
+  id = 0,
+  type: string,
+  refType: ObjectType,
+  position?: number,
+  createdAt?: string
+): InstanceElement =>
+  new InstanceElement(`${type}${id}`, refType, {
     brand: BRAND_ID,
     testField: 'test',
     id,
@@ -94,38 +102,64 @@ const createCategoryInstance = (id = 0, position?: number, createdAt?: string): 
     created_at: createdAt,
   })
 
-describe('categories order in brand', () => {
-  let filter: FilterType
-  let elementsSourceValues: Element[] = []
+const createCategoryInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
+  createChildInstance(id, 'category', categoryType, position, createdAt)
 
+// const createSectionInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
+//   createChildInstance(id, 'section', sectionType, position, createdAt)
+//
+// const createArticleInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
+//   createChildInstance(id, 'article', articleType, position, createdAt)
+
+let filter: FilterType
+let elementsSourceValues: Element[] = []
+const elementsSource = {
+  get: (elemId: ElemID) => elementsSourceValues.find(
+    v => v.elemID.getFullName() === elemId.getFullName()
+  ),
+} as unknown as ReadOnlyElementsSource
+
+const testFetch = async (
+  {
+    fatherCreateInstance,
+    childCreateInstance,
+    orderField,
+  }
+  : {
+    fatherCreateInstance: () => InstanceElement
+    childCreateInstance: (id: number, position?: number, createdAt?: string) => InstanceElement
+    orderField: string
+  })
+ : Promise<void> => {
+  const fatherInstance = fatherCreateInstance()
+  const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
+  const LATE_CREATED_AT = '2022-11-30T12:00:00Z'
+  const childInstances = [
+    childCreateInstance(0, 0, EARLY_CREATED_AT),
+    childCreateInstance(1, 0, LATE_CREATED_AT),
+    childCreateInstance(2, 1, LATE_CREATED_AT),
+    childCreateInstance(3, 1, EARLY_CREATED_AT)]
+
+  await filter.onFetch([fatherInstance, ...childInstances])
+
+  expect(fatherInstance.value[orderField].length).toBe(4)
+  expect(fatherInstance.value[orderField])
+    .toMatchObject([childInstances[1], childInstances[0], childInstances[2], childInstances[3]]
+      .map(c => new ReferenceExpression(c.elemID, c)))
+}
+
+describe('categories order in brand', () => {
   beforeEach(async () => {
-    jest.clearAllMocks()
-    const elementsSource = {
-      get: (elemId: ElemID) => elementsSourceValues.find(
-        v => v.elemID.getFullName() === elemId.getFullName()
-      ),
-    } as unknown as ReadOnlyElementsSource
-    filter = filterCreator(createFilterCreatorParams({ elementsSource })) as FilterType
+    filter = brandOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
   })
 
   describe('on fetch', () => {
     it('with Guide active', async () => {
-      // Should create categories order field
-      const brandWithGuide = createBrandInstance()
-      const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
-      const LATE_CREATED_AT = '2022-11-30T12:00:00Z'
-      const categories = [
-        createCategoryInstance(0, 0, EARLY_CREATED_AT),
-        createCategoryInstance(1, 0, LATE_CREATED_AT),
-        createCategoryInstance(2, 1, LATE_CREATED_AT),
-        createCategoryInstance(3, 1, EARLY_CREATED_AT)]
-
-      await filter.onFetch([brandWithGuide, ...categories])
-
-      expect(brandWithGuide.value.categories.length).toBe(4)
-      expect(brandWithGuide.value.categories)
-        .toMatchObject([categories[1], categories[0], categories[2], categories[3]]
-          .map(c => new ReferenceExpression(c.elemID, c)))
+      await testFetch({
+        fatherCreateInstance: createBrandInstance,
+        childCreateInstance: createCategoryInstance,
+        orderField: CATEGORIES_FIELD,
+      })
     })
     it('with Guide not active', async () => {
       // Should not create categories order field at all
@@ -163,10 +197,10 @@ describe('categories order in brand', () => {
     )
 
     beforeEach(() => {
-      mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
+      mockDeployChange.mockReset()
+
       firstCategory.value.position = 0
       secondCategory.value.position = 1
-
       elementsSourceValues = [firstCategory, secondCategory]
     })
 
@@ -233,3 +267,54 @@ describe('categories order in brand', () => {
     })
   })
 })
+//
+// describe('sections order in category', () => {
+//   beforeEach(async () => {
+//     filter = categoriesOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+//   })
+//
+//   it('on fetch', async () => {
+//     // await testFetch({
+//     //   fatherCreateInstance: createSectionInstance,
+//     //   childCreateInstance: createArticleInstance,
+//     //   orderField: SECTIONS_FIELD,
+//     // })
+//   })
+//
+//   describe('on deploy', () => {
+//     beforeEach(() => {
+//     })
+//
+//     it(`with only ${SECTIONS_FIELD} order change`, async () => {
+//     })
+//
+//     it(`with ${SECTIONS_FIELD} change and regular change`, async () => {
+//     })
+//
+//     it('with only non-order changes', async () => {
+//     })
+//   })
+// })
+//
+// describe('sections and articles order in section', () => {
+//   beforeEach(async () => {
+//     filter = sectionsOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+//   })
+//
+//   it('on fetch', async () => {
+//   })
+//
+//   describe('on deploy', () => {
+//     beforeEach(() => {
+//     })
+//
+//     it(`with only ${SECTIONS_FIELD} and ${ARTICLES_FIELD} order change`, async () => {
+//     })
+//
+//     it('with order change and regular change', async () => {
+//     })
+//
+//     it('with only non-order changes', async () => {
+//     })
+//   })
+// })

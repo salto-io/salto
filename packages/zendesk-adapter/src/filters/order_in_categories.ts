@@ -39,7 +39,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
     categories.forEach(category => {
       // Lowest position index first, if there is a tie - the newer is first
       const categorySections = _.orderBy(sections
-        .filter(s => !s.value.parent_section_id)
+        .filter(s => s.value.parent_section_id === undefined)
         .filter(s => s.value.category_id === category.value.id),
       ['value.position', 'value.created_at'], ['asc', 'desc'])
 

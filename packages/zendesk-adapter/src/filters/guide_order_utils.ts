@@ -13,8 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-// Lowest position index first, if there is a tie - the newer is first
 import {
   Change, ElemID, InstanceElement,
   isAdditionChange, isReferenceExpression,
@@ -44,11 +42,10 @@ const orderFieldToType : {[key: string]: ObjectType} = {
   withOrderChanges    - Changes with order changes
   onlyNonOrderChanges - Changes without any order changes
  */
-export const sortChanges = (changes: Change<InstanceElement>[], orderField: string) :
-    {
-      withOrderChanges : ModificationChange<InstanceElement>[]
-      onlyNonOrderChanges : Change<InstanceElement>[]
-    } => {
+export const sortChanges = (changes: Change<InstanceElement>[], orderField: string): {
+  withOrderChanges : ModificationChange<InstanceElement>[]
+  onlyNonOrderChanges : Change<InstanceElement>[]
+} => {
   const withOrderChanges : ModificationChange<InstanceElement>[] = []
   const onlyNonOrderChanges : Change<InstanceElement>[] = []
 
@@ -78,16 +75,16 @@ export const sortChanges = (changes: Change<InstanceElement>[], orderField: stri
 
 // Transform order changes to new changes and deploy them
 export const deployOrderChanges = async ({ changes, client, config, orderField, elementsSource } : {
-    changes: ModificationChange<InstanceElement>[]
-    client: ZendeskClient
-    config: FilterContext
-    orderField: string
-    elementsSource: ReadOnlyElementsSource
+  changes: ModificationChange<InstanceElement>[]
+  client: ZendeskClient
+  config: FilterContext
+  orderField: string
+  elementsSource: ReadOnlyElementsSource
 }) : Promise<{ errors: Error[] }> => {
   const orderChangesToApply: Change<InstanceElement>[] = []
   const orderChangeErrors: Error[] = []
 
-  await awu(changes).map(async change => {
+  await awu(changes).forEach(async change => {
     // We get the real instanceElement because we need the orderField to be references
     const parentInstanceElement = await elementsSource.get(change.data.after.elemID)
     const parentChildren = parentInstanceElement.value[orderField]
@@ -97,7 +94,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField, 
       return
     }
 
-    await awu(parentChildren).filter(isReferenceExpression).map(async (child, i) => {
+    await awu(parentChildren).filter(isReferenceExpression).forEach(async (child, i) => {
       const childInstanceElement = await child.getResolvedValue(elementsSource)
       const refType = orderFieldToType[orderField]
       // Create a 'fake' change of the child's position
@@ -116,8 +113,8 @@ export const deployOrderChanges = async ({ changes, client, config, orderField, 
           after: afterChild,
         },
       })
-    }).toArray()
-  }).toArray()
+    })
+  })
 
   const orderChangesDeployResult = await deployChanges(
     orderChangesToApply,

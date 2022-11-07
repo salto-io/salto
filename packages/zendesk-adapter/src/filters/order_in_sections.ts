@@ -23,6 +23,9 @@ import { FilterCreator } from '../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
 import { ARTICLES_FIELD, deployOrderChanges, SECTIONS_FIELD, sortChanges } from './guide_order_utils'
 
+/**
+ * Handles the sections and articles orders inside section
+ */
 const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
   /** Insert the section's sections and articles into fields in it */
   onFetch: async (elements: Element[]) => {

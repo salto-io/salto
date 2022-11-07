@@ -61,7 +61,6 @@ import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
-import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
@@ -94,7 +93,6 @@ const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
   { creator: settingsFilter, addsNewInformation: true },
-  { creator: customFeedFilterFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
@@ -271,7 +269,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private fetchProfile: FetchProfile
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
+    metadataTypesOfInstancesFetchedInFilters = [],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {
@@ -500,12 +498,11 @@ export default class SalesforceAdapter implements AdapterOperations {
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
-      const result = await Promise.all(metadataTypesToRead
-        // Just fetch metadata instances of the types that we receive from the describe call
+      const result = await awu(metadataTypesToRead)
         .filter(
           async type => !this.metadataTypesOfInstancesFetchedInFilters
             .includes(await apiName(type))
-        ).map(type => this.createMetadataInstances(type)))
+        ).map(type => this.createMetadataInstances(type)).toArray()
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),

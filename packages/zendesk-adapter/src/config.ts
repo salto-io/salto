@@ -1660,7 +1660,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/knowledge/articles/{id}',
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1708,6 +1708,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1744,6 +1745,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       modify: {
@@ -1823,7 +1825,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/knowledge/sections/{id}',
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1872,6 +1874,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1936,7 +1939,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/hc/admin/categories/{id}/edit',
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1977,6 +1980,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {

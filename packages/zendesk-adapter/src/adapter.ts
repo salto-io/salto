@@ -98,6 +98,7 @@ import hcGuideSettings from './filters/help_center_guide_settings'
 import brandsFilter from './filters/brands_filter'
 import categoriesOrder from './filters/categories_order'
 import sectionsOrder from './filters/sections_order'
+import hcServiceUrl from './filters/help_center_service_url'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -156,6 +157,7 @@ export const DEFAULT_FILTERS = [
   hcSectionCategoryFilter,
   hcTranslationFilter,
   hcGuideSettings,
+  hcServiceUrl,
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,

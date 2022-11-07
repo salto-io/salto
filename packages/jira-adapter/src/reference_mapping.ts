@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
@@ -64,9 +64,51 @@ export const contextStrategyLookup: Record<
   parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
 }
 
-export const referencesRules: referenceUtils.FieldReferenceDefinition<
+type ReferenceSerializationStrategyName = 'groupName' | referenceUtils.ReferenceSerializationStrategyName
+const testfunc = (args: GetLookupNameFuncArgs): Promise<Value> => {
+  // eslint-disable-next-line no-console
+  console.log('eheheheh')
+  // eslint-disable-next-line no-console
+  console.log(args)
+  return isInstanceElement(args.ref.value) ? args.ref.value.value.originalName : args.ref.value
+}
+const JiraReferenceSerializationStrategyLookup: Record<
+  ReferenceSerializationStrategyName,
+  referenceUtils.ReferenceSerializationStrategy
+> = {
+  ...referenceUtils.ReferenceSerializationStrategyLookup,
+  groupName: {
+    serialize: testfunc,
+    lookup: val => val,
+    lookupIndexName: 'originalName',
+  },
+}
+
+type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 ReferenceContextStrategyName
->[] = [
+> & {
+  JiraSerializationStrategy?: ReferenceSerializationStrategyName
+}
+export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
+ReferenceContextStrategyName
+> {
+  constructor(def: JiraFieldReferenceDefinition) {
+    super({ src: def.src })
+    this.serializationStrategy = JiraReferenceSerializationStrategyLookup[
+      def.JiraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+    ]
+    this.target = def.target
+      ? { ...def.target, lookup: this.serializationStrategy.lookup }
+      : undefined
+  }
+}
+
+export const referencesRules: JiraFieldReferenceDefinition[] = [
+  // {
+  //   src: { field: 'name', parentTypes: [PERMISSION_SCHEME_TYPE_NAME] },
+  //   JiraSerializationStrategy: 'groupName',
+  //   target: { type: GROUP_TYPE_NAME },
+  // },
   {
     src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
@@ -344,12 +386,12 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'groups', parentTypes: ['ConditionConfiguration'] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   {
     src: { field: 'group', parentTypes: ['ConditionConfiguration'] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   {
@@ -364,22 +406,22 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'groups', parentTypes: ['ApplicationRole'] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   {
     src: { field: 'defaultGroups', parentTypes: ['ApplicationRole'] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   {
     src: { field: 'name', parentTypes: ['GroupName'] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   {
@@ -409,7 +451,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'groups', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   // Overlapping rules, serialization strategies guarantee no conflict
@@ -436,7 +478,7 @@ ReferenceContextStrategyName
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_GROUP] },
-    serializationStrategy: 'nameWithPath',
+    JiraSerializationStrategy: 'groupName',
     target: { type: 'Group' },
   },
   {

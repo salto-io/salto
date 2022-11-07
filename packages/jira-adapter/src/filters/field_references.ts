@@ -16,7 +16,7 @@
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { referencesRules, contextStrategyLookup } from '../reference_mapping'
+import { referencesRules, JiraFieldReferenceResolver } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 
 /**
@@ -26,10 +26,10 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,
-      fieldsToGroupBy: ['id', 'name'],
+      fieldsToGroupBy: ['id', 'name', 'originalName'],
       defs: referencesRules,
       isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
-      contextStrategyLookup,
+      fieldReferenceResolverCreator: defs => new JiraFieldReferenceResolver(defs),
     })
   },
 })

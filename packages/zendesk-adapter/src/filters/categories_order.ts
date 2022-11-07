@@ -51,28 +51,27 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   /** Change the sections positions to their order in the category, and deploy the category */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [categoryChanges, leftoverChanges] = _.partition(
-      changes,
-      change => getChangeData(change).elemID.typeName === CATEGORY_TYPE_NAME,
+    const categoryChanges = changes.filter(
+      c => getChangeData(c).elemID.typeName === CATEGORY_TYPE_NAME
     )
 
     const {
-      onlyOrderChanges,
-      mixedOrderChanges,
-      onlyNonOrderChanges,
+      withOrderChanges,
     } = sortChanges(categoryChanges, SECTIONS_FIELD)
 
-    const deployResult = await deployOrderChanges({
-      onlyOrderChanges,
-      mixedOrderChanges,
+    const { errors: orderChangeErrors } = await deployOrderChanges({
+      changes: withOrderChanges,
       orderField: SECTIONS_FIELD,
       client,
       config,
     })
 
     return {
-      deployResult,
-      leftoverChanges: [...leftoverChanges, ...mixedOrderChanges, ...onlyNonOrderChanges],
+      deployResult: {
+        appliedChanges: [],
+        errors: orderChangeErrors,
+      },
+      leftoverChanges: changes,
     }
   },
 })

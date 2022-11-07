@@ -54,23 +54,22 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   /** Change the section and articles positions according to their order in the section */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [sectionChanges, leftoverChanges] = _.partition(
-      changes,
-      change => getChangeData(change).elemID.typeName === SECTION_TYPE_NAME,
+    const sectionChanges = changes.filter(
+      c => getChangeData(c).elemID.typeName === SECTION_TYPE_NAME
     )
 
     const sortedSectionChanges = sortChanges(sectionChanges, SECTIONS_FIELD)
     const sortedArticleChanges = sortChanges(sectionChanges, ARTICLES_FIELD)
 
-    const sectionsDeployResult = await deployOrderChanges({
-      ...sortedSectionChanges,
+    const { errors: sectionOrderChangeErrors } = await deployOrderChanges({
+      changes: sortedSectionChanges.withOrderChanges,
       orderField: SECTIONS_FIELD,
       client,
       config,
     })
 
-    const articlesDeployResult = await deployOrderChanges({
-      ...sortedArticleChanges,
+    const { errors: articleOrderChangeErrors } = await deployOrderChanges({
+      changes: sortedArticleChanges.withOrderChanges,
       orderField: ARTICLES_FIELD,
       client,
       config,
@@ -78,22 +77,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     return {
       deployResult: {
-        appliedChanges: [
-          ...sectionsDeployResult.appliedChanges,
-          ...articlesDeployResult.appliedChanges,
-        ],
+        appliedChanges: [],
         errors: [
-          ...sectionsDeployResult.errors,
-          ...articlesDeployResult.errors,
+          ...sectionOrderChangeErrors,
+          ...articleOrderChangeErrors,
         ],
       },
-      leftoverChanges: [
-        ...leftoverChanges,
-        ...sortedSectionChanges.mixedOrderChanges,
-        ...sortedArticleChanges.mixedOrderChanges,
-        ...sortedSectionChanges.onlyNonOrderChanges,
-        ...sortedArticleChanges.onlyNonOrderChanges,
-      ],
+      leftoverChanges: changes,
     }
   },
 })

@@ -16,8 +16,7 @@
 
 // Lowest position index first, if there is a tie - the newer is first
 import {
-  Change, DeployResult,
-  InstanceElement,
+  Change, InstanceElement,
   isAdditionChange, isReferenceExpression,
   isRemovalChange,
   ModificationChange,
@@ -35,12 +34,10 @@ import { FilterContext } from '../config'
  */
 export const sortChanges = (changes: Change<InstanceElement>[], orderField: string) :
     {
-      onlyOrderChanges : ModificationChange<InstanceElement>[]
-      mixedOrderChanges: ModificationChange<InstanceElement>[]
+      withOrderChanges : ModificationChange<InstanceElement>[]
       onlyNonOrderChanges : Change<InstanceElement>[]
     } => {
-  const onlyOrderChanges : ModificationChange<InstanceElement>[] = []
-  const mixedOrderChanges : ModificationChange<InstanceElement>[] = []
+  const withOrderChanges : ModificationChange<InstanceElement>[] = []
   const onlyNonOrderChanges : Change<InstanceElement>[] = []
 
   changes.forEach(change => {
@@ -54,40 +51,30 @@ export const sortChanges = (changes: Change<InstanceElement>[], orderField: stri
       return
     }
     const parentChanges = detailedCompare(change.data.before, change.data.after)
-    const hasOnlyOrderChanges = parentChanges.every(c =>
-      c.id.createTopLevelParentID().path[0] === orderField)
     const hasAnyOrderChanges = parentChanges.some(c =>
       c.id.createTopLevelParentID().path[0] === orderField)
 
-    if (hasOnlyOrderChanges) {
-      onlyOrderChanges.push(change)
-    } else if (hasAnyOrderChanges) {
-      mixedOrderChanges.push(change)
+    if (hasAnyOrderChanges) {
+      withOrderChanges.push(change)
     } else {
       onlyNonOrderChanges.push(change)
     }
   })
 
-  return { onlyOrderChanges, mixedOrderChanges, onlyNonOrderChanges }
+  return { withOrderChanges, onlyNonOrderChanges }
 }
 
 // Transform order changes to new changes and deploy them
-export const deployOrderChanges = async (
-  { onlyOrderChanges,
-    mixedOrderChanges,
-    client,
-    config,
-    orderField } : {
-    onlyOrderChanges: ModificationChange<InstanceElement>[]
-    mixedOrderChanges: ModificationChange<InstanceElement>[]
+export const deployOrderChanges = async ({ changes, client, config, orderField } : {
+    changes: ModificationChange<InstanceElement>[]
     client: ZendeskClient
     config: FilterContext
     orderField: string
-}) : Promise<DeployResult> => {
+}) : Promise<{ errors: Error[] }> => {
   const orderChangesToApply: Change<InstanceElement>[] = []
   const orderChangeErrors: Error[] = []
 
-  onlyOrderChanges.concat(mixedOrderChanges).forEach(change => {
+  changes.forEach(change => {
     const parentValue = change.data.after.value
 
     if (!parentValue[orderField].every(isReferenceExpression)) {
@@ -124,19 +111,8 @@ export const deployOrderChanges = async (
     }
   )
 
-  // Deploy the changes that only included order changes, we are finished with them
-  const onlyChangeDeployResult = await deployChanges(
-    onlyOrderChanges,
-    async change => {
-      await deployChange(change, client, config.apiDefinitions, [orderField])
-    }
-  )
-
   return {
-    // Without orderChangesDeployResult appliedChanges because they are fake temporary changes
-    appliedChanges: onlyChangeDeployResult.appliedChanges,
     errors: [
-      ...onlyChangeDeployResult.errors,
       ...orderChangesDeployResult.errors,
       ...orderChangeErrors,
     ],

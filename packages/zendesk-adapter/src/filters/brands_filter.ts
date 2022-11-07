@@ -62,14 +62,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     )
 
     const {
-      onlyOrderChanges,
-      mixedOrderChanges,
+      withOrderChanges,
       onlyNonOrderChanges,
     } = sortChanges(brandChanges, CATEGORIES_FIELD)
 
-    const orderDeployResults = await deployOrderChanges({
-      onlyOrderChanges,
-      mixedOrderChanges,
+    const { errors: orderChangeErrors } = await deployOrderChanges({
+      changes: withOrderChanges,
       orderField: CATEGORIES_FIELD,
       client,
       config,
@@ -78,7 +76,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     // Ignores the logo and categories field from brand instances when deploying,
     // logos are covered as brand_logo instances, categories were converted to orderChangesToApply
     const brandChangesDeployResult = await deployChanges(
-      [...mixedOrderChanges, ...onlyNonOrderChanges],
+      [...withOrderChanges, ...onlyNonOrderChanges],
       async change => {
         await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
       }
@@ -88,10 +86,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       deployResult: {
         appliedChanges: [
           ...brandChangesDeployResult.appliedChanges,
-          ...orderDeployResults.appliedChanges,
         ],
         errors: [
-          ...orderDeployResults.errors,
+          ...orderChangeErrors,
           ...brandChangesDeployResult.errors,
         ],
       },

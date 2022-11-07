@@ -20,6 +20,18 @@ import { GROUP_TYPE_NAME, JIRA } from '../../src/constants'
 import groupNameFilter from '../../src/filters/group_name'
 import { getFilterParams } from '../utils'
 
+const mockGetConfigWithDefault = jest.fn()
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    config: {
+      ...actual.config,
+      getConfigWithDefault: jest.fn(args => mockGetConfigWithDefault(args)),
+    },
+  }
+})
+
 describe('group name filter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   const type = new ObjectType({
@@ -40,6 +52,7 @@ describe('group name filter', () => {
     }
   )
   beforeEach(async () => {
+    mockGetConfigWithDefault.mockReturnValue({ serviceIdField: 'groupId' })
     const elemIdGetter = mockFunction<ElemIdGetter>()
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
     filter = groupNameFilter({ ...getFilterParams(), getElemIdFunc: elemIdGetter }) as typeof filter
@@ -53,5 +66,11 @@ describe('group name filter', () => {
     const elements = [withoutUUIDInstance]
     await filter.onFetch(elements)
     expect(elements[0].elemID.name).toEqual('normal')
+  })
+  it('should not change the name there is no service id in config', async () => {
+    mockGetConfigWithDefault.mockReturnValue({ serviceIdField: undefined })
+    const elements = [withUUIDInstance]
+    await filter.onFetch(elements)
+    expect(elements[0].elemID.name).toEqual('trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b')
   })
 })

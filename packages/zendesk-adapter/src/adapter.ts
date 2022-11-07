@@ -192,7 +192,6 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
-  'brand',
 ]
 
 /**

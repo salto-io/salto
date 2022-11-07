@@ -21,14 +21,12 @@ import {
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
-import { deployOrderChanges, sortChanges } from './guide_order_utils'
-
-export const SECTIONS_FIELD = 'sections'
+import { deployOrderChanges, SECTIONS_FIELD, sortChanges } from './guide_order_utils'
 
 /**
  * Handles the section orders inside category
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
   /** Insert the category's section into a field in it */
   onFetch: async (elements: Element[]) => {
     const sections = elements.filter(isInstanceElement)
@@ -41,7 +39,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     categories.forEach(category => {
       // Lowest position index first, if there is a tie - the newer is first
       const categorySections = _.orderBy(
-        sections.filter(s => s.value.category_id === category.value.id),
+        sections.filter(s => !s.value.parent_section_id)
+          .filter(s => s.value.category_id === category.value.id),
         ['value.position', 'value.created_at'], ['asc', 'desc']
       )
 
@@ -64,6 +63,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       orderField: SECTIONS_FIELD,
       client,
       config,
+      elementsSource,
     })
 
     return {

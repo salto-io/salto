@@ -21,12 +21,9 @@ import {
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
-import { deployOrderChanges, sortChanges } from './guide_order_utils'
-import { SECTIONS_FIELD } from './categories_order'
+import { ARTICLES_FIELD, deployOrderChanges, SECTIONS_FIELD, sortChanges } from './guide_order_utils'
 
-export const ARTICLES_FIELD = 'articles'
-
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
   /** Insert the section's sections and articles into fields in it */
   onFetch: async (elements: Element[]) => {
     const articles = elements.filter(isInstanceElement)
@@ -66,6 +63,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       orderField: SECTIONS_FIELD,
       client,
       config,
+      elementsSource,
     })
 
     const { errors: articleOrderChangeErrors } = await deployOrderChanges({
@@ -73,6 +71,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       orderField: ARTICLES_FIELD,
       client,
       config,
+      elementsSource,
     })
 
     return {

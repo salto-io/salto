@@ -16,16 +16,29 @@
 
 // Lowest position index first, if there is a tie - the newer is first
 import {
-  Change, InstanceElement,
+  Change, ElemID, InstanceElement,
   isAdditionChange, isReferenceExpression,
   isRemovalChange,
-  ModificationChange,
-  ReferenceExpression,
+  ModificationChange, ObjectType, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { deployChange, deployChanges } from '../deployment'
 import ZendeskClient from '../client/client'
 import { FilterContext } from '../config'
+import { ARTICLE_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../constants'
+
+const { awu } = collections.asynciterable
+
+export const CATEGORIES_FIELD = 'categories'
+export const SECTIONS_FIELD = 'sections'
+export const ARTICLES_FIELD = 'articles'
+
+const orderFieldToType : {[key: string]: ObjectType} = {
+  [CATEGORIES_FIELD]: new ObjectType({ elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME) }),
+  [SECTIONS_FIELD]: new ObjectType({ elemID: new ElemID(ZENDESK, SECTION_TYPE_NAME) }),
+  [ARTICLES_FIELD]: new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+}
 
 /* Split the changes into 3 groups:
   withOrderChanges    - Changes with order changes
@@ -65,31 +78,33 @@ export const sortChanges = (changes: Change<InstanceElement>[], orderField: stri
 }
 
 // Transform order changes to new changes and deploy them
-export const deployOrderChanges = async ({ changes, client, config, orderField } : {
+export const deployOrderChanges = async ({ changes, client, config, orderField, elementsSource } : {
     changes: ModificationChange<InstanceElement>[]
     client: ZendeskClient
     config: FilterContext
     orderField: string
+    elementsSource: ReadOnlyElementsSource
 }) : Promise<{ errors: Error[] }> => {
   const orderChangesToApply: Change<InstanceElement>[] = []
   const orderChangeErrors: Error[] = []
 
-  changes.forEach(change => {
-    const parentValue = change.data.after.value
+  await awu(changes).map(async change => {
+    const parentInstanceElement = await elementsSource.get(change.data.after.elemID)
+    const parentChildren = parentInstanceElement.value[orderField]
 
-    if (!parentValue[orderField].every(isReferenceExpression)) {
-      orderChangeErrors.push(new Error(`Error updating ${orderField} positions of '${parentValue.name}' - some values in the list are not a reference`))
+    if (!parentChildren.every(isReferenceExpression)) {
+      orderChangeErrors.push(new Error(`Error updating ${orderField} positions of '${parentInstanceElement.value.name}' - some values in the list are not a reference`))
       return
     }
 
-    const children = parentValue[orderField].map((c: ReferenceExpression) => c.value)
-
-    children.forEach((child: InstanceElement, i : number) => {
+    await awu(parentChildren).filter(isReferenceExpression).map(async (child, i) => {
+      const childInstanceElement = await child.getResolvedValue(elementsSource)
+      const refType = orderFieldToType[orderField]
       // Create a 'fake' change of the child's position
       const beforeChild = new InstanceElement(
-        child.elemID.name,
-        child.refType,
-        { id: child.value.id, position: child.value.position }
+        childInstanceElement.elemID.name,
+        refType,
+        { id: childInstanceElement.value.id, position: childInstanceElement.value.position }
       )
       const afterChild = beforeChild.clone()
       afterChild.value.position = i
@@ -101,8 +116,8 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
           after: afterChild,
         },
       })
-    })
-  })
+    }).toArray()
+  }).toArray()
 
   const orderChangesDeployResult = await deployChanges(
     orderChangesToApply,

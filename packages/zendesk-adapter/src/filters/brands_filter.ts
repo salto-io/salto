@@ -23,13 +23,12 @@ import { FilterCreator } from '../filter'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 import { LOGO_FIELD } from './brand_logo'
-import { deployOrderChanges, sortChanges } from './guide_order_utils'
+import { CATEGORIES_FIELD, deployOrderChanges, sortChanges } from './guide_order_utils'
 
-export const CATEGORIES_FIELD = 'categories'
 /**
  * Handle everything related to brands
  */
-const filterCreator: FilterCreator = ({ client, config }) => ({
+const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
   /** Insert the brand's categories into a field in it */
   onFetch: async (elements: Element[]) => {
     const categories = elements.filter(isInstanceElement)
@@ -71,6 +70,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       orderField: CATEGORIES_FIELD,
       client,
       config,
+      elementsSource,
     })
 
     // Ignores the logo and categories field from brand instances when deploying,

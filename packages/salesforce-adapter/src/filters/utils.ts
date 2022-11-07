@@ -41,9 +41,16 @@ const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
 
-export const isCustomMetadataType = async (elem: ObjectType): Promise<boolean> => {
+export const isCustomMetadataRecordType = async (elem: ObjectType): Promise<boolean> => {
   const elementApiName = await apiName(elem)
   return elementApiName?.endsWith('__mdt') ?? false
+}
+
+export const isCustomMetadataRecordInstance = async (
+  instance: InstanceElement
+): Promise<boolean> => {
+  const instanceType = await instance.getType()
+  return isCustomMetadataRecordType(instanceType)
 }
 
 export const boolValue = (val: JSONBool):

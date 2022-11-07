@@ -17,10 +17,10 @@ import { BuiltinTypes, ElemID, ElemIdGetter, InstanceElement, ObjectType, toChan
 import { mockFunction } from '@salto-io/test-utils'
 import { filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { getFilterParams, mockClient } from '../utils'
-import { getDefaultConfig } from '../../src/config/config'
-import { JIRA } from '../../src/constants'
-import filtersDcDeployFilter from '../../src/filters/filters_dc_deploy'
+import { getFilterParams, mockClient } from '../../utils'
+import { getDefaultConfig } from '../../../src/config/config'
+import { JIRA } from '../../../src/constants'
+import filtersDcDeployFilter from '../../../src/filters/data_center/filters_permissions'
 
 const verifyEditInstance0 = (
   permissions: Value[],

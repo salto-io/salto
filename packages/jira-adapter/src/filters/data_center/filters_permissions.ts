@@ -15,7 +15,7 @@
 */
 import { getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { FilterCreator } from '../filter'
+import { FilterCreator } from '../../filter'
 
 const isFilterInstance = (instanceElement: InstanceElement): boolean =>
   instanceElement.elemID.typeName === 'Filter'

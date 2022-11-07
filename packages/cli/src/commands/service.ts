@@ -344,10 +344,10 @@ export const accountLoginDef = createWorkspaceCommand({
     getTagsForAccounts({ workspace, accounts: [input.accountName], env: input.env }),
 })
 
-const accountGroupDef = createCommandGroupDef({
+const serviceGroupDef = createCommandGroupDef({
   properties: {
     name: 'service',
-    description: 'Manage the environment accounts',
+    description: 'Manage the environment accounts (DEPRECATED)',
   },
   subCommands: [
     serviceAddDef,
@@ -356,4 +356,4 @@ const accountGroupDef = createCommandGroupDef({
   ],
 })
 
-export default accountGroupDef
+export default serviceGroupDef

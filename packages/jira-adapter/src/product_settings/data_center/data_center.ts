@@ -74,22 +74,6 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/screens/\\d+',
   },
   {
-    httpMethods: ['get'],
-    url: '/rest/api/3/workflow/search',
-  },
-  {
-    httpMethods: ['post'],
-    url: '/rest/api/3/workflow',
-  },
-  {
-    httpMethods: ['delete'],
-    url: '/rest/api/3/workflow/\\d+',
-  },
-  {
-    httpMethods: ['put', 'delete'],
-    url: '/rest/api/3/screens/\\d+',
-  },
-  {
     httpMethods: ['get', 'post'],
     url: '/rest/api/3/screenscheme',
   },
@@ -160,6 +144,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['get'],
     url: '/rest/api/3/field/.*/context/.*/option',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuesecurityschemes/.*/members.*',
   },
   {
     httpMethods: ['get', 'post'],

@@ -80,16 +80,16 @@ salto init
 
 This will create a new directory named `quickstart` in your home directory which will serve as the `workspace` for this project. Inside this directory, a `salto.config` directory was created, with some Salto configuration files — no need to worry about these for now. Also, you probably noticed that `salto init` prompted for a name for the "first environment", you can just accept the default for now.
 
-### Add a new service to the workspace
+### Add a new service account to the workspace
 
 Next, we'll connect this workspace to a Salesforce account, by running:
 ```shell
-salto service add salesforce
+salto account add salesforce
 ```
 
 This command will prompt you to enter the credentials for your account, please do so.
 
-![salto_service_add.png](salto_service_add.png)
+![salto_account_add.png](salto_account_add.png)
 
 ### Fetch the configuration from your business application to the workspace
 
@@ -258,7 +258,7 @@ In a typical feature development process, multiple environments are being used. 
 
 In Salto, `environments` are first-level citizens, which also enable the encapsulation of commonalities and differences between service accounts. Before showing some examples for working with environments, we should first explain some common terms and operations:
 
-- An `environment` is a collection of `services`.
+- An `environment` is a collection of `service accounts`.
 - A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move-to-common` and `salto element move-to-envs` commands
 - A `fetch` operation can work in `align mode`, when it will not modify common configuration, or in standard mode when it will modify both common and environment-specific configuration. As a rule of thumb, `align mode` should be used when the intent is to make sure that the fetched env is aligned with the common configuration elements. When fetching in `align mode`, any modifications to the common elements will be dropped and it should be followed by a deploy operation. Standard fetch mode is used when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
@@ -269,10 +269,10 @@ salto init
 
 Note that you've been prompted to give a name for the first environment in the workspace. You can just accept the "env1" value, or choose the name of your liking (we'll use `prod` for this example)
 
-Next, we'll continue similarly to quick-start by adding a service and running fetch:
+Next, we'll continue similarly to quick-start by adding a service account and running fetch:
 
 ```shell
-salto service add salesforce
+salto account add salesforce
 # provide credentials to your "prod" instance
 salto fetch
 ```
@@ -287,7 +287,7 @@ Note that creating this env, also changed the current env to be `dev` (see `salt
 Now we'll configure this environment to connect to a `dev` instance (e.g. a Salesforce sandbox synched with `prod`) and run fetch:
 
 ```shell
-salto service add salesforce
+salto account add salesforce
 # provide credentials to your "dev" instance
 salto fetch
 ```

@@ -47,6 +47,7 @@ export const DATA_MANAGEMENT = 'dataManagement'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const SHOULD_FETCH_ALL_CUSTOM_SETTINGS = 'fetchAllCustomSettings'
 export const ENUM_FIELD_PERMISSIONS = 'enumFieldPermissions'
+export const PREFER_ACTIVE_FLOW_VERSIONS = 'preferActiveFlowVersions'
 
 // Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
 export const INSTANCE_SUFFIXES = [
@@ -239,6 +240,7 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
+  [PREFER_ACTIVE_FLOW_VERSIONS]?: boolean
   validators?: ChangeValidatorConfig
 }
 
@@ -649,6 +651,9 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       },
     },
     [ENUM_FIELD_PERMISSIONS]: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    [PREFER_ACTIVE_FLOW_VERSIONS]: {
       refType: BuiltinTypes.BOOLEAN,
     },
     [CLIENT_CONFIG]: {

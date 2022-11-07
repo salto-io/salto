@@ -336,6 +336,8 @@ export default class SalesforceAdapter implements AdapterOperations {
           systemFields,
           enumFieldPermissions: config.enumFieldPermissions
             ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
+          preferActiveFlowVersions: config.preferActiveFlowVersions
+            ?? constants.DEFAULT_PREFER_ACTIVE_FLOW_VERSIONS,
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,

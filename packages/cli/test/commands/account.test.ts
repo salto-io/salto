@@ -175,7 +175,7 @@ describe('account command group', () => {
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
 
-    describe('when calling service add via the commander wrapper', () => {
+    describe('when calling account add via the commander wrapper', () => {
       const { action } = accountAddDef
       let telemetry: mocks.MockTelemetry
 
@@ -478,7 +478,7 @@ describe('account command group', () => {
           })
 
           it('should print try again text', () => {
-            expect(output.stderr.content).toContain('To try again run: `salto service add newAdapter`')
+            expect(output.stderr.content).toContain('To try again run: `salto account add newAdapter`')
           })
 
           it('should not print login information updated', () => {

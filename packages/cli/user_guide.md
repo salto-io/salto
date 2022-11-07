@@ -50,7 +50,7 @@ Update the workspace configuration elements from the state file
 * `--env, -e` :                  The name of the environment to use [string]
 * `--mode, -m <mode>` :          Choose a restore mode. Options - [default, align]
 
-### **salto service \<command>**
+### **salto account \<command>**
 
 Manage the environment services
 
@@ -63,7 +63,7 @@ Manage the environment services
 
 #### **Non Interactive Execution**
 
-`service add` and `service login` commands are interactive by default.
+`account add` and `account login` commands are interactive by default.
 
 Use the `--login-parameters` option in order to execute them in non interactive mode.
 

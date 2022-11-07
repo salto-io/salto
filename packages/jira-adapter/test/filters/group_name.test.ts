@@ -57,10 +57,13 @@ describe('group name filter', () => {
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
     filter = groupNameFilter({ ...getFilterParams(), getElemIdFunc: elemIdGetter }) as typeof filter
   })
-  it('should remove uuid suffix', async () => {
+  it('should remove uuid suffix from element name, file name and field into a new field', async () => {
     const elements = [withUUIDInstance]
     await filter.onFetch(elements)
     expect(elements[0].elemID.name).toEqual('trusted_users@b')
+    expect(elements[0].path).toEqual(['trusted_users'])
+    expect(elements[0].value.name).toEqual('trusted-users')
+    expect(elements[0].value.originalName).toEqual('trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b')
   })
   it('should not change the name if there is no uuid in it', async () => {
     const elements = [withoutUUIDInstance]
@@ -72,5 +75,11 @@ describe('group name filter', () => {
     const elements = [withUUIDInstance]
     await filter.onFetch(elements)
     expect(elements[0].elemID.name).toEqual('trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b')
+  })
+  it('change element file name to not have uuid', async () => {
+    withUUIDInstance.path = undefined
+    const elements = [withUUIDInstance]
+    await filter.onFetch(elements)
+    expect(elements[0].path).toEqual(['trusted_users'])
   })
 })

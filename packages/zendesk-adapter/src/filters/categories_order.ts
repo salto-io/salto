@@ -38,11 +38,10 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
     // Insert the sections of that category to the category, sorted
     categories.forEach(category => {
       // Lowest position index first, if there is a tie - the newer is first
-      const categorySections = _.orderBy(
-        sections.filter(s => !s.value.parent_section_id)
-          .filter(s => s.value.category_id === category.value.id),
-        ['value.position', 'value.created_at'], ['asc', 'desc']
-      )
+      const categorySections = _.orderBy(sections
+        .filter(s => !s.value.parent_section_id)
+        .filter(s => s.value.category_id === category.value.id),
+      ['value.position', 'value.created_at'], ['asc', 'desc'])
 
       category.value[SECTIONS_FIELD] = categorySections
         .map(s => new ReferenceExpression(s.elemID, s))
@@ -54,9 +53,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
       c => getChangeData(c).elemID.typeName === CATEGORY_TYPE_NAME
     )
 
-    const {
-      withOrderChanges,
-    } = sortChanges(categoryChanges, SECTIONS_FIELD)
+    const { withOrderChanges } = sortChanges(categoryChanges, SECTIONS_FIELD)
 
     const { errors: orderChangeErrors } = await deployOrderChanges({
       changes: withOrderChanges,

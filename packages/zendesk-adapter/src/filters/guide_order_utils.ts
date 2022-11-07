@@ -40,9 +40,8 @@ const orderFieldToType : {[key: string]: ObjectType} = {
   [ARTICLES_FIELD]: new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
 }
 
-/* Split the changes into 3 groups:
+/* Split the changes into 2 groups:
   withOrderChanges    - Changes with order changes
-  mixedOrderChanges   - Changes with order and non-order changes
   onlyNonOrderChanges - Changes without any order changes
  */
 export const sortChanges = (changes: Change<InstanceElement>[], orderField: string) :
@@ -89,6 +88,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField, 
   const orderChangeErrors: Error[] = []
 
   await awu(changes).map(async change => {
+    // We get the real instanceElement because we need the orderField to be references
     const parentInstanceElement = await elementsSource.get(change.data.after.elemID)
     const parentChildren = parentInstanceElement.value[orderField]
 

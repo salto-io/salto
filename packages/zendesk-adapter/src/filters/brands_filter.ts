@@ -60,10 +60,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
 
-    const {
-      withOrderChanges,
-      onlyNonOrderChanges,
-    } = sortChanges(brandChanges, CATEGORIES_FIELD)
+    const { withOrderChanges, onlyNonOrderChanges } = sortChanges(brandChanges, CATEGORIES_FIELD)
 
     const { errors: orderChangeErrors } = await deployOrderChanges({
       changes: withOrderChanges,
@@ -84,9 +81,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
 
     return {
       deployResult: {
-        appliedChanges: [
-          ...brandChangesDeployResult.appliedChanges,
-        ],
+        appliedChanges: brandChangesDeployResult.appliedChanges,
         errors: [
           ...orderChangeErrors,
           ...brandChangesDeployResult.errors,

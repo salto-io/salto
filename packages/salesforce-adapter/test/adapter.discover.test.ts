@@ -82,6 +82,7 @@ describe('SalesforceAdapter fetch', () => {
 
   afterEach(() => {
     jest.resetAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe('should fetch metadata types', () => {

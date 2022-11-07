@@ -35,10 +35,12 @@ import {
 import { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import { fetchMetadataInstances } from '../src/fetch'
 import { MetadataQuery } from '../src/fetch_profile/metadata_query'
+import * as fetchModule from '../src/fetch'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
+  let fetchMetadataInstancesSpy: jest.SpyInstance
 
   const metadataExclude = [
     { metadataType: 'Test1' },
@@ -75,6 +77,7 @@ describe('SalesforceAdapter fetch', () => {
         },
       },
     }))
+    fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
   })
 
   afterEach(() => {
@@ -381,6 +384,26 @@ describe('SalesforceAdapter fetch', () => {
           expect.any(String),
           'IgnoredNamespace__FlowInstance'
         )
+      })
+
+      it('should not fetch metadata types instances the will be fetch in filters', async () => {
+        const instances = [
+          { props: { fullName: 'MyType0' }, values: { fullName: 'MyType0' } },
+          { props: { fullName: 'MyType1' }, values: { fullName: 'MyType1' } },
+        ]
+        mockMetadataType(
+          { xmlName: 'Queue' },
+          { valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }] },
+          instances,
+        )
+        await adapter.fetch(mockFetchOpts)
+        expect(fetchMetadataInstancesSpy).not.toHaveBeenCalledWith(expect.objectContaining(
+          { metadataType: expect.objectContaining(
+            { elemID: expect.objectContaining(
+              { typeName: 'Queue' }
+            ) }
+          ) }
+        ))
       })
 
       it('should use existing elemID when fetching metadata instance', async () => {

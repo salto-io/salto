@@ -23,6 +23,9 @@ yarn-error.log
 # salto logs
 logsalto.log
 
+# salto logs
+logsalto.log
+
 # jest
 /.jest_cache
 

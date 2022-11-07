@@ -14,7 +14,14 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression, Change,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  BuiltinTypes,
+  ReferenceExpression,
+  Change,
+  ReadOnlyElementsSource,
+  Element,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -43,9 +50,6 @@ const brandType = new ObjectType({
 })
 const categoryType = new ObjectType({
   elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME),
-  fields: {
-    brand: { refType: BuiltinTypes.NUMBER },
-  },
 })
 // const sectionType = new ObjectType({
 //   elemID: new ElemID(ZENDESK, SECTION_TYPE_NAME),
@@ -62,9 +66,9 @@ const categoryType = new ObjectType({
 
 const regularDeployChangeParam = (change: Change) : {} => ({
   change,
+  fieldsToIgnore: [LOGO_FIELD, 'categories'],
   client: expect.anything(),
   endpointDetails: expect.anything(),
-  fieldsToIgnore: [LOGO_FIELD, 'categories'],
 })
 
 const categoryDeployChangeParam = (change: Change) : {} => ({
@@ -92,10 +96,16 @@ const createCategoryInstance = (id = 0, position?: number, createdAt?: string): 
 
 describe('categories order in brand', () => {
   let filter: FilterType
+  let elementsSourceValues: Element[] = []
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    const elementsSource = {
+      get: (elemId: ElemID) => elementsSourceValues.find(
+        v => v.elemID.getFullName() === elemId.getFullName()
+      ),
+    } as unknown as ReadOnlyElementsSource
+    filter = filterCreator(createFilterCreatorParams({ elementsSource })) as FilterType
   })
 
   describe('on fetch', () => {
@@ -156,6 +166,8 @@ describe('categories order in brand', () => {
       mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
       firstCategory.value.position = 0
       secondCategory.value.position = 1
+
+      elementsSourceValues = [firstCategory, secondCategory]
     })
 
     it(`with only ${CATEGORIES_FIELD} order change`, async () => {
@@ -164,6 +176,7 @@ describe('categories order in brand', () => {
       afterBrand.value.categories = [secondCategory, firstCategory].map(
         c => new ReferenceExpression(c.elemID, c)
       )
+      elementsSourceValues.push(afterBrand)
 
       const res = await filter.deploy([{
         action: 'modify',
@@ -185,6 +198,7 @@ describe('categories order in brand', () => {
         c => new ReferenceExpression(c.elemID, c)
       )
       afterBrand.value.subdomain = 'changed'
+      elementsSourceValues.push(afterBrand)
 
       const res = await filter.deploy([
         { action: 'modify', data: { before: beforeBrand, after: afterBrand } },

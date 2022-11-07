@@ -33,7 +33,7 @@ import {
 } from '../constants'
 
 const PARAM_MATCH = /\{([\w_.]+)}/g
-const DIFFERENT_BASE_URL_TYPES = [CATEGORY_TRANSLATION_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME]
+const BRAND_SPECIFIC_BASE_URL_TYPES = [CATEGORY_TRANSLATION_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME]
 const SERVICE_URL_FOR_GUIDE: Record<string, string> = {
   [SECTION_TYPE_NAME]: '/knowledge/arrange/sections/{id}?brand_id={brand}',
   [CATEGORY_TYPE_NAME]: '/knowledge/arrange/categories/{id}?brand_id={brand}',
@@ -79,18 +79,19 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .map(brand => brand.value)
     const brandToUrl: Record<number, string> = _.mapValues(_.keyBy(brandList, 'id'), 'brand_url')
 
+    const toBaseUrl = (instance: InstanceElement): string => {
+      // only some have different baseUrl according to brand
+      if (BRAND_SPECIFIC_BASE_URL_TYPES.includes(instance.elemID.typeName)) {
+        return brandToUrl[instance.value.brand]
+      }
+      return client.getUrl().href
+    }
+
     elements
       .filter(isInstanceElement)
       .filter(instance => Object.keys(SERVICE_URL_FOR_GUIDE).includes(instance.elemID.typeName))
       .forEach(instance => {
-        let baseUrl
-        // only some have different baseUrl according to brand
-        if (DIFFERENT_BASE_URL_TYPES.includes(instance.elemID.typeName)) {
-          baseUrl = brandToUrl[instance.value.brand]
-        } else {
-          baseUrl = client.getUrl().href
-        }
-        createServiceUrl(instance, baseUrl)
+        createServiceUrl(instance, toBaseUrl(instance))
       })
   },
 })

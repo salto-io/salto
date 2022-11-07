@@ -51,6 +51,7 @@ describe('client validation', () => {
     ]
   })
   it('should not have errors', async () => {
+    mockValidate.mockReturnValue([])
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies
     )
@@ -58,9 +59,9 @@ describe('client validation', () => {
   })
   it('should have SDF Objects Validation Error for instance', async () => {
     const detailedMessage = 'error on objectName'
-    mockValidate.mockRejectedValue(
-      new ObjectsValidationError('error message', new Map([['objectName', detailedMessage]]))
-    )
+    mockValidate.mockReturnValue([
+      new ObjectsValidationError('error message', new Map([['objectName', detailedMessage]])),
+    ])
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies
     )
@@ -74,9 +75,9 @@ describe('client validation', () => {
   })
   it('should have SDF Objects Validation Error for customRecordType', async () => {
     const detailedMessage = 'error on customrecord1'
-    mockValidate.mockRejectedValue(
-      new ObjectsValidationError('error message', new Map([['customrecord1', detailedMessage]]))
-    )
+    mockValidate.mockReturnValue([
+      new ObjectsValidationError('error message', new Map([['customrecord1', detailedMessage]])),
+    ])
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies
     )
@@ -90,7 +91,7 @@ describe('client validation', () => {
   })
   it('should have SDF Manifest Validation Error', async () => {
     const detailedMessage = 'manifest error'
-    mockValidate.mockRejectedValue(new ManifestValidationError(detailedMessage))
+    mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage)])
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies
     )
@@ -104,7 +105,7 @@ describe('client validation', () => {
   })
   it('should have general Validation Error', async () => {
     const detailedMessage = 'some error'
-    mockValidate.mockRejectedValue(new Error(detailedMessage))
+    mockValidate.mockReturnValue([new Error(detailedMessage)])
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies
     )

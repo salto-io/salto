@@ -47,39 +47,40 @@ const changeValidator: ClientChangeValidator = async (
 
   return awu(changesByGroupId)
     .flatMap(async ([groupId, groupChanges]) => {
-      try {
-        await client.validate(
-          groupChanges,
-          groupId,
-          deployReferencedElements,
-          additionalDependencies
-        )
-        return []
-      } catch (error) {
-        if (error instanceof ObjectsValidationError) {
-          return groupChanges.map(getChangeData)
-            .filter(element => error.invalidObjects.has(
-              getElementValueOrAnnotations(element)[SCRIPT_ID]
-            ))
-            .map(element => ({
-              message: 'SDF Objects Validation Error',
-              severity: 'Error' as const,
-              elemID: element.elemID,
-              detailedMessage: error.invalidObjects.get(
+      const errors = await client.validate(
+        groupChanges,
+        groupId,
+        deployReferencedElements,
+        additionalDependencies
+      )
+      if (errors.length > 0) {
+        return errors.map(error => {
+          if (error instanceof ObjectsValidationError) {
+            return groupChanges.map(getChangeData)
+              .filter(element => error.invalidObjects.has(
                 getElementValueOrAnnotations(element)[SCRIPT_ID]
-              ),
-            }))
-        }
-        const message = error instanceof ManifestValidationError
-          ? 'SDF Manifest Validation Error'
-          : `Validation Error on ${groupId}`
-        return groupChanges.map(change => ({
-          message,
-          severity: 'Error' as const,
-          elemID: getChangeData(change).elemID,
-          detailedMessage: error.message,
-        }))
+              ))
+              .map(element => ({
+                message: 'SDF Objects Validation Error',
+                severity: 'Error' as const,
+                elemID: element.elemID,
+                detailedMessage: error.invalidObjects.get(
+                  getElementValueOrAnnotations(element)[SCRIPT_ID]
+                ),
+              }) as ChangeError)
+          }
+          const message = error instanceof ManifestValidationError
+            ? 'SDF Manifest Validation Error'
+            : `Validation Error on ${groupId}`
+          return groupChanges.map(change => ({
+            message,
+            severity: 'Error' as const,
+            elemID: getChangeData(change).elemID,
+            detailedMessage: error.message,
+          }) as ChangeError)
+        }).flat()
       }
+      return []
     })
     .toArray()
 }

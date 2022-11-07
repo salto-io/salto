@@ -229,7 +229,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   return CliExitCode.Success
 }
 
-export const serviceAddDef = createWorkspaceCommand({
+export const accountAddDef = createWorkspaceCommand({
   properties: {
     name: 'add',
     description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
@@ -240,7 +240,7 @@ export const serviceAddDef = createWorkspaceCommand({
         default: true,
         alias: 'n',
         type: 'boolean',
-        description: 'Do not login to account when adding it. Example usage: \'service add <service-name> --no-login\'.',
+        description: 'Do not login to account when adding it. Example usage: \'add <service-name> --no-login\'.',
         required: false,
       },
       {
@@ -347,13 +347,25 @@ export const accountLoginDef = createWorkspaceCommand({
 const serviceGroupDef = createCommandGroupDef({
   properties: {
     name: 'service',
-    description: 'Manage the environment accounts (DEPRECATED)',
+    description: 'Manage the environment accounts (DEPRECATED, use `account` command instead)',
   },
   subCommands: [
-    serviceAddDef,
+    accountAddDef,
     accountListDef,
     accountLoginDef,
   ],
 })
 
-export default serviceGroupDef
+const accountGroupDef = createCommandGroupDef({
+  properties: {
+    name: 'account',
+    description: 'Manage the environment accounts',
+  },
+  subCommands: [
+    accountAddDef,
+    accountListDef,
+    accountLoginDef,
+  ],
+})
+
+export { serviceGroupDef, accountGroupDef }

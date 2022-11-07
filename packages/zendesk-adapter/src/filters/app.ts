@@ -57,7 +57,7 @@ const isJobStatus = (value: unknown): value is JobStatus => {
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string, fullName: string
 ): Promise<boolean> => {
-  const res = (await client.getSinglePage({ url: `/apps/job_statuses/${jobId}` })).data
+  const res = (await client.getSinglePage({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
     throw new Error(`Got an invalid response for job status. Element: ${fullName}. Job ID: ${jobId}`)
   }

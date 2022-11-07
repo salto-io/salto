@@ -14,181 +14,68 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { addDefaults, isCustomMetadataRecordInstance, isCustomMetadataRecordType } from '../../src/filters/utils'
-import {
-  SALESFORCE,
-  LABEL,
-  API_NAME,
-  CUSTOM_FIELD,
-  INSTANCE_FULL_NAME_FIELD,
-  METADATA_TYPE,
-  CUSTOM_OBJECT,
-  CUSTOM_SETTINGS_TYPE,
-} from '../../src/constants'
-import { createInstanceElement, Types } from '../../src/transformers/transformer'
+import { addDefaults } from '../../src/filters/utils'
+import { SALESFORCE, LABEL, API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
+import { Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
 
-describe('Salesforce filter utils', () => {
-  describe('addDefaults', () => {
-    describe('when called with instance', () => {
-      let instance: InstanceElement
-      beforeEach(async () => {
-        instance = new InstanceElement('test', mockTypes.Profile)
-        await addDefaults(instance)
-      })
-      it('should add api name', () => {
-        expect(instance.value).toHaveProperty(INSTANCE_FULL_NAME_FIELD, 'test')
-      })
+describe('addDefaults', () => {
+  describe('when called with instance', () => {
+    let instance: InstanceElement
+    beforeEach(async () => {
+      instance = new InstanceElement('test', mockTypes.Profile)
+      await addDefaults(instance)
     })
-    describe('when called with custom object instance', () => {
-      let instance: InstanceElement
-      beforeEach(async () => {
-        const customObj = createCustomObjectType('test', {})
-        instance = new InstanceElement('test', customObj)
-        await addDefaults(instance)
-      })
-      it('should not add api name', () => {
-        expect(instance.value).not.toHaveProperty(INSTANCE_FULL_NAME_FIELD)
-      })
+    it('should add api name', () => {
+      expect(instance.value).toHaveProperty(INSTANCE_FULL_NAME_FIELD, 'test')
     })
-    describe('when called with field', () => {
-      let field: Field
-      beforeEach(async () => {
-        const obj = new ObjectType({
-          elemID: new ElemID(SALESFORCE, 'test'),
-          fields: {
-            a: { refType: Types.primitiveDataTypes.Text },
-          },
-          annotations: {
-            [API_NAME]: 'test',
-          },
-        })
-        field = obj.fields.a
-        await addDefaults(field)
-      })
-      it('should add api name', () => {
-        expect(field.annotations).toHaveProperty(API_NAME, 'test.a__c')
-      })
-      it('should add label', () => {
-        expect(field.annotations).toHaveProperty(LABEL, 'a')
-      })
+  })
+  describe('when called with custom object instance', () => {
+    let instance: InstanceElement
+    beforeEach(async () => {
+      const customObj = createCustomObjectType('test', {})
+      instance = new InstanceElement('test', customObj)
+      await addDefaults(instance)
     })
-    describe('when called with custom object', () => {
-      describe('when object has no annotations', () => {
-        let object: ObjectType
-        beforeEach(async () => {
-          object = new ObjectType({
-            elemID: new ElemID(SALESFORCE, 'test'),
-            fields: {
-              a: { refType: Types.primitiveDataTypes.Text },
-            },
-          })
-
-          await addDefaults(object)
-        })
-        it('should add annotation values', () => {
-          expect(object.annotations).toMatchObject({
-            [API_NAME]: 'test__c',
-            [METADATA_TYPE]: CUSTOM_OBJECT,
-            [LABEL]: 'test',
-            deploymentStatus: 'Deployed',
-            pluralLabel: 'tests',
-            nameField: { type: 'Text', label: 'Name' },
-            sharingModel: 'ReadWrite',
-          } as Partial<CustomObject>)
-        })
-        it('should add annotation types', () => {
-          expect(object.annotationRefTypes).toMatchObject({
-            [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-            [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-            [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
-            deploymentStatus: createRefToElmWithValue(BuiltinTypes.STRING),
-            pluralLabel: createRefToElmWithValue(BuiltinTypes.STRING),
-            sharingModel: createRefToElmWithValue(BuiltinTypes.STRING),
-          })
-          expect(object.annotationRefTypes.nameField?.elemID).toEqual(
-            new ElemID(SALESFORCE, CUSTOM_FIELD)
-          )
-        })
-        it('should add defaults to fields', () => {
-          expect(object.fields.a.annotations).toMatchObject({
-            [API_NAME]: 'test__c.a__c',
-            [LABEL]: 'a',
-          })
-        })
-      })
-      describe('when object already has annotations', () => {
-        let object: ObjectType
-        beforeEach(async () => {
-          object = new ObjectType({
-            elemID: new ElemID(SALESFORCE, 'test'),
-            annotations: {
-              [LABEL]: 'myLabel',
-              nameField: { type: 'AutoNumber', label: 'Name' },
-            },
-            annotationRefsOrTypes: {
-              sharingModel: BuiltinTypes.HIDDEN_STRING,
-            },
-          })
-          await addDefaults(object)
-        })
-        it('should add missing annotations', () => {
-          expect(object.annotations).toMatchObject({
-            [API_NAME]: 'test__c',
-            sharingModel: 'ReadWrite',
-          } as Partial<CustomObject>)
-        })
-        it('should not override existing annotations', () => {
-          expect(object.annotations).toMatchObject({
-            [LABEL]: 'myLabel',
-            nameField: { type: 'AutoNumber', label: 'Name' },
-          } as Partial<CustomObject>)
-        })
-        it('should add plural label according to the label', () => {
-          expect(object.annotations).toHaveProperty('pluralLabel', 'myLabels')
-        })
-        it('should add missing annotation types', () => {
-          expect(object.annotationRefTypes).toMatchObject({
-            [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-            [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
-          })
-          expect(object.annotationRefTypes.nameField?.elemID).toEqual(
-            new ElemID(SALESFORCE, CUSTOM_FIELD)
-          )
-        })
-        it('should not override existing annotation types', () => {
-          expect(object.annotationRefTypes).toMatchObject({
-            sharingModel: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
-          })
-        })
-      })
-      describe('when object has a master detail field', () => {
-        let object: ObjectType
-        beforeEach(async () => {
-          object = new ObjectType({
-            elemID: new ElemID(SALESFORCE, 'test'),
-            fields: {
-              a: { refType: Types.primitiveDataTypes.MasterDetail },
-            },
-          })
-          await addDefaults(object)
-        })
-        it('should set sharing model to controlled by parent', () => {
-          expect(object.annotations).toHaveProperty('sharingModel', 'ControlledByParent')
-        })
-      })
+    it('should not add api name', () => {
+      expect(instance.value).not.toHaveProperty(INSTANCE_FULL_NAME_FIELD)
     })
-    describe('when called with custom settings', () => {
+  })
+  describe('when called with field', () => {
+    let field: Field
+    beforeEach(async () => {
+      const obj = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'test'),
+        fields: {
+          a: { refType: Types.primitiveDataTypes.Text },
+        },
+        annotations: {
+          [API_NAME]: 'test',
+        },
+      })
+      field = obj.fields.a
+      await addDefaults(field)
+    })
+    it('should add api name', () => {
+      expect(field.annotations).toHaveProperty(API_NAME, 'test.a__c')
+    })
+    it('should add label', () => {
+      expect(field.annotations).toHaveProperty(LABEL, 'a')
+    })
+  })
+  describe('when called with custom object', () => {
+    describe('when object has no annotations', () => {
       let object: ObjectType
       beforeEach(async () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
-          annotations: {
-            [CUSTOM_SETTINGS_TYPE]: 'Hierarchical',
+          fields: {
+            a: { refType: Types.primitiveDataTypes.Text },
           },
         })
+
         await addDefaults(object)
       })
       it('should add annotation values', () => {
@@ -196,7 +83,7 @@ describe('Salesforce filter utils', () => {
           [API_NAME]: 'test__c',
           [METADATA_TYPE]: CUSTOM_OBJECT,
           [LABEL]: 'test',
-        })
+        } as Partial<CustomObject>)
       })
       it('should add annotation types', () => {
         expect(object.annotationRefTypes).toMatchObject({
@@ -205,67 +92,113 @@ describe('Salesforce filter utils', () => {
           [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
         })
       })
-      it('should not add custom object annotations', () => {
-        expect(object.annotations).not.toHaveProperty('sharingModel')
-        expect(object.annotations).not.toHaveProperty('deploymentStatus')
+      it('should add defaults to fields', () => {
+        expect(object.fields.a.annotations).toMatchObject({
+          [API_NAME]: 'test__c.a__c',
+          [LABEL]: 'a',
+        })
       })
     })
-    describe('when called with custom metadata type', () => {
-      const CUSTOM_METADATA_TYPE_NAME = 'TestCustomMetadataType__mdt'
-      const CUSTOM_METADATA_TYPE_LABEL = 'TestMetadataTypeLabel'
+    describe('when object already has annotations', () => {
       let object: ObjectType
       beforeEach(async () => {
         object = new ObjectType({
-          elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
+          elemID: new ElemID(SALESFORCE, 'test'),
           annotations: {
-            [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
-            [LABEL]: CUSTOM_METADATA_TYPE_LABEL,
+            [LABEL]: 'myLabel',
+            nameField: { type: 'AutoNumber', label: 'Name' },
+          },
+          annotationRefsOrTypes: {
+            sharingModel: BuiltinTypes.HIDDEN_STRING,
           },
         })
         await addDefaults(object)
       })
-      it('should add annotation values', () => {
+      it('should add missing annotations', () => {
         expect(object.annotations).toMatchObject({
-          [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
-          [METADATA_TYPE]: CUSTOM_OBJECT,
-          [LABEL]: CUSTOM_METADATA_TYPE_LABEL,
-        })
+          [API_NAME]: 'test__c',
+        } as Partial<CustomObject>)
       })
-      it('should add annotation types', () => {
+      it('should not override existing annotations', () => {
+        expect(object.annotations).toMatchObject({
+          [LABEL]: 'myLabel',
+          nameField: { type: 'AutoNumber', label: 'Name' },
+        } as Partial<CustomObject>)
+      })
+      it('should add missing annotation types', () => {
         expect(object.annotationRefTypes).toMatchObject({
           [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-          [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
           [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
         })
       })
-      it('should not add custom object annotations', () => {
-        expect(object.annotations).not.toHaveProperty('sharingModel')
-        expect(object.annotations).not.toHaveProperty('deploymentStatus')
+      it('should not override existing annotation types', () => {
+        expect(object.annotationRefTypes).toMatchObject({
+          sharingModel: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+        })
       })
     })
   })
-  describe('isCustomMetadataRecordType', () => {
-    it('should return true for customMetadataRecordType', async () => {
-      expect(await isCustomMetadataRecordType(mockTypes.CustomMetadataRecordType)).toBeTrue()
+  describe('when called with custom settings', () => {
+    let object: ObjectType
+    beforeEach(async () => {
+      object = new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'test'),
+        annotations: {
+          [CUSTOM_SETTINGS_TYPE]: 'Hierarchical',
+        },
+      })
+      await addDefaults(object)
     })
-    it('should return false for non customMetadataRecordType', async () => {
-      expect(await isCustomMetadataRecordType(mockTypes.Profile)).toBeFalse()
+    it('should add annotation values', () => {
+      expect(object.annotations).toMatchObject({
+        [API_NAME]: 'test__c',
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [LABEL]: 'test',
+      })
+    })
+    it('should add annotation types', () => {
+      expect(object.annotationRefTypes).toMatchObject({
+        [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
+      })
+    })
+    it('should not add custom object annotations', () => {
+      expect(object.annotations).not.toHaveProperty('sharingModel')
+      expect(object.annotations).not.toHaveProperty('deploymentStatus')
     })
   })
-  describe('isCustomMetadataRecordInstance', () => {
-    const customMetadataRecordInstance = createInstanceElement(
-      { [INSTANCE_FULL_NAME_FIELD]: 'MDType.MDTypeInstance' },
-      mockTypes.CustomMetadataRecordType
-    )
-    const profileInstance = createInstanceElement(
-      { [INSTANCE_FULL_NAME_FIELD]: 'profileInstance' },
-      mockTypes.Profile
-    )
-    it('should return true for customMetadataRecordType instance', async () => {
-      expect(await isCustomMetadataRecordInstance(customMetadataRecordInstance)).toBeTrue()
+  describe('when called with custom metadata type', () => {
+    const CUSTOM_METADATA_TYPE_NAME = 'TestCustomMetadataType__mdt'
+    const CUSTOM_METADATA_TYPE_LABEL = 'TestMetadataTypeLabel'
+    let object: ObjectType
+    beforeEach(async () => {
+      object = new ObjectType({
+        elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_TYPE_NAME),
+        annotations: {
+          [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
+          [LABEL]: CUSTOM_METADATA_TYPE_LABEL,
+        },
+      })
+      await addDefaults(object)
     })
-    it('should return false for non customMetadataRecordType', async () => {
-      expect(await isCustomMetadataRecordInstance(profileInstance)).toBeFalse()
+    it('should add annotation values', () => {
+      expect(object.annotations).toMatchObject({
+        [API_NAME]: CUSTOM_METADATA_TYPE_NAME,
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [LABEL]: CUSTOM_METADATA_TYPE_LABEL,
+      })
+    })
+    it('should add annotation types', () => {
+      expect(object.annotationRefTypes).toMatchObject({
+        [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
+      })
+    })
+    it('should not add custom object annotations', () => {
+      expect(object.annotations).not.toHaveProperty('sharingModel')
+      expect(object.annotations).not.toHaveProperty('deploymentStatus')
     })
   })
 })

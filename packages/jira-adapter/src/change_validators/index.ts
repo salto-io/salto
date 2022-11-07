@@ -28,6 +28,7 @@ import { privateApiValidator } from './private_api'
 import { workflowValidator } from './workflow'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
+import { permissionTypeValidator } from './permission_type'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
@@ -59,6 +60,7 @@ export default (
     workflowValidator,
     dashboardGadgetsValidator,
     dashboardLayoutValidator,
+    permissionTypeValidator,
     automationsValidator,
     maskingValidator(client),
     lockedFieldsValidator,

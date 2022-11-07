@@ -16,13 +16,11 @@
 import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
+import { filterUtils } from '@salto-io/adapter-components'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/remove_brand_logo_field'
+import filterCreator, { CATEGORIES_FIELD } from '../../src/filters/brands_filter'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
+import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -37,7 +35,6 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('remove brand logo field filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
   const brandType = new ObjectType({
@@ -67,18 +64,7 @@ describe('remove brand logo field filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   it('should pass the correct params to deployChange and client on create', async () => {
@@ -90,7 +76,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'add', data: { after: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -114,7 +100,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'modify', data: { before: clonedBeforeBrand, after: clonedAfterBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -134,7 +120,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'remove', data: { before: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -151,7 +137,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'add', data: { after: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)

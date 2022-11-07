@@ -18,7 +18,6 @@ import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
   isInstanceElement,
-  Value,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
@@ -32,7 +31,11 @@ import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
 import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
-import { ZENDESK, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME } from './constants'
+import {
+  ZENDESK,
+  BRAND_LOGO_TYPE_NAME,
+  BRAND_TYPE_NAME,
+} from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -79,7 +82,6 @@ import handleTemplateExpressionFilter from './filters/handle_template_expression
 import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
-import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import articleFilter from './filters/article'
 import helpCenterFetchArticle from './filters/help_center_fetch_article'
 import articleBodyFilter from './filters/article_body'
@@ -91,7 +93,12 @@ import { Credentials } from './auth'
 import hcSectionCategoryFilter from './filters/help_center_section_and_category'
 import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
+import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
+import hcGuideSettings from './filters/help_center_guide_settings'
+import brandsFilter from './filters/brands_filter'
+import hcServiceUrl from './filters/help_center_service_url'
 
+const { makeArray } = collections.array
 const log = logger(module)
 const { createPaginator } = clientUtils
 const { findDataField, computeGetArgs } = elementUtils
@@ -104,6 +111,7 @@ const {
 } = elementUtils.ducktype
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
+const SECTIONS_TYPE_NAME = 'sections'
 
 export const DEFAULT_FILTERS = [
   ticketFieldFilter,
@@ -137,12 +145,14 @@ export const DEFAULT_FILTERS = [
   hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
-  // removeBrandLogoFieldFilter should be after brandLogoFilter
-  removeBrandLogoFieldFilter,
+  // brandsFilter should be after brandLogoFilter
+  brandsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,
+  hcGuideSettings,
+  hcServiceUrl,
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
@@ -162,6 +172,7 @@ export const DEFAULT_FILTERS = [
   fetchCategorySection,
   helpCenterFetchArticle,
   articleBodyFilter,
+  hcParentSection,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
@@ -176,6 +187,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
+  'brand',
 ]
 
 /**
@@ -207,16 +219,34 @@ const zendeskGuideEntriesFunc = (
         typesConfig,
       })).flat()
       // Defining Zendesk Guide element to its corresponding help center (= subdomain)
-      brandPaginatorResponseValues.forEach(response => {
+      return brandPaginatorResponseValues.flatMap(response => {
         const responseEntryName = typesConfig[typeName].transformation?.dataField
         if (responseEntryName === undefined) {
-          return undefined
+          return makeArray(response)
         }
-        return (response[responseEntryName] as Value[]).forEach(instanceType => {
-          instanceType.brand = brandInstance.value.id
+        const responseEntries = makeArray(
+          (responseEntryName !== configUtils.DATA_FIELD_ENTIRE_OBJECT)
+            ? response[responseEntryName]
+            : response
+        ) as clientUtils.ResponseValue[]
+        responseEntries.forEach(entry => {
+          entry.brand = brandInstance.value.id
         })
-      })
-      return brandPaginatorResponseValues
+        // need to add direct parent to a section as it is possible to have a section inside
+        // a section and therefore the elemeID will change accordingly.
+        if (responseEntryName === SECTIONS_TYPE_NAME) {
+          responseEntries.forEach(entry => {
+            addParentFields(entry)
+          })
+        }
+        if (responseEntryName === configUtils.DATA_FIELD_ENTIRE_OBJECT) {
+          return responseEntries
+        }
+        return {
+          ...response,
+          [responseEntryName]: responseEntries,
+        }
+      }) as clientUtils.ResponseValue[]
     }).toArray()).flat()
   }
 
@@ -300,6 +330,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           },
           getElemIdFunc,
           fetchQuery: this.fetchQuery,
+          elementsSource,
         },
         filterCreators,
         concatObjects,

@@ -84,6 +84,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
+import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -269,7 +270,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private fetchProfile: FetchProfile
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [],
+    metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {

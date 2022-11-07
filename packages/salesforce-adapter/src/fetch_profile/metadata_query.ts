@@ -28,8 +28,6 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // We have special treatment for this type
   { metadataType: 'CustomField' },
   { metadataType: SETTINGS_METADATA_TYPE },
-  // Only has the active flow version but we cant get flow versions anyway
-  { metadataType: 'FlowDefinition' },
   // readMetadata and retrieve fail on this type when fetching by name
   { metadataType: 'CustomIndex' },
   // readMetadata fails on those and pass on the parents

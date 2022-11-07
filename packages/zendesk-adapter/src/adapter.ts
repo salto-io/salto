@@ -82,7 +82,6 @@ import handleTemplateExpressionFilter from './filters/handle_template_expression
 import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
-import removeBrandLogoFieldFilter from './filters/remove_brand_logo_field'
 import articleFilter from './filters/article'
 import helpCenterFetchArticle from './filters/help_center_fetch_article'
 import articleBodyFilter from './filters/article_body'
@@ -96,6 +95,7 @@ import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
 import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 import hcGuideSettings from './filters/help_center_guide_settings'
+import brandsFilter from './filters/brands_filter'
 import hcServiceUrl from './filters/help_center_service_url'
 
 const { makeArray } = collections.array
@@ -145,8 +145,8 @@ export const DEFAULT_FILTERS = [
   hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
-  // removeBrandLogoFieldFilter should be after brandLogoFilter
-  removeBrandLogoFieldFilter,
+  // brandsFilter should be after brandLogoFilter
+  brandsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
   hcSectionCategoryFilter,
@@ -187,6 +187,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
+  'brand',
 ]
 
 /**
@@ -329,6 +330,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           },
           getElemIdFunc,
           fetchQuery: this.fetchQuery,
+          elementsSource,
         },
         filterCreators,
         concatObjects,

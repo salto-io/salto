@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,

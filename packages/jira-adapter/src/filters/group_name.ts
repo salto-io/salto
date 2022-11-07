@@ -27,9 +27,6 @@ const GROUP_NAME_REGEX = new RegExp(`^(.*)-${UUID_REGEX}$`)
 const isGroupElement = (element: Element): boolean =>
   element.elemID.typeName === GROUP_TYPE_NAME
 
-// const hasUUIDInName = (instance: InstanceElement): boolean =>
-//   instance.value.name.match(GROUP_NAME_REGEX) !== null
-
 const getInstanceName = (
   instance: InstanceElement,
   config: JiraConfig,

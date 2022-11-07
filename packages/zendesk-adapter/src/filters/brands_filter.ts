@@ -15,54 +15,17 @@
 */
 import {
   Change, Element, getChangeData,
-  InstanceElement, isAdditionChange, isAdditionOrModificationChange,
-  isInstanceElement, isRemovalChange, ReferenceExpression, Value,
+  InstanceElement,
+  isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { detailedCompare } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 import { LOGO_FIELD } from './brand_logo'
+import { deployOrderChanges, sortChanges } from './guide_order_utils'
 
 export const CATEGORIES_FIELD = 'categories'
-
-/* Split the changes into 3 groups:
-  onlyOrderChanges    - Brands with only categories order changes
-  mixedChanges        - Brands with categories order and other changes
-  onlyNonOrderChanges - Brands without any categories order changes
- */
-const sortBrandChanges = (changes: Change<InstanceElement>[]) :
-    {
-      withOrderChanges : Change<InstanceElement>[]
-      onlyNonOrderChanges : Change<InstanceElement>[]
-    } => {
-  const withOrderChanges : Change<InstanceElement>[] = []
-  const onlyNonOrderChanges : Change<InstanceElement>[] = []
-
-  changes.forEach(change => {
-    if (isRemovalChange(change)) {
-      onlyNonOrderChanges.push(change)
-      return
-    }
-    // currently isn't supported because categories can't exist before brand
-    if (isAdditionChange(change)) {
-      onlyNonOrderChanges.push(change)
-      return
-    }
-    const brandChanges = detailedCompare(change.data.before, change.data.after)
-    const hasAnyOrderChanges = brandChanges.some(c =>
-      c.id.createTopLevelParentID().path[0] === CATEGORIES_FIELD)
-
-    if (hasAnyOrderChanges) {
-      withOrderChanges.push(change)
-    } else {
-      onlyNonOrderChanges.push(change)
-    }
-  })
-
-  return { withOrderChanges, onlyNonOrderChanges }
-}
 
 /**
  * Handle everything related to brands
@@ -99,51 +62,24 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
 
-    const { withOrderChanges, onlyNonOrderChanges } = sortBrandChanges(brandChanges)
+    const {
+      onlyOrderChanges,
+      mixedOrderChanges,
+      onlyNonOrderChanges,
+    } = sortChanges(brandChanges, CATEGORIES_FIELD)
 
-    const orderChangesToApply: Change<InstanceElement>[] = []
-    const orderChangeErrors: Error[] = []
-
-    withOrderChanges.filter(isAdditionOrModificationChange).forEach(brandChange => {
-      const brandValue = brandChange.data.after.value
-
-      if (brandValue.categories.some((c: Value) => !(c instanceof ReferenceExpression))) {
-        orderChangeErrors.push(new Error(`Error updating categories positions of '${brandValue.name}' - some values in the list are not a reference`))
-        return
-      }
-      const categories = brandValue.categories.map((c: ReferenceExpression) => c.value)
-
-      categories.forEach((category: InstanceElement, i : number) => {
-        // Create a 'fake' change of the category's position
-        const beforeCategory = new InstanceElement(
-          category.elemID.name,
-          category.refType,
-          { id: category.value.id, position: category.value.position }
-        )
-        const afterCategory = beforeCategory.clone()
-        afterCategory.value.position = i
-
-        orderChangesToApply.push({
-          action: 'modify',
-          data: {
-            before: beforeCategory,
-            after: afterCategory,
-          },
-        })
-      })
+    const orderDeployResults = await deployOrderChanges({
+      onlyOrderChanges,
+      mixedOrderChanges,
+      orderField: CATEGORIES_FIELD,
+      client,
+      config,
     })
-
-    const orderChangesDeployResult = await deployChanges(
-      orderChangesToApply,
-      async change => {
-        await deployChange(change, client, config.apiDefinitions)
-      }
-    )
 
     // Ignores the logo and categories field from brand instances when deploying,
     // logos are covered as brand_logo instances, categories were converted to orderChangesToApply
     const brandChangesDeployResult = await deployChanges(
-      [...withOrderChanges, ...onlyNonOrderChanges],
+      [...mixedOrderChanges, ...onlyNonOrderChanges],
       async change => {
         await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
       }
@@ -151,12 +87,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     return {
       deployResult: {
-        // Without orderChangesDeployResult since they are internal 'fake' changes and did not exist
-        appliedChanges: brandChangesDeployResult.appliedChanges,
+        appliedChanges: [
+          ...brandChangesDeployResult.appliedChanges,
+          ...orderDeployResults.appliedChanges,
+        ],
         errors: [
-          ...orderChangesDeployResult.errors,
+          ...orderDeployResults.errors,
           ...brandChangesDeployResult.errors,
-          ...orderChangeErrors,
         ],
       },
       leftoverChanges,

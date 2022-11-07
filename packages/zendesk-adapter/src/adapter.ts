@@ -96,6 +96,8 @@ import fetchCategorySection from './filters/help_center_fetch_section_and_catego
 import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 import hcGuideSettings from './filters/help_center_guide_settings'
 import brandsFilter from './filters/brands_filter'
+import categoriesOrder from './filters/categories_order'
+import sectionsOrder from './filters/sections_order'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -146,6 +148,9 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // brandsFilter should be after brandLogoFilter
   brandsFilter,
+  // order filters should be before hc filters
+  categoriesOrder,
+  sectionsOrder,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
   hcSectionCategoryFilter,

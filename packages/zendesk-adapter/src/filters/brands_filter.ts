@@ -26,7 +26,6 @@ import { LOGO_FIELD } from './brand_logo'
 import { deployOrderChanges, sortChanges } from './guide_order_utils'
 
 export const CATEGORIES_FIELD = 'categories'
-
 /**
  * Handle everything related to brands
  */

@@ -16,7 +16,7 @@
 import { Element, ElemIdGetter, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, JIRA } from '../constants'
 import { JiraConfig } from '../config/config'
@@ -27,8 +27,8 @@ const GROUP_NAME_REGEX = new RegExp(`^(.*)-${UUID_REGEX}$`)
 const isGroupElement = (element: Element): boolean =>
   element.elemID.typeName === GROUP_TYPE_NAME
 
-const hasUUIDInName = (instance: InstanceElement): boolean =>
-  instance.value.name.match(GROUP_NAME_REGEX) !== null
+// const hasUUIDInName = (instance: InstanceElement): boolean =>
+//   instance.value.name.match(GROUP_NAME_REGEX) !== null
 
 const getInstanceName = (
   instance: InstanceElement,
@@ -67,11 +67,12 @@ const getRenamedInstance = (
   const originalName = instance.value.name
   const match = instance.value.name.match(GROUP_NAME_REGEX)
   const newName = match ? match[1] : instance.value.name
+  const newPath = [...(instance.path ?? []).slice(0, -1), pathNaclCase(elementName)]
   return new InstanceElement(
     elementName,
     instance.refType,
     { ...instance.value, name: newName, originalName },
-    instance.path,
+    newPath,
     instance.annotations,
   )
 }
@@ -82,7 +83,7 @@ const getRenamedInstance = (
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
   onFetch: async (elements: Element[]) => {
     const instances = _.remove(elements,
-      element => isGroupElement(element) && isInstanceElement(element) && hasUUIDInName(element))
+      element => isGroupElement(element) && isInstanceElement(element))
     const newInstances = instances
       .filter(isInstanceElement)
       .map(e => getRenamedInstance(e, config, getElemIdFunc))

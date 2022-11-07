@@ -16,12 +16,12 @@
 import _ from 'lodash'
 import { isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefIdType, getRefNameType } from './references/workflow_properties'
 
@@ -65,20 +65,14 @@ export const contextStrategyLookup: Record<
 }
 
 type ReferenceSerializationStrategyName = 'groupName' | referenceUtils.ReferenceSerializationStrategyName
-const testfunc = (args: GetLookupNameFuncArgs): Promise<Value> => {
-  // eslint-disable-next-line no-console
-  console.log('eheheheh')
-  // eslint-disable-next-line no-console
-  console.log(args)
-  return isInstanceElement(args.ref.value) ? args.ref.value.value.originalName : args.ref.value
-}
 const JiraReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   groupName: {
-    serialize: testfunc,
+    serialize: ({ ref }) =>
+      (isInstanceElement(ref.value) ? ref.value.value.originalName : ref.value),
     lookup: val => val,
     lookupIndexName: 'originalName',
   },
@@ -104,11 +98,6 @@ ReferenceContextStrategyName
 }
 
 export const referencesRules: JiraFieldReferenceDefinition[] = [
-  // {
-  //   src: { field: 'name', parentTypes: [PERMISSION_SCHEME_TYPE_NAME] },
-  //   JiraSerializationStrategy: 'groupName',
-  //   target: { type: GROUP_TYPE_NAME },
-  // },
   {
     src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
     serializationStrategy: 'id',
@@ -387,12 +376,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'groups', parentTypes: ['ConditionConfiguration'] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'group', parentTypes: ['ConditionConfiguration'] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['ConditionStatus'] },
@@ -407,22 +396,22 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'groups', parentTypes: ['ApplicationRole'] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'defaultGroups', parentTypes: ['ApplicationRole'] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'name', parentTypes: ['GroupName'] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'boardId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
@@ -452,7 +441,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'groups', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   // Overlapping rules, serialization strategies guarantee no conflict
   {
@@ -479,7 +468,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_GROUP] },
     JiraSerializationStrategy: 'groupName',
-    target: { type: 'Group' },
+    target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'field', parentTypes: [AUTOMATION_CONDITION] },

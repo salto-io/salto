@@ -101,4 +101,17 @@ describe('helpCenterCreationOrRemovalValidator', () => {
     )
     expect(errors).toHaveLength(0)
   })
+
+  it('should not return an error when the brand is not valid', async () => {
+    const invalidBrandInstance = new InstanceElement(
+      'Test1',
+      BrandType,
+      {}
+      ,
+    )
+    const errors = await changeValidator(
+      [toChange({ after: invalidBrandInstance })]
+    )
+    expect(errors).toHaveLength(0)
+  })
 })

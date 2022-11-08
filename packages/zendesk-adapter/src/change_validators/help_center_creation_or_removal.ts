@@ -55,15 +55,15 @@ export const helpCenterCreationOrRemovalValidator:
             severity: 'Error',
             message: 'Creation or removal of help center for a certain brand is not supported via Salto.',
             detailedMessage: `Creation or removal of help center for a certain brand is not supported via Salto.
-            To create or remove a help center, please go to ${client.getUrl().href}${apiConfig.types.brand.transformation?.serviceUrl}`,
+            To create or remove a help center, please go to ${client.getUrl().href}${apiConfig.types.brand.transformation?.serviceUrl?.slice(1)}`,
           }]
         }
         return [{
           elemID: getChangeData(change).elemID,
-          severity: 'Warning', // TO DO waiting for Tomer to help with the phrasing
+          severity: 'Warning',
           message: 'Creation of a brand with a help center is not supported via Salto.',
-          detailedMessage: `Creation of a brand with a help center is not supported via Salto.
-            To create a help center, please go to ${client.getUrl().href}${(apiConfig.types.brand.transformation?.serviceUrl)?.slice(1)}`,
+          detailedMessage: `Creation of a brand with a help center is not supported via Salto. The brand will be created without a help center. After creating the brand, 
+            to create a help center, please go to ${client.getUrl().href}${(apiConfig.types.brand.transformation?.serviceUrl)?.slice(1)}`,
         }]
       })
   }

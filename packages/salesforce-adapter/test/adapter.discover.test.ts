@@ -35,7 +35,6 @@ import {
 } from './connection'
 import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import { fetchMetadataInstances } from '../src/fetch'
-import { MetadataQuery } from '../src/fetch_profile/metadata_query'
 import * as fetchModule from '../src/fetch'
 
 describe('SalesforceAdapter fetch', () => {

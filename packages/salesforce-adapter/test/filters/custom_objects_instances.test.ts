@@ -1115,6 +1115,19 @@ describe('Custom Object Instances filter', () => {
       expect(elements.length).toBe(2)
       expect(result).toMatchObject({ configSuggestions: [] })
     })
+    it('Mixed CustomObjects with more and less instances than MaxInstancesPerType', async () => {
+      const elements = [testElement, testElement]
+      client.countInstances = jest.fn().mockResolvedValueOnce(3).mockResolvedValueOnce(1)
+      const result = await filter.onFetch(elements)
+      expect(elements.length).toBe(2)
+      expect(result).toMatchObject({
+        configSuggestions: [{
+          type: 'dataObjectsExclude',
+          value: 'testElement',
+          reason: "'testElement' has 3 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 2.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
+        }],
+      })
+    })
   })
 })
 

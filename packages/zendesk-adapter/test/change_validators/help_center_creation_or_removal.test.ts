@@ -62,7 +62,7 @@ describe('helpCenterCreationOrRemovalValidator', () => {
       severity: 'Error',
       message: 'Creation or removal of help center for a certain brand is not supported via Salto.',
       detailedMessage: `Creation or removal of help center for a certain brand is not supported via Salto.
-        To create or remove a help center, please go to ${client.getUrl().href}${config.types.brand.transformation?.serviceUrl?.slice(1)}`,
+      To create or remove a help center, please go to ${client.getUrl().href}${config.types.brand.transformation?.serviceUrl?.slice(1)}`,
     }])
   })
 

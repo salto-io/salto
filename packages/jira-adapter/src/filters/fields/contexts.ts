@@ -84,7 +84,7 @@ export const getContexts = async (
   client: JiraClient,
 ): Promise<InstanceElement[]> => {
   const fieldInstance = getChangeData(fieldChange)
-  const resp = await client.getSinglePage({ url: `/rest/api/3/field/${fieldInstance.value.id}/contexts` })
+  const resp = await client.getSinglePage({ url: `/rest/api/3/field/${fieldInstance.value.id}/context` })
   if (!Array.isArray(resp.data.values)) {
     log.warn(`Received unexpected response from Jira when querying contexts for instance ${getChangeData(fieldChange).elemID.getFullName()}: ${safeJsonStringify(resp.data.values)}`)
     throw new Error(`Received unexpected response from Jira when querying contexts for instance ${getChangeData(fieldChange).elemID.getFullName()}`)

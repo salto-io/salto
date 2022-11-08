@@ -124,6 +124,30 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get'],
     url: '/rest/api/3/field/.*/context/.*/option',
   },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuetypescreenscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+/mapping',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+/mapping/default',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+/mapping/remove',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuetypescreenscheme/mapping.+',
+  },
 ]
 
 const DC_DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {

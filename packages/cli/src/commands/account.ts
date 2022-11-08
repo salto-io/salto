@@ -38,7 +38,7 @@ import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
 import { CliExitCode, CliOutput, KeyedOption } from '../types'
-import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
+import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction, CommandOptions } from '../command_builder'
 import {
   formatAccountAdded,
   formatAccountAlreadyAdded,
@@ -59,6 +59,9 @@ import { getAdaptersTags, getTagsForAccounts } from './common/accounts'
 
 const { isDefined } = values
 
+const printDeprecationWarning = (output: CliOutput): void => {
+  errorOutputLine("The 'service' command is depreceated. Use 'account' instead.", output)
+}
 
 type AuthTypeArgs = {
   authType: AdapterAuthMethod
@@ -229,40 +232,51 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   return CliExitCode.Success
 }
 
+const accountAddDefProperties: CommandOptions<AccountAddArgs> = {
+  name: 'add',
+  description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
+  keyedOptions: [
+    {
+      // Will be replaced with --no-login
+      name: 'login',
+      default: true,
+      alias: 'n',
+      type: 'boolean',
+      description: 'Do not login to account when adding it. Example usage: \'add <service-name> --no-login\'.',
+      required: false,
+    },
+    {
+      name: 'accountName',
+      type: 'string',
+      description: 'Service account name. Use in case more than one account of a certain service type is added to the same environment.',
+      required: false,
+    },
+    AUTH_TYPE_OPTION,
+    ENVIRONMENT_OPTION,
+    LOGIN_PARAMETER_OPTION,
+  ],
+  positionalOptions: [
+    {
+      name: 'serviceType',
+      type: 'string',
+      description: 'The type of the service',
+      required: true,
+    },
+  ],
+}
+
 export const accountAddDef = createWorkspaceCommand({
-  properties: {
-    name: 'add',
-    description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
-    keyedOptions: [
-      {
-        // Will be replaced with --no-login
-        name: 'login',
-        default: true,
-        alias: 'n',
-        type: 'boolean',
-        description: 'Do not login to account when adding it. Example usage: \'add <service-name> --no-login\'.',
-        required: false,
-      },
-      {
-        name: 'accountName',
-        type: 'string',
-        description: 'Service account name. Use in case more than one account of a certain service type is added to the same environment.',
-        required: false,
-      },
-      AUTH_TYPE_OPTION,
-      ENVIRONMENT_OPTION,
-      LOGIN_PARAMETER_OPTION,
-    ],
-    positionalOptions: [
-      {
-        name: 'serviceType',
-        type: 'string',
-        description: 'The type of the service',
-        required: true,
-      },
-    ],
-  },
+  properties: accountAddDefProperties,
   action: addAction,
+  extraTelemetryTags: ({ input }) => getAdaptersTags([input.serviceType]),
+})
+
+export const serviceAddDef = createWorkspaceCommand({
+  properties: accountAddDefProperties,
+  action: async (args): Promise<CliExitCode> => {
+    printDeprecationWarning(args.output)
+    return addAction(args)
+  },
   extraTelemetryTags: ({ input }) => getAdaptersTags([input.serviceType]),
 })
 
@@ -350,7 +364,7 @@ const serviceGroupDef = createCommandGroupDef({
     description: 'Manage the environment accounts (DEPRECATED, use `account` command instead)',
   },
   subCommands: [
-    accountAddDef,
+    serviceAddDef,
     accountListDef,
     accountLoginDef,
   ],

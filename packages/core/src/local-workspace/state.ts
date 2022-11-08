@@ -192,7 +192,9 @@ export const localState = (
     const elementsByAccount = _.groupBy(elements, element => element.elemID.adapter)
     const accountToElementStrings = await promises.object.mapValuesAsync(
       elementsByAccount,
-      accountElements => serialize(accountElements),
+      accountElements => serialize(
+        _.sortBy(accountElements, element => element.elemID.getFullName())
+      ),
     )
     const accountToDates = await inMemState.getAccountsUpdateDates()
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(

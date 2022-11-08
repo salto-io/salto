@@ -21,7 +21,7 @@ import {
   ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { naclCase, pathNaclCase, safeJsonStringify, getParent } from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
 import { collections } from '@salto-io/lowerdash'
@@ -105,7 +105,8 @@ const getBrandLogo = async ({ client, brand }: {
   const name = elementsUtils.ducktype.toNestedTypeName(
     brand.value.name, logoValues.file_name
   )
-  const pathName = pathNaclCase(name)
+  const pathName = pathNaclCase(naclCase(name))
+  const resourcePathName = normalizeFilePathPart(name)
 
   const { id, file_name: filename } = brand.value.logo
   const content = await getLogoContent(client, id, filename)
@@ -120,7 +121,7 @@ const getBrandLogo = async ({ client, brand }: {
       filename: logoValues.file_name,
       contentType: logoValues.content_type,
       content: new StaticFile({
-        filepath: `${ZENDESK}/${BRAND_LOGO_TYPE.elemID.name}/${pathName}`,
+        filepath: `${ZENDESK}/${BRAND_LOGO_TYPE.elemID.name}/${resourcePathName}`,
         content,
       }),
     },
@@ -138,7 +139,7 @@ const fetchBrand = async (
   brandId: string,
 ): Promise<Brand | undefined> => {
   const response = await client.getSinglePage({
-    url: `/brands/${brandId}`,
+    url: `/api/v2/brands/${brandId}`,
   })
   if (response === undefined) {
     log.error('Received empty response from Zendesk API. Not adding brand logo')
@@ -167,7 +168,7 @@ const deployBrandLogo = async (
       form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
       // eslint-disable-next-line no-await-in-loop
       const putResult = await client.put({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: form,
         headers: { ...form.getHeaders() },
       })

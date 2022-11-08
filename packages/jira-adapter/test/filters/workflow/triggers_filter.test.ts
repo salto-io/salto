@@ -124,7 +124,7 @@ describe('triggersFilter', () => {
         {
           name: 'name',
           transitions: [
-            { id: '1', name: 'transition1', from: ['4', '5'] },
+            { name: 'transition1', from: ['4', '5'] },
           ],
         },
       )
@@ -135,7 +135,7 @@ describe('triggersFilter', () => {
       expect(instance.value).toEqual({
         name: 'name',
         transitions: [
-          { id: '1', name: 'transition1', from: ['4', '5'] },
+          { name: 'transition1', from: ['4', '5'] },
         ],
       })
     })

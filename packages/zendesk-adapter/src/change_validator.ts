@@ -37,8 +37,10 @@ import {
   automationAllConditionsValidator,
   requiredAppOwnedParametersValidator,
   oneTranslationPerLocaleValidator,
-  articleRemovalValidator,
   brandFieldForBrandBasedElementsValidator,
+  translationForDefaultLocaleValidator,
+  articleRemovalValidator,
+  articleLabelNamesRemovalValidator, helpCenterActivationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -86,7 +88,10 @@ export default ({
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
+    articleLabelNamesRemovalValidator,
     brandFieldForBrandBasedElementsValidator,
+    translationForDefaultLocaleValidator,
+    helpCenterActivationValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

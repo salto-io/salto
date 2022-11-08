@@ -223,6 +223,7 @@ export type ReferenceContextStrategyName = 'neighborField'
   | 'neighborReferenceUserAndOrgField'
   | 'neighborSubjectReferenceTicketField'
   | 'neighborSubjectReferenceUserAndOrgField'
+  | 'neighborParentType'
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
@@ -237,6 +238,7 @@ export const contextStrategyLookup: Record<
   neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
+  neighborParentType: neighborContextFunc({ contextFieldName: 'direct_parent_type' }),
   parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: getValueLookupType }),
   neighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: getValueLookupType }),
   parentTitle: neighborContextFunc({ contextFieldName: 'title', levelsUp: 1, contextValueMapper: getValueLookupType }),
@@ -641,17 +643,18 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'permission_group' },
   },
   {
-    src: { field: 'label_names', parentTypes: ['article'] },
-    serializationStrategy: 'name',
-    target: { type: 'label' },
-  },
-  {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
     serializationStrategy: 'id',
     target: { type: 'help_center_locale' },
   },
   {
-    src: { field: 'locale', parentTypes: ['article', 'section', 'category'] },
+    src: {
+      field: 'locale',
+      parentTypes: [
+        'article', 'section', 'category',
+        'section_translation', 'category_translation', 'article_translation',
+      ],
+    },
     serializationStrategy: 'id',
     target: { type: 'help_center_locale' },
   },
@@ -744,6 +747,21 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'tag', parentTypes: ['ticket_field', 'organization_field', 'user_field'] },
     serializationStrategy: 'id',
     target: { type: 'tag' },
+  },
+  {
+    src: { field: 'parent_section_id', parentTypes: ['section'] },
+    serializationStrategy: 'id',
+    target: { type: 'section' },
+  },
+  {
+    src: {
+      field: 'direct_parent_id',
+      parentTypes: [
+        'section',
+      ],
+    },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborParentType' },
   },
 ]
 
@@ -962,6 +980,6 @@ const filter: FilterCreator = ({ config }) => ({
     )
     await addReferences(secondIterationFieldNameToTypeMappingDefs)
   }, 'Field reference filter'),
-})
 
+})
 export default filter

@@ -35,10 +35,13 @@ import {
 } from './connection'
 import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import { fetchMetadataInstances } from '../src/fetch'
+import { MetadataQuery } from '../src/fetch_profile/metadata_query'
+import * as fetchModule from '../src/fetch'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
+  let fetchMetadataInstancesSpy: jest.SpyInstance
 
   const metadataExclude = [
     { metadataType: 'Test1' },
@@ -75,10 +78,12 @@ describe('SalesforceAdapter fetch', () => {
         },
       },
     }))
+    fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
   })
 
   afterEach(() => {
     jest.resetAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe('should fetch metadata types', () => {
@@ -383,6 +388,26 @@ describe('SalesforceAdapter fetch', () => {
         )
       })
 
+      it('should not fetch metadata types instances the will be fetch in filters', async () => {
+        const instances = [
+          { props: { fullName: 'MyType0' }, values: { fullName: 'MyType0' } },
+          { props: { fullName: 'MyType1' }, values: { fullName: 'MyType1' } },
+        ]
+        mockMetadataType(
+          { xmlName: 'Queue' },
+          { valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }] },
+          instances,
+        )
+        await adapter.fetch(mockFetchOpts)
+        expect(fetchMetadataInstancesSpy).not.toHaveBeenCalledWith(expect.objectContaining(
+          { metadataType: expect.objectContaining(
+            { elemID: expect.objectContaining(
+              { typeName: 'Queue' }
+            ) }
+          ) }
+        ))
+      })
+
       it('should use existing elemID when fetching metadata instance', async () => {
         ({ connection, adapter } = mockAdapter({
           adapterParams: {
@@ -549,11 +574,10 @@ describe('SalesforceAdapter fetch', () => {
         expect(layout).toBeDefined()
         expect((await layout.getType()).elemID).toEqual(LAYOUT_TYPE_ID)
         expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
-        expect(layout.value.layoutSections.length).toBe(3)
+        expect(layout.value.layoutSections.length).toBe(4)
         expect(layout.value.layoutSections[0].label).toBe('Description Information')
         expect(layout.value.layoutSections[0].layoutColumns[0].layoutItems[0].behavior).toBe('Edit')
         expect(layout.value.layoutSections[0].layoutColumns[1].layoutItems[0].field).toBe('Description2')
-        expect(layout.value.layoutSections[1].layoutColumns).toBeUndefined()
         expect(layout.value.layoutSections[1].label).toBe('Additional Information')
         expect(layout.value.layoutSections[2].style).toBe('CustomLinks')
         expect(
@@ -562,7 +586,6 @@ describe('SalesforceAdapter fetch', () => {
         ).toBe('string')
         expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
         // empty objects should be omitted
-        expect(layout.value.processMetadataValues[1].value).toBeUndefined()
         expect(layout.value.processMetadataValues[2].name).toBe('leftHandSideReferenceTo2')
         // empty strings should be kept
         expect(layout.value.processMetadataValues[2].value).toEqual({ stringValue: '' })

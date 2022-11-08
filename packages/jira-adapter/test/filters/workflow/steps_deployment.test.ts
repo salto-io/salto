@@ -33,11 +33,6 @@ describe('steps_deployment', () => {
       workflowType,
       {
         name: 'workflowName',
-        stepIds: {
-          1: '4',
-          2: '5',
-          3: '6',
-        },
         statuses: [
           {
             name: 'name1',
@@ -58,6 +53,28 @@ describe('steps_deployment', () => {
     const { client: cli, connection } = mockClient()
     client = cli
     mockConnection = connection
+
+    mockConnection.get.mockResolvedValue({
+      status: 200,
+      data: {
+        layout: {
+          statuses: [
+            {
+              statusId: 1,
+              stepId: 4,
+            },
+            {
+              statusId: 2,
+              stepId: 5,
+            },
+            {
+              statusId: 3,
+              stepId: 6,
+            },
+          ],
+        },
+      },
+    })
   })
 
   it('should call the deploy steps endpoint', async () => {
@@ -109,8 +126,16 @@ describe('steps_deployment', () => {
     await expect(deploySteps(instance, client)).rejects.toThrow()
   })
 
-  it('should throw if there are not step ids', async () => {
-    delete instance.value.stepIds
+  it('should throw if there are no step ids', async () => {
+    mockConnection.get.mockResolvedValue({
+      status: 200,
+      data: {
+        layout: {
+          statuses: [],
+        },
+      },
+    })
+
     await expect(deploySteps(instance, client)).rejects.toThrow()
   })
 })

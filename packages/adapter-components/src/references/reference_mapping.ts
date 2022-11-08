@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value, Element, isInstanceElement, ElemID } from '@salto-io/adapter-api'
-import { types } from '@salto-io/lowerdash'
+import { Field, Value, Element, isInstanceElement, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { collections, types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+
+const { awu } = collections.asynciterable
 
 export type ApiNameFunc = (elem: Element) => string
 export type LookupFunc = (val: Value, context?: string) => string
@@ -89,8 +91,10 @@ export type ExtendedReferenceTargetDefinition<
 > = ReferenceTargetDefinition<T> & { lookup: LookupFunc }
 
 type SourceDef = {
-  field: string | RegExp
+  field: string
   parentTypes?: string[]
+  // when available, only consider instances matching one or more of the specified types
+  instanceTypes?: (string | RegExp)[]
 }
 
 /**
@@ -119,6 +123,20 @@ export type FieldReferenceDefinition<
 // We can extract the api name from the elem id as long as we don't support renaming
 const elemLookupName: ApiNameFunc = elem => elem.elemID.name
 
+const matchName = (name: string, matcher: string | RegExp): boolean => (
+  _.isString(matcher)
+    ? matcher === name
+    : matcher.test(name)
+)
+
+const matchInstanceType = async (
+  inst: InstanceElement,
+  matchers: (string | RegExp)[],
+): Promise<boolean> => {
+  const typeName = elemLookupName(await inst.getType())
+  return matchers.some(matcher => matchName(typeName, matcher))
+}
+
 type FieldReferenceResolverDetails<T extends string> = {
   serializationStrategy: ReferenceSerializationStrategy
   target?: ExtendedReferenceTargetDefinition<T>
@@ -145,19 +163,22 @@ export class FieldReferenceResolver<T extends string> {
     return new FieldReferenceResolver<S>(def)
   }
 
-  match(field: Field): boolean {
+  async match(field: Field, element: Element): Promise<boolean> {
     return (
-      field.name === this.src.field
+      matchName(field.name, this.src.field)
       && (
         this.src.parentTypes === undefined
         || this.src.parentTypes.includes(elemLookupName(field.parent))
       )
+      && (this.src.instanceTypes === undefined
+        || (isInstanceElement(element) && matchInstanceType(element, this.src.instanceTypes)))
     )
   }
 }
 
 export type ReferenceResolverFinder<T extends string> = (
-  field: Field
+  field: Field,
+  element: Element,
 ) => Promise<FieldReferenceResolverDetails<T>[]>
 
 /**
@@ -182,7 +203,9 @@ export const generateReferenceResolverFinder = <
     .groupBy(def => def.src.field)
     .value()
 
-  return (async field => (
-    (matchersByFieldName[field.name] ?? []).filter(resolver => resolver.match(field))
+  return (async (field, element) => (
+    awu(matchersByFieldName[field.name] ?? [])
+      .filter(resolver => resolver.match(field, element))
+      .toArray()
   ))
 }

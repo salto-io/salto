@@ -14,16 +14,13 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
-import ZendeskClient from '../../src/client/client'
+import { filterUtils } from '@salto-io/adapter-components'
+import { createFilterCreatorParams } from '../utils'
 import { ZENDESK } from '../../src/constants'
-import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/collision_errors'
 import { FilterResult } from '../../src/filter'
 
 describe('collision errors', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy', FilterResult>
   let filter: FilterType
   const objType = new ObjectType({ elemID: new ElemID(ZENDESK, 'obj') })
@@ -33,18 +30,7 @@ describe('collision errors', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('onFetch', () => {

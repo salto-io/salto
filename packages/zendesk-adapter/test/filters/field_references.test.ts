@@ -15,31 +15,18 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
   BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
-import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
+import { createFilterCreatorParams } from '../utils'
 
 describe('References by id filter', () => {
-  let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
 
   beforeAll(() => {
-    client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'c' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   const brandType = new ObjectType({
@@ -442,12 +429,7 @@ describe('References by id filter', () => {
         expect(brokenTrigger.value.conditions.all[5].value).toEqual('current_groups')
       })
       it('should not create missing references if enable missing references is false', async () => {
-        const newFilter = filterCreator({
-          client,
-          paginator: clientUtils.createPaginator({
-            client,
-            paginationFuncCreator: paginate,
-          }),
+        const newFilter = filterCreator(createFilterCreatorParams({
           config: {
             ...DEFAULT_CONFIG,
             fetch: {
@@ -455,8 +437,7 @@ describe('References by id filter', () => {
               enableMissingReferences: false,
             },
           },
-          fetchQuery: elementUtils.query.createMockQuery(),
-        }) as FilterType
+        })) as FilterType
         const clonedElements = originalElements.map(element => element.clone())
         await newFilter.onFetch(clonedElements)
         const brokenTrigger = clonedElements.filter(

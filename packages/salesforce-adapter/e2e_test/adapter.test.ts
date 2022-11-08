@@ -26,7 +26,6 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 
-import { testHelpers } from '../index'
 import * as constants from '../src/constants'
 import {
   INSTANCE_TYPE_FIELD, NESTED_INSTANCE_TYPE_NAME,
@@ -64,6 +63,7 @@ import {
   customObjectWithFieldsName, gvsName, removeCustomObjectsWithVariousFields,
   summaryFieldName, verifyElementsExist,
 } from './setup'
+import { testHelpers } from './jest_environment'
 
 const { awu } = collections.asynciterable
 
@@ -476,6 +476,8 @@ describe('Salesforce adapter E2E with real account', () => {
         annotationRefsOrTypes: {
           deploymentStatus: BuiltinTypes.STRING,
           enableHistory: BuiltinTypes.BOOLEAN,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
           nameField: new ObjectType({ elemID: nameFieldElemID,
             fields: {
               [constants.LABEL]: { refType: BuiltinTypes.STRING },
@@ -489,6 +491,8 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
           deploymentStatus: 'InDevelopment',
           enableHistory: true,
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
           nameField: {
             [constants.LABEL]: customObjectName,
             type: 'AutoNumber',
@@ -553,6 +557,16 @@ describe('Salesforce adapter E2E with real account', () => {
         annotations: {
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
         fields: {
           description: {
@@ -595,6 +609,16 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
       })
 
@@ -622,6 +646,16 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.LABEL]: 'test2 label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
       })
 
@@ -817,6 +851,8 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         annotationRefsOrTypes: {
           deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
           nameField: nameFieldType,
         },
         annotations: {
@@ -825,6 +861,8 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
           deploymentStatus: 'InDevelopment',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
           nameField: {
             [constants.LABEL]: customObjectName,
             type: 'AutoNumber',
@@ -854,6 +892,8 @@ describe('Salesforce adapter E2E with real account', () => {
         {
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test label 2',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
           deploymentStatus: 'Deployed',
           nameField: {
             [constants.LABEL]: customObjectName,
@@ -920,6 +960,16 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.LABEL]: 'Object Label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
       })
 
@@ -1463,8 +1513,16 @@ describe('Salesforce adapter E2E with real account', () => {
               ...customFieldsObject.annotations,
               [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+              deploymentStatus: 'Deployed',
+              pluralLabel: 'Tests',
+              sharingModel: 'ControlledByParent',
+              nameField: { type: 'Text', label: 'Name' },
             },
-            annotationRefsOrTypes: { ...customFieldsObject.annotationRefTypes },
+            annotationRefsOrTypes: { ...customFieldsObject.annotationRefTypes,
+              deploymentStatus: BuiltinTypes.STRING,
+              pluralLabel: BuiltinTypes.STRING,
+              sharingModel: BuiltinTypes.STRING,
+              nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }) },
           })
 
           // Resolve reference expression before deploy
@@ -2346,6 +2404,16 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
       })
 
@@ -2404,6 +2472,16 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
       })
 
@@ -2427,6 +2505,16 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
           [constants.TOPICS_FOR_OBJECTS_ANNOTATION]: { [constants
             .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]: true },
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
       })
 
@@ -2454,6 +2542,16 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+          deploymentStatus: 'Deployed',
+          pluralLabel: 'Tests',
+          sharingModel: 'ReadWrite',
+          nameField: { type: 'Text', label: 'Name' },
+        },
+        annotationRefsOrTypes: {
+          deploymentStatus: BuiltinTypes.STRING,
+          pluralLabel: BuiltinTypes.STRING,
+          sharingModel: BuiltinTypes.STRING,
+          nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
         },
       })
 

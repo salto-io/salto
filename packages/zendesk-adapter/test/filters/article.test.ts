@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement,
+  ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, toChange,
+  getChangeData,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG } from '../../src/config'
+import { filterUtils } from '@salto-io/adapter-components'
+import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
 import { ARTICLE_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/article'
 
@@ -37,7 +37,7 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('article filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'deploy'>
+  type FilterType = filterUtils.FilterWith<'preDeploy' | 'deploy' | 'onDeploy'>
   let filter: FilterType
   const articleInstance = new InstanceElement(
     'testArticle',
@@ -49,34 +49,58 @@ describe('article filter', () => {
       promoted: false,
       position: 0,
       section_id: '12345',
-      name: 'The name of the article',
-      title: 'The title of the article',
       source_locale: 'en-us',
       locale: 'en-us',
       outdated: false,
       permission_group_id: '666',
-      body: '<p>ppppp</p>',
-      translations: [
-        '9999999',
-      ],
       brand: '1',
     }
   )
+  const articleTranslationInstance = new InstanceElement(
+    'testArticleTranslation',
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'article_translation') }),
+    {
+      locale: { id: 'en-us' },
+      title: 'The title of the article',
+      draft: false,
+      brand: '1',
+      body: '<p>ppppp</p>',
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]:
+        [new ReferenceExpression(articleInstance.elemID, articleInstance)] },
+  )
+  articleInstance.value.translations = [
+    new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
+  ]
 
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
     })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      }),
-      config: DEFAULT_CONFIG,
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
+  })
+
+
+  describe('preDeploy', () => {
+    it('should add the title and the body to the article instance from its translation', async () => {
+      const clonedArticle = articleInstance.clone()
+      const clonedTranslation = articleTranslationInstance.clone()
+      const articleAddition = toChange({ after: clonedArticle })
+      const TranslationAddition = toChange({ after: clonedTranslation })
+
+      expect(clonedArticle.value.title).toBeUndefined()
+      expect(clonedArticle.value.body).toBeUndefined()
+      await filter.preDeploy([
+        articleAddition,
+        TranslationAddition,
+      ])
+      const filteredArticle = getChangeData(articleAddition)
+      expect(filteredArticle.value.title).toBe('The title of the article')
+      expect(filteredArticle.value.body).toBe('<p>ppppp</p>')
+      expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
+    })
   })
 
   describe('deploy', () => {
@@ -154,6 +178,26 @@ describe('article filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+  })
+
+  describe('onDeploy', () => {
+    it('should omit the title and the body from the article instance', async () => {
+      const clonedArticle = articleInstance.clone()
+      const clonedTranslation = articleTranslationInstance.clone()
+      const articleAddition = toChange({ after: clonedArticle })
+      const TranslationAddition = toChange({ after: clonedTranslation })
+
+      clonedArticle.value.title = 'title'
+      clonedArticle.value.body = 'body'
+      await filter.onDeploy([
+        articleAddition,
+        TranslationAddition,
+      ])
+      const filteredArticle = getChangeData(articleAddition)
+      expect(filteredArticle.value.title).toBeUndefined()
+      expect(filteredArticle.value.body).toBeUndefined()
+      expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
   })
 })

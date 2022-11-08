@@ -161,7 +161,7 @@ describe('adapter creator', () => {
             types: {
               c: {
                 request: {
-                  url: '/c',
+                  url: '/api/v2/c',
                 },
               },
             },
@@ -187,7 +187,7 @@ describe('adapter creator', () => {
   it('should validate credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
     jest.spyOn(connection, 'validateCredentials')
-    mockAxiosAdapter.onGet('/account/settings').reply(200, {
+    mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
       settings: {},
     })
 

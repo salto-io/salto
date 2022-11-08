@@ -13,55 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, isInstanceElement, MapType } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
-import { findObject } from '../../utils'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
-import { isWorkflowInstance, Transition, WorkflowInstance } from './types'
+import { isWorkflowInstance } from './types'
 
-export const getTransitionKey = (transition: Transition): string => [
-  ..._.sortBy(transition.from ?? []),
-  transition.name ?? '',
-].join('-')
-
-export const addTransitionIds = (
-  instance: WorkflowInstance,
-  transitions: Transition[] | undefined,
-): void => {
-  if (transitions === undefined) {
-    return
-  }
-  instance.value.transitionIds = _(transitions)
-    .keyBy(getTransitionKey)
-    .mapValues(transition => transition.id)
-    .pickBy(values.isDefined)
-    .value()
-
-  instance.value.transitions?.forEach(transition => {
-    delete transition.id
-  })
-}
-
+/**
+ * A filter that deletes the transition ids from all the workflows.
+ * We delete the ids since they are not env friendly and not needed
+ * (since we implement modification of a workflow with addition and removal)
+ */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
-    if (workflowType !== undefined) {
-      workflowType.fields.transitionIds = new Field(
-        workflowType,
-        'transitionIds',
-        new MapType(BuiltinTypes.STRING),
-        { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true }
-      )
-    }
-
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
       .forEach(instance => {
-        addTransitionIds(instance, instance.value.transitions)
+        instance.value.transitions?.forEach(transition => {
+          // We don't need to id after this filter since
+          // in modification we remove and create a new workflow
+          delete transition.id
+        })
       })
   },
 })

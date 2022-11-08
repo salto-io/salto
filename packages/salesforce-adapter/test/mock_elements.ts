@@ -14,30 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
-import { MetadataTypeAnnotations, MetadataObjectType, createInstanceElement } from '../src/transformers/transformer'
+import { TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
+import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
 
-
-type ObjectTypeCtorParam = ConstructorParameters<typeof ObjectType>[0]
-type CreateMetadataObjectTypeParams = Omit<ObjectTypeCtorParam, 'elemID'> & {
-  annotations: MetadataTypeAnnotations
-}
-export const createMetadataObjectType = (
-  params: CreateMetadataObjectTypeParams
-): MetadataObjectType => new ObjectType({
-  elemID: new ElemID(SALESFORCE, params.annotations.metadataType),
-  ...params,
-  fields: {
-    [INSTANCE_FULL_NAME_FIELD]: {
-      refType: BuiltinTypes.SERVICE_ID,
-    },
-    ...params.fields,
-  },
-}) as MetadataObjectType
 
 export const mockTypes = {
   ApexClass: createMetadataObjectType({
@@ -203,6 +186,30 @@ export const mockTypes = {
     fields: {
       status: { refType: BuiltinTypes.STRING },
       actionType: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  QuickAction: createMetadataObjectType({
+    annotations: {
+      metadataType: 'QuickAction',
+      dirName: 'quickActions',
+      suffix: 'quickAction',
+    },
+    fields: {
+      quickActionLayout: {
+        refType: createMetadataObjectType({
+          annotations: {
+            metadataType: 'QuickActionLayout',
+          },
+          fields: {
+            quickActionLayoutColumns: {
+              refType: new ListType(createMetadataObjectType(
+                { annotations: { metadataType: 'QuickActionLayoutColumn' } }
+              )),
+            },
+          },
+        }),
+      },
+
     },
   }),
 }

@@ -40,6 +40,18 @@ export const customObject = (
         annotations: { label: data.betaLabel },
       },
     },
+    annotations: {
+      deploymentStatus: 'Deployed',
+      pluralLabel: 'Tests',
+      sharingModel: 'ReadWrite',
+      nameField: { type: 'Text', label: 'Name' },
+    },
+    annotationRefsOrTypes: {
+      deploymentStatus: BuiltinTypes.STRING,
+      pluralLabel: BuiltinTypes.STRING,
+      sharingModel: BuiltinTypes.STRING,
+      nameField: new ObjectType({ elemID: new ElemID('salesforce', 'CustomObject') }),
+    },
   })
 }
 

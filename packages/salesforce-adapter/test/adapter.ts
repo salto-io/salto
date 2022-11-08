@@ -34,6 +34,7 @@ const mockAdapter = ({ adapterParams }: Opts = {}): Mocks => {
   const { connection, client } = createClient(adapterParams?.config?.client)
   const adapter = new SalesforceAdapter({
     client,
+    metadataTypesOfInstancesFetchedInFilters: ['Queue'],
     config: {},
     elementsSource: buildElementsSourceFromElements([]),
     ...adapterParams || {},

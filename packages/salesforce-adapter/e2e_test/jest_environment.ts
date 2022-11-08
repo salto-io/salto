@@ -15,17 +15,18 @@
 */
 import {
   createEnvUtils,
+  creds,
+  CredsLease,
   CredsSpec,
-  SuspendCredentialsError,
-  SaltoE2EJestEnvironment,
   JestEnvironmentConstructorArgs,
+  SaltoE2EJestEnvironment,
+  SuspendCredentialsError,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import {
-  ApiLimitsTooLowError,
-  validateCredentials,
-} from '../src/client/client'
+import { ApiLimitsTooLowError, validateCredentials } from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
+import { CUSTOM_OBJECT } from '../src/constants'
+import { CustomObject as tCustomObject } from '../src/client/types'
 
 
 const log = logger(module)
@@ -52,9 +53,11 @@ export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentia
         isSandbox: envUtils.bool(sandboxEnvVarName),
       }
     },
-    validate: async (creds: UsernamePasswordCredentials): Promise<void> => {
+    validate: async (credentials: UsernamePasswordCredentials): Promise<void> => {
       try {
-        await validateCredentials(new UsernamePasswordCredentials(creds), MIN_API_REQUESTS_NEEDED)
+        await validateCredentials(
+          new UsernamePasswordCredentials(credentials), MIN_API_REQUESTS_NEEDED
+        )
       } catch (e) {
         if (e instanceof ApiLimitsTooLowError) {
           throw new SuspendCredentialsError(e, NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT)
@@ -71,4 +74,17 @@ export default class SalesforceE2EJestEnvironment extends SaltoE2EJestEnvironmen
   constructor(...args: JestEnvironmentConstructorArgs) {
     super({ logBaseName: log.namespace }, ...args)
   }
+}
+
+export type TestHelpers = {
+  credentials: (envName?: string) => Promise<CredsLease<UsernamePasswordCredentials>>
+  CUSTOM_OBJECT: string
+}
+export const testHelpers = (): TestHelpers => ({
+  CUSTOM_OBJECT,
+  credentials: (envName?: string) => creds(credsSpec(envName), log),
+})
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace testTypes {
+  export type CustomObject = tCustomObject
 }

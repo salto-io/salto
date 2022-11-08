@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
-import { client as clientUtils, filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 import filterCreator from '../../src/filters/help_center_locale'
-import { paginate } from '../../src/client/pagination'
+import { createFilterCreatorParams } from '../utils'
 
 describe('help center locale filter', () => {
   let mockClient: MockInterface<ZendeskClient>
@@ -32,12 +32,8 @@ describe('help center locale filter', () => {
     mockClient = {
       getSinglePage: mockGetSinglePage,
     } as unknown as MockInterface<ZendeskClient>
-    filter = filterCreator({
+    filter = filterCreator(createFilterCreatorParams({
       client: mockClient as unknown as ZendeskClient,
-      paginator: clientUtils.createPaginator({
-        client: mockClient as unknown as ZendeskClient,
-        paginationFuncCreator: paginate,
-      }),
       config: {
         ...DEFAULT_CONFIG,
         [FETCH_CONFIG]: {
@@ -45,8 +41,7 @@ describe('help center locale filter', () => {
           enableGuide: true,
         },
       },
-      fetchQuery: elementUtils.query.createMockQuery(),
-    }) as FilterType
+    })) as FilterType
   })
 
   describe('onFetch', () => {
@@ -81,15 +76,7 @@ describe('help center locale filter', () => {
           default_locale: 'en-us',
         },
       })
-      const filterWithNoGuide = filterCreator({
-        client: mockClient as unknown as ZendeskClient,
-        paginator: clientUtils.createPaginator({
-          client: mockClient as unknown as ZendeskClient,
-          paginationFuncCreator: paginate,
-        }),
-        config: DEFAULT_CONFIG,
-        fetchQuery: elementUtils.query.createMockQuery(),
-      }) as FilterType
+      const filterWithNoGuide = filterCreator(createFilterCreatorParams({})) as FilterType
       await filterWithNoGuide.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([])
     })

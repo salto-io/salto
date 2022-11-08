@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Joi from 'joi'
 import {
   BuiltinTypes, ElemID, InstanceElement, ObjectType,
@@ -48,7 +49,7 @@ const getLocales = async (
   client: ZendeskClient,
 ): Promise<LocalesResponse | undefined> => {
   const response = await client.getSinglePage({
-    url: '/help_center/locales',
+    url: '/api/v2/help_center/locales',
   })
   if (!isLocalesResponse(response.data)) {
     log.error('Failed to get the help center locales')
@@ -84,9 +85,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         localeName,
         localeType,
         { id: locale, default: locale === defaultLocale },
-        [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(locale)],
+        [ZENDESK, RECORDS_PATH, LOCALE_TYPE_NAME, pathNaclCase(localeName)],
       )
     })
+    const localeTypeFullID = localeType.elemID.getFullName()
+    // the type was added already as part of addRemainingTypes. this will be fixed in SALTO-2869
+    _.remove(elements, e => e.elemID.getFullName() === localeTypeFullID)
     elements.push(localeType)
     locales.forEach(locale => {
       elements.push(locale)

@@ -22,7 +22,6 @@ import {
 import _ from 'lodash'
 import { MetadataInfo } from 'jsforce-types'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { testHelpers } from '../index'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
@@ -40,6 +39,7 @@ import {
   getMetadataInstance, getMetadata, removeMetadataIfAlreadyExists, createAndVerify,
   removeElementAndVerify, fetchTypes, runFiltersOnFetch,
 } from './utils'
+import { testHelpers } from './jest_environment'
 
 describe('workflow filter', () => {
   // Set long timeout as we communicate with salesforce API

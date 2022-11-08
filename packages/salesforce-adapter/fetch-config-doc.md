@@ -2,7 +2,7 @@
 ## Overview
 Each business application connection in Salto has a configuration file per each environment or workspace linked it is added to. The configuration file allowes to customize the nature of the connection. The configuration file consists of 3 main sections:
 - Fetch metadata: allowing to include and exclude specific metadata types in the fetch scope, such as [profiles and email templates](https://github.com/salto-io/salto/blob/main/packages/salesforce-adapter/fetch-config-doc.md#profiles).
-- Fetch data: allowing to include data that would be fetched to Salto, for example to to support use-cases like [CPQ](https://github.com/salto-io/salto/blob/main/packages/salesforce-adapter/cpq-config-doc.md).
+- Fetch data: allowing to include data that would be fetched to Salto, for example to to support use-cases like [CPQ and Advanced Approvals](https://github.com/salto-io/salto/blob/main/packages/salesforce-adapter/cpq-sbaa-config-doc.md).
 - Client: allowing to configure technical details like number of retries and timeouts of fetch.
 
 In this guide we would focus on the first two, which allow us to control the scope of which elements are being fetched to Salto. You can copy paste these these configuration suggestions and use them for your Salesforce app connections.
@@ -143,5 +143,5 @@ This configuration differs from the default one above by not having the 'Profile
 
 
 
-## CPQ
-To learn more about CPQ configurations, [click here](https://github.com/salto-io/salto/blob/main/packages/salesforce-adapter/cpq-config-doc.md).
+## CPQ and Advanced Approvals with Salto
+To learn more about CPQ and Advanced Approvals with Salto configurations, [click here](https://github.com/salto-io/salto/blob/main/packages/salesforce-adapter/cpq-sbaa-config-doc.md).

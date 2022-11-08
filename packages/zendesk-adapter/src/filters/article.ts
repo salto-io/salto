@@ -88,9 +88,14 @@ const verifyUserSegmentIdForAdditionChanges = (
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    elements
+    const articleInstances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
+    if (articleInstances.length === 0) {
+      return
+    }
+
+    articleInstances
       .filter(article => _.isEmpty(article.value[USER_SEGMENT_ID_FIELD]))
       .forEach(article => {
         article.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(

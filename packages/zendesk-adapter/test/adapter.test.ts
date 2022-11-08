@@ -502,6 +502,7 @@ describe('adapter', () => {
           'zendesk.user_fields',
           'zendesk.user_segment',
           'zendesk.user_segment.instance.Agents_and_admins@s',
+          'zendesk.user_segment.instance.Everyone',
           'zendesk.user_segment.instance.Signed_in_users@bs',
           'zendesk.user_segment.instance.Tier_3_Articles@s',
           'zendesk.user_segment.instance.VIP_Customers@s',

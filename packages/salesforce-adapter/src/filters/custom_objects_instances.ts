@@ -432,8 +432,6 @@ const filterTypesWithManyInstances = (
 
   for (const [typeName, count] of Object.entries(typeToInstancesCount)) {
     if (count > maxInstancesPerType) {
-      // Remove the type from the fetch
-      delete validChangesFetchSettings[typeName]
       // Return a config suggestion to exclude that type from the dataObjects
       const reason = `'${typeName}' has ${count} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
       If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
@@ -470,7 +468,8 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const { maxInstancesPerType } = config.fetchProfile
 
     await awu(Object.keys(validChangesFetchSettings)).forEach(async typeName => {
-      typeToInstancesCount[typeName] = maxInstancesPerType === UNLIMITED_INSTANCES_VALUE ? 0
+      typeToInstancesCount[typeName] = maxInstancesPerType === UNLIMITED_INSTANCES_VALUE
+        ? UNLIMITED_INSTANCES_VALUE
         : await client.countInstances(typeName)
     })
 

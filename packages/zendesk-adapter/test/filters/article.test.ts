@@ -16,12 +16,13 @@
 import {
   ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, toChange,
   getChangeData,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { ARTICLE_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/article'
+import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
+import filterCreator, { EVERYONE_USER_SEGMENT_INSTANCE } from '../../src/filters/article'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -37,8 +38,17 @@ jest.mock('@salto-io/adapter-components', () => {
 
 describe('article filter', () => {
   let client: ZendeskClient
-  type FilterType = filterUtils.FilterWith<'preDeploy' | 'deploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
   let filter: FilterType
+  const userSegmentInstance = new InstanceElement(
+    'notEveryone',
+    new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) }),
+    {
+      user_type: 'Everyone',
+      built_in: true,
+      name: 'Everyone',
+    }
+  )
   const articleInstance = new InstanceElement(
     'testArticle',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
@@ -54,6 +64,24 @@ describe('article filter', () => {
       outdated: false,
       permission_group_id: '666',
       brand: '1',
+    }
+  )
+  const anotherArticleInstance = new InstanceElement(
+    'userSegmentArticle',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+    {
+      author_id: 'author@salto.io',
+      comments_disabled: false,
+      draft: false,
+      promoted: false,
+      position: 0,
+      section_id: '12345',
+      source_locale: 'en-us',
+      locale: 'en-us',
+      outdated: false,
+      permission_group_id: '666',
+      brand: '1',
+      user_segment_id: new ReferenceExpression(userSegmentInstance.elemID, userSegmentInstance),
     }
   )
   const articleTranslationInstance = new InstanceElement(
@@ -74,6 +102,10 @@ describe('article filter', () => {
     new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
   ]
 
+  const generateElements = (): (InstanceElement | ObjectType)[] => ([
+    articleInstance, anotherArticleInstance, userSegmentInstance,
+  ]).map(element => element.clone())
+
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
@@ -82,6 +114,35 @@ describe('article filter', () => {
     filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
+
+  describe('onFetch', () => {
+    let elements: (InstanceElement | ObjectType)[]
+
+    beforeAll(() => {
+      elements = generateElements()
+    })
+
+    it('should add Everyone user_segment', async () => {
+      await filter.onFetch(elements)
+      const fetchedArticle = elements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'testArticle')
+      expect(fetchedArticle?.value).toEqual({
+        ...articleInstance.value,
+        user_segment_id: new ReferenceExpression(
+          EVERYONE_USER_SEGMENT_INSTANCE.elemID,
+          EVERYONE_USER_SEGMENT_INSTANCE
+        ),
+      })
+    })
+    it('should not edit existing user_segment', async () => {
+      await filter.onFetch(elements)
+      const fetchedArticle = elements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'userSegmentArticle')
+      expect(fetchedArticle?.value).toEqual(anotherArticleInstance.value)
+    })
+  })
 
   describe('preDeploy', () => {
     it('should add the title and the body to the article instance from its translation', async () => {

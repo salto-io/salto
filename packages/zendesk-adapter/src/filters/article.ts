@@ -43,7 +43,7 @@ export type TranslationType = {
   locale: { id: string }
 }
 
-const EVERYONE_USER_SEGMENT = new InstanceElement(
+export const EVERYONE_USER_SEGMENT_INSTANCE = new InstanceElement(
   EVERYONE,
   new ObjectType({
     elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
@@ -94,17 +94,17 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     if (articleInstances.length === 0) {
       return
     }
-
     articleInstances
       .filter(article => _.isEmpty(article.value[USER_SEGMENT_ID_FIELD]))
       .forEach(article => {
         article.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
-          EVERYONE_USER_SEGMENT.elemID,
-          EVERYONE_USER_SEGMENT,
+          EVERYONE_USER_SEGMENT_INSTANCE.elemID,
+          EVERYONE_USER_SEGMENT_INSTANCE,
         )
       })
-    elements.push(EVERYONE_USER_SEGMENT)
+    elements.push(EVERYONE_USER_SEGMENT_INSTANCE)
   },
+
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     await awu(changes)
       .filter(isAdditionChange)
@@ -153,8 +153,8 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         removeTitleAndBody(articleInstance)
         if (articleInstance.value[USER_SEGMENT_ID_FIELD] === null) {
           articleInstance.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
-            EVERYONE_USER_SEGMENT.elemID,
-            EVERYONE_USER_SEGMENT,
+            EVERYONE_USER_SEGMENT_INSTANCE.elemID,
+            EVERYONE_USER_SEGMENT_INSTANCE,
           )
         }
       })

@@ -40,7 +40,7 @@ const BRAND_SCHEMA = Joi.object({
 }).unknown(true).required()
 
 
-const isBrand = createSchemeGuardForInstance<BrandType>(
+export const isBrand = createSchemeGuardForInstance<BrandType>(
   BRAND_SCHEMA, 'Received an invalid value for brand'
 )
 

@@ -66,7 +66,7 @@ describe('helpCenterCreationOrRemovalValidator', () => {
     }])
   })
 
-  it('should not return an error when help_center_state is not changed', async () => {
+  it('should not return an error when has_help_center is not changed', async () => {
     const brandTwoInstance = new InstanceElement(
       'Test2',
       BrandType,
@@ -82,11 +82,17 @@ describe('helpCenterCreationOrRemovalValidator', () => {
     expect(errors).toHaveLength(0)
   })
 
-  it('should not return an error when the change is addition', async () => {
+  it('should return a warning when the change is addition', async () => {
     const errors = await changeValidator(
       [toChange({ after: brandOneInstance })]
     )
-    expect(errors).toHaveLength(0)
+    expect(errors).toEqual([{
+      elemID: brandOneInstance.elemID,
+      severity: 'Warning',
+      message: 'Creation of a brand with a help center is not supported via Salto.',
+      detailedMessage: `Creation of a brand with a help center is not supported via Salto.
+            To create a help center, please go to ${client.getUrl().href}${config.types.brand.transformation?.serviceUrl?.slice(1)}`,
+    }])
   })
 
   it('should not return an error when the change is removal', async () => {

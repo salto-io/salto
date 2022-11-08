@@ -7,5 +7,5 @@ Supprted parameters are:
 
 ### Example
 ```
-salto service add workato --login-parameters username=SomeUSer token=SomeToken
+salto account add workato --login-parameters username=SomeUSer token=SomeToken
 ```

@@ -10,7 +10,7 @@ We do this using the [Zendesk REST API](<https://developer.zendesk.com/api-refer
 Salto supports authenticating with Zendesk using either a combination of user-name and password, or using OAuth authentication. In order to use OAuth authentication, please follow the steps below.
 - Create a new "OAuth Client" in your Zendesk account (see [details](https://developer.zendesk.com/documentation/ticketing/working-with-oauth/creating-and-using-oauth-tokens-with-the-api/#create-an-oauth-client))
 	- Under "Redirect URL", write `http://localhost:PORT`, where `PORT` is a port you can allow salto to open momentarily on your computer (it will not be open to external connections). Except for PORT, do not change any character in the URL.
-- You can now connect your Zendesk account using OAuth credentials, by adding the flag `-a oauth` or `--auth-type oauth` to the commands `salto service add zendesk` or `salto service login zendesk`
+- You can now connect your Zendesk account using OAuth credentials, by adding the flag `-a oauth` or `--auth-type oauth` to the commands `salto account add zendesk` or `salto account login zendesk`
 - You will be asked to provide the following parameters:
   - Client ID of the OAuth Client
   - The generated Client Secret

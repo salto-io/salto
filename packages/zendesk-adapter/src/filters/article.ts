@@ -49,6 +49,18 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   }
 }
 
+const verifyUserSegmentIdForAdditionChanges = (
+  changes: Change<InstanceElement>[]
+): void => {
+  changes
+    .filter(isAdditionChange)
+    .map(getChangeData)
+    .filter(articleInstance => articleInstance.value.user_segment_id === undefined)
+    .forEach(articleInstance => {
+      articleInstance.value.user_segment_id = null
+    })
+}
+
 /**
  * Deploys articles
  */
@@ -81,6 +93,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         && !isRemovalChange(change),
     )
     addRemovalChangesId(articleChanges)
+    verifyUserSegmentIdForAdditionChanges(articleChanges)
     const deployResult = await deployChanges(
       articleChanges,
       async change => {
@@ -95,7 +108,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
       .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
-      .forEach(change => removeTitleAndBody(getChangeData(change)))
+      .map(getChangeData)
+      .forEach(articleInstance => {
+        removeTitleAndBody(articleInstance)
+        if (articleInstance.value.user_segment_id === null) {
+          delete articleInstance.value.user_segment_id
+        }
+      })
   },
 })
 

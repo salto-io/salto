@@ -17,12 +17,14 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionChange, isRemovalChange,
+  BuiltinTypes, Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
+  isInstanceElement, isRemovalChange, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { ARTICLE_TYPE_NAME } from '../constants'
+import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
 import { addRemovalChangesId, isTranslation } from './help_center_section_and_category'
 import { lookupFunc } from './field_references'
 import { removeTitleAndBody } from './help_center_fetch_article'
@@ -30,12 +32,30 @@ import { prepRef } from './article_body'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { RECORDS_PATH } = elementsUtils
+
+const USER_SEGMENT_ID_FIELD = 'user_segment_id'
+const EVERYONE = 'Everyone'
 
 export type TranslationType = {
   title: string
   body?: string
   locale: { id: string }
 }
+
+const EVERYONE_USER_SEGMENT = new InstanceElement(
+  EVERYONE,
+  new ObjectType({
+    elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
+    fields: {
+      user_type: { refType: BuiltinTypes.STRING },
+      built_in: { refType: BuiltinTypes.BOOLEAN },
+      name: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  { user_type: EVERYONE, built_in: true, name: EVERYONE },
+  [ZENDESK, RECORDS_PATH, USER_SEGMENT_TYPE_NAME, EVERYONE],
+)
 
 const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
@@ -49,22 +69,37 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   }
 }
 
+// The default user_segment we added will be resolved to undefined
+// So in order to create a new article we need to add a null value user_segment_id
 const verifyUserSegmentIdForAdditionChanges = (
   changes: Change<InstanceElement>[]
 ): void => {
   changes
     .filter(isAdditionChange)
     .map(getChangeData)
-    .filter(articleInstance => articleInstance.value.user_segment_id === undefined)
+    .filter(articleInstance => articleInstance.value[USER_SEGMENT_ID_FIELD] === undefined)
     .forEach(articleInstance => {
-      articleInstance.value.user_segment_id = null
+      articleInstance.value[USER_SEGMENT_ID_FIELD] = null
     })
 }
 
 /**
- * Deploys articles
+ * Deploys articles and adds default user_segment value to visible articles
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  onFetch: async elements => {
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
+      .filter(article => _.isEmpty(article.value[USER_SEGMENT_ID_FIELD]))
+      .forEach(article => {
+        article.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
+          EVERYONE_USER_SEGMENT.elemID,
+          EVERYONE_USER_SEGMENT,
+        )
+      })
+    elements.push(EVERYONE_USER_SEGMENT)
+  },
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     await awu(changes)
       .filter(isAdditionChange)
@@ -111,8 +146,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .map(getChangeData)
       .forEach(articleInstance => {
         removeTitleAndBody(articleInstance)
-        if (articleInstance.value.user_segment_id === null) {
-          delete articleInstance.value.user_segment_id
+        if (articleInstance.value[USER_SEGMENT_ID_FIELD] === null) {
+          articleInstance.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
+            EVERYONE_USER_SEGMENT.elemID,
+            EVERYONE_USER_SEGMENT,
+          )
         }
       })
   },

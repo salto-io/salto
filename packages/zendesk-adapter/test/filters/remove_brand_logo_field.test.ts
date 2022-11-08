@@ -18,9 +18,10 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator, { CATEGORIES_FIELD } from '../../src/filters/brands_filter'
+import filterCreator from '../../src/filters/brands_filter'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
+import { CATEGORIES_FIELD } from '../../src/filters/guide_order_utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {

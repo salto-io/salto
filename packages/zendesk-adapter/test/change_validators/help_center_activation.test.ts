@@ -22,7 +22,6 @@ describe('helpCenterActivationValidator', () => {
   const BrandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
   })
-
   const brandOneInstance = new InstanceElement(
     'Test1',
     BrandType,

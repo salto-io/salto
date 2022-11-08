@@ -40,3 +40,4 @@ export { articleLabelNamesRemovalValidator } from './article_label_names_removal
 export { brandFieldForBrandBasedElementsValidator } from './brand_field_for_branded_based_elements'
 export { translationForDefaultLocaleValidator } from './translation_for_default_locale'
 export { helpCenterActivationValidator } from './help_center_activation'
+export { helpCenterCreationOrRemovalValidator } from './help_center_creation_or_removal'

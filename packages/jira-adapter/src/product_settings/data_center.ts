@@ -125,7 +125,7 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/field/.*/context/.*/option',
   },
   {
-    httpMethods: ['get'],
+    httpMethods: ['get', 'post'],
     url: '/rest/api/3/issuetypescreenscheme',
   },
   {

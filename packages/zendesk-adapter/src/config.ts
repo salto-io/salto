@@ -1647,8 +1647,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
-      idFields: ['&brand', 'title'],
-      fileNameFields: ['&brand', 'title'],
+      idFields: ['&section_id', 'title'],
+      fileNameFields: ['&section_id', 'title'],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -1694,6 +1694,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       idFields: ['&locale'],
+      extendsParentId: true,
       fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',

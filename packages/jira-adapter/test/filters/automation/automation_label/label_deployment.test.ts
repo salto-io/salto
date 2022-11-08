@@ -119,7 +119,7 @@ describe('automationLabelDeploymentFilter', () => {
             },
           }
         }
-        if (url === 'gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
           return {
             status: 200,
             data:
@@ -147,9 +147,45 @@ describe('automationLabelDeploymentFilter', () => {
         undefined,
       )
       expect(connection.post).toHaveBeenCalledWith(
-        'gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
+        '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
         { name: automationLabelInstance.value.name,
           color: automationLabelInstance.value.color },
+        undefined
+      )
+    })
+
+    it('should create automation label in jira DC', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/cb-automation/latest/rule-label') {
+          return {
+            status: 200,
+            data:
+            { ...automationLabelInstance.value,
+              id: 555 },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      filter = automationLabelDeploymentFilter(getFilterParams({
+        client,
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+
+      await filter.onFetch([automationLabelType])
+      await filter.deploy([toChange({ after: automationLabelInstance })])
+
+      expect(automationLabelInstance.value.id).toBe(555)
+      expect(connection.post).toHaveBeenCalledTimes(1)
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/cb-automation/latest/rule-label',
+        {
+          name: automationLabelInstance.value.name,
+          color: automationLabelInstance.value.color,
+        },
         undefined
       )
     })
@@ -169,7 +205,7 @@ describe('automationLabelDeploymentFilter', () => {
           }
         }
 
-        if (url === 'gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
           return {
             status: 200,
             data:
@@ -191,7 +227,29 @@ describe('automationLabelDeploymentFilter', () => {
       expect(getChangeData(deployResult.appliedChanges[0])).toEqual(changedInstance)
       expect(connection.put).toHaveBeenCalledTimes(1)
       expect(connection.put).toHaveBeenCalledWith(
-        'gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels/555',
+        '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels/555',
+        { ...changedInstance.value },
+        undefined
+      )
+    })
+
+    it('should modify automation label in jira DC', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      filter = automationLabelDeploymentFilter(getFilterParams({
+        client,
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+
+      automationLabelInstance.value.id = 555
+      const { deployResult } = await filter.deploy([toChange(
+        { before: automationLabelInstance, after: changedInstance }
+      )])
+      expect(deployResult.appliedChanges).toHaveLength(1)
+      expect(getChangeData(deployResult.appliedChanges[0])).toEqual(changedInstance)
+      expect(connection.put).toHaveBeenCalledWith(
+        '/rest/cb-automation/latest/rule-label/555',
         { ...changedInstance.value },
         undefined
       )

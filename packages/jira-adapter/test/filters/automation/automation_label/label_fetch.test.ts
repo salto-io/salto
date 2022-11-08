@@ -125,6 +125,48 @@ describe('automationLabelFetchFilter', () => {
       )
     })
 
+    it('should fetch automation labels in Jira DC', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      filter = automationLabelFetchFilter(getFilterParams({
+        client,
+      })) as filterUtils.FilterWith<'onFetch'>
+
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/cb-automation/latest/rule-label') {
+          return {
+            status: 200,
+            data: [{
+              id: 555,
+              name: 'labelName',
+              color: 'color',
+            }],
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+      const elements = [] as Element[]
+      await filter.onFetch(elements)
+
+      expect(elements).toHaveLength(2)
+
+      const automationLabel = elements[0] as InstanceElement
+      const labelType = elements[1]
+
+      expect(automationLabel.elemID.getFullName()).toEqual('jira.AutomationLabel.instance.labelName')
+
+      expect(automationLabel.value).toEqual(automationLabelInstance.value)
+
+      expect(labelType).toEqual(automationLabelType)
+
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/cb-automation/latest/rule-label',
+        undefined,
+      )
+    })
+
     it('should not fetch automation labels if usePrivateApi is false', async () => {
       config.client.usePrivateAPI = false
       const elements = [] as Element[]

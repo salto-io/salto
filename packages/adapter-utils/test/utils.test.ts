@@ -2243,6 +2243,40 @@ describe('Test utils.ts', () => {
   "refType": "TypeReference(salto.obj, <omitted>)"
 }`)
       })
+      it('should replace static file objects with the file\'s path', () => {
+        const element = new ObjectType({
+          elemID: new ElemID('salto', 'obj_staticfile'),
+          annotationRefsOrTypes: {
+            refValue: BuiltinTypes.STRING,
+            reg: BuiltinTypes.STRING,
+
+          },
+          annotations: {},
+          fields: {
+            fileValue: { refType: BuiltinTypes.STRING },
+          },
+        })
+        const instance = new InstanceElement(
+          'test3',
+          element,
+          {
+            fileValue: valueFile,
+          },
+          [],
+          {},
+        )
+        const res = safeJsonStringify(instance, elementExpressionStringifyReplacer, 2)
+        expect(res).toEqual(`{
+  "elemID": "ElemID(salto.obj_staticfile.instance.test3)",
+  "annotations": {},
+  "annotationRefTypes": {},
+  "path": [],
+  "value": {
+    "fileValue": "StaticFile(${valueFile.filepath})"
+  },
+  "refType": "TypeReference(salto.obj_staticfile, <omitted>)"
+}`)
+      })
     })
   })
 

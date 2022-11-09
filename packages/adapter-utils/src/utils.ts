@@ -982,6 +982,9 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) => {
   if (isTypeReference(value)) {
     return `TypeReference(${value.elemID.getFullName()}, ${value.type ? '<omitted>' : '<no value>'})`
   }
+  if (isStaticFile(value)) {
+    return `StaticFile(${value.filepath})`
+  }
   if (value instanceof ElemID) {
     return `ElemID(${value.getFullName()})`
   }

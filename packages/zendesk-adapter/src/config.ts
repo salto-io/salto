@@ -1749,7 +1749,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
-      // serviceUrl is created in help_center_service_url filter
+      // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {
       modify: {

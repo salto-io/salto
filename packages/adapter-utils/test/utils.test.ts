@@ -2272,7 +2272,7 @@ describe('Test utils.ts', () => {
   "annotationRefTypes": {},
   "path": [],
   "value": {
-    "fileValue": "StaticFile(${valueFile.filepath})"
+    "fileValue": "StaticFile(${valueFile.filepath}, ${valueFile.hash})"
   },
   "refType": "TypeReference(salto.obj_staticfile, <omitted>)"
 }`)

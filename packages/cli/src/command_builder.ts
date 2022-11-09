@@ -68,7 +68,7 @@ type CommandInnerDef<T> = {
   action: CommandDefAction<T>
 }
 
-type WorkspaceCommandArgs<T> = (
+export type WorkspaceCommandArgs<T> = (
   Omit<DefActionInput<T>, 'workspacePath'>
   & { workspace: Workspace }
 )

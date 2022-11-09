@@ -24,8 +24,8 @@ import { AUTOMATION_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
-import { getCloudId } from './cloud_id'
 import { JiraConfig } from '../../config/config'
+import { getCloudId } from './cloud_id'
 
 const DEFAULT_PAGE_SIZE = 100
 
@@ -113,11 +113,16 @@ const createInstance = (
 export const getAutomations = async (
   client: JiraClient,
   config: JiraConfig,
-  cloudId: string,
-): Promise<Values[]> => postPaginated(
-  `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules`,
-  client,
-    config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE
+): Promise<Values[]> => (
+  client.isDataCenter
+    ? (await client.getSinglePage({
+      url: '/rest/cb-automation/latest/project/GLOBAL/rule',
+    })).data as Values[]
+    : postPaginated(
+      `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rules`,
+      client,
+        config.client.pageSize?.get ?? DEFAULT_PAGE_SIZE
+    )
 )
 
 /**
@@ -136,15 +141,13 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       return
     }
 
-    const cloudId = await getCloudId(client)
-
     const idToProject = _(elements)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
       .keyBy(instance => instance.value.id)
       .value()
 
-    const automations = await getAutomations(client, config, cloudId)
+    const automations = await getAutomations(client, config)
 
     const { automationType, subTypes } = createAutomationTypes()
 

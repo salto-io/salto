@@ -14,13 +14,21 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression, Change,
+  Change,
+  Element,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator, { CATEGORIES_FIELD } from '../../src/filters/brands_filter'
+import { ARTICLE_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
+import categoriesOrderFilter from '../../src/filters/order_in_categories'
+import sectionsOrderFilter from '../../src/filters/order_in_sections'
 import { LOGO_FIELD } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
+import { ARTICLES_FIELD, SECTIONS_FIELD } from '../../src/filters/guide_order_utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -33,175 +41,412 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
 
+type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
+// const brandType = new ObjectType({
+//   elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
+//   fields: {
+//     has_help_center: { refType: BuiltinTypes.BOOLEAN },
+//   },
+// })
+const categoryType = new ObjectType({
+  elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME),
+})
+const sectionType = new ObjectType({
+  elemID: new ElemID(ZENDESK, SECTION_TYPE_NAME),
+})
+const articleType = new ObjectType({
+  elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME),
+})
+
+const regularDeployChangeParam = (change: Change) : {} => ({
+  change,
+  fieldsToIgnore: [LOGO_FIELD, 'categories'],
+  client: expect.anything(),
+  endpointDetails: expect.anything(),
+})
+
+const categoryDeployChangeParam = (change: Change) : {} => ({
+  change,
+  client: expect.anything(),
+  endpointDetails: expect.anything(),
+})
+
+const removeNonRelevantFields = (categories: InstanceElement[]) : void => {
+  categories.forEach(c => { c.value = { id: c.value.id, position: c.value.position } })
+}
+
+const PARENT_ID = 96
+// const createBrandInstance = (has_help_center = true): InstanceElement =>
+//   new InstanceElement('brand', brandType, { id: PARENT_ID, has_help_center, subdomain: 'test' })
+
+const createChildInstance = (
+  id = 0,
+  type: string,
+  refType: ObjectType,
+  parentKey: string,
+  position?: number,
+  createdAt?: string
+): InstanceElement =>
+  new InstanceElement(`${type}${id}`, refType, {
+    [parentKey]: PARENT_ID,
+    testField: 'test',
+    id,
+    position,
+    created_at: createdAt,
+  })
+
+const createCategoryInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
+  createChildInstance(id, 'category_id', categoryType, 'brand', position, createdAt)
+
+const createSectionInCategoryInstance = (
+  id = 2, // Not 1 or 2 to avoid having two sections with the same id and name
+  position?: number,
+  createdAt?: string
+) : InstanceElement =>
+  createChildInstance(id, 'section', sectionType, 'category_id', position, createdAt)
+
+const createSectionInSectionInstance = (
+  id = 0,
+  position?: number,
+  createdAt?: string
+) : InstanceElement =>
+  createChildInstance(id, 'section', sectionType, 'parent_section_id', position, createdAt)
+
+const createArticleInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
+  createChildInstance(id, 'article', articleType, 'section_id', position, createdAt)
+
+let filter: FilterType
+let elementsSourceValues: Element[] = []
+const elementsSource = {
+  get: (elemId: ElemID) => elementsSourceValues.find(
+    v => v.elemID.getFullName() === elemId.getFullName()
+  ),
+} as unknown as ReadOnlyElementsSource
+
+const testFetch = async ({ createParent, createChild, orderField }
+  : {
+    createParent: () => InstanceElement
+    createChild: (id: number, position?: number, createdAt?: string) => InstanceElement
+    orderField: string
+  })
+ : Promise<void> => {
+  const parentInstance = createParent()
+  parentInstance.value.id = PARENT_ID
+  const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
+  const LATE_CREATED_AT = '2022-11-30T12:00:00Z'
+  const childInstances = [
+    createChild(0, 0, EARLY_CREATED_AT),
+    createChild(1, 0, LATE_CREATED_AT),
+    createChild(2, 1, LATE_CREATED_AT),
+    createChild(3, 1, EARLY_CREATED_AT)]
+
+  await filter.onFetch([parentInstance, ...childInstances])
+
+  expect(parentInstance.value[orderField].length).toBe(4)
+  expect(parentInstance.value[orderField])
+    .toMatchObject([childInstances[1], childInstances[0], childInstances[2], childInstances[3]]
+      .map(c => new ReferenceExpression(c.elemID, c)))
+}
+
+type deployInstances = {
+  beforeParent: InstanceElement
+  firstChild: InstanceElement
+  secondChild: InstanceElement
+  beforeFirstChild: InstanceElement
+  beforeSecondChild: InstanceElement
+  afterFirstChild: InstanceElement
+  afterSecondChild: InstanceElement
+}
+
+const initDeployInstances = (
+  createParent: () => InstanceElement,
+  createChild: (id: number, position?: number, createdAt?: string) => InstanceElement,
+  orderField: string
+) : deployInstances => {
+  const beforeParent = createParent()
+  beforeParent.value.id = PARENT_ID
+  const FIRST_ID = 0
+  const SECOND_ID = 1
+
+  const firstChild = createChild(FIRST_ID)
+  const secondChild = createChild(SECOND_ID)
+
+  const beforeFirstChild = createChild(FIRST_ID, 0)
+  const beforeSecondChild = createChild(SECOND_ID, 1)
+  const afterFirstChild = createChild(FIRST_ID, 1)
+  const afterSecondChild = createChild(SECOND_ID, 0)
+
+  // The code shouldn't deploy non-relevant fields, so we remove them from the result elements
+  removeNonRelevantFields([
+    beforeFirstChild,
+    beforeSecondChild,
+    afterFirstChild,
+    afterSecondChild,
+  ])
+
+  beforeParent.value[orderField] = [firstChild, secondChild].map(
+    c => new ReferenceExpression(c.elemID, c)
+  )
+  firstChild.value.position = 0
+  secondChild.value.position = 1
+  elementsSourceValues = [firstChild, secondChild]
+
+  return {
+    beforeParent,
+    firstChild,
+    secondChild,
+    beforeFirstChild,
+    beforeSecondChild,
+    afterFirstChild,
+    afterSecondChild,
+  }
+}
+
+const beforeDeploy = (firstChild: InstanceElement, secondChild: InstanceElement): void => {
+  mockDeployChange.mockReset()
+  firstChild.value.position = 0
+  secondChild.value.position = 1
+  elementsSourceValues = [firstChild, secondChild]
+}
+
+const testDeployWithOrderChanges = async (
+  deployInstances: deployInstances,
+  withRegularChange: boolean,
+  orderField: string
+): Promise<void> => {
+  const {
+    beforeParent,
+    firstChild,
+    secondChild,
+    beforeFirstChild,
+    beforeSecondChild,
+    afterFirstChild,
+    afterSecondChild,
+  } = deployInstances
+  const afterParent = beforeParent.clone()
+  afterParent.value[orderField] = [secondChild, firstChild].map(
+    c => new ReferenceExpression(c.elemID, c)
+  )
+  if (withRegularChange) {
+    afterParent.value.testField = 'changed'
+  }
+  // should deploy categories position change and not return appliedChanges
+  elementsSourceValues.push(afterParent)
+
+  const res = await filter.deploy([{
+    action: 'modify',
+    data: { before: beforeParent, after: afterParent },
+  }])
+
+  const isBrand = beforeParent.elemID.typeName === 'brand' // brandFilter also deploys its changes
+  if (isBrand) {
+    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeParent, after: afterParent } }))
+  }
+
+  expect(mockDeployChange).toHaveBeenCalledTimes(isBrand ? 3 : 2)
+  expect(res.deployResult.appliedChanges).toHaveLength(isBrand ? 1 : 0)
+
+  expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondChild, after: afterSecondChild } }))
+  expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstChild, after: afterFirstChild } }))
+}
+
+const testDeployWithoutOrderChanges = async (
+  deployInstances: deployInstances,
+  orderField: string
+): Promise<void> => {
+  const {
+    beforeParent,
+    firstChild,
+    secondChild,
+  } = deployInstances
+  const afterParent = beforeParent.clone()
+  afterParent.value[orderField] = [firstChild, secondChild].map(
+    c => new ReferenceExpression(c.elemID, c)
+  )
+  afterParent.value.testField = 'changed'
+  // should deploy categories position change and not return appliedChanges
+  elementsSourceValues.push(afterParent)
+
+  const res = await filter.deploy([
+    { action: 'add', data: { after: beforeParent } },
+    { action: 'remove', data: { before: beforeParent } },
+    { action: 'modify', data: { before: beforeParent, after: afterParent } },
+  ])
+
+  const isBrand = beforeParent.elemID.typeName === 'brand' // brandFilter also deploys its changes
+  expect(mockDeployChange).toHaveBeenCalledTimes(isBrand ? 3 : 0)
+  expect(res.deployResult.appliedChanges).toHaveLength(isBrand ? 3 : 0)
+
+  if (isBrand) {
+    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'add', data: { after: beforeParent } }))
+    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'remove', data: { before: beforeParent } }))
+    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeParent, after: afterParent } }))
+  }
+}
+/*
 describe('categories order in brand', () => {
-    type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
-    let filter: FilterType
-    const brandType = new ObjectType({
-      elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
-      fields: {
-        has_help_center: { refType: BuiltinTypes.BOOLEAN },
-      },
-    })
-    const categoryType = new ObjectType({
-      elemID: new ElemID(ZENDESK, 'category'),
-      fields: {
-        brand: { refType: BuiltinTypes.NUMBER },
-      },
-    })
-    const BRAND_ID = 96
-    const createBrandInstance = (has_help_center = true): InstanceElement =>
-      new InstanceElement('brand', brandType, { id: BRAND_ID, has_help_center, subdomain: 'test' })
+  beforeEach(async () => {
+    filter = brandOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+  })
 
-    const createCategory = (id = 0, position?: number, createdAt?: string): InstanceElement =>
-      new InstanceElement(`category${id}`, categoryType, {
-        brand: BRAND_ID,
-        testField: 'test',
-        id,
-        position,
-        created_at: createdAt,
-      })
-
-    const regularDeployChangeParam = (change: Change) : {} => ({
-      change,
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD, 'categories'],
-    })
-
-    const categoryDeployChangeParam = (change: Change) : {} => ({
-      change,
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-    })
-
-    const removeNonRelevantFields = (categories: InstanceElement[]) : void => {
-      categories.forEach(c => { c.value = { id: c.value.id, position: c.value.position } })
-    }
-
-    beforeEach(async () => {
-      jest.clearAllMocks()
-      filter = filterCreator(createFilterCreatorParams({})) as FilterType
-    })
-
-    describe('on fetch', () => {
-      it('with Guide active', async () => {
-        // Should create categories order field
-        const brandWithGuide = createBrandInstance()
-        const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
-        const LATE_CREATED_AT = '2022-11-30T12:00:00Z'
-        const categories = [
-          createCategory(0, 0, EARLY_CREATED_AT),
-          createCategory(1, 0, LATE_CREATED_AT),
-          createCategory(2, 1, LATE_CREATED_AT),
-          createCategory(3, 1, EARLY_CREATED_AT)]
-
-        await filter.onFetch([brandWithGuide, ...categories])
-
-        expect(brandWithGuide.value.categories.length).toBe(4)
-        expect(brandWithGuide.value.categories)
-          .toMatchObject([categories[1], categories[0], categories[2], categories[3]]
-            .map(c => new ReferenceExpression(c.elemID, c)))
-      })
-      it('with Guide not active', async () => {
-        // Should not create categories order field at all
-        const brandWithoutGuide = createBrandInstance(false)
-        const categories = [createCategory(), createCategory()]
-        await filter.onFetch([brandWithoutGuide, ...categories])
-
-        expect(brandWithoutGuide.value.categories).toBeUndefined()
+  describe('on fetch', () => {
+    it('with Guide active', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = true
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource, config })) as FilterType
+      await testFetch({
+        createParent: createBrandInstance,
+        createChild: createCategoryInstance,
+        orderField: CATEGORIES_FIELD,
       })
     })
+    it('with Guide not active in the brand', async () => {
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+      // Should not create categories order field at all
+      const brandWithoutGuide = createBrandInstance(false)
+      const categories = [createCategoryInstance(), createCategoryInstance()]
+      await filter.onFetch([brandWithoutGuide, ...categories])
 
-    describe('on deploy', () => {
-      const beforeBrand = createBrandInstance()
-      const FIRST_ID = 0
-      const SECOND_ID = 1
+      expect(brandWithoutGuide.value.categories).toBeUndefined()
+    })
+    it('with Guide not active in Salto', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = false
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource, config })) as FilterType
+      // Should not create categories order field at all
+      const brandWithoutGuide = createBrandInstance()
+      const categories = [createCategoryInstance(), createCategoryInstance()]
+      await filter.onFetch([brandWithoutGuide, ...categories])
 
-      const firstCategory = createCategory(FIRST_ID)
-      const secondCategory = createCategory(SECOND_ID)
+      expect(brandWithoutGuide.value.categories).toBeUndefined()
+    })
+  })
 
-      const beforeFirstCategory = createCategory(FIRST_ID, 0)
-      const beforeSecondCategory = createCategory(SECOND_ID, 1)
-      const afterFirstCategory = createCategory(FIRST_ID, 1)
-      const afterSecondCategory = createCategory(SECOND_ID, 0)
+  describe('on deploy', () => {
+    const deployInstances = initDeployInstances(
+      createBrandInstance,
+      createCategoryInstance,
+      CATEGORIES_FIELD
+    )
+    beforeEach(() => {
+      beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
+    })
 
-      // The code shouldn't deploy non-relevant fields, so we remove them from the result elements
-      removeNonRelevantFields([
-        beforeFirstCategory,
-        beforeSecondCategory,
-        afterFirstCategory,
-        afterSecondCategory,
-      ])
+    it(`with only ${CATEGORIES_FIELD} order change`, async () => {
+      await testDeployWithOrderChanges(deployInstances, false, CATEGORIES_FIELD)
+    })
 
-      beforeBrand.value.categories = [firstCategory, secondCategory].map(
-        c => new ReferenceExpression(c.elemID, c)
+    it(`with ${CATEGORIES_FIELD} change and regular change`, async () => {
+      await testDeployWithOrderChanges(deployInstances, true, CATEGORIES_FIELD)
+    })
+
+    it('with only non-order changes', async () => {
+      await testDeployWithoutOrderChanges(deployInstances, CATEGORIES_FIELD)
+    })
+  })
+})
+*/
+describe('sections order in category', () => {
+  beforeEach(async () => {
+    filter = categoriesOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+  })
+
+  it('on fetch', async () => {
+    await testFetch({
+      createParent: createCategoryInstance,
+      createChild: createSectionInCategoryInstance,
+      orderField: SECTIONS_FIELD,
+    })
+  })
+
+  describe('on deploy', () => {
+    const deployInstances = initDeployInstances(
+      createCategoryInstance,
+      createSectionInCategoryInstance,
+      SECTIONS_FIELD
+    )
+    beforeEach(() => {
+      beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
+    })
+
+    it(`with only ${SECTIONS_FIELD} order change`, async () => {
+      await testDeployWithOrderChanges(deployInstances, false, SECTIONS_FIELD)
+    })
+
+    it(`with ${SECTIONS_FIELD} change and regular change`, async () => {
+      await testDeployWithOrderChanges(deployInstances, true, SECTIONS_FIELD)
+    })
+
+    it('with only non-order changes', async () => {
+      await testDeployWithoutOrderChanges(deployInstances, SECTIONS_FIELD)
+    })
+  })
+})
+
+describe('sections and articles order in section', () => {
+  beforeEach(async () => {
+    filter = sectionsOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+  })
+
+  it('on fetch', async () => {
+    await testFetch({
+      createParent: createSectionInCategoryInstance,
+      createChild: createSectionInSectionInstance,
+      orderField: SECTIONS_FIELD,
+    })
+    await testFetch({
+      createParent: createSectionInCategoryInstance,
+      createChild: createArticleInstance,
+      orderField: ARTICLES_FIELD,
+    })
+  })
+
+  describe('on deploy', () => {
+    describe('section in section', () => {
+      const deployInstances = initDeployInstances(
+        createSectionInCategoryInstance,
+        createSectionInSectionInstance,
+        SECTIONS_FIELD
       )
-
       beforeEach(() => {
-        mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
-        firstCategory.value.position = 0
-        secondCategory.value.position = 1
+        beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
       })
 
-      it(`with only ${CATEGORIES_FIELD} order change`, async () => {
-        // should deploy categories position change and not return appliedChanges
-        const afterBrand = beforeBrand.clone()
-        afterBrand.value.categories = [secondCategory, firstCategory].map(
-          c => new ReferenceExpression(c.elemID, c)
-        )
-
-        const res = await filter.deploy([{
-          action: 'modify',
-          data: { before: beforeBrand, after: afterBrand },
-        }])
-
-
-        expect(mockDeployChange).toHaveBeenCalledTimes(3)
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondCategory, after: afterSecondCategory } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstCategory, after: afterFirstCategory } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: afterBrand } }))
-        expect(res.deployResult.appliedChanges).toHaveLength(1)
+      it(`with only ${SECTIONS_FIELD} order change`, async () => {
+        await testDeployWithOrderChanges(deployInstances, false, SECTIONS_FIELD)
       })
 
-      it(`with ${CATEGORIES_FIELD} change and regular change`, async () => {
-        // should deploy categories position change and regular deploy, and return appliedChanges
-        const afterBrand = beforeBrand.clone()
-        afterBrand.value.categories = [secondCategory, firstCategory].map(
-          c => new ReferenceExpression(c.elemID, c)
-        )
-        afterBrand.value.subdomain = 'changed'
-
-        const res = await filter.deploy([
-          { action: 'modify', data: { before: beforeBrand, after: afterBrand } },
-        ])
-
-        expect(mockDeployChange).toHaveBeenCalledTimes(3)
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstCategory, after: afterFirstCategory } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondCategory, after: afterSecondCategory } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: afterBrand } }))
-        expect(res.deployResult.appliedChanges).toHaveLength(1)
+      it(`with ${SECTIONS_FIELD} change and regular change`, async () => {
+        await testDeployWithOrderChanges(deployInstances, true, SECTIONS_FIELD)
       })
 
       it('with only non-order changes', async () => {
-        // should not deploy categories position change, should return appliedChanges
-        const afterBrand = beforeBrand.clone()
-        afterBrand.value.categories = [firstCategory, secondCategory].map(
-          c => new ReferenceExpression(c.elemID, c)
-        )
-        afterBrand.value.subdomain = 'changed'
-
-        const res = await filter.deploy([
-          { action: 'add', data: { after: beforeBrand } },
-          { action: 'remove', data: { before: beforeBrand } },
-          { action: 'modify', data: { before: beforeBrand, after: afterBrand } },
-        ])
-
-        expect(mockDeployChange).toHaveBeenCalledTimes(3)
-        expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'add', data: { after: beforeBrand } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'remove', data: { before: beforeBrand } }))
-        expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeBrand, after: afterBrand } }))
-        expect(res.deployResult.appliedChanges).toHaveLength(3)
+        await testDeployWithoutOrderChanges(deployInstances, SECTIONS_FIELD)
       })
     })
+    describe('article in section', () => {
+      const deployInstances = initDeployInstances(
+        createSectionInCategoryInstance,
+        createArticleInstance,
+        ARTICLES_FIELD
+      )
+      beforeEach(() => {
+        beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
+      })
+
+      it(`with only ${ARTICLES_FIELD} order change`, async () => {
+        await testDeployWithOrderChanges(deployInstances, false, ARTICLES_FIELD)
+      })
+
+      it(`with ${ARTICLES_FIELD} change and regular change`, async () => {
+        await testDeployWithOrderChanges(deployInstances, true, ARTICLES_FIELD)
+      })
+
+      it('with only non-order changes', async () => {
+        await testDeployWithoutOrderChanges(deployInstances, ARTICLES_FIELD)
+      })
+    })
+  })
 })

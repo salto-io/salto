@@ -104,7 +104,7 @@ describe('fields_deployment', () => {
     mockConnection.get.mockImplementation(async url => ({
       status: 200,
       data: {
-        values: url === '/rest/api/3/field/field_1/contexts'
+        values: url === '/rest/api/3/field/field_1/context'
           ? [{ id: '4' }]
           : [],
       },

@@ -25,6 +25,7 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { SALESFORCE_METADATA_TYPES } from './fetch_profile/fetch_targets'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
 
@@ -569,7 +570,15 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     data: { refType: dataManagementType },
     optionalFeatures: { refType: optionalFeaturesType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
-    target: { refType: new ListType(BuiltinTypes.STRING) },
+    target: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          enforce_value: true,
+          values: SALESFORCE_METADATA_TYPES,
+        }),
+      },
+    },
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {

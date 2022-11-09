@@ -147,6 +147,9 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // brandsFilter should be after brandLogoFilter
   brandsFilter,
+  // order filters should be before hc filters
+  // orderInCategoriesFilter,
+  // orderInSectionsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   articleFilter,
   hcSectionCategoryFilter,
@@ -187,7 +190,6 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
-  'brand',
 ]
 
 /**

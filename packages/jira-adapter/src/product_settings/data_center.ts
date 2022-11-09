@@ -109,8 +109,44 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/field/search',
   },
   {
-    httpMethods: ['get'],
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/field/.*',
+  },
+  {
+    httpMethods: ['get', 'post'],
     url: '/rest/api/3/field/.*/context',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/field/.*/context/\\d+',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/field/.*/context/\\d+/issuetype',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/field/.*/context/\\d+/issuetype/remove',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/field/.*/context/\\d+/project',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/field/.*/context/\\d+/project/remove',
+  },
+  {
+    httpMethods: ['post', 'put'],
+    url: '/rest/api/3/field/.*/context/\\d+/option',
+  },
+  {
+    httpMethods: ['delete'],
+    url: '/rest/api/3/field/.*/context/\\d+/option/\\d+',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/field/.*/context/\\d+/option/move',
   },
   {
     httpMethods: ['get'],
@@ -123,6 +159,30 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['get'],
     url: '/rest/api/3/field/.*/context/.*/option',
+  },
+  {
+    httpMethods: ['get', 'post'],
+    url: '/rest/api/3/issuetypescreenscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+/mapping',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+/mapping/default',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/issuetypescreenscheme/\\d+/mapping/remove',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuetypescreenscheme/mapping.+',
   },
 ]
 

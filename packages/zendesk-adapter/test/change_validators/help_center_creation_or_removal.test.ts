@@ -59,9 +59,10 @@ describe('helpCenterCreationOrRemovalValidator', () => {
     )
     expect(errors).toEqual([{
       elemID: brandTwoInstance.elemID,
-      severity: 'Error',
-      message: 'Creation or removal of help center for a certain brand is not supported via Salto.',
-      detailedMessage: `Creation or removal of help center for a certain brand is not supported via Salto.
+      severity: 'Warning',
+      message: 'Creation or removal of help center for a brand is not supported via Salto.',
+      // we expect the service url to always exist.
+      detailedMessage: `Creation or removal of help center for brand ${brandTwoInstance.elemID.getFullName()} is not supported via Salto.
       To create or remove a help center, please go to ${client.getUrl().href}${config.types.brand.transformation?.serviceUrl?.slice(1)}`,
     }])
   })
@@ -90,7 +91,7 @@ describe('helpCenterCreationOrRemovalValidator', () => {
       elemID: brandOneInstance.elemID,
       severity: 'Warning',
       message: 'Creation of a brand with a help center is not supported via Salto.',
-      detailedMessage: `Creation of a brand with a help center is not supported via Salto. The brand will be created without a help center. After creating the brand, 
+      detailedMessage: `Creation of a brand with a help center is not supported via Salto. The brand ${brandOneInstance.elemID.getFullName()} will be created without a help center. After creating the brand, 
             to create a help center, please go to ${client.getUrl().href}${(config.types.brand.transformation?.serviceUrl)?.slice(1)}`,
     }])
   })

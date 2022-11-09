@@ -13,23 +13,29 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { retryDecider } from '../src/utils'
+import * as AWS from '@aws-sdk/client-s3'
+import { createS3Client, retryDecider } from '../src/utils'
 
-describe('retryDecider', () => {
-  it('should return true for connection refused', () => {
-    const err: Error & { code?: string } = new Error()
-    err.code = 'ECONNREFUSED'
-    expect(retryDecider(err)).toBeTruthy()
+describe('utils', () => {
+  describe('createS3Client', () => {
+    it('should create s3 client', () => {
+      expect(createS3Client()).toBeInstanceOf(AWS.S3)
+    })
   })
-
-  it('should return true for errors matching the default retry decider', () => {
-    const err: Error & { code?: string } = new Error()
-    err.code = 'ECONNRESET'
-    expect(retryDecider(err)).toBeTruthy()
-  })
-
-  it('should return false for other errors', () => {
-    const err = new Error()
-    expect(retryDecider(err)).toBeFalsy()
+  describe('retryDecider', () => {
+    it('should return true for connection refused', () => {
+      const err: Error & { code?: string } = new Error()
+      err.code = 'ECONNREFUSED'
+      expect(retryDecider(err)).toBeTruthy()
+    })
+    it('should return true for errors matching the default retry decider', () => {
+      const err: Error & { code?: string } = new Error()
+      err.code = 'ECONNRESET'
+      expect(retryDecider(err)).toBeTruthy()
+    })
+    it('should return false for other errors', () => {
+      const err = new Error()
+      expect(retryDecider(err)).toBeFalsy()
+    })
   })
 })

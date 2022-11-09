@@ -32,5 +32,8 @@ export const retryDecider: RetryDecider = error => {
 export const createS3Client = (
   numberOfRetries = NUMBER_OF_RETRIES
 ): AWS.S3 => new AWS.S3({
-  retryStrategy: new StandardRetryStrategy(async () => numberOfRetries, { retryDecider }),
+  retryStrategy: new StandardRetryStrategy(
+    () => Promise.resolve(numberOfRetries),
+    { retryDecider }
+  ),
 })

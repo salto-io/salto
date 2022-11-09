@@ -1716,7 +1716,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     deployRequests: {
       add: {
-        url: '/help_center/articles/{article_id}/translations',
+        url: '/api/v2/help_center/articles/{article_id}/translations',
         method: 'post',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1724,7 +1724,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/help_center/articles/{article_id}/translations/{locale}',
+        url: '/api/v2/help_center/articles/{article_id}/translations/{locale}',
         method: 'put',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1733,7 +1733,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/translations/{translation_id}',
+        url: '/api/v2/help_center/translations/{translation_id}',
         method: 'delete',
         urlParamsToFields: {
           translation_id: 'id',
@@ -1749,7 +1749,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
-      // serviceUrl is created in help_center_service_url filter
+      // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {
       modify: {

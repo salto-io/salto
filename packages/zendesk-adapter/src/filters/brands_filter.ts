@@ -14,46 +14,43 @@
 * limitations under the License.
 */
 import {
-  Change, Element, getChangeData,
+  Change, getChangeData,
   InstanceElement,
-  isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 import { LOGO_FIELD } from './brand_logo'
-import { CATEGORIES_FIELD, deployOrderChanges, sortChanges } from './guide_order_utils'
-import { FETCH_CONFIG } from '../config'
 
 /**
  * Handle everything related to brands
  */
-const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Insert the brand's categories into a field in it */
-  onFetch: async (elements: Element[]) => {
-    const categories = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
-    const brands = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
-
-    // Insert the categories of that brand to the brand, sorted
-    brands.forEach(brand => {
-      // If the brand doesn't have Guide activated, do nothing
-      if (!config[FETCH_CONFIG].enableGuide || !brand.value.has_help_center) {
-        return
-      }
-
-      // Lowest position index first, if there is a tie - the newer is first
-      const brandsCategories = _.orderBy(
-        categories.filter(c => c.value.brand === brand.value.id),
-        ['value.position', 'value.created_at'], ['asc', 'desc']
-      )
-
-      brand.value[CATEGORIES_FIELD] = brandsCategories
-        .map(c => new ReferenceExpression(c.elemID, c))
-    })
-  },
+  // onFetch: async (elements: Element[]) => {
+  //   const categories = elements.filter(isInstanceElement)
+  //     .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
+  //   const brands = elements.filter(isInstanceElement)
+  //     .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
+  //
+  //   // Insert the categories of that brand to the brand, sorted
+  //   brands.forEach(brand => {
+  //     // If the brand doesn't have Guide activated, do nothing
+  //     if (!config[FETCH_CONFIG].enableGuide || !brand.value.has_help_center) {
+  //       return
+  //     }
+  //
+  //     // Lowest position index first, if there is a tie - the newer is first
+  //     const brandsCategories = _.orderBy(
+  //       categories.filter(c => c.value.brand === brand.value.id),
+  //       ['value.position', 'value.created_at'], ['asc', 'desc']
+  //     )
+  //
+  //     brand.value[CATEGORIES_FIELD] = brandsCategories
+  //       .map(c => new ReferenceExpression(c.elemID, c))
+  //   })
+  // },
   /** Change the categories positions according to their order in the brand, and deploy the brand */
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandChanges, leftoverChanges] = _.partition(
@@ -61,33 +58,27 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
       change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME,
     )
 
-    const { withOrderChanges, onlyNonOrderChanges } = sortChanges(brandChanges, CATEGORIES_FIELD)
-
-    const { errors: orderChangeErrors } = await deployOrderChanges({
-      changes: withOrderChanges,
-      orderField: CATEGORIES_FIELD,
-      client,
-      config,
-      elementsSource,
-    })
+    // const { withOrderChanges, onlyNonOrderChanges } = sortChanges(brandChanges, CATEGORIES_FIELD)
+    //
+    // const { errors: orderChangeErrors } = await deployOrderChanges({
+    //   changes: withOrderChanges,
+    //   orderField: CATEGORIES_FIELD,
+    //   client,
+    //   config,
+    //   elementsSource,
+    // })
 
     // Ignores the logo and categories field from brand instances when deploying,
     // logos are covered as brand_logo instances, categories were converted to orderChangesToApply
-    const brandChangesDeployResult = await deployChanges(
-      [...withOrderChanges, ...onlyNonOrderChanges],
+    const deployResult = await deployChanges(
+      brandChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
+        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD])
       }
     )
 
     return {
-      deployResult: {
-        appliedChanges: brandChangesDeployResult.appliedChanges,
-        errors: [
-          ...orderChangeErrors,
-          ...brandChangesDeployResult.errors,
-        ],
-      },
+      deployResult,
       leftoverChanges,
     }
   },

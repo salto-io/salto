@@ -28,6 +28,7 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
   get: 2,
   deploy: 2,
 }
+const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
@@ -47,6 +48,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
         // TODO SALTO-2649: add better handling for rate limits
+        maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
         retry: {
           maxAttempts: 5, // try 5 times
           retryDelay: 10000, // wait for 10s before trying again, change after SALTO-2649

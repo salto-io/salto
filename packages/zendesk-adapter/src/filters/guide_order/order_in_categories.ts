@@ -19,56 +19,58 @@ import {
   isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { FilterCreator } from '../filter'
-import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
-import { deployOrderChanges, SECTIONS_FIELD, sortChanges } from './guide_order_utils'
+import { FilterCreator } from '../../filter'
+import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
+import {
+  createOrderElement,
+  deployOrderChanges,
+  GUIDE_ORDER_TYPES,
+  ORDER_IN_CATEGORY_TYPE,
+  SECTIONS_FIELD,
+} from './guide_orders_utils'
 
 /**
  * Handles the section orders inside category
  */
-const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
-  /** Insert the category's section into a field in it */
+const filterCreator: FilterCreator = ({ client, config }) => ({
+  /** Create an InstanceElement of the sections order inside the categories */
   onFetch: async (elements: Element[]) => {
     const sections = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
     const categories = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
 
-
-    // Insert the sections of that category to the category, sorted
+    elements.push(GUIDE_ORDER_TYPES[CATEGORY_TYPE_NAME])
     categories.forEach(category => {
-      // Lowest position index first, if there is a tie - the newer is first
-      const categorySections = _.orderBy(sections
-        .filter(s => s.value.parent_section_id === undefined)
-        .filter(s => s.value.category_id === category.value.id),
-      ['value.position', 'value.created_at'], ['asc', 'desc'])
-
-      category.value[SECTIONS_FIELD] = categorySections
-        .map(s => new ReferenceExpression(s.elemID, s))
+      const orderInCategoryElement = createOrderElement({
+        parent: category,
+        parentField: 'category_id',
+        orderField: SECTIONS_FIELD,
+        childrenElements: sections.filter(s => s.value.parent_section_id === undefined),
+      })
+      category.value.sections = new ReferenceExpression(
+        orderInCategoryElement.elemID, orderInCategoryElement
+      )
+      elements.push(orderInCategoryElement)
     })
   },
   /** Change the sections positions to their order in the category, and deploy the category */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const categoryChanges = changes.filter(
-      c => getChangeData(c).elemID.typeName === CATEGORY_TYPE_NAME
+    const [orderInCategoryChanges, leftoverChanges] = _.partition(
+      changes,
+      change => getChangeData(change).elemID.typeName === ORDER_IN_CATEGORY_TYPE,
     )
 
-    const { withOrderChanges } = sortChanges(categoryChanges, SECTIONS_FIELD)
-
-    const { errors: orderChangeErrors } = await deployOrderChanges({
-      changes: withOrderChanges,
+    const deployResult = await deployOrderChanges({
+      changes: orderInCategoryChanges,
       orderField: SECTIONS_FIELD,
       client,
       config,
-      elementsSource,
     })
 
     return {
-      deployResult: {
-        appliedChanges: [],
-        errors: orderChangeErrors,
-      },
-      leftoverChanges: changes,
+      deployResult,
+      leftoverChanges,
     }
   },
 })

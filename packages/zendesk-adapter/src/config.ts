@@ -491,7 +491,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'categories', fieldType: 'list<unknown>' },
+        { fieldName: 'categories', fieldType: 'unknown' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       serviceUrl: '/admin/account/brand_management/brands',
@@ -1828,8 +1828,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'sections', fieldType: 'list<unknown>' },
-        { fieldName: 'articles', fieldType: 'list<unknown>' },
+        { fieldName: 'sections_articles', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1946,7 +1945,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'sections', fieldType: 'list<unknown>' },
+        { fieldName: 'sections', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

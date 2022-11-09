@@ -95,10 +95,16 @@ import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
 import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 import hcGuideSettings from './filters/help_center_guide_settings'
-import brandsFilter from './filters/brands_filter'
-import orderInCategoriesFilter from './filters/order_in_categories'
-import orderInSectionsFilter from './filters/order_in_sections'
+import removeBrandLogoFilter from './filters/remove_brand_logo_field'
+import orderInBrandsFilter from './filters/guide_order/order_in_brands'
+import orderInCategoriesFilter from './filters/guide_order/order_in_categories'
+import orderInSectionsFilter from './filters/guide_order/order_in_sections'
 import hcServiceUrl from './filters/help_center_service_url'
+import {
+  ORDER_IN_BRAND_TYPE,
+  ORDER_IN_CATEGORY_TYPE,
+  ORDER_IN_SECTION_TYPE,
+} from './filters/guide_order/guide_orders_utils'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -147,9 +153,9 @@ export const DEFAULT_FILTERS = [
   hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
-  // brandsFilter should be after brandLogoFilter
-  brandsFilter,
-  // order filters should be before hc filters
+  // removeBrandLogoFilter should be after brandLogoFilter
+  removeBrandLogoFilter,
+  orderInBrandsFilter,
   orderInCategoriesFilter,
   orderInSectionsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
@@ -192,6 +198,9 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
+  ORDER_IN_BRAND_TYPE,
+  ORDER_IN_CATEGORY_TYPE,
+  ORDER_IN_SECTION_TYPE,
 ]
 
 /**
@@ -548,7 +557,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
-        typesWithNoDeploy: ['tag'],
+        typesWithNoDeploy: ['tag', ORDER_IN_BRAND_TYPE, ORDER_IN_CATEGORY_TYPE, ORDER_IN_SECTION_TYPE],
       }),
       dependencyChanger,
       getChangeGroupIds,

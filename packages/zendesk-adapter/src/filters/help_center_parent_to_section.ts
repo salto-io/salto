@@ -24,7 +24,6 @@ import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './help_center_section_and_category'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
-import { ARTICLES_FIELD, SECTIONS_FIELD } from './guide_order_utils'
 
 const PARENT_SECTION_ID_FIELD = 'parent_section_id'
 
@@ -62,7 +61,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       parentChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, ['translations', PARENT_SECTION_ID_FIELD, ARTICLES_FIELD, SECTIONS_FIELD])
+        await deployChange(change, client, config.apiDefinitions, ['translations', PARENT_SECTION_ID_FIELD])
       }
     )
     // need to deploy separately parent_section_id if exists since zendesk API does not support

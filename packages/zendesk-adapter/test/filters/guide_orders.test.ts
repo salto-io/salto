@@ -25,12 +25,12 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
-import brandOrderFilter from '../../src/filters/brands_filter'
-import categoriesOrderFilter from '../../src/filters/order_in_categories'
-import sectionsOrderFilter from '../../src/filters/order_in_sections'
+import orderInBrandsFilter from '../../src/filters/guide_order/order_in_brands'
+import orderInCategoriesFilter from '../../src/filters/guide_order/order_in_categories'
+import orderInSectionsFilter from '../../src/filters/guide_order/order_in_sections'
 import { LOGO_FIELD } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
-import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/filters/guide_order_utils'
+import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/filters/guide_order/guide_orders_utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -290,7 +290,7 @@ const testDeployWithoutOrderChanges = async (
 
 describe('categories order in brand', () => {
   beforeEach(async () => {
-    filter = brandOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+    filter = orderInBrandsFilter(createFilterCreatorParams({ elementsSource })) as FilterType
   })
 
   describe('on fetch', () => {
@@ -337,7 +337,7 @@ describe('categories order in brand', () => {
 
 describe('sections order in category', () => {
   beforeEach(async () => {
-    filter = categoriesOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+    filter = orderInCategoriesFilter(createFilterCreatorParams({ elementsSource })) as FilterType
   })
 
   it('on fetch', async () => {
@@ -374,7 +374,7 @@ describe('sections order in category', () => {
 
 describe('sections and articles order in section', () => {
   beforeEach(async () => {
-    filter = sectionsOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+    filter = orderInSectionsFilter(createFilterCreatorParams({ elementsSource })) as FilterType
   })
 
   it('on fetch', async () => {

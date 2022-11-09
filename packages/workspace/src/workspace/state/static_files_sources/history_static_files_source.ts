@@ -20,7 +20,7 @@ import { StateStaticFilesSource, StateStaticFilesStore } from '../../static_file
 
 const log = logger(module)
 
-const getFileName = (filepath: string, hash: string): string =>
+export const getFileName = (filepath: string, hash: string): string =>
   `${filepath}-${hash}`
 
 /**

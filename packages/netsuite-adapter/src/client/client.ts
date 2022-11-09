@@ -204,7 +204,8 @@ export default class NetsuiteClient {
   private async sdfDeploy(
     changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
-    additionalDependencies: AdditionalDependencies
+    additionalDependencies: AdditionalDependencies,
+    validateOnly = false
   ): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
 
@@ -222,9 +223,11 @@ export default class NetsuiteClient {
       )
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
+        const sdfDeployParams = validateOnly
+          ? { additionalDependencies, validateOnly } : { additionalDependencies }
         // eslint-disable-next-line no-await-in-loop
         await log.time(
-          () => this.sdfClient.deploy(customizationInfos, suiteAppId, { additionalDependencies }),
+          () => this.sdfClient.deploy(customizationInfos, suiteAppId, sdfDeployParams),
           'sdfDeploy'
         )
         return { errors, appliedChanges: changesToDeploy }
@@ -275,7 +278,7 @@ export default class NetsuiteClient {
   ): Promise<readonly Error[]> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
       return (await this.sdfDeploy(
-        changes, deployReferencedElements, additionalSdfDependencies
+        changes, deployReferencedElements, additionalSdfDependencies, true
       )).errors
     }
     return []

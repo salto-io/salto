@@ -323,7 +323,7 @@ describe('NetsuiteClient', () => {
             values: { scriptid: 'someObject' },
           }],
           undefined,
-          { additionalDependencies: validateParams[1] }
+          { additionalDependencies: validateParams[1], validateOnly: true }
         )
       })
       it('should skip validation', async () => {

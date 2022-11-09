@@ -105,17 +105,18 @@ const filterCreator: LocalFilterCreator = ({ config }) : FilterWith<'onFetch' | 
       deployableChanges.forEach(c => changes.push(c))
     },
     onDeploy: async changes => {
-      const customObjectInstanceChanges = await awu(changes)
+      const relatedAppliedChangesApiNames = await awu(changes)
         .filter(isInstanceOfTypeChange(CUSTOM_OBJECT))
+        .filter(c => getChangeData(c).elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
         .toArray()
-      const appliedChangesApiNames = await awu(customObjectInstanceChanges)
+      const appliedChangesApiNames = await awu(relatedAppliedChangesApiNames)
         .map(c => apiName(getChangeData(c)))
         .toArray()
 
       const appliedOriginalChanges = appliedChangesApiNames
         .flatMap(name => groupedOriginalChangesByApiName[name] ?? [])
 
-      _.pullAll(changes, customObjectInstanceChanges)
+      _.pullAll(changes, relatedAppliedChangesApiNames)
       appliedOriginalChanges.forEach(c => changes.push(c))
     },
   }

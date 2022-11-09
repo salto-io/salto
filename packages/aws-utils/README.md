@@ -1,6 +1,6 @@
-# Salto - S3 Utils
+# Salto - AWS Utils
 
-S3 utils for salto.io.
+AWS utils for salto.io.
 
 
 ### Build instructions

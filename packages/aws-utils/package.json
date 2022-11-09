@@ -2,7 +2,7 @@
   "name": "@salto-io/aws-utils",
   "version": "0.3.25",
   "license": "Apache-2.0",
-  "description": "Salto S3 Utils",
+  "description": "Salto AWS Utils",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto_monorepo"

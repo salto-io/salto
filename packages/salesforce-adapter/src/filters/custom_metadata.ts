@@ -32,7 +32,7 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { isCustomMetadataRecordInstance, isCustomMetadataRecordType, isInstanceOfType } from './utils'
 import {
-  CUSTOM_METADATA,
+  CUSTOM_METADATA, CUSTOM_METADATA_SUFFIX,
   FIELD_TYPE_NAMES,
   INTERNAL_ID_FIELD,
   SALESFORCE,
@@ -135,10 +135,15 @@ const additionalNamespaces = Object.fromEntries([
 const resolveCustomMetadataType = async (
   instance: InstanceElement,
   customMetadataTypes: ObjectType[],
-): Promise<ObjectType | undefined> => {
-  const customMetadataTypeName = (await apiName(instance)).split('.')[0].concat('__mdt')
-  return customMetadataTypes
+): Promise<ObjectType> => {
+  const customMetadataTypeName = (await apiName(instance)).split('.')[0].concat(CUSTOM_METADATA_SUFFIX)
+  const correctType = customMetadataTypes
     .find(objectType => objectType.elemID.typeName === customMetadataTypeName)
+  if (correctType === undefined) {
+    log.warn('Could not fix type for CustomMetadataType Instance %o, since its CustomMetadata record type was not found', instance)
+    return instance.getType()
+  }
+  return correctType
 }
 
 const extractValuesToFields = (
@@ -210,11 +215,8 @@ const toInstanceWithCorrectType = async (
   instance: InstanceElement,
   customMetadataRecordTypes: ObjectType[]
 ): Promise<InstanceElement> => {
-  let correctType = await resolveCustomMetadataType(instance, customMetadataRecordTypes)
-  if (correctType === undefined) {
-    log.warn('Could not fix type for CustomMetadataType Instance %o, since its CustomMetadata record type was not found', instance)
-    correctType = await instance.getType()
-  }
+  const correctType = await resolveCustomMetadataType(instance, customMetadataRecordTypes)
+
   const formattedValues = isServiceMDTRecordValues(instance.value)
     ? formatMDTRecordValuesToNacl(instance.value)
     : instance.value

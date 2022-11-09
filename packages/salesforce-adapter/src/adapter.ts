@@ -75,7 +75,7 @@ import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
-import customMetadataTypeFilter from './filters/custom_metadata_type'
+import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -101,6 +101,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
+  { creator: customMetadataToObjectTypeFilter },
+  // customMetadataToObjectTypeFilter should run before customObjectsToObjectTypeFilter
   { creator: customObjectsToObjectTypeFilter },
   // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   { creator: customObjectsInstancesFilter, addsNewInformation: true },
@@ -135,8 +137,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: dataInstancesAuthorFilter, addsNewInformation: true },
   { creator: sharingRulesAuthorFilter, addsNewInformation: true },
   { creator: validationRulesAuthorFilter, addsNewInformation: true },
-  { creator: customMetadataTypeFilter },
-  // customMetadataTypeFilter should run before hideReadOnlyValuesFilter
   { creator: hideReadOnlyValuesFilter },
   { creator: currencyIsoCodeFilter },
   { creator: splitCustomLabels },

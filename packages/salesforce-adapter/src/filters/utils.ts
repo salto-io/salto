@@ -31,7 +31,7 @@ import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH,
+  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject } from '../transformers/transformer'
@@ -41,9 +41,9 @@ const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
 
-export const isCustomMetadataRecordType = async (elem: ObjectType): Promise<boolean> => {
+export const isCustomMetadataRecordType = async (elem: Element): Promise<boolean> => {
   const elementApiName = await apiName(elem)
-  return elementApiName?.endsWith('__mdt') ?? false
+  return isObjectType(elem) && (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
 }
 
 export const isCustomMetadataRecordInstance = async (

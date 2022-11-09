@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import {
-  ObjectType,
+  BuiltinTypes,
+  Change,
+  Element,
   ElemID,
   InstanceElement,
-  BuiltinTypes,
-  ReferenceExpression,
-  Change,
+  ObjectType,
   ReadOnlyElementsSource,
-  Element,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -31,6 +31,7 @@ import sectionsOrderFilter from '../../src/filters/order_in_sections'
 import { LOGO_FIELD } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
 import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/filters/guide_order_utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -295,15 +296,30 @@ describe('categories order in brand', () => {
 
   describe('on fetch', () => {
     it('with Guide active', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = true
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource, config })) as FilterType
       await testFetch({
         createParent: createBrandInstance,
         createChild: createCategoryInstance,
         orderField: CATEGORIES_FIELD,
       })
     })
-    it('with Guide not active', async () => {
+    it('with Guide not active in the brand', async () => {
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
       // Should not create categories order field at all
       const brandWithoutGuide = createBrandInstance(false)
+      const categories = [createCategoryInstance(), createCategoryInstance()]
+      await filter.onFetch([brandWithoutGuide, ...categories])
+
+      expect(brandWithoutGuide.value.categories).toBeUndefined()
+    })
+    it('with Guide not active in Salto', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = false
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource, config })) as FilterType
+      // Should not create categories order field at all
+      const brandWithoutGuide = createBrandInstance()
       const categories = [createCategoryInstance(), createCategoryInstance()]
       await filter.onFetch([brandWithoutGuide, ...categories])
 

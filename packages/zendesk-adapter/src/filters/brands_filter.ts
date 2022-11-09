@@ -24,6 +24,7 @@ import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 import { LOGO_FIELD } from './brand_logo'
 import { CATEGORIES_FIELD, deployOrderChanges, sortChanges } from './guide_order_utils'
+import { FETCH_CONFIG } from '../config'
 
 /**
  * Handle everything related to brands
@@ -39,7 +40,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource }) => ({
     // Insert the categories of that brand to the brand, sorted
     brands.forEach(brand => {
       // If the brand doesn't have Guide activated, do nothing
-      if (!brand.value.has_help_center) {
+      if (!config[FETCH_CONFIG].enableGuide || !brand.value.has_help_center) {
         return
       }
 

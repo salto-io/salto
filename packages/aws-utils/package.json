@@ -1,0 +1,37 @@
+{
+  "name": "@salto-io/aws-utils",
+  "version": "0.3.25",
+  "license": "Apache-2.0",
+  "description": "Salto S3 Utils",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto_monorepo"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src",
+    "index.ts"
+  ],
+  "main": "dist/src",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "clean-ts": "../../build_utils/clean-old-ts.sh",
+    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
+    "test": "jest",
+    "clean": "rm -rf ./dist .eslintcache",
+    "clean-ts-test": "yarn clean-ts && yarn test",
+    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
+    "build-ts": "tsc -b && yarn clean-ts",
+    "watch-ts": "tsc -b -w",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn lint --fix"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.198.0",
+    "@aws-sdk/middleware-retry": "3.198.0",
+    "@salto-io/logging": "0.3.25"
+  }
+}

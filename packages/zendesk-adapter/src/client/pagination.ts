@@ -19,6 +19,8 @@ const { getWithCursorPagination } = clientUtils
 
 const pathChecker: clientUtils.PathCheckerFunc = (current, next) => (
   next === `${current}.json` || next === `${current}`
+  // the next URL might be locale-specific so it will not be identical
+  || next.startsWith('/api/v2/help_center/')
 )
 export const paginate: clientUtils.PaginationFuncCreator = () => (
   getWithCursorPagination(pathChecker)

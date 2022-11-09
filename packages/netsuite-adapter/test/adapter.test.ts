@@ -880,6 +880,7 @@ describe('Adapter', () => {
           fetchByQuery: expect.anything(),
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
+          filtersRunner: expect.anything(),
           additionalDependencies: expect.anything(),
         })
       })
@@ -908,6 +909,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
+          filtersRunner: expect.anything(),
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),
@@ -938,6 +940,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: true,
           fetchByQuery: expect.anything(),
+          filtersRunner: expect.anything(),
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),

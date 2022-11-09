@@ -15,31 +15,40 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeError, changeId, getChangeData } from '@salto-io/adapter-api'
+import { Change, ChangeError, changeId, getChangeData, Element } from '@salto-io/adapter-api'
 import NetsuiteClient from '../client/client'
 import { AdditionalDependencies } from '../client/types'
 import { getChangeGroupIdsFunc } from '../group_changes'
-import { ObjectsValidationError, ManifestValidationError } from '../errors'
+import { ManifestValidationError, ObjectsDeployError } from '../errors'
 import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
+import { Filter } from '../filter'
 
 const { awu } = collections.asynciterable
+
+const detailedErrorMessageRegex = RegExp('^Details: [a-z0-9A-Z_ ]+', 'gm')
 
 export type ClientChangeValidator = (
   changes: ReadonlyArray<Change>,
   client: NetsuiteClient,
   additionalDependencies: AdditionalDependencies,
+  filtersRunner: Required<Filter>,
   deployReferencedElements?: boolean
 ) => Promise<ReadonlyArray<ChangeError>>
 
 const changeValidator: ClientChangeValidator = async (
-  changes, client, additionalDependencies, deployReferencedElements = false
+  changes, client, additionalDependencies, filtersRunner, deployReferencedElements = false
 ) => {
+  const clonedChanges = changes.map(change => ({
+    action: change.action,
+    data: _.mapValues(change.data, (element: Element) => element.clone()),
+  })) as Change[]
+  await filtersRunner.preDeploy(clonedChanges)
   const getChangeGroupIds = getChangeGroupIdsFunc(client.isSuiteAppConfigured())
   const { changeGroupIdMap } = await getChangeGroupIds(
-    new Map(changes.map(change => [changeId(change), change]))
+    new Map(clonedChanges.map(change => [changeId(change), change]))
   )
-  const changesByGroupId = _(changes)
+  const changesByGroupId = _(clonedChanges)
     .filter(change => changeGroupIdMap.has(changeId(change)))
     .groupBy(change => changeGroupIdMap.get(changeId(change)))
     .entries()
@@ -55,19 +64,18 @@ const changeValidator: ClientChangeValidator = async (
       )
       if (errors.length > 0) {
         return errors.map(error => {
-          if (error instanceof ObjectsValidationError) {
+          if (error instanceof ObjectsDeployError) {
+            const detailedErrorArray = error.message.match(detailedErrorMessageRegex)
             return groupChanges.map(getChangeData)
-              .filter(element => error.invalidObjects.has(
+              .filter(element => error.failedObjects.has(
                 getElementValueOrAnnotations(element)[SCRIPT_ID]
               ))
-              .map(element => ({
+              .map((element, index) => ({
                 message: 'SDF Objects Validation Error',
                 severity: 'Error' as const,
                 elemID: element.elemID,
-                detailedMessage: error.invalidObjects.get(
-                  getElementValueOrAnnotations(element)[SCRIPT_ID]
-                ),
-              }) as ChangeError)
+                detailedMessage: detailedErrorArray?.[index] ?? error.message,
+              }))
           }
           const message = error instanceof ManifestValidationError
             ? 'SDF Manifest Validation Error'
@@ -77,7 +85,7 @@ const changeValidator: ClientChangeValidator = async (
             severity: 'Error' as const,
             elemID: getChangeData(change).elemID,
             detailedMessage: error.message,
-          }) as ChangeError)
+          }))
         }).flat()
       }
       return []

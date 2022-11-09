@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -72,8 +72,6 @@ export type SdfClientOpts = {
   config?: SdfClientConfig
   globalLimiter: Bottleneck
 }
-
-type getValidationErrorParams = 'objectValidationError' | 'manifestValidationError'
 
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
@@ -115,11 +113,6 @@ const objectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 const manifestErrorRegex = RegExp('^Details: The manifest ([a-z0-9_ ]+)', 'm')
-
-const SERVER_VALIDATION_ERROR = '*** ERROR ***'
-const ERROR_MESSAGE_LINE_OFFSET = 4
-const DETAILED_ERROR_MESSAGE_OFFSET = 5
-
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -197,34 +190,6 @@ const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string
     .map(r => r.groups)
     .filter(isDefined)
     .map(groups => groups[item])
-
-type ErrorMatcher = { getValidationErrorMessage: (errorType: getValidationErrorParams) => string }
-const createErrorMatcher = (lines: string[]): ErrorMatcher => {
-  const indicesMap = new Map<string, number[]>()
-  lines.forEach((line, index) => {
-    if (!indicesMap.has(line)) {
-      indicesMap.set(line, [])
-    }
-    indicesMap.get(line)?.push(index)
-  })
-
-  return {
-    getValidationErrorMessage: errorType => {
-      const errorIndex = indicesMap.get(SERVER_VALIDATION_ERROR)?.[0]
-      if (errorIndex) {
-        const errorMessageLine = lines[errorIndex + ERROR_MESSAGE_LINE_OFFSET]
-        const detailedErrorMessageLine = lines[errorIndex + DETAILED_ERROR_MESSAGE_OFFSET]
-        if (errorType === 'objectValidationError' && objectValidationErrorRegex.test(errorMessageLine)) {
-          return detailedErrorMessageLine
-        }
-        if (errorType === 'manifestValidationError' && manifestErrorRegex.test(detailedErrorMessageLine)) {
-          return detailedErrorMessageLine
-        }
-      }
-      return ''
-    },
-  }
-}
 
 type Project = {
   projectName: string
@@ -946,6 +911,9 @@ export default class SdfClient {
     const errorMessage = error.message
 
     if (settingsValidationErrorRegex.test(errorMessage)) {
+      if (manifestErrorRegex.test(errorMessage)) {
+        return new ManifestValidationError(errorMessage)
+      }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
     if (!deployStartMessageRegex.test(errorMessage)) {
@@ -977,29 +945,6 @@ export default class SdfClient {
     )
   }
 
-  private static customizeValidationError(
-    error: Error,
-    customizationInfos: CustomizationInfo[]
-  ): Error {
-    const errorMatcher = createErrorMatcher(error.message.split(os.EOL))
-    const manifestErrorMessage = errorMatcher
-      .getValidationErrorMessage('manifestValidationError')
-    if (manifestErrorMessage) {
-      return new ManifestValidationError(manifestErrorMessage)
-    }
-    const failedObjects = customizationInfos
-      .filter(isCustomTypeInfo)
-      .map((custInfo): [string, string] | undefined => {
-        const errorMessage = errorMatcher
-          .getValidationErrorMessage('objectValidationError')
-        return errorMessage ? [custInfo.scriptId, CUSTOM_OBJECT_VALIDATION_ERROR.concat(` ${errorMessage}`)] : undefined
-      })
-      .filter(isDefined)
-    return failedObjects.length > 0
-      ? new ObjectsValidationError(error.message, new Map(failedObjects))
-      : error
-  }
-
   private async runDeployCommands(
     { executor, projectName, type }: Project,
     customizationInfos: CustomizationInfo[],
@@ -1022,9 +967,6 @@ export default class SdfClient {
       )
     } catch (e) {
       const error = e instanceof Error ? e : new Error(String(e))
-      if (validateOnly) {
-        throw SdfClient.customizeValidationError(error, customizationInfos)
-      }
       throw SdfClient.customizeDeployError(error)
     }
   }

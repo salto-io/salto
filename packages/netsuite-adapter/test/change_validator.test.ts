@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Change, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
+import { Filter } from '../src/filter'
 import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
 import netsuiteClientValidation from '../src/change_validators/client_validation'
@@ -34,6 +35,9 @@ const DEFAULT_OPTIONS = {
 
 jest.mock('../src/change_validators/client_validation')
 const netsuiteClientValidationMock = netsuiteClientValidation as jest.Mock
+const mockFiltersRunner = {
+  preDeploy: jest.fn(),
+} as unknown as Required<Filter>
 
 describe('change validator', () => {
   const file = fileType()
@@ -54,7 +58,7 @@ describe('change validator', () => {
     describe('without SuiteApp', () => {
       it('should have change error when removing an instance with file cabinet type', async () => {
         const changeValidator = getChangeValidator(
-          { ...DEFAULT_OPTIONS, client, fetchByQuery }
+          { ...DEFAULT_OPTIONS, client, fetchByQuery, filtersRunner: mockFiltersRunner }
         )
         const instance = new InstanceElement('test', file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
@@ -67,7 +71,13 @@ describe('change validator', () => {
     describe('with SuiteApp', () => {
       it('should not have change error when removing an instance with file cabinet type', async () => {
         const changeValidator = getChangeValidator(
-          { ...DEFAULT_OPTIONS, withSuiteApp: true, client, fetchByQuery }
+          {
+            ...DEFAULT_OPTIONS,
+            withSuiteApp: true,
+            client,
+            fetchByQuery,
+            filtersRunner: mockFiltersRunner,
+          }
         )
         const instance = new InstanceElement('test', file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
@@ -98,13 +108,25 @@ describe('change validator', () => {
     })
     it('should not have change error when warnOnStaleWorkspaceData is false', async () => {
       const changeErrors = await getChangeValidator(
-        { ...DEFAULT_OPTIONS, client, fetchByQuery }
+        {
+          ...DEFAULT_OPTIONS,
+          withSuiteApp: true,
+          client,
+          fetchByQuery,
+          filtersRunner: mockFiltersRunner,
+        }
       )([change])
       expect(changeErrors).toHaveLength(0)
     })
     it('should have change error when warnOnStaleWorkspaceData is true', async () => {
       const changeErrors = await getChangeValidator(
-        { ...DEFAULT_OPTIONS, warnStaleData: true, client, fetchByQuery }
+        {
+          ...DEFAULT_OPTIONS,
+          warnStaleData: true,
+          client,
+          fetchByQuery,
+          filtersRunner: mockFiltersRunner,
+        }
       )([change])
       expect(changeErrors).toHaveLength(1)
     })
@@ -115,20 +137,33 @@ describe('change validator', () => {
     netsuiteClientValidationMock.mockResolvedValue([])
     it('should not call netsuiteClientValidation when validate=false', async () => {
       await getChangeValidator(
-        { ...DEFAULT_OPTIONS, client, fetchByQuery, validate: false }
+        {
+          ...DEFAULT_OPTIONS,
+          withSuiteApp: true,
+          client,
+          fetchByQuery,
+          filtersRunner: mockFiltersRunner,
+        }
       )([toChange({ after: new InstanceElement('test', file) })])
       expect(netsuiteClientValidationMock).not.toHaveBeenCalled()
     })
     it('should call netsuiteClientValidation when validate=true', async () => {
       const changes = [toChange({ after: new InstanceElement('test', file) })]
       await getChangeValidator(
-        { ...DEFAULT_OPTIONS, client, fetchByQuery, validate: true }
+        {
+          ...DEFAULT_OPTIONS,
+          client,
+          fetchByQuery,
+          validate: true,
+          filtersRunner: mockFiltersRunner,
+        }
       )(changes)
       expect(netsuiteClientValidationMock).toHaveBeenCalledWith(
         changes,
         client,
         DEFAULT_OPTIONS.additionalDependencies,
-        DEFAULT_OPTIONS.deployReferencedElements
+        mockFiltersRunner,
+        DEFAULT_OPTIONS.deployReferencedElements,
       )
     })
   })

@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import { Change, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { Filter } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
-import { ManifestValidationError, ObjectsValidationError } from '../../src/errors'
+import { ManifestValidationError, ObjectsDeployError } from '../../src/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 
 describe('client validation', () => {
@@ -29,6 +30,11 @@ describe('client validation', () => {
     isSuiteAppConfigured: () => true,
     validate: mockValidate,
   } as unknown as NetsuiteClient
+
+  const mockFiltersRunner = {
+    onFetch: jest.fn(),
+    preDeploy: jest.fn(),
+  } as unknown as Required<Filter>
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -53,17 +59,22 @@ describe('client validation', () => {
   it('should not have errors', async () => {
     mockValidate.mockReturnValue([])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies
+      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
     )
     expect(changeErrors).toHaveLength(0)
   })
   it('should have SDF Objects Validation Error for instance', async () => {
-    const detailedMessage = 'error on objectName'
+    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value'
+    const fullErrorMessage = `validation failed.
+An error occurred during custom object validation. (objectName)
+${detailedMessage}, 'T' or 'F'.
+File: ~/Objects/objectName.xml`
+
     mockValidate.mockReturnValue([
-      new ObjectsValidationError('error message', new Map([['objectName', detailedMessage]])),
+      new ObjectsDeployError(fullErrorMessage, new Set(['objectName'])),
     ])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies
+      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -74,12 +85,16 @@ describe('client validation', () => {
     })
   })
   it('should have SDF Objects Validation Error for customRecordType', async () => {
-    const detailedMessage = 'error on customrecord1'
+    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value'
+    const fullErrorMessage = `validation failed.
+An error occurred during custom object validation. (objectName)
+${detailedMessage}, 'T' or 'F'.
+File: ~/Objects/objectName.xml`
     mockValidate.mockReturnValue([
-      new ObjectsValidationError('error message', new Map([['customrecord1', detailedMessage]])),
+      new ObjectsDeployError(fullErrorMessage, new Set(['customrecord1'])),
     ])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies
+      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -93,7 +108,7 @@ describe('client validation', () => {
     const detailedMessage = 'manifest error'
     mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage)])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies
+      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
@@ -107,7 +122,7 @@ describe('client validation', () => {
     const detailedMessage = 'some error'
     mockValidate.mockReturnValue([new Error(detailedMessage)])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies
+      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({

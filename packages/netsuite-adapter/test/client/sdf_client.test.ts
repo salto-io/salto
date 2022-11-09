@@ -33,7 +33,7 @@ import SdfClient, {
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
@@ -1795,7 +1795,6 @@ File: ~/AccountConfiguration/features.xml`
       })
       it('should throw ObjectsValidationError', async () => {
         let errorMessage: string
-        const objectErrorMessage = 'An error occurred during custom object validation. Details: The availableexternally field must be set to a valid Boolean value, \'T\' or \'F\'.'
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.CREATE_PROJECT) {
             return Promise.resolve({ isSuccess: () => true })
@@ -1834,9 +1833,9 @@ File: ~/Objects/${failObject}.xml`
           // should throw before this test
           expect(false).toBeTruthy()
         } catch (e) {
-          expect(e instanceof ObjectsValidationError).toBeTruthy()
-          expect(e.invalidObjects instanceof Map).toBeTruthy()
-          expect(e.invalidObjects.get(failObject)).toContain(objectErrorMessage)
+          expect(e instanceof ObjectsDeployError).toBeTruthy()
+          expect(e.failedObjects instanceof Set).toBeTruthy()
+          expect(e.failedObjects.has(failObject)).toBeTruthy()
         }
       })
       it('should throw ManifestValidationError', async () => {
@@ -1883,7 +1882,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
           expect(false).toBeTruthy()
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
-          expect(e.message).toEqual(manifestErrorMessage)
+          expect(e.message).toContain(manifestErrorMessage)
         }
       })
       it('should throw error', async () => {

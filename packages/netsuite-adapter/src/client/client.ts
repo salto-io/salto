@@ -36,7 +36,7 @@ import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { convertElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
@@ -201,57 +201,6 @@ export default class NetsuiteClient {
       .toArray()
   }
 
-  private async sdfValidate(
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
-    additionalDependencies: AdditionalDependencies
-  ): Promise<Error[]> {
-    const changesToValidate = Array.from(changes)
-
-    const someElementToDeploy = getChangeData(changes[0])
-    const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
-
-    const errors: Error[] = []
-
-    while (changesToValidate.length > 0) {
-      // eslint-disable-next-line no-await-in-loop
-      const customizationInfos = await NetsuiteClient.toCustomizationInfos(
-        changes.map(getChangeData),
-        deployReferencedElements
-      )
-
-      try {
-        log.debug('validating %d changes', changesToValidate.length)
-        // eslint-disable-next-line no-await-in-loop
-        await log.time(
-          () => this.sdfClient.deploy(
-            customizationInfos,
-            suiteAppId,
-            { additionalDependencies, validateOnly: true }
-          ),
-          'sdfValidate'
-        )
-        return errors
-      } catch (error) {
-        errors.push(error)
-        if (error instanceof ManifestValidationError) {
-          return errors
-        }
-        if (error instanceof ObjectsValidationError) {
-          _.remove(
-            changesToValidate,
-            change => error.invalidObjects.has(
-              (getChangeData(change) as InstanceElement).value.scriptid
-            )
-          )
-        } else {
-          return errors
-        }
-      }
-    }
-    return errors
-  }
-
   private async sdfDeploy(
     changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
@@ -323,9 +272,11 @@ export default class NetsuiteClient {
     groupID: string,
     deployReferencedElements: boolean,
     additionalSdfDependencies: AdditionalDependencies,
-  ): Promise<Error[]> {
+  ): Promise<readonly Error[]> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      return this.sdfValidate(changes, deployReferencedElements, additionalSdfDependencies)
+      return (await this.sdfDeploy(
+        changes, deployReferencedElements, additionalSdfDependencies
+      )).errors
     }
     return []
   }

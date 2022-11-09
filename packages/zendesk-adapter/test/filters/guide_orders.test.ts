@@ -13,37 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType,
-  ElemID,
-  InstanceElement,
-  BuiltinTypes,
-  ReferenceExpression,
-  Change,
-  ReadOnlyElementsSource,
-  Element,
-} from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { BuiltinTypes, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { elements as elementsUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import orderInBrandsFilter from '../../src/filters/guide_order/order_in_brands'
 import orderInCategoriesFilter from '../../src/filters/guide_order/order_in_categories'
 import orderInSectionsFilter from '../../src/filters/guide_order/order_in_sections'
-import { LOGO_FIELD } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
-import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/filters/guide_order/guide_orders_utils'
+import {
+  ARTICLES_FIELD,
+  CATEGORIES_FIELD,
+  GUIDE_ORDER_TYPES,
+  SECTIONS_FIELD,
+} from '../../src/filters/guide_order/guide_orders_utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import ZendeskClient from '../../src/client/client'
 
-const mockDeployChange = jest.fn()
-jest.mock('@salto-io/adapter-components', () => {
-  const actual = jest.requireActual('@salto-io/adapter-components')
-  return {
-    ...actual,
-    deployment: {
-      ...actual.deployment,
-      deployChange: jest.fn((...args) => mockDeployChange(...args)),
-    },
-  }
+const { RECORDS_PATH, SETTINGS_NESTED_PATH, createUrl } = elementsUtils
+
+const client = new ZendeskClient({
+  credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
 })
-mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
+client.put = jest.fn()
 
 type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
 const brandType = new ObjectType({
@@ -61,23 +52,6 @@ const sectionType = new ObjectType({
 const articleType = new ObjectType({
   elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME),
 })
-
-const regularDeployChangeParam = (change: Change) : {} => ({
-  change,
-  fieldsToIgnore: [LOGO_FIELD, 'categories'],
-  client: expect.anything(),
-  endpointDetails: expect.anything(),
-})
-
-const categoryDeployChangeParam = (change: Change) : {} => ({
-  change,
-  client: expect.anything(),
-  endpointDetails: expect.anything(),
-})
-
-const removeNonRelevantFields = (categories: InstanceElement[]) : void => {
-  categories.forEach(c => { c.value = { id: c.value.id, position: c.value.position } })
-}
 
 const PARENT_ID = 96
 const createBrandInstance = (has_help_center = true): InstanceElement =>
@@ -103,7 +77,7 @@ const createCategoryInstance = (id = 0, position?: number, createdAt?: string): 
   createChildInstance(id, 'category_id', categoryType, 'brand', position, createdAt)
 
 const createSectionInCategoryInstance = (
-  id = 2, // Not 1 or 2 to avoid having two sections with the same id and name
+  id = 0,
   position?: number,
   createdAt?: string
 ) : InstanceElement =>
@@ -120,12 +94,6 @@ const createArticleInstance = (id = 0, position?: number, createdAt?: string): I
   createChildInstance(id, 'article', articleType, 'section_id', position, createdAt)
 
 let filter: FilterType
-let elementsSourceValues: Element[] = []
-const elementsSource = {
-  get: (elemId: ElemID) => elementsSourceValues.find(
-    v => v.elemID.getFullName() === elemId.getFullName()
-  ),
-} as unknown as ReadOnlyElementsSource
 
 const testFetch = async ({ createParent, createChild, orderField }
   : {
@@ -144,164 +112,100 @@ const testFetch = async ({ createParent, createChild, orderField }
     createChild(2, 1, LATE_CREATED_AT),
     createChild(3, 1, EARLY_CREATED_AT)]
 
-  await filter.onFetch([parentInstance, ...childInstances])
+  const elements = [parentInstance, ...childInstances]
+  await filter.onFetch(elements)
 
-  expect(parentInstance.value[orderField].length).toBe(4)
-  expect(parentInstance.value[orderField])
-    .toMatchObject([childInstances[1], childInstances[0], childInstances[2], childInstances[3]]
-      .map(c => new ReferenceExpression(c.elemID, c)))
-}
-
-type deployInstances = {
-  beforeParent: InstanceElement
-  firstChild: InstanceElement
-  secondChild: InstanceElement
-  beforeFirstChild: InstanceElement
-  beforeSecondChild: InstanceElement
-  afterFirstChild: InstanceElement
-  afterSecondChild: InstanceElement
-}
-
-const initDeployInstances = (
-  createParent: () => InstanceElement,
-  createChild: (id: number, position?: number, createdAt?: string) => InstanceElement,
-  orderField: string
-) : deployInstances => {
-  const beforeParent = createParent()
-  beforeParent.value.id = PARENT_ID
-  const FIRST_ID = 0
-  const SECOND_ID = 1
-
-  const firstChild = createChild(FIRST_ID)
-  const secondChild = createChild(SECOND_ID)
-
-  const beforeFirstChild = createChild(FIRST_ID, 0)
-  const beforeSecondChild = createChild(SECOND_ID, 1)
-  const afterFirstChild = createChild(FIRST_ID, 1)
-  const afterSecondChild = createChild(SECOND_ID, 0)
-
-  // The code shouldn't deploy non-relevant fields, so we remove them from the result elements
-  removeNonRelevantFields([
-    beforeFirstChild,
-    beforeSecondChild,
-    afterFirstChild,
-    afterSecondChild,
-  ])
-
-  beforeParent.value[orderField] = [firstChild, secondChild].map(
-    c => new ReferenceExpression(c.elemID, c)
+  const typeObject = GUIDE_ORDER_TYPES[parentInstance.elemID.typeName]
+  const orderInstance = new InstanceElement(
+    parentInstance.elemID.name,
+    typeObject,
+    {
+      [orderField]: [childInstances[1], childInstances[0], childInstances[2], childInstances[3]]
+        .map(c => new ReferenceExpression(c.elemID, c)),
+    },
+    [ZENDESK, RECORDS_PATH, SETTINGS_NESTED_PATH, 'GuideOrder', `order_in_${parentInstance.elemID.typeName}`]
   )
-  firstChild.value.position = 0
-  secondChild.value.position = 1
-  elementsSourceValues = [firstChild, secondChild]
-
-  return {
-    beforeParent,
-    firstChild,
-    secondChild,
-    beforeFirstChild,
-    beforeSecondChild,
-    afterFirstChild,
-    afterSecondChild,
+  // Sections inside sections test will create and orderElement for all instanceElements
+  if (parentInstance.elemID.typeName === SECTION_TYPE_NAME && orderField === SECTIONS_FIELD) {
+    expect(elements.length).toBe(11)
+    expect(elements[5]).toBe(typeObject)
+    expect(elements[6]).toMatchObject(orderInstance)
+  } else {
+    expect(elements.length).toBe(7)
+    expect(elements[5]).toBe(typeObject)
+    expect(elements[6]).toMatchObject(orderInstance)
   }
 }
 
-const beforeDeploy = (firstChild: InstanceElement, secondChild: InstanceElement): void => {
-  mockDeployChange.mockReset()
-  firstChild.value.position = 0
-  secondChild.value.position = 1
-  elementsSourceValues = [firstChild, secondChild]
-}
-
-const testDeployWithOrderChanges = async (
-  deployInstances: deployInstances,
-  withRegularChange: boolean,
-  orderField: string
-): Promise<void> => {
-  const {
-    beforeParent,
-    firstChild,
-    secondChild,
-    beforeFirstChild,
-    beforeSecondChild,
-    afterFirstChild,
-    afterSecondChild,
-  } = deployInstances
-  const afterParent = beforeParent.clone()
-  afterParent.value[orderField] = [secondChild, firstChild].map(
-    c => new ReferenceExpression(c.elemID, c)
+const testDeploy = async (
+  parentInstance: InstanceElement,
+  orderField: string,
+  createChildElement: (id?: number) => InstanceElement,
+  updateApi: configUtils.DeployRequestConfig,
+  orderAdditionalField?: string,
+) : Promise<void> => {
+  const orderInstance = new InstanceElement(
+    parentInstance.elemID.name,
+    GUIDE_ORDER_TYPES[parentInstance.elemID.typeName],
+    {
+      [orderField]: [createChildElement(0), createChildElement(1)]
+        .map(c => new ReferenceExpression(c.elemID, c)),
+    },
+    [ZENDESK, RECORDS_PATH, SETTINGS_NESTED_PATH, 'GuideOrder', `order_in_${parentInstance.elemID.typeName}`]
   )
-  if (withRegularChange) {
-    afterParent.value.testField = 'changed'
-  }
-  // should deploy categories position change and not return appliedChanges
-  elementsSourceValues.push(afterParent)
 
-  const res = await filter.deploy([{
-    action: 'modify',
-    data: { before: beforeParent, after: afterParent },
-  }])
-
-  const isBrand = beforeParent.elemID.typeName === 'brand' // brandFilter also deploys its changes
-  if (isBrand) {
-    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeParent, after: afterParent } }))
+  if (orderAdditionalField) {
+    orderInstance.value[orderAdditionalField] = []
   }
 
-  expect(mockDeployChange).toHaveBeenCalledTimes(isBrand ? 3 : 2)
-  expect(res.deployResult.appliedChanges).toHaveLength(isBrand ? 1 : 0)
+  const change = {
+    action: 'add',
+    data: { after: orderInstance },
+  } as Change
 
-  expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeSecondChild, after: afterSecondChild } }))
-  expect(mockDeployChange).toHaveBeenCalledWith(categoryDeployChangeParam({ action: 'modify', data: { before: beforeFirstChild, after: afterFirstChild } }))
-}
-
-const testDeployWithoutOrderChanges = async (
-  deployInstances: deployInstances,
-  orderField: string
-): Promise<void> => {
-  const {
-    beforeParent,
-    firstChild,
-    secondChild,
-  } = deployInstances
-  const afterParent = beforeParent.clone()
-  afterParent.value[orderField] = [firstChild, secondChild].map(
-    c => new ReferenceExpression(c.elemID, c)
-  )
-  afterParent.value.testField = 'changed'
-  // should deploy categories position change and not return appliedChanges
-  elementsSourceValues.push(afterParent)
-
-  const res = await filter.deploy([
-    { action: 'add', data: { after: beforeParent } },
-    { action: 'remove', data: { before: beforeParent } },
-    { action: 'modify', data: { before: beforeParent, after: afterParent } },
-  ])
-
-  const isBrand = beforeParent.elemID.typeName === 'brand' // brandFilter also deploys its changes
-  expect(mockDeployChange).toHaveBeenCalledTimes(isBrand ? 3 : 0)
-  expect(res.deployResult.appliedChanges).toHaveLength(isBrand ? 3 : 0)
-
-  if (isBrand) {
-    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'add', data: { after: beforeParent } }))
-    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'remove', data: { before: beforeParent } }))
-    expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeParent, after: afterParent } }))
-  }
+  const mockPut = jest.spyOn(client, 'put')
+  mockPut.mockReset()
+  const deployResult = await filter.deploy([change])
+  expect(deployResult.deployResult.appliedChanges).toMatchObject([change])
+  expect(mockPut).toHaveBeenCalledTimes(2)
+  expect(mockPut).toHaveBeenCalledWith({
+    url: createUrl({
+      instance: createChildElement(),
+      baseUrl: updateApi.url,
+      urlParamsToFields: updateApi.urlParamsToFields,
+    }),
+    data: { position: 0 },
+  })
+  expect(mockPut).toHaveBeenCalledWith({
+    url: createUrl({
+      instance: createChildElement(1),
+      baseUrl: updateApi.url,
+      urlParamsToFields: updateApi.urlParamsToFields,
+    }),
+    data: { position: 1 },
+  })
 }
 
 describe('categories order in brand', () => {
-  beforeEach(async () => {
-    filter = orderInBrandsFilter(createFilterCreatorParams({ elementsSource })) as FilterType
-  })
-
   describe('on fetch', () => {
     it('with Guide active', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = true
+      filter = orderInBrandsFilter(
+        createFilterCreatorParams({ config })
+      ) as FilterType
       await testFetch({
         createParent: createBrandInstance,
         createChild: createCategoryInstance,
         orderField: CATEGORIES_FIELD,
       })
     })
-    it('with Guide not active', async () => {
+    it('with Guide not active in Zendesk', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = true
+      filter = orderInBrandsFilter(
+        createFilterCreatorParams({ config })
+      ) as FilterType
       // Should not create categories order field at all
       const brandWithoutGuide = createBrandInstance(false)
       const categories = [createCategoryInstance(), createCategoryInstance()]
@@ -309,35 +213,48 @@ describe('categories order in brand', () => {
 
       expect(brandWithoutGuide.value.categories).toBeUndefined()
     })
+    it('with Guide not active in Salto', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = false
+      filter = orderInBrandsFilter(
+        createFilterCreatorParams({ config })
+      ) as FilterType
+      // Should not create categories order field at all
+      const brandWithGuide = createBrandInstance()
+      const categories = [createCategoryInstance(), createCategoryInstance()]
+      await filter.onFetch([brandWithGuide, ...categories])
+
+      expect(brandWithGuide.value.categories).toBeUndefined()
+    })
   })
 
   describe('on deploy', () => {
-    const deployInstances = initDeployInstances(
-      createBrandInstance,
-      createCategoryInstance,
-      CATEGORIES_FIELD
-    )
+    const updateApi = {
+      url: '/api/v2/help_center/categories/{category_id}',
+      method: 'put',
+      deployAsField: 'category',
+      urlParamsToFields: {
+        category_id: 'id',
+      },
+    } as configUtils.DeployRequestConfig
     beforeEach(() => {
-      beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
+      filter = orderInBrandsFilter(createFilterCreatorParams({ client })) as FilterType
     })
 
-    it(`with only ${CATEGORIES_FIELD} order change`, async () => {
-      await testDeployWithOrderChanges(deployInstances, false, CATEGORIES_FIELD)
-    })
-
-    it(`with ${CATEGORIES_FIELD} change and regular change`, async () => {
-      await testDeployWithOrderChanges(deployInstances, true, CATEGORIES_FIELD)
-    })
-
-    it('with only non-order changes', async () => {
-      await testDeployWithoutOrderChanges(deployInstances, CATEGORIES_FIELD)
+    it('deploy', async () => {
+      await testDeploy(
+        createBrandInstance(),
+        CATEGORIES_FIELD,
+        createCategoryInstance,
+        updateApi
+      )
     })
   })
 })
 
 describe('sections order in category', () => {
   beforeEach(async () => {
-    filter = orderInCategoriesFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+    filter = orderInCategoriesFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('on fetch', async () => {
@@ -349,32 +266,29 @@ describe('sections order in category', () => {
   })
 
   describe('on deploy', () => {
-    const deployInstances = initDeployInstances(
-      createCategoryInstance,
-      createSectionInCategoryInstance,
-      SECTIONS_FIELD
-    )
-    beforeEach(() => {
-      beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
-    })
+    const updateApi = {
+      url: '/api/v2/help_center/sections/{section_id}',
+      method: 'put',
+      deployAsField: 'section',
+      urlParamsToFields: {
+        section_id: 'id',
+      },
+    } as configUtils.DeployRequestConfig
 
     it(`with only ${SECTIONS_FIELD} order change`, async () => {
-      await testDeployWithOrderChanges(deployInstances, false, SECTIONS_FIELD)
-    })
-
-    it(`with ${SECTIONS_FIELD} change and regular change`, async () => {
-      await testDeployWithOrderChanges(deployInstances, true, SECTIONS_FIELD)
-    })
-
-    it('with only non-order changes', async () => {
-      await testDeployWithoutOrderChanges(deployInstances, SECTIONS_FIELD)
+      await testDeploy(
+        createCategoryInstance(),
+        SECTIONS_FIELD,
+        createSectionInCategoryInstance,
+        updateApi
+      )
     })
   })
 })
 
 describe('sections and articles order in section', () => {
   beforeEach(async () => {
-    filter = orderInSectionsFilter(createFilterCreatorParams({ elementsSource })) as FilterType
+    filter = orderInSectionsFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('on fetch', async () => {
@@ -392,47 +306,43 @@ describe('sections and articles order in section', () => {
 
   describe('on deploy', () => {
     describe('section in section', () => {
-      const deployInstances = initDeployInstances(
-        createSectionInCategoryInstance,
-        createSectionInSectionInstance,
-        SECTIONS_FIELD
-      )
-      beforeEach(() => {
-        beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
-      })
+      const updateApi = {
+        url: '/api/v2/help_center/sections/{section_id}',
+        method: 'put',
+        deployAsField: 'section',
+        urlParamsToFields: {
+          section_id: 'id',
+        },
+      } as configUtils.DeployRequestConfig
 
       it(`with only ${SECTIONS_FIELD} order change`, async () => {
-        await testDeployWithOrderChanges(deployInstances, false, SECTIONS_FIELD)
-      })
-
-      it(`with ${SECTIONS_FIELD} change and regular change`, async () => {
-        await testDeployWithOrderChanges(deployInstances, true, SECTIONS_FIELD)
-      })
-
-      it('with only non-order changes', async () => {
-        await testDeployWithoutOrderChanges(deployInstances, SECTIONS_FIELD)
+        await testDeploy(
+          createSectionInCategoryInstance(1),
+          SECTIONS_FIELD,
+          createSectionInSectionInstance,
+          updateApi,
+          ARTICLES_FIELD,
+        )
       })
     })
     describe('article in section', () => {
-      const deployInstances = initDeployInstances(
-        createSectionInCategoryInstance,
-        createArticleInstance,
-        ARTICLES_FIELD
-      )
-      beforeEach(() => {
-        beforeDeploy(deployInstances.firstChild, deployInstances.secondChild)
-      })
+      const updateApi = {
+        url: '/api/v2/help_center/articles/{articleId}',
+        method: 'put',
+        deployAsField: 'article',
+        urlParamsToFields: {
+          articleId: 'id',
+        },
+      } as configUtils.DeployRequestConfig
 
       it(`with only ${ARTICLES_FIELD} order change`, async () => {
-        await testDeployWithOrderChanges(deployInstances, false, ARTICLES_FIELD)
-      })
-
-      it(`with ${ARTICLES_FIELD} change and regular change`, async () => {
-        await testDeployWithOrderChanges(deployInstances, true, ARTICLES_FIELD)
-      })
-
-      it('with only non-order changes', async () => {
-        await testDeployWithoutOrderChanges(deployInstances, ARTICLES_FIELD)
+        await testDeploy(
+          createSectionInCategoryInstance(),
+          ARTICLES_FIELD,
+          createArticleInstance,
+          updateApi,
+          SECTIONS_FIELD,
+        )
       })
     })
   })

@@ -111,6 +111,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
 
     const newOrderElement = change.data.after
     const orderElements = newOrderElement.value[orderField]
+    let positionUpdatesSuccessful = true
 
     if (!orderElements.every(isReferenceExpression)) {
       orderChangeErrors.push(new Error(`Error updating ${orderField} positions of '${newOrderElement.elemID.typeName}' - some values in the list are not a reference`))
@@ -118,7 +119,6 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
     }
 
     await awu(orderElements).filter(isReferenceExpression).forEach(async (child, i) => {
-      let positionUpdatesSuccessful = true
       const resolvedChild = child.value
       const childType = resolvedChild.elemID.typeName
       const childUpdateApi = config[API_DEFINITIONS_CONFIG].types[childType].deployRequests?.modify
@@ -142,11 +142,11 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
         orderChangeErrors.push(new Error(`Error updating position of '${childType}' - No update API configuration`))
         positionUpdatesSuccessful = false
       }
-
-      if (positionUpdatesSuccessful) {
-        appliedChanges.push(change)
-      }
     })
+
+    if (positionUpdatesSuccessful) {
+      appliedChanges.push(change)
+    }
   })
 
   return {

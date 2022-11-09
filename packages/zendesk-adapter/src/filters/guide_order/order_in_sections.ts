@@ -86,8 +86,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     return {
       deployResult: {
         appliedChanges: [
-          ...sectionsInSectionDeployResult.appliedChanges,
-          ...articlesInSectionDeployResult.appliedChanges,
+          // Each change is run twice (one on each field), so we removed duplicates
+          ...new Set([
+            ...sectionsInSectionDeployResult.appliedChanges,
+            ...articlesInSectionDeployResult.appliedChanges,
+          ]),
         ],
         errors: [
           ...sectionsInSectionDeployResult.errors,

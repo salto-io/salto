@@ -19,6 +19,7 @@ import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { BRAND_TYPE_NAME } from '../constants'
 import { LOGO_FIELD } from './brand_logo'
+import { CATEGORIES_FIELD } from './guide_order/guide_orders_utils'
 
 /**
  * Ignores the logo field from brand instances when deploying,
@@ -33,7 +34,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       brandChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD])
+        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
       }
     )
     return { deployResult, leftoverChanges }

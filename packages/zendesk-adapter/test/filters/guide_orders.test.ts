@@ -125,7 +125,7 @@ const testFetch = async ({ createParent, createChild, orderField }
     },
     [ZENDESK, RECORDS_PATH, SETTINGS_NESTED_PATH, 'GuideOrder', `order_in_${parentInstance.elemID.typeName}`]
   )
-  // Sections inside sections test will create and orderElement for all instanceElements
+  // Sections inside sections test will create and orderElement for all sections InstanceElements
   if (parentInstance.elemID.typeName === SECTION_TYPE_NAME && orderField === SECTIONS_FIELD) {
     expect(elements.length).toBe(11)
     expect(elements[5]).toBe(typeObject)

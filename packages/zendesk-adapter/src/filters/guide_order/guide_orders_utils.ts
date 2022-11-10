@@ -15,7 +15,7 @@
 */
 import {
   BuiltinTypes,
-  Change,
+  Change, CORE_ANNOTATIONS,
   DeployResult,
   ElemID,
   InstanceElement,
@@ -89,7 +89,10 @@ export const createOrderElement = ({ parent, parentField, orderField, childrenEl
       SETTINGS_NESTED_PATH,
       'GuideOrder',
       `order_in_${parent.elemID.typeName}`,
-    ]
+    ],
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
+    }
   )
 }
 

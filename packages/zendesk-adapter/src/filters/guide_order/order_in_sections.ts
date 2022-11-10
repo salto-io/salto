@@ -53,14 +53,14 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         childrenElements: articles,
       })
 
-      const orderElement = sectionsInSectionOrderElement.clone()
-      // Combine the orderElements into a single one with two fields
-      orderElement.value[ARTICLES_FIELD] = articlesInSectionOrderElement.value[ARTICLES_FIELD]
-
-      section.value.sections_articles = new ReferenceExpression(
-        orderElement.elemID, orderElement
+      section.value[SECTIONS_FIELD] = new ReferenceExpression(
+        sectionsInSectionOrderElement.elemID, sectionsInSectionOrderElement
       )
-      elements.push(orderElement)
+
+      section.value[ARTICLES_FIELD] = new ReferenceExpression(
+        articlesInSectionOrderElement.elemID, articlesInSectionOrderElement
+      )
+      elements.push(sectionsInSectionOrderElement, articlesInSectionOrderElement)
     })
   },
   /** Change the section and articles positions according to their order in the section */

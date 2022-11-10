@@ -37,6 +37,7 @@ export { requiredAppOwnedParametersValidator } from './required_app_owned_parame
 export { oneTranslationPerLocaleValidator } from './one_translation_per_locale'
 export { articleRemovalValidator } from './article_removal'
 export { articleLabelNamesRemovalValidator } from './article_label_names_removal'
+export { everyoneUserSegmentModificationValidator } from './everyone_user_segment_modification'
 export { brandFieldForBrandBasedElementsValidator } from './brand_field_for_branded_based_elements'
 export { translationForDefaultLocaleValidator } from './translation_for_default_locale'
 export { helpCenterActivationValidator } from './help_center_activation'

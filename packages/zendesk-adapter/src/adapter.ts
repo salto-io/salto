@@ -36,6 +36,11 @@ import {
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
 } from './constants'
+import {
+  ORDER_IN_BRAND_TYPE,
+  ORDER_IN_CATEGORY_TYPE,
+  ORDER_IN_SECTION_TYPE,
+} from './filters/guide_order/guide_orders_utils'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -100,11 +105,7 @@ import orderInBrandsFilter from './filters/guide_order/order_in_brands'
 import orderInCategoriesFilter from './filters/guide_order/order_in_categories'
 import orderInSectionsFilter from './filters/guide_order/order_in_sections'
 import hcServiceUrl from './filters/help_center_service_url'
-import {
-  ORDER_IN_BRAND_TYPE,
-  ORDER_IN_CATEGORY_TYPE,
-  ORDER_IN_SECTION_TYPE,
-} from './filters/guide_order/guide_orders_utils'
+import everyoneUserSegementFilter from './filters/everyone_user_segment'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -159,6 +160,8 @@ export const DEFAULT_FILTERS = [
   orderInCategoriesFilter,
   orderInSectionsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
+  // everyoneUserSegementFilter needs to be before articleFilter
+  everyoneUserSegementFilter,
   articleFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,

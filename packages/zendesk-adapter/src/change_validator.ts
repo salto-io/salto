@@ -43,6 +43,7 @@ import {
   articleLabelNamesRemovalValidator,
   helpCenterActivationValidator,
   helpCenterCreationOrRemovalValidator,
+  everyoneUserSegmentModificationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { orderInBrandsValidator } from './change_validators/guide_orders/order_in_brands_validator'
@@ -94,6 +95,7 @@ export default ({
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
     articleLabelNamesRemovalValidator,
+    everyoneUserSegmentModificationValidator,
     brandFieldForBrandBasedElementsValidator,
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,

@@ -131,7 +131,7 @@ const testFetch = async ({ createParent, createChild, orderField }
 
   const typeObject = createOrderType(parentInstance.elemID.typeName)
   const orderInstance = new InstanceElement(
-    parentInstance.elemID.name,
+    `${parentInstance.elemID.name}_${orderField}`,
     typeObject,
     {
       // Sort by position -> later createAt -> id
@@ -189,6 +189,7 @@ const testDeploy = async (
   mockPut.mockReset()
   const deployResult = await filter.deploy([change])
   expect(deployResult.deployResult.appliedChanges).toMatchObject([change])
+  expect(deployResult.leftoverChanges.length).toBe(0)
   expect(mockPut).toHaveBeenCalledTimes(2)
   expect(mockPut).toHaveBeenCalledWith({
     url: createUrl({

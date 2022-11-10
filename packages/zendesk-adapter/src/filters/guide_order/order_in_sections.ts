@@ -18,6 +18,7 @@ import {
   InstanceElement,
   isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
 import {
@@ -70,8 +71,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   /** Change the section and articles positions according to their order in the section */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const orderInSectionChanges = changes.filter(
-      c => getChangeData(c).elemID.typeName === ORDER_IN_SECTION_TYPE
+    const [orderInSectionChanges, leftoverChanges] = _.partition(
+      changes,
+      change => getChangeData(change).elemID.typeName === ORDER_IN_SECTION_TYPE,
     )
 
     const sectionsInSectionDeployResult = await deployOrderChanges({
@@ -102,7 +104,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           ...articlesInSectionDeployResult.errors,
         ],
       },
-      leftoverChanges: changes,
+      leftoverChanges,
     }
   },
 })

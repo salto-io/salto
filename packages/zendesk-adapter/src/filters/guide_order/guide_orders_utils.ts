@@ -116,7 +116,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
     }
 
     const newOrderElement = change.data.after
-    const orderElements = newOrderElement.value[orderField]
+    const orderElements = newOrderElement.value[orderField] || []
 
     await awu(orderElements).filter(isReferenceExpression).forEach(async (child, i) => {
       const resolvedChild = child.value
@@ -125,17 +125,20 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
 
       // Send an api request to update the positions of the elements in the order list
       if (childUpdateApi !== undefined) {
-        try {
-          await client.put({
-            url: createUrl({
-              instance: resolvedChild,
-              baseUrl: childUpdateApi.url,
-              urlParamsToFields: childUpdateApi.urlParamsToFields,
-            }),
-            data: { position: i },
-          })
-        } catch (err) {
-          orderChangeErrors.push(getZendeskError(getChangeData(change).elemID.getFullName(), err))
+        // There is no reason to update categories that weren't changed
+        if (resolvedChild.value.position !== i) {
+          try {
+            await client.put({
+              url: createUrl({
+                instance: resolvedChild,
+                baseUrl: childUpdateApi.url,
+                urlParamsToFields: childUpdateApi.urlParamsToFields,
+              }),
+              data: { position: i },
+            })
+          } catch (err) {
+            orderChangeErrors.push(getZendeskError(getChangeData(change).elemID.getFullName(), err))
+          }
         }
       } else {
         orderChangeErrors.push(new Error(`No endpoint of type modify for ${child.elemID.typeName}`))

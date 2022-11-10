@@ -39,13 +39,14 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const brands = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
 
-    elements.push(GUIDE_ORDER_TYPES[BRAND_TYPE_NAME])
-    brands.forEach(brand => {
-      // If the brand doesn't have Guide activated, do nothing
-      if (!config[FETCH_CONFIG].enableGuide || !brand.value.has_help_center) {
-        return
-      }
+    // If Guide is not enabled in Salto, we don't need to do anything
+    if (!config[FETCH_CONFIG].enableGuide) {
+      return
+    }
 
+    elements.push(GUIDE_ORDER_TYPES[BRAND_TYPE_NAME])
+    // If the brand doesn't have Guide activated, do nothing
+    brands.filter(b => b.value.has_help_center).forEach(brand => {
       const orderInBrandElement = createOrderElement({
         parent: brand,
         parentField: 'brand',

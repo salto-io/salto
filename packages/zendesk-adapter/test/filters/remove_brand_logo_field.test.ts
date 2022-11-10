@@ -21,6 +21,7 @@ import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_brand_logo_field'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
+import { CATEGORIES_FIELD } from '../../src/filters/guide_order/guide_orders_utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -76,7 +77,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'add', data: { after: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -100,7 +101,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'modify', data: { before: clonedBeforeBrand, after: clonedAfterBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -120,7 +121,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'remove', data: { before: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -137,7 +138,7 @@ describe('remove brand logo field filter', () => {
       change: { action: 'add', data: { after: clonedBrand } },
       client: expect.anything(),
       endpointDetails: expect.anything(),
-      fieldsToIgnore: [LOGO_FIELD],
+      fieldsToIgnore: [LOGO_FIELD, CATEGORIES_FIELD],
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)

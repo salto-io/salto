@@ -114,7 +114,6 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
 
     const newOrderElement = change.data.after
     const orderElements = newOrderElement.value[orderField]
-    let positionUpdatesSuccessful = true
 
     if (!orderElements.every(isReferenceExpression)) {
       orderChangeErrors.push(new Error(`Error updating ${orderField} positions of '${newOrderElement.elemID.typeName}' - some values in the list are not a reference`))
@@ -139,15 +138,13 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
           })
         } catch (e) {
           orderChangeErrors.push(new Error(`Error updating position of '${childType}' - ${e.message}`))
-          positionUpdatesSuccessful = false
         }
       } else {
         orderChangeErrors.push(new Error(`Error updating position of '${childType}' - No update API configuration`))
-        positionUpdatesSuccessful = false
       }
     })
 
-    if (positionUpdatesSuccessful) {
+    if (orderChangeErrors.length === 0) {
       appliedChanges.push(change)
     }
   })

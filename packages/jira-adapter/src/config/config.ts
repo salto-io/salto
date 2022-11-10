@@ -50,8 +50,7 @@ type JiraDeployConfig = configUtils.UserDeployConfig & {
   forceDelete: boolean
 }
 
-type JiraFetchFilters = {
-  name?: string
+type JiraFetchFilters = configUtils.DefaultFetchCriteria & {
   type?: string
 }
 

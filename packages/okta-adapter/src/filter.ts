@@ -26,7 +26,7 @@ export type FilterResult = {
 
 export type Filter = filterUtils.Filter<FilterResult>
 
-export type FilterAdditionParams = {
+export type FilterAdditionalParams = {
   elementsSource: ReadOnlyElementsSource
   fetchQuery: elementUtils.query.ElementQuery
   // A context for deployment that should be persistent across all the deployment steps.
@@ -39,5 +39,5 @@ export type FilterCreator = filterUtils.FilterCreator<
   OktaClient,
   OktaConfig,
   FilterResult,
-  FilterAdditionParams
+  FilterAdditionalParams
 >

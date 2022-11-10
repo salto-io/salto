@@ -13,11 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import WorkatoClient from './client/client'
 import { FilterContext } from './config'
 
 export const { filtersRunner } = filterUtils
+
+export type FilterAdditionalParams = {
+  fetchQuery: elementUtils.query.ElementQuery
+}
 
 export type Filter = filterUtils.Filter
 

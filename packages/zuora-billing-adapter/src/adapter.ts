@@ -23,6 +23,7 @@ import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
 import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, getUpdatedConfig, SETTING_TYPES, SUPPORTED_TYPES } from './config'
+import fetchCriteria from './fetch_criteria'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
@@ -42,26 +43,22 @@ const { createPaginator } = clientUtils
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
-const { hideTypes, ...otherCommonFilters } = commonFilters
+const { hideTypes: hideTypesFilter, query: queryFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   // hideTypes should run before creating custom objects, so that it doesn't hide them
-  hideTypes,
+  hideTypesFilter,
+  queryFilter,
   // objectDefsFilter should run before everything else
   objectDefsFilter,
-
+  queryFilter,
   // unorderedLists should run before references are created
   unorderedListsFilter,
-
   workflowAndTaskReferencesFilter,
-
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
-
   objectReferencesFilter,
-
   financeInformationReferencesFilter,
-
   ...Object.values(otherCommonFilters),
   // objectDefSplitFilter should run at the end - splits elements to divide to multiple files
   objectDefSplitFilter,
@@ -92,7 +89,10 @@ export default class ZuoraAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.paginator = paginator
-    this.fetchQuery = elementUtils.query.createElementQuery(config[FETCH_CONFIG])
+    this.fetchQuery = elementUtils.query.createElementQuery(
+      this.userConfig[FETCH_CONFIG],
+      fetchCriteria,
+    )
     this.createFiltersRunner = () => (
       filtersRunner({ client, paginator, config, fetchQuery: this.fetchQuery }, filterCreators)
     )

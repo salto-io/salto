@@ -39,13 +39,16 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const categories = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
 
-    elements.push(createOrderType(CATEGORY_TYPE_NAME))
+    const orderType = createOrderType(CATEGORY_TYPE_NAME)
+    elements.push(orderType)
+
     categories.forEach(category => {
       const orderInCategoryElement = createOrderElement({
         parent: category,
         parentField: 'category_id',
         orderField: SECTIONS_FIELD,
         childrenElements: sections.filter(s => s.value.parent_section_id === undefined),
+        orderType,
       })
       category.value.sections = new ReferenceExpression(
         orderInCategoryElement.elemID, orderInCategoryElement
@@ -53,7 +56,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       elements.push(orderInCategoryElement)
     })
   },
-  /** Change the sections positions to their order in the category, and deploy the category */
+  /** Change the sections positions to their order in the category */
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [orderInCategoryChanges, leftoverChanges] = _.partition(
       changes,

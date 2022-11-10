@@ -39,19 +39,23 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const sections = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
 
-    elements.push(createOrderType(SECTION_TYPE_NAME))
+    const orderType = createOrderType(SECTION_TYPE_NAME)
+    elements.push(orderType)
+
     sections.forEach(section => {
       const sectionsOrderElement = createOrderElement({
         parent: section,
         parentField: 'parent_section_id',
         orderField: SECTIONS_FIELD,
         childrenElements: sections,
+        orderType,
       })
       const articlesOrderElements = createOrderElement({
         parent: section,
         parentField: 'section_id',
         orderField: ARTICLES_FIELD,
         childrenElements: articles,
+        orderType,
       })
 
       // Promoted articles are first

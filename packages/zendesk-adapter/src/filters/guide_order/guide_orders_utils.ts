@@ -67,12 +67,13 @@ const GUIDE_ORDER_TYPES : {[key: string]: () => ObjectType} = {
 export const createOrderType = (typeName: string) : ObjectType => GUIDE_ORDER_TYPES[typeName]()
 
 
-export const createOrderElement = ({ parent, parentField, orderField, childrenElements }
+export const createOrderElement = ({ parent, parentField, orderField, childrenElements, orderType }
 : {
   parent: InstanceElement
   parentField: string
   orderField: string
   childrenElements: InstanceElement[]
+  orderType: ObjectType
 }): InstanceElement => {
   const parentsChildren = _.orderBy(
     childrenElements.filter(c => c.value[parentField] === parent.value.id),
@@ -82,7 +83,7 @@ export const createOrderElement = ({ parent, parentField, orderField, childrenEl
 
   return new InstanceElement(
     `${parent.elemID.name}_${orderField}`,
-    createOrderType(parent.elemID.typeName),
+    orderType,
     {
       [orderField]: parentsChildren.map(c => new ReferenceExpression(c.elemID, c)),
     },
@@ -125,7 +126,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
 
       // Send an api request to update the positions of the elements in the order list
       if (childUpdateApi !== undefined) {
-        // There is no reason to update categories that weren't changed
+        // There is no reason to update elements that weren't changed
         if (resolvedChild.value.position !== i) {
           try {
             await client.put({

@@ -209,10 +209,11 @@ const testDeploy = async (
   })
 }
 
+const config = { ...DEFAULT_CONFIG }
+
 describe('categories order in brand', () => {
   describe('on fetch', () => {
-    it('with Guide active', async () => {
-      const config = DEFAULT_CONFIG
+    it('with Guide active in Zendesk And Salto', async () => {
       config[FETCH_CONFIG].enableGuide = true
       filter = orderInBrandsFilter(
         createFilterCreatorParams({ config })
@@ -224,7 +225,6 @@ describe('categories order in brand', () => {
       })
     })
     it('with Guide not active in Zendesk', async () => {
-      const config = DEFAULT_CONFIG
       config[FETCH_CONFIG].enableGuide = true
       filter = orderInBrandsFilter(
         createFilterCreatorParams({ config })
@@ -237,10 +237,9 @@ describe('categories order in brand', () => {
       expect(brandWithoutGuide.value.categories).toBeUndefined()
     })
     it('with Guide not active in Salto', async () => {
-      const config = DEFAULT_CONFIG
       config[FETCH_CONFIG].enableGuide = false
       filter = orderInBrandsFilter(
-        createFilterCreatorParams({ config })
+        createFilterCreatorParams({})
       ) as FilterType
       // Should not create categories order field at all
       const brandWithGuide = createBrandInstance()

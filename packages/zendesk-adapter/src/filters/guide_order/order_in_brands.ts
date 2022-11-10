@@ -29,7 +29,7 @@ import {
 import { FETCH_CONFIG } from '../../config'
 
 /**
- * Handle everything related to brands
+ * Handle the order of categories in brand
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Create an InstanceElement of the categories order inside the brands */
@@ -44,7 +44,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    elements.push(createOrderType(BRAND_TYPE_NAME))
+    const orderType = createOrderType(BRAND_TYPE_NAME)
+    elements.push(orderType)
+
     // If the brand doesn't have Guide activated, do nothing
     brands.filter(b => b.value.has_help_center).forEach(brand => {
       const orderInBrandElement = createOrderElement({
@@ -52,6 +54,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         parentField: 'brand',
         orderField: CATEGORIES_FIELD,
         childrenElements: categories,
+        orderType,
       })
       brand.value.categories = new ReferenceExpression(
         orderInBrandElement.elemID, orderInBrandElement
@@ -59,7 +62,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       elements.push(orderInBrandElement)
     })
   },
-  /** Change the categories positions according to their order in the brand, and deploy the brand */
+  /** Change the categories positions according to their order in the brand */
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [orderInBrandChanges, leftoverChanges] = _.partition(
       changes,

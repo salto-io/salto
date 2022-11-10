@@ -18,9 +18,8 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
-  isInstanceElement, isObjectType, isRemovalChange, ObjectType, ReferenceExpression,
+  isInstanceElement, isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -29,29 +28,18 @@ import { addRemovalChangesId, isTranslation } from './help_center_section_and_ca
 import { lookupFunc } from './field_references'
 import { removeTitleAndBody } from './help_center_fetch_article'
 import { prepRef } from './article_body'
-import { FETCH_CONFIG } from '../config'
+import { EVERYONE } from './everyone_user_segment'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const { RECORDS_PATH } = elementsUtils
 
 const USER_SEGMENT_ID_FIELD = 'user_segment_id'
-const EVERYONE = 'Everyone'
 
 export type TranslationType = {
   title: string
   body?: string
   locale: { id: string }
 }
-
-export const createEveryoneUserSegmentInstance = (userSegmentType: ObjectType): InstanceElement => (
-  new InstanceElement(
-    EVERYONE,
-    userSegmentType,
-    { user_type: EVERYONE, built_in: true, name: EVERYONE },
-    [ZENDESK, RECORDS_PATH, USER_SEGMENT_TYPE_NAME, EVERYONE],
-  )
-)
 
 const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
@@ -84,20 +72,15 @@ const setUserSegmentIdForAdditionChanges = (
  */
 const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   onFetch: async elements => {
-    const userSegmentType = elements
-      .filter(element => element.elemID.typeName === USER_SEGMENT_TYPE_NAME)
-      .find(isObjectType)
-    if (userSegmentType === undefined) {
-      log.error("Couldn't find user_segment type. Cancel article fetch.")
+    const everyoneUserSegmentInstance = elements
+      .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
+      .find(instance => instance.elemID.name === EVERYONE)
+    if (everyoneUserSegmentInstance === undefined) {
       return
     }
-    const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
     const articleInstances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
-    if (!config[FETCH_CONFIG].enableGuide) {
-      return
-    }
     articleInstances
       .filter(article => article.value[USER_SEGMENT_ID_FIELD] === undefined)
       .forEach(article => {
@@ -106,11 +89,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
           everyoneUserSegmentInstance,
         )
       })
-    if (elements.find(
-      element => element.elemID.isEqual(everyoneUserSegmentInstance.elemID) === undefined
-    )) {
-      elements.push(everyoneUserSegmentInstance)
-    }
   },
 
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
@@ -154,9 +132,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   },
 
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-    const userSegmentTypeElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME)
-    const userSegmentType = await elementsSource.get(userSegmentTypeElemID)
-    const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
+    const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE)
+    const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID)
     changes
       .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
       .map(getChangeData)

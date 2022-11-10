@@ -23,8 +23,9 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator, { createEveryoneUserSegmentInstance } from '../../src/filters/article'
+import filterCreator from '../../src/filters/article'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -42,14 +43,13 @@ describe('article filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
   let filter: FilterType
-  let everyoneUserSegmentInstance: InstanceElement
   const userSegmentInstance = new InstanceElement(
     'notEveryone',
     new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) }),
     {
-      user_type: 'Everyone',
+      user_type: 'notEveryone',
       built_in: true,
-      name: 'Everyone',
+      name: 'notEveryone',
     }
   )
   const articleInstance = new InstanceElement(
@@ -105,9 +105,11 @@ describe('article filter', () => {
     new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
   ]
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) })
+  const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
     articleInstance, anotherArticleInstance, userSegmentInstance, userSegmentType,
+    everyoneUserSegmentInstance,
   ]).map(element => element.clone())
 
   beforeEach(async () => {
@@ -115,7 +117,6 @@ describe('article filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
     })
-    everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
     const elementsSource = buildElementsSourceFromElements([
       userSegmentType,
       everyoneUserSegmentInstance,
@@ -144,7 +145,7 @@ describe('article filter', () => {
       elements = generateElements()
     })
 
-    it('should add Everyone user_segment', async () => {
+    it('should add Everyone user_segment_id field', async () => {
       await filter.onFetch(elements)
       const fetchedArticle = elements
         .filter(isInstanceElement)

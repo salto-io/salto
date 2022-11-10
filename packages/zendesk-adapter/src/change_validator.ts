@@ -43,7 +43,7 @@ import {
   articleLabelNamesRemovalValidator,
   helpCenterActivationValidator,
   helpCenterCreationOrRemovalValidator,
-  everyoneUserSegmentValidator,
+  everyoneUserSegmentModificationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -92,7 +92,7 @@ export default ({
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
     articleLabelNamesRemovalValidator,
-    everyoneUserSegmentValidator,
+    everyoneUserSegmentModificationValidator,
     brandFieldForBrandBasedElementsValidator,
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,

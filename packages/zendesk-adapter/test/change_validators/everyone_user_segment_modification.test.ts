@@ -16,10 +16,10 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { everyoneUserSegmentValidator } from '../../src/change_validators/everyone_user_segment'
-import { createEveryoneUserSegmentInstance } from '../../src/filters/article'
+import { everyoneUserSegmentModificationValidator } from '../../src/change_validators/everyone_user_segment_modification'
+import { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
 
-describe('everyoneUserSegmentValidator', () => {
+describe('everyoneUserSegmentModificationValidator', () => {
   const userSegmentType = new ObjectType({
     elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
   })
@@ -40,7 +40,7 @@ describe('everyoneUserSegmentValidator', () => {
   it('should return an error if everyone user_segment has been modified', async () => {
     const clonedAfterUserSegment = everyoneUserSegmentInstance.clone()
     clonedAfterUserSegment.value.name = 'notEveryoneAnymore'
-    const errors = await everyoneUserSegmentValidator(
+    const errors = await everyoneUserSegmentModificationValidator(
       [toChange({ before: clonedAfterUserSegment, after: everyoneUserSegmentInstance })],
       elementsSource,
     )
@@ -52,7 +52,7 @@ describe('everyoneUserSegmentValidator', () => {
     }])
   })
   it('should return an error if everyone user_segment has been removed', async () => {
-    const errors = await everyoneUserSegmentValidator(
+    const errors = await everyoneUserSegmentModificationValidator(
       [toChange({ before: everyoneUserSegmentInstance })],
       elementsSource,
     )
@@ -67,7 +67,7 @@ describe('everyoneUserSegmentValidator', () => {
     const clonedBeforeUserSegment = userSegmentInstance.clone()
     const clonedAfterUserSegment = userSegmentInstance.clone()
     clonedAfterUserSegment.value.name = 'editedName'
-    const errors = await everyoneUserSegmentValidator(
+    const errors = await everyoneUserSegmentModificationValidator(
       [toChange({ before: clonedBeforeUserSegment, after: clonedAfterUserSegment })],
       elementsSource,
     )

@@ -25,7 +25,8 @@ import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replie
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
-import { ZENDESK } from '../src/constants'
+import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../src/constants'
+import { createEveryoneUserSegmentInstance } from '../src/filters/everyone_user_segment'
 
 type MockReply = {
   url: string
@@ -68,6 +69,10 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
+  const userSegmentType = new ObjectType({
+    elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
+  })
+  const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
@@ -888,7 +893,10 @@ describe('adapter', () => {
             },
           }
         ),
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSource: buildElementsSourceFromElements([
+          userSegmentType,
+          everyoneUserSegmentInstance,
+        ]),
       })
     })
     afterEach(() => {

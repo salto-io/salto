@@ -97,6 +97,7 @@ import hcParentSection, { addParentFields } from './filters/help_center_parent_t
 import hcGuideSettings from './filters/help_center_guide_settings'
 import brandsFilter from './filters/brands_filter'
 import hcServiceUrl from './filters/help_center_service_url'
+import everyoneUserSegementFilter from './filters/everyone_user_segment'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -151,6 +152,8 @@ export const DEFAULT_FILTERS = [
   // orderInCategoriesFilter,
   // orderInSectionsFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
+  // everyoneUserSegementFilter needs to be before articleFilter
+  everyoneUserSegementFilter,
   articleFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,

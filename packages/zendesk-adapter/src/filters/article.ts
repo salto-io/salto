@@ -17,19 +17,23 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionChange, isRemovalChange,
+  Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
+  isInstanceElement, isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { ARTICLE_TYPE_NAME } from '../constants'
+import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
 import { addRemovalChangesId, isTranslation } from './help_center_section_and_category'
 import { lookupFunc } from './field_references'
 import { removeTitleAndBody } from './help_center_fetch_article'
 import { prepRef } from './article_body'
+import { EVERYONE } from './everyone_user_segment'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+
+const USER_SEGMENT_ID_FIELD = 'user_segment_id'
 
 export type TranslationType = {
   title: string
@@ -49,10 +53,45 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   }
 }
 
+// The default user_segment we added will be resolved to undefined
+// So in order to create a new article we need to add a null value user_segment_id
+const setUserSegmentIdForAdditionChanges = (
+  changes: Change<InstanceElement>[]
+): void => {
+  changes
+    .filter(isAdditionChange)
+    .map(getChangeData)
+    .filter(articleInstance => articleInstance.value[USER_SEGMENT_ID_FIELD] === undefined)
+    .forEach(articleInstance => {
+      articleInstance.value[USER_SEGMENT_ID_FIELD] = null
+    })
+}
+
 /**
- * Deploys articles
+ * Deploys articles and adds default user_segment value to visible articles
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
+  onFetch: async elements => {
+    const everyoneUserSegmentInstance = elements
+      .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
+      .find(instance => instance.elemID.name === EVERYONE)
+    if (everyoneUserSegmentInstance === undefined) {
+      log.info("Couldn't find Everyone user_segment instance.")
+      return
+    }
+    const articleInstances = elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
+    articleInstances
+      .filter(article => article.value[USER_SEGMENT_ID_FIELD] === undefined)
+      .forEach(article => {
+        article.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
+          everyoneUserSegmentInstance.elemID,
+          everyoneUserSegmentInstance,
+        )
+      })
+  },
+
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     await awu(changes)
       .filter(isAdditionChange)
@@ -81,6 +120,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         && !isRemovalChange(change),
     )
     addRemovalChangesId(articleChanges)
+    setUserSegmentIdForAdditionChanges(articleChanges)
     const deployResult = await deployChanges(
       articleChanges,
       async change => {
@@ -93,9 +133,20 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   },
 
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+    const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE)
+    const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID)
     changes
       .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
-      .forEach(change => removeTitleAndBody(getChangeData(change)))
+      .map(getChangeData)
+      .forEach(articleInstance => {
+        removeTitleAndBody(articleInstance)
+        if (articleInstance.value[USER_SEGMENT_ID_FIELD] === null) {
+          articleInstance.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
+            everyoneUserSegmentInstance.elemID,
+            everyoneUserSegmentInstance,
+          )
+        }
+      })
   },
 })
 

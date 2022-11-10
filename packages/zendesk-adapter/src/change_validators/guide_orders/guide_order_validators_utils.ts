@@ -13,15 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { ChangeDataType, ChangeError, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
-import _ from 'lodash'
 
 export const isEverythingReferences = (orderInstance: ChangeDataType, orderField: string)
     : boolean =>
   isInstanceElement(orderInstance)
-    && !_.isEmpty(orderInstance.value[orderField])
-    && orderInstance.value[orderField].every(isReferenceExpression)
+  // If the field doesn't exist we treat it as true
+  && (orderInstance.value[orderField] === undefined
+  || orderInstance.value[orderField].every(isReferenceExpression))
 
 export const createErrorMessage = (instance: ChangeDataType, orderField: string) : ChangeError => ({
   elemID: instance.elemID,

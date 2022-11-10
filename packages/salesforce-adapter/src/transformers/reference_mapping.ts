@@ -548,6 +548,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'column', parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'] },
     target: { type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
+    target: { type: 'EntitlementProcess' },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on

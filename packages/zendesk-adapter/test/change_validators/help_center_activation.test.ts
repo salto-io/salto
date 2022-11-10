@@ -47,7 +47,7 @@ describe('helpCenterActivationValidator', () => {
     )
     expect(errors).toEqual([{
       elemID: brandTwoInstance.elemID,
-      severity: 'Error',
+      severity: 'Warning',
       message: 'Activation or deactivation of help center for a certain brand is not supported via Salto.',
       detailedMessage: `Activation or deactivation of help center for a certain brand is not supported via Salto. To activate or deactivate a help center, please go to ${brandTwoInstance.value.brand_url}/hc/admin/general_settings`,
     }])

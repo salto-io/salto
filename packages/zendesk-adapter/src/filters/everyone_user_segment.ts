@@ -39,9 +39,9 @@ export const createEveryoneUserSegmentInstance = (userSegmentType: ObjectType): 
 /**
  * Adds a user_segment for "Everyone" entity
  */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ config, fetchQuery }) => ({
   onFetch: async elements => {
-    if (!config[FETCH_CONFIG].enableGuide) {
+    if (!config[FETCH_CONFIG].enableGuide || !fetchQuery.isTypeMatch(USER_SEGMENT_TYPE_NAME)) {
       return
     }
     const userSegmentType = elements

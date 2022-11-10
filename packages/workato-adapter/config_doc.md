@@ -45,7 +45,7 @@ workato {
 |---------------------------------------------------------------|--------------------------|------------
 | [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [rateLimit](#rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
-| [maxRequestsPerMinute]                                        |                          | Limits on the number of requests per minute
+| [maxRequestsPerMinute]                                        | unlimited                | Limits on the number of requests per minute
 
 #### Client retry options
 

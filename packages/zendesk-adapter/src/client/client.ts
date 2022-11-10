@@ -32,7 +32,6 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
   get: 20,
   deploy: 20,
 }
-const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 20,
@@ -59,7 +58,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
+        maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
       },
     )

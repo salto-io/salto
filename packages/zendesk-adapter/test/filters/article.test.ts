@@ -24,6 +24,7 @@ import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator, { createEveryoneUserSegmentInstance } from '../../src/filters/article'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -117,7 +118,20 @@ describe('article filter', () => {
       new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) }),
     )
     const elementsSource = buildElementsSourceFromElements([everyoneUserSegmentInstance])
-    filter = filterCreator(createFilterCreatorParams({ client, elementsSource })) as FilterType
+    filter = filterCreator(createFilterCreatorParams({
+      client,
+      elementsSource,
+      config: {
+        ...DEFAULT_CONFIG,
+        [FETCH_CONFIG]: {
+          include: [{
+            type: '.*',
+          }],
+          exclude: [],
+          enableGuide: true,
+        },
+      },
+    })) as FilterType
   })
 
 

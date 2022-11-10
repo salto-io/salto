@@ -23,11 +23,8 @@ describe('everyoneUserSegmentValidator', () => {
   const userSegmentType = new ObjectType({
     elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
   })
-  console.log('%o', userSegmentType)
   const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
-  console.log('%o', everyoneUserSegmentInstance)
   const elementsSource = buildElementsSourceFromElements([everyoneUserSegmentInstance])
-  console.log('%o', elementsSource)
   const userSegmentInstance = new InstanceElement(
     'justATypicalUserSegment',
     userSegmentType,

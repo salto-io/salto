@@ -43,6 +43,9 @@ import {
   articleLabelNamesRemovalValidator, helpCenterActivationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
+import { orderInBrandsValidator } from './change_validators/guide_orders/order_in_brands_validator'
+import { orderInCategoriesValidator } from './change_validators/guide_orders/order_in_categories_validator'
+import { orderInSectionsValidator } from './change_validators/guide_orders/order_in_sections_validator'
 
 const {
   deployTypesNotSupportedValidator,
@@ -92,6 +95,9 @@ export default ({
     brandFieldForBrandBasedElementsValidator,
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,
+    orderInBrandsValidator,
+    orderInCategoriesValidator,
+    orderInSectionsValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

@@ -17,7 +17,7 @@ import {
   BuiltinTypes,
   Change, CORE_ANNOTATIONS,
   DeployResult,
-  ElemID,
+  ElemID, getChangeData,
   InstanceElement,
   isReferenceExpression,
   isRemovalChange, ListType,
@@ -30,6 +30,7 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../constants'
+import { getZendeskError } from '../../errors'
 
 const { RECORDS_PATH, SETTINGS_NESTED_PATH, createUrl } = elementsUtils
 const { awu } = collections.asynciterable
@@ -117,11 +118,6 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
     const newOrderElement = change.data.after
     const orderElements = newOrderElement.value[orderField]
 
-    if (!orderElements.every(isReferenceExpression)) {
-      orderChangeErrors.push(new Error(`Error updating ${orderField} positions of '${newOrderElement.elemID.typeName}' - some values in the list are not a reference`))
-      return
-    }
-
     await awu(orderElements).filter(isReferenceExpression).forEach(async (child, i) => {
       const resolvedChild = child.value
       const childType = resolvedChild.elemID.typeName
@@ -138,11 +134,11 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
             }),
             data: { position: i },
           })
-        } catch (e) {
-          orderChangeErrors.push(new Error(`Error updating position of '${childType}' - ${e.message}`))
+        } catch (err) {
+          orderChangeErrors.push(getZendeskError(getChangeData(change).elemID.getFullName(), err))
         }
       } else {
-        orderChangeErrors.push(new Error(`Error updating position of '${childType}' - No update API configuration`))
+        orderChangeErrors.push(new Error(`No endpoint of type modify for ${child.elemID.typeName}`))
       }
     })
 

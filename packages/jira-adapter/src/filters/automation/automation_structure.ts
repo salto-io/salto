@@ -341,11 +341,10 @@ const filter: FilterCreator = () => {
           change,
           originalAutomationChanges,
           getLookUpName,
-          (source, targetElement, lookUpNameFunc, allowEmpty = true) => restoreValues(
+          (source, targetElement, lookUpNameFunc) => restoreValues(
             source,
             targetElement,
             lookUpNameFunc,
-            allowEmpty,
           )
         ))
         .toArray()

@@ -179,6 +179,8 @@ describe('Test utils.ts', () => {
             },
           },
         },
+        {
+        },
       ],
       objWithInnerObj: {
         innerObj: {
@@ -1126,6 +1128,7 @@ describe('Test utils.ts', () => {
         arrayValues: [
           regValue,
           valueRef,
+          {},
         ],
         mapValues: {
           regValue,
@@ -1219,7 +1222,7 @@ describe('Test utils.ts', () => {
       it('should transform instanceElement', () => {
         expect(resolvedInstance.value.name).toEqual(instance.value.name)
         expect(resolvedInstance.value.refValue).toEqual(regValue)
-        expect(resolvedInstance.value.arrayValues).toHaveLength(2)
+        expect(resolvedInstance.value.arrayValues).toHaveLength(3)
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
         expect(Object.values(resolvedInstance.value.mapValues)).toHaveLength(2)
@@ -1351,16 +1354,21 @@ describe('Test utils.ts', () => {
       })
       describe('with addition change', () => {
         let sourceChange: AdditionChange<InstanceElement>
+        let restoredChange: AdditionChange<InstanceElement>
         beforeEach(async () => {
           sourceChange = { action: 'add', data: { after: afterData.clone() } }
           const sourceChanges = _.keyBy(
             [sourceChange],
             c => getChangeData(c).elemID.getFullName(),
           )
-          await restoreChangeElement(additionChange, sourceChanges, getName, mockRestore)
+          restoredChange = await restoreChangeElement(additionChange,
+            sourceChanges, getName, mockRestore) as AdditionChange<InstanceElement>
         })
         it('should call restore func on the after data', () => {
           expect(mockRestore).toHaveBeenCalledWith(sourceChange.data.after, afterData, getName)
+        })
+        it('should return the after data from the source change', () => {
+          expect(restoredChange.data.after).toStrictEqual(sourceChange.data.after)
         })
       })
       describe('with removal change', () => {

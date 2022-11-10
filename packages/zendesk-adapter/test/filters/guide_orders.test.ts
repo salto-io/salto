@@ -22,8 +22,7 @@ import orderInSectionsFilter from '../../src/filters/guide_order/order_in_sectio
 import { createFilterCreatorParams } from '../utils'
 import {
   ARTICLES_FIELD,
-  CATEGORIES_FIELD,
-  GUIDE_ORDER_TYPES,
+  CATEGORIES_FIELD, createOrderType,
   SECTIONS_FIELD,
 } from '../../src/filters/guide_order/guide_orders_utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
@@ -98,7 +97,10 @@ let filter: FilterType
 const testFetch = async ({ createParent, createChild, orderField }
   : {
     createParent: () => InstanceElement
-    createChild: (id: number, position?: number, createdAt?: string) => InstanceElement
+    createChild: (id: number,
+                  position?: number,
+                  createdAt?: string,
+                  promoted?: boolean) => InstanceElement
     orderField: string
   })
  : Promise<void> => {
@@ -107,21 +109,33 @@ const testFetch = async ({ createParent, createChild, orderField }
   const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
   const LATE_CREATED_AT = '2022-11-30T12:00:00Z'
   const childInstances = [
-    createChild(0, 0, EARLY_CREATED_AT),
+    createChild(1, 1, EARLY_CREATED_AT),
+    createChild(1, 0, EARLY_CREATED_AT),
     createChild(1, 0, LATE_CREATED_AT),
-    createChild(2, 1, LATE_CREATED_AT),
-    createChild(3, 1, EARLY_CREATED_AT)]
+    createChild(0, 0, LATE_CREATED_AT),
+  ]
+
+  const sortedOrder = [childInstances[3], childInstances[2], childInstances[1], childInstances[0]]
+
+  // In articles, we also check 'promoted' field, if its true the article should be first
+  if (orderField === ARTICLES_FIELD) {
+    const promotedArticle = createChild(2, 2, EARLY_CREATED_AT)
+    promotedArticle.value.promoted = true
+
+    childInstances.push(promotedArticle)
+    sortedOrder.unshift(promotedArticle)
+  }
 
   const elements = [parentInstance, ...childInstances]
   await filter.onFetch(elements)
 
-  const typeObject = GUIDE_ORDER_TYPES[parentInstance.elemID.typeName]
+  const typeObject = createOrderType(parentInstance.elemID.typeName)
   const orderInstance = new InstanceElement(
     parentInstance.elemID.name,
     typeObject,
     {
-      [orderField]: [childInstances[1], childInstances[0], childInstances[2], childInstances[3]]
-        .map(c => new ReferenceExpression(c.elemID, c)),
+      // Sort by position -> later createAt -> id
+      [orderField]: sortedOrder.map(c => new ReferenceExpression(c.elemID, c)),
     },
     [ZENDESK, RECORDS_PATH, SETTINGS_NESTED_PATH, 'GuideOrder', `order_in_${parentInstance.elemID.typeName}`]
   )
@@ -131,17 +145,18 @@ const testFetch = async ({ createParent, createChild, orderField }
     // Section_field test will also create an order element for all child sections
     if (orderField === SECTIONS_FIELD) {
       expect(elements.length).toBe(16) // All(8) x 2
-      expect(elements[6]).toMatchObject(orderInstance)
     } else {
-      expect(elements.length).toBe(8) // All(7) + ArticlesOrder(1)
-      expect(elements[7]).toMatchObject(orderInstance)
+      expect(elements.length).toBe(9) // All(7) + PromotedArticle(1) + ArticlesOrder(1)
+      expect(elements[6]).toMatchObject(typeObject)
+      expect(elements[8]).toMatchObject(orderInstance)
+      return
     }
   } else {
     expect(elements.length).toBe(7) // Parent(1) + Children(4) + Type(1) + OrderElement(1)
-    expect(elements[6]).toMatchObject(orderInstance)
   }
 
-  expect(elements[5]).toBe(typeObject)
+  expect(elements[6]).toMatchObject(orderInstance)
+  expect(elements[5]).toMatchObject(typeObject)
 }
 
 const testDeploy = async (
@@ -153,7 +168,7 @@ const testDeploy = async (
 ) : Promise<void> => {
   const orderInstance = new InstanceElement(
     parentInstance.elemID.name,
-    GUIDE_ORDER_TYPES[parentInstance.elemID.typeName],
+    createOrderType(parentInstance.elemID.typeName),
     {
       [orderField]: [createChildElement(0), createChildElement(1)]
         .map(c => new ReferenceExpression(c.elemID, c)),

@@ -22,9 +22,8 @@ import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
 import {
-  createOrderElement,
+  createOrderElement, createOrderType,
   deployOrderChanges,
-  GUIDE_ORDER_TYPES,
   ORDER_IN_CATEGORY_TYPE,
   SECTIONS_FIELD,
 } from './guide_orders_utils'
@@ -40,7 +39,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const categories = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
 
-    elements.push(GUIDE_ORDER_TYPES[CATEGORY_TYPE_NAME])
+    elements.push(createOrderType(CATEGORY_TYPE_NAME))
     categories.forEach(category => {
       const orderInCategoryElement = createOrderElement({
         parent: category,

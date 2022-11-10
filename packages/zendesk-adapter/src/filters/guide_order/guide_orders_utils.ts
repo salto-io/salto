@@ -20,7 +20,7 @@ import {
   ElemID,
   InstanceElement,
   isReferenceExpression,
-  isRemovalChange,
+  isRemovalChange, ListType,
   ObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -42,27 +42,29 @@ export const CATEGORIES_FIELD = 'categories'
 export const SECTIONS_FIELD = 'sections'
 export const ARTICLES_FIELD = 'articles'
 
-// TODO - fill it up
-export const GUIDE_ORDER_TYPES : {[key: string]: ObjectType} = {
-  [BRAND_TYPE_NAME]:
-      new ObjectType({
-        elemID: new ElemID(ZENDESK, ORDER_IN_BRAND_TYPE),
-        fields: { [CATEGORIES_FIELD]: { refType: BuiltinTypes.UNKNOWN } },
-      }),
-  [CATEGORY_TYPE_NAME]:
-      new ObjectType({
-        elemID: new ElemID(ZENDESK, ORDER_IN_CATEGORY_TYPE),
-        fields: { [SECTIONS_FIELD]: { refType: BuiltinTypes.UNKNOWN } },
-      }),
-  [SECTION_TYPE_NAME]:
-      new ObjectType({
-        elemID: new ElemID(ZENDESK, ORDER_IN_SECTION_TYPE),
-        fields: {
-          [SECTIONS_FIELD]: { refType: BuiltinTypes.UNKNOWN },
-          [ARTICLES_FIELD]: { refType: BuiltinTypes.UNKNOWN },
-        },
-      }),
+const GUIDE_ORDER_TYPES : {[key: string]: () => ObjectType} = {
+  [BRAND_TYPE_NAME]: () =>
+    new ObjectType({
+      elemID: new ElemID(ZENDESK, ORDER_IN_BRAND_TYPE),
+      fields: { [CATEGORIES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
+    }),
+  [CATEGORY_TYPE_NAME]: () =>
+    new ObjectType({
+      elemID: new ElemID(ZENDESK, ORDER_IN_CATEGORY_TYPE),
+      fields: { [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
+    }),
+  [SECTION_TYPE_NAME]: () =>
+    new ObjectType({
+      elemID: new ElemID(ZENDESK, ORDER_IN_SECTION_TYPE),
+      fields: {
+        [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
+        [ARTICLES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
+      },
+    }),
 }
+
+export const createOrderType = (typeName: string) : ObjectType => GUIDE_ORDER_TYPES[typeName]()
+
 
 export const createOrderElement = ({ parent, parentField, orderField, childrenElements }
 : {
@@ -73,13 +75,13 @@ export const createOrderElement = ({ parent, parentField, orderField, childrenEl
 }): InstanceElement => {
   const parentsChildren = _.orderBy(
     childrenElements.filter(c => c.value[parentField] === parent.value.id),
-    // Lowest position index first, if there is a tie - the newer is first
-    ['value.position', 'value.created_at'], ['asc', 'desc']
+    // Lowest position index first, if there is a tie - the newer is first, another tie - by id
+    ['value.position', 'value.created_at', 'value.id'], ['asc', 'desc', 'asc']
   )
 
   return new InstanceElement(
-    parent.elemID.name,
-    GUIDE_ORDER_TYPES[parent.elemID.typeName],
+    `${parent.elemID.name}_${orderField}`,
+    createOrderType(parent.elemID.typeName),
     {
       [orderField]: parentsChildren.map(c => new ReferenceExpression(c.elemID, c)),
     },

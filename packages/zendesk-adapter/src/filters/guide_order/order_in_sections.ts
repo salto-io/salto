@@ -22,8 +22,8 @@ import { FilterCreator } from '../../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
 import {
   ARTICLES_FIELD,
-  createOrderElement,
-  deployOrderChanges, GUIDE_ORDER_TYPES,
+  createOrderElement, createOrderType,
+  deployOrderChanges,
   ORDER_IN_SECTION_TYPE, SECTIONS_FIELD,
 } from './guide_orders_utils'
 
@@ -38,29 +38,34 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const sections = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
 
-    elements.push(GUIDE_ORDER_TYPES[SECTION_TYPE_NAME])
+    elements.push(createOrderType(SECTION_TYPE_NAME))
     sections.forEach(section => {
-      const sectionsInSectionOrderElement = createOrderElement({
+      const sectionsOrderElement = createOrderElement({
         parent: section,
         parentField: 'parent_section_id',
         orderField: SECTIONS_FIELD,
         childrenElements: sections,
       })
-      const articlesInSectionOrderElement = createOrderElement({
+      const articlesOrderElements = createOrderElement({
         parent: section,
         parentField: 'section_id',
         orderField: ARTICLES_FIELD,
         childrenElements: articles,
       })
 
+      // Promoted articles are first
+      articlesOrderElements.value[ARTICLES_FIELD] = articlesOrderElements.value[ARTICLES_FIELD]
+        .sort((a : ReferenceExpression, b : ReferenceExpression) =>
+          Number(b.value.value.promoted === true) - Number(a.value.value.promoted === true))
+
       section.value[SECTIONS_FIELD] = new ReferenceExpression(
-        sectionsInSectionOrderElement.elemID, sectionsInSectionOrderElement
+        sectionsOrderElement.elemID, sectionsOrderElement
       )
 
       section.value[ARTICLES_FIELD] = new ReferenceExpression(
-        articlesInSectionOrderElement.elemID, articlesInSectionOrderElement
+        articlesOrderElements.elemID, articlesOrderElements
       )
-      elements.push(sectionsInSectionOrderElement, articlesInSectionOrderElement)
+      elements.push(sectionsOrderElement, articlesOrderElements)
     })
   },
   /** Change the section and articles positions according to their order in the section */

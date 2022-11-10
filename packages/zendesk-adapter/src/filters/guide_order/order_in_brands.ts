@@ -23,8 +23,8 @@ import { FilterCreator } from '../../filter'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../../constants'
 import {
   CATEGORIES_FIELD,
-  createOrderElement,
-  deployOrderChanges, GUIDE_ORDER_TYPES, ORDER_IN_BRAND_TYPE,
+  createOrderElement, createOrderType,
+  deployOrderChanges, ORDER_IN_BRAND_TYPE,
 } from './guide_orders_utils'
 import { FETCH_CONFIG } from '../../config'
 
@@ -44,7 +44,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    elements.push(GUIDE_ORDER_TYPES[BRAND_TYPE_NAME])
+    elements.push(createOrderType(BRAND_TYPE_NAME))
     // If the brand doesn't have Guide activated, do nothing
     brands.filter(b => b.value.has_help_center).forEach(brand => {
       const orderInBrandElement = createOrderElement({

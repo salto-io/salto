@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
@@ -75,9 +75,6 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(85)
-        expect(elements.filter(isObjectType)).toHaveLength(49)
-        expect(elements.filter(isInstanceElement)).toHaveLength(36)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'workato.api_access_profile',
           'workato.api_access_profile.instance.ap1',

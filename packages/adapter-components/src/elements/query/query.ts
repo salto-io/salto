@@ -15,7 +15,7 @@
 */
 import { InstanceElement, Value } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import { UserFetchConfig } from '../config'
+import { UserFetchConfig } from '../../config'
 
 export const ALL_TYPES = '.*'
 

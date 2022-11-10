@@ -13,8 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { elements as elementUtils } from '@salto-io/adapter-components'
-
-export default {
-  name: elementUtils.query.nameCriterion,
-}
+export { ALL_TYPES, INCLUDE_ALL_CONFIG, ElementQuery, createElementQuery, createMockQuery } from './query'
+export { nameCriterion } from './fetch_criteria'

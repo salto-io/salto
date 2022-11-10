@@ -23,9 +23,11 @@ import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import StripeClient from './client/client'
 import { StripeConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from './config'
+import fetchCriteria from './fetch_criteria'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { STRIPE } from './constants'
 import changeValidator from './change_validator'
+import queryFilter from './filters/query'
 import fieldReferencesFilter from './filters/field_references'
 
 const { createPaginator, getWithCursorPagination } = clientUtils
@@ -34,6 +36,7 @@ const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  queryFilter,
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
 ]
@@ -62,7 +65,10 @@ export default class StripeAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: () => getWithCursorPagination(),
     })
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
+    this.fetchQuery = elementUtils.query.createElementQuery(
+      this.userConfig[FETCH_CONFIG],
+      fetchCriteria,
+    )
     this.filtersRunner = filtersRunner(
       {
         client: this.client,

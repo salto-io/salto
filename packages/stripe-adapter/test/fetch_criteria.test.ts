@@ -13,8 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import fetchCriteria from '../src/fetch_criteria'
 
-export default {
-  name: elementUtils.query.nameCriterion,
-}
+describe('fetch_criteria', () => {
+  describe('name', () => {
+    it('should match element name', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+        }
+      )
+
+      expect(fetchCriteria.name({ instance, value: '.ame' })).toBeTruthy()
+      expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
+    })
+  })
+})

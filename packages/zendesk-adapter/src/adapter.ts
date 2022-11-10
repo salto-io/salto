@@ -38,10 +38,12 @@ import {
 } from './constants'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
+import fetchCriteria from './fetch_criteria'
 import { getChangeGroupIds } from './group_change'
 import fieldReferencesFilter, { lookupFunc } from './filters/field_references'
 import listValuesMissingReferencesFilter from './filters/references/list_values_missing_references'
 import unorderedListsFilter from './filters/unordered_lists'
+import queryFilter from './filters/query'
 import viewFilter from './filters/view'
 import workspaceFilter from './filters/workspace'
 import ticketFormOrderFilter from './filters/reorder/ticket_form'
@@ -114,6 +116,7 @@ const { concatObjects } = objects
 const SECTIONS_TYPE_NAME = 'sections'
 
 export const DEFAULT_FILTERS = [
+  queryFilter,
   ticketFieldFilter,
   userFieldFilter,
   viewFilter,
@@ -316,7 +319,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       })
     )
 
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
+    this.fetchQuery = elementUtils.query.createElementQuery(
+      this.userConfig[FETCH_CONFIG],
+      fetchCriteria,
+    )
 
     this.createFiltersRunner = async (
       filterRunnerClient?: ZendeskClient,

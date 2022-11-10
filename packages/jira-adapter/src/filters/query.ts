@@ -16,10 +16,10 @@
 import { filters } from '@salto-io/adapter-components'
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
-import { FilterAdditionParams, FilterCreator, FilterResult } from '../filter'
+import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
 
 const filter: FilterCreator = params =>
-  filters.queryFilterCreator<JiraClient, JiraConfig, FilterResult, FilterAdditionParams>(
+  filters.queryFilterCreator<JiraClient, JiraConfig, FilterResult, FilterAdditionalParams>(
   )(params)
 
 export default filter

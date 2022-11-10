@@ -22,10 +22,12 @@ import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
+import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
+import queryFilter from './filters/query'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
@@ -47,6 +49,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  queryFilter,
   standardRolesFilter,
   appStructureFilter,
   // should run before fieldReferencesFilter
@@ -95,6 +98,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(
       this.userConfig.fetch,
+      fetchCriteria,
     )
 
     this.paginator = paginator

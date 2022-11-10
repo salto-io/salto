@@ -13,8 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { filters } from '@salto-io/adapter-components'
+import { StripeConfig } from '../config'
+import StripeClient from '../client/client'
+import { FilterAdditionalParams, FilterCreator } from '../filter'
 
-export default {
-  name: elementUtils.query.nameCriterion,
-}
+const filter: FilterCreator = params =>
+  filters.queryFilterCreator<StripeClient, StripeConfig, void, FilterAdditionalParams>(
+  )(params)
+
+export default filter

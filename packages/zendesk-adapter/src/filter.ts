@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import ZendeskClient from './client/client'
 import { FilterContext } from './config'
 
@@ -26,6 +26,7 @@ export type FilterResult = {
 
 export type FilterAdditionalParams = {
   elementsSource: ReadOnlyElementsSource
+  fetchQuery: elementUtils.query.ElementQuery
 }
 
 export type Filter = filterUtils.Filter<FilterResult>

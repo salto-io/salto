@@ -23,10 +23,12 @@ import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
 import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, getUpdatedConfig, SETTING_TYPES, SUPPORTED_TYPES } from './config'
+import fetchCriteria from './fetch_criteria'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
 import objectDefSplitFilter from './filters/object_def_split'
+import queryFilter from './filters/query'
 import workflowAndTaskReferencesFilter from './filters/workflow_and_task_references'
 import objectReferencesFilter from './filters/object_references'
 import financeInformationReferencesFilter from './filters/finance_information_references'
@@ -44,19 +46,14 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   // objectDefsFilter should run before everything else
   objectDefsFilter,
-
+  queryFilter,
   // unorderedLists should run before references are created
   unorderedListsFilter,
-
   workflowAndTaskReferencesFilter,
-
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
-
   objectReferencesFilter,
-
   financeInformationReferencesFilter,
-
   // objectDefSplitFilter should run at the end - splits elements to divide to multiple files
   objectDefSplitFilter,
 ]
@@ -86,7 +83,10 @@ export default class ZuoraAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.paginator = paginator
-    this.fetchQuery = elementUtils.query.createElementQuery(config[FETCH_CONFIG])
+    this.fetchQuery = elementUtils.query.createElementQuery(
+      this.userConfig[FETCH_CONFIG],
+      fetchCriteria,
+    )
     this.createFiltersRunner = () => (
       filtersRunner({ client, paginator, config, fetchQuery: this.fetchQuery }, filterCreators)
     )

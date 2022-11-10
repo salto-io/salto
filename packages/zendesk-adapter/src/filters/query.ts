@@ -13,8 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { filters } from '@salto-io/adapter-components'
+import { ZendeskConfig } from '../config'
+import ZendeskClient from '../client/client'
+import { FilterAdditionalParams, FilterCreator, FilterResult } from '../filter'
 
-export default {
-  name: elementUtils.query.nameCriterion,
-}
+const filter: FilterCreator = params =>
+  filters.queryFilterCreator<ZendeskClient, ZendeskConfig, FilterResult, FilterAdditionalParams>(
+  )(params)
+
+export default filter

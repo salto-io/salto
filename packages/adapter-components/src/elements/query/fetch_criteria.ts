@@ -13,8 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { regex } from '@salto-io/lowerdash'
+import { QueryCriterion } from './query'
 
-export default {
-  name: elementUtils.query.nameCriterion,
-}
+export const nameCriterion: QueryCriterion = ({
+  instance,
+  value,
+}): boolean => (
+  regex.isFullRegexMatch(instance.value.name, value)
+)

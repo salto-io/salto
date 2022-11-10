@@ -76,6 +76,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
       .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
       .find(instance => instance.elemID.name === EVERYONE)
     if (everyoneUserSegmentInstance === undefined) {
+      log.info("Couldn't find Everyone user_segment instance.")
       return
     }
     const articleInstances = elements

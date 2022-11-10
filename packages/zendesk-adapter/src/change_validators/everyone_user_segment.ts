@@ -13,20 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { EVERYONE_USER_SEGMENT_INSTANCE } from '../filters/article'
+import { ChangeValidator, ElemID, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
+import { createEveryoneUserSegmentInstance } from '../filters/article'
 
-export const everyoneUserSegmentValidator: ChangeValidator = async changes => (
-  changes
+const log = logger(module)
+
+export const everyoneUserSegmentValidator: ChangeValidator = async (changes, elementSource) => {
+  if (elementSource === undefined) {
+    log.error('Failed to run customRoleNameValidator because no element source was provided')
+    return []
+  }
+  const userSegmentTypeElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME)
+  const userSegmentType = await elementSource.get(userSegmentTypeElemID)
+  const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
+  return changes
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.isEqual(EVERYONE_USER_SEGMENT_INSTANCE.elemID))
+    .filter(instance => instance.elemID.isEqual(everyoneUserSegmentInstance.elemID))
     .flatMap(instance => (
       [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Everyone user segment failed to change',
-        detailedMessage: 'Everyone user_segment is a fixed instance, and cannot be changed',
+        message: 'The "Everyone" user segment cannot be modified',
+        detailedMessage: 'The "Everyone" user segment cannot be modified',
       }]
     ))
-)
+}

@@ -17,8 +17,8 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
-  isInstanceElement, isRemovalChange, ObjectType, ReferenceExpression,
+  Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
+  isInstanceElement, isObjectType, isRemovalChange, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
@@ -43,18 +43,13 @@ export type TranslationType = {
   locale: { id: string }
 }
 
-export const EVERYONE_USER_SEGMENT_INSTANCE = new InstanceElement(
-  EVERYONE,
-  new ObjectType({
-    elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
-    fields: {
-      user_type: { refType: BuiltinTypes.STRING },
-      built_in: { refType: BuiltinTypes.BOOLEAN },
-      name: { refType: BuiltinTypes.STRING },
-    },
-  }),
-  { user_type: EVERYONE, built_in: true, name: EVERYONE },
-  [ZENDESK, RECORDS_PATH, USER_SEGMENT_TYPE_NAME, EVERYONE],
+export const createEveryoneUserSegmentInstance = (userSegmentType: ObjectType): InstanceElement => (
+  new InstanceElement(
+    EVERYONE,
+    userSegmentType,
+    { user_type: EVERYONE, built_in: true, name: EVERYONE },
+    [ZENDESK, RECORDS_PATH, USER_SEGMENT_TYPE_NAME, EVERYONE],
+  )
 )
 
 const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
@@ -71,7 +66,7 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
 
 // The default user_segment we added will be resolved to undefined
 // So in order to create a new article we need to add a null value user_segment_id
-const verifyUserSegmentIdForAdditionChanges = (
+const setUserSegmentIdForAdditionChanges = (
   changes: Change<InstanceElement>[]
 ): void => {
   changes
@@ -86,8 +81,16 @@ const verifyUserSegmentIdForAdditionChanges = (
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   onFetch: async elements => {
+    const userSegmentType = elements
+      .filter(element => element.elemID.typeName === USER_SEGMENT_TYPE_NAME)
+      .find(isObjectType)
+    if (userSegmentType === undefined) {
+      log.error("Couldn't find user_segment type. Cancel article fetch.")
+      return
+    }
+    const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
     const articleInstances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
@@ -95,14 +98,18 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       return
     }
     articleInstances
-      .filter(article => _.isEmpty(article.value[USER_SEGMENT_ID_FIELD]))
+      .filter(article => article.value[USER_SEGMENT_ID_FIELD] === undefined)
       .forEach(article => {
         article.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
-          EVERYONE_USER_SEGMENT_INSTANCE.elemID,
-          EVERYONE_USER_SEGMENT_INSTANCE,
+          everyoneUserSegmentInstance.elemID,
+          everyoneUserSegmentInstance,
         )
       })
-    elements.push(EVERYONE_USER_SEGMENT_INSTANCE)
+    if (elements.find(
+      element => element.elemID.isEqual(everyoneUserSegmentInstance.elemID) === undefined
+    )) {
+      elements.push(everyoneUserSegmentInstance)
+    }
   },
 
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
@@ -133,7 +140,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         && !isRemovalChange(change),
     )
     addRemovalChangesId(articleChanges)
-    verifyUserSegmentIdForAdditionChanges(articleChanges)
+    setUserSegmentIdForAdditionChanges(articleChanges)
     const deployResult = await deployChanges(
       articleChanges,
       async change => {
@@ -146,6 +153,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
   },
 
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+    const userSegmentTypeElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME)
+    const userSegmentType = await elementsSource.get(userSegmentTypeElemID)
+    const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
     changes
       .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
       .map(getChangeData)
@@ -153,8 +163,8 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         removeTitleAndBody(articleInstance)
         if (articleInstance.value[USER_SEGMENT_ID_FIELD] === null) {
           articleInstance.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
-            EVERYONE_USER_SEGMENT_INSTANCE.elemID,
-            EVERYONE_USER_SEGMENT_INSTANCE,
+            everyoneUserSegmentInstance.elemID,
+            everyoneUserSegmentInstance,
           )
         }
       })

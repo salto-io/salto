@@ -14,14 +14,20 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { everyoneUserSegmentValidator } from '../../src/change_validators/everyone_user_segment'
-import { EVERYONE_USER_SEGMENT_INSTANCE } from '../../src/filters/article'
+import { createEveryoneUserSegmentInstance } from '../../src/filters/article'
 
 describe('everyoneUserSegmentValidator', () => {
   const userSegmentType = new ObjectType({
     elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
   })
+  console.log('%o', userSegmentType)
+  const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
+  console.log('%o', everyoneUserSegmentInstance)
+  const elementsSource = buildElementsSourceFromElements([everyoneUserSegmentInstance])
+  console.log('%o', elementsSource)
   const userSegmentInstance = new InstanceElement(
     'justATypicalUserSegment',
     userSegmentType,
@@ -32,24 +38,26 @@ describe('everyoneUserSegmentValidator', () => {
     }
   )
   it('should return an error if everyone user_segment has been modified', async () => {
-    const clonedAfterUserSegment = EVERYONE_USER_SEGMENT_INSTANCE.clone()
+    const clonedAfterUserSegment = everyoneUserSegmentInstance.clone()
     clonedAfterUserSegment.value.name = 'notEveryoneAnymore'
     const errors = await everyoneUserSegmentValidator(
-      [toChange({ before: EVERYONE_USER_SEGMENT_INSTANCE, after: clonedAfterUserSegment })],
+      [toChange({ before: clonedAfterUserSegment, after: everyoneUserSegmentInstance })],
+      elementsSource,
     )
     expect(errors).toEqual([{
-      elemID: EVERYONE_USER_SEGMENT_INSTANCE.elemID,
+      elemID: everyoneUserSegmentInstance.elemID,
       severity: 'Error',
-      message: 'Everyone user segment failed to change',
-      detailedMessage: 'Everyone user_segment is a fixed instance, and cannot be changed',
+      message: 'The "Everyone" user segment cannot be modified',
+      detailedMessage: 'The "Everyone" user segment cannot be modified',
     }])
   })
   it('should return an error if everyone user_segment has been removed', async () => {
     const errors = await everyoneUserSegmentValidator(
-      [toChange({ before: EVERYONE_USER_SEGMENT_INSTANCE })],
+      [toChange({ before: everyoneUserSegmentInstance })],
+      elementsSource,
     )
     expect(errors).toEqual([{
-      elemID: EVERYONE_USER_SEGMENT_INSTANCE.elemID,
+      elemID: everyoneUserSegmentInstance.elemID,
       severity: 'Error',
       message: 'Everyone user segment failed to change',
       detailedMessage: 'Everyone user_segment is a fixed instance, and cannot be changed',
@@ -61,6 +69,7 @@ describe('everyoneUserSegmentValidator', () => {
     clonedAfterUserSegment.value.name = 'editedName'
     const errors = await everyoneUserSegmentValidator(
       [toChange({ before: clonedBeforeUserSegment, after: clonedAfterUserSegment })],
+      elementsSource,
     )
     expect(errors).toHaveLength(0)
   })

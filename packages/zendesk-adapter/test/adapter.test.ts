@@ -263,6 +263,7 @@ describe('adapter', () => {
           'zendesk.group.instance.Support4',
           'zendesk.group.instance.Support5',
           'zendesk.groups',
+          'zendesk.guide_language_settings',
           'zendesk.guide_settings',
           'zendesk.guide_settings.instance.brandWithGuide',
           'zendesk.guide_settings.instance.myBrand',

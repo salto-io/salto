@@ -24,7 +24,10 @@ describe('everyoneUserSegmentValidator', () => {
     elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
   })
   const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
-  const elementsSource = buildElementsSourceFromElements([everyoneUserSegmentInstance])
+  const elementsSource = buildElementsSourceFromElements([
+    userSegmentType,
+    everyoneUserSegmentInstance,
+  ])
   const userSegmentInstance = new InstanceElement(
     'justATypicalUserSegment',
     userSegmentType,
@@ -56,8 +59,8 @@ describe('everyoneUserSegmentValidator', () => {
     expect(errors).toEqual([{
       elemID: everyoneUserSegmentInstance.elemID,
       severity: 'Error',
-      message: 'Everyone user segment failed to change',
-      detailedMessage: 'Everyone user_segment is a fixed instance, and cannot be changed',
+      message: 'The "Everyone" user segment cannot be modified',
+      detailedMessage: 'The "Everyone" user segment cannot be modified',
     }])
   })
   it('should not return an error if other user_segment has been changed', async () => {

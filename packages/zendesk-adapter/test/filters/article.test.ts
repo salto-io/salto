@@ -104,9 +104,10 @@ describe('article filter', () => {
   articleInstance.value.translations = [
     new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
   ]
+  const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) })
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
-    articleInstance, anotherArticleInstance, userSegmentInstance,
+    articleInstance, anotherArticleInstance, userSegmentInstance, userSegmentType,
   ]).map(element => element.clone())
 
   beforeEach(async () => {
@@ -114,10 +115,11 @@ describe('article filter', () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
     })
-    everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(
-      new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) }),
-    )
-    const elementsSource = buildElementsSourceFromElements([everyoneUserSegmentInstance])
+    everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
+    const elementsSource = buildElementsSourceFromElements([
+      userSegmentType,
+      everyoneUserSegmentInstance,
+    ])
     filter = filterCreator(createFilterCreatorParams({
       client,
       elementsSource,

@@ -96,15 +96,18 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
+    const [translationChanges, leftoverChanges] = _.partition(
+      changes,
+      change => isInstanceChange(change)
+        && TRANSLATIONS_TYPE_NAME.includes(getChangeData(change).elemID.typeName),
+    )
     const deployResult = await deployChanges(
-      changes
-        .filter(isInstanceChange)
-        .filter(change => TRANSLATIONS_TYPE_NAME.includes(getChangeData(change).elemID.typeName)),
+      translationChanges,
       async change => {
         await deployChange(change, client, config.apiDefinitions, [GUIDE_TRANSLATION_FIELD])
       }
     )
-    return { deployResult, leftoverChanges: [] }
+    return { deployResult, leftoverChanges }
   },
 })
 export default filterCreator

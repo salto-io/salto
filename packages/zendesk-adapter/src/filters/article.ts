@@ -29,6 +29,7 @@ import { addRemovalChangesId, isTranslation } from './help_center_section_and_ca
 import { lookupFunc } from './field_references'
 import { removeTitleAndBody } from './help_center_fetch_article'
 import { prepRef } from './article_body'
+import { FETCH_CONFIG } from '../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -94,7 +95,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
     const articleInstances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
-    if (articleInstances.length === 0) {
+    if (!config[FETCH_CONFIG].enableGuide) {
       return
     }
     articleInstances

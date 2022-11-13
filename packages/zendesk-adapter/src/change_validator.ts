@@ -49,6 +49,7 @@ import ZendeskClient from './client/client'
 import { orderInBrandsValidator } from './change_validators/guide_orders/order_in_brands_validator'
 import { orderInCategoriesValidator } from './change_validators/guide_orders/order_in_categories_validator'
 import { orderInSectionsValidator } from './change_validators/guide_orders/order_in_sections_validator'
+import { orderDeletionValidator } from './change_validators/guide_orders/order_deletion_validator'
 
 const {
   deployTypesNotSupportedValidator,
@@ -103,6 +104,7 @@ export default ({
     orderInBrandsValidator,
     orderInCategoriesValidator,
     orderInSectionsValidator,
+    orderDeletionValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

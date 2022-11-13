@@ -112,6 +112,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
 
   await awu(changes).forEach(async change => {
     // Removal means nothing because the element is internal
+    // We have order_deletion_validator to make sure the parent was also deleted
     if (isRemovalChange(change)) {
       return
     }

@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import {
-  createInvlidIdFieldConfigChange, createManyInstancesExcludeChange,
+  createInvlidIdFieldConfigChange, createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
 } from '../config_change'
 import SalesforceClient from '../client/client'
@@ -424,13 +424,13 @@ const filterTypesWithManyInstances = async (
 }
 ): Promise<{
   filteredChangesFetchSettings: Record<string, CustomObjectFetchSetting>
-  heavyTypesConfigChanges: ConfigChangeSuggestion[]
+  heavyTypesSuggestions: ConfigChangeSuggestion[]
 }> => {
   if (maxInstancesPerType === UNLIMITED_INSTANCES_VALUE) {
-    return { filteredChangesFetchSettings: validChangesFetchSettings, heavyTypesConfigChanges: [] }
+    return { filteredChangesFetchSettings: validChangesFetchSettings, heavyTypesSuggestions: [] }
   }
   const typesToFilter: string[] = []
-  const heavyTypesConfigChanges: ConfigChangeSuggestion[] = []
+  const heavyTypesSuggestions: ConfigChangeSuggestion[] = []
 
   // Creates a lists of typeNames and changeSuggestions for types with too many instances
   await awu(Object.keys(validChangesFetchSettings))
@@ -438,15 +438,15 @@ const filterTypesWithManyInstances = async (
       const instancesCount = await client.countInstances(typeName)
       if (instancesCount > maxInstancesPerType) {
         typesToFilter.push(typeName)
-        heavyTypesConfigChanges.push(
-          createManyInstancesExcludeChange({ typeName, instancesCount, maxInstancesPerType })
+        heavyTypesSuggestions.push(
+          createManyInstancesExcludeConfigChange({ typeName, instancesCount, maxInstancesPerType })
         )
       }
     })
 
   return {
     filteredChangesFetchSettings: _.omit(validChangesFetchSettings, typesToFilter),
-    heavyTypesConfigChanges,
+    heavyTypesSuggestions,
   }
 }
 
@@ -472,7 +472,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
 
     const {
       filteredChangesFetchSettings,
-      heavyTypesConfigChanges,
+      heavyTypesSuggestions,
     } = await filterTypesWithManyInstances({
       validChangesFetchSettings,
       maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
@@ -495,7 +495,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     return {
       configSuggestions: [
         ...invalidFieldSuggestions,
-        ...heavyTypesConfigChanges,
+        ...heavyTypesSuggestions,
         ...configChangeSuggestions,
       ],
     }

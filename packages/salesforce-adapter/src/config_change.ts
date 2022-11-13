@@ -51,7 +51,7 @@ export const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]):
   return [MESSAGE_INTRO, '', MESSAGE_REASONS_INTRO, ...reasons.map(formatReason), '', MESSAGE_SUMMARY].join('\n')
 }
 
-export const createManyInstancesExcludeChange = (
+export const createManyInstancesExcludeConfigChange = (
   { typeName, instancesCount, maxInstancesPerType } :
   { typeName: string; instancesCount: number; maxInstancesPerType: number }
 ) : ConfigChangeSuggestion => {

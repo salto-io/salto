@@ -450,10 +450,12 @@ export default class SalesforceClient {
 
     setPollIntervalForConnection(this.conn, pollingConfig)
     this.setFetchPollingTimeout()
-    this.rateLimiters = createRateLimitersFromConfig(
-      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
-      SALESFORCE
-    )
+    this.rateLimiters = createRateLimitersFromConfig({
+      rateLimit: _.defaults(
+        {}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+      ),
+      clientName: SALESFORCE,
+    })
     this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
     this.clientName = 'SFDC'
     this.readMetadataChunkSize = _.merge(

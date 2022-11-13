@@ -22,12 +22,12 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
-import {createSchemeGuardForInstance, safeJsonStringify} from '@salto-io/adapter-utils'
+import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { TRANSLATIONS_TYPE_NAME } from './help_center_translation'
 import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
-import {logger} from "@salto-io/logging";
 
 
 export const GUIDE_TRANSLATION_FIELD = 'guide_translation'

@@ -54,7 +54,8 @@ const brandAndLocale = (brand: number, locale: string): string => `${brand}-${lo
 
 /**
  * This filter adds a field of guide_translation to all translations onFetch. The field is a
- * reference expression to guide_language_settings
+ * reference expression to guide_language_settings. The reference is added so that during deploy the
+ * user will know if they need to add a language that is not currently supported.
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
@@ -72,10 +73,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => TRANSLATIONS_TYPE_NAME.includes(instance.elemID.typeName))
       .forEach(instance => {
-        const search = brandAndLocale(instance.value.brand, instance.value.locale)
-        const guideTranslation: GuideLanguageSettingsType = guideTranslationsRecord[search]
+        const localeName = brandAndLocale(instance.value.brand, instance.value.locale)
+        const guideTranslation: GuideLanguageSettingsType = guideTranslationsRecord[localeName]
         if (guideTranslation === undefined) {
-          instance.value[GUIDE_TRANSLATION_FIELD] = undefined
           return
         }
         instance.value[GUIDE_TRANSLATION_FIELD] = new ReferenceExpression(

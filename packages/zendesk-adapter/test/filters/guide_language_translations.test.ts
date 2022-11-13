@@ -99,7 +99,6 @@ describe('guid language settings filter', () => {
         {
           locale: 'he',
           brand: 123,
-          [GUIDE_TRANSLATION_FIELD]: undefined,
         },
       )
       const guideLanguageSettingsDifferentBrandInstance = new InstanceElement(

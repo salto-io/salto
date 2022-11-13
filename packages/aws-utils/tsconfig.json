@@ -1,0 +1,16 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "baseUrl": ".",
+        "resolveJsonModule": true
+    },
+    "include": [
+        "src/**/*",
+        "test/**/*",
+        "index.ts"
+    ],
+    "references": [
+        { "path": "../logging" },
+    ],
+}

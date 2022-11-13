@@ -17,7 +17,7 @@ import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement,
   ReferenceExpression, TemplateExpression, TemplatePart, Values,
 } from '@salto-io/adapter-api'
-import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
+import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates, resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -26,6 +26,7 @@ import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import { createMissingInstance } from './references/missing_references'
 import { ZENDESK } from '../constants'
 import { FETCH_CONFIG } from '../config'
+import { lookupFunc } from './field_references'
 
 
 const { awu } = collections.asynciterable
@@ -123,6 +124,12 @@ const potentialTemplates: PotentialTemplateField[] = [
     fieldName: 'value',
     containerValidator: (container: Values): boolean =>
       container.name === 'uri_templates',
+  },
+  {
+    instanceType: 'ticket_field',
+    pathToContainer: ['custom_field_options'],
+    fieldName: 'raw_name',
+    containerValidator: NoValidator,
   },
 ]
 
@@ -255,7 +262,7 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
 /**
  * Process values that can reference other objects and turn them into TemplateExpressions
  */
-const filterCreator: FilterCreator = ({ config }) => {
+const filterCreator: FilterCreator = ({ config, elementsSource }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
@@ -269,9 +276,19 @@ const filterCreator: FilterCreator = ({ config }) => {
         log.error(`Error parsing templates in deployment: ${e.message}`)
       }
     }, 'Create template resolve filter'),
-    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
       (await getContainers(changes.map(getChangeData)))
-        .forEach(container => resolveTemplates(container, deployTemplateMapping)),
+        .forEach(container => {
+          resolveTemplates(container, deployTemplateMapping)
+        })
+      await awu(changes)
+        .forEach(change => resolveChangeElement(
+          change,
+          lookupFunc,
+          async (element, getLookUpName) =>
+            resolveValues(element, getLookUpName, elementsSource, true),
+        ))
+    },
     'Create templates restore filter'),
   })
 }

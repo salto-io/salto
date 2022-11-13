@@ -114,7 +114,7 @@ export const createCustomFieldOptionsFilterCreator = (
       change => getChangeData(change).elemID.typeName === parentTypeName,
     )
     if (parentChanges.length === 0) {
-      // The service does not allow us to have an field with no options - therefore, we need to do
+      // The service does not allow us to have a field with no options - therefore, we need to do
       //  the removal changes last
       const [removalChanges, nonRemovalChanges] = _.partition(childrenChanges, isRemovalChange)
       const deployResult = await deployChangesByGroups(

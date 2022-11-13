@@ -33,17 +33,18 @@ const FLOW_METADATA_TYPE_ID = new ElemID(
   SALESFORCE, FLOW_METADATA_TYPE
 )
 
-const findActiveVersion = (flowDefinitions: InstanceElement[]): Map<string, string> => {
-  const activeVersions = new Map<string, string>()
-  flowDefinitions.forEach(flow => activeVersions.set(`${flow.value.fullName}`,
-    `${flow.value.fullName}${isDefined(flow.value.activeVersionNumber) ? `-${flow.value.activeVersionNumber}` : ''}`))
-  return activeVersions
-}
-
 const fixFlowName = (props: FileProperties, activeVersions: Map<string, string>)
     : FileProperties => ({
   ...props, fullName: activeVersions.get(`${props.fullName}`) ?? `${props.fullName}`,
 })
+
+const findActiveVersion = (fileProp: FileProperties[], flowDefinitions: InstanceElement[]):
+    FileProperties[] => {
+  const activeVersions = new Map<string, string>()
+  flowDefinitions.forEach(flow => activeVersions.set(`${flow.value.fullName}`,
+    `${flow.value.fullName}${isDefined(flow.value.activeVersionNumber) ? `-${flow.value.activeVersionNumber}` : ''}`))
+  return fileProp.map(prop => fixFlowName(prop, activeVersions))
+}
 
 const removeFlowVersion = (element: InstanceElement, flowType: ObjectType):InstanceElement => {
   const prevFullName = element.value.fullName
@@ -96,10 +97,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       metadataQuery: config.fetchProfile.metadataQuery,
       maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
     })
-    const flowsVersion = findActiveVersion(flowDefinitionInstances.elements)
+    const flowsVersionProps = findActiveVersion(fileProps, flowDefinitionInstances.elements)
     const instances = await fetchMetadataInstances({
       client,
-      fileProps: fileProps.map(fileProp => fixFlowName(fileProp, flowsVersion)),
+      fileProps: flowsVersionProps,
       metadataType: flowType,
       metadataQuery: config.fetchProfile.metadataQuery,
       maxInstancesPerType: config.fetchProfile.maxInstancesPerType,

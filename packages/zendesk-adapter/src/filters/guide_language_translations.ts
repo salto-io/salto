@@ -22,15 +22,16 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Joi from 'joi'
-import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import {createSchemeGuardForInstance, safeJsonStringify} from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { TRANSLATIONS_TYPE_NAME } from './help_center_translation'
 import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
+import {logger} from "@salto-io/logging";
 
 
 export const GUIDE_TRANSLATION_FIELD = 'guide_translation'
-
+const log = logger(module)
 
 type GuideLanguageSettingsType = InstanceElement & {
   value: {
@@ -76,6 +77,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         const localeName = brandAndLocale(instance.value.brand, instance.value.locale)
         const guideTranslation: GuideLanguageSettingsType = guideTranslationsRecord[localeName]
         if (guideTranslation === undefined) {
+          log.debug('could not find a guide translation for brand %s and locale %s.', instance.value.brand, instance.value.locale)
           return
         }
         instance.value[GUIDE_TRANSLATION_FIELD] = new ReferenceExpression(

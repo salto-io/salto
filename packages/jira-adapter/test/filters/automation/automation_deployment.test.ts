@@ -214,6 +214,89 @@ describe('automationDeploymentFilter', () => {
       )
     })
 
+    it('should create automation in jira DC', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/cb-automation/latest/project/GLOBAL/rule/import') {
+          return {
+            status: 200,
+            data: null,
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      connection.get.mockImplementation(async url => {
+        if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
+          return {
+            status: 200,
+            data: [
+              existingAutomationValues,
+              {
+                name: 'someName',
+                id: 3,
+                created: 1,
+                projects: [
+                  {
+                    projectId: '1',
+                  },
+                ],
+              },
+            ],
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      filter = automationDeploymentFilter(getFilterParams({
+        client,
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+
+      await filter.deploy([toChange({ after: instance })])
+
+      expect(instance.value.id).toBe(3)
+      expect(instance.value.created).toBe(1)
+
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/cb-automation/latest/project/GLOBAL/rule/import',
+        {
+          rules: [{
+            name: 'someName',
+            state: 'ENABLED',
+            projects: [
+              {
+                projectId: '1',
+              },
+            ],
+          }],
+        },
+        {
+          headers: PRIVATE_API_HEADERS,
+        }
+      )
+
+      expect(connection.put).toHaveBeenCalledWith(
+        '/rest/cb-automation/latest/project/GLOBAL/rule/3',
+        {
+          id: 3,
+          created: 1,
+          name: 'someName',
+          state: 'ENABLED',
+          projects: [
+            {
+              projectId: '1',
+            },
+          ],
+        },
+        {
+          headers: PRIVATE_API_HEADERS,
+        }
+      )
+    })
+
     it('should not call enable automation if it is disabled', async () => {
       instance.value.state = 'DISABLED'
       await filter.deploy([toChange({ after: instance })])
@@ -389,6 +472,26 @@ describe('automationDeploymentFilter', () => {
       )
     })
 
+    it('should delete automation in jira DC', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      filter = automationDeploymentFilter(getFilterParams({
+        client,
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+
+      instance.value.id = 3
+      await filter.deploy([toChange({ before: instance })])
+
+      expect(connection.delete).toHaveBeenCalledWith(
+        '/rest/cb-automation/latest/project/GLOBAL/rule/3',
+        {
+          headers: PRIVATE_API_HEADERS,
+        }
+      )
+    })
+
     it('should modify automation', async () => {
       instance.value.id = 3
       instance.value.created = 1
@@ -442,10 +545,39 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
           null,
-          undefined
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
         )
       })
-      it('should delete an automation label ', async () => {
+
+      it('should add a label to automation in jira DC', async () => {
+        const { client: cli, connection: conn } = mockClient(true)
+        client = cli
+        connection = conn
+
+        filter = automationDeploymentFilter(getFilterParams({
+          client,
+        })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+
+        const modifyInstance = instance.clone()
+        modifyInstance.value.labels = ['1']
+        await filter.deploy([toChange({ before: instance, after: modifyInstance })])
+        expect(connection.put).toHaveBeenCalledTimes(2)
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1',
+          null,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        )
+      })
+
+      it('should delete an automation label', async () => {
         const modifyInstance = instance.clone()
         instance.value.labels = ['1']
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
@@ -454,6 +586,25 @@ describe('automationDeploymentFilter', () => {
           undefined,
         )
       })
+
+      it('should delete an automation label in jira DC', async () => {
+        const { client: cli, connection: conn } = mockClient(true)
+        client = cli
+        connection = conn
+
+        filter = automationDeploymentFilter(getFilterParams({
+          client,
+        })) as filterUtils.FilterWith<'onFetch' | 'deploy'>
+
+        const modifyInstance = instance.clone()
+        instance.value.labels = ['1']
+        await filter.deploy([toChange({ before: instance, after: modifyInstance })])
+        expect(connection.delete).toHaveBeenCalledWith(
+          '/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1',
+          undefined,
+        )
+      })
+
       it('should modify an automation label', async () => {
         instance.value.labels = ['1']
         const modifyInstance = instance.clone()
@@ -462,7 +613,11 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/2',
           null,
-          undefined,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
         )
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',

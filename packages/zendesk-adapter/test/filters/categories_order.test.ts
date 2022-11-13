@@ -14,23 +14,21 @@
 * limitations under the License.
 */
 import {
-  ObjectType,
+  Change,
+  Element,
   ElemID,
   InstanceElement,
-  BuiltinTypes,
-  ReferenceExpression,
-  Change,
+  ObjectType,
   ReadOnlyElementsSource,
-  Element,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
-import brandOrderFilter from '../../src/filters/brands_filter'
+import { ARTICLE_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import categoriesOrderFilter from '../../src/filters/order_in_categories'
 import sectionsOrderFilter from '../../src/filters/order_in_sections'
 import { LOGO_FIELD } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
-import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/filters/guide_order_utils'
+import { ARTICLES_FIELD, SECTIONS_FIELD } from '../../src/filters/guide_order_utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -46,12 +44,12 @@ jest.mock('@salto-io/adapter-components', () => {
 mockDeployChange.mockImplementation(async () => ({ appliedChanges: ['change'] }))
 
 type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy'>
-const brandType = new ObjectType({
-  elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
-  fields: {
-    has_help_center: { refType: BuiltinTypes.BOOLEAN },
-  },
-})
+// const brandType = new ObjectType({
+//   elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
+//   fields: {
+//     has_help_center: { refType: BuiltinTypes.BOOLEAN },
+//   },
+// })
 const categoryType = new ObjectType({
   elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME),
 })
@@ -80,8 +78,8 @@ const removeNonRelevantFields = (categories: InstanceElement[]) : void => {
 }
 
 const PARENT_ID = 96
-const createBrandInstance = (has_help_center = true): InstanceElement =>
-  new InstanceElement('brand', brandType, { id: PARENT_ID, has_help_center, subdomain: 'test' })
+// const createBrandInstance = (has_help_center = true): InstanceElement =>
+//   new InstanceElement('brand', brandType, { id: PARENT_ID, has_help_center, subdomain: 'test' })
 
 const createChildInstance = (
   id = 0,
@@ -287,7 +285,7 @@ const testDeployWithoutOrderChanges = async (
     expect(mockDeployChange).toHaveBeenCalledWith(regularDeployChangeParam({ action: 'modify', data: { before: beforeParent, after: afterParent } }))
   }
 }
-
+/*
 describe('categories order in brand', () => {
   beforeEach(async () => {
     filter = brandOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
@@ -295,15 +293,30 @@ describe('categories order in brand', () => {
 
   describe('on fetch', () => {
     it('with Guide active', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = true
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource, config })) as FilterType
       await testFetch({
         createParent: createBrandInstance,
         createChild: createCategoryInstance,
         orderField: CATEGORIES_FIELD,
       })
     })
-    it('with Guide not active', async () => {
+    it('with Guide not active in the brand', async () => {
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType
       // Should not create categories order field at all
       const brandWithoutGuide = createBrandInstance(false)
+      const categories = [createCategoryInstance(), createCategoryInstance()]
+      await filter.onFetch([brandWithoutGuide, ...categories])
+
+      expect(brandWithoutGuide.value.categories).toBeUndefined()
+    })
+    it('with Guide not active in Salto', async () => {
+      const config = DEFAULT_CONFIG
+      config[FETCH_CONFIG].enableGuide = false
+      filter = brandOrderFilter(createFilterCreatorParams({ elementsSource, config })) as FilterType
+      // Should not create categories order field at all
+      const brandWithoutGuide = createBrandInstance()
       const categories = [createCategoryInstance(), createCategoryInstance()]
       await filter.onFetch([brandWithoutGuide, ...categories])
 
@@ -334,7 +347,7 @@ describe('categories order in brand', () => {
     })
   })
 })
-
+*/
 describe('sections order in category', () => {
   beforeEach(async () => {
     filter = categoriesOrderFilter(createFilterCreatorParams({ elementsSource })) as FilterType

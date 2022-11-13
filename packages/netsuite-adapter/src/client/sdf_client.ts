@@ -899,6 +899,8 @@ export default class SdfClient {
     const project = await this.initProject(suiteAppId)
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
+    // Delete the default FileCabinet folder to prevent permissions error
+    await rm(fileCabinetDirPath)
     await Promise.all(customizationInfos.map(async customizationInfo => {
       if (customizationInfo.typeName === CONFIG_FEATURES) {
         return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectName)

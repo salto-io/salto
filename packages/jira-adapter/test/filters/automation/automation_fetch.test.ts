@@ -36,6 +36,24 @@ describe('automationFetchFilter', () => {
   let connection: MockInterface<clientUtils.APIConnection>
   let fetchQuery: MockInterface<elementUtils.query.ElementQuery>
 
+  const automationResponse = {
+    status: 200,
+    data: {
+      total: 1,
+      values: [
+        {
+          id: '1',
+          name: 'automationName',
+          projects: [
+            {
+              projectId: '2',
+            },
+          ],
+        },
+      ],
+    },
+  }
+
   beforeEach(async () => {
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
@@ -80,23 +98,7 @@ describe('automationFetchFilter', () => {
       }
 
       if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
-        return {
-          status: 200,
-          data: {
-            total: 1,
-            values: [
-              {
-                id: '1',
-                name: 'automationName',
-                projects: [
-                  {
-                    projectId: '2',
-                  },
-                ],
-              },
-            ],
-          },
-        }
+        return automationResponse
       }
 
       throw new Error(`Unexpected url ${url}`)
@@ -107,7 +109,6 @@ describe('automationFetchFilter', () => {
     it('should fetch automations from the service', async () => {
       const elements = [projectInstance]
       await filter.onFetch(elements)
-
 
       const automationTypes = createAutomationTypes()
       expect(elements).toHaveLength(
@@ -148,6 +149,58 @@ describe('automationFetchFilter', () => {
           offset: 0,
           limit: 100,
         },
+        undefined,
+      )
+    })
+
+    it('should fetch automations from the service in jira dc', async () => {
+      const { client: cli, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      conn.get.mockImplementation(async url => {
+        if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
+          return {
+            status: 200,
+            data: automationResponse.data.values,
+          }
+        }
+
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      filter = automationFetchFilter(getFilterParams({
+        client,
+      })) as filterUtils.FilterWith<'onFetch'>
+
+      const elements = [projectInstance]
+      await filter.onFetch(elements)
+
+      const automationTypes = createAutomationTypes()
+      expect(elements).toHaveLength(
+        1 // original project
+        + 1 // new automation
+        + 1 // automation top level type
+        + automationTypes.subTypes.length
+      )
+
+      const automation = elements[1]
+
+      expect(automation.elemID.getFullName()).toEqual('jira.Automation.instance.automationName_projectName')
+
+      expect(automation.value).toEqual({
+        id: '1',
+        name: 'automationName',
+        projects: [
+          {
+            projectId: '2',
+          },
+        ],
+      })
+
+      expect(connection.post).not.toHaveBeenCalled()
+      expect(connection.get).toHaveBeenCalledWith(
+        '/rest/cb-automation/latest/project/GLOBAL/rule',
         undefined,
       )
     })

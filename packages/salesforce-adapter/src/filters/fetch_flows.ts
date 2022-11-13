@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
-import { Element, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
+import { createInstanceElement } from '../transformers/transformer'
 
 const { isDefined } = lowerdashValues
 
@@ -43,6 +45,18 @@ const fixFlowName = (props: FileProperties, activeVersions: Map<string, string>)
   ...props, fullName: activeVersions.get(`${props.fullName}`) ?? `${props.fullName}`,
 })
 
+const removeFlowVersion = (element: InstanceElement, flowType: ObjectType):InstanceElement => {
+  const prevFullName = element.value.fullName
+  const flowName = prevFullName.includes('-') ? prevFullName.split('-').slice(0, -1).join('-') : prevFullName
+  const flow = createInstanceElement(
+    { ...element.value, fullName: flowName },
+    flowType,
+    undefined,
+    element.annotations
+  ) as InstanceElement
+  return flow
+}
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const flowType = findObjectType(elements, FLOW_METADATA_TYPE_ID)
@@ -52,7 +66,11 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const { elements: fileProps, configChanges } = await listMetadataObjects(
       client, FLOW_METADATA_TYPE, [],
     )
-    if (config.preferActiveFlowVersions === false) {
+    const flowDefinitionType = findObjectType(
+      elements, FLOW_DEFINITION_METADATA_TYPE_ID
+    )
+    _.pull(elements, flowDefinitionType)
+    if (config.preferActiveFlowVersions === false || flowDefinitionType === undefined) {
       // should fetch the latest version of each flow (as by default)
 
       const instances = await fetchMetadataInstances({
@@ -66,20 +84,15 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       return {
         configSuggestions: [...instances.configChanges, ...configChanges],
       }
-    } // should fetch the active version of each Flow
-    const FlowDefinitionType = findObjectType(
-      elements, FLOW_DEFINITION_METADATA_TYPE_ID
-    )
-    if (FlowDefinitionType === undefined) {
-      return {}
     }
+    // should fetch the active version of each Flow
     const { elements: definitionFileProps } = await listMetadataObjects(
       client, FLOW_DEFINITION_METADATA_TYPE, [],
     )
     const flowDefinitionInstances = await fetchMetadataInstances({
       client,
       fileProps: definitionFileProps,
-      metadataType: FlowDefinitionType,
+      metadataType: flowDefinitionType,
       metadataQuery: config.fetchProfile.metadataQuery,
       maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
     })
@@ -91,7 +104,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       metadataQuery: config.fetchProfile.metadataQuery,
       maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
     })
-    instances.elements.forEach(e => elements.push(e))
+    instances.elements.forEach(e => elements.push(removeFlowVersion(e, flowType)))
     return {
       configSuggestions: [...instances.configChanges, ...configChanges],
     }

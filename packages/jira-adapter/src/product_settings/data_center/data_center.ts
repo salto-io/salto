@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { config as configUtils } from '@salto-io/adapter-components'
-import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
-import { ProductSettings } from './product_settings'
+import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../../config/api_config'
+import { DC_DEFAULT_API_DEFINITIONS } from './api_config'
+import { ProductSettings } from '../product_settings'
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
@@ -186,30 +187,6 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
 ]
 
-const DC_DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
-  IssueEvent: {
-    deployRequests: {
-      add: {
-        url: '/rest/api/3/events',
-        method: 'post',
-      },
-      modify: {
-        url: '/rest/api/3/events',
-        method: 'put',
-      },
-      remove: {
-        url: '/rest/api/3/events?id={id}',
-        method: 'delete',
-      },
-    },
-  },
-}
-
-const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
-  types: DC_DEFAULT_TYPE_CUSTOMIZATIONS,
-}
-
-
 const replaceRestVersion = (url: string): string => url.replace(
   CLOUD_REST_PREFIX,
   DATA_REST_CENTER_PREFIX,
@@ -238,7 +215,7 @@ const wrapConnection: ProductSettings['wrapConnection'] = connection => ({
 export const DATA_CENTER_SETTINGS: ProductSettings = {
   defaultApiDefinitions: configUtils.mergeWithDefaultConfig(
     DEFAULT_API_DEFINITIONS,
-    DC_DEFAULT_API_DEFINITIONS
+    DC_DEFAULT_API_DEFINITIONS,
   ) as JiraApiConfig,
   wrapConnection,
   type: 'dataCenter',

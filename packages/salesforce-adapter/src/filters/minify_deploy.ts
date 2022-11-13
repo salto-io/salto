@@ -43,6 +43,10 @@ const isProfileRelatedChange = async (change: Change): Promise<boolean> => (
   isInstanceOfTypeProfile(getChangeData(change))
 )
 
+const isPermissionSetRelatedChange = async (change: Change): Promise<boolean> => (
+  isInstanceOfType(PERMISSION_SET_METADATA_TYPE)(getChangeData(change))
+)
+
 const toMinifiedProfileChange = (
   change: Change<InstanceElement>,
 ): Change<InstanceElement> => {
@@ -129,25 +133,25 @@ const filterCreator: LocalFilterCreator = () => {
         .filter(isModificationChange)
         .filter(isProfileRelatedChange)
         .toArray()
-      const PermissionSetChanges = await awu(changes)
+      const permissionSetChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
-        .filter(change => isInstanceOfType(PERMISSION_SET_METADATA_TYPE)(getChangeData(change)))
+        .filter(isPermissionSetRelatedChange)
         .toArray()
-      originalChanges = await keyByAsync([...profileChanges, ...PermissionSetChanges],
+      originalChanges = await keyByAsync([...profileChanges, ...permissionSetChanges],
         change => apiName(getChangeData(change)))
 
-      _.pullAll(changes, [...profileChanges, ...PermissionSetChanges])
+      _.pullAll(changes, [...profileChanges, ...permissionSetChanges])
       changes.push(...profileChanges.map(toMinifiedProfileChange),
-        ...PermissionSetChanges.map(toMinifiedPermissionSetChange))
+        ...permissionSetChanges.map(toMinifiedPermissionSetChange))
     },
     onDeploy: async changes => {
-      const appliedProfileChanges = await awu(changes)
+      const appliedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
-        .filter(isProfileRelatedChange)
+        .filter(isProfileRelatedChange || isPermissionSetRelatedChange)
         .toArray()
-      const appliedProfileChangesApiNames = await awu(appliedProfileChanges)
+      const appliedProfileChangesApiNames = await awu(appliedChanges)
         .map(change => apiName(getChangeData(change)))
         .toArray()
 
@@ -155,7 +159,7 @@ const filterCreator: LocalFilterCreator = () => {
         .map(name => originalChanges[name])
         .filter(isDefined)
 
-      _.pullAll(changes, appliedProfileChanges)
+      _.pullAll(changes, appliedChanges)
       appliedOriginalChanges.forEach(change => changes.push(change))
     },
   }

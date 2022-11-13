@@ -150,8 +150,6 @@ const getRequiredReferencedElements = async (
     .map(getRequiredDependency)
     .filter(isDefined)
 
-  log.debug(`adding referenced element:${os.EOL}${requiredReferencedElements.map(elementFullName).join('\n')}`)
-
   const elements = _.uniqBy(sourceElements.concat(requiredReferencedElements), elementFullName)
   const elementsSet = new Set(elements.map(elementFullName))
   // SALTO-2974 Due to SDF bug, it seems like referenced translation collection instances
@@ -165,6 +163,13 @@ const getRequiredReferencedElements = async (
       .toArray(),
     elementFullName
   )
+
+  log.debug(`adding referenced elements:${os.EOL}${
+    requiredReferencedElements
+      .concat(referencedTranslationCollectionInstances)
+      .map(elementFullName)
+      .join(os.EOL)
+  }`)
   return elements.concat(referencedTranslationCollectionInstances)
 }
 

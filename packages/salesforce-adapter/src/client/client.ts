@@ -503,10 +503,7 @@ export default class SalesforceClient {
     return requestWithRetry(this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts)
   }
 
-  /**
-   * Count the amount of instances of a type
-   */
-  @throttle<ClientRateLimitConfig>({ bucketName: 'read' })
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
   public async countInstances(typeName: string) : Promise<number> {

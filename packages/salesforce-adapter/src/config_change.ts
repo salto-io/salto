@@ -17,8 +17,18 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig, DataManagementConfig, isRetrieveSizeConfigSuggstion } from './types'
+import {
+  ConfigChangeSuggestion,
+  configType,
+  isDataManagementConfigSuggestions,
+  isMetadataConfigSuggestions,
+  SalesforceConfig,
+  DataManagementConfig,
+  isRetrieveSizeConfigSuggstion,
+  MAX_INSTANCES_PER_TYPE,
+} from './types'
 import * as constants from './constants'
+import { UNLIMITED_INSTANCES_VALUE } from './constants'
 
 const { isDefined } = values
 const { makeArray } = collections.array
@@ -41,13 +51,20 @@ export const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]):
   return [MESSAGE_INTRO, '', MESSAGE_REASONS_INTRO, ...reasons.map(formatReason), '', MESSAGE_SUMMARY].join('\n')
 }
 
-export const createDataObjectExcludeChange = (
-  { value, reason } : { value: string; reason: string }
-) : ConfigChangeSuggestion => ({
-  type: 'dataObjectsExclude',
-  value,
-  reason,
-})
+export const createManyInstancesExcludeChange = (
+  { typeName, instancesCount, maxInstancesPerType } :
+  { typeName: string; instancesCount: number; maxInstancesPerType: number }
+) : ConfigChangeSuggestion => {
+  // Return a config suggestion to exclude that type from the dataObjects
+  const reason = `'${typeName}' has ${instancesCount} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
+      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
+  return {
+    type: 'dataObjectsExclude',
+    value: typeName,
+    reason,
+  }
+}
+
 
 export const createInvlidIdFieldConfigChange = (
   typeName: string,

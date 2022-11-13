@@ -19,8 +19,7 @@ import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import {
-  createDataObjectExcludeChange,
-  createInvlidIdFieldConfigChange,
+  createInvlidIdFieldConfigChange, createManyInstancesExcludeChange,
   createUnresolvedRefIdFieldConfigChange,
 } from '../config_change'
 import SalesforceClient from '../client/client'
@@ -32,7 +31,7 @@ import {
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import { getNamespace, isMasterDetailField, isLookupField, conditionQueries, queryClient } from './utils'
-import { ConfigChangeSuggestion, MAX_INSTANCES_PER_TYPE } from '../types'
+import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { mapValuesAsync, pickAsync } = promises.object
@@ -416,32 +415,39 @@ export const getCustomObjectsFetchSettings = async (
     .toArray()
 }
 
-const filterTypesWithManyInstances = (
-  { validChangesFetchSettings, typeToInstancesCount, maxInstancesPerType }
+const filterTypesWithManyInstances = async (
+  { validChangesFetchSettings, maxInstancesPerType, client }
 : {
   validChangesFetchSettings: Record<string, CustomObjectFetchSetting>
-  typeToInstancesCount: Record<string, number>
   maxInstancesPerType: number
+  client: SalesforceClient
 }
-): {
+): Promise<{
   filteredChangesFetchSettings: Record<string, CustomObjectFetchSetting>
   heavyTypesConfigChanges: ConfigChangeSuggestion[]
-} => {
-  const heavyTypesConfigChanges: ConfigChangeSuggestion[] = []
-  const filteredChangesFetchSettings: Record<string, CustomObjectFetchSetting> = {}
-
-  for (const [typeName, count] of Object.entries(typeToInstancesCount)) {
-    if (count > maxInstancesPerType) {
-      // Return a config suggestion to exclude that type from the dataObjects
-      const reason = `'${typeName}' has ${count} instances so it was skipped and would be excluded from future fetch operations, as ${MAX_INSTANCES_PER_TYPE} is set to ${maxInstancesPerType}.
-      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (${UNLIMITED_INSTANCES_VALUE} for unlimited).`
-      heavyTypesConfigChanges.push(createDataObjectExcludeChange({ value: typeName, reason }))
-    } else {
-      filteredChangesFetchSettings[typeName] = validChangesFetchSettings[typeName]
-    }
+}> => {
+  if (maxInstancesPerType === UNLIMITED_INSTANCES_VALUE) {
+    return { filteredChangesFetchSettings: validChangesFetchSettings, heavyTypesConfigChanges: [] }
   }
+  const typesToFilter: string[] = []
+  const heavyTypesConfigChanges: ConfigChangeSuggestion[] = []
 
-  return { filteredChangesFetchSettings, heavyTypesConfigChanges }
+  // Creates a lists of typeNames and changeSuggestions for types with too many instances
+  await awu(Object.keys(validChangesFetchSettings))
+    .forEach(async typeName => {
+      const instancesCount = await client.countInstances(typeName)
+      if (instancesCount > maxInstancesPerType) {
+        typesToFilter.push(typeName)
+        heavyTypesConfigChanges.push(
+          createManyInstancesExcludeChange({ typeName, instancesCount, maxInstancesPerType })
+        )
+      }
+    })
+
+  return {
+    filteredChangesFetchSettings: _.omit(validChangesFetchSettings, typesToFilter),
+    heavyTypesConfigChanges,
+  }
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -464,19 +470,13 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       setting => apiName(setting.objectType),
     )
 
-    const typeToInstancesCount: Record<string, number> = {}
-    const { maxInstancesPerType } = config.fetchProfile
-
-    await awu(Object.keys(validChangesFetchSettings)).forEach(async typeName => {
-      typeToInstancesCount[typeName] = maxInstancesPerType === UNLIMITED_INSTANCES_VALUE
-        ? UNLIMITED_INSTANCES_VALUE
-        : await client.countInstances(typeName)
-    })
-
-    const { filteredChangesFetchSettings, heavyTypesConfigChanges } = filterTypesWithManyInstances({
+    const {
+      filteredChangesFetchSettings,
+      heavyTypesConfigChanges,
+    } = await filterTypesWithManyInstances({
       validChangesFetchSettings,
-      typeToInstancesCount,
-      maxInstancesPerType,
+      maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
+      client,
     })
 
     const { instances, configChangeSuggestions } = await getAllInstances(

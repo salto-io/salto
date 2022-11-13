@@ -28,7 +28,7 @@ import {
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 
-const { RECORDS_PATH, SETTINGS_NESTED_PATH, createUrl } = elementsUtils
+const { createUrl } = elementsUtils
 
 const client = new ZendeskClient({
   credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -137,7 +137,7 @@ const testFetch = async ({ createParent, createChild, orderField }
       // Sort by position -> later createAt -> id
       [orderField]: sortedOrder.map(c => new ReferenceExpression(c.elemID, c)),
     },
-    [ZENDESK, RECORDS_PATH, SETTINGS_NESTED_PATH, 'GuideOrder', `order_in_${parentInstance.elemID.typeName}`]
+    parentInstance.path && [...parentInstance.path.slice(0, -1), `${orderField}_order`],
   )
 
   // Sections have both sections and articles field
@@ -173,7 +173,7 @@ const testDeploy = async (
       [orderField]: [createChildElement(0), createChildElement(1)]
         .map(c => new ReferenceExpression(c.elemID, c)),
     },
-    [ZENDESK, RECORDS_PATH, SETTINGS_NESTED_PATH, 'GuideOrder', `order_in_${parentInstance.elemID.typeName}`]
+    parentInstance.path && [...parentInstance.path.slice(0, -1), `${orderField}_order`],
   )
 
   if (orderAdditionalField) {

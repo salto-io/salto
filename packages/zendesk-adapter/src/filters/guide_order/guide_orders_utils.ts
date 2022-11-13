@@ -32,7 +32,7 @@ import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 
-const { RECORDS_PATH, SETTINGS_NESTED_PATH, createUrl } = elementsUtils
+const { createUrl } = elementsUtils
 const { awu } = collections.asynciterable
 
 export const ORDER_IN_BRAND_TYPE = 'order_in_brand'
@@ -87,13 +87,8 @@ export const createOrderElement = ({ parent, parentField, orderField, childrenEl
     {
       [orderField]: parentsChildren.map(c => new ReferenceExpression(c.elemID, c)),
     },
-    [
-      ZENDESK,
-      RECORDS_PATH,
-      SETTINGS_NESTED_PATH,
-      'GuideOrder',
-      `order_in_${parent.elemID.typeName}`,
-    ],
+    // The same directory as it's parent
+    parent.path && [...parent.path.slice(0, -1), `${orderField}_order`],
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
     }

@@ -223,6 +223,9 @@ const filter: FilterCreator = ({ client, config }) => ({
   },
 
   deploy: async changes => {
+    if (client.isDataCenter) {
+      return { deployResult: { appliedChanges: [], errors: [] }, leftoverChanges: changes }
+    }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
@@ -232,6 +235,9 @@ const filter: FilterCreator = ({ client, config }) => ({
         )
     )
 
+    // This code is meant to allow adding new levels with a new scheme (no scheme id yet).
+    // Note that deploy is called in groups, so only 1 scheme (if it was changed) with
+    // its changed levels
     const securitySchemeChange = relevantChanges
       .filter(isInstanceChange)
       .find(change => getChangeData(change).elemID.typeName === SECURITY_SCHEME_TYPE)

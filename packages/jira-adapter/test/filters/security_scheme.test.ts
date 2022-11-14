@@ -252,6 +252,23 @@ describe('securitySchemeFilter', () => {
       }))
     })
 
+    it('should have no effect when working on data center', async () => {
+      const { client: cli, paginator } = mockClient(true)
+      filter = securitySchemeFilter(getFilterParams({
+        client: cli,
+        paginator,
+        config,
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      const { deployResult, leftoverChanges } = await filter.deploy([
+        toChange({ after: securitySchemeInstance }),
+        toChange({ after: securityLevelInstance }),
+      ])
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).toHaveLength(0)
+      expect(leftoverChanges).toHaveLength(2)
+      expect(deployWithJspEndpointsMock).not.toHaveBeenCalled()
+    })
+
     it('should call deployWithJspEndpoints in the right order on creation', async () => {
       const { deployResult } = await filter.deploy([
         toChange({ after: securitySchemeInstance }),

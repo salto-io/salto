@@ -105,6 +105,7 @@ import automationLabelFetchFilter from './filters/automation/automation_label/la
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import filtersDcDeployFilter from './filters/data_center/filters_permissions'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
+import deployDcSecuritySchemeFilter from './filters/data_center/security_scheme_deploy'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
@@ -208,6 +209,7 @@ export const DEFAULT_FILTERS = [
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
+  deployDcSecuritySchemeFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

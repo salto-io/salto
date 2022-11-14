@@ -14,29 +14,27 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { beforeEach } from 'jest-circus'
 import { FilterWith } from '../../src/filter'
 import { defaultFilterContext } from '../utils'
 import mockClient from '../client'
-import fetchFlowFilter from '../../src/filters/fetch_flows'
+import fetchFlowFilter, { findActiveVersion } from '../../src/filters/fetch_flows'
 import {
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
-// import { mockFileProperties } from '../connection'
-// import { createInstanceElement } from '../../src/transformers/transformer'
-// import { mockTypes } from '../mock_elements'
+import { mockFileProperties } from '../connection'
+import { createInstanceElement } from '../../src/transformers/transformer'
+import { mockTypes } from '../mock_elements'
 import * as fetchModule from '../../src/fetch'
-
 
 describe('fetch flows filter', () => {
   const { client } = mockClient()
   let filter: FilterWith<'onFetch'>
   let fetchMetadataInstancesSpy: jest.SpyInstance
 
-  beforeEach(() => {
+  beforeAll(() => {
     fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
   })
 
@@ -64,12 +62,13 @@ describe('fetch flows filter', () => {
       })
 
       it('Should call fetchMetadataInstances once', async () => {
-        expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
+        expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(2)
       })
     })
     describe('with preferActiveFlowVersions false', () => {
       beforeAll(async () => {
         elements = [flowType, flowDefinitionType]
+        fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
         filter = fetchFlowFilter(
           { config: { ...defaultFilterContext }, client },
         ) as FilterWith<'onFetch'>
@@ -77,32 +76,38 @@ describe('fetch flows filter', () => {
       })
 
       it('Should call fetchMetadataInstances once', async () => {
-        expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(2)
+        expect(fetchMetadataInstancesSpy).toHaveBeenCalledTimes(1)
       })
-      // it('Should fetch the active flows', async () => {
-      //   const mockedFileProperties1 = mockFileProperties({ fullName: 'flow1',
-      //     type: 'flow',
-      //     createdByName: 'Ruler',
-      //     createdDate: 'created_date',
-      //     lastModifiedByName: 'Ruler',
-      //     lastModifiedDate: '2021-10-19T06:30:10.000Z' })
-      //   const mockedFileProperties2 = mockFileProperties({ fullName: 'flow2',
-      //     type: 'flow',
-      //     createdByName: 'Ruler',
-      //     createdDate: 'created_date',
-      //     lastModifiedByName: 'Ruler',
-      //     lastModifiedDate: '2021-10-19T06:30:10.000Z' })
-      //   const flowdef1 = createInstanceElement({ fullName: 'flow1' },
-      //     mockTypes.FlowDefinition)
-      //   const flowdef2 = createInstanceElement({ fullName: 'flow2', activeVersionNumber: 2 },
-      //     mockTypes.FlowDefinition)
-      //   const result = findActiveVersion(
-      //     [mockedFileProperties1, mockedFileProperties2],
-      //     [flowdef1, flowdef2]
-      //   )
-      //   expect(result[0].fullName).toEqual('flow1')
-      //   expect(result[1].fullName).toEqual('flow2-2')
-      // })
+    })
+    describe('find the active versions of the flows', () => {
+      it('Should fetch the active flows', async () => {
+        const mockedFileProperties1 = mockFileProperties({
+          fullName: 'flow1',
+          type: 'flow',
+          createdByName: 'Ruler',
+          createdDate: 'created_date',
+          lastModifiedByName: 'Ruler',
+          lastModifiedDate: '2021-10-19T06:30:10.000Z',
+        })
+        const mockedFileProperties2 = mockFileProperties({
+          fullName: 'flow2',
+          type: 'flow',
+          createdByName: 'Ruler',
+          createdDate: 'created_date',
+          lastModifiedByName: 'Ruler',
+          lastModifiedDate: '2021-10-19T06:30:10.000Z',
+        })
+        const flowdef1 = createInstanceElement({ fullName: 'flow1' },
+          mockTypes.FlowDefinition)
+        const flowdef2 = createInstanceElement({ fullName: 'flow2', activeVersionNumber: 2 },
+          mockTypes.FlowDefinition)
+        const result = findActiveVersion(
+          [mockedFileProperties1, mockedFileProperties2],
+          [flowdef1, flowdef2]
+        )
+        expect(result[0].fullName).toEqual('flow1')
+        expect(result[1].fullName).toEqual('flow2-2')
+      })
     })
   })
 })

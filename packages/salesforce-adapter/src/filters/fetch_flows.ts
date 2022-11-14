@@ -38,7 +38,7 @@ const fixFlowName = (props: FileProperties, activeVersions: Map<string, string>)
   ...props, fullName: activeVersions.get(`${props.fullName}`) ?? `${props.fullName}`,
 })
 
-const findActiveVersion = (fileProp: FileProperties[], flowDefinitions: InstanceElement[]):
+export const findActiveVersion = (fileProp: FileProperties[], flowDefinitions: InstanceElement[]):
     FileProperties[] => {
   const activeVersions = new Map<string, string>()
   flowDefinitions.forEach(flow => activeVersions.set(`${flow.value.fullName}`,
@@ -73,7 +73,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     _.pull(elements, flowDefinitionType)
     if (config.preferActiveFlowVersions === false || flowDefinitionType === undefined) {
       // should fetch the latest version of each flow (as by default)
-
       const instances = await fetchMetadataInstances({
         client,
         fileProps,

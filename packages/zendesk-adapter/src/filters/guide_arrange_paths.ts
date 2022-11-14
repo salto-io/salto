@@ -26,7 +26,7 @@ import {
   GUIDE_SETTINGS_TYPE_NAME, USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME,
 } from '../constants'
 
-const GUIDE_PATH = ['zendesk', 'Records', 'guide']
+export const GUIDE_PATH = ['zendesk', 'Records', 'guide']
 const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
 const BRAND_SECOND_LEVEL = [CATEGORY_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME]
 const PARENTS = [CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLE_TYPE_NAME]
@@ -34,7 +34,7 @@ const TRANSLATIONS = [CATEGORY_TRANSLATION_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME]
 
-const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
+export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [ARTICLE_TRANSLATION_TYPE_NAME]: 'translations',
   [ARTICLE_TYPE_NAME]: 'articles',
   [CATEGORY_TYPE_NAME]: 'categories',
@@ -77,7 +77,7 @@ const pathForSecondLevel = (instance: InstanceElement): void => {
   instance.path = newPath
 }
 
-const pathForSections = (
+const pathForOtherLevels = (
   instance: InstanceElement,
   needTypeDirectory: boolean,
   needOwnFolder: boolean,
@@ -127,7 +127,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance.value.direct_parent_type === CATEGORY_TYPE_NAME)
       .forEach(instance => {
         const parentId = instance.value.direct_parent_id.value.value.id
-        pathForSections(instance, true, true, parentsById[parentId])
+        pathForOtherLevels(instance, true, true, parentsById[parentId])
       })
 
     // sections under section
@@ -136,7 +136,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance.value.direct_parent_type === SECTION_TYPE_NAME)
       .forEach(instance => {
         const parentId = instance.value.direct_parent_id.value.value.id
-        pathForSections(instance, false, true, parentsById[parentId])
+        pathForOtherLevels(instance, false, true, parentsById[parentId])
       })
 
     // articles
@@ -144,15 +144,15 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
       .forEach(instance => {
         const parentId = instance.value.section_id.value.value.id
-        pathForSections(instance, true, true, parentsById[parentId])
+        pathForOtherLevels(instance, true, true, parentsById[parentId])
       })
 
-    // translations
+    // others (translations, article attachments)
     guideInstances
       .filter(instance => TRANSLATIONS.includes(instance.elemID.typeName))
       .forEach(instance => {
         const parentId = instance.annotations[CORE_ANNOTATIONS.PARENT][0].value.value.id
-        pathForSections(instance, true, false, parentsById[parentId])
+        pathForOtherLevels(instance, true, false, parentsById[parentId])
       })
   },
 })

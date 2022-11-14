@@ -102,11 +102,9 @@ import sectionsOrderFilter from './filters/guide_order/sections_order'
 import articlesOrderFilter from './filters/guide_order/articles_order'
 import hcServiceUrl from './filters/help_center_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
-<<<<<<< HEAD
 import hcLanguageSettings from './filters/guide_language_translations'
-=======
 import guideArrangePaths from './filters/guide_arrange_paths'
->>>>>>> b276c62d (SALTO-2918: arrange paths for guide)
+
 
 const { makeArray } = collections.array
 const log = logger(module)

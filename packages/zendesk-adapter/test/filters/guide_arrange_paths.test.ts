@@ -29,7 +29,7 @@ import {
   GUIDE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   ZENDESK,
-  USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../../src/constants'
 import filterCreator, {
   GUIDE_ELEMENT_DIRECTORY,
@@ -71,6 +71,9 @@ describe('guide arrange paths', () => {
   })
   const categoryTranslationType = new ObjectType({
     elemID: new ElemID(ZENDESK, CATEGORY_TRANSLATION_TYPE_NAME),
+  })
+  const guideTranslationType = new ObjectType({
+    elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
   })
   const BRAND_PATH = ['brands', 'best brand']
 
@@ -169,6 +172,15 @@ describe('guide arrange paths', () => {
     categoryInstance.elemID, categoryInstance
   )]
 
+  const languageSettingsInstance = new InstanceElement(
+    'instance12',
+    guideTranslationType,
+    {
+      brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+    },
+    ['instance12'],
+  )
+
 
   beforeEach(async () => {
     client = new ZendeskClient({
@@ -190,6 +202,7 @@ describe('guide arrange paths', () => {
         articleTranslationInstance,
         sectionTranslationInstance,
         categoryTranslationInstance,
+        languageSettingsInstance,
       ].map(e => e.clone())
       await filter.onFetch([elements, brandInstance].flat())
       expect(elements
@@ -276,6 +289,12 @@ describe('guide arrange paths', () => {
           'instance5',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
           'instance11',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[GUIDE_LANGUAGE_SETTINGS_TYPE_NAME],
+          'instance12',
         ],
       ])
     })

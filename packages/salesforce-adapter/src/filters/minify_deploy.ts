@@ -146,16 +146,22 @@ const filterCreator: LocalFilterCreator = () => {
         ...permissionSetChanges.map(toMinifiedPermissionSetChange))
     },
     onDeploy: async changes => {
-      const appliedChanges = await awu(changes)
+      const appliedProfileChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
-        .filter(isProfileRelatedChange || isPermissionSetRelatedChange)
+        .filter(isProfileRelatedChange)
         .toArray()
-      const appliedProfileChangesApiNames = await awu(appliedChanges)
+      const appliedPermissionSetChanges = await awu(changes)
+        .filter(isInstanceChange)
+        .filter(isModificationChange)
+        .filter(isPermissionSetRelatedChange)
+        .toArray()
+      const appliedChanges = [...appliedProfileChanges, ...appliedPermissionSetChanges]
+      const appliedChangesApiNames = await awu(appliedChanges)
         .map(change => apiName(getChangeData(change)))
         .toArray()
 
-      const appliedOriginalChanges = appliedProfileChangesApiNames
+      const appliedOriginalChanges = appliedChangesApiNames
         .map(name => originalChanges[name])
         .filter(isDefined)
 

@@ -93,6 +93,9 @@ export const mockTypes = {
   Profile: createMetadataObjectType({
     annotations: { metadataType: 'Profile', dirName: 'profiles', suffix: 'profile' },
   }),
+  PermissionSet: createMetadataObjectType({
+    annotations: { metadataType: 'PermissionSet', dirName: 'PermissionSets', suffix: 'permissionSet' },
+  }),
   EmailFolder: createMetadataObjectType({
     annotations: {
       metadataType: 'EmailFolder',

@@ -20,9 +20,10 @@ import filterCreator, { LAYOUT_ASSIGNMENTS_FIELD, LOGIN_IP_RANGES_FIELD } from '
 import { defaultFilterContext } from '../utils'
 import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 
-describe('profileDeployFilter', () => {
+describe('minifyDeployFilter', () => {
   describe('deploy flow', () => {
-    const FULL_NAME = 'ProfileFullName'
+    const PROFILE_FULL_NAME = 'ProfileFullName'
+    const PERMISSION_SET_FULL_NAME = 'PermissionSetFullName'
     const AFTER_IP_RANGES = [
       {
         description: 'desc 2',
@@ -37,16 +38,17 @@ describe('profileDeployFilter', () => {
     ]
 
     let filter: FilterWith<'preDeploy' | 'onDeploy'>
-    let originalChange: Change<InstanceElement>
+    let profileChange: Change<InstanceElement>
+    let permissionSetChange: Change<InstanceElement>
     let afterPreDeployChanges: Change<InstanceElement>[]
     let afterOnDeployChanges: Change<InstanceElement>[]
 
     beforeAll(async () => {
-      const beforeInstance = new InstanceElement(
+      const beforeProfileInstance = new InstanceElement(
         'TestProfile',
         mockTypes.Profile,
         {
-          [INSTANCE_FULL_NAME_FIELD]: FULL_NAME,
+          [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
           layoutAssignments: {
             nonModifiedLayout: [{ layout: 'nonModifiedLayout' }],
             anotherNonModifiedLayout: [{ layout: 'anotherNonModifiedLayout' }],
@@ -67,32 +69,61 @@ describe('profileDeployFilter', () => {
           },
         }
       )
+      const beforePermissionSetInstance = new InstanceElement(
+        'TestPermissionSet',
+        mockTypes.PermissionSet,
+        {
+          [INSTANCE_FULL_NAME_FIELD]: PERMISSION_SET_FULL_NAME,
+          nonModifiedField: '1',
+          anotherNonModifiedField: '2',
+          modifiedField: 'before',
+          modifiedNestedField: {
+            modifiedAttr: 'before',
+            nonModifiedAttr: '1',
+          },
+          modifiedNestedNestedField: {
+            modifiedNestedAttr: {
+              modifiedAttr: 'before',
+              nonModifiedAttr: '1',
+            },
+            nonModifiedAttr: '1',
+          },
+        }
+      )
 
-      const afterInstance = beforeInstance.clone()
-      afterInstance.value.modifiedField = 'after'
-      afterInstance.value.modifiedNestedField.modifiedAttr = 'after'
-      afterInstance.value.modifiedNestedNestedField.modifiedNestedAttr.modifiedAttr = 'after'
-      afterInstance.value[LAYOUT_ASSIGNMENTS_FIELD].newLayoutAssignment = [{ layout: 'newLayoutAssignment' }]
-      afterInstance.value[LOGIN_IP_RANGES_FIELD] = AFTER_IP_RANGES
-      originalChange = toChange({
-        before: beforeInstance,
-        after: afterInstance,
+      const afterProfileInstance = beforeProfileInstance.clone()
+      afterProfileInstance.value.modifiedField = 'after'
+      afterProfileInstance.value.modifiedNestedField.modifiedAttr = 'after'
+      afterProfileInstance.value.modifiedNestedNestedField.modifiedNestedAttr.modifiedAttr = 'after'
+      afterProfileInstance.value[LAYOUT_ASSIGNMENTS_FIELD].newLayoutAssignment = [{ layout: 'newLayoutAssignment' }]
+      afterProfileInstance.value[LOGIN_IP_RANGES_FIELD] = AFTER_IP_RANGES
+      profileChange = toChange({
+        before: beforeProfileInstance,
+        after: afterProfileInstance,
+      })
+      const afterPermissionSetInstance = beforePermissionSetInstance.clone()
+      afterPermissionSetInstance.value.modifiedField = 'after'
+      afterPermissionSetInstance.value.modifiedNestedField.modifiedAttr = 'after'
+      afterPermissionSetInstance.value.modifiedNestedNestedField.modifiedNestedAttr.modifiedAttr = 'after'
+      permissionSetChange = toChange({
+        before: beforePermissionSetInstance,
+        after: afterPermissionSetInstance,
       })
 
       filter = filterCreator({
         config: defaultFilterContext,
       }) as FilterWith<'preDeploy' | 'onDeploy'>
-      afterPreDeployChanges = [originalChange]
+      afterPreDeployChanges = [profileChange, permissionSetChange]
       await filter.preDeploy(afterPreDeployChanges)
       afterOnDeployChanges = [...afterPreDeployChanges]
       await filter.onDeploy(afterOnDeployChanges)
     })
     describe('on preDeploy', () => {
-      it('should have a minified Profile change', () => {
-        expect(afterPreDeployChanges).toHaveLength(1)
-        const [, after] = getAllChangeData(afterPreDeployChanges[0])
-        expect(after.value).toEqual({
-          [INSTANCE_FULL_NAME_FIELD]: FULL_NAME,
+      it('should have a minified Profile and PermissionSet changes', () => {
+        expect(afterPreDeployChanges).toHaveLength(2)
+        const [, afterProfile] = getAllChangeData(afterPreDeployChanges[0])
+        expect(afterProfile.value).toEqual({
+          [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
           [LOGIN_IP_RANGES_FIELD]: AFTER_IP_RANGES,
           [LAYOUT_ASSIGNMENTS_FIELD]: {
             newLayoutAssignment: [{ layout: 'newLayoutAssignment' }],
@@ -109,12 +140,28 @@ describe('profileDeployFilter', () => {
             },
           },
         })
+        const [, afterPermissionSet] = getAllChangeData(afterPreDeployChanges[1])
+        expect(afterPermissionSet.value).toEqual({
+          [INSTANCE_FULL_NAME_FIELD]: PERMISSION_SET_FULL_NAME,
+          modifiedField: 'after',
+          modifiedNestedField: {
+            modifiedAttr: 'after',
+            nonModifiedAttr: '1',
+          },
+          modifiedNestedNestedField: {
+            modifiedNestedAttr: {
+              modifiedAttr: 'after',
+              nonModifiedAttr: '1',
+            },
+          },
+        })
       })
     })
     describe('on onDeploy', () => {
       it('should have the original change', () => {
-        expect(afterOnDeployChanges).toHaveLength(1)
-        expect(afterOnDeployChanges[0]).toEqual(originalChange)
+        expect(afterOnDeployChanges).toHaveLength(2)
+        expect(afterOnDeployChanges[0]).toEqual(profileChange)
+        expect(afterOnDeployChanges[1]).toEqual(permissionSetChange)
       })
     })
   })

@@ -2204,6 +2204,11 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   'section_translation',
 ]
 
+export const ALL_SUPPORTED_TYPES = {
+  ...SUPPORTED_TYPES,
+  ...GUIDE_SUPPORTED_TYPES,
+}
+
 export const DEFAULT_CONFIG: ZendeskConfig = {
   [FETCH_CONFIG]: {
     include: [{
@@ -2231,7 +2236,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
       },
     },
     types: DEFAULT_TYPES,
-    supportedTypes: SUPPORTED_TYPES,
+    supportedTypes: ALL_SUPPORTED_TYPES,
   },
 }
 

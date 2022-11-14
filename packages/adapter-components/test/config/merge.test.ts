@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
-import { mergeWithDefaultConfig } from '../../src/config'
+import { mergeWithDefaultConfig, MERGE_CONFIG_DELETE_VALUE } from '../../src/config'
 
 describe('mergeWithDefaultConfig', () => {
   let defaultConfig: Values
@@ -53,5 +53,44 @@ describe('mergeWithDefaultConfig', () => {
 
   it('input should be affected', () => {
     expect(defaultConfig).not.toEqual(mergedConfig)
+  })
+
+  it('should properly delete values', () => {
+    config = {
+      a: MERGE_CONFIG_DELETE_VALUE,
+      b: {
+        c: 3,
+        d: [5],
+      },
+    }
+    mergedConfig = mergeWithDefaultConfig(defaultConfig, config)
+    expect(mergedConfig).toEqual({
+      b: {
+        c: 3,
+        d: [5],
+        e: '5',
+      },
+    })
+  })
+  it('should delete inline values', () => {
+    config = {
+      a: 5,
+      b: {
+        c: MERGE_CONFIG_DELETE_VALUE,
+        d: [5],
+      },
+    }
+    mergedConfig = mergeWithDefaultConfig(defaultConfig, config)
+    expect(mergedConfig).toEqual({
+      a: 5,
+      b: {
+        d: [5],
+        e: '5',
+      },
+    })
+  })
+  it('should handle empty configs', () => {
+    mergedConfig = mergeWithDefaultConfig(defaultConfig, undefined)
+    expect(mergedConfig).toEqual(defaultConfig)
   })
 })

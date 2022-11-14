@@ -16,10 +16,26 @@
 import { Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
-export const mergeWithDefaultConfig = (defaultConfig: Values, config?: Values): Values => (
-  _.mergeWith(
+export const MERGE_CONFIG_DELETE_VALUE = null
+
+const removeEmptyValues = (values: Values): Values => {
+  Object.keys(values).forEach(key => {
+    if (values[key] === MERGE_CONFIG_DELETE_VALUE) {
+      delete values[key]
+    } else if (_.isObject(values[key])) {
+      removeEmptyValues(values[key])
+    }
+  })
+  return values
+}
+
+export const mergeWithDefaultConfig = (
+  defaultConfig: Values,
+  config: Values | undefined
+): Values => (
+  removeEmptyValues(_.mergeWith(
     _.cloneDeep(defaultConfig),
-    config ?? {},
+    config,
     (_firstVal, secondValue) => (Array.isArray(secondValue) ? secondValue : undefined)
-  )
+  ))
 )

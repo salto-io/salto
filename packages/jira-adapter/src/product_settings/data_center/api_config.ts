@@ -13,9 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { config } from '@salto-io/adapter-components'
 import { JiraApiConfig } from '../../config/api_config'
 
-export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
+export type RecursiveNullable<T> = {
+  [P in keyof T]: RecursiveNullable<T[P]> | null
+}
+export const DC_DEFAULT_API_DEFINITIONS: RecursiveNullable<Partial<JiraApiConfig>> = {
   types: {
     IssueEvent: {
       deployRequests: {
@@ -38,11 +42,22 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         serviceUrl: '/secure/Dashboard.jspa?selectPageId={id}',
       },
     },
-
     Automation: {
       transformation: {
         serviceUrl: '/secure/AutomationGlobalAdminAction!default.jspa#/rule/{id}',
       },
     },
+    rest__api__3__priority: {
+      request: {
+        url: '/rest/api/3/priority',
+        paginationField: config.MERGE_CONFIG_DELETE_VALUE,
+      },
+      transformation: {
+        dataField: '.',
+      },
+    },
+  },
+  supportedTypes: {
+    Priority: ['rest__api__3__priority'],
   },
 }

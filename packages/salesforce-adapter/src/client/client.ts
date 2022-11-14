@@ -505,6 +505,14 @@ export default class SalesforceClient {
     return requestWithRetry(this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts)
   }
 
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
+  @logDecorator()
+  @requiresLogin()
+  public async countInstances(typeName: string) : Promise<number> {
+    const countResult = await this.conn.query(`SELECT COUNT() FROM ${typeName}`)
+    return countResult.totalSize
+  }
+
   /**
    * Extract metadata object names
    */

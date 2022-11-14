@@ -422,3 +422,5 @@ export const SBAA_NAMESPACE = 'sbaa'
 // sbaa Objects
 export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
+
+export const UNLIMITED_INSTANCES_VALUE = -1

@@ -392,7 +392,7 @@ describe('user filter', () => {
         .find(e => e.elemID.typeName === SECTION_TRANSLATION_TYPE_NAME)
       expect(sectionTranslation?.value).toEqual({
         updated_by_id: 'a@a.com',
-        created_by_id: 'b@b.com' ,
+        created_by_id: 'b@b.com',
       })
       const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
       expect(userSegment?.value).toEqual({
@@ -631,7 +631,7 @@ describe('user filter', () => {
     it('should change the user ids to emails', async () => {
       const instances = [
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
-        articleInstance, sectionTranslationInstance
+        articleInstance, sectionTranslationInstance,
       ].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings

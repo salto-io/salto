@@ -53,6 +53,9 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: 'language_settings',
 }
 
+/**
+ * gives a path which is not related to a specific brand
+ */
 const pathForFirstLevel = (instance: InstanceElement): void => {
   const curPath = instance.path
   if (curPath === undefined) {
@@ -65,6 +68,9 @@ const pathForFirstLevel = (instance: InstanceElement): void => {
   ]
 }
 
+/**
+ * gives a path which is related to a specific brand and does not have a parent
+ */
 const pathForSecondLevel = (instance: InstanceElement): void => {
   const curPath = instance.path
   const brandName = instance.value.brand?.value.value.name
@@ -78,12 +84,15 @@ const pathForSecondLevel = (instance: InstanceElement): void => {
     GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
     curPath[curPath.length - 1],
   ]
-  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) {
+  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
     newPath.push(curPath[curPath.length - 1])
   }
   instance.path = newPath
 }
 
+/**
+ * gives a path which is related to a specific brand and has a parent.
+ */
 const pathForOtherLevels = (
   instance: InstanceElement,
   needTypeDirectory: boolean,
@@ -109,6 +118,9 @@ const pathForOtherLevels = (
 const getId = (instance: InstanceElement): number =>
   instance.value.id
 
+/**
+ * This filter arranges the paths for guide elements.
+ */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const guideInstances = elements
@@ -123,7 +135,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => FIRST_LEVEL_TYPES.includes(instance.elemID.typeName))
       .forEach(pathForFirstLevel)
 
-    // category and settings
+    // category, settings, language_settings
     guideInstances
       .filter(instance => BRAND_SECOND_LEVEL.includes(instance.elemID.typeName))
       .forEach(pathForSecondLevel)
@@ -154,7 +166,7 @@ const filterCreator: FilterCreator = () => ({
         pathForOtherLevels(instance, true, true, parentsById[parentId])
       })
 
-    // others (translations, article attachments)
+    // others (translations, article attachments, order?)
     guideInstances
       .filter(instance => TRANSLATIONS.includes(instance.elemID.typeName))
       .forEach(instance => {

@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
-import { ZENDESK } from '../../src/constants'
+import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
 
@@ -31,6 +31,18 @@ describe('user filter', () => {
   const routingAttributeValueType = new ObjectType({ elemID: new ElemID(ZENDESK, 'routing_attribute_value') })
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
   const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, 'article') })
+  const sectionTranslationType = new ObjectType(
+    { elemID: new ElemID(ZENDESK, SECTION_TRANSLATION_TYPE_NAME) }
+  )
+
+  const sectionTranslationInstance = new InstanceElement(
+    'test',
+    sectionTranslationType,
+    {
+      updated_by_id: 1,
+      created_by_id: 2,
+    }
+  )
 
   const userSegmentInstance = new InstanceElement(
     'test',
@@ -268,7 +280,7 @@ describe('user filter', () => {
         macroType, slaPolicyType, triggerType, workspaceType, routingAttributeValueType,
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
         routingAttributeValueInstance, userSegmentType, userSegmentInstance,
-        articleType, articleInstance,
+        articleType, articleInstance, sectionTranslationInstance, sectionTranslationType,
       ].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
@@ -279,6 +291,8 @@ describe('user filter', () => {
           'zendesk.macro.instance.test',
           'zendesk.routing_attribute_value',
           'zendesk.routing_attribute_value.instance.test',
+          'zendesk.section_translation',
+          'zendesk.section_translation.instance.test',
           'zendesk.sla_policy',
           'zendesk.sla_policy.instance.test',
           'zendesk.trigger',
@@ -373,6 +387,12 @@ describe('user filter', () => {
             { subject: 'SOLVED', operator: 'greater_than', value: '96' },
           ],
         },
+      })
+      const sectionTranslation = instances
+        .find(e => e.elemID.typeName === SECTION_TRANSLATION_TYPE_NAME)
+      expect(sectionTranslation?.value).toEqual({
+        updated_by_id: 'a@a.com',
+        created_by_id: 'b@b.com' ,
       })
       const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
       expect(userSegment?.value).toEqual({
@@ -513,7 +533,7 @@ describe('user filter', () => {
     it('should change the emails to user ids ', async () => {
       const instances = [
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
-        articleInstance,
+        articleInstance, sectionTranslationInstance,
       ].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       await filter.preDeploy(changes)
@@ -589,6 +609,12 @@ describe('user filter', () => {
           },
         ],
       })
+      const sectionTranslation = instances
+        .find(e => e.elemID.typeName === SECTION_TRANSLATION_TYPE_NAME)
+      expect(sectionTranslation?.value).toEqual({
+        updated_by_id: 1,
+        created_by_id: 2,
+      })
       const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
       expect(userSegment?.value).toEqual({
         title: 'test',
@@ -605,7 +631,7 @@ describe('user filter', () => {
     it('should change the user ids to emails', async () => {
       const instances = [
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
-        articleInstance,
+        articleInstance, sectionTranslationInstance
       ].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings
@@ -687,6 +713,12 @@ describe('user filter', () => {
       expect(userSegment?.value).toEqual({
         title: 'test',
         added_user_ids: 'a@a.com',
+      })
+      const sectionTranslation = instances
+        .find(e => e.elemID.typeName === SECTION_TRANSLATION_TYPE_NAME)
+      expect(sectionTranslation?.value).toEqual({
+        updated_by_id: 'a@a.com',
+        created_by_id: 'b@b.com',
       })
       const article = instances.find(e => e.elemID.typeName === 'article')
       expect(article?.value).toEqual({

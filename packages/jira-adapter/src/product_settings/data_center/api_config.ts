@@ -38,11 +38,21 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         serviceUrl: '/secure/Dashboard.jspa?selectPageId={id}',
       },
     },
-
     Automation: {
       transformation: {
         serviceUrl: '/secure/AutomationGlobalAdminAction!default.jspa#/rule/{id}',
       },
     },
+    rest__api__3__priority: {
+      request: {
+        url: '/rest/api/3/priority',
+      },
+      transformation: {
+        dataField: '.',
+      },
+    },
+  },
+  supportedTypes: {
+    Priority: ['rest__api__3__priority'],
   },
 }

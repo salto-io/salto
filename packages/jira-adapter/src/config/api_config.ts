@@ -1550,12 +1550,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       serviceUrl: '/secure/admin/ListEventTypes.jspa',
     },
   },
-  Priorities: {
-    request: {
-      url: '/rest/api/3/priority/search',
-      paginationField: 'startAt',
-    },
-  },
   Priority: {
     transformation: {
       fieldsToHide: [

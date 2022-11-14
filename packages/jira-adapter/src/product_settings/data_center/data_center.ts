@@ -205,6 +205,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get', 'put'],
     url: '/rest/api/3/fieldconfiguration/\\d+/fields',
   },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/priority',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/priority/.+',
+  },
 ]
 
 const replaceRestVersion = (url: string): string => url.replace(

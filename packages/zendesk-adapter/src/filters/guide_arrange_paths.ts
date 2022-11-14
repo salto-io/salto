@@ -54,14 +54,14 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
 }
 
 /**
- * gives a path which is not related to a specific brand
+ * calculates a path which is not related to a specific brand
  */
-const pathForFirstLevel = (instance: InstanceElement): void => {
+const pathForFirstLevel = (instance: InstanceElement): readonly string[] | undefined => {
   const curPath = instance.path
   if (curPath === undefined) {
-    return
+    return curPath
   }
-  instance.path = [
+  return [
     ...GUIDE_PATH,
     GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
     curPath[curPath.length - 1],
@@ -69,13 +69,13 @@ const pathForFirstLevel = (instance: InstanceElement): void => {
 }
 
 /**
- * gives a path which is related to a specific brand and does not have a parent
+ * calculates a path which is related to a specific brand and does not have a parent
  */
-const pathForSecondLevel = (instance: InstanceElement): void => {
+const pathForSecondLevel = (instance: InstanceElement): readonly string[] | undefined => {
   const curPath = instance.path
   const brandName = instance.value.brand?.value.value.name
   if (curPath === undefined) {
-    return
+    return curPath
   }
   const newPath = [
     ...GUIDE_PATH,
@@ -87,22 +87,22 @@ const pathForSecondLevel = (instance: InstanceElement): void => {
   if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
     newPath.push(curPath[curPath.length - 1])
   }
-  instance.path = newPath
+  return newPath
 }
 
 /**
- * gives a path which is related to a specific brand and has a parent.
+ * calculates a path which is related to a specific brand and has a parent.
  */
 const pathForOtherLevels = (
   instance: InstanceElement,
   needTypeDirectory: boolean,
   needOwnFolder: boolean,
   parent: InstanceElement
-): void => {
+): readonly string[] | undefined => {
   const curPath = instance.path
   const parentPath = parent.path
   if (curPath === undefined || parentPath === undefined) {
-    return
+    return curPath
   }
   const newPath = [...(_.slice(parentPath, 0, parentPath.length - 1))]
   if (needTypeDirectory) {
@@ -112,7 +112,7 @@ const pathForOtherLevels = (
     newPath.push(curPath[curPath.length - 1])
   }
   newPath.push(curPath[curPath.length - 1])
-  instance.path = newPath
+  return newPath
 }
 
 const getId = (instance: InstanceElement): number =>
@@ -133,12 +133,16 @@ const filterCreator: FilterCreator = () => ({
     // user_segments and permission_groups
     guideInstances
       .filter(instance => FIRST_LEVEL_TYPES.includes(instance.elemID.typeName))
-      .forEach(pathForFirstLevel)
+      .forEach(instance => {
+        instance.path = pathForFirstLevel(instance)
+      })
 
     // category, settings, language_settings
     guideInstances
       .filter(instance => BRAND_SECOND_LEVEL.includes(instance.elemID.typeName))
-      .forEach(pathForSecondLevel)
+      .forEach(instance => {
+        instance.path = pathForSecondLevel(instance)
+      })
 
     // sections under category
     guideInstances
@@ -146,7 +150,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance.value.direct_parent_type === CATEGORY_TYPE_NAME)
       .forEach(instance => {
         const parentId = instance.value.direct_parent_id.value.value.id
-        pathForOtherLevels(instance, true, true, parentsById[parentId])
+        instance.path = pathForOtherLevels(instance, true, true, parentsById[parentId])
       })
 
     // sections under section
@@ -155,7 +159,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance.value.direct_parent_type === SECTION_TYPE_NAME)
       .forEach(instance => {
         const parentId = instance.value.direct_parent_id.value.value.id
-        pathForOtherLevels(instance, false, true, parentsById[parentId])
+        instance.path = pathForOtherLevels(instance, false, true, parentsById[parentId])
       })
 
     // articles
@@ -163,7 +167,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
       .forEach(instance => {
         const parentId = instance.value.section_id.value.value.id
-        pathForOtherLevels(instance, true, true, parentsById[parentId])
+        instance.path = pathForOtherLevels(instance, true, true, parentsById[parentId])
       })
 
     // others (translations, article attachments, order?)
@@ -171,7 +175,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => TRANSLATIONS.includes(instance.elemID.typeName))
       .forEach(instance => {
         const parentId = instance.annotations[CORE_ANNOTATIONS.PARENT][0].value.value.id
-        pathForOtherLevels(instance, true, false, parentsById[parentId])
+        instance.path = pathForOtherLevels(instance, true, false, parentsById[parentId])
       })
   },
 })

@@ -185,6 +185,18 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get'],
     url: '/rest/api/3/issuetypescreenscheme/mapping.+',
   },
+  {
+    httpMethods: ['get', 'post'],
+    url: '/rest/api/3/fieldconfiguration',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/fieldconfiguration/\\d+',
+  },
+  {
+    httpMethods: ['get', 'put'],
+    url: '/rest/api/3/fieldconfiguration/\\d+/fields',
+  },
 ]
 
 const replaceRestVersion = (url: string): string => url.replace(

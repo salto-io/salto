@@ -98,6 +98,7 @@ import hcGuideSettings from './filters/help_center_guide_settings'
 import brandsFilter from './filters/brands_filter'
 import hcServiceUrl from './filters/help_center_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
+import hcLanguageSettings from './filters/guide_language_translations'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -157,6 +158,7 @@ export const DEFAULT_FILTERS = [
   articleFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,
+  hcLanguageSettings,
   hcGuideSettings,
   hcServiceUrl,
   fieldReferencesFilter,

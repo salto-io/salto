@@ -1746,8 +1746,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/hc/api/internal/help_center_translations',
     },
     transformation: {
-      idFields: ['&brand', 'name'],
-      fileNameFields: ['&brand', 'name'],
+      idFields: ['&brand', '&locale'],
+      fileNameFields: ['&brand', '&locale'],
       dataField: '.',
       // serviceUrl is created in the help_center_service_url filter
     },

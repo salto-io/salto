@@ -36,9 +36,7 @@ import {
   ZendeskConfig,
   CLIENT_CONFIG,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_GLOBAL_TYPES,
   GUIDE_BRAND_SPECIFIC_TYPES,
-  SUPPORTED_TYPES,
 } from './config'
 import {
   ZENDESK,
@@ -362,9 +360,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
-    const supportedTypes = isGuideDisabled
-      ? SUPPORTED_TYPES
-      : { ...SUPPORTED_TYPES, ...GUIDE_GLOBAL_TYPES }
+    const { supportedTypes } = this.userConfig.apiDefinitions
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainElements = await getAllElements({
       adapterName: ZENDESK,

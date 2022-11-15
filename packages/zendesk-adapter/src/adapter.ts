@@ -36,11 +36,7 @@ import {
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
 } from './constants'
-import {
-  ORDER_IN_BRAND_TYPE,
-  ORDER_IN_CATEGORY_TYPE,
-  ORDER_IN_SECTION_TYPE,
-} from './filters/guide_order/guide_orders_utils'
+import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_orders_utils'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -101,9 +97,9 @@ import fetchCategorySection from './filters/help_center_fetch_section_and_catego
 import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 import hcGuideSettings from './filters/help_center_guide_settings'
 import removeBrandLogoFilter from './filters/remove_brand_logo_field'
-import orderInBrandsFilter from './filters/guide_order/order_in_brands'
-import orderInCategoriesFilter from './filters/guide_order/order_in_categories'
-import orderInSectionsFilter from './filters/guide_order/order_in_sections'
+import categoriesOrderFilter from './filters/guide_order/categories_order'
+import sectionsOrderFilter from './filters/guide_order/sections_order'
+import articlesOrderFilter from './filters/guide_order/articles_order'
 import hcServiceUrl from './filters/help_center_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
 
@@ -156,9 +152,9 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
   removeBrandLogoFilter,
-  orderInBrandsFilter,
-  orderInCategoriesFilter,
-  orderInSectionsFilter,
+  categoriesOrderFilter,
+  sectionsOrderFilter,
+  articlesOrderFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
@@ -201,9 +197,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
-  ORDER_IN_BRAND_TYPE,
-  ORDER_IN_CATEGORY_TYPE,
-  ORDER_IN_SECTION_TYPE,
+  ...GUIDE_ORDER_TYPES,
 ]
 
 /**
@@ -560,7 +554,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
-        typesWithNoDeploy: ['tag', ORDER_IN_BRAND_TYPE, ORDER_IN_CATEGORY_TYPE, ORDER_IN_SECTION_TYPE],
+        typesWithNoDeploy: ['tag', ...GUIDE_ORDER_TYPES],
       }),
       dependencyChanger,
       getChangeGroupIds,

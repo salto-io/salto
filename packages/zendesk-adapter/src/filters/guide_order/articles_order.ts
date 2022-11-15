@@ -23,9 +23,10 @@ import { FilterCreator } from '../../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
 import {
   ARTICLES_FIELD,
-  createOrderElement, createOrderType,
+  ARTICLES_ORDER,
+  createOrderInstance,
+  createOrderType,
   deployOrderChanges,
-  ORDER_IN_SECTION_TYPE, SECTIONS_FIELD,
 } from './guide_orders_utils'
 
 /**
@@ -39,18 +40,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const sections = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
 
-    const orderType = createOrderType(SECTION_TYPE_NAME)
+    const orderType = createOrderType(ARTICLE_TYPE_NAME)
     elements.push(orderType)
 
     sections.forEach(section => {
-      const sectionsOrderElement = createOrderElement({
-        parent: section,
-        parentField: 'parent_section_id',
-        orderField: SECTIONS_FIELD,
-        childrenElements: sections,
-        orderType,
-      })
-      const articlesOrderElements = createOrderElement({
+      const articlesOrderElements = createOrderInstance({
         parent: section,
         parentField: 'section_id',
         orderField: ARTICLES_FIELD,
@@ -63,51 +57,28 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         .sort((a : ReferenceExpression, b : ReferenceExpression) =>
           Number(b.value.value.promoted === true) - Number(a.value.value.promoted === true))
 
-      section.value[SECTIONS_FIELD] = new ReferenceExpression(
-        sectionsOrderElement.elemID, sectionsOrderElement
-      )
-
       section.value[ARTICLES_FIELD] = new ReferenceExpression(
         articlesOrderElements.elemID, articlesOrderElements
       )
-      elements.push(sectionsOrderElement, articlesOrderElements)
+      elements.push(articlesOrderElements)
     })
   },
   /** Change the section and articles positions according to their order in the section */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [orderInSectionChanges, leftoverChanges] = _.partition(
+    const [articlesOrderChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === ORDER_IN_SECTION_TYPE,
+      change => getChangeData(change).elemID.typeName === ARTICLES_ORDER,
     )
 
-    const sectionsInSectionDeployResult = await deployOrderChanges({
-      changes: orderInSectionChanges,
-      orderField: SECTIONS_FIELD,
-      client,
-      config,
-    })
-
-    const articlesInSectionDeployResult = await deployOrderChanges({
-      changes: orderInSectionChanges,
+    const deployResult = await deployOrderChanges({
+      changes: articlesOrderChanges,
       orderField: ARTICLES_FIELD,
       client,
       config,
     })
 
     return {
-      deployResult: {
-        appliedChanges: [
-          // Each change is run twice (one on each field), so we removed duplicates
-          ...new Set([
-            ...sectionsInSectionDeployResult.appliedChanges,
-            ...articlesInSectionDeployResult.appliedChanges,
-          ]),
-        ],
-        errors: [
-          ...sectionsInSectionDeployResult.errors,
-          ...articlesInSectionDeployResult.errors,
-        ],
-      },
+      deployResult,
       leftoverChanges,
     }
   },

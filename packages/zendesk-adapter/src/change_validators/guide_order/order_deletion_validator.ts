@@ -15,22 +15,19 @@
 */
 import { ChangeValidator, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import {
-  ORDER_IN_BRAND_TYPE, ORDER_IN_CATEGORY_TYPE,
-  ORDER_IN_SECTION_TYPE,
-} from '../../filters/guide_order/guide_orders_utils'
+import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_orders_utils'
 
-const orderTypes = [ORDER_IN_BRAND_TYPE, ORDER_IN_CATEGORY_TYPE, ORDER_IN_SECTION_TYPE]
-
-export const orderDeletionValidator: ChangeValidator = async changes => {
+export const guideOrderDeletionValidator: ChangeValidator = async changes => {
   const removalChanges = changes.filter(isRemovalChange).map(getChangeData)
   const orderRemovals = removalChanges.filter(
-    instance => orderTypes.includes(instance.elemID.typeName)
+    instance => GUIDE_ORDER_TYPES.includes(instance.elemID.typeName)
   )
 
+  const removedElements = new Set(removalChanges.map(change => change.elemID.getFullName()))
+
   // Makes sure that if the order list was deleted, the parent was also deleted
-  return orderRemovals.filter(orderInstance =>
-    !removalChanges.some(instance => instance === getParent(orderInstance)))
+  return orderRemovals
+    .filter(orderInstance => !removedElements.has(getParent(orderInstance).elemID.getFullName()))
     .map(orderInstance => {
       const instanceName = orderInstance.elemID.getFullName()
       const parentName = getParent(orderInstance).elemID.getFullName()

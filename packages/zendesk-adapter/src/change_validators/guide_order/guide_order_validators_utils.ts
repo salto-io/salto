@@ -13,7 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeDataType, ChangeError, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import {
+  Change,
+  ChangeDataType,
+  ChangeError, getChangeData,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
 
 export const isEverythingReferences = (orderInstance: ChangeDataType, orderField: string)
     : boolean =>
@@ -22,9 +29,22 @@ export const isEverythingReferences = (orderInstance: ChangeDataType, orderField
   && (orderInstance.value[orderField] === undefined
   || orderInstance.value[orderField].every(isReferenceExpression))
 
-export const createErrorMessage = (instance: ChangeDataType, orderField: string) : ChangeError => ({
+export const createNotReferencesError = (instance: ChangeDataType, orderField: string)
+    : ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: `${orderField} field error`,
   detailedMessage: `Some ${orderField} elements are not a reference`,
 })
+
+export const validateReferences = (
+  changes: readonly Change[],
+  orderField: string,
+  orderTypeName: string
+): ChangeError[] =>
+  changes
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(instance => orderTypeName === instance.elemID.typeName)
+    .filter(instance => !isEverythingReferences(instance, orderField))
+    .flatMap(instance => [createNotReferencesError(instance, orderField)])

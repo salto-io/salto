@@ -23,17 +23,19 @@ import {
   ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import {
   ARTICLES_FIELD,
   CATEGORIES_FIELD,
   createOrderType,
   SECTIONS_FIELD,
 } from '../../src/filters/guide_order/guide_orders_utils'
-import { orderInBrandsValidator } from '../../src/change_validators/guide_orders/order_in_brands_validator'
-import { orderInCategoriesValidator } from '../../src/change_validators/guide_orders/order_in_categories_validator'
-import { orderInSectionsValidator } from '../../src/change_validators/guide_orders/order_in_sections_validator'
-import { orderDeletionValidator } from '../../src/change_validators/guide_orders/order_deletion_validator'
+import {
+  categoriesOrderValidator,
+  sectionsOrderValidator,
+  articlesOrderValidator,
+  guideOrderDeletionValidator,
+} from '../../src/change_validators'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
 const categoryType = new ObjectType({ elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME) })
@@ -43,20 +45,32 @@ const brandInstance = new InstanceElement('brand', brandType)
 const categoryInstance = new InstanceElement('category', categoryType)
 const sectionInstance = new InstanceElement('section', sectionType)
 
-const createOrderElement = (parent: InstanceElement, orderField: string) : InstanceElement =>
+const createOrderElement = (
+  parent: InstanceElement,
+  orderElementType: string,
+  orderField: string
+) : InstanceElement =>
   new InstanceElement(
     `${parent.elemID.name}_${orderField}`,
-    createOrderType(parent.elemID.typeName),
+    createOrderType(orderElementType),
     {
       [orderField]: [new ReferenceExpression(sectionInstance.elemID, sectionInstance)],
     }, [],
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
   )
 
-const orderInBrandInstance = createOrderElement(brandInstance, CATEGORIES_FIELD)
-const orderInCategoryInstance = createOrderElement(categoryInstance, SECTIONS_FIELD)
-const sectionsInSectionOrderInstance = createOrderElement(sectionInstance, SECTIONS_FIELD)
-const articlesInSectionOrderInstance = createOrderElement(sectionInstance, ARTICLES_FIELD)
+const categoriesOrderInstance = createOrderElement(
+  brandInstance, CATEGORY_TYPE_NAME, CATEGORIES_FIELD
+)
+const categorySectionsOrderInstance = createOrderElement(
+  categoryInstance, SECTION_TYPE_NAME, SECTIONS_FIELD
+)
+const sectionSectionsOrderInstance = createOrderElement(
+  sectionInstance, SECTION_TYPE_NAME, SECTIONS_FIELD
+)
+const articlesOrderInstance = createOrderElement(
+  sectionInstance, ARTICLE_TYPE_NAME, ARTICLES_FIELD
+)
 
 describe('GuideOrdersValidator', () => {
   describe('Are all children a reference', () => {
@@ -82,15 +96,21 @@ describe('GuideOrdersValidator', () => {
       })
     }
 
-    it('Order in Brand', async () => {
-      await testValidator(orderInBrandInstance, CATEGORIES_FIELD, orderInBrandsValidator)
+    it('Categories order', async () => {
+      await testValidator(categoriesOrderInstance, CATEGORIES_FIELD, categoriesOrderValidator)
     })
-    it('Order in Category', async () => {
-      await testValidator(orderInCategoryInstance, SECTIONS_FIELD, orderInCategoriesValidator)
+    it('Category sections order', async () => {
+      await testValidator(
+        categorySectionsOrderInstance, SECTIONS_FIELD, sectionsOrderValidator
+      )
     })
-    it('Order in Section', async () => {
-      await testValidator(sectionsInSectionOrderInstance, SECTIONS_FIELD, orderInSectionsValidator)
-      await testValidator(articlesInSectionOrderInstance, ARTICLES_FIELD, orderInSectionsValidator)
+    it('Section sections order', async () => {
+      await testValidator(
+        sectionSectionsOrderInstance, SECTIONS_FIELD, sectionsOrderValidator
+      )
+    })
+    it('Articles order', async () => {
+      await testValidator(articlesOrderInstance, ARTICLES_FIELD, articlesOrderValidator)
     })
   })
   describe('Order element removal', () => {
@@ -107,7 +127,7 @@ describe('GuideOrdersValidator', () => {
       const instanceName = orderInstance.elemID.getFullName()
       const parentName = fakeParent.elemID.getFullName()
 
-      const errors = await orderDeletionValidator(changes)
+      const errors = await guideOrderDeletionValidator(changes)
       expect(errors.length).toBe(1)
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
@@ -116,15 +136,17 @@ describe('GuideOrdersValidator', () => {
         detailedMessage: `Unable to remove this element without removing it's parent (${parentName})`,
       })
     }
-    it('Order in Brand', async () => {
-      await testValidator(orderInBrandInstance)
+    it('Categories order', async () => {
+      await testValidator(categoriesOrderInstance)
     })
-    it('Order in Category', async () => {
-      await testValidator(orderInCategoryInstance)
+    it('Category sections order', async () => {
+      await testValidator(categorySectionsOrderInstance)
     })
-    it('Order in Section', async () => {
-      await testValidator(sectionsInSectionOrderInstance)
-      await testValidator(articlesInSectionOrderInstance)
+    it('Section sections order', async () => {
+      await testValidator(sectionSectionsOrderInstance)
+    })
+    it('Articles order', async () => {
+      await testValidator(articlesOrderInstance)
     })
   })
 })

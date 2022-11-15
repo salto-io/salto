@@ -16,9 +16,9 @@
 import { BuiltinTypes, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as elementsUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
-import orderInBrandsFilter from '../../src/filters/guide_order/order_in_brands'
-import orderInCategoriesFilter from '../../src/filters/guide_order/order_in_categories'
-import orderInSectionsFilter from '../../src/filters/guide_order/order_in_sections'
+import categoriesOrderFilter from '../../src/filters/guide_order/categories_order'
+import sectionsOrderFilter from '../../src/filters/guide_order/sections_order'
+import articlesOrderFilter from '../../src/filters/guide_order/articles_order'
 import { createFilterCreatorParams } from '../utils'
 import {
   ARTICLES_FIELD,
@@ -95,13 +95,13 @@ const createArticleInstance = (id = 0, position?: number, createdAt?: string): I
 let filter: FilterType
 
 const testFetch = async ({ createParent, createChild, orderField }
-  : {
-    createParent: () => InstanceElement
-    createChild: (id: number,
-                  position?: number,
-                  createdAt?: string,
-                  promoted?: boolean) => InstanceElement
-    orderField: string
+: {
+  createParent: () => InstanceElement
+  createChild: (id: number,
+                position?: number,
+                createdAt?: string,
+                promoted?: boolean) => InstanceElement
+  orderField: string
   })
  : Promise<void> => {
   const parentInstance = createParent()
@@ -109,10 +109,10 @@ const testFetch = async ({ createParent, createChild, orderField }
   const EARLY_CREATED_AT = '2022-10-29T11:00:00Z'
   const LATE_CREATED_AT = '2022-11-30T12:00:00Z'
   const childInstances = [
-    createChild(1, 1, EARLY_CREATED_AT),
+    createChild(0, 1, EARLY_CREATED_AT),
     createChild(1, 0, EARLY_CREATED_AT),
     createChild(1, 0, LATE_CREATED_AT),
-    createChild(0, 0, LATE_CREATED_AT),
+    createChild(1, 0, LATE_CREATED_AT),
   ]
 
   const sortedOrder = [childInstances[3], childInstances[2], childInstances[1], childInstances[0]]
@@ -129,28 +129,30 @@ const testFetch = async ({ createParent, createChild, orderField }
   const elements = [parentInstance, ...childInstances]
   await filter.onFetch(elements)
 
-  const typeObject = createOrderType(parentInstance.elemID.typeName)
+  const typeObject = createOrderType(childInstances[0].elemID.typeName)
   const orderInstance = new InstanceElement(
-    `${parentInstance.elemID.name}_${orderField}`,
+    parentInstance.elemID.name,
     typeObject,
     {
-      // Sort by position -> later createAt -> id
+      // Sort by position -> later createAt -> later id
       [orderField]: sortedOrder.map(c => new ReferenceExpression(c.elemID, c)),
     },
-    parentInstance.path && [...parentInstance.path.slice(0, -1), `${orderField}_order`],
+    parentInstance.path !== undefined
+      ? [...parentInstance.path.slice(0, -1), typeObject.elemID.typeName]
+      : undefined,
   )
 
-  // Sections have both sections and articles field
-  if (parentInstance.elemID.typeName === SECTION_TYPE_NAME) {
-    // Section_field test will also create an order element for all child sections
-    if (orderField === SECTIONS_FIELD) {
-      expect(elements.length).toBe(16) // All(8) x 2
-    } else {
-      expect(elements.length).toBe(9) // All(7) + PromotedArticle(1) + ArticlesOrder(1)
-      expect(elements[6]).toMatchObject(typeObject)
-      expect(elements[8]).toMatchObject(orderInstance)
-      return
-    }
+  // with Article_field we added another article to make sure promoted articles are first
+  if (orderField === ARTICLES_FIELD) {
+    expect(elements.length).toBe(8) // All(7) + PromotedArticle(1)
+    expect(elements[7]).toMatchObject(orderInstance)
+    expect(elements[6]).toMatchObject(typeObject)
+    return
+  }
+
+  // Section_field tests will also create an order element for all child sections
+  if (orderField === SECTIONS_FIELD) {
+    expect(elements.length).toBe(11) // All(7) + ChildrenOrders(4)
   } else {
     expect(elements.length).toBe(7) // Parent(1) + Children(4) + Type(1) + OrderElement(1)
   }
@@ -164,21 +166,16 @@ const testDeploy = async (
   orderField: string,
   createChildElement: (id?: number) => InstanceElement,
   updateApi: configUtils.DeployRequestConfig,
-  orderAdditionalField?: string,
 ) : Promise<void> => {
+  const children = [createChildElement(0), createChildElement(1)]
   const orderInstance = new InstanceElement(
     parentInstance.elemID.name,
-    createOrderType(parentInstance.elemID.typeName),
+    createOrderType(children[0].elemID.typeName),
     {
-      [orderField]: [createChildElement(0), createChildElement(1)]
-        .map(c => new ReferenceExpression(c.elemID, c)),
+      [orderField]: children.map(c => new ReferenceExpression(c.elemID, c)),
     },
     parentInstance.path && [...parentInstance.path.slice(0, -1), `${orderField}_order`],
   )
-
-  if (orderAdditionalField) {
-    orderInstance.value[orderAdditionalField] = []
-  }
 
   const change = {
     action: 'add',
@@ -211,11 +208,11 @@ const testDeploy = async (
 
 const config = { ...DEFAULT_CONFIG }
 
-describe('categories order in brand', () => {
+describe('Categories order in brand', () => {
   describe('on fetch', () => {
     it('with Guide active in Zendesk And Salto', async () => {
       config[FETCH_CONFIG].enableGuide = true
-      filter = orderInBrandsFilter(
+      filter = categoriesOrderFilter(
         createFilterCreatorParams({ config })
       ) as FilterType
       await testFetch({
@@ -226,7 +223,7 @@ describe('categories order in brand', () => {
     })
     it('with Guide not active in Zendesk', async () => {
       config[FETCH_CONFIG].enableGuide = true
-      filter = orderInBrandsFilter(
+      filter = categoriesOrderFilter(
         createFilterCreatorParams({ config })
       ) as FilterType
       // Should not create categories order field at all
@@ -238,7 +235,7 @@ describe('categories order in brand', () => {
     })
     it('with Guide not active in Salto', async () => {
       config[FETCH_CONFIG].enableGuide = false
-      filter = orderInBrandsFilter(
+      filter = categoriesOrderFilter(
         createFilterCreatorParams({})
       ) as FilterType
       // Should not create categories order field at all
@@ -260,7 +257,7 @@ describe('categories order in brand', () => {
       },
     } as configUtils.DeployRequestConfig
     beforeEach(() => {
-      filter = orderInBrandsFilter(createFilterCreatorParams({ client })) as FilterType
+      filter = categoriesOrderFilter(createFilterCreatorParams({ client })) as FilterType
     })
 
     it('deploy', async () => {
@@ -268,15 +265,15 @@ describe('categories order in brand', () => {
         createBrandInstance(),
         CATEGORIES_FIELD,
         createCategoryInstance,
-        updateApi
+        updateApi,
       )
     })
   })
 })
 
-describe('sections order in category', () => {
+describe('Sections order in category', () => {
   beforeEach(async () => {
-    filter = orderInCategoriesFilter(createFilterCreatorParams({ client })) as FilterType
+    filter = sectionsOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('on fetch', async () => {
@@ -297,20 +294,20 @@ describe('sections order in category', () => {
       },
     } as configUtils.DeployRequestConfig
 
-    it(`with only ${SECTIONS_FIELD} order change`, async () => {
+    it('deploy', async () => {
       await testDeploy(
         createCategoryInstance(),
         SECTIONS_FIELD,
         createSectionInCategoryInstance,
-        updateApi
+        updateApi,
       )
     })
   })
 })
 
-describe('sections and articles order in section', () => {
+describe('Sections order in section', () => {
   beforeEach(async () => {
-    filter = orderInSectionsFilter(createFilterCreatorParams({ client })) as FilterType
+    filter = sectionsOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('on fetch', async () => {
@@ -318,11 +315,6 @@ describe('sections and articles order in section', () => {
       createParent: createSectionInCategoryInstance,
       createChild: createSectionInSectionInstance,
       orderField: SECTIONS_FIELD,
-    })
-    await testFetch({
-      createParent: createSectionInCategoryInstance,
-      createChild: createArticleInstance,
-      orderField: ARTICLES_FIELD,
     })
   })
 
@@ -337,35 +329,48 @@ describe('sections and articles order in section', () => {
         },
       } as configUtils.DeployRequestConfig
 
-      it(`with only ${SECTIONS_FIELD} order change`, async () => {
+      it('deploy', async () => {
         await testDeploy(
           createSectionInCategoryInstance(1),
           SECTIONS_FIELD,
           createSectionInSectionInstance,
           updateApi,
-          ARTICLES_FIELD,
         )
       })
     })
-    describe('article in section', () => {
-      const updateApi = {
-        url: '/api/v2/help_center/articles/{articleId}',
-        method: 'put',
-        deployAsField: 'article',
-        urlParamsToFields: {
-          articleId: 'id',
-        },
-      } as configUtils.DeployRequestConfig
+  })
+})
 
-      it(`with only ${ARTICLES_FIELD} order change`, async () => {
-        await testDeploy(
-          createSectionInCategoryInstance(),
-          ARTICLES_FIELD,
-          createArticleInstance,
-          updateApi,
-          SECTIONS_FIELD,
-        )
-      })
+describe('Articles order in section', () => {
+  beforeEach(async () => {
+    filter = articlesOrderFilter(createFilterCreatorParams({ client })) as FilterType
+  })
+
+  it('on fetch', async () => {
+    await testFetch({
+      createParent: createSectionInCategoryInstance,
+      createChild: createArticleInstance,
+      orderField: ARTICLES_FIELD,
+    })
+  })
+
+  describe('on deploy', () => {
+    const updateApi = {
+      url: '/api/v2/help_center/articles/{articleId}',
+      method: 'put',
+      deployAsField: 'article',
+      urlParamsToFields: {
+        articleId: 'id',
+      },
+    } as configUtils.DeployRequestConfig
+
+    it('deploy', async () => {
+      await testDeploy(
+        createSectionInCategoryInstance(),
+        ARTICLES_FIELD,
+        createArticleInstance,
+        updateApi,
+      )
     })
   })
 })

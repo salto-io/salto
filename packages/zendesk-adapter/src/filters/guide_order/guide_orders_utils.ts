@@ -24,50 +24,52 @@ import {
   ObjectType,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
-import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../constants'
+import { ARTICLE_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 
+
+const { isDefined } = lowerDashValues
 const { createUrl } = elementsUtils
 const { awu } = collections.asynciterable
 
-export const ORDER_IN_BRAND_TYPE = 'order_in_brand'
-export const ORDER_IN_CATEGORY_TYPE = 'order_in_category'
-export const ORDER_IN_SECTION_TYPE = 'order_in_section'
+export const CATEGORIES_ORDER = 'categories_order'
+export const SECTIONS_ORDER = 'sections_order'
+export const ARTICLES_ORDER = 'articles_order'
+
+export const GUIDE_ORDER_TYPES = [CATEGORIES_ORDER, SECTIONS_ORDER, ARTICLES_ORDER]
 
 export const CATEGORIES_FIELD = 'categories'
 export const SECTIONS_FIELD = 'sections'
 export const ARTICLES_FIELD = 'articles'
 
-const GUIDE_ORDER_TYPES : {[key: string]: () => ObjectType} = {
-  [BRAND_TYPE_NAME]: () =>
-    new ObjectType({
-      elemID: new ElemID(ZENDESK, ORDER_IN_BRAND_TYPE),
-      fields: { [CATEGORIES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
-    }),
+const GUIDE_ORDER_OBJECT_TYPES : {[key: string]: () => ObjectType} = {
   [CATEGORY_TYPE_NAME]: () =>
     new ObjectType({
-      elemID: new ElemID(ZENDESK, ORDER_IN_CATEGORY_TYPE),
-      fields: { [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
+      elemID: new ElemID(ZENDESK, CATEGORIES_ORDER),
+      fields: { [CATEGORIES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
     }),
   [SECTION_TYPE_NAME]: () =>
     new ObjectType({
-      elemID: new ElemID(ZENDESK, ORDER_IN_SECTION_TYPE),
-      fields: {
-        [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
-        [ARTICLES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
-      },
+      elemID: new ElemID(ZENDESK, SECTIONS_ORDER),
+      fields: { [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
+    }),
+  [ARTICLE_TYPE_NAME]: () =>
+    new ObjectType({
+      elemID: new ElemID(ZENDESK, ARTICLES_ORDER),
+      fields: { [ARTICLES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
     }),
 }
 
-export const createOrderType = (typeName: string) : ObjectType => GUIDE_ORDER_TYPES[typeName]()
+export const createOrderType = (typeName: string)
+  : ObjectType => GUIDE_ORDER_OBJECT_TYPES[typeName]()
 
 
-export const createOrderElement = ({ parent, parentField, orderField, childrenElements, orderType }
+export const createOrderInstance = ({ parent, parentField, orderField, childrenElements, orderType }
 : {
   parent: InstanceElement
   parentField: string
@@ -78,24 +80,75 @@ export const createOrderElement = ({ parent, parentField, orderField, childrenEl
   const parentsChildren = _.orderBy(
     childrenElements.filter(c => c.value[parentField] === parent.value.id),
     // Lowest position index first, if there is a tie - the newer is first, another tie - by id
-    ['value.position', 'value.created_at', 'value.id'], ['asc', 'desc', 'asc']
+    ['value.position', 'value.created_at', 'value.id'], ['asc', 'desc', 'desc']
   )
 
   return new InstanceElement(
-    `${parent.elemID.name}_${orderField}`,
+    parent.elemID.name,
     orderType,
     {
       [orderField]: parentsChildren.map(c => new ReferenceExpression(c.elemID, c)),
     },
     // The same directory as it's parent
-    parent.path && [...parent.path.slice(0, -1), `${orderField}_order`],
+    parent.path !== undefined
+      ? [...parent.path.slice(0, -1), orderType.elemID.typeName]
+      : undefined,
     {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)],
     }
   )
 }
 
-// Transform order changes to new changes and deploy them
+const updateElementPositions = async (
+  change: Change<InstanceElement>,
+  orderField: string,
+  config: FilterContext,
+  client: ZendeskClient
+): Promise<Error[]> => {
+  // Removal means nothing because the element is internal
+  // We have order_deletion_validator that made sure the parent was also deleted
+  if (isRemovalChange(change)) {
+    return []
+  }
+
+  const newOrderElement = change.data.after
+  const elements = newOrderElement.value[orderField] ?? []
+
+  return awu(elements).filter(isReferenceExpression).map(
+    async (child, i): Promise<Error | undefined> => {
+      const resolvedChild = child.value
+      const childType = resolvedChild.elemID.typeName
+      const childUpdateApi = config[API_DEFINITIONS_CONFIG].types[childType].deployRequests?.modify
+
+      if (childUpdateApi === undefined) {
+        return new Error(`No endpoint of type modify for ${child.elemID.typeName}`)
+      }
+
+      // Send an api request to update the positions of the elements in the order list
+      // There is no reason to update elements that weren't changed
+      if (resolvedChild.value.position !== i) {
+        try {
+          await client.put({
+            url: createUrl({
+              instance: resolvedChild,
+              baseUrl: childUpdateApi.url,
+              urlParamsToFields: childUpdateApi.urlParamsToFields,
+            }),
+            data: { position: i },
+          })
+        } catch (err) {
+          return getZendeskError(getChangeData(change).elemID.getFullName(), err)
+        }
+      }
+      return undefined
+    }
+  ).filter(isDefined)
+    .toArray()
+}
+
+/**
+  Updated the position of the elements in the order list, by calling their modify API
+*/
 export const deployOrderChanges = async ({ changes, client, config, orderField } : {
   changes: Change<InstanceElement>[]
   client: ZendeskClient
@@ -106,45 +159,11 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
   const appliedChanges: Change[] = []
 
   await awu(changes).forEach(async change => {
-    // Removal means nothing because the element is internal
-    // We have order_deletion_validator to make sure the parent was also deleted
-    if (isRemovalChange(change)) {
+    const changeErrors = await updateElementPositions(change, orderField, config, client)
+    if (changeErrors.length === 0) {
       appliedChanges.push(change)
-      return
-    }
-
-    const newOrderElement = change.data.after
-    const orderElements = newOrderElement.value[orderField] || []
-
-    await awu(orderElements).filter(isReferenceExpression).forEach(async (child, i) => {
-      const resolvedChild = child.value
-      const childType = resolvedChild.elemID.typeName
-      const childUpdateApi = config[API_DEFINITIONS_CONFIG].types[childType].deployRequests?.modify
-
-      // Send an api request to update the positions of the elements in the order list
-      if (childUpdateApi !== undefined) {
-        // There is no reason to update elements that weren't changed
-        if (resolvedChild.value.position !== i) {
-          try {
-            await client.put({
-              url: createUrl({
-                instance: resolvedChild,
-                baseUrl: childUpdateApi.url,
-                urlParamsToFields: childUpdateApi.urlParamsToFields,
-              }),
-              data: { position: i },
-            })
-          } catch (err) {
-            orderChangeErrors.push(getZendeskError(getChangeData(change).elemID.getFullName(), err))
-          }
-        }
-      } else {
-        orderChangeErrors.push(new Error(`No endpoint of type modify for ${child.elemID.typeName}`))
-      }
-    })
-
-    if (orderChangeErrors.length === 0) {
-      appliedChanges.push(change)
+    } else {
+      orderChangeErrors.push(...changeErrors)
     }
   })
 

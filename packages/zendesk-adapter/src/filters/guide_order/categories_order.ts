@@ -23,8 +23,10 @@ import { FilterCreator } from '../../filter'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../../constants'
 import {
   CATEGORIES_FIELD,
-  createOrderElement, createOrderType,
-  deployOrderChanges, ORDER_IN_BRAND_TYPE,
+  CATEGORIES_ORDER,
+  createOrderInstance,
+  createOrderType,
+  deployOrderChanges,
 } from './guide_orders_utils'
 import { FETCH_CONFIG } from '../../config'
 
@@ -44,12 +46,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    const orderType = createOrderType(BRAND_TYPE_NAME)
+    const orderType = createOrderType(CATEGORY_TYPE_NAME)
     elements.push(orderType)
 
     // If the brand doesn't have Guide activated, do nothing
     brands.filter(b => b.value.has_help_center).forEach(brand => {
-      const orderInBrandElement = createOrderElement({
+      const orderInBrandElement = createOrderInstance({
         parent: brand,
         parentField: 'brand',
         orderField: CATEGORIES_FIELD,
@@ -64,13 +66,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   /** Change the categories positions according to their order in the brand */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [orderInBrandChanges, leftoverChanges] = _.partition(
+    const [categoriesOrderChange, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === ORDER_IN_BRAND_TYPE,
+      change => getChangeData(change).elemID.typeName === CATEGORIES_ORDER,
     )
 
     const deployResult = await deployOrderChanges({
-      changes: orderInBrandChanges,
+      changes: categoriesOrderChange,
       orderField: CATEGORIES_FIELD,
       client,
       config,

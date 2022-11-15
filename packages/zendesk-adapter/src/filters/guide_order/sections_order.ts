@@ -22,10 +22,9 @@ import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
 import {
-  createOrderElement, createOrderType,
+  createOrderInstance, createOrderType,
   deployOrderChanges,
-  ORDER_IN_CATEGORY_TYPE,
-  SECTIONS_FIELD,
+  SECTIONS_FIELD, SECTIONS_ORDER,
 } from './guide_orders_utils'
 
 /**
@@ -39,11 +38,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const categories = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
 
-    const orderType = createOrderType(CATEGORY_TYPE_NAME)
+    const orderType = createOrderType(SECTION_TYPE_NAME)
     elements.push(orderType)
 
+    /** Sections in category */
     categories.forEach(category => {
-      const orderInCategoryElement = createOrderElement({
+      const orderInCategoryElement = createOrderInstance({
         parent: category,
         parentField: 'category_id',
         orderField: SECTIONS_FIELD,
@@ -55,16 +55,33 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       )
       elements.push(orderInCategoryElement)
     })
+
+    /** Sections in section */
+    sections.forEach(section => {
+      const sectionsOrderElement = createOrderInstance({
+        parent: section,
+        parentField: 'parent_section_id',
+        orderField: SECTIONS_FIELD,
+        childrenElements: sections,
+        orderType,
+      })
+
+      section.value[SECTIONS_FIELD] = new ReferenceExpression(
+        sectionsOrderElement.elemID, sectionsOrderElement
+      )
+
+      elements.push(sectionsOrderElement)
+    })
   },
   /** Change the sections positions to their order in the category */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [orderInCategoryChanges, leftoverChanges] = _.partition(
+    const [sectionsOrderChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === ORDER_IN_CATEGORY_TYPE,
+      change => getChangeData(change).elemID.typeName === SECTIONS_ORDER,
     )
 
     const deployResult = await deployOrderChanges({
-      changes: orderInCategoryChanges,
+      changes: sectionsOrderChanges,
       orderField: SECTIONS_FIELD,
       client,
       config,

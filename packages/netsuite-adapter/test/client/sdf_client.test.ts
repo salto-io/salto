@@ -33,7 +33,7 @@ import SdfClient, {
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
@@ -1776,7 +1776,7 @@ File: ~/AccountConfiguration/features.xml`
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
     })
     describe('validate only', () => {
-      const failObject = 'failObject'
+      const failObject = 'fail_object'
       const deployParams: [CustomTypeInfo[], undefined, SdfDeployParams] = [
         [
           { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
@@ -1793,59 +1793,11 @@ File: ~/AccountConfiguration/features.xml`
         await client.deploy(...deployParams)
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
       })
-      it('should throw ObjectsValidationError', async () => {
-        let errorMessage: string
-        mockExecuteAction.mockImplementation(context => {
-          if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            return Promise.resolve({ isSuccess: () => true })
-          }
-          if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
-            errorMessage = `The validation process has encountered an error.
-Validating against TSTDRV2257860 - Salto Development - Administrator.
-Validate manifest -- Success
-Validate deploy file -- Success
-Validate configuration -- Success
-Validate objects -- Failed
-WARNING -- One or more potential issues were found during custom object validation. (${failObject})
-Details: Missing or invalid field attribute value for field label. When specifying a scriptid as the field value, set translate = T.
-File: ~/Objects/${failObject}.xml
-Validate files -- Success
-Validate folders -- Success
-Validate translation imports -- Success
-Validation of referenceability from custom objects to translations collection strings in progress. -- Success
-Validate preferences -- Success
-Validate flags -- Success
-Validate for circular dependencies -- Success
-*** ERROR ***
-
-Validation failed.
-
-An error occurred during custom object validation. (${failObject})
-Details: The availableexternally field must be set to a valid Boolean value, 'T' or 'F'.
-File: ~/Objects/${failObject}.xml`
-            throw new Error(errorMessage)
-          }
-          return Promise.resolve({ isSuccess: () => true })
-        })
-
-        try {
-          await client.deploy(...deployParams)
-          // should throw before this test
-          expect(false).toBeTruthy()
-        } catch (e) {
-          expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e.failedObjects instanceof Set).toBeTruthy()
-          expect(e.failedObjects.has(failObject)).toBeTruthy()
-        }
-      })
       it('should throw ManifestValidationError', async () => {
         let errorMessage: string
         const errorReferenceName = 'someRefName'
         const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
-          if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            return Promise.resolve({ isSuccess: () => true })
-          }
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             errorMessage = `Warning: The validation process has encountered an error.
 Validating against TSTDRV2257860 - Salto Development - Administrator.
@@ -1881,7 +1833,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
           // should throw before this test
           expect(false).toBeTruthy()
         } catch (e) {
-          expect(e instanceof ManifestValidationError).toBeTruthy()
+          expect(e instanceof SettingsDeployError).toBeTruthy()
           expect(e.message).toContain(manifestErrorMessage)
         }
       })

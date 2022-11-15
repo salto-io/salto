@@ -23,10 +23,17 @@ import { ManifestValidationError, ObjectsDeployError } from '../errors'
 import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'
+import { objectValidationErrorRegex } from '../client/sdf_client'
 
 const { awu } = collections.asynciterable
 
 const detailedErrorMessageRegex = RegExp('^Details: [a-z0-9A-Z_ ]+', 'gm')
+
+const mapObjectDeployErrorToInstance = (error: Error) => {
+  const scriptIdArray = error.message.match(objectValidationErrorRegex)
+  const detailedErrorArray = error.message.match(detailedErrorMessageRegex)
+  
+}
 
 export type ClientChangeValidator = (
   changes: ReadonlyArray<Change>,
@@ -63,9 +70,9 @@ const changeValidator: ClientChangeValidator = async (
         additionalDependencies
       )
       if (errors.length > 0) {
-        return errors.map(error => {
+        return errors.flatMap(error => {
           if (error instanceof ObjectsDeployError) {
-            const detailedErrorArray = error.message.match(detailedErrorMessageRegex)
+            
             return groupChanges.map(getChangeData)
               .filter(element => error.failedObjects.has(
                 getElementValueOrAnnotations(element)[SCRIPT_ID]
@@ -86,7 +93,7 @@ const changeValidator: ClientChangeValidator = async (
             elemID: getChangeData(change).elemID,
             detailedMessage: error.message,
           }))
-        }).flat()
+        })
       }
       return []
     })

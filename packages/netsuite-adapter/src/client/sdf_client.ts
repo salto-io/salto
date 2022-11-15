@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -109,10 +109,9 @@ const OBJECT_ID = 'objectId'
 const CUSTOM_OBJECT_VALIDATION_ERROR = 'An error occurred during custom object validation.'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
-const objectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\((?<${OBJECT_ID}>[a-z0-9A-Z_]+)\\)`, 'gm')
+export const objectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
-const manifestErrorRegex = RegExp('^Details: The manifest ([a-z0-9_ ]+)', 'm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -911,9 +910,6 @@ export default class SdfClient {
     const errorMessage = error.message
 
     if (settingsValidationErrorRegex.test(errorMessage)) {
-      if (manifestErrorRegex.test(errorMessage)) {
-        return new ManifestValidationError(errorMessage)
-      }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
     if (!deployStartMessageRegex.test(errorMessage)) {
@@ -954,9 +950,9 @@ export default class SdfClient {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
     try {
-      const custCommandArguments: Values = validateOnly ? { server: true } : {}
-      if (type === 'AccountCustomization') {
-        custCommandArguments.accountspecificvalues = 'Warning'
+      const custCommandArguments = {
+        ...(type === 'AccountCustomization' ? { ccountspecificvalues: 'WARNING' } : {}),
+        ...(validateOnly ? { server: true } : {}),
       }
       await this.executeProjectAction(
         validateOnly ? COMMANDS.VALIDATE_PROJECT : COMMANDS.DEPLOY_PROJECT,

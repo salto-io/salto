@@ -366,7 +366,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: isGuideDisabled,
-      supportedTypes,
+      supportedTypes: _.omit(supportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES)),
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,

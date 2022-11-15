@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { everyoneUserSegmentModificationValidator } from '../../src/change_validators/everyone_user_segment_modification'
 import { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
@@ -24,10 +23,6 @@ describe('everyoneUserSegmentModificationValidator', () => {
     elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
   })
   const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
-  const elementsSource = buildElementsSourceFromElements([
-    userSegmentType,
-    everyoneUserSegmentInstance,
-  ])
   const userSegmentInstance = new InstanceElement(
     'justATypicalUserSegment',
     userSegmentType,
@@ -42,7 +37,6 @@ describe('everyoneUserSegmentModificationValidator', () => {
     clonedAfterUserSegment.value.name = 'notEveryoneAnymore'
     const errors = await everyoneUserSegmentModificationValidator(
       [toChange({ before: clonedAfterUserSegment, after: everyoneUserSegmentInstance })],
-      elementsSource,
     )
     expect(errors).toEqual([{
       elemID: everyoneUserSegmentInstance.elemID,
@@ -54,7 +48,6 @@ describe('everyoneUserSegmentModificationValidator', () => {
   it('should return an error if everyone user_segment has been removed', async () => {
     const errors = await everyoneUserSegmentModificationValidator(
       [toChange({ before: everyoneUserSegmentInstance })],
-      elementsSource,
     )
     expect(errors).toEqual([{
       elemID: everyoneUserSegmentInstance.elemID,
@@ -63,13 +56,18 @@ describe('everyoneUserSegmentModificationValidator', () => {
       detailedMessage: 'The "Everyone" user segment cannot be modified',
     }])
   })
+  it('should do nothing if everyone user_segment does not exist', async () => {
+    const errors = await everyoneUserSegmentModificationValidator(
+      [toChange({ before: new InstanceElement('aaa', userSegmentType, {}) })],
+    )
+    expect(errors).toEqual([])
+  })
   it('should not return an error if other user_segment has been changed', async () => {
     const clonedBeforeUserSegment = userSegmentInstance.clone()
     const clonedAfterUserSegment = userSegmentInstance.clone()
     clonedAfterUserSegment.value.name = 'editedName'
     const errors = await everyoneUserSegmentModificationValidator(
       [toChange({ before: clonedBeforeUserSegment, after: clonedAfterUserSegment })],
-      elementsSource,
     )
     expect(errors).toHaveLength(0)
   })

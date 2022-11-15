@@ -15,15 +15,29 @@
 */
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeData, InstanceElement, ChangeError, isMapType, MapType, isObjectType,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  ChangeError,
+  isMapType,
+  MapType,
+  isObjectType,
+  isAdditionOrModificationChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { getInstanceChanges, PROFILE_MAP_FIELD_DEF, defaultMapper } from '../filters/convert_maps'
-import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE } from '../constants'
+import { defaultMapper, metadataTypeToFieldToMapDef } from '../filters/convert_maps'
+import { API_NAME_SEPARATOR, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
+import { isInstanceOfTypeChange } from '../filters/utils'
+import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
+
+const metadataTypesToValidate = [
+  PROFILE_METADATA_TYPE,
+  PERMISSION_SET_METADATA_TYPE,
+]
 
 const isNum = (str: string | undefined): boolean => (
   !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
@@ -33,12 +47,15 @@ const getMapKeyErrors = async (
   after: InstanceElement
 ): Promise<ChangeError[]> => {
   const errors: ChangeError[] = []
+  const type = await after.getType()
+  const typeName = await apiName(type)
+  const mapper = metadataTypeToFieldToMapDef[typeName]
   await awu(Object.entries(after.value)).filter(
-    async ([fieldName]) => isMapType(await (await after.getType()).fields[fieldName]?.getType())
-    && PROFILE_MAP_FIELD_DEF[fieldName] !== undefined
+    async ([fieldName]) => isMapType(await (type).fields[fieldName]?.getType())
+    && mapper[fieldName] !== undefined
   ).forEach(async ([fieldName, fieldValues]) => {
-    const fieldType = await (await after.getType()).fields[fieldName].getType() as MapType
-    const mapDef = PROFILE_MAP_FIELD_DEF[fieldName]
+    const fieldType = await (type).fields[fieldName].getType() as MapType
+    const mapDef = mapper[fieldName]
     const findInvalidPaths: TransformFunc = async ({ value, path, field }) => {
       if (isObjectType(await field?.getType()) && path !== undefined) {
         if (value[mapDef.key] === undefined) {
@@ -46,7 +63,7 @@ const getMapKeyErrors = async (
             elemID: path,
             severity: 'Error',
             message: `Nested value '${mapDef.key}' not found in field '${fieldName}`,
-            detailedMessage: `Profile ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
+            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
           })
           return undefined
         }
@@ -62,8 +79,8 @@ const getMapKeyErrors = async (
           errors.push({
             elemID: after.elemID.createNestedID(fieldName, ...previewPrefix),
             severity: 'Error',
-            message: `Incorrect map key in profile ${after.value.fullName} field ${fieldName}: ${previewPrefix?.join(API_NAME_SEPARATOR)} should be ${expectedPath.slice(0, previewPrefix.length).join(API_NAME_SEPARATOR)}`,
-            detailedMessage: `Profile ${after.value.fullName} field ${fieldName}: Incorrect map key ${actualPath?.join(API_NAME_SEPARATOR)}, should be ${expectedPath.join(API_NAME_SEPARATOR)}`,
+            message: `Incorrect map key in ${typeName} ${after.value.fullName} field ${fieldName}: ${previewPrefix?.join(API_NAME_SEPARATOR)} should be ${expectedPath.slice(0, previewPrefix.length).join(API_NAME_SEPARATOR)}`,
+            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Incorrect map key ${actualPath?.join(API_NAME_SEPARATOR)}, should be ${expectedPath.join(API_NAME_SEPARATOR)}`,
           })
         }
         return undefined
@@ -83,11 +100,16 @@ const getMapKeyErrors = async (
   return errors
 }
 
+
 const changeValidator: ChangeValidator = async changes => (
-  awu(await getInstanceChanges(changes, PROFILE_METADATA_TYPE))
+  awu(changes)
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(isInstanceOfTypeChange(...metadataTypesToValidate))
     .flatMap(async change => getMapKeyErrors(
       await resolveValues(getChangeData(change), getLookUpName)
-    )).toArray()
+    ))
+    .toArray()
 )
 
 export default changeValidator

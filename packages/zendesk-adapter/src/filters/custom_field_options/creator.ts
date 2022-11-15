@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { getParents, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../../deployment'
 import { applyforInstanceChangesOfType } from '../utils'
@@ -28,6 +29,8 @@ import { prepRef } from '../handle_template_expressions'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'
+
+const log = logger(module)
 
 type CustomFieldOptionsFilterCreatorParams = {
   parentTypeName: string
@@ -110,6 +113,10 @@ export const createCustomFieldOptionsFilterCreator = (
           // replace with the original references - since the current restore logic
           // does not restore references correctly when the resolved values contain templates
           const originalInstance = await elementsSource.get(instance.elemID)
+          if (originalInstance === undefined) {
+            log.error('Could not find original instance for %s, not replacing options', originalInstance.elemID.getFullName())
+            return instance
+          }
           const originalOptions = makeArray(originalInstance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
           if (originalOptions.every(isReferenceExpression)) {
             instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = originalOptions

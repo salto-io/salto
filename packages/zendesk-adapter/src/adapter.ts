@@ -36,7 +36,7 @@ import {
   ZendeskConfig,
   CLIENT_CONFIG,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES,
 } from './config'
 import {
   ZENDESK,
@@ -360,13 +360,16 @@ export default class ZendeskAdapter implements AdapterOperations {
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
-    const { supportedTypes } = this.userConfig.apiDefinitions
+    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
+    const supportedTypes = isGuideDisabled
+      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
+      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainElements = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
       shouldAddRemainingTypes: isGuideDisabled,
-      supportedTypes: _.omit(supportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES)),
+      supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
       nestedFieldFinder: findDataField,

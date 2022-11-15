@@ -22,7 +22,16 @@ import { naclCase, buildElementsSourceFromElements } from '@salto-io/adapter-uti
 import { config as configUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, FETCH_CONFIG, GUIDE_SUPPORTED_TYPES } from '../src/config'
+import {
+  DEFAULT_CONFIG,
+  API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG,
+  GUIDE_SUPPORTED_TYPES,
+  SUPPORTED_TYPES,
+  DEFAULT_ID_FIELDS,
+  DEFAULT_FILENAME_FIELDS,
+  FIELDS_TO_OMIT, FIELDS_TO_HIDE, DEFAULT_SERVICE_ID_FIELD, DEFAULT_TYPES,
+} from '../src/config'
 import { ZENDESK, BRAND_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -30,7 +39,10 @@ import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
 const { awu } = collections.asynciterable
-
+const ALL_SUPPORTED_TYPES = {
+  ...GUIDE_SUPPORTED_TYPES,
+  ...SUPPORTED_TYPES,
+}
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
 
@@ -266,6 +278,22 @@ describe('Zendesk adapter E2E', () => {
             ],
             exclude: [],
             enableGuide: true,
+          },
+          [API_DEFINITIONS_CONFIG]: {
+            typeDefaults: {
+              request: {
+                paginationField: 'next_page',
+              },
+              transformation: {
+                idFields: DEFAULT_ID_FIELDS,
+                fileNameFields: DEFAULT_FILENAME_FIELDS,
+                fieldsToOmit: FIELDS_TO_OMIT,
+                fieldsToHide: FIELDS_TO_HIDE,
+                serviceIdField: DEFAULT_SERVICE_ID_FIELD,
+              },
+            },
+            types: DEFAULT_TYPES,
+            supportedTypes: ALL_SUPPORTED_TYPES,
           },
         }
       )

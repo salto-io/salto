@@ -22,7 +22,7 @@ import customObjectInstancesValidator from './change_validators/custom_object_in
 import unknownFieldValidator from './change_validators/unknown_field'
 import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
-import mapKeysValidator from './change_validators/map_keys'
+import profileMapKeysValidator from './change_validators/profile_map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import createCheckOnlyDeployValidator from './change_validators/check_only_deploy'
@@ -42,7 +42,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownField: () => unknownFieldValidator,
   customFieldType: () => customFieldTypeValidator,
   standardFieldLabel: () => standardFieldLabelValidator,
-  mapKeys: () => mapKeysValidator,
+  profileMapKeys: () => profileMapKeysValidator,
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,

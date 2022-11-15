@@ -25,7 +25,7 @@ import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 import { LocalFilterCreator } from '../filter'
-import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE, EMAIL_TEMPLATE_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../constants'
+import { API_NAME_SEPARATOR, PROFILE_METADATA_TYPE, BUSINESS_HOURS_METADATA_TYPE, EMAIL_TEMPLATE_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
@@ -61,7 +61,7 @@ const BUSINESS_HOURS_MAP_FIELD_DEF: Record<string, MapDef> = {
   businessHours: { key: 'name' },
 }
 
-export const PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
+export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
   // One-level maps
   applicationVisibilities: { key: 'application' },
   classAccesses: { key: 'apexClass' },
@@ -74,19 +74,14 @@ export const PERMISSIONS_SET_MAP_FIELD_DEF: Record<string, MapDef> = {
   pageAccesses: { key: 'apexPage' },
   userPermissions: { key: 'name' },
 
+  // Non-unique maps (multiple values can have the same key)
+  categoryGroupVisibilities: { key: 'dataCategoryGroup', mapToList: true },
+  layoutAssignments: { key: 'layout', mapToList: true },
+
   // Two-level maps
   fieldPermissions: { key: 'field', nested: true },
   fieldLevelSecurities: { key: 'field', nested: true }, // only available in API version 22.0 and earlier
   recordTypeVisibilities: { key: 'recordType', nested: true },
-}
-
-export const PROFILE_MAP_FIELD_DEF: Record<string, MapDef> = {
-  // sharing map field def with permission set
-  ...PERMISSIONS_SET_MAP_FIELD_DEF,
-
-  // Non-unique maps (multiple values can have the same key)
-  categoryGroupVisibilities: { key: 'dataCategoryGroup', mapToList: true },
-  layoutAssignments: { key: 'layout', mapToList: true },
 }
 
 const EMAIL_TEMPLATE_MAP_FIELD_DEF: Record<string, MapDef> = {
@@ -102,7 +97,6 @@ export const metadataTypeToFieldToMapDef: Record<string, Record<string, MapDef>>
   [BUSINESS_HOURS_METADATA_TYPE]: BUSINESS_HOURS_MAP_FIELD_DEF,
   [EMAIL_TEMPLATE_METADATA_TYPE]: EMAIL_TEMPLATE_MAP_FIELD_DEF,
   [PROFILE_METADATA_TYPE]: PROFILE_MAP_FIELD_DEF,
-  [PERMISSION_SET_METADATA_TYPE]: PERMISSIONS_SET_MAP_FIELD_DEF,
   [LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE]: LIGHTNING_COMPONENT_BUNDLE_MAP,
 }
 

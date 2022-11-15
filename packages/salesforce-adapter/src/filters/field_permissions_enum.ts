@@ -15,41 +15,12 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import {
-  InstanceElement,
-  isObjectType,
-  MapType,
-  PrimitiveType,
-  ElemID,
-  PrimitiveTypes,
-  CORE_ANNOTATIONS,
-  createRestriction,
-  createRefToElmWithValue,
-  ObjectType,
-  getChangeData,
-  BuiltinTypes,
-  isAdditionOrModificationChange,
-  AdditionChange,
-  ModificationChange,
-  Field,
-  isInstanceElement,
-  ChangeDataType,
-  Change,
-  isInstanceChange,
-  isMapType,
-} from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, MapType, PrimitiveType, ElemID, PrimitiveTypes, CORE_ANNOTATIONS, createRestriction, createRefToElmWithValue, ObjectType, getChangeData, BuiltinTypes, isAdditionOrModificationChange, AdditionChange, ModificationChange, Field, isInstanceElement, ChangeDataType, Change, isInstanceChange } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
-import {
-  SALESFORCE,
-  METADATA_TYPE,
-  PROFILE_METADATA_TYPE,
-  TYPES_PATH,
-  SUBTYPES_PATH,
-  PERMISSION_SET_METADATA_TYPE,
-} from '../constants'
+import { SALESFORCE, METADATA_TYPE, PROFILE_METADATA_TYPE, TYPES_PATH, SUBTYPES_PATH } from '../constants'
 import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
@@ -57,7 +28,6 @@ const log = logger(module)
 
 const metadataTypesWithFieldPermissions = [
   PROFILE_METADATA_TYPE,
-  PERMISSION_SET_METADATA_TYPE,
 ]
 
 const FIELD_PERMISSIONS = 'fieldPermissions'
@@ -163,17 +133,12 @@ const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement
     log.warn('Instance of type %s does not have fieldPermissions value (as expected)', instance.elemID.typeName)
     return instance
   }
-  if (!_.isPlainObject(fieldPermissions)) {
-    log.warn('Instance of type %s does not have fieldPermissions filed as Map (as expected)', instance.elemID.typeName)
-    return instance
-  }
   instance.value.fieldPermissions = _.mapValues(
     fieldPermissions,
     objectPermission => _.mapValues(
       objectPermission,
       fieldPermission => {
-        if (_.isPlainObject(fieldPermission)
-                && _.isBoolean(fieldPermission.readable) && _.isBoolean(fieldPermission.editable)) {
+        if (_.isBoolean(fieldPermission.readable) && _.isBoolean(fieldPermission.editable)) {
           return fieldPermissionsObjectToEnum(fieldPermission)
         }
         return fieldPermission
@@ -201,13 +166,8 @@ const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceEleme
   return instance
 }
 
-const fieldPermissionFieldToEnum = async (objectType: ObjectType): Promise<void> => {
+const fieldPermissionFieldToEnum = (objectType: ObjectType): void => {
   if (isTypeWithFieldPermissions(objectType)) {
-    const fieldType = await objectType.fields.fieldPermissions.getType()
-    if (!isMapType(fieldType)) {
-      log.warn('Type %s does not have fieldPermissions filed as Map (as expected)', objectType.elemID.typeName)
-      return
-    }
     objectType.fields.fieldPermissions.refType = mapOfMapOfEnumFieldPermissions
   }
 }
@@ -254,11 +214,11 @@ const filter: LocalFilterCreator = ({ config }) => ({
       return
     }
     log.info('Running fieldPermissionsEnum onFetch')
-    relevantElements.forEach(async element => {
+    relevantElements.forEach(element => {
       if (isInstanceElement(element)) {
         fieldPermissionValuesToEnum(element)
       } else if (isObjectType(element)) {
-        await fieldPermissionFieldToEnum(element)
+        fieldPermissionFieldToEnum(element)
       }
     })
     elements.push(enumFieldPermissions)

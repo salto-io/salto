@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
@@ -27,16 +29,21 @@ import {
   USER_SEGMENT_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  ZENDESK, GUIDE, BRAND_TYPE_NAME,
 } from '../constants'
 
-export const GUIDE_PATH = ['zendesk', 'Records', 'guide']
+const { RECORDS_PATH } = elementsUtils
+
+export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
 const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
-const BRAND_SECOND_LEVEL = [CATEGORY_TYPE_NAME,
+const BRAND_SECOND_LEVEL = [
+  CATEGORY_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 ]
 const PARENTS = [CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLE_TYPE_NAME]
-const TRANSLATIONS = [CATEGORY_TRANSLATION_TYPE_NAME,
+const TRANSLATIONS = [
+  CATEGORY_TRANSLATION_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME]
 
@@ -56,36 +63,29 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
 /**
  * calculates a path which is not related to a specific brand
  */
-const pathForFirstLevel = (instance: InstanceElement): readonly string[] | undefined => {
-  const curPath = instance.path
-  if (curPath === undefined) {
-    return curPath
-  }
-  return [
-    ...GUIDE_PATH,
-    GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    curPath[curPath.length - 1],
-  ]
-}
+const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | undefined => [
+  ...GUIDE_PATH,
+  GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
+  pathNaclCase(instance.elemID.name),
+]
 
 /**
  * calculates a path which is related to a specific brand and does not have a parent
  */
-const pathForSecondLevel = (instance: InstanceElement): readonly string[] | undefined => {
-  const curPath = instance.path
-  const brandName = instance.value.brand?.value.value.name
-  if (curPath === undefined) {
-    return curPath
+const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: string)
+  : readonly string[] | undefined => {
+  if (brandName === undefined) {
+    return undefined
   }
   const newPath = [
     ...GUIDE_PATH,
     'brands',
     brandName,
     GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    curPath[curPath.length - 1],
+    pathNaclCase(instance.elemID.name),
   ]
   if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
-    newPath.push(curPath[curPath.length - 1])
+    newPath.push(pathNaclCase(instance.elemID.name))
   }
   return newPath
 }
@@ -93,30 +93,32 @@ const pathForSecondLevel = (instance: InstanceElement): readonly string[] | unde
 /**
  * calculates a path which is related to a specific brand and has a parent.
  */
-const pathForOtherLevels = (
-  instance: InstanceElement,
-  needTypeDirectory: boolean,
-  needOwnFolder: boolean,
+const pathForOtherLevels = (params :{
+  instance: InstanceElement
+  needTypeDirectory: boolean
+  needOwnFolder: boolean
   parent: InstanceElement
-): readonly string[] | undefined => {
-  const curPath = instance.path
-  const parentPath = parent.path
-  if (curPath === undefined || parentPath === undefined) {
-    return curPath
+}): readonly string[] | undefined => {
+  const parentPath = params.parent?.path
+  if (parentPath === undefined) {
+    return parentPath
   }
-  const newPath = [...(_.slice(parentPath, 0, parentPath.length - 1))]
-  if (needTypeDirectory) {
-    newPath.push(GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName])
+  const newPath = parentPath.slice(0, parentPath.length - 1)
+  if (params.needTypeDirectory) {
+    newPath.push(GUIDE_ELEMENT_DIRECTORY[params.instance.elemID.typeName])
   }
-  if (needOwnFolder) {
-    newPath.push(curPath[curPath.length - 1])
+  if (params.needOwnFolder) {
+    newPath.push(pathNaclCase(params.instance.elemID.name))
   }
-  newPath.push(curPath[curPath.length - 1])
+  newPath.push(pathNaclCase(params.instance.elemID.name))
   return newPath
 }
 
 const getId = (instance: InstanceElement): number =>
   instance.value.id
+
+const getFullName = (instance: InstanceElement): string =>
+  instance.elemID.getFullName()
 
 /**
  * This filter arranges the paths for guide elements.
@@ -125,57 +127,82 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const guideInstances = elements
       .filter(isInstanceElement)
-      .filter(obj => Object.keys(GUIDE_ELEMENT_DIRECTORY).includes(obj.elemID.typeName))
-
+      .filter(inst => Object.keys(GUIDE_ELEMENT_DIRECTORY).includes(inst.elemID.typeName))
+    const guideGrouped = _.groupBy(guideInstances, inst => inst.elemID.typeName)
     const parents = guideInstances.filter(instance => PARENTS.includes(instance.elemID.typeName))
     const parentsById = _.keyBy(parents, getId)
+    const NameByIdParents = _.mapValues(_.keyBy(parents, getFullName), 'value.id')
+    const brands = elements
+      .filter(elem => elem.elemID.typeName === BRAND_TYPE_NAME)
+      .filter(isInstanceElement)
+    const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
 
     // user_segments and permission_groups
-    guideInstances
-      .filter(instance => FIRST_LEVEL_TYPES.includes(instance.elemID.typeName))
+    FIRST_LEVEL_TYPES
+      .flatMap(type => guideGrouped[type])
       .forEach(instance => {
-        instance.path = pathForFirstLevel(instance)
+        instance.path = pathForGlobalTypes(instance)
       })
 
     // category, settings, language_settings
-    guideInstances
-      .filter(instance => BRAND_SECOND_LEVEL.includes(instance.elemID.typeName))
+    BRAND_SECOND_LEVEL
+      .flatMap(type => guideGrouped[type])
       .forEach(instance => {
-        instance.path = pathForSecondLevel(instance)
+        const brandElemId = instance.value.brand?.elemID.getFullName()
+        instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId])
       })
 
     // sections under category
-    guideInstances
-      .filter(instance => instance.elemID.typeName === SECTION_TYPE_NAME)
-      .filter(instance => instance.value.direct_parent_type === CATEGORY_TYPE_NAME)
+    const [categoryParent, sectionParent] = _.partition(
+      guideGrouped[SECTION_TYPE_NAME],
+      inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME
+    )
+    categoryParent
       .forEach(instance => {
-        const parentId = instance.value.direct_parent_id.value.value.id
-        instance.path = pathForOtherLevels(instance, true, true, parentsById[parentId])
+        const parentId = NameByIdParents[instance.value.direct_parent_id?.elemID.getFullName()]
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: true,
+          needOwnFolder: true,
+          parent: parentsById[parentId],
+        })
       })
 
     // sections under section
-    guideInstances
-      .filter(instance => instance.elemID.typeName === SECTION_TYPE_NAME)
-      .filter(instance => instance.value.direct_parent_type === SECTION_TYPE_NAME)
+    sectionParent
       .forEach(instance => {
-        const parentId = instance.value.direct_parent_id.value.value.id
-        instance.path = pathForOtherLevels(instance, false, true, parentsById[parentId])
+        const parentId = NameByIdParents[instance.value.direct_parent_id?.elemID.getFullName()]
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: false,
+          needOwnFolder: true,
+          parent: parentsById[parentId],
+        })
       })
 
     // articles
-    guideInstances
-      .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
+    guideGrouped[ARTICLE_TYPE_NAME]
       .forEach(instance => {
-        const parentId = instance.value.section_id.value.value.id
-        instance.path = pathForOtherLevels(instance, true, true, parentsById[parentId])
+        const parentId = NameByIdParents[instance.value.section_id?.elemID.getFullName()]
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: true,
+          needOwnFolder: true,
+          parent: parentsById[parentId],
+        })
       })
 
     // others (translations, article attachments, order?)
-    guideInstances
-      .filter(instance => TRANSLATIONS.includes(instance.elemID.typeName))
+    TRANSLATIONS
+      .flatMap(type => guideGrouped[type])
       .forEach(instance => {
-        const parentId = instance.annotations[CORE_ANNOTATIONS.PARENT][0].value.value.id
-        instance.path = pathForOtherLevels(instance, true, false, parentsById[parentId])
+        const parentId = getParent(instance).value.id
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: true,
+          needOwnFolder: false,
+          parent: parentsById[parentId],
+        })
       })
   },
 })

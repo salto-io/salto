@@ -85,8 +85,8 @@ describe('guide arrange paths', () => {
       name: BRAND_PATH[1],
     }
   )
-  const userSegmentInstance = new InstanceElement('instance2', userSegmentType, {}, ['instance1'])
-  const permissionGroupInstance = new InstanceElement('instance3', permissionGroupType, {}, ['instance2'])
+  const userSegmentInstance = new InstanceElement('instance2', userSegmentType, {})
+  const permissionGroupInstance = new InstanceElement('instance3', permissionGroupType, {})
 
   const guideSettingsInstance = new InstanceElement(
     'instance4',
@@ -94,7 +94,6 @@ describe('guide arrange paths', () => {
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
     },
-    ['instance4'],
   )
   const categoryInstance = new InstanceElement(
     'instance5',
@@ -103,7 +102,6 @@ describe('guide arrange paths', () => {
       id: 1,
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
     },
-    ['instance5'],
   )
   const sectionInstance = new InstanceElement(
     'instance6',
@@ -113,8 +111,7 @@ describe('guide arrange paths', () => {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
       direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
       direct_parent_type: 'category',
-    },
-    ['instance6'],
+    }
   )
   const sectionInSectionInstance = new InstanceElement(
     'instance7',
@@ -124,8 +121,7 @@ describe('guide arrange paths', () => {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
       direct_parent_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
       direct_parent_type: 'section',
-    },
-    ['instance7'],
+    }
   )
   const articleInstance = new InstanceElement(
     'instance8',
@@ -134,16 +130,14 @@ describe('guide arrange paths', () => {
       id: 4,
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
       section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-    },
-    ['instance8'],
+    }
   )
   const articleTranslationInstance = new InstanceElement(
     'instance9',
     articleTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
-    },
-    ['instance9'],
+    }
   )
   articleTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
     articleInstance.elemID, articleInstance
@@ -154,8 +148,7 @@ describe('guide arrange paths', () => {
     sectionTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
-    },
-    ['instance10'],
+    }
   )
   sectionTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
     sectionInstance.elemID, sectionInstance
@@ -165,8 +158,7 @@ describe('guide arrange paths', () => {
     categoryTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
-    },
-    ['instance11'],
+    }
   )
   categoryTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
     categoryInstance.elemID, categoryInstance
@@ -177,8 +169,7 @@ describe('guide arrange paths', () => {
     guideTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
-    },
-    ['instance12'],
+    }
   )
 
 
@@ -216,12 +207,12 @@ describe('guide arrange paths', () => {
         [
           ...GUIDE_PATH,
           GUIDE_ELEMENT_DIRECTORY[USER_SEGMENT_TYPE_NAME],
-          'instance1',
+          'instance2',
         ],
         [
           ...GUIDE_PATH,
           GUIDE_ELEMENT_DIRECTORY[PERMISSION_GROUP_TYPE_NAME],
-          'instance2',
+          'instance3',
         ],
         [
           ...GUIDE_PATH,

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 export const ZENDESK = 'zendesk'
+export const GUIDE = 'guide'
 export const BRAND_TYPE_NAME = 'brand'
 export const TARGET_TYPE_NAME = 'target'
 export const APP_OWNED_TYPE_NAME = 'app_owned'

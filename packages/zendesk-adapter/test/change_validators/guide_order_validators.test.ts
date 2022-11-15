@@ -91,8 +91,8 @@ describe('GuideOrdersValidator', () => {
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: `${orderField} field error`,
-        detailedMessage: `Some ${orderField} elements are not a reference`,
+        message: 'Guide order list elements are not a reference',
+        detailedMessage: `Some elements in ${orderInstance.elemID.getFullName()}'s ${orderField} field are not a reference`,
       })
     }
 
@@ -132,8 +132,8 @@ describe('GuideOrdersValidator', () => {
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: `Error removing ${instanceName}`,
-        detailedMessage: `Unable to remove this element without removing it's parent (${parentName})`,
+        message: 'Guide order elements removed without their parent',
+        detailedMessage: `${instanceName} was deleted without deleting its parent (${parentName})`,
       })
     }
     it('Categories order', async () => {

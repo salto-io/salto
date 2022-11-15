@@ -17,6 +17,8 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 import { validateReferences } from './guide_order_validators_utils'
 import { ARTICLES_FIELD, ARTICLES_ORDER } from '../../filters/guide_order/guide_orders_utils'
 
-/** Validates that all the elements in the articles order list are references */
+/**
+ * Validates that all the elements in the articles order list are references
+ */
 export const articlesOrderValidator: ChangeValidator = async changes =>
   validateReferences(changes, ARTICLES_FIELD, ARTICLES_ORDER)

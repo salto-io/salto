@@ -17,7 +17,9 @@ import { ChangeValidator, getChangeData, isRemovalChange } from '@salto-io/adapt
 import { getParent } from '@salto-io/adapter-utils'
 import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_orders_utils'
 
-/** Validates that if an order element was removed, its parent was also removed */
+/**
+ * Validates that if an order element was removed, its parent was also removed
+ * */
 export const guideOrderDeletionValidator: ChangeValidator = async changes => {
   const removalChanges = changes.filter(isRemovalChange).map(getChangeData)
   const orderRemovals = removalChanges.filter(

@@ -28,6 +28,7 @@ import {
   createOrderType,
   deployOrderChanges,
 } from './guide_orders_utils'
+import { FETCH_CONFIG } from '../../config'
 
 /**
  * Handles the sections and articles orders inside section
@@ -35,6 +36,11 @@ import {
 const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Create an InstanceElement of the sections and articles order inside the sections */
   onFetch: async (elements: Element[]) => {
+    // If Guide is not enabled in Salto, we don't need to do anything
+    if (!config[FETCH_CONFIG].enableGuide) {
+      return
+    }
+
     const articles = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
     const sections = elements.filter(isInstanceElement)
@@ -53,9 +59,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       })
 
       // Promoted articles are first
-      articlesOrderElements.value[ARTICLES_FIELD] = articlesOrderElements.value[ARTICLES_FIELD]
-        .sort((a : ReferenceExpression, b : ReferenceExpression) =>
-          Number(b.value.value.promoted === true) - Number(a.value.value.promoted === true))
+      articlesOrderElements.value[ARTICLES_FIELD] = _.sortBy(
+        articlesOrderElements.value[ARTICLES_FIELD], a => !a.value.value.promoted
+      )
 
       section.value[ARTICLES_FIELD] = new ReferenceExpression(
         articlesOrderElements.elemID, articlesOrderElements

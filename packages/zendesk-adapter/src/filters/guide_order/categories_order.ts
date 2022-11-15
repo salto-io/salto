@@ -36,33 +36,35 @@ import { FETCH_CONFIG } from '../../config'
 const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Create an InstanceElement of the categories order inside the brands */
   onFetch: async (elements: Element[]) => {
-    const categories = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
-    const brands = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
-
     // If Guide is not enabled in Salto, we don't need to do anything
     if (!config[FETCH_CONFIG].enableGuide) {
       return
     }
 
+    const categories = elements.filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
+    const brands = elements.filter(isInstanceElement)
+      .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
+
     const orderType = createOrderType(CATEGORY_TYPE_NAME)
     elements.push(orderType)
 
+    const categoriesOrderElements = brands
     // If the brand doesn't have Guide activated, do nothing
-    brands.filter(b => b.value.has_help_center).forEach(brand => {
-      const orderInBrandElement = createOrderInstance({
-        parent: brand,
-        parentField: 'brand',
-        orderField: CATEGORIES_FIELD,
-        childrenElements: categories,
-        orderType,
+      .filter(b => b.value.has_help_center).map(brand => {
+        const categoriesOrderElement = createOrderInstance({
+          parent: brand,
+          parentField: 'brand',
+          orderField: CATEGORIES_FIELD,
+          childrenElements: categories,
+          orderType,
+        })
+        brand.value.categories = new ReferenceExpression(
+          categoriesOrderElement.elemID, categoriesOrderElement
+        )
+        return categoriesOrderElement
       })
-      brand.value.categories = new ReferenceExpression(
-        orderInBrandElement.elemID, orderInBrandElement
-      )
-      elements.push(orderInBrandElement)
-    })
+    categoriesOrderElements.forEach(element => elements.push(element))
   },
   /** Change the categories positions according to their order in the brand */
   deploy: async (changes: Change<InstanceElement>[]) => {

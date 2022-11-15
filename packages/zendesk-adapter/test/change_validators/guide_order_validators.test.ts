@@ -91,8 +91,8 @@ describe('GuideOrdersValidator', () => {
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide order list elements are not a reference',
-        detailedMessage: `Some elements in ${orderInstance.elemID.getFullName()}'s ${orderField} field are not a reference`,
+        message: 'Guide elements order list includes an invalid Salto reference',
+        detailedMessage: `One or more elements in ${orderInstance.elemID.getFullName()}'s ${orderField} field are not a valid Salto reference`,
       })
     }
 
@@ -133,7 +133,7 @@ describe('GuideOrdersValidator', () => {
         elemID: orderInstance.elemID,
         severity: 'Error',
         message: 'Guide order elements removed without their parent',
-        detailedMessage: `${instanceName} was deleted without deleting its parent (${parentName})`,
+        detailedMessage: `Deleting ${instanceName} requires deleting its parent (${parentName})`,
       })
     }
     it('Categories order', async () => {

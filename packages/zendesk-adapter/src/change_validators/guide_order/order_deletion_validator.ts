@@ -17,6 +17,7 @@ import { ChangeValidator, getChangeData, isRemovalChange } from '@salto-io/adapt
 import { getParent } from '@salto-io/adapter-utils'
 import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_orders_utils'
 
+/** Validates that if an order element was removed, its parent was also removed */
 export const guideOrderDeletionValidator: ChangeValidator = async changes => {
   const removalChanges = changes.filter(isRemovalChange).map(getChangeData)
   const orderRemovals = removalChanges.filter(
@@ -25,7 +26,6 @@ export const guideOrderDeletionValidator: ChangeValidator = async changes => {
 
   const removedElements = new Set(removalChanges.map(change => change.elemID.getFullName()))
 
-  // Makes sure that if the order list was deleted, the parent was also deleted
   return orderRemovals
     .filter(orderInstance => !removedElements.has(getParent(orderInstance).elemID.getFullName()))
     .map(orderInstance => {

@@ -147,7 +147,7 @@ const updateElementPositions = async (
 }
 
 /**
-  Updated the position of the elements in the order list, by calling their modify API
+ * Updated the position of the elements in the order list, by calling their modify API
 */
 export const deployOrderChanges = async ({ changes, client, config, orderField } : {
   changes: Change<InstanceElement>[]

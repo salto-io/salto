@@ -121,6 +121,7 @@ const testFetch = async ({ createParent, createChild, orderField }
   if (orderField === ARTICLES_FIELD) {
     const promotedArticle = createChild(2, 2, EARLY_CREATED_AT)
     promotedArticle.value.promoted = true
+    childInstances.forEach(child => { child.value.promoted = false })
 
     childInstances.push(promotedArticle)
     sortedOrder.unshift(promotedArticle)
@@ -273,6 +274,7 @@ describe('Categories order in brand', () => {
 
 describe('Sections order in category', () => {
   beforeEach(async () => {
+    config[FETCH_CONFIG].enableGuide = true
     filter = sectionsOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
@@ -307,6 +309,7 @@ describe('Sections order in category', () => {
 
 describe('Sections order in section', () => {
   beforeEach(async () => {
+    config[FETCH_CONFIG].enableGuide = true
     filter = sectionsOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
@@ -343,6 +346,7 @@ describe('Sections order in section', () => {
 
 describe('Articles order in section', () => {
   beforeEach(async () => {
+    config[FETCH_CONFIG].enableGuide = true
     filter = articlesOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 

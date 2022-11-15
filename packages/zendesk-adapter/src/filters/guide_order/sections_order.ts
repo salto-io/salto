@@ -26,6 +26,7 @@ import {
   deployOrderChanges,
   SECTIONS_FIELD, SECTIONS_ORDER,
 } from './guide_orders_utils'
+import { FETCH_CONFIG } from '../../config'
 
 /**
  * Handles the section orders inside category
@@ -33,6 +34,11 @@ import {
 const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Create an InstanceElement of the sections order inside the categories */
   onFetch: async (elements: Element[]) => {
+    // If Guide is not enabled in Salto, we don't need to do anything
+    if (!config[FETCH_CONFIG].enableGuide) {
+      return
+    }
+
     const sections = elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
     const categories = elements.filter(isInstanceElement)
@@ -42,23 +48,24 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     elements.push(orderType)
 
     /** Sections in category */
-    categories.forEach(category => {
-      const orderInCategoryElement = createOrderInstance({
+    const sectionsInCategoryOrderElements = categories.map(category => {
+      const sectionInCategoryOrder = createOrderInstance({
         parent: category,
         parentField: 'category_id',
         orderField: SECTIONS_FIELD,
+        // Make sure these sections are not under another section
         childrenElements: sections.filter(s => s.value.parent_section_id === undefined),
         orderType,
       })
       category.value.sections = new ReferenceExpression(
-        orderInCategoryElement.elemID, orderInCategoryElement
+        sectionInCategoryOrder.elemID, sectionInCategoryOrder
       )
-      elements.push(orderInCategoryElement)
+      return sectionInCategoryOrder
     })
 
     /** Sections in section */
-    sections.forEach(section => {
-      const sectionsOrderElement = createOrderInstance({
+    const sectionsInSectionOrderElements = sections.map(section => {
+      const sectionInSectionOrderElement = createOrderInstance({
         parent: section,
         parentField: 'parent_section_id',
         orderField: SECTIONS_FIELD,
@@ -67,11 +74,14 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       })
 
       section.value[SECTIONS_FIELD] = new ReferenceExpression(
-        sectionsOrderElement.elemID, sectionsOrderElement
+        sectionInSectionOrderElement.elemID, sectionInSectionOrderElement
       )
 
-      elements.push(sectionsOrderElement)
+      return sectionInSectionOrderElement
     })
+
+    sectionsInCategoryOrderElements.forEach(element => elements.push(element))
+    sectionsInSectionOrderElements.forEach(element => elements.push(element))
   },
   /** Change the sections positions to their order in the category */
   deploy: async (changes: Change<InstanceElement>[]) => {

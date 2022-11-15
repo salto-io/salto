@@ -16,10 +16,7 @@
 import { config } from '@salto-io/adapter-components'
 import { JiraApiConfig } from '../../config/api_config'
 
-export type RecursiveNullable<T> = {
-  [P in keyof T]: RecursiveNullable<T[P]> | null
-}
-export const DC_DEFAULT_API_DEFINITIONS: RecursiveNullable<Partial<JiraApiConfig>> = {
+export const DC_DEFAULT_API_DEFINITIONS: config.RecursiveDeletable<Partial<JiraApiConfig>> = {
   types: {
     IssueEvent: {
       deployRequests: {

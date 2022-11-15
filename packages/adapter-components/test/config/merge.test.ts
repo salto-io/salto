@@ -72,7 +72,7 @@ describe('mergeWithDefaultConfig', () => {
       },
     })
   })
-  it('should delete inline values', () => {
+  it('should delete nested values', () => {
     config = {
       a: 5,
       b: {

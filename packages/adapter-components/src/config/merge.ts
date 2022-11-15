@@ -18,6 +18,10 @@ import _ from 'lodash'
 
 export const MERGE_CONFIG_DELETE_VALUE = null
 
+export type RecursiveDeletable<T> = {
+  [P in keyof T]: RecursiveDeletable<T[P]> | typeof MERGE_CONFIG_DELETE_VALUE
+}
+
 const removeEmptyValues = (values: Values): Values => {
   Object.keys(values).forEach(key => {
     if (values[key] === MERGE_CONFIG_DELETE_VALUE) {

@@ -62,7 +62,8 @@ const createChildInstance = (
   refType: ObjectType,
   parentKey: string,
   position?: number,
-  createdAt?: string
+  createdAt?: string,
+  parentType?: string,
 ): InstanceElement =>
   new InstanceElement(`${type}${id}`, refType, {
     [parentKey]: PARENT_ID,
@@ -70,6 +71,7 @@ const createChildInstance = (
     id,
     position,
     created_at: createdAt,
+    direct_parent_type: parentType,
   })
 
 const createCategoryInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
@@ -80,14 +82,14 @@ const createSectionInCategoryInstance = (
   position?: number,
   createdAt?: string
 ) : InstanceElement =>
-  createChildInstance(id, 'section', sectionType, 'category_id', position, createdAt)
+  createChildInstance(id, 'section', sectionType, 'category_id', position, createdAt, CATEGORY_TYPE_NAME)
 
 const createSectionInSectionInstance = (
   id = 0,
   position?: number,
   createdAt?: string
 ) : InstanceElement =>
-  createChildInstance(id, 'section', sectionType, 'parent_section_id', position, createdAt)
+  createChildInstance(id, 'section', sectionType, 'parent_section_id', position, createdAt, SECTION_TYPE_NAME)
 
 const createArticleInstance = (id = 0, position?: number, createdAt?: string): InstanceElement =>
   createChildInstance(id, 'article', articleType, 'section_id', position, createdAt)

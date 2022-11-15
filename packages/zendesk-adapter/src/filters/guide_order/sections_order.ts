@@ -54,7 +54,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         parentField: 'category_id',
         orderField: SECTIONS_FIELD,
         // Make sure these sections are not under another section
-        childrenElements: sections.filter(s => s.value.parent_section_id === undefined),
+        childrenElements: sections.filter(s => s.value.direct_parent_type === CATEGORY_TYPE_NAME),
         orderType,
       })
       category.value.sections = new ReferenceExpression(
@@ -69,7 +69,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         parent: section,
         parentField: 'parent_section_id',
         orderField: SECTIONS_FIELD,
-        childrenElements: sections,
+        childrenElements: sections.filter(s => s.value.direct_parent_type === SECTION_TYPE_NAME),
         orderType,
       })
 

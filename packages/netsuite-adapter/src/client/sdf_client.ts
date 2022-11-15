@@ -908,7 +908,6 @@ export default class SdfClient {
 
   private static customizeDeployError(error: Error): Error {
     const errorMessage = error.message
-
     if (settingsValidationErrorRegex.test(errorMessage)) {
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }

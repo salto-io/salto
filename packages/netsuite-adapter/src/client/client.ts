@@ -204,14 +204,13 @@ export default class NetsuiteClient {
   }
 
   private async sdfDeploy({
-    changes, deployReferencedElements, additionalDependencies, validateOnly = false
+    changes, deployReferencedElements, additionalDependencies, validateOnly = false,
   }: {
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
-    additionalDependencies: AdditionalDependencies,
+    changes: ReadonlyArray<Change>
+    deployReferencedElements: boolean
+    additionalDependencies: AdditionalDependencies
     validateOnly?: boolean
-  }
-  ): Promise<DeployResult> {
+  }): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
 
     const someElementToDeploy = getChangeData(changes[0])
@@ -230,7 +229,11 @@ export default class NetsuiteClient {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
         await log.time(
-          () => this.sdfClient.deploy(customizationInfos, suiteAppId, { additionalDependencies, validateOnly }),
+          () => this.sdfClient.deploy(
+            customizationInfos,
+            suiteAppId,
+            { additionalDependencies, validateOnly }
+          ),
           'sdfDeploy'
         )
         return { errors, appliedChanges: changesToDeploy }
@@ -285,9 +288,12 @@ export default class NetsuiteClient {
     additionalSdfDependencies: AdditionalDependencies,
   ): Promise<ReadonlyArray<Error>> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      return (await this.sdfDeploy(
-        { changes, deployReferencedElements, additionalDependencies: additionalSdfDependencies, validateOnly: true }
-      )).errors
+      return (await this.sdfDeploy({
+        changes,
+        deployReferencedElements,
+        additionalDependencies: additionalSdfDependencies,
+        validateOnly: true,
+      })).errors
     }
     return []
   }
@@ -302,7 +308,11 @@ export default class NetsuiteClient {
   ):
     Promise<DeployResult> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      return this.sdfDeploy({ changes, deployReferencedElements, additionalDependencies: additionalSdfDependencies })
+      return this.sdfDeploy({
+        changes,
+        deployReferencedElements,
+        additionalDependencies: additionalSdfDependencies,
+      })
     }
 
     const instancesChanges = changes.filter(isInstanceChange)

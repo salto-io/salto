@@ -159,7 +159,8 @@ describe('NetsuiteClient', () => {
               additionalDependencies: {
                 exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
               },
-            }
+              validateOnly: false,
+            },
           )
         })
         it('should transform field to customrecordtype instance', async () => {
@@ -195,7 +196,8 @@ describe('NetsuiteClient', () => {
               additionalDependencies: {
                 exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
               },
-            }
+              validateOnly: false,
+            },
           )
         })
         it('should try again to deploy after ObjectsDeployError field fail', async () => {

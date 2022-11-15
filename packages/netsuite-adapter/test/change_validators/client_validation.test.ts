@@ -43,7 +43,7 @@ describe('client validation', () => {
         after: new InstanceElement(
           'instanceName',
           workflowType().type,
-          { [SCRIPT_ID]: 'objectName' }
+          { [SCRIPT_ID]: 'object_name' }
         ),
       }), toChange({
         after: new ObjectType({
@@ -64,14 +64,14 @@ describe('client validation', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should have SDF Objects Validation Error for instance', async () => {
-    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value'
+    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value, \'T\' or \'F\'.'
     const fullErrorMessage = `validation failed.
-An error occurred during custom object validation. (objectName)
-${detailedMessage}, 'T' or 'F'.
-File: ~/Objects/objectName.xml`
+An error occurred during custom object validation. (object_name)
+${detailedMessage}
+File: ~/Objects/object_name.xml`
 
     mockValidate.mockReturnValue([
-      new ObjectsDeployError(fullErrorMessage, new Set(['objectName'])),
+      new ObjectsDeployError(fullErrorMessage, new Set(['object_name'])),
     ])
     const changeErrors = await clientValidation(
       changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
@@ -85,11 +85,11 @@ File: ~/Objects/objectName.xml`
     })
   })
   it('should have SDF Objects Validation Error for customRecordType', async () => {
-    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value'
+    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value, \'T\' or \'F\'.'
     const fullErrorMessage = `validation failed.
-An error occurred during custom object validation. (objectName)
-${detailedMessage}, 'T' or 'F'.
-File: ~/Objects/objectName.xml`
+An error occurred during custom object validation. (customrecord1)
+${detailedMessage}
+File: ~/Objects/customrecord1.xml`
     mockValidate.mockReturnValue([
       new ObjectsDeployError(fullErrorMessage, new Set(['customrecord1'])),
     ])

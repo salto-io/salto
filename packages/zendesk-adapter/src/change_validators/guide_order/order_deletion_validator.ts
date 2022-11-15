@@ -35,7 +35,7 @@ export const guideOrderDeletionValidator: ChangeValidator = async changes => {
         elemID: orderInstance.elemID,
         severity: 'Error',
         message: 'Guide order elements removed without their parent',
-        detailedMessage: `${instanceName} was deleted without deleting its parent (${parentName})`,
+        detailedMessage: `Deleting ${instanceName} requires deleting its parent (${parentName})`,
       }
     })
 }

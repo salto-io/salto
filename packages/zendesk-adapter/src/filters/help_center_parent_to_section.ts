@@ -24,7 +24,7 @@ import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './help_center_section_and_category'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../constants'
-import { ARTICLES_FIELD, SECTIONS_FIELD } from './guide_order_utils'
+import { ARTICLES_FIELD, SECTIONS_FIELD } from './guide_order/guide_orders_utils'
 
 const PARENT_SECTION_ID_FIELD = 'parent_section_id'
 

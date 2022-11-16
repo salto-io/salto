@@ -30,7 +30,7 @@ const log = logger(module)
 
 const { RECORDS_PATH, TYPES_PATH } = elementsUtils
 
-export const LOCALE_TYPE_NAME = 'help_center_locale'
+export const LOCALE_TYPE_NAME = 'guide_locale'
 
 type LocalesResponse = {
   locales: string[]

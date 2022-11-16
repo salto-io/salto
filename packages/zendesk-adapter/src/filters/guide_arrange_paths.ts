@@ -63,11 +63,13 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
 /**
  * calculates a path which is not related to a specific brand
  */
-const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | undefined => [
-  ...GUIDE_PATH,
-  GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-  pathNaclCase(instance.elemID.name),
-]
+const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | undefined =>
+  [
+    ...GUIDE_PATH,
+    GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
+    pathNaclCase(instance.elemID.name),
+  ]
+
 
 /**
  * calculates a path which is related to a specific brand and does not have a parent
@@ -140,6 +142,7 @@ const filterCreator: FilterCreator = () => ({
     // user_segments and permission_groups
     FIRST_LEVEL_TYPES
       .flatMap(type => guideGrouped[type])
+      .filter(instance => instance !== undefined)
       .forEach(instance => {
         instance.path = pathForGlobalTypes(instance)
       })
@@ -147,6 +150,7 @@ const filterCreator: FilterCreator = () => ({
     // category, settings, language_settings
     BRAND_SECOND_LEVEL
       .flatMap(type => guideGrouped[type])
+      .filter(instance => instance !== undefined)
       .forEach(instance => {
         const brandElemId = instance.value.brand?.elemID.getFullName()
         instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId])
@@ -154,7 +158,7 @@ const filterCreator: FilterCreator = () => ({
 
     // sections under category
     const [categoryParent, sectionParent] = _.partition(
-      guideGrouped[SECTION_TYPE_NAME],
+      guideGrouped[SECTION_TYPE_NAME] ?? [],
       inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME
     )
     categoryParent
@@ -181,7 +185,8 @@ const filterCreator: FilterCreator = () => ({
       })
 
     // articles
-    guideGrouped[ARTICLE_TYPE_NAME]
+    const articles = guideGrouped[ARTICLE_TYPE_NAME] ?? []
+    articles
       .forEach(instance => {
         const parentId = NameByIdParents[instance.value.section_id?.elemID.getFullName()]
         instance.path = pathForOtherLevels({
@@ -195,6 +200,7 @@ const filterCreator: FilterCreator = () => ({
     // others (translations, article attachments, order?)
     TRANSLATIONS
       .flatMap(type => guideGrouped[type])
+      .filter(instance => instance !== undefined)
       .forEach(instance => {
         const parentId = getParent(instance).value.id
         instance.path = pathForOtherLevels({

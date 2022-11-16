@@ -103,6 +103,8 @@ import articlesOrderFilter from './filters/guide_order/articles_order'
 import hcServiceUrl from './filters/help_center_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
 import hcLanguageSettings from './filters/guide_language_translations'
+import guideArrangePaths from './filters/guide_arrange_paths'
+
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -190,6 +192,7 @@ export const DEFAULT_FILTERS = [
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
   deployBrandedGuideTypesFilter,
+  guideArrangePaths,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

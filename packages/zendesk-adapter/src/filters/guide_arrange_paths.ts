@@ -17,6 +17,7 @@ import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-a
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
@@ -33,6 +34,7 @@ import {
 } from '../constants'
 
 const { RECORDS_PATH } = elementsUtils
+const log = logger(module)
 
 export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
 const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
@@ -74,10 +76,15 @@ const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | unde
 /**
  * calculates a path which is related to a specific brand and does not have a parent
  */
-const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: string)
-  : readonly string[] | undefined => {
+const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: string | undefined)
+  : readonly string[] => {
   if (brandName === undefined) {
-    return undefined
+    log.error('brandName was not found for instance %s.', instance.elemID.getFullName())
+    return [
+      ...GUIDE_PATH,
+      GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
+      pathNaclCase(instance.elemID.name),
+    ]
   }
   const newPath = [
     ...GUIDE_PATH,
@@ -99,11 +106,15 @@ const pathForOtherLevels = (params :{
   instance: InstanceElement
   needTypeDirectory: boolean
   needOwnFolder: boolean
-  parent: InstanceElement
+  parent: InstanceElement | undefined
 }): readonly string[] | undefined => {
   const parentPath = params.parent?.path
   if (parentPath === undefined) {
-    return parentPath
+    return [
+      ...GUIDE_PATH,
+      GUIDE_ELEMENT_DIRECTORY[params.instance.elemID.typeName],
+      pathNaclCase(params.instance.elemID.name),
+    ]
   }
   const newPath = parentPath.slice(0, parentPath.length - 1)
   if (params.needTypeDirectory) {
@@ -116,8 +127,10 @@ const pathForOtherLevels = (params :{
   return newPath
 }
 
-const getId = (instance: InstanceElement): number =>
-  instance.value.id
+const getId = (instance: InstanceElement): number => {
+  return instance.value.id
+}
+
 
 const getFullName = (instance: InstanceElement): string =>
   instance.elemID.getFullName()
@@ -131,12 +144,17 @@ const filterCreator: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(inst => Object.keys(GUIDE_ELEMENT_DIRECTORY).includes(inst.elemID.typeName))
     const guideGrouped = _.groupBy(guideInstances, inst => inst.elemID.typeName)
-    const parents = guideInstances.filter(instance => PARENTS.includes(instance.elemID.typeName))
+
+    const parents = guideInstances
+      .filter(instance => PARENTS.includes(instance.elemID.typeName))
+      .filter(parent => parent.value.id !== undefined)
     const parentsById = _.keyBy(parents, getId)
-    const NameByIdParents = _.mapValues(_.keyBy(parents, getFullName), 'value.id')
+    const nameByIdParents = _.mapValues(_.keyBy(parents, getFullName), 'value.id')
+
     const brands = elements
       .filter(elem => elem.elemID.typeName === BRAND_TYPE_NAME)
       .filter(isInstanceElement)
+      .filter(brand => brand.value.name !== undefined)
     const fullNameByNameBrand = _.mapValues(_.keyBy(brands, getFullName), 'value.name')
 
     // user_segments and permission_groups
@@ -163,24 +181,26 @@ const filterCreator: FilterCreator = () => ({
     )
     categoryParent
       .forEach(instance => {
-        const parentId = NameByIdParents[instance.value.direct_parent_id?.elemID.getFullName()]
+        const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
+        const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
         instance.path = pathForOtherLevels({
           instance,
           needTypeDirectory: true,
           needOwnFolder: true,
-          parent: parentsById[parentId],
+          parent,
         })
       })
 
     // sections under section
     sectionParent
       .forEach(instance => {
-        const parentId = NameByIdParents[instance.value.direct_parent_id?.elemID.getFullName()]
+        const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
+        const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
         instance.path = pathForOtherLevels({
           instance,
           needTypeDirectory: false,
           needOwnFolder: true,
-          parent: parentsById[parentId],
+          parent,
         })
       })
 
@@ -188,7 +208,7 @@ const filterCreator: FilterCreator = () => ({
     const articles = guideGrouped[ARTICLE_TYPE_NAME] ?? []
     articles
       .forEach(instance => {
-        const parentId = NameByIdParents[instance.value.section_id?.elemID.getFullName()]
+        const parentId = nameByIdParents[instance.value.section_id?.elemID.getFullName()]
         instance.path = pathForOtherLevels({
           instance,
           needTypeDirectory: true,

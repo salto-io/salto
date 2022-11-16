@@ -289,5 +289,215 @@ describe('guide arrange paths', () => {
         ],
       ])
     })
+    it('should not raise error when global types dont exist', async () => {
+      const elements = [
+        guideSettingsInstance,
+        sectionInstance,
+        sectionInSectionInstance,
+        categoryInstance,
+        articleInstance,
+        articleTranslationInstance,
+        sectionTranslationInstance,
+        categoryTranslationInstance,
+        languageSettingsInstance,
+      ].map(e => e.clone())
+      await filter.onFetch([elements, brandInstance].flat())
+      expect(elements.map(elem => elem.path)).toEqual([
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[GUIDE_SETTINGS_TYPE_NAME],
+          'instance4',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance6',
+          'instance6',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance6',
+          'instance7',
+          'instance7',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          'instance5',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance6',
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
+          'instance8',
+          'instance8',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance6',
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
+          'instance8',
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
+          'instance9',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance6',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
+          'instance10',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
+          'instance11',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[GUIDE_LANGUAGE_SETTINGS_TYPE_NAME],
+          'instance12',
+        ],
+      ])
+    })
+    it('should not raise error when parent types dont exist', async () => {
+      const elements = [
+        articleTranslationInstance,
+        sectionTranslationInstance,
+        categoryTranslationInstance,
+      ].map(e => e.clone())
+      await filter.onFetch([elements, brandInstance].flat())
+      expect(elements.map(elem => elem.path)).toEqual([
+        [
+          ...GUIDE_PATH,
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
+          'instance9',
+        ],
+        [
+          ...GUIDE_PATH,
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
+          'instance10',
+        ],
+        [
+          ...GUIDE_PATH,
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
+          'instance11',
+        ],
+      ])
+    })
+    it('should not raise error when id field of parent is missing', async () => {
+      const articleMissingIdInstance = new InstanceElement(
+        'instance1',
+        articleType,
+        {
+          brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+          section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+        }
+      )
+      const articleTranslationMissingIdInstance = new InstanceElement(
+        'instance2',
+        articleTranslationType,
+        {
+          brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+        }
+      )
+      articleTranslationMissingIdInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(
+          articleMissingIdInstance.elemID, articleMissingIdInstance
+        )]
+      const elements = [
+        articleMissingIdInstance,
+        articleTranslationMissingIdInstance,
+      ].map(e => e.clone())
+      await filter.onFetch([elements, brandInstance].flat())
+      expect(elements.map(elem => elem.path)).toEqual([
+        [
+          ...GUIDE_PATH,
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
+          'instance1',
+        ],
+        [
+          ...GUIDE_PATH,
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
+          'instance2',
+        ],
+      ])
+    })
+    it('should not raise error when direct_parent_id is missing', async () => {
+      const sectionNoDirectParentInstance = new InstanceElement(
+        'instance2',
+        sectionType,
+        {
+          id: 2,
+          brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+        }
+      )
+      const elements = [
+        sectionNoDirectParentInstance,
+      ].map(e => e.clone())
+      await filter.onFetch([elements, brandInstance].flat())
+      expect(elements.map(elem => elem.path)).toEqual([
+        [
+          ...GUIDE_PATH,
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance2',
+        ],
+      ])
+    })
+    it('should not raise error when brandName is missing', async () => {
+      const brandNoNameInstance = new InstanceElement(
+        'instance1',
+        brandType,
+        {
+          id: 123,
+          name: BRAND_PATH[1],
+        }
+      )
+      const sectionNoBrandNameInstance = new InstanceElement(
+        'instance2',
+        sectionType,
+        {
+          id: 2,
+          brand: new ReferenceExpression(brandNoNameInstance.elemID, brandNoNameInstance),
+          direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          direct_parent_type: 'category',
+        }
+      )
+      const elements = [
+        sectionNoBrandNameInstance,
+      ].map(e => e.clone())
+      await filter.onFetch([elements, brandNoNameInstance].flat())
+      expect(elements.map(elem => elem.path)).toEqual([
+        [
+          ...GUIDE_PATH,
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance2',
+        ],
+      ])
+    })
   })
 })

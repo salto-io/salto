@@ -36,6 +36,7 @@ import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
 const { awu } = collections.asynciterable
+
 const ALL_SUPPORTED_TYPES = {
   ...GUIDE_SUPPORTED_TYPES,
   ...SUPPORTED_TYPES,

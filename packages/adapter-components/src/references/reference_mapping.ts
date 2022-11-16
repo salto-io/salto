@@ -41,9 +41,6 @@ export type ReferenceSerializationStrategy = {
     getReferenceId: GetReferenceIdFunc
   }>
 )
-export type ReferenceSerializationStrategyWithSerialize = ReferenceSerializationStrategy & {
-  serialize: GetLookupNameFunc
-}
 
 export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
 export const ReferenceSerializationStrategyLookup: Record<

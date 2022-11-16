@@ -24,7 +24,6 @@ import {
   CreateMissingRefFunc,
   GetReferenceIdFunc,
   ReferenceSerializationStrategyLookup,
-  ReferenceSerializationStrategyWithSerialize,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -314,15 +313,11 @@ export const generateLookupFunc = <
       return ref.value
     }
 
-    const strategy = await determineLookupStrategy({ ref, path, field, element })
+    const strategy = await determineLookupStrategy({
+      ref, path, field, element,
+    }) ?? ReferenceSerializationStrategyLookup.fullValue
     if (strategy !== undefined && !isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field, element })
-    }
-
-    if (isElement(ref.value)) {
-      // eslint-disable-next-line max-len
-      const defaultStrategy = ReferenceSerializationStrategyLookup.fullValue as ReferenceSerializationStrategyWithSerialize
-      return defaultStrategy.serialize({ ref, field, element })
     }
     return cloneDeepWithoutRefs(ref.value)
   }

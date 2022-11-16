@@ -30,7 +30,14 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
+import {
+  API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG,
+  ZendeskConfig,
+  CLIENT_CONFIG,
+  GUIDE_TYPES_TO_HANDLE_BY_BRAND,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES,
+} from './config'
 import {
   ZENDESK,
   BRAND_LOGO_TYPE_NAME,
@@ -356,10 +363,10 @@ export default class ZendeskAdapter implements AdapterOperations {
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
-    const { supportedTypes: supportSupportedTypes } = this.userConfig.apiDefinitions
+    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     const supportedTypes = isGuideDisabled
-      ? supportSupportedTypes
-      : { ...supportSupportedTypes, ...GUIDE_GLOBAL_TYPES }
+      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
+      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainElements = await getAllElements({
       adapterName: ZENDESK,

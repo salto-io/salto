@@ -42,7 +42,7 @@ export const missingFromParentValidatorCreator = (
   apiConfig: ZendeskApiConfig,
 ): ChangeValidator => async (changes, elementSource) => {
   if (elementSource === undefined) {
-    log.warn('Elements source was not passed to missingFromParentValidatorCreator. Skipping validator')
+    log.warn('Element source was not passed to missingFromParentValidatorCreator. Skipping validator')
     return []
   }
   const relationships = getChildAndParentTypeNames(apiConfig)

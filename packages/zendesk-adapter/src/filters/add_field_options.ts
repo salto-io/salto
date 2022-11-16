@@ -17,8 +17,8 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { applyforInstanceChangesOfType } from './utils'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME, ORG_FIELD_TYPE_NAME } from './organization_field'
-import { USER_FIELD_TYPE_NAME } from './custom_field_options/user_field'
+import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from './organization_field'
+import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../constants'
 
 const { makeArray } = collections.array
 

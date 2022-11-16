@@ -24,6 +24,7 @@ import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, IdLocator } from '../config'
 import { APP_INSTALLATION_TYPE_NAME } from './app'
 import { ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE } from './handle_template_expressions'
+import { TICKET_FIELD_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -36,7 +37,7 @@ const GENERAL_ID_REGEX = '([\\d]{10,})'
 const LOCATORS: IdLocator[] = [{
   fieldRegex: '(?:(.*_fields)|(.*_field)|^(ticketfield.*))$',
   idRegex: GENERAL_ID_REGEX,
-  type: ['ticket_field'],
+  type: [TICKET_FIELD_TYPE_NAME],
 }, {
   fieldRegex: '.*_options$',
   idRegex: '(custom_field_)([\\d]+)',

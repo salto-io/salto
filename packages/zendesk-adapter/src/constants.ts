@@ -29,6 +29,10 @@ export const USER_SEGMENT_TYPE_NAME = 'user_segment'
 export const GUIDE_SETTINGS_TYPE_NAME = 'guide_settings'
 export const GUIDE_LANGUAGE_SETTINGS_TYPE_NAME = 'guide_language_settings'
 export const PERMISSION_GROUP_TYPE_NAME = 'permission_group'
+export const TICKET_FIELD_TYPE_NAME = 'ticket_field'
+export const ORG_FIELD_TYPE_NAME = 'organization_field'
+export const USER_FIELD_TYPE_NAME = 'user_field'
+export const FIELD_TYPE_NAMES = [TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME]
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'

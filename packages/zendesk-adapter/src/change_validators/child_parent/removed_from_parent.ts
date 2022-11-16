@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange,
-  isRemovalChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isRemovalChange, InstanceElement, ChangeError } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../config'
-import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
+import { getChildAndParentTypeNames, getRemovedAndAddedChildren, ChildParentRelationship } from './utils'
+import { FIELD_TYPE_NAMES } from '../../constants'
+
+const WARNING_ONLY_PARENT_TYPES = FIELD_TYPE_NAMES
 
 export const removedFromParentValidatorCreator = (
   apiConfig: ZendeskApiConfig,
@@ -30,24 +32,31 @@ export const removedFromParentValidatorCreator = (
     .filter(change => parentTypes.has(getChangeData(change).elemID.typeName))
   const changeByID = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
   return relevantChanges.flatMap(change => {
-    const instance = getChangeData(change)
+    const instance = getChangeData(change) as InstanceElement
     const { typeName } = instance.elemID
     const relevantRelations = relationships.filter(r => r.parent === typeName)
-    return relevantRelations.flatMap(relation => {
+    return relevantRelations.flatMap((relation: ChildParentRelationship): ChangeError[] => {
       const nonFullyRemovedChildren = getRemovedAndAddedChildren(change, relation.fieldName)
         .removed
-        .map(id => id)
         .filter(childId =>
           (changeByID[childId.getFullName()] === undefined)
           || !isRemovalChange(changeByID[childId.getFullName()]))
       if (_.isEmpty(nonFullyRemovedChildren)) {
         return []
       }
+      if (WARNING_ONLY_PARENT_TYPES.includes(instance.elemID.typeName)) {
+        return [{
+          elemID: instance.elemID,
+          severity: 'Warning',
+          message: `Removing ${relation.fieldName} from ${typeName} will also remove related instances`,
+          detailedMessage: `The following ${relation.fieldName} are no longer referenced from ${typeName} "${instance.elemID.name}", but the instances still exist:\n${nonFullyRemovedChildren.map(id => `- ${id.name}`).join('\n')}\n\nIf you continue with the deploy they will be removed from the service, and any references to them will break. It is recommended to remove them in Salto first and deploy again.`,
+        }]
+      }
       return [{
         elemID: instance.elemID,
-        severity: 'Warning',
-        message: `Removing ${relation.fieldName} from ${typeName} will also remove related instances`,
-        detailedMessage: `The following ${relation.fieldName} are no longer referenced from ${typeName} "${instance.elemID.name}", but the instances still exist:\n${nonFullyRemovedChildren.map(id => `- ${id.name}`).join('\n')}.\n\nIf you continue with the deploy they will be removed from the service, and any references to them will break. It is recommended to remove them in Salto first and deploy again.`,
+        severity: 'Error',
+        message: `Cannot remove ${relation.fieldName} from ${typeName} without removing the related instances`,
+        detailedMessage: `The following ${relation.fieldName} are no longer referenced from ${typeName} "${instance.elemID.name}", but the instances still exist:\n${nonFullyRemovedChildren.map(id => `- ${id.name}`).join('\n')}\n\nPlease remove them first and deploy again.`,
       }]
     })
   })

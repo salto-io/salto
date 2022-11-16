@@ -17,10 +17,9 @@ import {
   ObjectType, ElemID, InstanceElement, toChange,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ZENDESK } from '../../src/constants'
+import { ZENDESK, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME } from '../../src/constants'
 import filterCreator from '../../src/filters/add_field_options'
-import { CUSTOM_FIELD_OPTIONS_FIELD_NAME, ORG_FIELD_TYPE_NAME } from '../../src/filters/organization_field'
-import { USER_FIELD_TYPE_NAME } from '../../src/filters/custom_field_options/user_field'
+import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../../src/filters/organization_field'
 import { createFilterCreatorParams } from '../utils'
 
 describe('add field options filter', () => {

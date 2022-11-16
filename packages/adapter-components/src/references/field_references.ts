@@ -316,7 +316,7 @@ export const generateLookupFunc = <
     const strategy = await determineLookupStrategy({
       ref, path, field, element,
     }) ?? ReferenceSerializationStrategyLookup.fullValue
-    if (strategy !== undefined && !isRelativeSerializer(strategy)) {
+    if (!isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field, element })
     }
     return cloneDeepWithoutRefs(ref.value)

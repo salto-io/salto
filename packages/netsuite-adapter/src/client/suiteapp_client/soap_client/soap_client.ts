@@ -53,6 +53,8 @@ const SOAP_CORE_URN = `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuit
 const SOAP_COMMON_URN = `urn:common_${NETSUITE_VERSION}.platform.webservices.netsuite.com`
 const SOAP_FILE_CABINET_URN = `urn:filecabinet_${NETSUITE_VERSION}.documents.webservices.netsuite.com`
 
+const SOAP_CUSTOM_RECORD_TYPE_NAME = 'CustomRecord'
+
 const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
@@ -418,7 +420,7 @@ export default class SoapClient {
       return RECORD_REF
     }
     if (isCustomRecordType(type)) {
-      return 'CustomRecord'
+      return SOAP_CUSTOM_RECORD_TYPE_NAME
     }
     return (type.elemID.name[0].toUpperCase() + type.elemID.name.slice(1))
   }

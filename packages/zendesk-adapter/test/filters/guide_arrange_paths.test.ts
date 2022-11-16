@@ -33,9 +33,10 @@ import {
 } from '../../src/constants'
 import filterCreator, {
   GUIDE_ELEMENT_DIRECTORY,
-  GUIDE_PATH,
+  GUIDE_PATH, UNSORTED,
 } from '../../src/filters/guide_arrange_paths'
 import { createFilterCreatorParams } from '../utils'
+import {CATEGORIES_ORDER, SECTIONS_ORDER} from "../../src/filters/guide_order/guide_orders_utils";
 
 describe('guide arrange paths', () => {
   let client: ZendeskClient
@@ -74,6 +75,12 @@ describe('guide arrange paths', () => {
   })
   const guideTranslationType = new ObjectType({
     elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
+  })
+  const sectionOrderType = new ObjectType({
+    elemID: new ElemID(ZENDESK, SECTIONS_ORDER),
+  })
+  const categoryOrderType = new ObjectType({
+    elemID: new ElemID(ZENDESK, CATEGORIES_ORDER),
   })
   const BRAND_PATH = ['brands', 'best brand']
 
@@ -171,6 +178,28 @@ describe('guide arrange paths', () => {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
     }
   )
+  const sectionOrderInstance = new InstanceElement(
+    'instance13',
+    sectionOrderType,
+    {
+      brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+    }
+  )
+  sectionOrderInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
+    sectionInstance.elemID, sectionInstance
+  )]
+
+  const categoriesOrderInstance = new InstanceElement(
+    'instance14',
+    categoryOrderType,
+    {
+      brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+    }
+  )
+  categoriesOrderInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
+    categoryInstance.elemID, categoryInstance
+  )]
+
 
 
   beforeEach(async () => {
@@ -194,6 +223,8 @@ describe('guide arrange paths', () => {
         sectionTranslationInstance,
         categoryTranslationInstance,
         languageSettingsInstance,
+        sectionOrderInstance,
+        categoriesOrderInstance,
       ].map(e => e.clone())
       await filter.onFetch([elements, brandInstance].flat())
       expect(elements
@@ -286,6 +317,22 @@ describe('guide arrange paths', () => {
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[GUIDE_LANGUAGE_SETTINGS_TYPE_NAME],
           'instance12',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'instance5',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'instance6',
+          GUIDE_ELEMENT_DIRECTORY[SECTIONS_ORDER],
+          'instance13',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORIES_ORDER],
+          'instance14',
         ],
       ])
     })
@@ -394,16 +441,19 @@ describe('guide arrange paths', () => {
       expect(elements.map(elem => elem.path)).toEqual([
         [
           ...GUIDE_PATH,
+          UNSORTED,
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
           'instance9',
         ],
         [
           ...GUIDE_PATH,
+          UNSORTED,
           GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
           'instance10',
         ],
         [
           ...GUIDE_PATH,
+          UNSORTED,
           GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
           'instance11',
         ],
@@ -437,11 +487,13 @@ describe('guide arrange paths', () => {
       expect(elements.map(elem => elem.path)).toEqual([
         [
           ...GUIDE_PATH,
+          UNSORTED,
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
           'instance1',
         ],
         [
           ...GUIDE_PATH,
+          UNSORTED,
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
           'instance2',
         ],
@@ -463,6 +515,7 @@ describe('guide arrange paths', () => {
       expect(elements.map(elem => elem.path)).toEqual([
         [
           ...GUIDE_PATH,
+          UNSORTED,
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
           'instance2',
         ],
@@ -494,6 +547,7 @@ describe('guide arrange paths', () => {
       expect(elements.map(elem => elem.path)).toEqual([
         [
           ...GUIDE_PATH,
+          UNSORTED,
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
           'instance2',
         ],

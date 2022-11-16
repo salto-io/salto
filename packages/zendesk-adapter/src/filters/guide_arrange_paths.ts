@@ -32,16 +32,24 @@ import {
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   ZENDESK, GUIDE, BRAND_TYPE_NAME,
 } from '../constants'
+import {
+  ARTICLES_ORDER,
+  CATEGORIES_ORDER,
+  // GUIDE_ORDER_TYPES,
+  SECTIONS_ORDER,
+} from './guide_order/guide_orders_utils'
 
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
 
+export const UNSORTED = 'unsorted'
 export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
 const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
 const BRAND_SECOND_LEVEL = [
   CATEGORY_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  CATEGORIES_ORDER,
 ]
 const PARENTS = [CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLE_TYPE_NAME]
 const TRANSLATIONS = [
@@ -49,6 +57,7 @@ const TRANSLATIONS = [
   SECTION_TRANSLATION_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME]
 
+const OTHER_TYPES = [...TRANSLATIONS, SECTIONS_ORDER, ARTICLES_ORDER]
 export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [ARTICLE_TRANSLATION_TYPE_NAME]: 'translations',
   [ARTICLE_TYPE_NAME]: 'articles',
@@ -60,6 +69,9 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [USER_SEGMENT_TYPE_NAME]: 'user_segments',
   [PERMISSION_GROUP_TYPE_NAME]: 'permission_groups',
   [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: 'language_settings',
+  [CATEGORIES_ORDER]: 'categories_order',
+  [SECTIONS_ORDER]: 'sections_order',
+  [ARTICLES_ORDER]: 'articles_order',
 }
 
 /**
@@ -82,6 +94,7 @@ const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: 
     log.error('brandName was not found for instance %s.', instance.elemID.getFullName())
     return [
       ...GUIDE_PATH,
+      UNSORTED,
       GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
       pathNaclCase(instance.elemID.name),
     ]
@@ -109,9 +122,10 @@ const pathForOtherLevels = (params :{
   parent: InstanceElement | undefined
 }): readonly string[] | undefined => {
   const parentPath = params.parent?.path
-  if (parentPath === undefined) {
+  if (params.parent === undefined || parentPath === undefined) {
     return [
       ...GUIDE_PATH,
+      UNSORTED,
       GUIDE_ELEMENT_DIRECTORY[params.instance.elemID.typeName],
       pathNaclCase(params.instance.elemID.name),
     ]
@@ -123,13 +137,16 @@ const pathForOtherLevels = (params :{
   if (params.needOwnFolder) {
     newPath.push(pathNaclCase(params.instance.elemID.name))
   }
+  // if (GUIDE_ORDER_TYPES.includes(params.instance.elemID.typeName)) {
+  //   newPath.push(pathNaclCase(params.parent.elemID.name))
+  // } else {
+  //   newPath.push(pathNaclCase(params.instance.elemID.name))
+  // }
   newPath.push(pathNaclCase(params.instance.elemID.name))
   return newPath
 }
 
-const getId = (instance: InstanceElement): number => {
-  return instance.value.id
-}
+const getId = (instance: InstanceElement): number => instance.value.id
 
 
 const getFullName = (instance: InstanceElement): string =>
@@ -165,7 +182,7 @@ const filterCreator: FilterCreator = () => ({
         instance.path = pathForGlobalTypes(instance)
       })
 
-    // category, settings, language_settings
+    // category, settings, language_settings, category_order
     BRAND_SECOND_LEVEL
       .flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
@@ -217,8 +234,8 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    // others (translations, article attachments, order?)
-    TRANSLATIONS
+    // others (translations, article attachments, order)
+    OTHER_TYPES
       .flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
       .forEach(instance => {

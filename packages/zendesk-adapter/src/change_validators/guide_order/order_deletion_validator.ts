@@ -15,7 +15,7 @@
 */
 import { ChangeValidator, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_orders_utils'
+import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_order_utils'
 
 /**
  * Validates that if an order element was removed, its parent was also removed

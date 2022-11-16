@@ -23,17 +23,12 @@ import {
   ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK, ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLE_TYPE_NAME } from '../../src/constants'
+import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import {
-  ARTICLES_FIELD,
-  CATEGORIES_FIELD,
-  createOrderType,
-  SECTIONS_FIELD,
-} from '../../src/filters/guide_order/guide_orders_utils'
-import {
-  categoriesOrderValidator,
-  sectionsOrderValidator,
-  articlesOrderValidator,
+  categoryOrderValidator,
+  sectionOrderValidator,
+  articleOrderValidator,
   guideOrderDeletionValidator,
 } from '../../src/change_validators'
 
@@ -59,7 +54,7 @@ const createOrderElement = (
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
   )
 
-const categoriesOrderInstance = createOrderElement(
+const categoryOrderInstance = createOrderElement(
   brandInstance, CATEGORY_TYPE_NAME, CATEGORIES_FIELD
 )
 const categorySectionsOrderInstance = createOrderElement(
@@ -68,7 +63,7 @@ const categorySectionsOrderInstance = createOrderElement(
 const sectionSectionsOrderInstance = createOrderElement(
   sectionInstance, SECTION_TYPE_NAME, SECTIONS_FIELD
 )
-const articlesOrderInstance = createOrderElement(
+const articleOrderInstance = createOrderElement(
   sectionInstance, ARTICLE_TYPE_NAME, ARTICLES_FIELD
 )
 
@@ -97,20 +92,20 @@ describe('GuideOrdersValidator', () => {
     }
 
     it('Categories order', async () => {
-      await testValidator(categoriesOrderInstance, CATEGORIES_FIELD, categoriesOrderValidator)
+      await testValidator(categoryOrderInstance, CATEGORIES_FIELD, categoryOrderValidator)
     })
     it('Category sections order', async () => {
       await testValidator(
-        categorySectionsOrderInstance, SECTIONS_FIELD, sectionsOrderValidator
+        categorySectionsOrderInstance, SECTIONS_FIELD, sectionOrderValidator
       )
     })
     it('Section sections order', async () => {
       await testValidator(
-        sectionSectionsOrderInstance, SECTIONS_FIELD, sectionsOrderValidator
+        sectionSectionsOrderInstance, SECTIONS_FIELD, sectionOrderValidator
       )
     })
     it('Articles order', async () => {
-      await testValidator(articlesOrderInstance, ARTICLES_FIELD, articlesOrderValidator)
+      await testValidator(articleOrderInstance, ARTICLES_FIELD, articleOrderValidator)
     })
   })
   describe('Order element removal', () => {
@@ -137,7 +132,7 @@ describe('GuideOrdersValidator', () => {
       })
     }
     it('Categories order', async () => {
-      await testValidator(categoriesOrderInstance)
+      await testValidator(categoryOrderInstance)
     })
     it('Category sections order', async () => {
       await testValidator(categorySectionsOrderInstance)
@@ -146,7 +141,7 @@ describe('GuideOrdersValidator', () => {
       await testValidator(sectionSectionsOrderInstance)
     })
     it('Articles order', async () => {
-      await testValidator(articlesOrderInstance)
+      await testValidator(articleOrderInstance)
     })
   })
 })

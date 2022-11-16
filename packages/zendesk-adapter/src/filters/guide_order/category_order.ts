@@ -13,21 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   Change, Element, getChangeData,
   InstanceElement,
   isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME } from '../../constants'
+import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME } from '../../constants'
 import {
-  CATEGORIES_FIELD,
-  CATEGORIES_ORDER,
-  createOrderInstance,
-  createOrderType,
-  deployOrderChanges,
-} from './guide_orders_utils'
+  createOrderInstance, deployOrderChanges, createOrderType,
+} from './guide_order_utils'
 import { FETCH_CONFIG } from '../../config'
 
 /**
@@ -47,12 +43,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
 
     const orderType = createOrderType(CATEGORY_TYPE_NAME)
+    _.remove(elements, e => e.elemID.getFullName() === orderType.elemID.getFullName())
     elements.push(orderType)
 
-    const categoriesOrderElements = brands
+    const categoryOrderElements = brands
     // If the brand doesn't have Guide activated, do nothing
       .filter(b => b.value.has_help_center).map(brand => {
-        const categoriesOrderElement = createOrderInstance({
+        const categoryOrderElement = createOrderInstance({
           parent: brand,
           parentField: 'brand',
           orderField: CATEGORIES_FIELD,
@@ -60,21 +57,21 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           orderType,
         })
         brand.value.categories = new ReferenceExpression(
-          categoriesOrderElement.elemID, categoriesOrderElement
+          categoryOrderElement.elemID, categoryOrderElement
         )
-        return categoriesOrderElement
+        return categoryOrderElement
       })
-    categoriesOrderElements.forEach(element => elements.push(element))
+    categoryOrderElements.forEach(element => elements.push(element))
   },
   /** Change the categories positions according to their order in the brand */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [categoriesOrderChange, leftoverChanges] = _.partition(
+    const [categoryOrderChange, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === CATEGORIES_ORDER,
+      change => getChangeData(change).elemID.typeName === CATEGORY_ORDER_TYPE_NAME,
     )
 
     const deployResult = await deployOrderChanges({
-      changes: categoriesOrderChange,
+      changes: categoryOrderChange,
       orderField: CATEGORIES_FIELD,
       client,
       config,

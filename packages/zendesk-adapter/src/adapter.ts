@@ -91,18 +91,18 @@ import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
-import hcSectionCategoryFilter from './filters/guide_section_and_category'
-import hcTranslationFilter from './filters/guide_translation'
+import guideSectionCategoryFilter from './filters/guide_section_and_category'
+import guideTranslationFilter from './filters/guide_translation'
 import fetchCategorySection from './filters/guide_fetch_section_and_category'
-import hcParentSection, { addParentFields } from './filters/guide_parent_to_section'
-import hcGuideSettings from './filters/guide_guide_settings'
+import guideParentSection, { addParentFields } from './filters/guide_parent_to_section'
+import guideGuideSettings from './filters/guide_guide_settings'
 import removeBrandLogoFilter from './filters/remove_brand_logo_field'
 import categoriesOrderFilter from './filters/guide_order/categories_order'
 import sectionsOrderFilter from './filters/guide_order/sections_order'
 import articlesOrderFilter from './filters/guide_order/articles_order'
-import hcServiceUrl from './filters/guide_service_url'
+import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
-import hcLanguageSettings from './filters/guide_language_translations'
+import guideLanguageSettings from './filters/guide_language_translations'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -145,7 +145,7 @@ export const DEFAULT_FILTERS = [
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
-  // tagsFilter and hcLocalesFilter
+  // tagsFilter and guideLocalesFilter
   usersFilter,
   tagsFilter,
   guideLocalesFilter,
@@ -160,11 +160,11 @@ export const DEFAULT_FILTERS = [
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
   articleFilter,
-  hcSectionCategoryFilter,
-  hcTranslationFilter,
-  hcLanguageSettings,
-  hcGuideSettings,
-  hcServiceUrl,
+  guideSectionCategoryFilter,
+  guideTranslationFilter,
+  guideLanguageSettings,
+  guideGuideSettings,
+  guideServiceUrl,
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
@@ -184,7 +184,7 @@ export const DEFAULT_FILTERS = [
   fetchCategorySection,
   helpCenterFetchArticle,
   articleBodyFilter,
-  hcParentSection,
+  guideParentSection,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,

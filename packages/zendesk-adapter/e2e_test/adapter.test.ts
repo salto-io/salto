@@ -28,9 +28,6 @@ import {
   FETCH_CONFIG,
   GUIDE_SUPPORTED_TYPES,
   SUPPORTED_TYPES,
-  DEFAULT_ID_FIELDS,
-  DEFAULT_FILENAME_FIELDS,
-  FIELDS_TO_OMIT, FIELDS_TO_HIDE, DEFAULT_SERVICE_ID_FIELD, DEFAULT_TYPES,
 } from '../src/config'
 import { ZENDESK, BRAND_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
@@ -280,19 +277,7 @@ describe('Zendesk adapter E2E', () => {
             enableGuide: true,
           },
           [API_DEFINITIONS_CONFIG]: {
-            typeDefaults: {
-              request: {
-                paginationField: 'next_page',
-              },
-              transformation: {
-                idFields: DEFAULT_ID_FIELDS,
-                fileNameFields: DEFAULT_FILENAME_FIELDS,
-                fieldsToOmit: FIELDS_TO_OMIT,
-                fieldsToHide: FIELDS_TO_HIDE,
-                serviceIdField: DEFAULT_SERVICE_ID_FIELD,
-              },
-            },
-            types: DEFAULT_TYPES,
+            ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
             supportedTypes: ALL_SUPPORTED_TYPES,
           },
         }

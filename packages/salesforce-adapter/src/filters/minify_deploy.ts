@@ -27,7 +27,12 @@ import _ from 'lodash'
 import { detailedCompare, getPath } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isInstanceOfType } from './utils'
-import { INSTANCE_FULL_NAME_FIELD, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from '../constants'
+import {
+  INSTANCE_FULL_NAME_FIELD,
+  INSTANCE_LABEL_FIELD,
+  PERMISSION_SET_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+} from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const isInstanceOfTypeProfile = isInstanceOfType(PROFILE_METADATA_TYPE)
@@ -101,6 +106,7 @@ const toMinifiedPermissionSetChange = (
   const minifiedAfter = after.clone()
   minifiedAfter.value = {
     [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
+    [INSTANCE_LABEL_FIELD]: after.value[INSTANCE_LABEL_FIELD],
   }
   detailedChanges
     .filter(isAdditionOrModificationChange)

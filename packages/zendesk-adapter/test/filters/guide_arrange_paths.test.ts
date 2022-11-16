@@ -36,7 +36,7 @@ import filterCreator, {
   GUIDE_PATH, UNSORTED,
 } from '../../src/filters/guide_arrange_paths'
 import { createFilterCreatorParams } from '../utils'
-import {CATEGORIES_ORDER, SECTIONS_ORDER} from "../../src/filters/guide_order/guide_orders_utils";
+import { CATEGORIES_ORDER, SECTIONS_ORDER } from '../../src/filters/guide_order/guide_orders_utils'
 
 describe('guide arrange paths', () => {
   let client: ZendeskClient
@@ -199,7 +199,6 @@ describe('guide arrange paths', () => {
   categoriesOrderInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
     categoryInstance.elemID, categoryInstance
   )]
-
 
 
   beforeEach(async () => {

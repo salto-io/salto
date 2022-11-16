@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Adapter, ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ListType } from '@salto-io/adapter-api'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import DummyAdapter from './adapter'
 import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from './generator'
@@ -40,4 +41,5 @@ export const adapter: Adapter = {
     credentialsType: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER) }),
   } }),
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

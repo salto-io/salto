@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import StripeClient from './client/client'
 import StripeAdapter from './adapter'
 import {
@@ -111,4 +112,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

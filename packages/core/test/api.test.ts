@@ -69,12 +69,14 @@ describe('api.ts', () => {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    getDefaultConfig: mockFunction<Adapter['getDefaultConfig']>().mockResolvedValue(undefined),
   }
 
   const mockEmptyAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    getDefaultConfig: mockFunction<Adapter['getDefaultConfig']>().mockResolvedValue(undefined),
   }
   const mockAdapterWithInstall = {
     authenticationMethods: { basic: {
@@ -83,6 +85,7 @@ describe('api.ts', () => {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
     install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
+    getDefaultConfig: mockFunction<Adapter['getDefaultConfig']>().mockResolvedValue(undefined),
   }
 
   adapterCreators[mockService] = mockAdapter
@@ -496,6 +499,7 @@ describe('api.ts', () => {
           },
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+          getDefaultConfig: mockFunction<Adapter['getDefaultConfig']>().mockResolvedValue([]),
         }
       })
 

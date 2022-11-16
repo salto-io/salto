@@ -19,6 +19,7 @@ import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -217,4 +218,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

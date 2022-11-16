@@ -1078,6 +1078,16 @@ export const resolveTypeShallow = async (
   }
 }
 
+export const buildDefaultAdapterConfig = async (
+  configType: ObjectType,
+): Promise<InstanceElement[] | undefined> => {
+  const defaultConf = ([await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)].flat())
+  if (defaultConf.length === 0) {
+    return undefined
+  }
+  return defaultConf
+}
+
 export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage?: string)
 : (value: unknown) => value is T => (value): value is T => {
     const { error } = scheme.validate(value)

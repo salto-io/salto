@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import ZuoraClient from './client/client'
 import ZuoraAdapter from './adapter'
 import { Credentials, oauthClientCredentialsType, isSandboxSubdomain, toZuoraBaseUrl } from './auth'
@@ -130,4 +131,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

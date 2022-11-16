@@ -134,7 +134,8 @@ export type Adapter = {
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
-  getDefaultConfig?: () => Promise<InstanceElement[]>
+  getDefaultConfig: (adapterConfigOverrides?: InstanceElement)
+    => Promise<InstanceElement[] | undefined>
   install?: () => Promise<AdapterInstallResult>
 }
 

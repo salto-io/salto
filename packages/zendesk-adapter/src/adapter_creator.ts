@@ -16,6 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
@@ -166,4 +167,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

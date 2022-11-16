@@ -100,13 +100,6 @@ describe('adapters.ts', () => {
       createDefaultInstanceFromTypeMock.mockReset()
     })
 
-    it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
-      delete mockAdapter.getDefaultConfig
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
-      expect(createDefaultInstanceFromType).toHaveBeenCalled()
-      expect(defaultConfigs).toHaveLength(1)
-      expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
-    })
     it('should use getDefaultConfig when defined', async () => {
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(mockAdapter.getDefaultConfig).toHaveBeenCalled()

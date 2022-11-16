@@ -19,6 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import { configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, CLIENT_CONFIG,
@@ -279,4 +280,5 @@ export const adapter: Adapter = {
       return { success: false, errors: [err.message ?? err] }
     }
   },
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

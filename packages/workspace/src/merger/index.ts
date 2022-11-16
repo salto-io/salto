@@ -114,7 +114,6 @@ export const mergeSingleElement = async <T extends Element>(elementParts: T[]): 
   }
 
   const mergedElements = await awu(mergeRes.merged.values()).toArray()
-
   if (mergedElements.length !== 1) {
     throw new Error(`Received invalid number of merged elements when expected one: ${mergedElements.map(e => e.elemID.getFullName()).join(', ')}`)
   }

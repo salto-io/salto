@@ -18,7 +18,7 @@ import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
   Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createAdapterReplacedID, merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -66,13 +66,6 @@ export const initAdapters = (
     }
   )
 
-const getAdapterConfigFromType = async (
-  adapterName: string
-): Promise<InstanceElement | undefined> => {
-  const { configType } = adapterCreators[adapterName]
-  return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
-}
-
 export const getAdaptersConfigTypesMap = async (): Promise<Record<string, ObjectType[]>> =>
   Object.fromEntries(
     Object.entries(await mapValuesAsync(
@@ -91,11 +84,11 @@ export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> =>
 export const getDefaultAdapterConfig = async (
   adapterName: string,
   accountName?: string,
+  adapterConfigOverrides?: InstanceElement,
 ): Promise<InstanceElement[] | undefined> => {
   const { getDefaultConfig } = adapterCreators[adapterName]
-  const defaultConf = (getDefaultConfig !== undefined) ? await getDefaultConfig()
-    : ([await getAdapterConfigFromType(adapterName) ?? []].flat())
-  if (defaultConf.length === 0) {
+  const defaultConf = await getDefaultConfig(adapterConfigOverrides)
+  if (!defaultConf) {
     return undefined
   }
   if (accountName && adapterName !== accountName) {

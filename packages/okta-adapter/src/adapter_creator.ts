@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
@@ -109,4 +110,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

@@ -19,6 +19,7 @@ import {
   InstanceElement, Adapter, Values, ElemID,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import JiraClient from './client/client'
 import JiraAdapter from './adapter'
 import { Credentials, basicAuthCredentialsType } from './auth'
@@ -142,4 +143,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

@@ -16,6 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import { buildDefaultAdapterConfig } from '@salto-io/adapter-utils'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
 import {
@@ -110,4 +111,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  getDefaultConfig: () => buildDefaultAdapterConfig(configType),
 }

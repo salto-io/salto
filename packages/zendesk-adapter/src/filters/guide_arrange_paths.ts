@@ -35,7 +35,6 @@ import {
 import {
   ARTICLES_ORDER,
   CATEGORIES_ORDER,
-  // GUIDE_ORDER_TYPES,
   SECTIONS_ORDER,
 } from './guide_order/guide_orders_utils'
 
@@ -115,34 +114,34 @@ const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: 
 /**
  * calculates a path which is related to a specific brand and has a parent.
  */
-const pathForOtherLevels = (params :{
+const pathForOtherLevels = ({
+  instance,
+  needTypeDirectory,
+  needOwnFolder,
+  parent,
+} :{
   instance: InstanceElement
   needTypeDirectory: boolean
   needOwnFolder: boolean
   parent: InstanceElement | undefined
 }): readonly string[] | undefined => {
-  const parentPath = params.parent?.path
-  if (params.parent === undefined || parentPath === undefined) {
+  const parentPath = parent?.path
+  if (parent === undefined || parentPath === undefined) {
     return [
       ...GUIDE_PATH,
       UNSORTED,
-      GUIDE_ELEMENT_DIRECTORY[params.instance.elemID.typeName],
-      pathNaclCase(params.instance.elemID.name),
+      GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
+      pathNaclCase(instance.elemID.name),
     ]
   }
   const newPath = parentPath.slice(0, parentPath.length - 1)
-  if (params.needTypeDirectory) {
-    newPath.push(GUIDE_ELEMENT_DIRECTORY[params.instance.elemID.typeName])
+  if (needTypeDirectory) {
+    newPath.push(GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName])
   }
-  if (params.needOwnFolder) {
-    newPath.push(pathNaclCase(params.instance.elemID.name))
+  if (needOwnFolder) {
+    newPath.push(pathNaclCase(instance.elemID.name))
   }
-  // if (GUIDE_ORDER_TYPES.includes(params.instance.elemID.typeName)) {
-  //   newPath.push(pathNaclCase(params.parent.elemID.name))
-  // } else {
-  //   newPath.push(pathNaclCase(params.instance.elemID.name))
-  // }
-  newPath.push(pathNaclCase(params.instance.elemID.name))
+  newPath.push(pathNaclCase(instance.elemID.name))
   return newPath
 }
 
@@ -164,9 +163,9 @@ const filterCreator: FilterCreator = () => ({
 
     const parents = guideInstances
       .filter(instance => PARENTS.includes(instance.elemID.typeName))
-      .filter(parent => parent.value.id !== undefined)
+      .filter(parent => getId(parent) !== undefined)
     const parentsById = _.keyBy(parents, getId)
-    const nameByIdParents = _.mapValues(_.keyBy(parents, getFullName), 'value.id')
+    const nameByIdParents = _.mapValues(_.keyBy(parents, getFullName), getId)
 
     const brands = elements
       .filter(elem => elem.elemID.typeName === BRAND_TYPE_NAME)

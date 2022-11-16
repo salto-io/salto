@@ -19,7 +19,7 @@ import {
   InstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/help_center_fetch_section_and_category'
+import filterCreator from '../../src/filters/guide_fetch_section_and_category'
 import { ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 

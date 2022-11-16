@@ -15,12 +15,12 @@
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { TRANSLATION_PARENT_TYPE_NAMES, removeNameAndDescription } from './help_center_section_and_category'
+import { TRANSLATION_PARENT_TYPE_NAMES, removeNameAndDescription } from './guide_section_and_category'
 
 /**
  * This filter works as follows: onFetch it discards the 'name' and 'description' fields to avoid
  * data duplication with the default translation.It is separated from
- * help_center_section_and_category as the removal needs to happen after the reference expressions
+ * guide_section_and_category as the removal needs to happen after the reference expressions
  * are created.
  */
 const filterCreator: FilterCreator = () => ({

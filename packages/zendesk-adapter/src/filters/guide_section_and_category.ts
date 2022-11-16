@@ -98,7 +98,7 @@ export const addRemovalChangesId = (changes: Change<InstanceElement>[]): void =>
 
 /**
  * This filter works as follows:  The preDeploy adds the 'name' and 'description' fields that where
- * removed during fetch in the help_center_fetch_section_and_category filter for the deployment to
+ * removed during fetch in the guide_fetch_section_and_category filter for the deployment to
  * work properly.
  * The Deploy ignores the 'translations' fields in the deployment. The onDeploy
  * discards the 'name' and 'description' fields from the section again.
@@ -111,7 +111,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       ))
       .forEach(addTranslationValues)
   },
-  // deploy only category, section is deployed in help_center_parent_to_section filter since
+  // deploy only category, section is deployed in guide_parent_to_section filter since
   // parent_section_id needs to be deployed separately
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [parentChanges, leftoverChanges] = _.partition(

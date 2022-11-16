@@ -18,7 +18,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
-import filterCreator from '../../src/filters/help_center_locale'
+import filterCreator from '../../src/filters/guide_locale'
 import { createFilterCreatorParams } from '../utils'
 
 describe('help center locale filter', () => {

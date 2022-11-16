@@ -22,7 +22,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import filterCreator from '../../src/filters/help_center_service_url'
+import filterCreator from '../../src/filters/guide_service_url'
 import { createFilterCreatorParams } from '../utils'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,

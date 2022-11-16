@@ -22,7 +22,7 @@ import {
 import { BRAND_TYPE_NAME } from '../constants'
 import ZendeskClient from '../client/client'
 import { ZendeskApiConfig } from '../config'
-import { isBrand, invalidBrandChange } from './help_center_activation'
+import { isBrand, invalidBrandChange } from './guide_activation'
 
 export const invalidBrandAdditionChange = (
   change: Change<InstanceElement>, fieldToCheck: 'has_help_center' | 'help_center_state'

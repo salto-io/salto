@@ -21,10 +21,10 @@ import {
   InstanceElement,
   ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/help_center_translation'
+import filterCreator from '../../src/filters/guide_translation'
 import { createFilterCreatorParams } from '../utils'
 import { ZENDESK } from '../../src/constants'
-import { removedTranslationParentId } from '../../src/filters/help_center_section_and_category'
+import { removedTranslationParentId } from '../../src/filters/guide_section_and_category'
 
 describe('guild section translation filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>

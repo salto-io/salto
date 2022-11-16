@@ -1896,6 +1896,24 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  sections_order: {
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+    },
+  },
+  articles_order: {
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+    },
+  },
+  categories_order: {
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+    },
+  },
   section_translation: {
     request: {
       url: '/api/v2/help_center/sections/{sectionId}/translations',

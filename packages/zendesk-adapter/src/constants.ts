@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 export const ZENDESK = 'zendesk'
+export const GUIDE = 'guide'
 export const BRAND_TYPE_NAME = 'brand'
 export const TARGET_TYPE_NAME = 'target'
 export const APP_OWNED_TYPE_NAME = 'app_owned'
@@ -27,3 +28,4 @@ export const CATEGORY_TRANSLATION_TYPE_NAME = 'category_translation'
 export const USER_SEGMENT_TYPE_NAME = 'user_segment'
 export const GUIDE_SETTINGS_TYPE_NAME = 'guide_settings'
 export const GUIDE_LANGUAGE_SETTINGS_TYPE_NAME = 'guide_language_settings'
+export const PERMISSION_GROUP_TYPE_NAME = 'permission_group'

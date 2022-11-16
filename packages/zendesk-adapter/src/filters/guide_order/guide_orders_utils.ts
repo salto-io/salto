@@ -29,7 +29,13 @@ import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
-import { ARTICLE_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../constants'
+import {
+  ARTICLE_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  ZENDESK,
+} from '../../constants'
 import { getZendeskError } from '../../errors'
 
 
@@ -51,17 +57,26 @@ const GUIDE_ORDER_OBJECT_TYPES : {[key: string]: () => ObjectType} = {
   [CATEGORY_TYPE_NAME]: () =>
     new ObjectType({
       elemID: new ElemID(ZENDESK, CATEGORIES_ORDER),
-      fields: { [CATEGORIES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
+      fields: {
+        [CATEGORIES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
+        brand: { refType: BuiltinTypes.NUMBER },
+      },
     }),
   [SECTION_TYPE_NAME]: () =>
     new ObjectType({
       elemID: new ElemID(ZENDESK, SECTIONS_ORDER),
-      fields: { [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
+      fields: {
+        [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
+        brand: { refType: BuiltinTypes.NUMBER },
+      },
     }),
   [ARTICLE_TYPE_NAME]: () =>
     new ObjectType({
       elemID: new ElemID(ZENDESK, ARTICLES_ORDER),
-      fields: { [ARTICLES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) } },
+      fields: {
+        [ARTICLES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
+        brand: { refType: BuiltinTypes.NUMBER },
+      },
     }),
 }
 
@@ -88,6 +103,9 @@ export const createOrderInstance = ({ parent, parentField, orderField, childrenE
     orderType,
     {
       [orderField]: parentsChildren.map(c => new ReferenceExpression(c.elemID, c)),
+      brand: parent.elemID.typeName !== BRAND_TYPE_NAME
+        ? parent.value.brand
+        : new ReferenceExpression(parent.elemID, parent), // for category_order parent is brand
     },
     // The same directory as it's parent
     parent.path !== undefined

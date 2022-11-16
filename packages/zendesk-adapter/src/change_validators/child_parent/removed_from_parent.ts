@@ -45,9 +45,9 @@ export const removedFromParentValidatorCreator = (
       }
       return [{
         elemID: instance.elemID,
-        severity: 'Error',
-        message: `Error while trying to remove ${relation.fieldName} from ${typeName}, because the related instances still exist`,
-        detailedMessage: `Error while trying to remove from ${typeName} "${instance.elemID.name}" the ${relation.fieldName} ${nonFullyRemovedChildren.map(id => `"${id.name}"`).join(', ')}, because the related instances still exist. Please remove them as well`,
+        severity: 'Warning',
+        message: `Removing ${relation.fieldName} from ${typeName} will also remove related instances`,
+        detailedMessage: `The following ${relation.fieldName} are no longer referenced from ${typeName} "${instance.elemID.name}", but the instances still exist:\n${nonFullyRemovedChildren.map(id => `- ${id.name}`).join('\n')}.\n\nIf you continue with the deploy they will be removed from the service, and any references to them will break. It is recommended to remove them in Salto first and deploy again.`,
       }]
     })
   })

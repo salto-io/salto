@@ -61,9 +61,12 @@ describe('removedFromParentValidatorCreator', () => {
     ])
     expect(errors).toEqual([{
       elemID: clonedTicketField.elemID,
-      severity: 'Error',
-      message: `Error while trying to remove ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} from ${clonedTicketField.elemID.typeName}, because the related instances still exist`,
-      detailedMessage: `Error while trying to remove from ${clonedTicketField.elemID.typeName} "${clonedTicketField.elemID.name}" the ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} "${option2.elemID.name}", because the related instances still exist. Please remove them as well`,
+      severity: 'Warning',
+      message: `Removing ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} from ${clonedTicketField.elemID.typeName} will also remove related instances`,
+      detailedMessage: `The following ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} are no longer referenced from ${clonedTicketField.elemID.typeName} "${clonedTicketField.elemID.name}", but the instances still exist:
+- ${option2.elemID.name}.
+
+If you continue with the deploy they will be removed from the service, and any references to them will break. It is recommended to remove them in Salto first and deploy again.`,
     }])
   })
   it('should not return an error when remove an option from the parent and remove the instance as well', async () => {

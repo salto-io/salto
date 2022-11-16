@@ -240,7 +240,7 @@ const replaceFormulasWithTemplates = async (
   }
 }
 
-const prepRef = (part: ReferenceExpression): TemplatePart => {
+export const prepRef = (part: ReferenceExpression): TemplatePart => {
   if (SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]) {
     return `${SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]}_${part.value.value.id}`
   }

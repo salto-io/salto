@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@salto-io/test-utils": "0.3.25",
+    "@salto-io/workspace": "0.3.25",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/uuid": "^8.3.0",

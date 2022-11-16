@@ -16,17 +16,21 @@
 import _ from 'lodash'
 import {
   Change, getChangeData, InstanceElement, isInstanceElement, Element,
-  isObjectType, Field, BuiltinTypes, ReferenceExpression, isRemovalChange,
+  isObjectType, Field, BuiltinTypes, ReferenceExpression, isRemovalChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, replaceTemplatesWithValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges, deployChangesByGroups } from '../../deployment'
 import { applyforInstanceChangesOfType } from '../utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
+import { prepRef } from '../handle_template_expressions'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_option'
+
+const log = logger(module)
 
 type CustomFieldOptionsFilterCreatorParams = {
   parentTypeName: string
@@ -37,7 +41,7 @@ const { makeArray } = collections.array
 
 export const createCustomFieldOptionsFilterCreator = (
   { parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams
-): FilterCreator => ({ config, client }) => ({
+): FilterCreator => ({ config, client, elementsSource }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const parentType = elements
       .filter(isObjectType)
@@ -80,10 +84,21 @@ export const createCustomFieldOptionsFilterCreator = (
       [parentTypeName],
       (instance: InstanceElement) => {
         const defaultValue = instance.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
-        makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
-          .forEach(option => {
+        const options = makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
+        if (options.length > 0) {
+          // if there is a template expression in raw_name, resolve it
+          // (workaround until template expressions can be resolved in core).
+          replaceTemplatesWithValues(
+            { values: options, fieldName: 'raw_name' },
+            // onDeploy this value will not exist, so we don't need the shared context
+            {},
+            prepRef,
+          )
+
+          options.forEach(option => {
             option.default = (defaultValue !== undefined) && (option.value === defaultValue)
           })
+        }
         return instance
       }
     )
@@ -92,12 +107,23 @@ export const createCustomFieldOptionsFilterCreator = (
     await applyforInstanceChangesOfType(
       changes,
       [parentTypeName],
-      (instance: InstanceElement) => {
+      async (instance: InstanceElement) => {
         const options = makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
-        if (options) {
+        if (options.length > 0) {
           options.forEach(option => {
             delete option.default
           })
+          // replace with the original references - since the current restore logic
+          // does not restore references correctly when the resolved values contain templates
+          const originalInstance = await elementsSource.get(instance.elemID)
+          if (originalInstance === undefined) {
+            log.error('Could not find original instance for %s, not replacing options', instance.elemID.getFullName())
+            return instance
+          }
+          const originalOptions = makeArray(originalInstance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
+          if (originalOptions.every(isReferenceExpression)) {
+            instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME] = originalOptions
+          }
         }
         return instance
       }

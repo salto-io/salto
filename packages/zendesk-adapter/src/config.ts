@@ -491,7 +491,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'categories', fieldType: 'list<unknown>' },
+        { fieldName: 'categories', fieldType: 'list<category>' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       serviceUrl: '/admin/account/brand_management/brands',
@@ -1748,8 +1748,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/hc/api/internal/help_center_translations',
     },
     transformation: {
-      idFields: ['&brand', 'name'],
-      fileNameFields: ['&brand', 'name'],
+      idFields: ['&brand', 'locale'],
+      fileNameFields: ['&brand', 'locale'],
       dataField: '.',
       // serviceUrl is created in the help_center_service_url filter
     },
@@ -1862,8 +1862,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'sections', fieldType: 'list<unknown>' },
-        { fieldName: 'articles', fieldType: 'list<unknown>' },
+        { fieldName: 'sections', fieldType: 'list<section>' },
+        { fieldName: 'articles', fieldType: 'list<article>' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1982,7 +1982,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'sections', fieldType: 'list<unknown>' },
+        { fieldName: 'sections', fieldType: 'list<section>' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

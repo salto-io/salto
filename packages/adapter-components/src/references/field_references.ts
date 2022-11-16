@@ -23,6 +23,8 @@ import {
   FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
   CreateMissingRefFunc,
   GetReferenceIdFunc,
+  ReferenceSerializationStrategyLookup,
+  ReferenceSerializationStrategyWithSerialize,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -317,9 +319,11 @@ export const generateLookupFunc = <
       return strategy.serialize({ ref, field, element })
     }
 
-    if (isInstanceElement(ref.value)) {
-      return ref.value.value
+    if (isElement(ref.value)) {
+      // eslint-disable-next-line max-len
+      const defaultStrategy = ReferenceSerializationStrategyLookup.fullValue as ReferenceSerializationStrategyWithSerialize
+      return defaultStrategy.serialize({ ref, field, element })
     }
-    return ref.value
+    return cloneDeepWithoutRefs(ref.value)
   }
 }

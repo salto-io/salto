@@ -110,9 +110,6 @@ export const createCustomFieldOptionsFilterCreator = (
       async (instance: InstanceElement) => {
         const options = makeArray(instance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])
         if (options.length > 0) {
-          options.forEach(option => {
-            delete option.default
-          })
           // replace with the original references - since the current restore logic
           // does not restore references correctly when the resolved values contain templates
           const originalInstance = await elementsSource.get(instance.elemID)

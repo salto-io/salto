@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value, Element, isInstanceElement, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { Field, Value, Element, isInstanceElement, ElemID, InstanceElement, cloneDeepWithoutRefs } from '@salto-io/adapter-api'
 import { collections, types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
@@ -41,13 +41,18 @@ export type ReferenceSerializationStrategy = {
     getReferenceId: GetReferenceIdFunc
   }>
 )
+export type ReferenceSerializationStrategyWithSerialize = ReferenceSerializationStrategy & {
+  serialize: GetLookupNameFunc
+}
 
 export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
   fullValue: {
-    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value : ref.value),
+    serialize: ({ ref }) => cloneDeepWithoutRefs(
+      isInstanceElement(ref.value) ? ref.value.value : ref.value
+    ),
     lookup: val => val,
   },
   id: {

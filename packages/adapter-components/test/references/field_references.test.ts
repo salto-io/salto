@@ -520,11 +520,12 @@ describe('Field references', () => {
       expect(res).toEqual(2)
     })
 
-    it('should resolve using full value strategy when no rule is matched', async () => {
+    it('should resolve using full value strategy when no rule is matched, and clone the values', async () => {
+      const inst = new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'someType') }), { id: 2, name: 'name' })
       const res = await lookupNameFunc({
         ref: new ReferenceExpression(
           new ElemID('adapter', 'someType', 'instance', 'instance'),
-          new InstanceElement('instance', new ObjectType({ elemID: new ElemID('adapter', 'someType') }), { id: 2, name: 'name' }),
+          inst,
         ),
         field: new Field(new ObjectType({ elemID: new ElemID('adapter', 'someType') }), 'api_collection_ids', BuiltinTypes.NUMBER),
         path: new ElemID('adapter', 'somePath'),
@@ -532,6 +533,8 @@ describe('Field references', () => {
       })
 
       expect(res).toEqual({ id: 2, name: 'name' })
+      res.name = 'bla'
+      expect(inst.value).toEqual({ id: 2, name: 'name' })
     })
 
     it('should resolve using full value strategy when field is undefined', async () => {

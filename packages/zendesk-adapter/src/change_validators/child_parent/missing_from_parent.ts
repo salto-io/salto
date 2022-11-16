@@ -14,11 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceElement,
   isReferenceExpression, isInstanceChange, AdditionChange, ChangeError, isAdditionChange,
   isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { ZendeskApiConfig } from '../../config'
-import { getChildAndParentTypeNames, getRemovedAndAddedChildren } from './utils'
+import { getChildAndParentTypeNames, getIdsFromReferenceExpressions } from './utils'
+
+const { awu } = collections.asynciterable
+const log = logger(module)
 
 export const createParentReferencesError = (
   change: AdditionChange<InstanceElement>,
@@ -28,14 +33,18 @@ export const createParentReferencesError = (
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: `Can not add ${instance.elemID.typeName} because there is no reference to it from its parent`,
-    detailedMessage: `Can not add ${instance.elemID.getFullName()} because there is no reference to it from ${parentFullName}`,
+    message: `Cannot add ${instance.elemID.typeName} because there is no reference to it from its parent`,
+    detailedMessage: `Cannot add ${instance.elemID.getFullName()} because there is no reference to it from ${parentFullName}`,
   }
 }
 
 export const missingFromParentValidatorCreator = (
   apiConfig: ZendeskApiConfig,
-): ChangeValidator => async changes => {
+): ChangeValidator => async (changes, elementSource) => {
+  if (elementSource === undefined) {
+    log.warn('Elements source was not passed to missingFromParentValidatorCreator. Skipping validator')
+    return []
+  }
   const relationships = getChildAndParentTypeNames(apiConfig)
   const childrenTypes = new Set(relationships.map(r => r.child))
   const instanceChanges = changes.filter(isInstanceChange)
@@ -43,7 +52,7 @@ export const missingFromParentValidatorCreator = (
     .filter(isAdditionChange)
     .filter(change => childrenTypes.has(getChangeData(change).elemID.typeName))
   const changeByID = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
-  return relevantChanges.flatMap(change => {
+  return awu(relevantChanges).flatMap(change => {
     const instance = getChangeData(change)
     const { typeName } = instance.elemID
     const parentRef = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
@@ -52,16 +61,21 @@ export const missingFromParentValidatorCreator = (
     }
     const parentFullName = parentRef.value.elemID.getFullName()
     const relevantRelations = relationships.filter(r => r.child === typeName)
-    return relevantRelations.flatMap(relation => {
+    return awu(relevantRelations).flatMap(async relation => {
       const parentChange = changeByID[parentFullName]
       if (parentChange === undefined || !isAdditionOrModificationChange(parentChange)) {
         return [createParentReferencesError(change, parentFullName)]
       }
-      const { added } = getRemovedAndAddedChildren(parentChange, relation.fieldName)
-      if (isAdditionChange(change) && !added.includes(instance.elemID.getFullName())) {
+      const parentInstance = await elementSource.get(parentRef.value.elemID)
+      if (parentInstance === undefined) {
+        log.error('Could not find parent instance %s in element source', parentFullName)
+        return []
+      }
+      const referencedIDs = getIdsFromReferenceExpressions(parentInstance.value[relation.fieldName])
+      if (isAdditionChange(change) && !referencedIDs.some(id => id.isEqual(instance.elemID))) {
         return [createParentReferencesError(change, parentFullName)]
       }
       return []
-    })
-  })
+    }).toArray()
+  }).toArray()
 }

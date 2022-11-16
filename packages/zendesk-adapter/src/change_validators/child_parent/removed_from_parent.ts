@@ -36,16 +36,18 @@ export const removedFromParentValidatorCreator = (
     return relevantRelations.flatMap(relation => {
       const nonFullyRemovedChildren = getRemovedAndAddedChildren(change, relation.fieldName)
         .removed
+        .map(id => id)
         .filter(childId =>
-          (changeByID[childId] === undefined) || !isRemovalChange(changeByID[childId]))
+          (changeByID[childId.getFullName()] === undefined)
+          || !isRemovalChange(changeByID[childId.getFullName()]))
       if (_.isEmpty(nonFullyRemovedChildren)) {
         return []
       }
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: `Error while trying to remove ${typeName}, because the related instance still exists, please remove it as well`,
-        detailedMessage: `Error while trying to remove ${instance.elemID.getFullName()}, because the related instance ${nonFullyRemovedChildren.join(', ')} still exists, please remove it as well`,
+        message: `Error while trying to remove ${relation.fieldName} from ${typeName}, because the related instances still exist`,
+        detailedMessage: `Error while trying to remove from ${typeName} "${instance.elemID.name}" the ${relation.fieldName} ${nonFullyRemovedChildren.map(id => `"${id.name}"`).join(', ')}, because the related instances still exist. Please remove them as well`,
       }]
     })
   })

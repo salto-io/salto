@@ -62,8 +62,8 @@ describe('removedFromParentValidatorCreator', () => {
     expect(errors).toEqual([{
       elemID: clonedTicketField.elemID,
       severity: 'Error',
-      message: `Error while trying to remove ${clonedTicketField.elemID.typeName}, because the related instance still exists, please remove it as well`,
-      detailedMessage: `Error while trying to remove ${clonedTicketField.elemID.getFullName()}, because the related instance ${option2.elemID.getFullName()} still exists, please remove it as well`,
+      message: `Error while trying to remove ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} from ${clonedTicketField.elemID.typeName}, because the related instances still exist`,
+      detailedMessage: `Error while trying to remove from ${clonedTicketField.elemID.typeName} "${clonedTicketField.elemID.name}" the ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} "${option2.elemID.name}", because the related instances still exist. Please remove them as well`,
     }])
   })
   it('should not return an error when remove an option from the parent and remove the instance as well', async () => {

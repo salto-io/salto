@@ -114,7 +114,7 @@ export const createCustomFieldOptionsFilterCreator = (
           // does not restore references correctly when the resolved values contain templates
           const originalInstance = await elementsSource.get(instance.elemID)
           if (originalInstance === undefined) {
-            log.error('Could not find original instance for %s, not replacing options', originalInstance.elemID.getFullName())
+            log.error('Could not find original instance for %s, not replacing options', instance.elemID.getFullName())
             return instance
           }
           const originalOptions = makeArray(originalInstance.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME])

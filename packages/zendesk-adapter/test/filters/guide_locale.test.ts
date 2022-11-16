@@ -56,9 +56,9 @@ describe('help center locale filter', () => {
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk.help_center_locale',
-          'zendesk.help_center_locale.instance.en_us@b',
-          'zendesk.help_center_locale.instance.es',
+          'zendesk.guide_locale',
+          'zendesk.guide_locale.instance.en_us@b',
+          'zendesk.guide_locale.instance.es',
         ])
       const locales = elements.filter(isInstanceElement)
       const enLocale = locales.find(locale => locale.value.id === 'en-us')

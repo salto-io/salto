@@ -1949,7 +1949,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   // needed until SALTO-2867 is solved
-  help_center_locale: {
+  guide_locale: {
     transformation: {
       idFields: ['id'],
       fileNameFields: ['id'],

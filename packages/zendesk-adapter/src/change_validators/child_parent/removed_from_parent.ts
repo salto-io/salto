@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isRemovalChange, InstanceElement, ChangeError } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isRemovalChange, ChangeError } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../config'
 import { getChildAndParentTypeNames, getRemovedAndAddedChildren, ChildParentRelationship } from './utils'
 import { FIELD_TYPE_NAMES } from '../../constants'
@@ -32,7 +32,7 @@ export const removedFromParentValidatorCreator = (
     .filter(change => parentTypes.has(getChangeData(change).elemID.typeName))
   const changeByID = _.keyBy(instanceChanges, change => getChangeData(change).elemID.getFullName())
   return relevantChanges.flatMap(change => {
-    const instance = getChangeData(change) as InstanceElement
+    const instance = getChangeData(change)
     const { typeName } = instance.elemID
     const relevantRelations = relationships.filter(r => r.parent === typeName)
     return relevantRelations.flatMap((relation: ChildParentRelationship): ChangeError[] => {

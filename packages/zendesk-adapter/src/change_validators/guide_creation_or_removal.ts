@@ -35,7 +35,7 @@ export const invalidBrandAdditionChange = (
 }
 
 /**
- * We currently do not support the creation or deletion of help centers using Salto.
+ * We currently do not support the creation or deletion of help centers (guide) using Salto.
  * If the help center is created/deleted as part of an existing brand and no other changes are made
  * to the brand, issue a warning on the change.
  * If the help center was created during an addition of a brand, it also issues a warning.

@@ -43,7 +43,7 @@ const EXPECTED_LOCALES_SCHEMA = Joi.object({
   default_locale: Joi.string().required(),
 }).required()
 
-const isLocalesResponse = createSchemeGuard<LocalesResponse>(EXPECTED_LOCALES_SCHEMA, 'Received invalid help center locales result')
+const isLocalesResponse = createSchemeGuard<LocalesResponse>(EXPECTED_LOCALES_SCHEMA, 'Received invalid guide locales result')
 
 const getLocales = async (
   client: ZendeskClient,
@@ -52,7 +52,7 @@ const getLocales = async (
     url: '/api/v2/help_center/locales',
   })
   if (!isLocalesResponse(response.data)) {
-    log.error('Failed to get the help center locales')
+    log.error('Failed to get the guide locales')
     return undefined
   }
   return response.data

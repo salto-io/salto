@@ -55,7 +55,7 @@ export const invalidBrandChange = (change: Change<InstanceElement>, fieldToCheck
 
 /**
  * This change validator checks that the field 'help_center_state' in a brand has not been changed
- * since Salto does not support the change of the help center state (enabled or restricted)
+ * since Salto does not support the change of the help center (guide) state (enabled or restricted)
  */
 export const helpCenterActivationValidator: ChangeValidator = async changes => {
   const relevantInstances = changes

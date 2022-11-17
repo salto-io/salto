@@ -1632,14 +1632,17 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   articles: {
     request: {
-      url: '/api/v2/help_center/articles',
-      recurseInto: [
-        {
-          type: 'article_translation',
-          toField: 'translations',
-          context: [{ name: 'articleId', fromField: 'id' }],
-        },
+      url: '/api/v2/help_center/{locale}/articles',
+      dependsOn: [
+        { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
       ],
+      // recurseInto: [
+      //   {
+      //     type: 'article_translation',
+      //     toField: 'translations',
+      //     context: [{ name: 'articleId', fromField: 'id' }],
+      //   },
+      // ],
     },
     transformation: {
       dataField: 'articles',
@@ -1655,7 +1658,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'position', fieldType: 'number' },
       ),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'author_id', fieldType: 'unknown' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'author_id', fieldType: 'unknown' },
+        { fieldName: 'translations', fieldType: 'list<article_translation>' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
@@ -1692,9 +1699,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   article_translation: {
-    request: {
-      url: '/api/v2/help_center/articles/{articleId}/translations',
-    },
+    // request: {
+    //   url: '/api/v2/help_center/articles/{articleId}/translations',
+    // },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,

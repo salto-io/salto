@@ -29,7 +29,7 @@ const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
 
-const BASE_URL_REGEX = /(https:\/\/.*?\.zendesk\.com)/
+const BASE_URL_REGEX = /(https:\/\/[^/]+)/
 const ARTICLE_ID_URL_REGEX = /(\/articles\/\d*)/
 
 const ARTICLE_ID_REGEX = /(?<articleUrl>\/articles\/)(?<articleId>\d*)/

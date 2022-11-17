@@ -55,6 +55,12 @@ describe('article body filter', () => {
     // eslint-disable-next-line no-template-curly-in-string
     { id: 7777, brand_url: 'https://coolSubdomain.zendesk.com' },
   )
+  const brandInstance2 = new InstanceElement(
+    'brand2',
+    brandType,
+    // eslint-disable-next-line no-template-curly-in-string
+    { id: 7778, brand_url: 'https://anotherDomain.notZendesk.smith' },
+  )
   const articleInstance = new InstanceElement(
     'refArticle',
     articleType,
@@ -62,24 +68,33 @@ describe('article body filter', () => {
     { id: 1666 },
   )
   const templatedTranslationInstance = new InstanceElement(
-    'article1',
+    'templatedTranslation',
     articleTranslationType,
     // eslint-disable-next-line no-template-curly-in-string
     { id: 1003, body: '<p><a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://coolSubdomain.zendesk.com/hc/he/articles/1666' },
   )
   const partialTemplatedTranslationInstance = new InstanceElement(
-    'article2',
+    'partialTemplatedTranslation',
     articleTranslationType,
     // eslint-disable-next-line no-template-curly-in-string
-    { id: 1004, body: '<a href="https://coolSubdomain.zendesk.com/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>' },
+    { id: 1004, body: '<a href="https://anotherDomain.notZendesk.smith/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>' },
+  )
+
+  const articleIdWithStringTranslation = new InstanceElement(
+    'articleIdWithStringTranslation',
+    articleTranslationType,
+    // eslint-disable-next-line no-template-curly-in-string
+    { id: 1005, body: '<a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666-someString" target="_self">linkedArticle</a>' },
   )
 
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
     brandInstance,
+    brandInstance2,
     articleInstance,
     templatedTranslationInstance,
     partialTemplatedTranslationInstance,
+    articleIdWithStringTranslation,
   ]).map(element => element.clone())
 
   describe('on fetch', () => {
@@ -92,9 +107,9 @@ describe('article body filter', () => {
 
 
     it('should add templates correctly', () => {
-      const fetchedTranslation1 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'article1')
+      const fetchedTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'templatedTranslation')
       // eslint-disable-next-line no-template-curly-in-string
-      expect(fetchedTranslation1?.value.body).toEqual(new TemplateExpression({ parts: [
+      expect(fetchedTranslation?.value.body).toEqual(new TemplateExpression({ parts: [
         '<p><a href="',
         new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
         '/hc/en-us/articles/',
@@ -106,12 +121,24 @@ describe('article body filter', () => {
       ] }))
     })
     it('should add partial templates normally', () => {
-      const fetchedTranslation2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'article2')
-      expect(fetchedTranslation2?.value.body).toEqual(new TemplateExpression({
+      const fetchedTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'partialTemplatedTranslation')
+      expect(fetchedTranslation?.value.body).toEqual(new TemplateExpression({
+        parts: [
+          '<a href="',
+          new ReferenceExpression(brandInstance2.elemID.createNestedID('brand_url'), brandInstance2.value.brand_url),
+          '/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>',
+        ],
+      }))
+    })
+    it('should keep url parts after articleId', () => {
+      const fetchedTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleIdWithStringTranslation')
+      expect(fetchedTranslation?.value.body).toEqual(new TemplateExpression({
         parts: [
           '<a href="',
           new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-          '/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>',
+          '/hc/en-us/articles/',
+          new ReferenceExpression(articleInstance.elemID, articleInstance),
+          '-someString" target="_self">linkedArticle</a>',
         ],
       }))
     })

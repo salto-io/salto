@@ -1790,7 +1790,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         url: '/hc/api/internal/general_settings',
         method: 'put',
       },
-      // TO DO - need to check what happens when guide is created or removed (SALTO-2914)
+      // TO DO - need to check what happens when help center is created or removed (SALTO-2914)
       // add: {
       //   url: '/hc/api/internal/general_settings',
       //   method: 'post',

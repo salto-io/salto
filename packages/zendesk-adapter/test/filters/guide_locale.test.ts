@@ -21,7 +21,7 @@ import ZendeskClient from '../../src/client/client'
 import filterCreator from '../../src/filters/guide_locale'
 import { createFilterCreatorParams } from '../utils'
 
-describe('guide locale filter', () => {
+describe('help center locale filter', () => {
   let mockClient: MockInterface<ZendeskClient>
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType

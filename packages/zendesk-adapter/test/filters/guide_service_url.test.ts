@@ -34,7 +34,7 @@ import {
   BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../../src/constants'
 
-describe('guide service_url filter', () => {
+describe('help center service_url filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType

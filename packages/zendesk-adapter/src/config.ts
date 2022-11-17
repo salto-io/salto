@@ -1896,19 +1896,19 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  sections_order: {
+  section_order: {
     transformation: {
       idFields: [],
       extendsParentId: true,
     },
   },
-  articles_order: {
+  article_order: {
     transformation: {
       idFields: [],
       extendsParentId: true,
     },
   },
-  categories_order: {
+  category_order: {
     transformation: {
       idFields: [],
       extendsParentId: true,

@@ -15,16 +15,12 @@
 */
 import { BuiltinTypes, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as elementsUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
-import categoriesOrderFilter from '../../src/filters/guide_order/categories_order'
-import sectionsOrderFilter from '../../src/filters/guide_order/sections_order'
-import articlesOrderFilter from '../../src/filters/guide_order/articles_order'
+import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK, ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../../src/constants'
+import categoryOrderFilter from '../../src/filters/guide_order/category_order'
+import sectionOrderFilter from '../../src/filters/guide_order/section_order'
+import articleOrderFilter from '../../src/filters/guide_order/article_order'
 import { createFilterCreatorParams } from '../utils'
-import {
-  ARTICLES_FIELD,
-  CATEGORIES_FIELD, createOrderType,
-  SECTIONS_FIELD,
-} from '../../src/filters/guide_order/guide_orders_utils'
+import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
 
@@ -215,7 +211,7 @@ describe('Categories order in brand', () => {
   describe('on fetch', () => {
     it('with Guide active in Zendesk And Salto', async () => {
       config[FETCH_CONFIG].enableGuide = true
-      filter = categoriesOrderFilter(
+      filter = categoryOrderFilter(
         createFilterCreatorParams({ config })
       ) as FilterType
       await testFetch({
@@ -226,7 +222,7 @@ describe('Categories order in brand', () => {
     })
     it('with Guide not active in Zendesk', async () => {
       config[FETCH_CONFIG].enableGuide = true
-      filter = categoriesOrderFilter(
+      filter = categoryOrderFilter(
         createFilterCreatorParams({ config })
       ) as FilterType
       // Should not create categories order field at all
@@ -238,7 +234,7 @@ describe('Categories order in brand', () => {
     })
     it('with Guide not active in Salto', async () => {
       config[FETCH_CONFIG].enableGuide = false
-      filter = categoriesOrderFilter(
+      filter = categoryOrderFilter(
         createFilterCreatorParams({})
       ) as FilterType
       // Should not create categories order field at all
@@ -260,7 +256,7 @@ describe('Categories order in brand', () => {
       },
     } as configUtils.DeployRequestConfig
     beforeEach(() => {
-      filter = categoriesOrderFilter(createFilterCreatorParams({ client })) as FilterType
+      filter = categoryOrderFilter(createFilterCreatorParams({ client })) as FilterType
     })
 
     it('deploy', async () => {
@@ -277,7 +273,7 @@ describe('Categories order in brand', () => {
 describe('Sections order in category', () => {
   beforeEach(async () => {
     config[FETCH_CONFIG].enableGuide = true
-    filter = sectionsOrderFilter(createFilterCreatorParams({ client })) as FilterType
+    filter = sectionOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('on fetch', async () => {
@@ -312,7 +308,7 @@ describe('Sections order in category', () => {
 describe('Sections order in section', () => {
   beforeEach(async () => {
     config[FETCH_CONFIG].enableGuide = true
-    filter = sectionsOrderFilter(createFilterCreatorParams({ client })) as FilterType
+    filter = sectionOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('on fetch', async () => {
@@ -349,7 +345,7 @@ describe('Sections order in section', () => {
 describe('Articles order in section', () => {
   beforeEach(async () => {
     config[FETCH_CONFIG].enableGuide = true
-    filter = articlesOrderFilter(createFilterCreatorParams({ client })) as FilterType
+    filter = articleOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
   it('on fetch', async () => {

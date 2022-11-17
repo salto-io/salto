@@ -13,29 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  BuiltinTypes,
-  Change, CORE_ANNOTATIONS,
-  DeployResult,
-  ElemID, getChangeData,
-  InstanceElement,
-  isReferenceExpression,
-  isRemovalChange, ListType,
-  ObjectType,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
+import { Change, CORE_ANNOTATIONS, DeployResult, getChangeData, InstanceElement, isReferenceExpression, isRemovalChange, ObjectType, ReferenceExpression, ElemID, ListType, BuiltinTypes } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { API_DEFINITIONS_CONFIG, FilterContext } from '../../config'
-import {
-  ARTICLE_TYPE_NAME,
-  BRAND_TYPE_NAME,
-  CATEGORY_TYPE_NAME,
-  SECTION_TYPE_NAME,
-  ZENDESK,
-} from '../../constants'
+import { BRAND_TYPE_NAME, CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME, ZENDESK, CATEGORIES_FIELD, SECTION_TYPE_NAME, SECTIONS_FIELD, ARTICLE_TYPE_NAME, ARTICLES_FIELD } from '../../constants'
 import { getZendeskError } from '../../errors'
 
 
@@ -43,40 +27,37 @@ const { isDefined } = lowerDashValues
 const { createUrl } = elementsUtils
 const { awu } = collections.asynciterable
 
-export const CATEGORIES_ORDER = 'categories_order'
-export const SECTIONS_ORDER = 'sections_order'
-export const ARTICLES_ORDER = 'articles_order'
+export const GUIDE_ORDER_TYPES = [
+  CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME,
+]
 
-export const GUIDE_ORDER_TYPES = [CATEGORIES_ORDER, SECTIONS_ORDER, ARTICLES_ORDER]
-
-export const CATEGORIES_FIELD = 'categories'
-export const SECTIONS_FIELD = 'sections'
-export const ARTICLES_FIELD = 'articles'
-
-const GUIDE_ORDER_OBJECT_TYPES : {[key: string]: () => ObjectType} = {
+const GUIDE_ORDER_OBJECT_TYPES : {[key: string]: (() => ObjectType)} = {
   [CATEGORY_TYPE_NAME]: () =>
     new ObjectType({
-      elemID: new ElemID(ZENDESK, CATEGORIES_ORDER),
+      elemID: new ElemID(ZENDESK, CATEGORY_ORDER_TYPE_NAME),
       fields: {
         [CATEGORIES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
         brand: { refType: BuiltinTypes.NUMBER },
       },
+      path: [ZENDESK, elementsUtils.TYPES_PATH, CATEGORY_ORDER_TYPE_NAME],
     }),
   [SECTION_TYPE_NAME]: () =>
     new ObjectType({
-      elemID: new ElemID(ZENDESK, SECTIONS_ORDER),
+      elemID: new ElemID(ZENDESK, SECTION_ORDER_TYPE_NAME),
       fields: {
         [SECTIONS_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
         brand: { refType: BuiltinTypes.NUMBER },
       },
+      path: [ZENDESK, elementsUtils.TYPES_PATH, SECTION_ORDER_TYPE_NAME],
     }),
   [ARTICLE_TYPE_NAME]: () =>
     new ObjectType({
-      elemID: new ElemID(ZENDESK, ARTICLES_ORDER),
+      elemID: new ElemID(ZENDESK, ARTICLE_ORDER_TYPE_NAME),
       fields: {
         [ARTICLES_FIELD]: { refType: new ListType(BuiltinTypes.NUMBER) },
         brand: { refType: BuiltinTypes.NUMBER },
       },
+      path: [ZENDESK, elementsUtils.TYPES_PATH, ARTICLE_ORDER_TYPE_NAME],
     }),
 }
 

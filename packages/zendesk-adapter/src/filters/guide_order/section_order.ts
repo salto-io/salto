@@ -13,19 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   Change, Element, getChangeData,
   InstanceElement,
   isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
+import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME } from '../../constants'
 import {
-  createOrderInstance, createOrderType,
-  deployOrderChanges,
-  SECTIONS_FIELD, SECTIONS_ORDER,
-} from './guide_orders_utils'
+  createOrderInstance, deployOrderChanges, createOrderType,
+} from './guide_order_utils'
 import { FETCH_CONFIG } from '../../config'
 
 /**
@@ -45,6 +43,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
 
     const orderType = createOrderType(SECTION_TYPE_NAME)
+    _.remove(elements, e => e.elemID.getFullName() === orderType.elemID.getFullName())
     elements.push(orderType)
 
     /** Sections in category */
@@ -85,13 +84,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   },
   /** Change the sections positions to their order in the category */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [sectionsOrderChanges, leftoverChanges] = _.partition(
+    const [sectionOrderChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === SECTIONS_ORDER,
+      change => getChangeData(change).elemID.typeName === SECTION_ORDER_TYPE_NAME,
     )
 
     const deployResult = await deployOrderChanges({
-      changes: sectionsOrderChanges,
+      changes: sectionOrderChanges,
       orderField: SECTIONS_FIELD,
       client,
       config,

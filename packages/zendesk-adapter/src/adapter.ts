@@ -157,7 +157,7 @@ export const DEFAULT_FILTERS = [
   categoriesOrderFilter,
   sectionsOrderFilter,
   articlesOrderFilter,
-  // help center filters need to be before fieldReferencesFilter (assume fields are strings)
+  // guide filters need to be before fieldReferencesFilter (assume fields are strings)
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
   articleFilter,
@@ -232,7 +232,7 @@ const zendeskGuideEntriesFunc = (
         typeName,
         typesConfig,
       })).flat()
-      // Defining Zendesk Guide element to its corresponding help center (= subdomain)
+      // Defining Zendesk Guide element to its corresponding guide (= subdomain)
       return brandPaginatorResponseValues.flatMap(response => {
         const responseEntryName = typesConfig[typeName].transformation?.dataField
         if (responseEntryName === undefined) {

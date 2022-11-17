@@ -35,10 +35,10 @@ export const invalidBrandAdditionChange = (
 }
 
 /**
- * We currently do not support the creation or deletion of help centers using Salto.
- * If the help center is created/deleted as part of an existing brand and no other changes are made
+ * We currently do not support the creation or deletion of guides using Salto.
+ * If the guide is created/deleted as part of an existing brand and no other changes are made
  * to the brand, issue a warning on the change.
- * If the help center was created during an addition of a brand, it also issues a warning.
+ * If the guide was created during an addition of a brand, it also issues a warning.
  */
 export const helpCenterCreationOrRemovalValidator:
   (client: ZendeskClient, apiConfig: ZendeskApiConfig) =>
@@ -55,18 +55,18 @@ export const helpCenterCreationOrRemovalValidator:
           return [{
             elemID: getChangeData(change).elemID,
             severity: 'Warning',
-            message: 'Creation or removal of help center for a brand is not supported via Salto.',
+            message: 'Creation or removal of guide for a brand is not supported via Salto.',
             // we expect the service url to always exist.
-            detailedMessage: `Creation or removal of help center for brand ${getChangeData(change).elemID.getFullName()} is not supported via Salto.
-      To create or remove a help center, please go to ${client.getUrl().href}${apiConfig.types.brand.transformation?.serviceUrl?.slice(1)}`,
+            detailedMessage: `Creation or removal of guide for brand ${getChangeData(change).elemID.getFullName()} is not supported via Salto.
+      To create or remove a guide, please go to ${client.getUrl().href}${apiConfig.types.brand.transformation?.serviceUrl?.slice(1)}`,
           }]
         }
         return [{
           elemID: getChangeData(change).elemID,
           severity: 'Warning',
-          message: 'Creation of a brand with a help center is not supported via Salto.',
-          detailedMessage: `Creation of a brand with a help center is not supported via Salto. The brand ${getChangeData(change).elemID.getFullName()} will be created without a help center. After creating the brand, 
-            to create a help center, please go to ${client.getUrl().href}${(apiConfig.types.brand.transformation?.serviceUrl)?.slice(1)}`,
+          message: 'Creation of a brand with a guide is not supported via Salto.',
+          detailedMessage: `Creation of a brand with a guide is not supported via Salto. The brand ${getChangeData(change).elemID.getFullName()} will be created without a guide. After creating the brand, 
+            to create a guide, please go to ${client.getUrl().href}${(apiConfig.types.brand.transformation?.serviceUrl)?.slice(1)}`,
         }]
       })
   }

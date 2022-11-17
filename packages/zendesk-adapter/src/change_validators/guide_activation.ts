@@ -55,7 +55,7 @@ export const invalidBrandChange = (change: Change<InstanceElement>, fieldToCheck
 
 /**
  * This change validator checks that the field 'help_center_state' in a brand has not been changed
- * since Salto does not support the change of the help center state (enabled or restricted)
+ * since Salto does not support the change of the guide state (enabled or restricted)
  */
 export const helpCenterActivationValidator: ChangeValidator = async changes => {
   const relevantInstances = changes
@@ -68,7 +68,7 @@ export const helpCenterActivationValidator: ChangeValidator = async changes => {
     .flatMap(instance => [{
       elemID: instance.elemID,
       severity: 'Warning',
-      message: 'Activation or deactivation of help center for a certain brand is not supported via Salto.',
-      detailedMessage: `Activation or deactivation of help center for a certain brand is not supported via Salto. To activate or deactivate a help center, please go to ${instance.value.brand_url}/hc/admin/general_settings`,
+      message: 'Activation or deactivation of guide for a certain brand is not supported via Salto.',
+      detailedMessage: `Activation or deactivation of guide for a certain brand is not supported via Salto. To activate or deactivate a guide, please go to ${instance.value.brand_url}/hc/admin/general_settings`,
     }])
 }

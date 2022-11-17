@@ -5,16 +5,24 @@ netsuite {
   fetch = {
     include = {
       types = [
-        { name = ".*" },
+        {
+          name = ".*"
+        },
       ]
       fileCabinet = [
         "^/SuiteScripts/.*",
         "^/Templates/.*",
       ]
+      customRecords = [
+        {
+          name = "customrecord_.*"
+        }
+      ]
     }
     exclude = {
       types = [
-        { name = "savedsearch"
+        {
+          name = "savedsearch"
           ids = [".*"]
         }
       ]
@@ -76,7 +84,7 @@ netsuite {
 | -------------------------------| ------------------------| -----------
 | types                          | fetch all types         | Specify which types to include on fetch
 | fileCabinet                    | fetch all files         | Specify which Files to include on fetch
-| customRecords                  | fetch all custom records | Specify which custom records to include on fetch
+| customRecords                  | don't fetch custom records | Specify which custom records to include on fetch
 
 ### Fetch exclude configuration options
 | Name                           | Default when undefined  | Description

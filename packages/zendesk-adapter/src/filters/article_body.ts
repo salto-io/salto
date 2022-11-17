@@ -35,22 +35,22 @@ const ARTICLE_ID_URL_REGEX = /(\/articles\/\d*)/
 const ARTICLE_ID_REGEX = /(?<articleUrl>\/articles\/)(?<articleId>\d*)/
 
 const referenceUrls = ({
-  url,
+  urlPart,
   brandInstances,
   articleInstances,
 }: {
-  url: string
+  urlPart: string
   brandInstances: InstanceElement[]
   articleInstances: InstanceElement[]
 }): TemplatePart[] => {
-  const urlSubdomain = url.match(BASE_URL_REGEX)?.pop()
+  const urlSubdomain = urlPart.match(BASE_URL_REGEX)?.pop()
   const urlBrand = brandInstances
     .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
   if (isInstanceElement(urlBrand)) {
     return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
   }
 
-  const { articleUrl, articleId } = url.match(ARTICLE_ID_REGEX)?.groups ?? {}
+  const { articleUrl, articleId } = urlPart.match(ARTICLE_ID_REGEX)?.groups ?? {}
   if (articleUrl && articleId) {
     const referencedArticle = articleInstances
       .find(articleInstance => articleInstance.value.id.toString() === articleId)
@@ -61,7 +61,7 @@ const referenceUrls = ({
       ]
     }
   }
-  return [url]
+  return [urlPart]
 }
 
 const updateArticleBody = (

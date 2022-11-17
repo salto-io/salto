@@ -30,13 +30,20 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
+import {
+  API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG,
+  ZendeskConfig,
+  CLIENT_CONFIG,
+  GUIDE_TYPES_TO_HANDLE_BY_BRAND,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES,
+} from './config'
 import {
   ZENDESK,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
 } from './constants'
-import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_orders_utils'
+import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -97,9 +104,9 @@ import fetchCategorySection from './filters/guide_fetch_section_and_category'
 import guideParentSection, { addParentFields } from './filters/guide_parent_to_section'
 import guideGuideSettings from './filters/guide_guide_settings'
 import removeBrandLogoFilter from './filters/remove_brand_logo_field'
-import categoriesOrderFilter from './filters/guide_order/categories_order'
-import sectionsOrderFilter from './filters/guide_order/sections_order'
-import articlesOrderFilter from './filters/guide_order/articles_order'
+import categoryOrderFilter from './filters/guide_order/category_order'
+import sectionOrderFilter from './filters/guide_order/section_order'
+import articleOrderFilter from './filters/guide_order/article_order'
 import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
 import guideLanguageSettings from './filters/guide_language_translations'
@@ -154,10 +161,10 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
   removeBrandLogoFilter,
-  categoriesOrderFilter,
-  sectionsOrderFilter,
-  articlesOrderFilter,
-  // guide filters need to be before fieldReferencesFilter (assume fields are strings)
+  categoryOrderFilter,
+  sectionOrderFilter,
+  articleOrderFilter,
+  // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
   articleFilter,
@@ -355,10 +362,10 @@ export default class ZendeskAdapter implements AdapterOperations {
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
-    const { supportedTypes: supportSupportedTypes } = this.userConfig.apiDefinitions
+    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     const supportedTypes = isGuideDisabled
-      ? supportSupportedTypes
-      : { ...supportSupportedTypes, ...GUIDE_GLOBAL_TYPES }
+      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
+      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainElements = await getAllElements({
       adapterName: ZENDESK,

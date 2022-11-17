@@ -30,8 +30,7 @@ const { awu } = collections.asynciterable
 const BODY_FIELD = 'body'
 
 const ARTICLE_REF_URL_REGEX = /(https:\/\/.*\.zendesk\.com\/hc\/.*\/articles\/\d*)/g
-const BASE_URL_REGEX = /(https:\/\/.*\.zendesk\.com)/
-const ARTICLE_ID_URL_REGEX = /\/articles\/(\d*)/
+const ARTICLE_REF_URL_GROUPS_REGEX = /((?<urlSubdomain>https:\/\/.*\.zendesk\.com)(?<translation>\/hc\/.*\/articles\/)(?<urlArticleId>\d*))/g
 
 const referenceArticleUrl = ({
   articleUrl,
@@ -42,10 +41,11 @@ const referenceArticleUrl = ({
   brandInstances: InstanceElement[]
   articleInstances: InstanceElement[]
 }): TemplatePart[] => {
-  const urlSubdomain = articleUrl.match(BASE_URL_REGEX)?.pop()
+  const urlParts = ARTICLE_REF_URL_GROUPS_REGEX.exec(articleUrl)?.groups ?? {}
+  const { urlSubdomain, translation, urlArticleId } = urlParts
+
   const urlBrand = brandInstances
     .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
-  const urlArticleId = articleUrl.match(ARTICLE_ID_URL_REGEX)?.pop()
   const referencedArticle = articleInstances
     .find(articleInstance => articleInstance.value.id.toString() === urlArticleId)
   if (!isInstanceElement(urlBrand) || !isInstanceElement(referencedArticle)) {
@@ -53,7 +53,7 @@ const referenceArticleUrl = ({
   }
   return [
     new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url),
-    '/hc/en-us/articles/',
+    translation,
     new ReferenceExpression(referencedArticle.elemID, referencedArticle),
   ]
 }

@@ -15,10 +15,10 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { validateReferences } from './guide_order_validators_utils'
-import { ARTICLES_FIELD, ARTICLES_ORDER } from '../../filters/guide_order/guide_orders_utils'
+import { SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME } from '../../constants'
 
 /**
- * Validates that all the elements in the articles order list are references
- */
-export const articlesOrderValidator: ChangeValidator = async changes =>
-  validateReferences(changes, ARTICLES_FIELD, ARTICLES_ORDER)
+ * Validates that all the elements in the sections order list are references
+ * */
+export const sectionOrderValidator: ChangeValidator = async changes =>
+  validateReferences(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME)

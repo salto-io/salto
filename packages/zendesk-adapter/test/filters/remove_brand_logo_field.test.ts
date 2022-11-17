@@ -17,11 +17,10 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_TYPE_NAME, ZENDESK, CATEGORIES_FIELD } from '../../src/constants'
 import filterCreator from '../../src/filters/remove_brand_logo_field'
 import { LOGO_FIELD, BRAND_LOGO_TYPE } from '../../src/filters/brand_logo'
 import { createFilterCreatorParams } from '../utils'
-import { CATEGORIES_FIELD } from '../../src/filters/guide_order/guide_orders_utils'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {

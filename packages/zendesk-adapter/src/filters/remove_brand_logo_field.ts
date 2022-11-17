@@ -17,9 +17,8 @@ import _ from 'lodash'
 import { InstanceElement, Change, getChangeData } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { BRAND_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, CATEGORIES_FIELD } from '../constants'
 import { LOGO_FIELD } from './brand_logo'
-import { CATEGORIES_FIELD } from './guide_order/guide_orders_utils'
 
 /**
  * Ignores the logo field from brand instances when deploying,

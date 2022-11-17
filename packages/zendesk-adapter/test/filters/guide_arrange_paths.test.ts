@@ -28,7 +28,7 @@ import {
   BRAND_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME, CATEGORY_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
-  ZENDESK,
+  ZENDESK, CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../../src/constants'
 import filterCreator, {
@@ -36,7 +36,6 @@ import filterCreator, {
   GUIDE_PATH, UNSORTED,
 } from '../../src/filters/guide_arrange_paths'
 import { createFilterCreatorParams } from '../utils'
-import { CATEGORIES_ORDER, SECTIONS_ORDER } from '../../src/filters/guide_order/guide_orders_utils'
 
 describe('guide arrange paths', () => {
   let client: ZendeskClient
@@ -77,10 +76,10 @@ describe('guide arrange paths', () => {
     elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
   })
   const sectionOrderType = new ObjectType({
-    elemID: new ElemID(ZENDESK, SECTIONS_ORDER),
+    elemID: new ElemID(ZENDESK, SECTION_ORDER_TYPE_NAME),
   })
   const categoryOrderType = new ObjectType({
-    elemID: new ElemID(ZENDESK, CATEGORIES_ORDER),
+    elemID: new ElemID(ZENDESK, CATEGORY_ORDER_TYPE_NAME),
   })
   const BRAND_PATH = ['brands', 'best brand']
 
@@ -189,14 +188,14 @@ describe('guide arrange paths', () => {
     sectionInstance.elemID, sectionInstance
   )]
 
-  const categoriesOrderInstance = new InstanceElement(
+  const categoryOrderInstance = new InstanceElement(
     'instance14',
     categoryOrderType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
     }
   )
-  categoriesOrderInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
+  categoryOrderInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
     categoryInstance.elemID, categoryInstance
   )]
 
@@ -223,7 +222,7 @@ describe('guide arrange paths', () => {
         categoryTranslationInstance,
         languageSettingsInstance,
         sectionOrderInstance,
-        categoriesOrderInstance,
+        categoryOrderInstance,
       ].map(e => e.clone())
       await filter.onFetch([elements, brandInstance].flat())
       expect(elements
@@ -324,13 +323,13 @@ describe('guide arrange paths', () => {
           'instance5',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
           'instance6',
-          GUIDE_ELEMENT_DIRECTORY[SECTIONS_ORDER],
+          GUIDE_ELEMENT_DIRECTORY[SECTION_ORDER_TYPE_NAME],
           'instance13',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
-          GUIDE_ELEMENT_DIRECTORY[CATEGORIES_ORDER],
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_ORDER_TYPE_NAME],
           'instance14',
         ],
       ])

@@ -13,21 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   Change, Element, getChangeData,
   InstanceElement,
   isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
-import {
-  ARTICLES_FIELD,
-  ARTICLES_ORDER,
-  createOrderInstance,
-  createOrderType,
-  deployOrderChanges,
-} from './guide_orders_utils'
+import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME } from '../../constants'
+import { createOrderInstance, deployOrderChanges, createOrderType } from './guide_order_utils'
 import { FETCH_CONFIG } from '../../config'
 
 /**
@@ -47,10 +41,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(e => e.elemID.typeName === SECTION_TYPE_NAME)
 
     const orderType = createOrderType(ARTICLE_TYPE_NAME)
+    _.remove(elements, e => e.elemID.getFullName() === orderType.elemID.getFullName())
     elements.push(orderType)
 
     sections.forEach(section => {
-      const articlesOrderElements = createOrderInstance({
+      const articleOrderElements = createOrderInstance({
         parent: section,
         parentField: 'section_id',
         orderField: ARTICLES_FIELD,
@@ -59,25 +54,25 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       })
 
       // Promoted articles are first
-      articlesOrderElements.value[ARTICLES_FIELD] = _.sortBy(
-        articlesOrderElements.value[ARTICLES_FIELD], a => !a.value.value.promoted
+      articleOrderElements.value[ARTICLES_FIELD] = _.sortBy(
+        articleOrderElements.value[ARTICLES_FIELD], a => !a.value.value.promoted
       )
 
       section.value[ARTICLES_FIELD] = new ReferenceExpression(
-        articlesOrderElements.elemID, articlesOrderElements
+        articleOrderElements.elemID, articleOrderElements
       )
-      elements.push(articlesOrderElements)
+      elements.push(articleOrderElements)
     })
   },
   /** Change the section and articles positions according to their order in the section */
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [articlesOrderChanges, leftoverChanges] = _.partition(
+    const [articleOrderChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === ARTICLES_ORDER,
+      change => getChangeData(change).elemID.typeName === ARTICLE_ORDER_TYPE_NAME,
     )
 
     const deployResult = await deployOrderChanges({
-      changes: articlesOrderChanges,
+      changes: articleOrderChanges,
       orderField: ARTICLES_FIELD,
       client,
       config,

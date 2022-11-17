@@ -67,7 +67,7 @@ describe('article body filter', () => {
     // eslint-disable-next-line no-template-curly-in-string
     { id: 1003, body: '<p><a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://coolSubdomain.zendesk.com/hc/he/articles/1666' },
   )
-  const nonTemplatedTranslationInstance = new InstanceElement(
+  const partialTemplatedTranslationInstance = new InstanceElement(
     'article2',
     articleTranslationType,
     // eslint-disable-next-line no-template-curly-in-string
@@ -76,7 +76,10 @@ describe('article body filter', () => {
 
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
-    brandInstance, articleInstance, templatedTranslationInstance, nonTemplatedTranslationInstance,
+    brandInstance,
+    articleInstance,
+    templatedTranslationInstance,
+    partialTemplatedTranslationInstance,
   ]).map(element => element.clone())
 
   describe('on fetch', () => {
@@ -102,9 +105,15 @@ describe('article body filter', () => {
         new ReferenceExpression(articleInstance.elemID, articleInstance),
       ] }))
     })
-    it('should resolve non-template normally', () => {
+    it('should add partial templates normally', () => {
       const fetchedTranslation2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'article2')
-      expect(fetchedTranslation2?.value.body).toEqual('<a href="https://coolSubdomain.zendesk.com/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>')
+      expect(fetchedTranslation2?.value.body).toEqual(new TemplateExpression({
+        parts: [
+          '<a href="',
+          new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+          '/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>',
+        ],
+      }))
     })
   })
   describe('preDeploy', () => {

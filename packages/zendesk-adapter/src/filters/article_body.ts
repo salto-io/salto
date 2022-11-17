@@ -29,33 +29,39 @@ const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
 
-const ARTICLE_REF_URL_REGEX = /(https:\/\/.*\.zendesk\.com\/hc\/.*\/articles\/\d*)/g
-const ARTICLE_REF_URL_GROUPS_REGEX = /((?<urlSubdomain>https:\/\/.*\.zendesk\.com)(?<translation>\/hc\/.*\/articles\/)(?<urlArticleId>\d*))/g
+const BASE_URL_REGEX = /(https:\/\/.*?\.zendesk\.com)/
+const ARTICLE_ID_URL_REGEX = /(\/articles\/\d*)/
 
-const referenceArticleUrl = ({
-  articleUrl,
+const ARTICLE_ID_REGEX = /(?<articleUrl>\/articles\/)(?<articleId>\d*)/
+
+const referenceUrls = ({
+  url,
   brandInstances,
   articleInstances,
 }: {
-  articleUrl: string
+  url: string
   brandInstances: InstanceElement[]
   articleInstances: InstanceElement[]
 }): TemplatePart[] => {
-  const urlParts = ARTICLE_REF_URL_GROUPS_REGEX.exec(articleUrl)?.groups ?? {}
-  const { urlSubdomain, translation, urlArticleId } = urlParts
-
+  const urlSubdomain = url.match(BASE_URL_REGEX)?.pop()
   const urlBrand = brandInstances
     .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
-  const referencedArticle = articleInstances
-    .find(articleInstance => articleInstance.value.id.toString() === urlArticleId)
-  if (!isInstanceElement(urlBrand) || !isInstanceElement(referencedArticle)) {
-    return [articleUrl]
+  if (isInstanceElement(urlBrand)) {
+    return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
   }
-  return [
-    new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url),
-    translation,
-    new ReferenceExpression(referencedArticle.elemID, referencedArticle),
-  ]
+
+  const { articleUrl, articleId } = url.match(ARTICLE_ID_REGEX)?.groups ?? {}
+  if (articleUrl && articleId) {
+    const referencedArticle = articleInstances
+      .find(articleInstance => articleInstance.value.id.toString() === articleId)
+    if (isInstanceElement(referencedArticle)) {
+      return [
+        articleUrl,
+        new ReferenceExpression(referencedArticle.elemID, referencedArticle),
+      ]
+    }
+  }
+  return [url]
 }
 
 const updateArticleBody = (
@@ -69,8 +75,8 @@ const updateArticleBody = (
   }
   const processedArticleBody = extractTemplate(
     originalArticleBody,
-    [ARTICLE_REF_URL_REGEX],
-    articleUrl => referenceArticleUrl({ articleUrl, brandInstances, articleInstances }),
+    [BASE_URL_REGEX, ARTICLE_ID_URL_REGEX],
+    articleUrl => referenceUrls({ url: articleUrl, brandInstances, articleInstances }),
   )
   articleInstace.value.body = processedArticleBody
 }

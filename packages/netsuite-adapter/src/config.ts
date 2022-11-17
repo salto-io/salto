@@ -517,14 +517,17 @@ export const combineQueryParams = (
   // case where both are defined
   const newFileCabinet = _(first.fileCabinet).concat(second.fileCabinet).uniq().value()
   const newTypes = combineFetchTypeQueryParams(first.types, second.types)
-  const newCustomRecords = first.customRecords || second.customRecords
-    ? combineFetchTypeQueryParams(first.customRecords ?? [], second.customRecords ?? [])
-    : undefined
+  const newCustomRecords = first.customRecords || second.customRecords ? {
+    customRecords: combineFetchTypeQueryParams(
+      first.customRecords ?? [],
+      second.customRecords ?? []
+    ),
+  } : {}
 
   return {
     fileCabinet: newFileCabinet,
     types: newTypes,
-    customRecords: newCustomRecords,
+    ...newCustomRecords,
   }
 }
 

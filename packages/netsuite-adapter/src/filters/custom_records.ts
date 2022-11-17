@@ -23,7 +23,7 @@ const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 const REC_TYPE = 'recType'
-const OWNER = 'owner'
+const FIELDS_TO_DELETE = [REC_TYPE, 'owner', 'customForm', 'created', 'lastModified']
 const TRANSLATION_LIST = 'translationsList'
 const TRANSLATIONS = 'customRecordTranslations'
 const CUSTOM_RECORD_TRANSLATION_LIST = 'customRecordTranslationsList'
@@ -64,8 +64,9 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
       .filter(isInstanceElement)
       .filter(async instance => isCustomRecordType(await instance.getType()))
       .forEach(async instance => {
-        delete instance.value[REC_TYPE]
-        delete instance.value[OWNER]
+        FIELDS_TO_DELETE.forEach(fieldName => {
+          delete instance.value[fieldName]
+        })
         if (instance.value[TRANSLATION_LIST]?.[TRANSLATIONS]) {
           instance.value[TRANSLATION_LIST][TRANSLATIONS] = makeArray(
             instance.value[TRANSLATION_LIST][TRANSLATIONS]

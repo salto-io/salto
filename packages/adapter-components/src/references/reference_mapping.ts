@@ -67,6 +67,23 @@ export const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
+
+export type TargetIdTransformation = {
+  transform: (val: string | number) => string | number
+}
+
+export type TargetIdTransformationName = 'asIs' | 'lowercase'
+export const TargetIdTransformationNameLookup: Record<
+TargetIdTransformationName, TargetIdTransformation
+> = {
+  asIs: {
+    transform: val => val,
+  },
+  lowercase: {
+    transform: val => val.toLocaleString().toLocaleLowerCase(),
+  },
+}
+
 export type MissingReferenceStrategy = {
   create: CreateMissingRefFunc
 }
@@ -118,6 +135,8 @@ export type FieldReferenceDefinition<
   target?: ReferenceTargetDefinition<T>
   // If missingRefStrategy is missing, we won't replace broken values with missing references
   missingRefStrategy?: MissingReferenceStrategyName
+  // How to map between the referring field's value and the target type's name
+  targetIdTransformation?: TargetIdTransformationName
 }
 
 // We can extract the api name from the elem id as long as we don't support renaming
@@ -141,6 +160,7 @@ type FieldReferenceResolverDetails<T extends string> = {
   serializationStrategy: ReferenceSerializationStrategy
   target?: ExtendedReferenceTargetDefinition<T>
   missingRefStrategy?: MissingReferenceStrategy
+  targetIdTransformation: TargetIdTransformation
 }
 
 export class FieldReferenceResolver<T extends string> {
@@ -148,6 +168,7 @@ export class FieldReferenceResolver<T extends string> {
   serializationStrategy: ReferenceSerializationStrategy
   target?: ExtendedReferenceTargetDefinition<T>
   missingRefStrategy?: MissingReferenceStrategy
+  targetIdTransformation: TargetIdTransformation
 
   constructor(def: FieldReferenceDefinition<T>) {
     this.src = def.src
@@ -157,6 +178,9 @@ export class FieldReferenceResolver<T extends string> {
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
+    this.targetIdTransformation = TargetIdTransformationNameLookup[
+      def.targetIdTransformation ?? 'asIs'
+    ]
   }
 
   static create<S extends string>(def: FieldReferenceDefinition<S>): FieldReferenceResolver<S> {

@@ -131,6 +131,7 @@ export type FieldReferenceDefinition = {
   serializationStrategy?: ReferenceSerializationStrategyName
   // If target is missing, the definition is used for resolving
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
+  targetIDTransformation?: referenceUtils.TargetIdTransformationName
 }
 
 export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
@@ -551,6 +552,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
     target: { type: 'EntitlementProcess' },
+    targetIDTransformation: 'lowercase',
   },
 ]
 
@@ -600,6 +602,7 @@ export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
   target?: referenceUtils.ExtendedReferenceTargetDefinition<ReferenceContextStrategyName>
+  targetIdTransformation: referenceUtils.TargetIdTransformation
 
   constructor(def: FieldReferenceDefinition) {
     this.src = def.src
@@ -609,6 +612,9 @@ export class FieldReferenceResolver {
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
+    this.targetIdTransformation = referenceUtils.TargetIdTransformationNameLookup[
+      def.targetIDTransformation ?? 'asIs'
+    ]
   }
 
   static create(def: FieldReferenceDefinition): FieldReferenceResolver {

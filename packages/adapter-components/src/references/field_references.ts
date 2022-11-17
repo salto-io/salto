@@ -20,6 +20,7 @@ import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
 import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
+  TargetIdTransformation,
   FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
   CreateMissingRefFunc,
   GetReferenceIdFunc,
@@ -65,13 +66,20 @@ export const replaceReferenceValues = async <
   contextStrategyLookup?: Record<T, ContextFunc>
   isEqualValue?: ValueIsEqualFunc
 }): Promise<Values> => {
-  const getRefElem = async ({ val, target, field, path, lookupIndexName, createMissingReference }: {
+  const getRefElem = async ({ val,
+    target,
+    field,
+    path,
+    lookupIndexName,
+    createMissingReference,
+    targetIdTransform }: {
     val: string | number
     field: Field
     path?: ElemID
     target: ExtendedReferenceTargetDefinition<T>
     lookupIndexName?: string
     createMissingReference?: CreateMissingRefFunc
+    targetIdTransform: TargetIdTransformation
   }): Promise<Element | undefined> => {
     const defaultIndex = Object.values(elemLookupMaps).length === 1
       ? Object.values(elemLookupMaps)[0]
@@ -110,17 +118,19 @@ export const replaceReferenceValues = async <
     const elemType = target.type ?? await typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })
-    return findElem(target.lookup(val, elemParent), elemType)
+    const lookupValue = targetIdTransform.transform(val)
+    return findElem(target.lookup(lookupValue, elemParent), elemType)
       ?? createMissingReference?.({
         value: val.toString(), typeName: elemType, adapter: field.elemID.adapter,
       })
   }
 
   const replacePrimitive = async (
-    val: string | number, field: Field, path?: ElemID,
+    val: string | number, field: Field, path?: ElemID
   ): Promise<Value> => {
     const toValidatedReference = async (
       serializer: ReferenceSerializationStrategy,
+      targetIdTransform: TargetIdTransformation,
       elem: Element | undefined,
     ): Promise<ReferenceExpression | undefined> => {
       const getReferenceExpression = async (element: Element):
@@ -143,23 +153,23 @@ export const replaceReferenceValues = async <
         if (checkMissingRef(element)) {
           return new ReferenceExpression(referenceId)
         }
-        return (
-          isEqualValue(
-            !isRelativeSerializer(serializer)
-              ? await serializer.serialize({
-                ref: new ReferenceExpression(element.elemID, elem),
-                field,
-                element: instance,
-              })
-              : resolvePath(element, referenceId),
-            val,
-          ) ? new ReferenceExpression(
-              referenceId,
-              elem !== undefined && !referenceId.isEqual(elem.elemID)
-                ? resolvePath(elem, referenceId)
-                : elem
-            )
-            : undefined
+
+        const referredInstance = !isRelativeSerializer(serializer)
+          ? await serializer.serialize({
+            ref: new ReferenceExpression(element.elemID, elem),
+            field,
+            element: instance,
+          })
+          : resolvePath(element, referenceId)
+
+        const lookupValue = targetIdTransform.transform(val)
+        return (isEqualValue(referredInstance, lookupValue)
+          ? new ReferenceExpression(
+            referenceId,
+            elem !== undefined && !referenceId.isEqual(elem.elemID)
+              ? resolvePath(elem, referenceId) : elem
+          )
+          : undefined
         )
       }
       if (elem === undefined) {
@@ -176,11 +186,13 @@ export const replaceReferenceValues = async <
       .filter(refResolver => refResolver.target !== undefined)
       .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
+        refResolver.targetIdTransformation,
         await getRefElem({
           val,
           field,
           path,
           target: refResolver.target as ExtendedReferenceTargetDefinition<T>,
+          targetIdTransform: refResolver.targetIdTransformation,
           lookupIndexName: refResolver.serializationStrategy.lookupIndexName,
           createMissingReference: refResolver.missingRefStrategy?.create,
         }),

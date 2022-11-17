@@ -42,8 +42,6 @@ import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const manifestErrorRegex = RegExp('^Details: The manifest', 'm')
-
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
   [SUITEAPP_UPDATING_FILES_GROUP_ID]: 'update',
@@ -239,10 +237,8 @@ export default class NetsuiteClient {
         return { errors, appliedChanges: changesToDeploy }
       } catch (error) {
         errors.push(error)
-        if (manifestErrorRegex.test(error.message)) {
-          log.debug('manifest validation error, failed to deploy : %o', changesToDeploy)
-          errors[-1] = new ManifestValidationError(error.message)
-          return { errors, appliedChanges: [] }
+        if (error instanceof ManifestValidationError) {
+          log.debug('manifest validation errror: sdf deploy failed')
         }
         if (error instanceof FeaturesDeployError) {
           const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(

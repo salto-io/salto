@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { Change, ChangeError, changeId, getChangeData, Element } from '@salto-io/adapter-api'
+import { getGroupItemFromRegex, objectValidationErrorRegex, OBJECT_ID } from '../client/sdf_client'
 import NetsuiteClient from '../client/client'
 import { AdditionalDependencies } from '../client/types'
 import { getChangeGroupIdsFunc } from '../group_changes'
@@ -24,18 +25,19 @@ import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'
 
-const { awu } = collections.asynciterable
 
-const scriptIdRegex = RegExp('\\([a-z_0-9]+\\)', 'gm')
+const { awu } = collections.asynciterable
 
 const mapObjectDeployErrorToInstance = (error: Error): Record<string, string> => {
   const scriptIdToErrorRecord: Record<string, string> = {}
-  const errorLines = error.message.split('\n')
-  errorLines.forEach((line, index) => {
-    const caughtScriptId = line.match(scriptIdRegex)
-    if (caughtScriptId) {
-      const cleanScriptId = caughtScriptId[0].slice(1, -1)
-      scriptIdToErrorRecord[cleanScriptId] = errorLines[index + 1]
+  const errorMessageChunks = error.message.split('Validation failed.')[1].split('\n\n')
+  errorMessageChunks.forEach(chunk => {
+    const caughtScriptId = getGroupItemFromRegex(
+      chunk, objectValidationErrorRegex, OBJECT_ID
+    )
+    if (caughtScriptId.length > 0) {
+      const cleanScriptId = caughtScriptId[0]
+      scriptIdToErrorRecord[cleanScriptId] = chunk
     }
   })
   return scriptIdToErrorRecord
@@ -80,9 +82,8 @@ const changeValidator: ClientChangeValidator = async (
           if (error instanceof ObjectsDeployError) {
             const scriptIdToErrorMap = mapObjectDeployErrorToInstance(error)
             return groupChanges.map(getChangeData)
-              .filter(element => error.failedObjects.has(
-                getElementValueOrAnnotations(element)[SCRIPT_ID]
-              ))
+              .filter(element =>
+                scriptIdToErrorMap[getElementValueOrAnnotations(element)[SCRIPT_ID]] !== undefined)
               .map(element => ({
                 message: 'SDF Objects Validation Error',
                 severity: 'Error' as const,
@@ -92,11 +93,18 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof SettingsDeployError) {
+            const { failedConfigTypes } = error
+            let detailedErrorMessage = error.message
+            if (!groupChanges.some(change =>
+              failedConfigTypes.has(getChangeData(change).elemID.typeName))) {
+              detailedErrorMessage = `settings deploy error:
+              no changes matched the failedConfigType list: ${Array.from(failedConfigTypes)}`
+            }
             return groupChanges.map(change => ({
               message: 'SDF Settings Validation Error',
               severity: 'Error' as const,
               elemID: getChangeData(change).elemID,
-              detailedMessage: error.message,
+              detailedMessage: detailedErrorMessage,
             }))
           }
           const message = error instanceof ManifestValidationError

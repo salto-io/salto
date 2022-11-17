@@ -64,12 +64,15 @@ describe('client validation', () => {
     expect(changeErrors).toHaveLength(0)
   })
   it('should have SDF Objects Validation Error for instance', async () => {
-    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value, \'T\' or \'F\'.'
-    const fullErrorMessage = `validation failed.
-An error occurred during custom object validation. (object_name)
-${detailedMessage}
+    const detailedMessage = `An error occurred during custom object validation. (object_name)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
 File: ~/Objects/object_name.xml`
-
+    const fullErrorMessage = `Validation failed.\n\n${detailedMessage}`
     mockValidate.mockReturnValue([
       new ObjectsDeployError(fullErrorMessage, new Set(['object_name'])),
     ])
@@ -85,11 +88,15 @@ File: ~/Objects/object_name.xml`
     })
   })
   it('should have SDF Objects Validation Error for customRecordType', async () => {
-    const detailedMessage = 'Details: The isparent field must be set to a valid Boolean value, \'T\' or \'F\'.'
-    const fullErrorMessage = `validation failed.
-An error occurred during custom object validation. (customrecord1)
-${detailedMessage}
+    const detailedMessage = `An error occurred during custom object validation. (customrecord1)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
 File: ~/Objects/customrecord1.xml`
+    const fullErrorMessage = `Validation failed.\n\n${detailedMessage}`
     mockValidate.mockReturnValue([
       new ObjectsDeployError(fullErrorMessage, new Set(['customrecord1'])),
     ])

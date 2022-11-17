@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -105,13 +105,13 @@ const FEATURES_TAG = 'features'
 const FEATURE_ID = 'featureId'
 const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_ID}>\\w+)\\(.*?\\) feature has FAILED`)
 
-const OBJECT_ID = 'objectId'
-const CUSTOM_OBJECT_VALIDATION_ERROR = 'An error occurred during custom object validation.'
+export const OBJECT_ID = 'objectId'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
-export const objectValidationErrorRegex = RegExp(`^${CUSTOM_OBJECT_VALIDATION_ERROR} \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
+export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
+const manifestErrorRegex = RegExp('^Details: The manifest', 'm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -184,7 +184,7 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
 
-const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
+export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
   Array.from(matchAll(str, regex))
     .map(r => r.groups)
     .filter(isDefined)
@@ -909,6 +909,9 @@ export default class SdfClient {
   private static customizeDeployError(error: Error): Error {
     const errorMessage = error.message
     if (settingsValidationErrorRegex.test(errorMessage)) {
+      if (manifestErrorRegex.test(errorMessage)) {
+        return new ManifestValidationError(errorMessage)
+      }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
     if (!deployStartMessageRegex.test(errorMessage)) {

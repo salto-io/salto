@@ -31,13 +31,13 @@ const DEFAULT_OPTIONS = {
     exclude: { features: [], objects: [] },
   },
   deployReferencedElements: false,
+  filtersRunner: {
+    preDeploy: jest.fn(),
+  } as unknown as Required<Filter>,
 }
 
 jest.mock('../src/change_validators/client_validation')
 const netsuiteClientValidationMock = netsuiteClientValidation as jest.Mock
-const mockFiltersRunner = {
-  preDeploy: jest.fn(),
-} as unknown as Required<Filter>
 
 describe('change validator', () => {
   const file = fileType()
@@ -58,7 +58,7 @@ describe('change validator', () => {
     describe('without SuiteApp', () => {
       it('should have change error when removing an instance with file cabinet type', async () => {
         const changeValidator = getChangeValidator(
-          { ...DEFAULT_OPTIONS, client, fetchByQuery, filtersRunner: mockFiltersRunner }
+          { ...DEFAULT_OPTIONS, client, fetchByQuery }
         )
         const instance = new InstanceElement('test', file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
@@ -76,7 +76,6 @@ describe('change validator', () => {
             withSuiteApp: true,
             client,
             fetchByQuery,
-            filtersRunner: mockFiltersRunner,
           }
         )
         const instance = new InstanceElement('test', file)
@@ -110,10 +109,8 @@ describe('change validator', () => {
       const changeErrors = await getChangeValidator(
         {
           ...DEFAULT_OPTIONS,
-          withSuiteApp: true,
           client,
           fetchByQuery,
-          filtersRunner: mockFiltersRunner,
         }
       )([change])
       expect(changeErrors).toHaveLength(0)
@@ -125,7 +122,6 @@ describe('change validator', () => {
           warnStaleData: true,
           client,
           fetchByQuery,
-          filtersRunner: mockFiltersRunner,
         }
       )([change])
       expect(changeErrors).toHaveLength(1)
@@ -139,10 +135,8 @@ describe('change validator', () => {
       await getChangeValidator(
         {
           ...DEFAULT_OPTIONS,
-          withSuiteApp: true,
           client,
           fetchByQuery,
-          filtersRunner: mockFiltersRunner,
         }
       )([toChange({ after: new InstanceElement('test', file) })])
       expect(netsuiteClientValidationMock).not.toHaveBeenCalled()
@@ -155,14 +149,13 @@ describe('change validator', () => {
           client,
           fetchByQuery,
           validate: true,
-          filtersRunner: mockFiltersRunner,
         }
       )(changes)
       expect(netsuiteClientValidationMock).toHaveBeenCalledWith(
         changes,
         client,
         DEFAULT_OPTIONS.additionalDependencies,
-        mockFiltersRunner,
+        DEFAULT_OPTIONS.filtersRunner,
         DEFAULT_OPTIONS.deployReferencedElements,
       )
     })

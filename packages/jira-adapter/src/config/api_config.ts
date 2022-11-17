@@ -1771,10 +1771,6 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'NotificationSchemes',
       },
       {
-        originalName: 'PageBeanPriority',
-        newName: 'Priorities',
-      },
-      {
         originalName: 'rest__api__3__projectCategory',
         newName: 'ProjectCategories',
       },

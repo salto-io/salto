@@ -17,9 +17,10 @@ import _ from 'lodash'
 import { config } from '@salto-io/adapter-components'
 import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
 import { ProductSettings } from './product_settings'
+import { addTypeNameOverrides } from './utils'
 
 
-export const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
+const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
   types: {
     Priorities: {
       request: {
@@ -29,10 +30,16 @@ export const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
     },
   },
 }
+const CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES = [
+  {
+    originalName: 'PageBeanPriority',
+    newName: 'Priorities',
+  },
+]
 
 export const CLOUD_SETTINGS: ProductSettings = {
   defaultApiDefinitions: config.mergeWithDefaultConfig(
-    DEFAULT_API_DEFINITIONS,
+    addTypeNameOverrides(DEFAULT_API_DEFINITIONS, CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES),
     CLOUD_DEFAULT_API_DEFINITIONS,
   ) as JiraApiConfig,
   wrapConnection: _.identity,

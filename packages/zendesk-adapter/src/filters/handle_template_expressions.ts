@@ -24,7 +24,7 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import { createMissingInstance } from './references/missing_references'
-import { ZENDESK } from '../constants'
+import { ZENDESK, TICKET_FIELD_TYPE_NAME } from '../constants'
 import { FETCH_CONFIG } from '../config'
 
 
@@ -35,7 +35,7 @@ const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
-  'ticket.ticket_field': 'ticket_field',
+  'ticket.ticket_field': TICKET_FIELD_TYPE_NAME,
   'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
 }
 

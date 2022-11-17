@@ -22,7 +22,7 @@ import { applyFunctionToChangeData, naclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { ZENDESK } from '../constants'
+import { ZENDESK, FIELD_TYPE_NAMES } from '../constants'
 import { FilterCreator } from '../filter'
 import { isConditions } from './utils'
 
@@ -41,7 +41,6 @@ const TYPE_NAME_TO_TAG_FIELD_NAMES: Record<string, string[]> = {
   user_segment: ['tags', 'or_tags'],
 }
 
-const TYPE_NAME_WITH_CHECKBOXES = ['ticket_field', 'user_field', 'organization_field']
 const TAG_FIELD_NAME_IN_CHECKBOX = 'tag'
 export const TAG_TYPE_NAME = 'tag'
 const TAGS_FILE_NAME = 'tags'
@@ -54,7 +53,7 @@ const extractTags = (value: string): string[] =>
   value.split(TAG_SEPERATOR).filter(tag => !_.isEmpty(tag))
 
 const isRelevantCheckboxInstance = (instance: InstanceElement): boolean => (
-  TYPE_NAME_WITH_CHECKBOXES.includes(instance.elemID.typeName)
+  FIELD_TYPE_NAMES.includes(instance.elemID.typeName)
   && instance.value.type === 'checkbox'
   && !_.isEmpty(instance.value[TAG_FIELD_NAME_IN_CHECKBOX])
 )

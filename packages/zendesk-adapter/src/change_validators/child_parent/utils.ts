@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { elements } from '@salto-io/adapter-components'
-import { AdditionChange, InstanceElement, isAdditionChange, isInstanceElement, isReferenceExpression, ModificationChange } from '@salto-io/adapter-api'
+import { AdditionChange, InstanceElement, isAdditionChange, isReferenceExpression, ModificationChange, ElemID } from '@salto-io/adapter-api'
 import { ZendeskApiConfig } from '../../config'
 
+const { makeArray } = collections.array
 
 export type ChildParentRelationship = {
   parent: string
@@ -46,25 +47,21 @@ export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParen
   }).concat(ADDITIONAL_CHILD_PARENT_RELATIONSHIPS)
 }
 
-const getIdsFromReferenceExpressions = (values: unknown): string[] => {
-  // Handling with list-type fields as well
-  const { makeArray } = collections.array
-  return makeArray(values)
-    .filter(isReferenceExpression)
-    .map(ref => ref.value)
-    .filter(isInstanceElement)
-    .map(inst => inst.elemID.getFullName())
-}
+export const getIdsFromReferenceExpressions = (values: unknown): ElemID[] => (
+  makeArray(values).filter(isReferenceExpression).map(ref => ref.elemID)
+)
 
 export const getRemovedAndAddedChildren = (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>, fieldName: string
-): { removed: string[]; added: string[] } => {
+): { removed: ElemID[]; added: ElemID[] } => {
   const childrenBefore = isAdditionChange(change)
     ? []
     : getIdsFromReferenceExpressions(change.data.before.value[fieldName])
   const childrenAfter = getIdsFromReferenceExpressions(change.data.after.value[fieldName])
+  const childrenBeforeLookup = new Set(childrenBefore.map(id => id.getFullName()))
+  const childrenAfterLookup = new Set(childrenAfter.map(id => id.getFullName()))
   return {
-    removed: childrenBefore.filter(child => !childrenAfter.includes(child)),
-    added: childrenAfter.filter(child => !childrenBefore.includes(child)),
+    removed: childrenBefore.filter(child => !childrenAfterLookup.has(child.getFullName())),
+    added: childrenAfter.filter(child => !childrenBeforeLookup.has(child.getFullName())),
   }
 }

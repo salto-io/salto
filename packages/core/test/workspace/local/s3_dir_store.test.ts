@@ -16,7 +16,7 @@
 import { staticFiles } from '@salto-io/workspace'
 import * as AWS from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
-import { buildS3DirectoryStore, retryDecider } from '../../../src/local-workspace/s3_dir_store'
+import { buildS3DirectoryStore } from '../../../src/local-workspace/s3_dir_store'
 
 describe('buildS3DirectoryStore', () => {
   const bucketName = 'bucketName'
@@ -194,25 +194,6 @@ describe('buildS3DirectoryStore', () => {
   describe('getFullPath', () => {
     it('should throw on unexpected error', async () => {
       expect(directoryStore.getFullPath('somePath')).toBe(`s3://${bucketName}/baseDir/somePath`)
-    })
-  })
-
-  describe('retryDecider', () => {
-    it('should return true for connection refused', () => {
-      const err: Error & { code?: string } = new Error()
-      err.code = 'ECONNREFUSED'
-      expect(retryDecider(err)).toBeTruthy()
-    })
-
-    it('should return true for errors matching the default retry decider', () => {
-      const err: Error & { code?: string } = new Error()
-      err.code = 'ECONNRESET'
-      expect(retryDecider(err)).toBeTruthy()
-    })
-
-    it('should return false for other errors', () => {
-      const err = new Error()
-      expect(retryDecider(err)).toBeFalsy()
     })
   })
 })

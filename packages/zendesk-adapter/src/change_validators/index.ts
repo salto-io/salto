@@ -42,3 +42,7 @@ export { brandFieldForBrandBasedElementsValidator } from './brand_field_for_bran
 export { translationForDefaultLocaleValidator } from './translation_for_default_locale'
 export { helpCenterActivationValidator } from './help_center_activation'
 export { helpCenterCreationOrRemovalValidator } from './help_center_creation_or_removal'
+export { categoryOrderValidator } from './guide_order/category_order_validator'
+export { sectionOrderValidator } from './guide_order/section_order_validator'
+export { articleOrderValidator } from './guide_order/article_order_validator'
+export { guideOrderDeletionValidator } from './guide_order/order_deletion_validator'

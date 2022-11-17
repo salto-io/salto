@@ -210,6 +210,62 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   })
 }
 
+export const generatePermissionSetType = (useMaps = false, preDeploy = false): ObjectType => {
+  const PermissionSetApplicationVisibility = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'PermissionSetApplicationVisibility'),
+    fields: {
+      application: { refType: BuiltinTypes.STRING },
+      default: { refType: BuiltinTypes.BOOLEAN },
+      visible: { refType: BuiltinTypes.BOOLEAN },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'PermissionSetApplicationVisibility',
+    },
+  })
+  const PermissionSetFieldLevelSecurity = new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, 'PermissionSetFieldLevelSecurity'),
+    fields: {
+      field: { refType: BuiltinTypes.STRING },
+      editable: { refType: BuiltinTypes.BOOLEAN },
+      readable: { refType: BuiltinTypes.BOOLEAN },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: 'PermissionSetFieldLevelSecurity',
+    },
+  })
+
+  // we only define types as lists if they use non-unique maps - so for onDeploy, fieldPermissions
+  // will not appear as a list unless conflicts were found during the previous fetch
+  const fieldPermissionsNonMapType = preDeploy
+    ? PermissionSetFieldLevelSecurity
+    : new ListType(PermissionSetFieldLevelSecurity)
+
+  if (useMaps || preDeploy) {
+    // mark key fields as _required=true
+    PermissionSetApplicationVisibility.fields.application
+      .annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    PermissionSetFieldLevelSecurity.fields.field.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+  }
+
+  return new ObjectType({
+    elemID: new ElemID(constants.SALESFORCE, constants.PROFILE_METADATA_TYPE),
+    fields: {
+      [constants.INSTANCE_FULL_NAME_FIELD]: {
+        refType: BuiltinTypes.STRING,
+      },
+      applicationVisibilities: { refType: useMaps
+        ? new MapType(PermissionSetApplicationVisibility)
+        : PermissionSetApplicationVisibility },
+      fieldPermissions: { refType: useMaps
+        ? new MapType(new MapType(PermissionSetFieldLevelSecurity))
+        : fieldPermissionsNonMapType },
+    },
+    annotations: {
+      [constants.METADATA_TYPE]: constants.PERMISSION_SET_METADATA_TYPE,
+    },
+  })
+}
+
 const stringType = new PrimitiveType({
   elemID: new ElemID(constants.SALESFORCE, 'Text'),
   primitive: PrimitiveTypes.STRING,

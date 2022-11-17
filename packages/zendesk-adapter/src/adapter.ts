@@ -30,12 +30,20 @@ import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult } from './filter'
-import { API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZendeskConfig, CLIENT_CONFIG, GUIDE_TYPES_TO_HANDLE_BY_BRAND, GUIDE_GLOBAL_TYPES, GUIDE_BRAND_SPECIFIC_TYPES } from './config'
+import {
+  API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG,
+  ZendeskConfig,
+  CLIENT_CONFIG,
+  GUIDE_TYPES_TO_HANDLE_BY_BRAND,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES,
+} from './config'
 import {
   ZENDESK,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
 } from './constants'
+import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import { getChangeGroupIds } from './group_change'
@@ -95,9 +103,15 @@ import hcTranslationFilter from './filters/help_center_translation'
 import fetchCategorySection from './filters/help_center_fetch_section_and_category'
 import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
 import hcGuideSettings from './filters/help_center_guide_settings'
-import brandsFilter from './filters/brands_filter'
+import removeBrandLogoFilter from './filters/remove_brand_logo_field'
+import categoryOrderFilter from './filters/guide_order/category_order'
+import sectionOrderFilter from './filters/guide_order/section_order'
+import articleOrderFilter from './filters/guide_order/article_order'
 import hcServiceUrl from './filters/help_center_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
+import hcLanguageSettings from './filters/guide_language_translations'
+import guideArrangePaths from './filters/guide_arrange_paths'
+
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -146,17 +160,18 @@ export const DEFAULT_FILTERS = [
   hcLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
-  // brandsFilter should be after brandLogoFilter
-  brandsFilter,
-  // order filters should be before hc filters
-  // orderInCategoriesFilter,
-  // orderInSectionsFilter,
+  // removeBrandLogoFilter should be after brandLogoFilter
+  removeBrandLogoFilter,
+  categoryOrderFilter,
+  sectionOrderFilter,
+  articleOrderFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
   articleFilter,
   hcSectionCategoryFilter,
   hcTranslationFilter,
+  hcLanguageSettings,
   hcGuideSettings,
   hcServiceUrl,
   fieldReferencesFilter,
@@ -184,6 +199,7 @@ export const DEFAULT_FILTERS = [
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
   deployBrandedGuideTypesFilter,
+  guideArrangePaths,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -193,6 +209,7 @@ const SKIP_RESOLVE_TYPE_NAMES = [
   'macro',
   'macro_attachment',
   'brand_logo',
+  ...GUIDE_ORDER_TYPES,
 ]
 
 /**
@@ -346,10 +363,10 @@ export default class ZendeskAdapter implements AdapterOperations {
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
     const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
-    const { supportedTypes: supportSupportedTypes } = this.userConfig.apiDefinitions
+    const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     const supportedTypes = isGuideDisabled
-      ? supportSupportedTypes
-      : { ...supportSupportedTypes, ...GUIDE_GLOBAL_TYPES }
+      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
+      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainElements = await getAllElements({
       adapterName: ZENDESK,
@@ -547,7 +564,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
-        typesWithNoDeploy: ['tag'],
+        typesWithNoDeploy: ['tag', ...GUIDE_ORDER_TYPES],
       }),
       dependencyChanger,
       getChangeGroupIds,

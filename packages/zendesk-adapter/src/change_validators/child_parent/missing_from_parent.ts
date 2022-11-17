@@ -28,8 +28,8 @@ export const createParentReferencesError = (
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: `Can not add ${instance.elemID.typeName} because there is no reference to it from its parent`,
-    detailedMessage: `Can not add ${instance.elemID.getFullName()} because there is no reference to it from ${parentFullName}`,
+    message: `Cannot add ${instance.elemID.typeName} because there is no reference to it from its parent`,
+    detailedMessage: `Cannot add ${instance.elemID.getFullName()} because there is no reference to it from ${parentFullName}`,
   }
 }
 
@@ -58,7 +58,7 @@ export const missingFromParentValidatorCreator = (
         return [createParentReferencesError(change, parentFullName)]
       }
       const { added } = getRemovedAndAddedChildren(parentChange, relation.fieldName)
-      if (isAdditionChange(change) && !added.includes(instance.elemID.getFullName())) {
+      if (isAdditionChange(change) && !added.some(id => id.isEqual(instance.elemID))) {
         return [createParentReferencesError(change, parentFullName)]
       }
       return []

@@ -31,7 +31,7 @@ import {
   GUIDE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   ZENDESK,
-  BRAND_TYPE_NAME,
+  BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../../src/constants'
 
 describe('help center service_url filter', () => {
@@ -63,6 +63,17 @@ describe('help center service_url filter', () => {
   const categoryTranslationType = new ObjectType({
     elemID: new ElemID(ZENDESK, CATEGORY_TRANSLATION_TYPE_NAME),
   })
+  const guideLanguageSettingsType = new ObjectType({
+    elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
+  })
+
+  const guideLanguageSettingsInstance = new InstanceElement(
+    'instance',
+    guideLanguageSettingsType,
+    {
+      brand: 123,
+    }
+  )
 
   const brandInstance = new InstanceElement(
     'instance',
@@ -158,6 +169,7 @@ describe('help center service_url filter', () => {
         articleTranslationInstance,
         sectionTranslationInstance,
         categoryTranslationInstance,
+        guideLanguageSettingsInstance,
       ]
       await filter.onFetch([elements, brandInstance].flat())
       expect(elements
@@ -170,6 +182,7 @@ describe('help center service_url filter', () => {
         'https://brandwithhc.zendesk.com/knowledge/sections/1?brand_id=123&locale=he',
         'https://free-tifder.zendesk.com/hc/admin/categories/2/edit?translation_locale=he',
         'https://free-tifder.zendesk.com/hc/admin/general_settings',
+        'https://free-tifder.zendesk.com/hc/admin/language_settings',
       ])
     })
   })

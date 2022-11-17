@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { config as configUtils } from '@salto-io/adapter-components'
-import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
-import { ProductSettings } from './product_settings'
+import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../../config/api_config'
+import { DC_DEFAULT_API_DEFINITIONS } from './api_config'
+import { ProductSettings } from '../product_settings'
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
@@ -55,22 +56,6 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['get', 'post'],
     url: '/rest/api/3/screens',
-  },
-  {
-    httpMethods: ['get'],
-    url: '/rest/api/3/workflow/search',
-  },
-  {
-    httpMethods: ['post'],
-    url: '/rest/api/3/workflow',
-  },
-  {
-    httpMethods: ['delete'],
-    url: '/rest/api/3/workflow/\\d+',
-  },
-  {
-    httpMethods: ['put', 'delete'],
-    url: '/rest/api/3/screens/\\d+',
   },
   {
     httpMethods: ['get'],
@@ -161,6 +146,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/field/.*/context/.*/option',
   },
   {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuesecurityschemes/.*/members.*',
+  },
+  {
     httpMethods: ['get', 'post'],
     url: '/rest/api/3/issuetypescreenscheme',
   },
@@ -184,31 +173,19 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get'],
     url: '/rest/api/3/issuetypescreenscheme/mapping.+',
   },
-]
-
-const DC_DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
-  IssueEvent: {
-    deployRequests: {
-      add: {
-        url: '/rest/api/3/events',
-        method: 'post',
-      },
-      modify: {
-        url: '/rest/api/3/events',
-        method: 'put',
-      },
-      remove: {
-        url: '/rest/api/3/events?id={id}',
-        method: 'delete',
-      },
-    },
+  {
+    httpMethods: ['get', 'post'],
+    url: '/rest/api/3/fieldconfiguration',
   },
-}
-
-const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
-  types: DC_DEFAULT_TYPE_CUSTOMIZATIONS,
-}
-
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/fieldconfiguration/\\d+',
+  },
+  {
+    httpMethods: ['get', 'put'],
+    url: '/rest/api/3/fieldconfiguration/\\d+/fields',
+  },
+]
 
 const replaceRestVersion = (url: string): string => url.replace(
   CLOUD_REST_PREFIX,
@@ -238,7 +215,7 @@ const wrapConnection: ProductSettings['wrapConnection'] = connection => ({
 export const DATA_CENTER_SETTINGS: ProductSettings = {
   defaultApiDefinitions: configUtils.mergeWithDefaultConfig(
     DEFAULT_API_DEFINITIONS,
-    DC_DEFAULT_API_DEFINITIONS
+    DC_DEFAULT_API_DEFINITIONS,
   ) as JiraApiConfig,
   wrapConnection,
   type: 'dataCenter',

@@ -28,10 +28,10 @@ type MyRateLimitConfig = {
 class A {
   readonly rateLimiters: BottleneckBuckets<MyRateLimitConfig>
   constructor(limits: MyRateLimitConfig) {
-    this.rateLimiters = createRateLimitersFromConfig(
-      limits,
-      'abc',
-    )
+    this.rateLimiters = createRateLimitersFromConfig({
+      rateLimit: limits,
+      clientName: 'abc',
+    })
   }
 
   @throttle<MyRateLimitConfig>({})

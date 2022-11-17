@@ -15,7 +15,7 @@
 */
 import { client } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
-import { DATA_CENTER_SETTINGS } from '../../src/product_settings/data_center'
+import { DATA_CENTER_SETTINGS } from '../../src/product_settings/data_center/data_center'
 
 describe('dataCenter settings', () => {
   describe('wrapConnection', () => {

@@ -14,26 +14,15 @@
 * limitations under the License.
 */
 import { ChangeValidator, ElemID, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { EVERYONE } from '../filters/everyone_user_segment'
 import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
 
-const log = logger(module)
-
-export const everyoneUserSegmentModificationValidator: ChangeValidator = async (
-  changes,
-  elementSource,
-) => {
-  if (elementSource === undefined) {
-    log.error('Failed to run customRoleNameValidator because no element source was provided')
-    return []
-  }
+export const everyoneUserSegmentModificationValidator: ChangeValidator = async changes => {
   const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE)
-  const everyoneUserSegmentInstance = await elementSource.get(everyoneUserSegmentElemID)
   return changes
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.isEqual(everyoneUserSegmentInstance.elemID))
+    .filter(instance => instance.elemID.isEqual(everyoneUserSegmentElemID))
     .flatMap(instance => (
       [{
         elemID: instance.elemID,

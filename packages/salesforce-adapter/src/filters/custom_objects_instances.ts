@@ -18,12 +18,15 @@ import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
-import { createInvlidIdFieldConfigChange, createUnresolvedRefIdFieldConfigChange } from '../config_change'
+import {
+  createInvlidIdFieldConfigChange, createManyInstancesExcludeConfigChange,
+  createUnresolvedRefIdFieldConfigChange,
+} from '../config_change'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, MAX_QUERY_LENGTH,
+  FIELD_ANNOTATIONS, MAX_QUERY_LENGTH, UNLIMITED_INSTANCES_VALUE,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -412,6 +415,41 @@ export const getCustomObjectsFetchSettings = async (
     .toArray()
 }
 
+const filterTypesWithManyInstances = async (
+  { validChangesFetchSettings, maxInstancesPerType, client }
+: {
+  validChangesFetchSettings: Record<string, CustomObjectFetchSetting>
+  maxInstancesPerType: number
+  client: SalesforceClient
+}
+): Promise<{
+  filteredChangesFetchSettings: Record<string, CustomObjectFetchSetting>
+  heavyTypesSuggestions: ConfigChangeSuggestion[]
+}> => {
+  if (maxInstancesPerType === UNLIMITED_INSTANCES_VALUE) {
+    return { filteredChangesFetchSettings: validChangesFetchSettings, heavyTypesSuggestions: [] }
+  }
+  const typesToFilter: string[] = []
+  const heavyTypesSuggestions: ConfigChangeSuggestion[] = []
+
+  // Creates a lists of typeNames and changeSuggestions for types with too many instances
+  await awu(Object.keys(validChangesFetchSettings))
+    .forEach(async typeName => {
+      const instancesCount = await client.countInstances(typeName)
+      if (instancesCount > maxInstancesPerType) {
+        typesToFilter.push(typeName)
+        heavyTypesSuggestions.push(
+          createManyInstancesExcludeConfigChange({ typeName, instancesCount, maxInstancesPerType })
+        )
+      }
+    })
+
+  return {
+    filteredChangesFetchSettings: _.omit(validChangesFetchSettings, typesToFilter),
+    heavyTypesSuggestions,
+  }
+}
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
@@ -431,9 +469,19 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       validFetchSettings,
       setting => apiName(setting.objectType),
     )
+
+    const {
+      filteredChangesFetchSettings,
+      heavyTypesSuggestions,
+    } = await filterTypesWithManyInstances({
+      validChangesFetchSettings,
+      maxInstancesPerType: config.fetchProfile.maxInstancesPerType,
+      client,
+    })
+
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
-      validChangesFetchSettings,
+      filteredChangesFetchSettings,
     )
     instances.forEach(instance => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)
@@ -445,7 +493,11 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ))
       .toArray()
     return {
-      configSuggestions: [...invalidFieldSuggestions, ...configChangeSuggestions],
+      configSuggestions: [
+        ...invalidFieldSuggestions,
+        ...heavyTypesSuggestions,
+        ...configChangeSuggestions,
+      ],
     }
   },
 })

@@ -38,7 +38,7 @@ import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getConfigWithHeader } from '../callbacks'
 import { CliExitCode, CliOutput, KeyedOption } from '../types'
-import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction, WorkspaceCommandArgs, CommandOptions } from '../command_builder'
+import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction, WorkspaceCommandArgs, WorkspaceCommandDef } from '../command_builder'
 import {
   formatAccountAdded,
   formatAccountAlreadyAdded,
@@ -59,12 +59,16 @@ import { getAdaptersTags, getTagsForAccounts } from './common/accounts'
 
 const { isDefined } = values
 
-const wrapWithDeprecationWarning = <T, > (func: WorkspaceCommandAction<T>):
+const wrapWithDeprecationWarning = <T> (func: WorkspaceCommandAction<T>):
   WorkspaceCommandAction<T> =>
     async (args: WorkspaceCommandArgs<T>): Promise<CliExitCode> => {
       errorOutputLine("The 'service' command is deprecated. Use 'account' instead.", args.output)
       return func(args)
     }
+
+const deprecatedCommandDef = <T> (def: WorkspaceCommandDef<T>): WorkspaceCommandDef<T> => (
+  { ...def, action: wrapWithDeprecationWarning(def.action) }
+)
 
 type AuthTypeArgs = {
   authType: AdapterAuthMethod
@@ -235,50 +239,45 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   return CliExitCode.Success
 }
 
-const accountAddDefProperties: CommandOptions<AccountAddArgs> = {
-  name: 'add',
-  description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
-  keyedOptions: [
-    {
-      // Will be replaced with --no-login
-      name: 'login',
-      default: true,
-      alias: 'n',
-      type: 'boolean',
-      description: 'Do not login to account when adding it. Example usage: \'add <service-name> --no-login\'.',
-      required: false,
-    },
-    {
-      name: 'accountName',
-      type: 'string',
-      description: 'Service account name. Use in case more than one account of a certain service type is added to the same environment.',
-      required: false,
-    },
-    AUTH_TYPE_OPTION,
-    ENVIRONMENT_OPTION,
-    LOGIN_PARAMETER_OPTION,
-  ],
-  positionalOptions: [
-    {
-      name: 'serviceType',
-      type: 'string',
-      description: 'The type of the service',
-      required: true,
-    },
-  ],
-}
-
-export const accountAddDef = createWorkspaceCommand({
-  properties: accountAddDefProperties,
+const accountAddCommandDef: WorkspaceCommandDef<AccountAddArgs> = {
+  properties: {
+    name: 'add',
+    description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
+    keyedOptions: [
+      {
+        // Will be replaced with --no-login
+        name: 'login',
+        default: true,
+        alias: 'n',
+        type: 'boolean',
+        description: 'Do not login to account when adding it. Example usage: \'add <service-name> --no-login\'.',
+        required: false,
+      },
+      {
+        name: 'accountName',
+        type: 'string',
+        description: 'Service account name. Use in case more than one account of a certain service type is added to the same environment.',
+        required: false,
+      },
+      AUTH_TYPE_OPTION,
+      ENVIRONMENT_OPTION,
+      LOGIN_PARAMETER_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'serviceType',
+        type: 'string',
+        description: 'The type of the service',
+        required: true,
+      },
+    ],
+  },
   action: addAction,
   extraTelemetryTags: ({ input }) => getAdaptersTags([input.serviceType]),
-})
+}
 
-export const serviceAddDef = createWorkspaceCommand({
-  properties: accountAddDefProperties,
-  action: wrapWithDeprecationWarning(addAction),
-  extraTelemetryTags: ({ input }) => getAdaptersTags([input.serviceType]),
-})
+export const accountAddDef = createWorkspaceCommand(accountAddCommandDef)
+const serviceAddDef = createWorkspaceCommand(deprecatedCommandDef(accountAddCommandDef))
 
 // List
 type AccountListArgs = {} & EnvArg
@@ -291,23 +290,19 @@ export const listAction: WorkspaceCommandAction<AccountListArgs> = async (
   return CliExitCode.Success
 }
 
-const accountListDefProperties: CommandOptions<AccountListArgs> = {
-  name: 'list',
-  description: 'List all environment service accounts',
-  keyedOptions: [
-    ENVIRONMENT_OPTION,
-  ],
+const accountListCommandDef: WorkspaceCommandDef<AccountListArgs> = {
+  properties: {
+    name: 'list',
+    description: 'List all environment service accounts',
+    keyedOptions: [
+      ENVIRONMENT_OPTION,
+    ],
+  },
+  action: listAction,
 }
 
-const serviceListDef = createWorkspaceCommand({
-  properties: accountListDefProperties,
-  action: wrapWithDeprecationWarning(listAction),
-})
-
-const accountListDef = createWorkspaceCommand({
-  properties: accountListDefProperties,
-  action: listAction,
-})
+const accountListDef = createWorkspaceCommand(accountListCommandDef)
+const serviceListDef = createWorkspaceCommand(deprecatedCommandDef(accountListCommandDef))
 
 // Login
 type AccountLoginArgs = {
@@ -342,37 +337,31 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
   return CliExitCode.Success
 }
 
-const accountLoginDefProperties: CommandOptions<AccountLoginArgs> = {
-  name: 'login',
-  description: 'Login to a service account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
-  keyedOptions: [
-    AUTH_TYPE_OPTION,
-    ENVIRONMENT_OPTION,
-    LOGIN_PARAMETER_OPTION,
-  ],
-  positionalOptions: [
-    {
-      name: 'accountName',
-      type: 'string',
-      description: 'The name of the service account, usually same as service type unless specified differently when adding the account',
-      required: true,
-    },
-  ],
-}
-
-export const accountLoginDef = createWorkspaceCommand({
-  properties: accountLoginDefProperties,
+const accountLoginCommandDef: WorkspaceCommandDef<AccountLoginArgs> = {
+  properties: {
+    name: 'login',
+    description: 'Login to a service account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
+    keyedOptions: [
+      AUTH_TYPE_OPTION,
+      ENVIRONMENT_OPTION,
+      LOGIN_PARAMETER_OPTION,
+    ],
+    positionalOptions: [
+      {
+        name: 'accountName',
+        type: 'string',
+        description: 'The name of the service account, usually same as service type unless specified differently when adding the account',
+        required: true,
+      },
+    ],
+  },
   action: loginAction,
   extraTelemetryTags: ({ workspace, input }) =>
     getTagsForAccounts({ workspace, accounts: [input.accountName], env: input.env }),
-})
+}
 
-export const serviceLoginDef = createWorkspaceCommand({
-  properties: accountLoginDefProperties,
-  action: wrapWithDeprecationWarning(loginAction),
-  extraTelemetryTags: ({ workspace, input }) =>
-    getTagsForAccounts({ workspace, accounts: [input.accountName], env: input.env }),
-})
+export const accountLoginDef = createWorkspaceCommand(accountLoginCommandDef)
+const serviceLoginDef = createWorkspaceCommand(deprecatedCommandDef(accountLoginCommandDef))
 
 const serviceGroupDef = createCommandGroupDef({
   properties: {
@@ -382,7 +371,7 @@ const serviceGroupDef = createCommandGroupDef({
   subCommands: [
     serviceAddDef,
     serviceListDef,
-    serviceLoginDef,
+    accountLoginDef,
   ],
 })
 
@@ -394,7 +383,7 @@ const accountGroupDef = createCommandGroupDef({
   subCommands: [
     accountAddDef,
     accountListDef,
-    accountLoginDef,
+    serviceLoginDef,
   ],
 })
 

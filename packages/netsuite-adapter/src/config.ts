@@ -181,9 +181,10 @@ export const fetchDefault: FetchParams = {
       '^/SuiteScripts.*',
       '^/Templates.*',
     ],
-    customRecords: [{
-      name: '.*',
-    }],
+    // SALTO-2198 should be fetched by default after some run time
+    // customRecords: [{
+    //   name: '.*',
+    // }],
   },
   fieldsToOmit: [
     {
@@ -220,7 +221,6 @@ export const fetchDefault: FetchParams = {
     fileCabinet: [
       '^/Templates/Letter Templates/Mail Merge Folder.*',
     ],
-    customRecords: [],
   },
 }
 
@@ -452,7 +452,6 @@ const createExclude = (failedPaths: NetsuiteQueryParameters['filePaths'], failed
   ({
     fileCabinet: failedPaths.map(_.escapeRegExp),
     types: Object.entries(failedTypes).map(([name, ids]) => ({ name, ids })),
-    customRecords: [],
   })
 
 const toConfigSuggestions = (
@@ -512,13 +511,15 @@ export const combineQueryParams = (
   second: QueryParams | undefined,
 ): QueryParams => {
   if (first === undefined || second === undefined) {
-    return first ?? second ?? { types: [], fileCabinet: [], customRecords: [] }
+    return first ?? second ?? { types: [], fileCabinet: [] }
   }
 
   // case where both are defined
   const newFileCabinet = _(first.fileCabinet).concat(second.fileCabinet).uniq().value()
   const newTypes = combineFetchTypeQueryParams(first.types, second.types)
-  const newCustomRecords = combineFetchTypeQueryParams(first.customRecords, second.customRecords)
+  const newCustomRecords = first.customRecords || second.customRecords
+    ? combineFetchTypeQueryParams(first.customRecords ?? [], second.customRecords ?? [])
+    : undefined
 
   return {
     fileCabinet: newFileCabinet,
@@ -550,7 +551,7 @@ const updateConfigFromFailures = (
   const currentFetch = configToUpdate[FETCH]
   const currentExclude = currentFetch?.[EXCLUDE] !== undefined
     ? _.cloneDeep(currentFetch[EXCLUDE])
-    : { types: [], fileCabinet: [], customRecords: [] }
+    : { types: [], fileCabinet: [] }
 
 
   const suggestedExclude = suggestions[FETCH]?.[EXCLUDE]
@@ -626,7 +627,7 @@ const updateConfigFetchFormat = (
 
   const typesToExclude: QueryParams = configToUpdate.value[SKIP_LIST] !== undefined
     ? convertToQueryParams(configToUpdate.value[SKIP_LIST])
-    : { types: [], fileCabinet: [], customRecords: [] }
+    : { types: [], fileCabinet: [] }
 
   delete configToUpdate.value[SKIP_LIST]
 

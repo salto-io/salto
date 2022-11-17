@@ -40,7 +40,7 @@ export type FetchTypeQueryParams = {
 export type QueryParams = {
   types: FetchTypeQueryParams[]
   fileCabinet: string[]
-  customRecords: FetchTypeQueryParams[]
+  customRecords?: FetchTypeQueryParams[]
 }
 
 export type FieldToOmitParams = {
@@ -62,7 +62,7 @@ export type FetchParams = {
 export const convertToQueryParams = ({ types = {}, filePaths = [] }:
   Partial<NetsuiteQueryParameters>): QueryParams => {
   const newTypes = Object.entries(types).map(([name, ids]) => ({ name, ids }))
-  return ({ types: newTypes, fileCabinet: filePaths, customRecords: [] })
+  return ({ types: newTypes, fileCabinet: filePaths })
 }
 
 export type TypesQuery = {

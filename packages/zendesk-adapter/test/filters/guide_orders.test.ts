@@ -128,7 +128,7 @@ const testFetch = async ({ createParent, createChild, orderField }
   const elements = [parentInstance, ...childInstances]
   await filter.onFetch(elements)
 
-  const typeObject = createOrderType(childInstances[0].elemID.typeName as 'article' | 'category' | 'section')
+  const typeObject = createOrderType(childInstances[0].elemID.typeName)
   const orderInstance = new InstanceElement(
     parentInstance.elemID.name,
     typeObject,

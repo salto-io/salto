@@ -991,9 +991,11 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) => {
   return value
 }
 
-export const safeJsonStringify = (value: Value,
+export const safeJsonStringify = (
+  value: Value,
   replacer?: Replacer,
-  space?: string | number): string =>
+  space?: string | number
+): string =>
   safeStringify(value, replacer, space)
 
 export const getAllReferencedIds = (
@@ -1096,7 +1098,9 @@ export const createSchemeGuardForInstance = <T extends InstanceElement>(
     const { error } = scheme.validate(instance.value)
     if (error !== undefined) {
       if (errorMessage !== undefined) {
-        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(instance)}`)
+        log.error('Error validating instance %s: %s, %s. Value: %s',
+          instance.elemID.getFullName(), errorMessage, error.message,
+          safeJsonStringify(instance.value, elementExpressionStringifyReplacer))
       }
       return false
     }

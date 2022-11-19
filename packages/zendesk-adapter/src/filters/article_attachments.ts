@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { getParents, naclCase, normalizeFilePathPart, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, normalizeFilePathPart, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
@@ -168,16 +168,12 @@ const getArticleAttachments = async ({ client, article, attachmentType }: {
   return attachmentInstances
 }
 
-const addArticleAttachment = async (
+const createUnassociatedAttachment = async (
   client: ZendeskClient,
   attachmentInstance: InstanceElement,
 ): Promise<void> => {
   try {
-    const attachmentParents = getParents(attachmentInstance)
-    if (attachmentParents.length !== 1) {
-      throw new Error(`Expected ${attachmentInstance.elemID.getFullName()} to have exactly one parent, found ${attachmentParents.length}`)
-    }
-    const articleId = attachmentParents[0].id
+    log.info(`Creating unassociated article attachment: ${attachmentInstance.value.filename}`)
     const fileContent = isStaticFile(attachmentInstance.value.content)
       ? await attachmentInstance.value.content.getContent()
       : attachmentInstance.value.content
@@ -185,7 +181,7 @@ const addArticleAttachment = async (
     form.append('inline', attachmentInstance.value.inline.toString())
     form.append('file', fileContent, attachmentInstance.value.filename)
     await client.post({
-      url: `/api/v2/help_center/articles/${articleId}/attachments`,
+      url: '/api/v2/help_center/articles/attachments',
       data: form,
       headers: { ...form.getHeaders() },
     })
@@ -220,6 +216,17 @@ const filterCreator: FilterCreator = ({ client, brandIdToClient = {} }) => ({
     elements.push(...articleAttachments)
   }, 'Article attachment filter'),
 
+  preDeploy: async (changes: Change<InstanceElement>[]) => {
+    // Associating attachments occurs in the article filter
+    await awu(changes)
+      .filter(isAdditionChange)
+      .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
+      .forEach(attachmentInstance => createUnassociatedAttachment(
+        client,
+        getChangeData(attachmentInstance)
+      ))
+  },
+
   // Modification changes aren't supported ATM
   // Removal changes are supported via the standard deploy method
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -229,9 +236,6 @@ const filterCreator: FilterCreator = ({ client, brandIdToClient = {} }) => ({
         && isAdditionOrModificationChange(change),
     )
     const [additionChanges, modificationChanges] = _.partition(relevantChanges, isAdditionChange)
-    await awu(additionChanges)
-      .map(getChangeData)
-      .forEach(articleInstance => addArticleAttachment(client, articleInstance))
 
     const modificationChangeErrors = modificationChanges
       .map(getChangeData)

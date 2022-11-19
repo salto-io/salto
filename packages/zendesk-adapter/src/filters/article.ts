@@ -17,8 +17,10 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
-  isInstanceElement, isRemovalChange, ReferenceExpression,
+  AdditionChange,
+  Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange,
+  isInstanceElement, isReferenceExpression, isRemovalChange, ModificationChange,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -29,6 +31,7 @@ import { lookupFunc } from './field_references'
 import { removeTitleAndBody } from './guide_fetch_article'
 import { prepRef } from './article_body'
 import { EVERYONE } from './everyone_user_segment'
+import ZendeskClient from '../client/client'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -65,6 +68,29 @@ const setUserSegmentIdForAdditionChanges = (
     .forEach(articleInstance => {
       articleInstance.value[USER_SEGMENT_ID_FIELD] = null
     })
+}
+
+const AssociateAttachments = async (
+  client: ZendeskClient,
+  articleChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+): Promise<void> => {
+  const addedAttachments = isAdditionChange(articleChange)
+    ? articleChange.data.after.value.attachments
+    : _.difference(
+      articleChange.data.after.value.attachments,
+      articleChange.data.before.value.attachments,
+    )
+  if (!_.isArray(addedAttachments)) {
+    return
+  }
+  const attachmentsIds = addedAttachments
+    .filter(isReferenceExpression)
+    .map(attachment => attachment.value.id)
+  await client.post({
+    url: `/api/v2/help_center/articles/${getChangeData(articleChange).value.id}/bulk_attachments`,
+    data: { attachment_ids: attachmentsIds },
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 /**
@@ -127,6 +153,9 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
         await deployChange(
           change, client, config.apiDefinitions, ['translations', 'attachments'],
         )
+        if (isAdditionOrModificationChange(change)) {
+          await AssociateAttachments(client, change)
+        }
       },
     )
     return { deployResult, leftoverChanges }

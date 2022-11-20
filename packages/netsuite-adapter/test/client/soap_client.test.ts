@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient, * as soapClientUtils from '../../src/client/suiteapp_client/soap_client/soap_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
-import { NETSUITE } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, NETSUITE } from '../../src/constants'
 
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
@@ -562,11 +562,31 @@ describe('soap_client', () => {
           totalPages: 1,
           searchId: 'someId',
           recordList: {
-            record: [{ id: 'id1' }, { id: 'id2' }],
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }, {
+              id: 'id2',
+              attributes: {
+                internalId: '2',
+              },
+            }],
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+        id: 'id1',
+        attributes: {
+          internalId: '1',
+        },
+      }, {
+        id: 'id2',
+        attributes: {
+          internalId: '2',
+        },
+      }])
     })
 
     it('should return empty record list when subsidiaries is disabled', async () => {
@@ -597,11 +617,31 @@ describe('soap_client', () => {
           totalPages: 1,
           searchId: 'someId',
           recordList: {
-            record: [{ id: 'id1' }, { id: 'id2' }],
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }, {
+              id: 'id2',
+              attributes: {
+                internalId: '2',
+              },
+            }],
           },
         },
       }])
-      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual([{
+        id: 'id1',
+        attributes: {
+          internalId: '1',
+        },
+      }, {
+        id: 'id2',
+        attributes: {
+          internalId: '2',
+        },
+      }])
       expect(searchAsyncMock).toHaveBeenCalledWith({
         searchRecord: {
           attributes: {
@@ -636,7 +676,12 @@ describe('soap_client', () => {
           totalPages: 2,
           searchId: 'someId',
           recordList: {
-            record: [{ id: 'id1' }],
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
           },
         },
       }])
@@ -646,11 +691,26 @@ describe('soap_client', () => {
           totalPages: 2,
           searchId: 'someId',
           recordList: {
-            record: [{ id: 'id2' }],
+            record: [{
+              id: 'id2',
+              attributes: {
+                internalId: '2',
+              },
+            }],
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+        id: 'id1',
+        attributes: {
+          internalId: '1',
+        },
+      }, {
+        id: 'id2',
+        attributes: {
+          internalId: '2',
+        },
+      }])
     })
 
     it('Should throw an error if got invalid searchMoreWithId results', async () => {
@@ -674,7 +734,12 @@ describe('soap_client', () => {
           totalPages: 2,
           searchId: 'someId',
           recordList: {
-            record: [{ id: 'id1' }],
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
           },
         },
       }])
@@ -703,12 +768,27 @@ describe('soap_client', () => {
           totalPages: 2,
           searchId: 'someId',
           recordList: {
-            record: [{ id: 'id2' }],
+            record: [{
+              id: 'id2',
+              attributes: {
+                internalId: '2',
+              },
+            }],
           },
         },
       }])
 
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+        id: 'id1',
+        attributes: {
+          internalId: '1',
+        },
+      }, {
+        id: 'id2',
+        attributes: {
+          internalId: '2',
+        },
+      }])
       expect(searchMoreWithIdAsyncMock).toHaveBeenCalledTimes(2)
     })
 
@@ -718,11 +798,31 @@ describe('soap_client', () => {
       getAllAsyncMock.mockResolvedValue([{
         getAllResult: {
           recordList: {
-            record: [{ id: 'id1' }, { id: 'id2' }],
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }, {
+              id: 'id2',
+              attributes: {
+                internalId: '2',
+              },
+            }],
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+        id: 'id1',
+        attributes: {
+          internalId: '1',
+        },
+      }, {
+        id: 'id2',
+        attributes: {
+          internalId: '2',
+        },
+      }])
     })
 
     it('Should throw an error if got invalid getAll results', async () => {
@@ -731,6 +831,44 @@ describe('soap_client', () => {
 
       getAllAsyncMock.mockResolvedValue([{}])
       await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow()
+    })
+  })
+
+  describe('getCustomRecords', () => {
+    it('Should return custom records using search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 1,
+          searchId: 'someId',
+          recordList: {
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }, {
+              id: 'id2',
+              attributes: {
+                internalId: '2',
+              },
+            }],
+          },
+        },
+      }])
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual([{
+        type: 'custrecord',
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+      }])
     })
   })
 
@@ -840,6 +978,12 @@ describe('soap_client', () => {
         },
       },
     })
+    const customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'custrecord'),
+      annotations: {
+        recordType: new ReferenceExpression(new ElemID(NETSUITE, CUSTOM_RECORD_TYPE, 'instance', 'record')),
+      },
+    })
 
     it('should return the id is success and the error if fails', async () => {
       addListAsyncMock.mockResolvedValue([{
@@ -857,6 +1001,14 @@ describe('soap_client', () => {
               status: {
                 attributes: { isSuccess: 'false' },
                 statusDetail: [{ code: 'SOME_ERROR', message: 'Some Error Message' }],
+              },
+            },
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '3',
+                },
               },
             },
           ],
@@ -880,12 +1032,21 @@ describe('soap_client', () => {
         subsidiaryType,
         { name: 'name' }
       )
+
+      const customRecord = new InstanceElement(
+        'custrecord_record1',
+        customRecordType,
+        { name: 'record1' },
+      )
+
       expect(await client.addInstances([
         instance1,
         instance2,
+        customRecord,
       ])).toEqual([
         1,
         new Error(`SOAP api call addList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+        3,
       ])
     })
 
@@ -933,6 +1094,12 @@ describe('soap_client', () => {
         },
       },
     })
+    const customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'custrecord'),
+      annotations: {
+        recordType: new ReferenceExpression(new ElemID(NETSUITE, CUSTOM_RECORD_TYPE, 'instance', 'record')),
+      },
+    })
 
     it('should return the id is success and the error if fails', async () => {
       deleteListAsyncMock.mockResolvedValue([{
@@ -950,6 +1117,14 @@ describe('soap_client', () => {
               status: {
                 attributes: { isSuccess: 'false' },
                 statusDetail: [{ code: 'SOME_ERROR', message: 'Some Error Message' }],
+              },
+            },
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '3',
+                },
               },
             },
           ],
@@ -981,12 +1156,31 @@ describe('soap_client', () => {
           },
         }
       )
+
+      const customRecord = new InstanceElement(
+        'custrecord_record1',
+        customRecordType,
+        {
+          name: 'record1',
+          attributes: {
+            internalId: '3',
+          },
+          recType: {
+            attributes: {
+              internalId: '10',
+            },
+          },
+        },
+      )
+
       expect(await client.deleteInstances([
         instance1,
         instance2,
+        customRecord,
       ])).toEqual([
         1,
         new Error(`SOAP api call deleteList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+        3,
       ])
     })
 

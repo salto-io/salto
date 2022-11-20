@@ -55,7 +55,7 @@ const getFullIdentifier = (
   }
 
   const parent = internalIdToValues[
-    getDataInstanceId(values.parent.attributes.internalId, type)
+    getDataInstanceId(values.parent.attributes.internalId, type.elemID.name)
   ]
   if (parent === undefined) {
     log.warn(`Could not find parent with id ${values.parent.attributes.internalId} of instance with id ${values.attributes.internalId} of type ${type.elemID.getFullName()}`)
@@ -74,7 +74,10 @@ export const addIdentifierToValues = (
 
   const internalIdToValues = Object.fromEntries(
     valuesListWithIdentifier
-      .map(({ type, values }) => [getDataInstanceId(values.attributes.internalId, type), values])
+      .map(({ type, values }) => [
+        getDataInstanceId(values.attributes.internalId, type.elemID.name),
+        values,
+      ])
   )
 
 

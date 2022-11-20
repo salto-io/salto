@@ -40,6 +40,7 @@ export type FetchTypeQueryParams = {
 export type QueryParams = {
   types: FetchTypeQueryParams[]
   fileCabinet: string[]
+  customRecords?: FetchTypeQueryParams[]
 }
 
 export type FieldToOmitParams = {
@@ -64,14 +65,25 @@ export const convertToQueryParams = ({ types = {}, filePaths = [] }:
   return ({ types: newTypes, fileCabinet: filePaths })
 }
 
-export type NetsuiteQuery = {
+export type TypesQuery = {
   isTypeMatch: (typeName: string) => boolean
   areAllObjectsMatch: (typeName: string) => boolean
   isObjectMatch: (objectID: ObjectID) => boolean
+}
+
+export type FileCabinetQuery = {
   isFileMatch: (filePath: string) => boolean
   isParentFolderMatch: (folderPath: string) => boolean
   areSomeFilesMatch: () => boolean
 }
+
+export type CustomRecordsQuery = {
+  isCustomRecordTypeMatch: (typeName: string) => boolean
+  areAllCustomRecordsMatch: (typeName: string) => boolean
+  isCustomRecordMatch: (objectID: ObjectID) => boolean
+}
+
+export type NetsuiteQuery = TypesQuery & FileCabinetQuery & CustomRecordsQuery
 
 const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
   regex.isFullRegexMatch(str, type.name)
@@ -150,8 +162,39 @@ export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void =>
   }
 }
 
+const buildTypesQuery = (types: FetchTypeQueryParams[]): TypesQuery => {
+  const matchingTypes = (typeName: string): FetchTypeQueryParams[] =>
+    types.filter(type => checkTypeNameRegMatch(type, typeName))
+
+  const matchingTypesRegexes = (typeName: string): string[] =>
+    matchingTypes(typeName)
+      .flatMap(type => type.ids ?? ['.*'])
+
+  return {
+    isTypeMatch: typeName =>
+      matchingTypes(typeName).length > 0,
+    areAllObjectsMatch: typeName =>
+      matchingTypesRegexes(typeName).some(id => id === '.*'),
+    isObjectMatch: ({ type, instanceId }) =>
+      matchingTypesRegexes(type).some(reg => new RegExp(`^${reg}$`).test(instanceId)),
+  }
+}
+
+const buildFileCabinetQuery = (fileMatchers: string[]): FileCabinetQuery => {
+  const parentFolderMatchers = fileMatchers.flatMap(
+    matcher => _.range(matcher.length).map(i => new RegExp(`^${matcher.slice(0, i + 1)}$`))
+  )
+  return {
+    isFileMatch: filePath =>
+      fileMatchers.some(reg => new RegExp(`^${reg}$`).test(filePath)),
+    isParentFolderMatch: folderPath =>
+      parentFolderMatchers.some(matcher => matcher.test(folderPath)),
+    areSomeFilesMatch: () => fileMatchers.length !== 0,
+  }
+}
+
 export const buildNetsuiteQuery = (
-  { types = [], fileCabinet = [] }: Partial<QueryParams>
+  { types = [], fileCabinet = [], customRecords = [] }: Partial<QueryParams>
 ): NetsuiteQuery => {
   // This is to support the adapter configuration before the migration of
   // the SuiteApp type names from PascalCase to camelCase
@@ -162,30 +205,32 @@ export const buildNetsuiteQuery = (
       : type.name,
   }))
 
-  const matchingTypes = (typeName: string): FetchTypeQueryParams[] =>
-    fixedTypes.filter(type => checkTypeNameRegMatch(type, typeName))
-
-  const matchingTypesRegexes = (typeName: string): string[] =>
-    matchingTypes(typeName)
-      .flatMap(type => type.ids ?? ['.*'])
-
-  const parentFolderMatchers = fileCabinet.flatMap(
-    matcher => _.range(matcher.length).map(i => new RegExp(`^${matcher.slice(0, i + 1)}$`))
-  )
+  const {
+    isTypeMatch,
+    areAllObjectsMatch,
+    isObjectMatch,
+  } = buildTypesQuery(fixedTypes)
+  const {
+    isFileMatch,
+    isParentFolderMatch,
+    areSomeFilesMatch,
+  } = buildFileCabinetQuery(fileCabinet)
+  const {
+    isTypeMatch: isCustomRecordTypeMatch,
+    areAllObjectsMatch: areAllCustomRecordsMatch,
+    isObjectMatch: isCustomRecordMatch,
+  } = buildTypesQuery(customRecords)
 
   return {
-    isTypeMatch: typeName => matchingTypes(typeName).length > 0,
-    areAllObjectsMatch: typeName =>
-      matchingTypesRegexes(typeName)
-        .some(id => id === '.*'),
-    isObjectMatch: objectID =>
-      matchingTypesRegexes(objectID.type)
-        .some(reg => new RegExp(`^${reg}$`).test(objectID.instanceId)),
-    isFileMatch: filePath =>
-      fileCabinet.some(reg => new RegExp(`^${reg}$`).test(filePath)),
-    isParentFolderMatch: folderPath =>
-      parentFolderMatchers.some(matcher => matcher.test(folderPath)),
-    areSomeFilesMatch: () => fileCabinet.length !== 0,
+    isTypeMatch,
+    areAllObjectsMatch,
+    isObjectMatch,
+    isFileMatch,
+    isParentFolderMatch,
+    areSomeFilesMatch,
+    isCustomRecordTypeMatch,
+    areAllCustomRecordsMatch,
+    isCustomRecordMatch,
   }
 }
 
@@ -202,6 +247,12 @@ export const andQuery = (firstQuery: NetsuiteQuery, secondQuery: NetsuiteQuery):
     firstQuery.isParentFolderMatch(folderPath) && secondQuery.isParentFolderMatch(folderPath),
   areSomeFilesMatch: () =>
     firstQuery.areSomeFilesMatch() && secondQuery.areSomeFilesMatch(),
+  isCustomRecordTypeMatch: typeName =>
+    firstQuery.isCustomRecordTypeMatch(typeName) && secondQuery.isCustomRecordTypeMatch(typeName),
+  areAllCustomRecordsMatch: typeName =>
+    firstQuery.areAllCustomRecordsMatch(typeName) && secondQuery.areAllCustomRecordsMatch(typeName),
+  isCustomRecordMatch: objectID =>
+    firstQuery.isCustomRecordMatch(objectID) && secondQuery.isCustomRecordMatch(objectID),
 })
 
 export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
@@ -211,4 +262,7 @@ export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
   isFileMatch: filePath => !query.isFileMatch(filePath),
   isParentFolderMatch: () => true,
   areSomeFilesMatch: () => true,
+  isCustomRecordTypeMatch: typeName => !query.areAllCustomRecordsMatch(typeName),
+  areAllCustomRecordsMatch: typeName => !query.isCustomRecordTypeMatch(typeName),
+  isCustomRecordMatch: objectID => !query.isCustomRecordMatch(objectID),
 })

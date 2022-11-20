@@ -347,12 +347,6 @@ export const DEPLOY_LIST_SCHEMA = {
 }
 
 export const SEARCH_ERROR_SCHEMA = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  definitions: {
-    'Record<string,unknown>': {
-      type: 'object',
-    },
-  },
   properties: {
     searchResult: {
       properties: {
@@ -412,12 +406,23 @@ export const SEARCH_ERROR_SCHEMA = {
   type: 'object',
 }
 
-export const SEARCH_SUCCESS_SCHEMA = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  definitions: {
-    'Record<string,unknown>': {
+const RECORD_DEFINITION = {
+  type: 'object',
+  properties: {
+    attributes: {
       type: 'object',
+      properties: {
+        internalId: { type: 'string' },
+      },
+      required: ['internalId'],
     },
+  },
+  required: ['attributes'],
+}
+
+export const SEARCH_SUCCESS_SCHEMA = {
+  definitions: {
+    Record: RECORD_DEFINITION,
   },
   properties: {
     searchResult: {
@@ -426,7 +431,7 @@ export const SEARCH_SUCCESS_SCHEMA = {
           properties: {
             record: {
               items: {
-                $ref: '#/definitions/Record<string,unknown>',
+                $ref: '#/definitions/Record',
               },
               type: 'array',
             },
@@ -459,12 +464,6 @@ export const SEARCH_SUCCESS_SCHEMA = {
 }
 
 export const SEARCH_RESPONSE_SCHEMA = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
-  definitions: {
-    'Record<string,unknown>': {
-      type: 'object',
-    },
-  },
   anyOf: [
     {
       SEARCH_SUCCESS_SCHEMA,
@@ -476,11 +475,8 @@ export const SEARCH_RESPONSE_SCHEMA = {
 }
 
 export const GET_ALL_RESPONSE_SCHEMA = {
-  $schema: 'http://json-schema.org/draft-07/schema#',
   definitions: {
-    'Record<string,unknown>': {
-      type: 'object',
-    },
+    Record: RECORD_DEFINITION,
   },
   properties: {
     getAllResult: {
@@ -489,7 +485,7 @@ export const GET_ALL_RESPONSE_SCHEMA = {
           properties: {
             record: {
               items: {
-                $ref: '#/definitions/Record<string,unknown>',
+                $ref: '#/definitions/Record',
               },
               type: 'array',
             },

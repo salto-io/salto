@@ -13,14 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
-import { isDataObjectType } from '../types'
+import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix, toCustomFieldName } from '../types'
 import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
-import { CUSTOM_FIELD_PREFIX } from '../constants'
+import { XSI_TYPE } from '../client/constants'
+import { getDifferentKeys } from './data_instances_diff'
+import { SOAP_SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -35,7 +36,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
         const customFields = Object.fromEntries(
           await awu(makeArray(instance.value.customFieldList?.customField))
             .map(async value => {
-              const fieldName = `${CUSTOM_FIELD_PREFIX}${value.scriptId}`
+              const fieldName = toCustomFieldName(value[SOAP_SCRIPT_ID])
               const field = type.fields[fieldName]
               return [fieldName, await castFieldValue(value.value, field)]
             })
@@ -48,37 +49,36 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
 
   preDeploy: async changes => {
     await awu(changes)
-      .forEach(async change =>
-        applyFunctionToChangeData(
-          change,
-          async element => {
-            if (!isInstanceElement(element) || !isDataObjectType(await element.getType())) {
-              return element
-            }
-            const customFields = _.pickBy(
-              element.value,
-              (_value, key) => key.startsWith(CUSTOM_FIELD_PREFIX),
-            )
-            if (_.isEmpty(customFields)) {
-              return element
-            }
+      .forEach(async change => {
+        const differentKeys = isModificationChange(change) && isInstanceChange(change)
+          ? getDifferentKeys(change)
+          : undefined
+        await awu(Object.values(change.data))
+          .filter(isInstanceElement)
+          .filter(async instance => isDataObjectType(await instance.getType()))
+          .forEach(instance => {
+            const customFields = _(instance.value)
+              .pickBy((_value, key) => isCustomFieldName(key))
+              .entries()
+              .sortBy(([key]) => key)
+              .filter(([key]) => !differentKeys || differentKeys.has(key))
+              .map(([key, customField]) => ({
+                attributes: {
+                  [SOAP_SCRIPT_ID]: removeCustomFieldPrefix(key),
+                  [XSI_TYPE]: getSoapType(customField),
+                },
+                'platformCore:value': customField,
+              }))
+              .value()
 
-            element.value.customFieldList = {
-              'platformCore:customField': _(customFields)
-                .entries()
-                .map(([key, customField]) => ({
-                  attributes: {
-                    scriptId: key.slice(CUSTOM_FIELD_PREFIX.length, key.length),
-                    'xsi:type': getSoapType(customField),
-                  },
-                  'platformCore:value': customField,
-                })).value(),
+            instance.value = {
+              ..._.omitBy(instance.value, (_value, key) => isCustomFieldName(key)),
+              ...(!_.isEmpty(customFields)
+                ? { customFieldList: { 'platformCore:customField': customFields } }
+                : {}),
             }
-
-            _(customFields).keys().forEach(key => delete element.value[key])
-            return element
-          }
-        ))
+          })
+      })
   },
 })
 

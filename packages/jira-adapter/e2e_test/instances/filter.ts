@@ -37,7 +37,7 @@ export const createFilterValues = (name: string, allElements: Element[]): Values
     // project should be before group- that is the fetch order
     { type: 'group',
       group: {
-        name: createReference(new ElemID(JIRA, GROUP_TYPE_NAME, 'instance', 'site_admins@b'), allElements, ['name']),
+        name: createReference(new ElemID(JIRA, GROUP_TYPE_NAME, 'instance', 'site_admins@b'), allElements),
       } },
   ],
 })

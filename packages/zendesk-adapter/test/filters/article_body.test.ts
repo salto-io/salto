@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType,
   BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/article_body'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 describe('article body filter', () => {
@@ -35,12 +35,16 @@ describe('article body filter', () => {
       brand_url: { refType: BuiltinTypes.STRING },
     },
   })
-  const articleType = new ObjectType({
-    elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME),
-    fields: {
-      id: { refType: BuiltinTypes.NUMBER },
-    },
+
+  const createObjectType = (typeName: string): ObjectType => new ObjectType({
+    elemID: new ElemID(ZENDESK, typeName),
+    fields: { id: { refType: BuiltinTypes.NUMBER } },
   })
+  const articleType = createObjectType(ARTICLE_TYPE_NAME)
+  const sectionType = createObjectType(SECTION_TYPE_NAME)
+  const categoryType = createObjectType(CATEGORY_TYPE_NAME)
+  const articleAttachmentType = createObjectType('article_attachment')
+
   const articleTranslationType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'article_translation'),
     fields: {
@@ -50,51 +54,39 @@ describe('article body filter', () => {
   })
 
   const brandInstance = new InstanceElement(
-    'brand1',
+    'brand',
     brandType,
-    // eslint-disable-next-line no-template-curly-in-string
-    { id: 7777, brand_url: 'https://coolSubdomain.zendesk.com' },
-  )
-  const brandInstance2 = new InstanceElement(
-    'brand2',
-    brandType,
-    // eslint-disable-next-line no-template-curly-in-string
-    { id: 7778, brand_url: 'https://anotherDomain.notZendesk.smith' },
-  )
-  const articleInstance = new InstanceElement(
-    'refArticle',
-    articleType,
-    // eslint-disable-next-line no-template-curly-in-string
-    { id: 1666 },
-  )
-  const templatedTranslationInstance = new InstanceElement(
-    'templatedTranslation',
-    articleTranslationType,
-    // eslint-disable-next-line no-template-curly-in-string
-    { id: 1003, body: '<p><a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://coolSubdomain.zendesk.com/hc/he/articles/1666' },
-  )
-  const partialTemplatedTranslationInstance = new InstanceElement(
-    'partialTemplatedTranslation',
-    articleTranslationType,
-    // eslint-disable-next-line no-template-curly-in-string
-    { id: 1004, body: '<a href="https://anotherDomain.notZendesk.smith/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>' },
+    { id: 1, brand_url: 'https://brand.zendesk.com' },
   )
 
-  const articleIdWithStringTranslation = new InstanceElement(
-    'articleIdWithStringTranslation',
+  const createInstanceElement = (type: ObjectType): InstanceElement =>
+    new InstanceElement(type.elemID.name, type, { id: 123 },)
+
+  const articleInstance = createInstanceElement(articleType)
+  const sectionInstance = createInstanceElement(sectionType)
+  const categoryInstance = createInstanceElement(categoryType)
+  const articleAttachmentInstance = createInstanceElement(articleAttachmentType)
+
+  const translationWithReferences = new InstanceElement(
+    'translationWithReferences',
     articleTranslationType,
-    // eslint-disable-next-line no-template-curly-in-string
-    { id: 1005, body: '<a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666-someString" target="_self">linkedArticle</a>' },
+    { id: 1, body: '<p><a href="https://brand.zendesk.com/hc/en-us/articles/123/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://brand.zendesk.com/hc/he/articles/123-extra_string' },
   )
 
+  const translationWithoutReferences = new InstanceElement(
+    'translationWithoutReferences',
+    articleTranslationType,
+    { id: 1, body: '<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/124/sep/sections/124/sep/categories/124/sep/article_attachments/124-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/124-extra_string' },
+  )
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
     brandInstance,
-    brandInstance2,
     articleInstance,
-    templatedTranslationInstance,
-    partialTemplatedTranslationInstance,
-    articleIdWithStringTranslation,
+    sectionInstance,
+    categoryInstance,
+    articleAttachmentInstance,
+    translationWithReferences,
+    translationWithoutReferences,
   ]).map(element => element.clone())
 
   describe('on fetch', () => {
@@ -105,42 +97,26 @@ describe('article body filter', () => {
       await filter.onFetch(elements)
     })
 
-
-    it('should add templates correctly', () => {
-      const fetchedTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'templatedTranslation')
-      // eslint-disable-next-line no-template-curly-in-string
-      expect(fetchedTranslation?.value.body).toEqual(new TemplateExpression({ parts: [
+    it('should convert all possible urls to references', () => {
+      const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithReferences')
+      expect(fetchedTranslationWithReferences?.value.body).toEqual(new TemplateExpression({ parts: [
         '<p><a href="',
         new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-        '/hc/en-us/articles/',
-        new ReferenceExpression(articleInstance.elemID, articleInstance),
-        '" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
+        '/hc/en-us/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
+        '/sep/sections/', new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+        '/sep/categories/', new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+        '/sep/article_attachments/', new ReferenceExpression(articleAttachmentInstance.elemID, articleAttachmentInstance),
+        '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
         new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-        '/hc/he/articles/',
-        new ReferenceExpression(articleInstance.elemID, articleInstance),
+        '/hc/he/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
+        '-extra_string',
       ] }))
     })
-    it('should add partial templates normally', () => {
-      const fetchedTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'partialTemplatedTranslation')
-      expect(fetchedTranslation?.value.body).toEqual(new TemplateExpression({
-        parts: [
-          '<a href="',
-          new ReferenceExpression(brandInstance2.elemID.createNestedID('brand_url'), brandInstance2.value.brand_url),
-          '/hc/en-us/nonarticles/1666" target="_self">linkedArticle</a>',
-        ],
-      }))
-    })
-    it('should keep url parts after articleId', () => {
-      const fetchedTranslation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleIdWithStringTranslation')
-      expect(fetchedTranslation?.value.body).toEqual(new TemplateExpression({
-        parts: [
-          '<a href="',
-          new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-          '/hc/en-us/articles/',
-          new ReferenceExpression(articleInstance.elemID, articleInstance),
-          '-someString" target="_self">linkedArticle</a>',
-        ],
-      }))
+
+    it('should do nothing if elements do not exists', () => {
+      const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithoutReferences')
+      expect(fetchedTranslationWithoutReferences?.value.body)
+        .toEqual('<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/124/sep/sections/124/sep/categories/124/sep/article_attachments/124-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/124-extra_string')
     })
   })
   describe('preDeploy', () => {

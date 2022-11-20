@@ -35,26 +35,24 @@ const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
 
-// TODO: Add documentation
-// TODO: Make it prettier because it looks crappy
-
-const ELEMENTS_ID_SEARCHES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, 'article_attachments'].map(field => ({
+const ELEMENTS_REGEXES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, 'article_attachments'].map(field => ({
   field,
   urlRegex: new RegExp(`(\\/${field}\\/\\d*)`),
   idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d*)`),
 }))
 
-const BASE_URL_REGEX = /(https:\/\/[^/]+)/
+const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
-const matchElementId = ({ urlPart, elements, idRegex }
+// Attempt to match the regex to an element and create a reference to that element
+const createElementReference = ({ urlPart, elements, idRegex }
   : { urlPart: string; elements: InstanceElement[]; idRegex: RegExp })
 : TemplatePart[] | undefined => {
   const { url, id } = urlPart.match(idRegex)?.groups ?? {}
   if (url && id) {
-    const referencedArticle = elements
-      .find(element => element.value.id.toString() === id)
-    if (isInstanceElement(referencedArticle)) {
-      return [url, new ReferenceExpression(referencedArticle.elemID, referencedArticle)]
+    const referencedElement = elements.find(element => element.value.id.toString() === id)
+    if (isInstanceElement(referencedElement)) {
+      // We want to keep the original url and replace just the id
+      return [url, new ReferenceExpression(referencedElement.elemID, referencedElement)]
     }
   }
   return undefined
@@ -64,19 +62,23 @@ const referenceUrls = ({ urlPart, additionalInstances }: {
   urlPart: string
   additionalInstances: Record<string, InstanceElement[]>
 }): TemplatePart[] => {
-  const urlSubdomain = urlPart.match(BASE_URL_REGEX)?.pop()
+  // Attempt to match the brand
+  const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
   const urlBrand = additionalInstances[BRAND_TYPE_NAME]
     .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
   if (isInstanceElement(urlBrand)) {
     return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
   }
 
-  for (const { idRegex, field } of ELEMENTS_ID_SEARCHES) {
-    const match = matchElementId({ urlPart, elements: additionalInstances[field], idRegex })
-    if (match) {
-      return match
+  // Attempt to match other elements
+  for (const { idRegex, field } of ELEMENTS_REGEXES) {
+    const result = createElementReference({ urlPart, elements: additionalInstances[field], idRegex })
+    if (result) {
+      return result
     }
   }
+
+  // If nothing matched, return the original url
   return [urlPart]
 }
 
@@ -90,7 +92,7 @@ const updateArticleBody = (
   }
   const processedArticleBody = extractTemplate(
     originalArticleBody,
-    [BASE_URL_REGEX, ...ELEMENTS_ID_SEARCHES.map(s => s.urlRegex)],
+    [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)],
     articleUrl => referenceUrls({ urlPart: articleUrl, additionalInstances }),
   )
   articleInstance.value.body = processedArticleBody

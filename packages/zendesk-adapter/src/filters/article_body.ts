@@ -45,6 +45,8 @@ const referenceArticleUrl = ({
   articleInstances: InstanceElement[]
 }): TemplatePart[] => {
   const urlParts = ARTICLE_REF_URL_GROUPS_REGEX.exec(articleUrl)?.groups ?? {}
+  // https://stackoverflow.com/questions/4724701/regexp-exec-returns-null-sporadically
+  ARTICLE_REF_URL_GROUPS_REGEX.lastIndex = 0
   const { urlSubdomain, translation, urlArticleId } = urlParts
 
   const urlBrand = brandInstances
@@ -151,7 +153,9 @@ const filterCreator: FilterCreator = () => {
       const articleInstances = instances
         .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
       const articleAttachmentsById: Record<string, InstanceElement> = _.keyBy(
-        instances.filter(e => e.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME),
+        instances.filter(
+          e => e.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME && e.value.id !== undefined
+        ),
         instance => _.toString(instance.value.id)
       )
       instances

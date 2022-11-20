@@ -45,6 +45,7 @@ import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
+import { resolve } from '../expressions'
 
 const log = logger(module)
 
@@ -140,7 +141,7 @@ export type Workspace = {
   // Remove this when no longer used, SALTO-1661
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
-  accountConfig: (name: string, defaultValue?: InstanceElement) =>
+  accountConfig: (name: string, defaultValue?: InstanceElement, shouldResolve?: boolean) =>
     Promise<InstanceElement | undefined>
   // serviceConfig is deprecated, kept for backwards compatibility.
   // use accountConfig.
@@ -1021,7 +1022,15 @@ export const loadWorkspace = async (
     hasErrors: async (env?: string) => (await errors(env)).hasErrors(),
     accountCredentials,
     servicesCredentials: accountCredentials,
-    accountConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
+    accountConfig: async (name, defaultValue, shouldResolve) => {
+      const unresolvedAccountConfig = await adaptersConfig.getAdapter(name, defaultValue)
+      return shouldResolve && unresolvedAccountConfig
+        ? (await resolve(
+          [unresolvedAccountConfig],
+          adaptersConfig.getElements(),
+        ))[0] as InstanceElement
+        : unresolvedAccountConfig
+    },
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
     accountConfigPaths: adaptersConfig.getElementNaclFiles,
     serviceConfigPaths: adaptersConfig.getElementNaclFiles,

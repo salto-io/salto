@@ -53,6 +53,7 @@ import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 import { createElementSelector } from '../../src/workspace/element_selector'
+import * as ExpressionsModule from '../../src/expressions'
 
 const { awu } = collections.asynciterable
 
@@ -2939,6 +2940,36 @@ describe('workspace', () => {
         expect(workspaceConf.setWorkspaceConfig as jest.Mock).toHaveBeenLastCalledWith(
           expect.objectContaining({ currentEnv: 'default' })
         )
+      })
+    })
+  })
+
+  describe('accountConfig', () => {
+    let workspace: Workspace
+    let adaptersConfig: MockInterface<AdaptersConfigSource>
+    const configElemId = new ElemID('dummy', 'new')
+    const resolveMock = jest.spyOn(ExpressionsModule, 'resolve')
+    beforeEach(async () => {
+      adaptersConfig = mockAdaptersConfigSource()
+      adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([
+        new ObjectType({ elemID: configElemId }),
+      ]))
+      workspace = await createWorkspace(undefined, undefined, undefined, adaptersConfig)
+      resolveMock.mockImplementation(async elem => elem)
+    })
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+    describe('when called with name only', () => {
+      it('should return the unresolved accountConfig', async () => {
+        expect(await workspace.accountConfig('new')).toEqual(configElemId)
+        expect(resolveMock).not.toHaveBeenCalled()
+      })
+    })
+    describe('when called with shouldResolve', () => {
+      it('should return the resolved accountConfig', async () => {
+        expect(await workspace.accountConfig('new', undefined, true)).toEqual({})
+        expect(resolveMock).toHaveBeenCalled()
       })
     })
   })

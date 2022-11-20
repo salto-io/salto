@@ -24,9 +24,9 @@ import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adap
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
-import { addRemovalChangesId, isTranslation } from './help_center_section_and_category'
+import { addRemovalChangesId, isTranslation } from './guide_section_and_category'
 import { lookupFunc } from './field_references'
-import { removeTitleAndBody } from './help_center_fetch_article'
+import { removeTitleAndBody } from './guide_fetch_article'
 import { prepRef } from './article_body'
 import { EVERYONE } from './everyone_user_segment'
 

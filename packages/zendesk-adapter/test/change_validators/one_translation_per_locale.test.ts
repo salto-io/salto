@@ -25,7 +25,7 @@ import {
 import { elementSource } from '@salto-io/workspace'
 import { ZENDESK } from '../../src/constants'
 import { oneTranslationPerLocaleValidator } from '../../src/change_validators'
-import { LOCALE_TYPE_NAME } from '../../src/filters/help_center_locale'
+import { LOCALE_TYPE_NAME } from '../../src/filters/guide_locale'
 
 describe('oneTranslationPerLocalValidator',
   () => {

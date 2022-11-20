@@ -21,7 +21,7 @@ import {
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/help_center_parent_to_section'
+import filterCreator from '../../src/filters/guide_parent_to_section'
 import { ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 

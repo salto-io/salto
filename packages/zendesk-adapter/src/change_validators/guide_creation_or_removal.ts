@@ -22,7 +22,7 @@ import {
 import { BRAND_TYPE_NAME } from '../constants'
 import ZendeskClient from '../client/client'
 import { ZendeskApiConfig } from '../config'
-import { isBrand, invalidBrandChange } from './help_center_activation'
+import { isBrand, invalidBrandChange } from './guide_activation'
 
 export const invalidBrandAdditionChange = (
   change: Change<InstanceElement>, fieldToCheck: 'has_help_center' | 'help_center_state'
@@ -35,7 +35,7 @@ export const invalidBrandAdditionChange = (
 }
 
 /**
- * We currently do not support the creation or deletion of help centers using Salto.
+ * We currently do not support the creation or deletion of help centers (guide) using Salto.
  * If the help center is created/deleted as part of an existing brand and no other changes are made
  * to the brand, issue a warning on the change.
  * If the help center was created during an addition of a brand, it also issues a warning.

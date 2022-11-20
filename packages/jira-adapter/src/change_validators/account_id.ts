@@ -141,7 +141,9 @@ export const accountIdValidator: (
 ) =>
   ChangeValidator = (client, config, getIdMapFunc) => async changes =>
     log.time(async () => {
-      if (!(config.fetch.showUserDisplayNames ?? true)) {
+      if (!(config.fetch.showUserDisplayNames ?? true)
+        // Temporary until we support it in DC
+        || client.isDataCenter) {
         return []
       }
       const idMap = await getIdMapFunc()

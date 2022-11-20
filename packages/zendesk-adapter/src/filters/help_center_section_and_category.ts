@@ -24,6 +24,7 @@ import Joi from 'joi'
 import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
+import { SECTIONS_FIELD } from '../constants'
 
 export const TRANSLATION_PARENT_TYPE_NAMES = ['section', 'category']
 const CATEGORY_TYPE_NAME = 'category'
@@ -121,7 +122,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       parentChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, ['translations'])
+        await deployChange(change, client, config.apiDefinitions, ['translations', SECTIONS_FIELD])
       }
     )
     return { deployResult, leftoverChanges }

@@ -104,7 +104,8 @@ import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permi
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
-import filtersDcDeployFilter from './filters/filters_dc_deploy'
+import filtersDcDeployFilter from './filters/data_center/filters_permissions'
+import deployDcIssueEventsFilter from './filters/data_center/issue_events'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
@@ -208,6 +209,7 @@ export const DEFAULT_FILTERS = [
   addDisplayNameFilter,
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
+  deployDcIssueEventsFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

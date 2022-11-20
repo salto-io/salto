@@ -78,6 +78,10 @@ export class StaticFile {
   }
 }
 
+type StaticFileMetadata = Pick<StaticFile, 'filepath' | 'hash'>
+export const getStaticFileUniqueName = ({ filepath, hash }: StaticFileMetadata): string =>
+  `${filepath}-${hash}`
+
 const getResolvedValue = async (
   elemID: ElemID,
   elementsSource?: ReadOnlyElementsSource,

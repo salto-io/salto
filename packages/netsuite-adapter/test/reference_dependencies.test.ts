@@ -14,18 +14,17 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
-import { customrecordtypeType } from '../src/autogen/types/standard_types/customrecordtype'
 import { customsegmentType } from '../src/autogen/types/standard_types/customsegment'
 import { datasetType } from '../src/autogen/types/standard_types/dataset'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { workbookType } from '../src/autogen/types/standard_types/workbook'
+import { translationcollectionType } from '../src/autogen/types/standard_types/translationcollection'
 import { fileType } from '../src/types/file_cabinet_types'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../src/constants'
 import { getReferencedElements } from '../src/reference_dependencies'
 
 describe('reference dependencies', () => {
   const entitycustomfield = entitycustomfieldType().type
-  const customrecordtype = customrecordtypeType().type
   const customsegment = customsegmentType().type
   const dataset = datasetType().type
   const workbook = workbookType().type
@@ -76,41 +75,47 @@ describe('reference dependencies', () => {
     })
   })
   describe('getRequiredReferencedInstances', () => {
-    const customRecordType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'customrecord_my_script_id'),
-      annotations: {
-        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
-        [SCRIPT_ID]: 'customrecord_my_script_id',
-      },
-    })
-
-    const customSegmentInstance = new InstanceElement('customSegmentInstance',
-      customsegment, {
-        [SCRIPT_ID]: 'cseg_my_script_id',
-      })
-
-    customSegmentInstance.value.recordtype = new ReferenceExpression(
-      customRecordType.elemID, 'val', customRecordType
-    )
-
-    customRecordType.annotations.customsegment = new ReferenceExpression(
-      customSegmentInstance.elemID, 'val', customSegmentInstance
-    )
-
-    const datasetInstance = new InstanceElement('datasetInstance',
-      dataset, {
-        [SCRIPT_ID]: 'custdataset_my_script_id',
-      })
-
-    const workbookInstance = new InstanceElement('workbookInstance',
-      workbook, {
-        [SCRIPT_ID]: 'custworkbook_my_script_id',
-        dependencies: {
-          dependency: new ReferenceExpression(
-            datasetInstance.elemID, 'val', datasetInstance
-          ),
+    let customRecordType: ObjectType
+    let customSegmentInstance: InstanceElement
+    let datasetInstance: InstanceElement
+    let workbookInstance: InstanceElement
+    beforeEach(() => {
+      customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord_my_script_id'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord_my_script_id',
         },
       })
+
+      customSegmentInstance = new InstanceElement('customSegmentInstance',
+        customsegment, {
+          [SCRIPT_ID]: 'cseg_my_script_id',
+        })
+
+      customSegmentInstance.value.recordtype = new ReferenceExpression(
+        customRecordType.elemID, 'val', customRecordType
+      )
+
+      customRecordType.annotations.customsegment = new ReferenceExpression(
+        customSegmentInstance.elemID, 'val', customSegmentInstance
+      )
+
+      datasetInstance = new InstanceElement('datasetInstance',
+        dataset, {
+          [SCRIPT_ID]: 'custdataset_my_script_id',
+        })
+
+      workbookInstance = new InstanceElement('workbookInstance',
+        workbook, {
+          [SCRIPT_ID]: 'custworkbook_my_script_id',
+          dependencies: {
+            dependency: new ReferenceExpression(
+              datasetInstance.elemID, 'val', datasetInstance
+            ),
+          },
+        })
+    })
 
     it('should not add dependencies that are not required', async () => {
       const result = await getReferencedElements([instanceWithManyRefs], false)
@@ -140,20 +145,50 @@ describe('reference dependencies', () => {
     })
 
     it('should not add new dependencies more then once', async () => {
-      const customRecordTypeInstance2 = new InstanceElement('customRecordTypeInstance2',
-        customrecordtype, {
-          [SCRIPT_ID]: 'customrecord_my_script_id_2',
+      const customRecordType2 = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord_my_script_id2'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord_my_script_id',
           customsegment: new ReferenceExpression(
             customSegmentInstance.elemID, 'val', customSegmentInstance
           ),
-        })
+        },
+      })
 
       const result = await getReferencedElements(
-        [customRecordType, customRecordTypeInstance2],
+        [customRecordType, customRecordType2],
         false
       )
       expect(result)
-        .toEqual([customRecordType, customRecordTypeInstance2, customSegmentInstance])
+        .toEqual([customRecordType, customRecordType2, customSegmentInstance])
+    })
+
+    it('should add translation collection instances when referenced', async () => {
+      const translationcollection = translationcollectionType().type
+      const translationCollectionInstanceReferencedInInstance = new InstanceElement('custtranslation_test1', translationcollection)
+      const translationCollectionInstanceReferencedInType = new InstanceElement('custtranslation_test2', translationcollection)
+      customRecordType.annotate({
+        name: new ReferenceExpression(
+          translationCollectionInstanceReferencedInType.elemID.createNestedID('strings', 'string', '1', 'scriptid'),
+          'translated',
+          translationCollectionInstanceReferencedInType
+        ),
+      })
+      customSegmentInstance.value.name = new ReferenceExpression(
+        translationCollectionInstanceReferencedInInstance.elemID.createNestedID('strings', 'string', '2', 'scriptid'),
+        'translated',
+        translationCollectionInstanceReferencedInInstance
+      )
+
+      const result = await getReferencedElements([customRecordType], false)
+      expect(result).toHaveLength(4)
+      expect(result).toEqual(expect.arrayContaining([
+        customRecordType,
+        customSegmentInstance,
+        translationCollectionInstanceReferencedInInstance,
+        translationCollectionInstanceReferencedInType,
+      ]))
     })
   })
 })

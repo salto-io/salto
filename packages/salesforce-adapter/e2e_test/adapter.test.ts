@@ -3788,5 +3788,26 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(await objectExists(client, constants.BUSINESS_HOURS_METADATA_TYPE, 'BusinessHours')).toBe(true)
       })
     })
+    describe('Deploy QuickAction', () => {
+      let quickAction: InstanceElement
+      beforeAll(async () => {
+        quickAction = createInstanceElement({ fullName: 'onec', optionsCreateFeedItem: true, standardLabel: 'LogACall', type: 'LogACall', targetObject: 'Task', quickActionLayout: { layoutSectionStyle: 'TwoColumnsLeftToRight', quickActionLayoutColumns: [{ quickActionLayoutItems: [{ field: 'Subject', uiBehavior: 'Edit' }] }, {}] } }, mockTypes.QuickAction)
+      })
+      it('should deploy empty quickActionLayoutColumns without deleting it', async () => {
+        const changes: Change[] = [{
+          action: 'add',
+          data: { after: quickAction },
+        }]
+        const additionDeploy = await adapter.deploy({
+          changeGroup: {
+            groupID: quickAction.elemID.getFullName(),
+            changes,
+          },
+        })
+
+        expect(additionDeploy.errors).toHaveLength(0)
+        expect(additionDeploy.appliedChanges).toEqual(changes)
+      })
+    })
   })
 })

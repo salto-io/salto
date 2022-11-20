@@ -890,7 +890,8 @@ export const fetchChangesFromWorkspace = async (
     )
   }
 
-  const differentConfig = await getDifferentConfigs()
+  const differentConfig = await log.time(async () =>
+    getDifferentConfigs(), 'Getting workspace configs')
   if (!_.isEmpty(differentConfig)) {
     const configsByAdapter = _.groupBy(
       [...differentConfig, ...currentConfigs],
@@ -902,7 +903,7 @@ export const fetchChangesFromWorkspace = async (
     })
   }
   if (!fromState
-    && (await otherWorkspace.errors()).hasErrors('Error')) {
+    && await log.time(async () => (await otherWorkspace.errors()).hasErrors('Error'), 'Checking workspace errors')) {
     return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
   }
 
@@ -910,51 +911,58 @@ export const fetchChangesFromWorkspace = async (
   if (progressEmitter) {
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, fetchAccounts)
   }
-
   const otherElementsSource = fromState
     ? otherWorkspace.state(env)
     : (await otherWorkspace.elements(true, env))
-  const fullElements = await awu(await (otherElementsSource).getAll())
-    .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
-    .toArray()
-
-  const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
-  const inMemoryOtherPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(
-    await awu(otherPathIndex.entries()).toArray(),
-  )
-  const splitByPathIndex = (await withLimitedConcurrency(wu(fullElements).map(
-    elem => () => pathIndex.splitElementByPath(elem, inMemoryOtherPathIndex)
-  ), MAX_SPLIT_CONCURRENCY)).flat()
+  const fullElements = await log.time(async () =>
+    awu(await (otherElementsSource).getAll())
+      .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
+      .toArray(), 'Getting other workspace elements')
+  const otherPathIndex = await log.time(async () =>
+    otherWorkspace.state(env).getPathIndex(), 'Getting other workspace pathIndex')
+  const inMemoryOtherPathIndex = await log.time(async () =>
+    new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(
+      await awu(otherPathIndex.entries()).toArray(),
+    ), 'Saving pathIndex to memory')
+  const splitByPathIndex = await log.time(async () =>
+    (await withLimitedConcurrency(wu(fullElements).map(
+      elem => () => pathIndex.splitElementByPath(elem, inMemoryOtherPathIndex)
+    ), MAX_SPLIT_CONCURRENCY)).flat(), 'Splitting elements by PathIndex')
   const [unmergedWithPath, unmergedWithoutPath] = _.partition(
     splitByPathIndex,
     elem => values.isDefined(elem.path)
   )
-  const unmergedElements = [
-    ...unmergedWithPath,
-    ...(await withLimitedConcurrency(
+  const splitByFile = await log.time(async () =>
+    (await withLimitedConcurrency(
       wu(unmergedWithoutPath).map(elem => () => splitElementByFile(elem)),
       MAX_SPLIT_CONCURRENCY
-    )
-    ).flat(),
+    )).flat(), 'Splitting elements by files')
+  const unmergedElements = [
+    ...unmergedWithPath,
+    ...splitByFile,
   ]
-  const fetchChangesResult = await createFetchChanges({
-    adapterNames: fetchAccounts,
-    currentConfigs,
-    getChangesEmitter,
-    processErrorsResult: {
-      keptElements: fullElements,
-      errorsWithDroppedElements: [],
-    },
-    stateElements,
-    workspaceElements,
-    unmergedElements,
-  })
+  const fetchChangesResult = await log.time(async () =>
+    createFetchChanges({
+      adapterNames: fetchAccounts,
+      currentConfigs,
+      getChangesEmitter,
+      processErrorsResult: {
+        keptElements: fullElements,
+        errorsWithDroppedElements: [],
+      },
+      stateElements,
+      workspaceElements,
+      unmergedElements,
+    }), 'Creating Fetch Changes')
   // We currently cannot access the content of static files from the state so when fetching
   // from the state we use the content from the NaCls, if there is a mis-match there we have
   // to drop the change
   // This will not be needed anymore once we have access to the state static file content
   return fromState
-    ? fixStaticFilesForFromStateChanges(fetchChangesResult, otherWorkspace, env)
+    ? log.time(async () =>
+      fixStaticFilesForFromStateChanges(
+        fetchChangesResult, otherWorkspace, env
+      ), 'Fix state static files')
     : fetchChangesResult
 }
 

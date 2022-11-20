@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
-import { generateProfileType, defaultFilterContext } from '../utils'
+import { generateProfileType, generatePermissionSetType, defaultFilterContext } from '../utils'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 
@@ -57,8 +57,32 @@ const generateProfileInstance = ({
     }
   )
 )
+
+const generatePermissionSetInstance = ({
+  permissionSetObj,
+  instanceName,
+  fields,
+  applications,
+}: {
+  permissionSetObj: ObjectType
+  instanceName: string
+  fields: string[]
+  applications: string[]
+}): InstanceElement => (
+  new InstanceElement(
+    instanceName,
+    permissionSetObj,
+    {
+      applicationVisibilities: applications.map(
+        application => ({ application, default: true, visible: false })
+      ),
+      fieldPermissions: fields.map(field => ({ field, editable: true, readable: true })),
+    }
+  )
+)
+
 describe('Convert maps filter', () => {
-  describe('ProfileMaps filter', () => {
+  describe('Profile Maps filter', () => {
     describe('on fetch', () => {
       const filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterWith<'onFetch' | 'preDeploy'>
       let profileObj: ObjectType
@@ -326,6 +350,178 @@ describe('Convert maps filter', () => {
         expect(afterProfileObj).toEqual(generateProfileType(true))
         expect(beforeInstances).toEqual(generateInstances(beforeProfileObj))
         expect(afterInstances).toEqual(generateInstances(afterProfileObj))
+      })
+    })
+  })
+  describe('Permission Set Maps filter', () => {
+    describe('on fetch', () => {
+      const filter = filterCreator({ config: { ...defaultFilterContext } }) as FilterWith<'onFetch' | 'preDeploy'>
+      let permissionSetObj: ObjectType
+      let instances: InstanceElement[]
+
+      describe('with regular instances', () => {
+        const generatePermissionSetInstances = (objType: ObjectType): InstanceElement[] => ([
+          generatePermissionSetInstance({
+            permissionSetObj: objType,
+            instanceName: 'aaa',
+            applications: ['app1', 'app2'],
+            fields: ['Account.AccountNumber', 'Contact.HasOptedOutOfEmail'],
+          }),
+          generatePermissionSetInstance({
+            permissionSetObj: objType,
+            instanceName: 'bbb',
+            applications: ['someApp'],
+            fields: ['Account.AccountNumber'],
+          }),
+        ])
+        beforeAll(async () => {
+          permissionSetObj = generatePermissionSetType()
+          instances = generatePermissionSetInstances(permissionSetObj)
+          await filter.onFetch([permissionSetObj, ...instances])
+        })
+
+        it('should convert object field types to maps', async () => {
+          expect(permissionSetObj).toEqual(generatePermissionSetType(true))
+          const fieldType = await permissionSetObj.fields.applicationVisibilities.getType()
+          expect(isMapType(fieldType)).toBeTruthy()
+          expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
+        })
+        it('should mark the fields that are used for keys as _required=true', async () => {
+          expect(permissionSetObj).toEqual(generatePermissionSetType(true))
+          const fieldType = await permissionSetObj.fields.applicationVisibilities.getType()
+          expect(isMapType(fieldType)).toBeTruthy()
+          expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
+        })
+        it('should convert instance values to maps', () => {
+          expect((instances[0] as InstanceElement).value).toEqual({
+            applicationVisibilities: {
+              app1: { application: 'app1', default: true, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+          })
+        })
+        it('should contain the original elements after fetch + preDeploy', async () => {
+          const afterPermissionSetObj = generatePermissionSetType()
+          const afterInstances = generatePermissionSetInstances(afterPermissionSetObj)
+          await filter.onFetch([afterPermissionSetObj, ...afterInstances])
+          const changes = instances.map(
+            (inst, idx) => toChange({ before: inst, after: afterInstances[idx] })
+          )
+          await filter.preDeploy(changes)
+          expect(afterPermissionSetObj).toEqual(generatePermissionSetType(false, true))
+          expect(permissionSetObj).toEqual(generatePermissionSetType(true))
+          expect(afterInstances).toEqual(generatePermissionSetInstances(afterPermissionSetObj))
+          expect(instances).toEqual(generatePermissionSetInstances(permissionSetObj))
+        })
+      })
+    })
+
+    describe('deploy (pre + on)', () => {
+      const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'preDeploy' | 'onDeploy'>
+      let beforePermissionSetObj: ObjectType
+      let afterPermissionSetObj: ObjectType
+      let beforeInstances: InstanceElement[]
+      let afterInstances: InstanceElement[]
+      let changes: Change[]
+
+      const generatePermissionSetInstances = (objType: ObjectType): InstanceElement[] => ([
+        new InstanceElement(
+          'profile1',
+          objType,
+          {
+            applicationVisibilities: {
+              app1: { application: 'app1', default: true, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+          }
+        ),
+        new InstanceElement(
+          'profile2',
+          objType,
+          {
+            applicationVisibilities: {
+              app1: { application: 'app1', default: false, visible: false },
+              app2: { application: 'app2', default: true, visible: false },
+            },
+            fieldPermissions: {
+              Account: {
+                AccountNumber: {
+                  field: 'Account.AccountNumber',
+                  editable: true,
+                  readable: true,
+                },
+              },
+              Contact: {
+                HasOptedOutOfEmail: {
+                  field: 'Contact.HasOptedOutOfEmail',
+                  editable: true,
+                  readable: true,
+                },
+              },
+            },
+          }
+        ),
+      ])
+
+      beforeAll(async () => {
+        beforePermissionSetObj = generatePermissionSetType(true)
+        beforeInstances = generatePermissionSetInstances(beforePermissionSetObj)
+        afterPermissionSetObj = generatePermissionSetType(true)
+        afterInstances = generatePermissionSetInstances(afterPermissionSetObj)
+        changes = beforeInstances.map((inst, idx) => (
+          toChange({ before: inst, after: afterInstances[idx] })
+        ))
+        await filter.preDeploy(changes)
+      })
+      it('should convert the object back to list on preDeploy', () => {
+        expect(afterPermissionSetObj).toEqual(generatePermissionSetType(false, true))
+      })
+
+      it('should convert the instances back to lists on preDeploy', () => {
+        expect(Array.isArray(afterInstances[0].value.applicationVisibilities)).toBeTruthy()
+        expect(Array.isArray(afterInstances[0].value.fieldPermissions)).toBeTruthy()
+        expect(Array.isArray(beforeInstances[0].value.applicationVisibilities)).toBeTruthy()
+        expect(Array.isArray(beforeInstances[0].value.fieldPermissions)).toBeTruthy()
+      })
+
+      it('should return object and instances to their original form', async () => {
+        await filter.onDeploy(changes)
+        expect(beforePermissionSetObj).toEqual(generatePermissionSetType(true))
+        expect(afterPermissionSetObj).toEqual(generatePermissionSetType(true))
+        expect(beforeInstances).toEqual(generatePermissionSetInstances(beforePermissionSetObj))
+        expect(afterInstances).toEqual(generatePermissionSetInstances(afterPermissionSetObj))
       })
     })
   })

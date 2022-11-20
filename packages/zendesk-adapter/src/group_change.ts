@@ -17,7 +17,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { Change, ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId,
   isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { SECTION_TYPE_NAME } from './constants'
+import { SECTION_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME } from './constants'
 
 
 const { awu } = collections.asynciterable
@@ -25,10 +25,10 @@ const { awu } = collections.asynciterable
 type ChangeIdFunction = (change: Change) => Promise<string | undefined>
 
 const PARENT_GROUPED_WITH_INNER_TYPE = [
-  'ticket_field',
-  'user_field',
+  TICKET_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
   'dynamic_content_item',
-  'organization_field',
+  ORG_FIELD_TYPE_NAME,
   'macro',
 ]
 const INNER_TYPE_GROUPED_WITH_PARENT = [

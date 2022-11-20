@@ -65,7 +65,7 @@ describe('article body filter', () => {
     'article1',
     articleTranslationType,
     // eslint-disable-next-line no-template-curly-in-string
-    { id: 1003, body: '<p><a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666' },
+    { id: 1003, body: '<p><a href="https://coolSubdomain.zendesk.com/hc/en-us/articles/1666" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://coolSubdomain.zendesk.com/hc/he/articles/1666' },
   )
   const nonTemplatedTranslationInstance = new InstanceElement(
     'article2',
@@ -98,7 +98,7 @@ describe('article body filter', () => {
         new ReferenceExpression(articleInstance.elemID, articleInstance),
         '" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
         new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-        '/hc/en-us/articles/',
+        '/hc/he/articles/',
         new ReferenceExpression(articleInstance.elemID, articleInstance),
       ] }))
     })

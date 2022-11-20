@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values, Element, ReferenceExpression } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { ElemID, Values, Element } from '@salto-io/adapter-api'
 import { createReference } from '../utils'
 import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
 
@@ -45,7 +44,6 @@ export const createFieldValues = (name: string): Values => ({
 
 export const createContextValues = (
   name: string,
-  instanceName: string,
   allElements: Element[]
 ): Values => ({
   name,
@@ -73,17 +71,6 @@ export const createContextValues = (
       disabled: false,
       position: 3,
     },
-  },
-  defaultValue: {
-    type: 'option.cascading',
-    optionId: new ReferenceExpression(
-      new ElemID(JIRA, 'CustomFieldContext', 'instance', instanceName, 'options', 'p1'),
-      _.cloneDeep(p1Option)
-    ),
-    cascadingOptionId: new ReferenceExpression(
-      new ElemID(JIRA, 'CustomFieldContext', 'instance', instanceName, 'options', 'p1', 'cascadingOptions', 'c11'),
-      _.cloneDeep(p1Option.cascadingOptions.c11)
-    ),
   },
   issueTypeIds: [
     createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Epic'), allElements),

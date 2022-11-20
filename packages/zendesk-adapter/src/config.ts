@@ -491,6 +491,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'categories', fieldType: 'list<category>' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       serviceUrl: '/admin/account/brand_management/brands',
@@ -1646,11 +1647,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
-      idFields: ['&brand', 'title'],
-      fileNameFields: ['&brand', 'title'],
+      idFields: ['&section_id', 'title'],
+      fileNameFields: ['&section_id', 'title'],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'position', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'author_id', fieldType: 'unknown' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'vote_sum' },
@@ -1659,7 +1663,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'name' },
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/knowledge/articles/{id}',
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1693,24 +1697,28 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       idFields: ['&locale'],
+      extendsParentId: true,
       fileNameFields: ['&locale'],
       sourceTypeName: 'article__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'created_by_id', fieldType: 'number' },
-        { fieldName: 'updated_by_id', fieldType: 'number' },
       ),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
-        url: '/help_center/articles/{article_id}/translations',
+        url: '/api/v2/help_center/articles/{article_id}/translations',
         method: 'post',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1718,7 +1726,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       modify: {
-        url: '/help_center/articles/{article_id}/translations/{locale}',
+        url: '/api/v2/help_center/articles/{article_id}/translations/{locale}',
         method: 'put',
         deployAsField: 'translation',
         urlParamsToFields: {
@@ -1727,10 +1735,42 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
       },
       remove: {
-        url: '/help_center/translations/{translation_id}',
+        url: '/api/v2/help_center/translations/{translation_id}',
         method: 'delete',
         urlParamsToFields: {
           translation_id: 'id',
+        },
+      },
+    },
+  },
+  guide_language_settings: {
+    request: {
+      url: '/hc/api/internal/help_center_translations',
+    },
+    transformation: {
+      idFields: ['&brand', 'locale'],
+      fileNameFields: ['&brand', 'locale'],
+      dataField: '.',
+      // serviceUrl is created in the help_center_service_url filter
+    },
+    deployRequests: {
+      modify: {
+        url: '/hc/api/internal/help_center_translations/{locale}',
+        method: 'put',
+        urlParamsToFields: {
+          locale: 'locale',
+        },
+      },
+      add: {
+        url: '/hc/api/internal/help_center_translations',
+        method: 'post',
+        deployAsField: 'locales',
+      },
+      remove: {
+        url: '/hc/api/internal/help_center_translations/{locale}',
+        method: 'delete',
+        urlParamsToFields: {
+          locale: 'locale',
         },
       },
     },
@@ -1743,6 +1783,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
+      // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {
       modify: {
@@ -1816,13 +1857,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         // directParent and parentType are created to avoid collisions
         { fieldName: 'direct_parent_id' },
-        { fieldName: 'direct_parent_type', fieldType: 'string' }
+        { fieldName: 'direct_parent_type', fieldType: 'string' },
+        { fieldName: 'position', fieldType: 'number' },
       ),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'sections', fieldType: 'list<section>' },
+        { fieldName: 'articles', fieldType: 'list<article>' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/knowledge/sections/{id}',
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1850,6 +1896,24 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  section_order: {
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+    },
+  },
+  article_order: {
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+    },
+  },
+  category_order: {
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+    },
+  },
   section_translation: {
     request: {
       url: '/api/v2/help_center/sections/{sectionId}/translations',
@@ -1862,15 +1926,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'created_by_id', fieldType: 'number' },
-        { fieldName: 'updated_by_id', fieldType: 'number' },
       ),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1929,12 +1996,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'categories__categories',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'position', fieldType: 'number' },
       ),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'sections', fieldType: 'list<section>' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
       ),
-      serviceUrl: '/hc/admin/categories/{id}/edit',
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -1965,16 +2036,22 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
     transformation: {
       idFields: ['&locale'],
+      extendsParentId: true,
       fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
       ),
+      // serviceUrl is created in help_center_service_url filter
     },
     deployRequests: {
       add: {
@@ -2124,6 +2201,7 @@ export const GUIDE_BRAND_SPECIFIC_TYPES = {
   section: ['sections'],
   category: ['categories'],
   guide_settings: ['guide_settings'],
+  guide_language_settings: ['guide_language_settings'],
 }
 
 // Types in Zendesk Guide that whose instances are shared across all brands

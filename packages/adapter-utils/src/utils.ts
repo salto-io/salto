@@ -514,7 +514,7 @@ const isEqualResolvedValues = (
 )
 
 export const restoreValues: RestoreValuesFunc = async (
-  source, targetElement, getLookUpName, allowEmpty = false
+  source, targetElement, getLookUpName, allowEmpty = true
 ) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
@@ -981,6 +981,9 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) => {
   }
   if (isTypeReference(value)) {
     return `TypeReference(${value.elemID.getFullName()}, ${value.type ? '<omitted>' : '<no value>'})`
+  }
+  if (isStaticFile(value)) {
+    return `StaticFile(${value.filepath}, ${value.hash ? value.hash : '<unknown hash>'})`
   }
   if (value instanceof ElemID) {
     return `ElemID(${value.getFullName()})`

@@ -25,6 +25,7 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { SALESFORCE_METADATA_TYPES } from './fetch_profile/fetch_targets'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
 
@@ -83,7 +84,7 @@ export type ChangeValidatorName = (
   | 'unknownField'
   | 'customFieldType'
   | 'standardFieldLabel'
-  | 'profileMapKeys'
+  | 'mapKeys'
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'cpqValidator'
@@ -548,7 +549,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownField: { refType: BuiltinTypes.BOOLEAN },
     customFieldType: { refType: BuiltinTypes.BOOLEAN },
     standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
-    profileMapKeys: { refType: BuiltinTypes.BOOLEAN },
+    mapKeys: { refType: BuiltinTypes.BOOLEAN },
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
@@ -569,7 +570,15 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     data: { refType: dataManagementType },
     optionalFeatures: { refType: optionalFeaturesType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
-    target: { refType: new ListType(BuiltinTypes.STRING) },
+    target: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          enforce_value: true,
+          values: SALESFORCE_METADATA_TYPES,
+        }),
+      },
+    },
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
   },
   annotations: {

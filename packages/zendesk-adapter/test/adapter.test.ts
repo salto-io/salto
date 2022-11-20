@@ -25,7 +25,8 @@ import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replie
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
-import { ZENDESK } from '../src/constants'
+import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../src/constants'
+import { createEveryoneUserSegmentInstance } from '../src/filters/everyone_user_segment'
 
 type MockReply = {
   url: string
@@ -68,6 +69,10 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
+  const userSegmentType = new ObjectType({
+    elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
+  })
+  const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
@@ -149,11 +154,18 @@ describe('adapter', () => {
           'zendesk.app_owned__parameters',
           'zendesk.apps_owned',
           'zendesk.article',
-          'zendesk.article.instance.brandWithGuide_Title_Yo__@ussa',
-          'zendesk.article.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers_@usssssssa',
+          'zendesk.article.instance.brandWithGuide_greatCategory_greatSection_Title_Yo__@uuussa',
+          'zendesk.article.instance.myBrand_Development_Apex_How_can_agents_leverage_knowledge_to_help_customers_@uuusssssssa',
+          'zendesk.article_order',
+          'zendesk.article_order.instance.brandWithGuide_greatCategory_greatSection__',
+          'zendesk.article_order.instance.myBrand_Development_Apex__',
+          'zendesk.article_order.instance.myBrand_General_Announcements__',
+          'zendesk.article_order.instance.myBrand_General_Billing_and_Subscriptions_uuss__@uuuumuu',
+          'zendesk.article_order.instance.myBrand_General_FAQ__',
+          'zendesk.article_order.instance.myBrand_General_Internal_KB_uus__@uuumuu',
           'zendesk.article_translation',
-          'zendesk.article_translation.instance.brandWithGuide_Title_Yo___ussa__en_us_b@uuuumuuum',
-          'zendesk.article_translation.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers__usssssssa__en_us_b@uuuuuuuuumuuum',
+          'zendesk.article_translation.instance.brandWithGuide_greatCategory_greatSection_Title_Yo___uuussa__en_us_b@uuuuuumuuum',
+          'zendesk.article_translation.instance.myBrand_Development_Apex_How_can_agents_leverage_knowledge_to_help_customers__uuusssssssa__en_us_b@uuuuuuuuuuumuuum',
           'zendesk.article_translation__translations',
           'zendesk.articles',
           'zendesk.automation',
@@ -187,8 +199,12 @@ describe('adapter', () => {
           'zendesk.business_hours_schedules',
           'zendesk.categories',
           'zendesk.category',
+          'zendesk.category.instance.brandWithGuide_greatCategory',
           'zendesk.category.instance.myBrand_Development',
           'zendesk.category.instance.myBrand_General',
+          'zendesk.category_order',
+          'zendesk.category_order.instance.brandWithGuide__',
+          'zendesk.category_order.instance.myBrand__',
           'zendesk.category_translation',
           'zendesk.category_translation.instance.myBrand_Development__en_us_b@uuuum',
           'zendesk.category_translation.instance.myBrand_General__en_us_b@uuuum',
@@ -257,6 +273,13 @@ describe('adapter', () => {
           'zendesk.group.instance.Support4',
           'zendesk.group.instance.Support5',
           'zendesk.groups',
+          'zendesk.guide_language_settings',
+          'zendesk.guide_language_settings.instance.brandWithGuide_ar',
+          'zendesk.guide_language_settings.instance.brandWithGuide_en_us@ub',
+          'zendesk.guide_language_settings.instance.brandWithGuide_he',
+          'zendesk.guide_language_settings.instance.myBrand_ar',
+          'zendesk.guide_language_settings.instance.myBrand_en_us@ub',
+          'zendesk.guide_language_settings.instance.myBrand_he',
           'zendesk.guide_settings',
           'zendesk.guide_settings.instance.brandWithGuide',
           'zendesk.guide_settings.instance.myBrand',
@@ -352,11 +375,22 @@ describe('adapter', () => {
           'zendesk.routing_attribute_value__conditions__all',
           'zendesk.routing_attributes',
           'zendesk.section',
+          'zendesk.section.instance.brandWithGuide_greatCategory_greatSection',
           'zendesk.section.instance.myBrand_Development_Apex',
           'zendesk.section.instance.myBrand_General_Announcements',
           'zendesk.section.instance.myBrand_General_Billing_and_Subscriptions@uuss',
           'zendesk.section.instance.myBrand_General_FAQ',
           'zendesk.section.instance.myBrand_General_Internal_KB@uus',
+          'zendesk.section_order',
+          'zendesk.section_order.instance.brandWithGuide_greatCategory__',
+          'zendesk.section_order.instance.brandWithGuide_greatCategory_greatSection__',
+          'zendesk.section_order.instance.myBrand_Development_Apex__',
+          'zendesk.section_order.instance.myBrand_Development__',
+          'zendesk.section_order.instance.myBrand_General_Announcements__',
+          'zendesk.section_order.instance.myBrand_General_Billing_and_Subscriptions_uuss__@uuuumuu',
+          'zendesk.section_order.instance.myBrand_General_FAQ__',
+          'zendesk.section_order.instance.myBrand_General_Internal_KB_uus__@uuumuu',
+          'zendesk.section_order.instance.myBrand_General__',
           'zendesk.section_translation',
           'zendesk.section_translation.instance.myBrand_Development_Apex__en_us_b@uuuuum',
           'zendesk.section_translation.instance.myBrand_General_Announcements__en_us_b@uuuuum',
@@ -500,6 +534,7 @@ describe('adapter', () => {
           'zendesk.user_fields',
           'zendesk.user_segment',
           'zendesk.user_segment.instance.Agents_and_admins@s',
+          'zendesk.user_segment.instance.Everyone',
           'zendesk.user_segment.instance.Signed_in_users@bs',
           'zendesk.user_segment.instance.Tier_3_Articles@s',
           'zendesk.user_segment.instance.VIP_Customers@s',
@@ -885,7 +920,10 @@ describe('adapter', () => {
             },
           }
         ),
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSource: buildElementsSourceFromElements([
+          userSegmentType,
+          everyoneUserSegmentInstance,
+        ]),
       })
     })
     afterEach(() => {

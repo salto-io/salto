@@ -22,15 +22,12 @@ import { FLOW_METADATA_TYPE } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
 
 const { awu } = collections.asynciterable
-const DRAFT = 'Draft'
-
-const isInstanceOfTypeFlow = isInstanceOfType(FLOW_METADATA_TYPE)
 
 const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
-  message: 'Cannot delete flow that is not in ‘draft’ status',
-  detailedMessage: `Cannot delete flow that is not in ‘draft’ state. Flow name: ${instance.elemID.getFullName()}, status: ${instance.value.status} `,
+  message: 'Cannot delete flow',
+  detailedMessage: `Cannot delete flow via metadata API. Flow name: ${instance.elemID.getFullName()}`,
 })
 
 /**
@@ -40,8 +37,7 @@ const changeValidator: ChangeValidator = async changes => awu(changes)
   .filter(isInstanceChange)
   .filter(isRemovalChange)
   .map(getChangeData)
-  .filter(isInstanceOfTypeFlow)
-  .filter(instance => instance.value.status !== DRAFT)
+  .filter(isInstanceOfType(FLOW_METADATA_TYPE))
   .map(createChangeError)
   .toArray()
 

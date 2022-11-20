@@ -71,6 +71,21 @@ const setUserSegmentIdForAdditionChanges = (
     })
 }
 
+const haveAttachmentsBeenAdded = (
+  articleChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+): boolean => {
+  const addedAttachments = isAdditionChange(articleChange)
+    ? articleChange.data.after.value.attachments
+    : _.difference(
+      articleChange.data.after.value.attachments,
+      articleChange.data.before.value.attachments,
+    )
+  if (!_.isArray(addedAttachments)) {
+    return false
+  }
+  return addedAttachments.length > 0
+}
+
 const AssociateAttachments = async (
   client: ZendeskClient,
   articleChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
@@ -196,7 +211,7 @@ const filterCreator: FilterCreator = ({
           await deployChange(
             change, client, config.apiDefinitions, ['translations', 'attachments'],
           )
-          if (isAdditionOrModificationChange(change)) {
+          if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
             await AssociateAttachments(client, change, articleNameToAttachments)
           }
         },

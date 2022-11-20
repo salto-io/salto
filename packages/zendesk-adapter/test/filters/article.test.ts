@@ -22,10 +22,12 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/article'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
+
+jest.useFakeTimers()
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -43,6 +45,20 @@ describe('article filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
   let filter: FilterType
+  let mockGet: jest.SpyInstance
+  let mockPost: jest.SpyInstance
+
+  const brandType = new ObjectType({
+    elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
+  })
+  const brandInstance = new InstanceElement(
+    'brandName',
+    brandType,
+    {
+      id: 121255,
+      subdomain: 'igonre',
+    }
+  )
   const userSegmentInstance = new InstanceElement(
     'notEveryone',
     new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) }),
@@ -56,6 +72,7 @@ describe('article filter', () => {
     'testArticle',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
     {
+      id: 1111,
       author_id: 'author@salto.io',
       comments_disabled: false,
       draft: false,
@@ -66,13 +83,14 @@ describe('article filter', () => {
       locale: 'en-us',
       outdated: false,
       permission_group_id: '666',
-      brand: '1',
+      brand: brandInstance.value.id,
     }
   )
   const anotherArticleInstance = new InstanceElement(
     'userSegmentArticle',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
     {
+      id: 2222,
       author_id: 'author@salto.io',
       comments_disabled: false,
       draft: false,
@@ -83,7 +101,7 @@ describe('article filter', () => {
       locale: 'en-us',
       outdated: false,
       permission_group_id: '666',
-      brand: '1',
+      brand: brandInstance.value.id,
       user_segment_id: new ReferenceExpression(userSegmentInstance.elemID, userSegmentInstance),
     }
   )
@@ -94,7 +112,7 @@ describe('article filter', () => {
       locale: { id: 'en-us' },
       title: 'The title of the article',
       draft: false,
-      brand: '1',
+      brand: brandInstance.value.id,
       body: '<p>ppppp</p>',
     },
     undefined,
@@ -115,15 +133,17 @@ describe('article filter', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     const elementsSource = buildElementsSourceFromElements([
       userSegmentType,
       everyoneUserSegmentInstance,
     ])
+    const brandIdToClient = { [brandInstance.value.id]: client }
     filter = filterCreator(createFilterCreatorParams({
       client,
       elementsSource,
+      brandIdToClient,
       config: {
         ...DEFAULT_CONFIG,
         [FETCH_CONFIG]: {
@@ -141,8 +161,37 @@ describe('article filter', () => {
   describe('onFetch', () => {
     let elements: (InstanceElement | ObjectType)[]
 
-    beforeAll(() => {
+    beforeEach(() => {
       elements = generateElements()
+      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet.mockImplementation(params => {
+        if ([
+          '/api/v2/help_center/articles/1111/attachments',
+          '/api/v2/help_center/articles/2222/attachments',
+        ].includes(params.url)) {
+          return {
+            status: 200,
+            data: {
+              article_attachments: [
+                // {
+                //   id: attachmentId,
+                //   file_name: filename,
+                //   content_type: 'image/png',
+                //   inline: true,
+                //   content_url: `https://ignore.zendesk.com/hc/article_attachments/${attachmentId}/${filename}`,
+                // },
+              ],
+            },
+          }
+        }
+        // if (params.url === `/hc/article_attachments/${attachmentId}/${filename}`) {
+        //   return {
+        //     status: 200,
+        //     data: content,
+        //   }
+        // }
+        throw new Error('Err')
+      })
     })
 
     it('should add Everyone user_segment_id field', async () => {
@@ -188,6 +237,20 @@ describe('article filter', () => {
   })
 
   describe('deploy', () => {
+    beforeEach(() => {
+      mockPost = jest.spyOn(client, 'post')
+      // For article_attachment UT
+      mockPost.mockImplementation(params => {
+        if ([
+          '/api/v2/help_center/articles/1111/bulk_attachments',
+        ].includes(params.url)) {
+          return {
+            status: 200,
+          }
+        }
+        throw new Error('Err')
+      })
+    })
     it('should pass the correct params to deployChange on create', async () => {
       const id = 2
       mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
@@ -207,7 +270,7 @@ describe('article filter', () => {
     })
 
     it('should pass the correct params to deployChange on update', async () => {
-      const id = 2
+      const id = 3333
       const clonedArticleBefore = articleInstance.clone()
       const clonedArticleAfter = articleInstance.clone()
       clonedArticleBefore.value.id = id

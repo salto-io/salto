@@ -21,6 +21,7 @@ import {
   isInstanceElement, isObjectType, isRemovalChange,
   ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { elements as elementsUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
@@ -69,6 +70,7 @@ const createTranslationType = () :ObjectType => new ObjectType({
     updated_by_id: { refType: BuiltinTypes.NUMBER }, // doesnt exist in article element
     brand: { refType: BuiltinTypes.NUMBER },
   },
+  path: [ZENDESK, elementsUtils.TYPES_PATH, ARTICLE_TRANSLATION_TYPE_NAME],
 })
 
 

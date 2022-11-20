@@ -58,7 +58,7 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const fieldContext = new InstanceElement(
     fieldContextName,
     findType('CustomFieldContext', fetchedElements),
-    createContextValues(randomString, fieldContextName, fetchedElements),
+    createContextValues(randomString, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] }
   )

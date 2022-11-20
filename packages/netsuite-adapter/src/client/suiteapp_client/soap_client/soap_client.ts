@@ -19,17 +19,20 @@ import crypto from 'crypto'
 import path from 'path'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { InstanceElement, isListType, isObjectType, ObjectType, Value } from '@salto-io/adapter-api'
+import { InstanceElement, isListType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
 import { collections, decorators, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
+import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
-import { DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, SearchErrorResponse, SearchResponse } from './types'
+import { CustomRecordTypeRecords, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordValue, SearchErrorResponse, SearchResponse } from './types'
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
+import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING } from '../../../data_elements/types'
+import { XSI_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -46,6 +49,11 @@ const REQUEST_RETRY_DELAY = 5000
 // When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
+const SOAP_CORE_URN = `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`
+const SOAP_COMMON_URN = `urn:common_${NETSUITE_VERSION}.platform.webservices.netsuite.com`
+const SOAP_FILE_CABINET_URN = `urn:filecabinet_${NETSUITE_VERSION}.documents.webservices.netsuite.com`
+
+const SOAP_CUSTOM_RECORD_TYPE_NAME = 'CustomRecord'
 
 const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
@@ -130,8 +138,8 @@ export default class SoapClient {
         attributes: {
           internalId: id.toString(),
           type: 'file',
-          'xsi:type': 'ns7:RecordRef',
-          'xmlns:ns7': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+          [XSI_TYPE]: 'ns7:RecordRef',
+          'xmlns:ns7': SOAP_CORE_URN,
         },
       },
     }
@@ -159,8 +167,8 @@ export default class SoapClient {
     const internalIdEntry = file.id !== undefined ? { internalId: file.id.toString() } : {}
     return {
       attributes: {
-        'xsi:type': 'q1:File',
-        'xmlns:q1': `urn:filecabinet_${NETSUITE_VERSION}.documents.webservices.netsuite.com`,
+        [XSI_TYPE]: 'q1:File',
+        'xmlns:q1': SOAP_FILE_CABINET_URN,
         ...internalIdEntry,
       },
       'q1:name': path.basename(file.path),
@@ -196,8 +204,8 @@ export default class SoapClient {
 
     return {
       attributes: {
-        'xsi:type': 'q1:Folder',
-        'xmlns:q1': `urn:filecabinet_${NETSUITE_VERSION}.documents.webservices.netsuite.com`,
+        [XSI_TYPE]: 'q1:Folder',
+        'xmlns:q1': SOAP_FILE_CABINET_URN,
         ...internalIdEntry,
       },
       'q1:name': path.basename(folder.path),
@@ -216,14 +224,20 @@ export default class SoapClient {
       : SoapClient.convertToFolderRecord(fileCabinetInstance)
   }
 
-  private static convertToDeletionRecord(instance:
-    { id: number; type: string }): object {
+  private static convertToDeletionRecord({
+    id, type, isCustomRecord,
+  } : { id: number; type: string; isCustomRecord?: boolean }): object {
     return {
-      attributes: {
-        type: instance.type,
-        internalId: instance.id,
-        'xsi:type': 'q1:RecordRef',
-        'xmlns:q1': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+      attributes: isCustomRecord ? {
+        typeId: type,
+        internalId: id,
+        [XSI_TYPE]: 'q1:CustomRecordRef',
+        'xmlns:q1': SOAP_CORE_URN,
+      } : {
+        type,
+        internalId: id,
+        [XSI_TYPE]: 'q1:RecordRef',
+        'xmlns:q1': SOAP_CORE_URN,
       },
     }
   }
@@ -367,7 +381,7 @@ export default class SoapClient {
     return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
-  public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
+  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
     const [itemTypes, otherTypes] = _.partition(types, type => type in ITEM_TYPE_TO_SEARCH_STRING)
@@ -392,13 +406,32 @@ export default class SoapClient {
     }))).flat()
   }
 
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+    return Promise.all(
+      customRecordTypes.map(async type => ({
+        type,
+        records: await this.searchCustomRecords(type),
+      }))
+    )
+  }
+
+  private static convertToSoapTypeName(type: ObjectType, isRecordRef: boolean): string {
+    if (isRecordRef) {
+      return RECORD_REF
+    }
+    if (isCustomRecordType(type)) {
+      return SOAP_CUSTOM_RECORD_TYPE_NAME
+    }
+    return (type.elemID.name[0].toUpperCase() + type.elemID.name.slice(1))
+  }
+
   private async convertToSoapRecord(
-    values: Record<string, unknown> & { attributes?: Record<string, unknown> },
+    values: Values,
     type: ObjectType,
     isTopLevel = true,
     isRecordRef = false,
-  ): Promise<Record<string, unknown>> {
-    const typeName = isRecordRef ? 'RecordRef' : (type.elemID.name[0].toUpperCase() + type.elemID.name.slice(1))
+  ): Promise<RecordValue> {
+    const typeName = SoapClient.convertToSoapTypeName(type, isRecordRef)
     // Namespace alias must start with a character (and not a number)
     const namespaceAlias = `pre${uuidv4()}`
 
@@ -406,7 +439,7 @@ export default class SoapClient {
       attributes: {
         ...values.attributes ?? {},
         [`xmlns:${namespaceAlias}`]: await this.getTypeNamespace(typeName),
-        ...isTopLevel ? { 'xsi:type': `${namespaceAlias}:${typeName}` } : {},
+        ...isTopLevel ? { [XSI_TYPE]: `${namespaceAlias}:${typeName}` } : {},
 
       },
       ...Object.fromEntries(await awu(Object.entries(values))
@@ -419,7 +452,7 @@ export default class SoapClient {
             return [
               updateKey,
               await this.convertToSoapRecord(
-                value as Record<string, unknown>,
+                value,
                 fieldType,
                 false,
                 Boolean(type.fields[key]?.annotations.isReference)
@@ -432,7 +465,7 @@ export default class SoapClient {
             if (isObjectType(innerType)) {
               return [updateKey, await awu(makeArray(value)).map(
                 async val => this.convertToSoapRecord(
-                  val as Record<string, unknown>,
+                  val,
                   innerType,
                   false
                 )
@@ -446,7 +479,16 @@ export default class SoapClient {
   }
 
   @retryOnBadResponse
-  private async runDeployAction(instances: InstanceElement[], body: Record<string, unknown>, action: 'updateList' | 'addList' | 'deleteList'): Promise<(number | Error)[]> {
+  private async runDeployAction(
+    instances: InstanceElement[],
+    body: {
+      attributes: Record<string, string>
+      record: RecordValue[]
+    } | {
+      baseRef: object[]
+    },
+    action: 'updateList' | 'addList' | 'deleteList'
+  ): Promise<(number | Error)[]> {
     const response = await this.sendSoapRequest(action, body)
     if (!this.ajv.validate<DeployListResults>(
       DEPLOY_LIST_SCHEMA,
@@ -476,7 +518,7 @@ export default class SoapClient {
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
-        'xmlns:platformCore': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+        'xmlns:platformCore': SOAP_CORE_URN,
       },
       record: await awu(instances).map(
         async instance => this.convertToSoapRecord(instance.value, await instance.getType())
@@ -488,7 +530,7 @@ export default class SoapClient {
   public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
-        'xmlns:platformCore': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+        'xmlns:platformCore': SOAP_CORE_URN,
       },
       record: await awu(instances).map(
         async instance => this.convertToSoapRecord(instance.value, await instance.getType())
@@ -500,46 +542,63 @@ export default class SoapClient {
   public async deleteInstances(instances: InstanceElement[]):
   Promise<(number | Error)[]> {
     const body = {
-      baseRef: instances.map(instance => SoapClient.convertToDeletionRecord({
-        id: instance.value.attributes.internalId,
-        type: instance.elemID.typeName[0].toLowerCase() + instance.elemID.typeName.slice(1),
-      })),
+      baseRef: await awu(instances).map(async instance => {
+        const isCustomRecord = isCustomRecordType(await instance.getType())
+        return SoapClient.convertToDeletionRecord({
+          id: instance.value.attributes.internalId,
+          type: isCustomRecord
+            ? instance.value.recType.attributes.internalId
+            : instance.elemID.typeName[0].toLowerCase() + instance.elemID.typeName.slice(1),
+          isCustomRecord,
+        })
+      }).toArray(),
     }
 
     return this.runDeployAction(instances, body, 'deleteList')
+  }
+
+  private async getAllSearchPages(
+    initialSearchResponse: SearchResponse,
+    type: string
+  ): Promise<SearchResponse[]> {
+    const { totalPages, searchId } = initialSearchResponse.searchResult
+    if (totalPages <= 1) {
+      return [initialSearchResponse]
+    }
+    const responses = await Promise.all(
+      _.range(2, totalPages + 1).map(async i => {
+        const res = await this.sendSearchWithIdRequest({ searchId, pageIndex: i })
+        log.debug(`Finished sending search request for page ${i}/${totalPages} of type ${type}`)
+        return res
+      })
+    )
+    return [initialSearchResponse].concat(responses)
   }
 
   private async search(
     type: string,
     namespace: string,
     subtypes?: string[]
-  ): Promise<Record<string, unknown>[]> {
-    const initialResponse = await this.sendSearchRequest(type, namespace, subtypes)
-    const responses = [initialResponse]
+  ): Promise<RecordValue[]> {
+    const responses = await this.getAllSearchPages(
+      await this.sendSearchRequest(type, namespace, subtypes),
+      type
+    )
+    return responses.flatMap(({ searchResult }) => searchResult.recordList?.record ?? [])
+  }
 
-    if (initialResponse.searchResult.totalPages > 1) {
-      responses.push(
-        ...await Promise.all(
-          _.range(2, initialResponse.searchResult.totalPages + 1)
-            .map(async i => {
-              const res = await this.sendSearchWithIdRequest({
-                searchId: initialResponse.searchResult.searchId,
-                pageIndex: i,
-              })
-              log.debug(`Finished sending search request for page ${i}/${initialResponse.searchResult.totalPages} of type ${type}`)
-              return res
-            })
-        )
-      )
-    }
-
-    return responses.map(
-      response => response.searchResult.recordList?.record ?? []
-    ).flat()
+  private async searchCustomRecords(
+    customRecordType: string
+  ): Promise<RecordValue[]> {
+    const responses = await this.getAllSearchPages(
+      await this.sendCustomRecordsSearchRequest(customRecordType),
+      customRecordType
+    )
+    return responses.flatMap(({ searchResult }) => searchResult.recordList?.record ?? [])
   }
 
   @retryOnBadResponse
-  private async sendGetAllRequest(type: string): Promise<Record<string, unknown>[]> {
+  private async sendGetAllRequest(type: string): Promise<RecordValue[]> {
     const body = {
       record: {
         attributes: {
@@ -561,6 +620,33 @@ export default class SoapClient {
     return response.getAllResult.recordList.record
   }
 
+  private assertSearchResponse(
+    value: unknown
+  ): asserts value is SearchResponse | SearchErrorResponse {
+    if (!this.ajv.validate(SEARCH_RESPONSE_SCHEMA, value)) {
+      log.error(`Got invalid response from search request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from search request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
+    }
+  }
+
+  private assertSuccessSearchResponse(
+    value: unknown
+  ): asserts value is SearchResponse {
+    if (!this.ajv.validate(SEARCH_SUCCESS_SCHEMA, value)) {
+      log.error(`Got invalid response from search request with SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
+      throw new Error(`VALIDATION_ERROR - Got invalid response from search request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(value, undefined, 2)}`)
+    }
+  }
+
+  private static toSearchResponse(
+    response: SearchResponse | SearchErrorResponse
+  ): SearchResponse {
+    if ('totalPages' in response.searchResult) {
+      return { searchResult: response.searchResult }
+    }
+    return { searchResult: { totalPages: 0, searchId: '', recordList: null } }
+  }
+
   @retryOnBadResponse
   private async sendSearchRequest(
     type: string,
@@ -571,7 +657,7 @@ export default class SoapClient {
     const body = {
       searchRecord: {
         attributes: {
-          'xsi:type': `q1:${searchTypeName}`,
+          [XSI_TYPE]: `q1:${searchTypeName}`,
           'xmlns:q1': namespace,
         },
       },
@@ -581,12 +667,12 @@ export default class SoapClient {
       _.assign(body.searchRecord, {
         'q1:basic': {
           attributes: {
-            'xmlns:platformCommon': `urn:common_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
-            'xmlns:platformCore': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+            'xmlns:platformCommon': SOAP_COMMON_URN,
+            'xmlns:platformCore': SOAP_CORE_URN,
           },
           'platformCommon:type': {
             attributes: {
-              'xsi:type': 'platformCore:SearchEnumMultiSelectField',
+              [XSI_TYPE]: 'platformCore:SearchEnumMultiSelectField',
               operator: 'anyOf',
             },
             'platformCore:searchValue': subtypes,
@@ -596,19 +682,33 @@ export default class SoapClient {
     }
 
     const response = await this.sendSoapRequest('search', body)
+    this.assertSearchResponse(response)
+    return SoapClient.toSearchResponse(response)
+  }
 
-    if (!this.ajv.validate<SearchResponse | SearchErrorResponse>(
-      SEARCH_RESPONSE_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from search request with SOAP api of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from search request of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+  @retryOnBadResponse
+  private async sendCustomRecordsSearchRequest(
+    customRecordType: string
+  ): Promise<SearchResponse> {
+    const body = {
+      searchRecord: {
+        attributes: {
+          [XSI_TYPE]: 'ns7:CustomRecordSearchBasic',
+          'xmlns:ns7': SOAP_COMMON_URN,
+        },
+        'ns7:recType': {
+          attributes: {
+            scriptId: customRecordType,
+            type: 'customRecordType',
+            [XSI_TYPE]: 'ns8:CustomizationRef',
+            'xmlns:ns8': SOAP_CORE_URN,
+          },
+        },
+      },
     }
-    if ('totalPages' in response.searchResult) {
-      log.debug(`Finished sending search request for page 1/${response.searchResult.totalPages} of type ${type}`)
-      return { searchResult: response.searchResult }
-    }
-    return { searchResult: { totalPages: 0, searchId: '', recordList: null } }
+    const response = await this.sendSoapRequest('search', body)
+    this.assertSearchResponse(response)
+    return SoapClient.toSearchResponse(response)
   }
 
   @retryOnBadResponse
@@ -619,15 +719,7 @@ export default class SoapClient {
     }
   ): Promise<SearchResponse> {
     const response = await this.sendSoapRequest('searchMoreWithId', args)
-
-    if (!this.ajv.validate<SearchResponse>(
-      SEARCH_SUCCESS_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from search with id request with in SOAP api. Id: ${args.searchId}, index: ${args.pageIndex}, errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`VALIDATION_ERROR - Got invalid response from search with id request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-    }
-
+    this.assertSuccessSearchResponse(response)
     return response
   }
 

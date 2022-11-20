@@ -13,37 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isEqualValues, isInstanceChange, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
 import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
 
-export const removeIdenticalValues = async (change: ModificationChange<InstanceElement>):
-  Promise<ModificationChange<InstanceElement>> => {
-  const differentKeys = new Set(_(change.data.after.value)
-    .keys()
-    .filter(key => !_.isEqual(change.data.after.value[key], change.data.before.value[key]))
-    .value())
+export const getDifferentKeys = (
+  change: ModificationChange<InstanceElement>
+): Set<string> => new Set(
+  Object.keys(change.data.after.value)
+    .filter(key => !isEqualValues(
+      change.data.after.value[key],
+      change.data.before.value[key]
+    ))
+)
 
-  return applyFunctionToChangeData<ModificationChange<InstanceElement>>(
-    change,
-    async element => {
-      element.value = _.pickBy(
-        element.value,
-        (_value, key) => differentKeys.has(key) || key === 'attributes'
-      )
-      return element
-    }
-  )
+export const removeIdenticalValues = (change: ModificationChange<InstanceElement>): void => {
+  const differentKeys = getDifferentKeys(change)
+  Object.values(change.data).forEach(element => {
+    element.value = _.pickBy(
+      element.value,
+      (_value, key) => differentKeys.has(key) || key === 'attributes'
+    )
+  })
 }
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  onFetch: async () => {},
+const filterCreator = (): FilterWith<'preDeploy'> => ({
   preDeploy: async changes => {
     await awu(changes)
       .filter(isModificationChange)

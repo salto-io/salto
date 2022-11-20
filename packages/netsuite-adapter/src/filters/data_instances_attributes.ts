@@ -19,6 +19,7 @@ import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-ut
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
 import { FilterWith } from '../filter'
+import { XSI_TYPE } from '../client/constants'
 
 const { awu } = collections.asynciterable
 
@@ -36,7 +37,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
             if (typeof value === 'object' && 'attributes' in value) {
               _.assign(value, value.attributes)
               delete value.attributes
-              delete value['xsi:type']
+              delete value[XSI_TYPE]
             }
             return value
           },

@@ -53,83 +53,102 @@ describe('data_instances_custom_fields', () => {
     })
   })
 
-  it('preDeploy should convert custom fields to customFieldList', async () => {
+  describe('preDeploy', () => {
     const type = new ObjectType({
       elemID: new ElemID(NETSUITE, 'Customer'),
       annotations: { source: 'soap' },
     })
-    const instance = new InstanceElement(
-      'name',
-      type,
-      {
-        custom_a: true,
-        custom_b: 'string',
-        custom_c: 1.5,
-        custom_d: '2020-05-02T13:44:31.000-07:00',
-        custom_e: {},
-        custom_f: 1,
-        custom_g: [{}],
-      }
-    )
-
-    await filterCreator().preDeploy([
-      toChange({ before: instance, after: instance }),
-      toChange({ before: type, after: type }),
-    ])
-    expect(instance.value).toEqual({
-      customFieldList: {
-        'platformCore:customField': [
-          {
-            attributes: {
-              scriptId: 'a',
-              'xsi:type': SOAP_FIELDS_TYPES.BOOLEAN,
+    let instance: InstanceElement
+    beforeEach(() => {
+      instance = new InstanceElement(
+        'name',
+        type,
+        {
+          custom_a: true,
+          custom_b: 'string',
+          custom_c: 1.5,
+          custom_d: '2020-05-02T13:44:31.000-07:00',
+          custom_e: {},
+          custom_f: 1,
+          custom_g: [{}],
+        }
+      )
+    })
+    it('should convert all custom fields to customFieldList on instance addition', async () => {
+      await filterCreator().preDeploy([toChange({ after: instance })])
+      expect(instance.value).toEqual({
+        customFieldList: {
+          'platformCore:customField': [
+            {
+              attributes: {
+                scriptId: 'a',
+                'xsi:type': SOAP_FIELDS_TYPES.BOOLEAN,
+              },
+              'platformCore:value': true,
             },
-            'platformCore:value': true,
-          },
-          {
-            attributes: {
-              scriptId: 'b',
-              'xsi:type': SOAP_FIELDS_TYPES.STRING,
+            {
+              attributes: {
+                scriptId: 'b',
+                'xsi:type': SOAP_FIELDS_TYPES.STRING,
+              },
+              'platformCore:value': 'string',
             },
-            'platformCore:value': 'string',
-          },
-          {
-            attributes: {
-              scriptId: 'c',
-              'xsi:type': SOAP_FIELDS_TYPES.DOUBLE,
+            {
+              attributes: {
+                scriptId: 'c',
+                'xsi:type': SOAP_FIELDS_TYPES.DOUBLE,
+              },
+              'platformCore:value': 1.5,
             },
-            'platformCore:value': 1.5,
-          },
-          {
-            attributes: {
-              scriptId: 'd',
-              'xsi:type': SOAP_FIELDS_TYPES.DATE,
+            {
+              attributes: {
+                scriptId: 'd',
+                'xsi:type': SOAP_FIELDS_TYPES.DATE,
+              },
+              'platformCore:value': '2020-05-02T13:44:31.000-07:00',
             },
-            'platformCore:value': '2020-05-02T13:44:31.000-07:00',
-          },
-          {
-            attributes: {
-              scriptId: 'e',
-              'xsi:type': SOAP_FIELDS_TYPES.SELECT,
+            {
+              attributes: {
+                scriptId: 'e',
+                'xsi:type': SOAP_FIELDS_TYPES.SELECT,
+              },
+              'platformCore:value': {},
             },
-            'platformCore:value': {},
-          },
-          {
-            attributes: {
-              scriptId: 'f',
-              'xsi:type': SOAP_FIELDS_TYPES.LONG,
+            {
+              attributes: {
+                scriptId: 'f',
+                'xsi:type': SOAP_FIELDS_TYPES.LONG,
+              },
+              'platformCore:value': 1,
             },
-            'platformCore:value': 1,
-          },
-          {
-            attributes: {
-              scriptId: 'g',
-              'xsi:type': SOAP_FIELDS_TYPES.MULTISELECT,
+            {
+              attributes: {
+                scriptId: 'g',
+                'xsi:type': SOAP_FIELDS_TYPES.MULTISELECT,
+              },
+              'platformCore:value': [{}],
             },
-            'platformCore:value': [{}],
-          },
-        ],
-      },
+          ],
+        },
+      })
+    })
+    it('should convert only changed custom fields to customFieldList on instance modification', async () => {
+      const before = instance.clone()
+      instance.value.custom_a = false
+      await filterCreator().preDeploy([toChange({ before, after: instance })])
+      expect(instance.value).toEqual({
+        customFieldList: {
+          'platformCore:customField': [
+            {
+              attributes: {
+                scriptId: 'a',
+                'xsi:type': SOAP_FIELDS_TYPES.BOOLEAN,
+              },
+              'platformCore:value': false,
+            },
+          ],
+        },
+      })
     })
   })
 })

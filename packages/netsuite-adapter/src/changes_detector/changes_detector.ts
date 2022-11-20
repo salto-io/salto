@@ -121,9 +121,18 @@ export const getChangedObjects = async (
 ): Promise<NetsuiteQuery> => {
   log.debug('Starting to look for changed objects')
 
+  const {
+    isTypeMatch,
+    isFileMatch,
+    isParentFolderMatch,
+    isCustomRecordTypeMatch,
+    areAllCustomRecordsMatch,
+    isCustomRecordMatch,
+  } = query
+
   const instancesChangesPromise = Promise.all(
     DETECTORS
-      .filter(detector => detector.getTypes().some(query.isTypeMatch))
+      .filter(detector => detector.getTypes().some(isTypeMatch))
       .map(detector => detector.getChanges(client, dateRange))
   ).then(output => output.flat())
   const [
@@ -148,11 +157,11 @@ export const getChangedObjects = async (
 
   const filePaths = new Set([
     ...getChangedIds(changedFiles, serviceIdToLastFetchDate, systemNoteChanges),
-  ].filter(query.isFileMatch))
+  ].filter(isFileMatch))
 
   const folderPaths = [
     ...getChangedIds(changedFolders, serviceIdToLastFetchDate, systemNoteChanges),
-  ].filter(query.isFileMatch)
+  ].filter(isFileMatch)
 
   const unresolvedFolderPaths = folderPaths
     .map(folder => `${folder}/`)
@@ -176,7 +185,10 @@ export const getChangedObjects = async (
       || types.has(objectID.type),
     isFileMatch: filePath => filePaths.has(filePath)
       || unresolvedFolderPaths.some(path => filePath.startsWith(path)),
-    isParentFolderMatch: query.isParentFolderMatch,
+    isParentFolderMatch,
     areSomeFilesMatch: () => filePaths.size !== 0 || folderPaths.length !== 0,
+    isCustomRecordTypeMatch,
+    areAllCustomRecordsMatch,
+    isCustomRecordMatch,
   }
 }

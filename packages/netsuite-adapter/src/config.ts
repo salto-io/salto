@@ -163,6 +163,9 @@ const queryParamsConfigType = new ObjectType({
     fileCabinet: {
       refType: new ListType(BuiltinTypes.STRING),
     },
+    customRecords: {
+      refType: new ListType(fetchTypeQueryParamsConfigType),
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -178,6 +181,10 @@ export const fetchDefault: FetchParams = {
       '^/SuiteScripts.*',
       '^/Templates.*',
     ],
+    // SALTO-2198 should be fetched by default after some run time
+    // customRecords: [{
+    //   name: '.*',
+    // }],
   },
   fieldsToOmit: [
     {
@@ -484,6 +491,21 @@ const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
   return newPathRegex
 }
 
+// uniting first's and second's types. without duplications
+const combineFetchTypeQueryParams = (
+  first: FetchTypeQueryParams[],
+  second: FetchTypeQueryParams[]
+): FetchTypeQueryParams[] => _(first)
+  .concat(second)
+  .groupBy(type => type.name)
+  .map((types, name) => ({
+    name,
+    ...types.some(type => type.ids === undefined)
+      ? {}
+      : { ids: _.uniq(types.flatMap(type => type.ids as string[])) },
+  }))
+  .value()
+
 export const combineQueryParams = (
   first: QueryParams | undefined,
   second: QueryParams | undefined,
@@ -493,24 +515,19 @@ export const combineQueryParams = (
   }
 
   // case where both are defined
-  const newFileCabinet = _(first.fileCabinet)
-    .concat(second.fileCabinet)
-    .uniq()
-    .value()
-  // uniting first's and second's types. without duplications
-  const newTypes: FetchTypeQueryParams[] = _(first.types)
-    .concat(second.types)
-    .groupBy(type => type.name)
-    .map((types, name) => ({
-      name,
-      ...types.some(type => type.ids === undefined)
-        ? {}
-        : { ids: _.uniq(types.flatMap(type => type.ids as string[])) },
-    }))
-    .value()
+  const newFileCabinet = _(first.fileCabinet).concat(second.fileCabinet).uniq().value()
+  const newTypes = combineFetchTypeQueryParams(first.types, second.types)
+  const newCustomRecords = first.customRecords || second.customRecords ? {
+    customRecords: combineFetchTypeQueryParams(
+      first.customRecords ?? [],
+      second.customRecords ?? []
+    ),
+  } : {}
+
   return {
     fileCabinet: newFileCabinet,
     types: newTypes,
+    ...newCustomRecords,
   }
 }
 
@@ -518,7 +535,7 @@ const updateConfigFromFailures = (
   failedToFetchAllAtOnce: boolean,
   failedFilePaths: FailedFiles,
   failedTypes: FailedTypes,
-  configToUpdate: InstanceElement,
+  configToUpdate: NetsuiteConfig,
 ): boolean => {
   const suggestions = toConfigSuggestions(
     failedToFetchAllAtOnce, failedFilePaths, failedTypes
@@ -528,13 +545,13 @@ const updateConfigFromFailures = (
   }
 
   if (suggestions.fetchAllTypesAtOnce !== undefined) {
-    configToUpdate.value[CLIENT_CONFIG] = _.pickBy({
-      ...(configToUpdate.value[CLIENT_CONFIG] ?? {}),
+    configToUpdate[CLIENT_CONFIG] = _.pickBy({
+      ...(configToUpdate[CLIENT_CONFIG] ?? {}),
       [FETCH_ALL_TYPES_AT_ONCE]: suggestions.fetchAllTypesAtOnce,
     }, values.isDefined)
   }
 
-  const currentFetch = configToUpdate.value[FETCH]
+  const currentFetch = configToUpdate[FETCH]
   const currentExclude = currentFetch?.[EXCLUDE] !== undefined
     ? _.cloneDeep(currentFetch[EXCLUDE])
     : { types: [], fileCabinet: [] }
@@ -551,8 +568,8 @@ const updateConfigFromFailures = (
     )
     : undefined
 
-  configToUpdate.value[FETCH] = {
-    ...(configToUpdate.value[FETCH] ?? {}),
+  configToUpdate[FETCH] = {
+    ...(configToUpdate[FETCH] ?? {}),
     [EXCLUDE]: newExclude,
     ...(newLockedElementToExclude !== undefined
       ? { [LOCKED_ELEMENTS_TO_EXCLUDE]: newLockedElementToExclude }
@@ -612,9 +629,7 @@ const updateConfigFetchFormat = (
   }
 
   const typesToExclude: QueryParams = configToUpdate.value[SKIP_LIST] !== undefined
-    ? convertToQueryParams(
-      configToUpdate.value[SKIP_LIST]
-    )
+    ? convertToQueryParams(configToUpdate.value[SKIP_LIST])
     : { types: [], fileCabinet: [] }
 
   delete configToUpdate.value[SKIP_LIST]
@@ -716,7 +731,7 @@ export const getConfigFromConfigChanges = (
     failedToFetchAllAtOnce,
     failedFilePaths,
     failedTypes,
-    conf
+    conf.value
   )
   const message = [
     didUpdateFromFailures

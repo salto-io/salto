@@ -19,14 +19,15 @@ import {
   Change, ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange,
   isInstanceChange, isInstanceElement, isModificationChange, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
+import { TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
 type ParentAndChildTypePair = { parent: string; child: string }
 export const RELEVANT_PARENT_AND_CHILD_TYPES: ParentAndChildTypePair[] = [
-  { parent: 'ticket_field', child: 'ticket_field__custom_field_options' },
-  { parent: 'user_field', child: 'user_field__custom_field_options' },
-  { parent: 'organization_field', child: 'organization_field__custom_field_options' },
+  { parent: TICKET_FIELD_TYPE_NAME, child: 'ticket_field__custom_field_options' },
+  { parent: USER_FIELD_TYPE_NAME, child: 'user_field__custom_field_options' },
+  { parent: ORG_FIELD_TYPE_NAME, child: 'organization_field__custom_field_options' },
 ]
 
 export const CHECKBOX_TYPE_NAME = 'checkbox'

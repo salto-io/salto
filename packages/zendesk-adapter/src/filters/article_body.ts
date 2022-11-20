@@ -35,11 +35,10 @@ const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
 
-// TODO: Make the regexes generic with a list.map
 // TODO: Add documentation
 // TODO: Make it prettier because it looks crappy
 
-const ELEMENTS_ID_SEARCHES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD].map(field => ({
+const ELEMENTS_ID_SEARCHES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, 'article_attachments'].map(field => ({
   field,
   urlRegex: new RegExp(`(\\/${field}\\/\\d*)`),
   idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d*)`),
@@ -123,6 +122,7 @@ const filterCreator: FilterCreator = () => {
         [CATEGORIES_FIELD]: instances.filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME),
         [SECTIONS_FIELD]: instances.filter(e => e.elemID.typeName === SECTION_TYPE_NAME),
         [ARTICLES_FIELD]: instances.filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME),
+        article_attachments: instances.filter(e => e.elemID.typeName === 'article_attachment'),
       }
 
       instances

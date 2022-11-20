@@ -541,7 +541,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
-  referenceUtils.generateLookupFunc(referencesRules),
+  referenceUtils.generateLookupFunc(referencesRules, defs => new JiraFieldReferenceResolver(defs)),
 ]
 
 export const getLookUpName: GetLookupNameFunc = async args => (

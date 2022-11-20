@@ -22,63 +22,79 @@ import {
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
+import {
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME, ARTICLES_FIELD,
+  BRAND_TYPE_NAME, CATEGORIES_FIELD,
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME, SECTIONS_FIELD,
+} from '../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
 
+// TODO: Make the regexes generic with a list.map
+// TODO: Add documentation
+// TODO: Make it prettier because it looks crappy
+
+const ELEMENTS_ID_SEARCHES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD].map(field => ({
+  field,
+  urlRegex: new RegExp(`(\\/${field}\\/\\d*)`),
+  idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d*)`),
+}))
+
 const BASE_URL_REGEX = /(https:\/\/[^/]+)/
-const ARTICLE_ID_URL_REGEX = /(\/articles\/\d*)/
 
-const ARTICLE_ID_REGEX = /(?<articleUrl>\/articles\/)(?<articleId>\d*)/
+const matchElementId = ({ urlPart, elements, idRegex }
+  : { urlPart: string; elements: InstanceElement[]; idRegex: RegExp })
+: TemplatePart[] | undefined => {
+  const { url, id } = urlPart.match(idRegex)?.groups ?? {}
+  if (url && id) {
+    const referencedArticle = elements
+      .find(element => element.value.id.toString() === id)
+    if (isInstanceElement(referencedArticle)) {
+      return [url, new ReferenceExpression(referencedArticle.elemID, referencedArticle)]
+    }
+  }
+  return undefined
+}
 
-const referenceUrls = ({
-  urlPart,
-  brandInstances,
-  articleInstances,
-}: {
+const referenceUrls = ({ urlPart, additionalInstances }: {
   urlPart: string
-  brandInstances: InstanceElement[]
-  articleInstances: InstanceElement[]
+  additionalInstances: Record<string, InstanceElement[]>
 }): TemplatePart[] => {
   const urlSubdomain = urlPart.match(BASE_URL_REGEX)?.pop()
-  const urlBrand = brandInstances
+  const urlBrand = additionalInstances[BRAND_TYPE_NAME]
     .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
   if (isInstanceElement(urlBrand)) {
     return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
   }
 
-  const { articleUrl, articleId } = urlPart.match(ARTICLE_ID_REGEX)?.groups ?? {}
-  if (articleUrl && articleId) {
-    const referencedArticle = articleInstances
-      .find(articleInstance => articleInstance.value.id.toString() === articleId)
-    if (isInstanceElement(referencedArticle)) {
-      return [
-        articleUrl,
-        new ReferenceExpression(referencedArticle.elemID, referencedArticle),
-      ]
+  for (const { idRegex, field } of ELEMENTS_ID_SEARCHES) {
+    const match = matchElementId({ urlPart, elements: additionalInstances[field], idRegex })
+    if (match) {
+      return match
     }
   }
   return [urlPart]
 }
 
 const updateArticleBody = (
-  articleInstace: InstanceElement,
-  brandInstances: InstanceElement[],
-  articleInstances: InstanceElement[],
+  articleInstance: InstanceElement,
+  additionalInstances: Record<string, InstanceElement[]>
 ): void => {
-  const originalArticleBody = articleInstace.value[BODY_FIELD]
+  const originalArticleBody = articleInstance.value[BODY_FIELD]
   if (!_.isString(originalArticleBody)) {
     return
   }
   const processedArticleBody = extractTemplate(
     originalArticleBody,
-    [BASE_URL_REGEX, ARTICLE_ID_URL_REGEX],
-    articleUrl => referenceUrls({ url: articleUrl, brandInstances, articleInstances }),
+    [BASE_URL_REGEX, ...ELEMENTS_ID_SEARCHES.map(s => s.urlRegex)],
+    articleUrl => referenceUrls({ urlPart: articleUrl, additionalInstances }),
   )
-  articleInstace.value.body = processedArticleBody
+  articleInstance.value.body = processedArticleBody
 }
 
 /**
@@ -102,15 +118,18 @@ const filterCreator: FilterCreator = () => {
   return {
     onFetch: async elements => {
       const instances = elements.filter(isInstanceElement)
-      const brandInstances = instances
-        .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
-      const articleInstances = instances
-        .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
+      const additionalInstances = {
+        [BRAND_TYPE_NAME]: instances.filter(e => e.elemID.typeName === BRAND_TYPE_NAME),
+        [CATEGORIES_FIELD]: instances.filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME),
+        [SECTIONS_FIELD]: instances.filter(e => e.elemID.typeName === SECTION_TYPE_NAME),
+        [ARTICLES_FIELD]: instances.filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME),
+      }
+
       instances
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
-          updateArticleBody(articleInstance, brandInstances, articleInstances)))
+          updateArticleBody(articleInstance, additionalInstances)))
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)

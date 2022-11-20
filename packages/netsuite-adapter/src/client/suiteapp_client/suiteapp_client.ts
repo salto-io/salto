@@ -39,6 +39,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
+import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
@@ -549,8 +550,12 @@ export default class SuiteAppClient {
     return this.soapClient.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
+  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
     return this.soapClient.getAllRecords(types)
+  }
+
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+    return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {

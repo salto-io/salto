@@ -120,7 +120,13 @@ describe('data_elements', () => {
     it('should return the instances of the types', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
+          return [{
+            name: 'name',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '1',
+            },
+          }]
         }
         return []
       })
@@ -128,7 +134,13 @@ describe('data_elements', () => {
       const elements = await getDataElements(client, query)
       expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
       expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary', 'instance', 'name'])
-      expect((elements[1] as InstanceElement).value).toEqual({ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } })
+      expect((elements[1] as InstanceElement).value).toEqual({
+        name: 'name',
+        attributes: {
+          'xsi:type': 'listAcct:Subsidiary',
+          internalId: '1',
+        },
+      })
     })
 
     it('should add identifier if type has more than one identifier fields', async () => {
@@ -145,7 +157,10 @@ describe('data_elements', () => {
         if (types[0] === 'accountingPeriod') {
           return [{
             periodName: 'name',
-            attributes: { 'xsi:type': 'listAcct:AccountingPeriod' },
+            attributes: {
+              'xsi:type': 'listAcct:AccountingPeriod',
+              internalId: '1',
+            },
             fiscalCalendar: {
               name: 'fiscal',
             },
@@ -204,7 +219,19 @@ describe('data_elements', () => {
     it('should return only requested instances', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
+          return [{
+            name: 'name1',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '1',
+            },
+          }, {
+            name: 'name2',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '2',
+            },
+          }]
         }
         return []
       })
@@ -227,7 +254,19 @@ describe('data_elements', () => {
     it('should return only types when no instances match', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
+          return [{
+            name: 'name1',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '1',
+            },
+          }, {
+            name: 'name2',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '2',
+            },
+          }]
         }
         return []
       })
@@ -264,7 +303,14 @@ describe('data_elements', () => {
     it('should convert date to string', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{ name: 'name', date: new Date(2020, 1, 1), attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
+          return [{
+            name: 'name',
+            date: new Date(2020, 1, 1),
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '1',
+            },
+          }]
         }
         return []
       })
@@ -275,10 +321,21 @@ describe('data_elements', () => {
     it('should convert booleans', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [
-            { name: 'name1', booleanField: 'true', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
-            { name: 'name2', booleanField: 'false', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
-          ]
+          return [{
+            name: 'name1',
+            booleanField: 'true',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '1',
+            },
+          }, {
+            name: 'name2',
+            booleanField: 'false',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '2',
+            },
+          }]
         }
         return []
       })
@@ -290,9 +347,14 @@ describe('data_elements', () => {
     it('should convert numbers', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [
-            { name: 'name', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
-          ]
+          return [{
+            name: 'name',
+            numberField: '1234',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '1',
+            },
+          }]
         }
         return []
       })
@@ -318,10 +380,21 @@ describe('data_elements', () => {
 
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [
-            { name: 'name', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
-            { name: 'name2', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
-          ]
+          return [{
+            name: 'name',
+            numberField: '1234',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '1',
+            },
+          }, {
+            name: 'name2',
+            numberField: '1234',
+            attributes: {
+              'xsi:type': 'listAcct:Subsidiary',
+              internalId: '2',
+            },
+          }]
         }
         return []
       })

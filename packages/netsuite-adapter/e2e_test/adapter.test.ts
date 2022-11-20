@@ -17,8 +17,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
-  DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes, ChangeError, getChangeData, Element,
+  Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
+  ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -26,14 +26,14 @@ import _ from 'lodash'
 import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
-import { getMetadataTypes, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
+import { getElementValueOrAnnotations, getMetadataTypes, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
-  FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, NETSUITE, PATH, ROLE, SCRIPT_ID,
+  FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, PATH, ROLE, SCRIPT_ID,
   SKIP_LIST, CONFIG_FEATURES,
   TRANSACTION_COLUMN_CUSTOM_FIELD,
-  WARN_STALE_DATA, WORKFLOW, FETCH, INCLUDE,
+  WARN_STALE_DATA, WORKFLOW, FETCH, INCLUDE, NETSUITE,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
@@ -107,7 +107,8 @@ describe('Netsuite adapter E2E with real account', () => {
       expect(updatedConfig.value?.[FETCH_ALL_TYPES_AT_ONCE] ?? false).toBe(false)
     }
 
-    const randomString = `created by oss e2e - ${String(Date.now()).substring(6)}`
+    const randomNumber = String(Date.now()).substring(6)
+    const randomString = `created by oss e2e - ${randomNumber}`
 
     const entityCustomFieldToCreate = createInstanceElement(
       ENTITY_CUSTOM_FIELD,
@@ -117,11 +118,12 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
-    const customRecordTypeValues = mockDefaultValues[CUSTOM_RECORD_TYPE]
+    const { fields, annotations } = mockDefaultValues[CUSTOM_RECORD_TYPE]
     const customRecordTypeToCreate = new ObjectType({
-      elemID: new ElemID(NETSUITE, customRecordTypeValues[SCRIPT_ID]),
+      elemID: new ElemID(NETSUITE, annotations[SCRIPT_ID]),
+      fields,
       annotations: {
-        ...customRecordTypeValues,
+        ...annotations,
         recordname: randomString,
       },
     })
@@ -213,6 +215,8 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
+    const featuresInstance = createInstanceElement(CONFIG_FEATURES, {})
+
     const subsidiaryAddressType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'address'),
       fields: {
@@ -256,11 +260,80 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
-    const featuresInstance = createInstanceElement(CONFIG_FEATURES, {})
+    const accountType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'account'),
+      fields: {
+        internalId: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            isAttribute: true,
+          },
+        },
+        acctName: { refType: BuiltinTypes.STRING },
+        acctType: { refType: BuiltinTypes.STRING },
+      },
+      annotations: { source: 'soap' },
+    })
+
+    const accountInstance = new InstanceElement(
+      naclCase(randomString),
+      accountType,
+      {
+        acctName: randomString,
+        acctType: '_fixedAsset',
+      }
+    )
+
+    const customRecordScriptId = `record_slt_e2e_test_${randomNumber}`
+    const customRecordInstance = new InstanceElement(
+      customRecordScriptId,
+      customRecordTypeToCreate,
+      {
+        scriptid: customRecordScriptId,
+        isInactive: false,
+        parent: new ReferenceExpression(
+          customRecordTypeToCreate.elemID.createNestedID('instance', 'parent_record'),
+          { internalId: '1' },
+        ),
+        name: randomString,
+        custom_custrecord_field1: 'test',
+        custom_custrecord_field2: 10,
+        custom_custrecord_account: new ReferenceExpression(accountInstance.elemID, accountInstance),
+      },
+    )
+
+    const elementsToCreate = [
+      entityCustomFieldToCreate,
+      customRecordTypeToCreate,
+      workflowToCreate,
+      emailTemplateToCreate,
+      fileToCreate,
+      invalidWorkflowInstance,
+      ...withSuiteApp ? [
+        subsidiaryInstance,
+        accountInstance,
+        customRecordInstance,
+      ] : [],
+    ]
+
+    const elementsMap = _.keyBy(elementsToCreate, instance => instance.elemID.getFullName())
+    const updateInternalIds = (changes: ReadonlyArray<Change>): void => {
+      changes.map(getChangeData).forEach(element => {
+        const { internalId } = getElementValueOrAnnotations(element)
+        if (internalId && element.elemID.getFullName() in elementsMap) {
+          const elementToUpdate = elementsMap[element.elemID.getFullName()]
+          getElementValueOrAnnotations(elementToUpdate).internalId = internalId
+        }
+      })
+    }
 
     afterAll(async () => {
       const revertChanges: Map<ChangeId, Change<InstanceElement>> = new Map([
-        ...withSuiteApp ? [subsidiaryInstance] : [],
+        ...withSuiteApp ? [
+          subsidiaryInstance,
+          accountInstance,
+          customRecordInstance,
+        ] : [],
       ].map((instanceToDelete, index) => [
         index.toString(),
         toChange({ before: instanceToDelete }),
@@ -290,15 +363,10 @@ describe('Netsuite adapter E2E with real account', () => {
     })
 
     describe('Create records', () => {
-      const changes: Map<ChangeId, Change> = new Map([
-        entityCustomFieldToCreate,
-        customRecordTypeToCreate,
-        workflowToCreate,
-        emailTemplateToCreate,
-        fileToCreate,
-        invalidWorkflowInstance,
-        ...withSuiteApp ? [subsidiaryInstance] : [],
-      ].map((instanceToCreate, index) => [index.toString(), toChange({ after: instanceToCreate })]))
+      const changes = new Map(elementsToCreate.map((instanceToCreate, index) => [
+        index.toString(),
+        toChange({ after: instanceToCreate }),
+      ]))
 
       const folderToModifyBefore = folderToModify.clone()
       // Modified the description here just so the before won't be the same as the after
@@ -323,7 +391,7 @@ describe('Netsuite adapter E2E with real account', () => {
       beforeAll(async () => {
         const adapterAttrWithoutElementsSource = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },
-          { [FETCH]: { [INCLUDE]: { types: [], fileCabinet: ['/Images.*'] } } }
+          { [FETCH]: { [INCLUDE]: { types: [], fileCabinet: ['/Images.*'], customRecords: [] } } }
         )
         const mockFetchOpts: MockInterface<FetchOptions> = {
           progressReporter: { reportProgress: jest.fn() },
@@ -348,17 +416,16 @@ describe('Netsuite adapter E2E with real account', () => {
           .entries()
           .value()
 
-        deployResult = { appliedChanges: [], errors: [] }
-        for (const [id, group] of changesGroups) {
-          // eslint-disable-next-line no-await-in-loop
-          const { appliedChanges, errors } = await adapter.deploy({
+        const results = await awu(changesGroups).map(async ([id, group]) => {
+          const result = await adapter.deploy({
             changeGroup: { groupID: id, changes: group },
           })
-
-          deployResult = {
-            appliedChanges: [...deployResult.appliedChanges, ...appliedChanges],
-            errors: [...deployResult.errors, ...errors],
-          }
+          updateInternalIds(result.appliedChanges)
+          return result
+        }).toArray()
+        deployResult = {
+          appliedChanges: results.flatMap(result => result.appliedChanges),
+          errors: results.flatMap(result => result.errors),
         }
       })
 
@@ -635,9 +702,39 @@ describe('Netsuite adapter E2E with real account', () => {
             fetchedElements,
             subsidiaryInstance.elemID
           ) as InstanceElement
-          subsidiaryInstance.value.internalId = fetchSubsidiary.value.internalId
           expect(fetchSubsidiary.value.name).toEqual(randomString)
           expect(fetchSubsidiary.value.internalId).toBeDefined()
+        }
+      })
+
+      it('should fetch the created account', async () => {
+        if (withSuiteApp) {
+          const fetchAccount = findElement(
+            fetchedElements,
+            accountInstance.elemID
+          ) as InstanceElement
+          expect(fetchAccount.value.acctName).toEqual(randomString)
+          expect(fetchAccount.value.internalId).toBeDefined()
+        }
+      })
+
+      it('should fetch the created custom record', async () => {
+        if (withSuiteApp) {
+          const fetchCustomRecord = findElement(
+            fetchedElements,
+            customRecordInstance.elemID
+          ) as InstanceElement
+          expect(fetchCustomRecord.value.name).toEqual(randomString)
+          expect(fetchCustomRecord.value.internalId).toBeDefined()
+          expect(fetchCustomRecord.value.scriptid).toEqual(customRecordScriptId)
+          expect(isReferenceExpression(fetchCustomRecord.value.parent)).toBeTruthy()
+          expect(fetchCustomRecord.value.custom_custrecord_field1).toEqual('test')
+          expect(fetchCustomRecord.value.custom_custrecord_field2).toEqual(10)
+          expect(
+            isReferenceExpression(fetchCustomRecord.value.custom_custrecord_account)
+            && fetchCustomRecord.value.custom_custrecord_account.elemID
+              .isEqual(accountInstance.elemID)
+          ).toBeTruthy()
         }
       })
 

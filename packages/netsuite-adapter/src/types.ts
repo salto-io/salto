@@ -20,7 +20,7 @@ import { StandardType, getStandardTypes, isStandardTypeName } from './autogen/ty
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
-import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, METADATA_TYPE } from './constants'
+import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, METADATA_TYPE, SOAP } from './constants'
 
 export const getElementValueOrAnnotations = (element: Element): Values => (
   isInstanceElement(element) ? element.value : element.annotations
@@ -50,7 +50,16 @@ export const isFileInstance = (element: Element): boolean =>
   isInstanceElement(element) && element.refType.elemID.name === 'file'
 
 export const isDataObjectType = (element: ObjectType): boolean =>
-  element.annotations.source === 'soap'
+  element.annotations.source === SOAP
+
+export const isCustomFieldName = (fieldName: string): boolean =>
+  fieldName.startsWith(CUSTOM_FIELD_PREFIX)
+
+export const toCustomFieldName = (fieldName: string): string =>
+  `${CUSTOM_FIELD_PREFIX}${fieldName}`
+
+export const removeCustomFieldPrefix = (fieldName: string): string =>
+  fieldName.slice(CUSTOM_FIELD_PREFIX.length, fieldName.length)
 
 type MetadataTypes = {
   standardTypes: TypesMap<StandardType>

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isField, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isField, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
@@ -22,6 +22,7 @@ import { RECORD_ID_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../../client/client'
 import { isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, SCRIPT_ID } from '../../constants'
+import { getCustomListValues, isCustomListInstance } from '../../elements_source_index/elements_source_index'
 
 const log = logger(module)
 
@@ -108,7 +109,7 @@ const addInternalIdFieldToSupportedType = (elements: Element[]): void => {
 }
 
 const fetchRecordType = async (
-  idParamName: string,
+  idParamName: 'id' | 'internalid',
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
@@ -179,6 +180,32 @@ const addInternalIdToCustomRecordTypes = async (
   }
 }
 
+const addInternalIdToCustomListValues = async (
+  client: NetsuiteClient,
+  elements: Element[]
+): Promise<void> => {
+  const customListInstancesWithMissingValuesInternalIds = elements
+    .filter(isInstanceElement).filter(isCustomListInstance)
+    .filter(instance => getCustomListValues(instance).some(([value]) => !value[INTERNAL_ID]))
+  const recordIdMap = Object.fromEntries(
+    await Promise.all(
+      customListInstancesWithMissingValuesInternalIds
+        .map(instance => instance.value[SCRIPT_ID])
+        .map(async (customListScriptId: string): Promise<[string, Record<string, string>]> =>
+          [customListScriptId, await fetchRecordType('id', client, customListScriptId)])
+    )
+  )
+  customListInstancesWithMissingValuesInternalIds.forEach(instance => {
+    const customListRecordIdMap = recordIdMap[instance.value[SCRIPT_ID]]
+    getCustomListValues(instance).filter(([value]) => !value[INTERNAL_ID]).forEach(([value]) => {
+      const scriptId = value[SCRIPT_ID].toLowerCase()
+      if (scriptId in customListRecordIdMap) {
+        value[INTERNAL_ID] = customListRecordIdMap[scriptId]
+      }
+    })
+  })
+}
+
 /**
  * This filter adds the internal id to instances.
  * so we will be able to reference them in other instances
@@ -195,6 +222,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const instances = getSupportedInstances(elements)
     await addInternalIdToInstances(client, instances)
     await addInternalIdToCustomRecordTypes(client, elements)
+    await addInternalIdToCustomListValues(client, elements)
   },
 
   /**
@@ -217,6 +245,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
     ).filter(type => isCustomRecordType(type)).forEach(customRecordType => {
       delete customRecordType.annotations[INTERNAL_ID]
     })
+    changesData.filter(isInstanceElement).filter(isCustomListInstance).forEach(instance => {
+      getCustomListValues(instance).forEach(([value]) => {
+        delete value[INTERNAL_ID]
+      })
+    })
   },
   /**
    * This assign the internal id for new instances created through Salto
@@ -232,6 +265,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
     await addInternalIdToCustomRecordTypes(
       client,
       changes.filter(isAdditionChange).map(getChangeData)
+    )
+    await addInternalIdToCustomListValues(
+      client,
+      changes.filter(isAdditionOrModificationChange).map(getChangeData)
     )
   },
 })

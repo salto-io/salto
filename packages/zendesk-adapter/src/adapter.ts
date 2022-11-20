@@ -146,7 +146,6 @@ export const DEFAULT_FILTERS = [
   triggerOrderFilter,
   viewOrderFilter,
   businessHoursScheduleFilter,
-  collisionErrorsFilter,
   accountSettingsFilter,
   dynamicContentFilter,
   restrictionFilter,
@@ -200,6 +199,7 @@ export const DEFAULT_FILTERS = [
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
+  collisionErrorsFilter,
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   // defaultDeployFilter should be last!

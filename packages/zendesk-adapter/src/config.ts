@@ -1636,13 +1636,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dependsOn: [
         { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
       ],
-      // recurseInto: [
-      //   {
-      //     type: 'article_translation',
-      //     toField: 'translations',
-      //     context: [{ name: 'articleId', fromField: 'id' }],
-      //   },
-      // ],
     },
     transformation: {
       dataField: 'articles',
@@ -1655,7 +1648,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
+        // { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'position', fieldType: 'number' },
       ),
       fieldTypeOverrides: [

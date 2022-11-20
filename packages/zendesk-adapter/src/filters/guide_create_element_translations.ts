@@ -61,11 +61,14 @@ const createTranslationType = () :ObjectType => new ObjectType({
   fields: {
     // can't get id
     locale: { refType: BuiltinTypes.STRING },
+    html_url: { refType: BuiltinTypes.STRING },
     title: { refType: BuiltinTypes.STRING },
     body: { refType: BuiltinTypes.STRING },
     outdated: { refType: BuiltinTypes.BOOLEAN },
     draft: { refType: BuiltinTypes.BOOLEAN },
     hidden: { refType: BuiltinTypes.BOOLEAN }, // doesnt exist in article element
+    created_at: { refType: BuiltinTypes.STRING },
+    updated_at: { refType: BuiltinTypes.STRING },
     created_by_id: { refType: BuiltinTypes.NUMBER }, // doesnt exist in article element
     updated_by_id: { refType: BuiltinTypes.NUMBER }, // doesnt exist in article element
     brand: { refType: BuiltinTypes.NUMBER },
@@ -92,16 +95,23 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
 
     articles
       .filter(parentInstance => parentInstance.value.locale === parentInstance.value.source_locale)
-      .forEach(instance => { instance.value.translations = [] })
+      .forEach(instance => {
+        instance.value.translations = []
+      })
+
     articles
       .forEach(instance => {
         const articleTranslationInstance = new InstanceElement(
-          instance.elemID.name,
+          `${instance.elemID.name}_${instance.value.locale}`,
           articleTranslationType,
           {
+            html_url: instance.value.html_url,
             locale: instance.value.locale,
             title: instance.value.title,
             body: instance.value.body,
+            draft: instance.value.draft,
+            created_at: instance.value.created_at,
+            updated_at: instance.value.updated_at,
             outdated: instance.value.outdated,
             brand: instance.value.brand,
           },
@@ -123,7 +133,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         elements.push(articleTranslationInstance)
       })
     _.remove(elements, isExtraArticle)
-    // const groupedById = _.groupBy(articles, 'value.id')
   },
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     const relaventChanges = changes

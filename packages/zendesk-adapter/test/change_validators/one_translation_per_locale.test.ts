@@ -22,8 +22,10 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
+import { elementSource } from '@salto-io/workspace'
 import { ZENDESK } from '../../src/constants'
 import { oneTranslationPerLocaleValidator } from '../../src/change_validators'
+import { LOCALE_TYPE_NAME } from '../../src/filters/help_center_locale'
 
 describe('oneTranslationPerLocalValidator',
   () => {
@@ -33,8 +35,11 @@ describe('oneTranslationPerLocalValidator',
     const articleTranslationType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'article_translation'),
     })
+    const guideLocaleType = new ObjectType({
+      elemID: new ElemID(ZENDESK, LOCALE_TYPE_NAME),
+    })
 
-    it('should not return an error when article have different translations with different locale', async () => {
+    it('should not return an error when article has different translations with different locale', async () => {
       const enTranslation = new InstanceElement(
         'Test1',
         articleTranslationType,
@@ -44,12 +49,27 @@ describe('oneTranslationPerLocalValidator',
         undefined,
       )
       const heTranslation = new InstanceElement(
-        'Test1',
+        'Test2',
         articleTranslationType,
         {
           locale: 'he',
         },
         undefined,
+      )
+      const esTranslation = new InstanceElement(
+        'Test3',
+        articleTranslationType,
+        {
+          locale: new ReferenceExpression(new ElemID(ZENDESK, LOCALE_TYPE_NAME, 'instance', 'es')),
+        },
+        undefined,
+      )
+      const esLocale = new InstanceElement(
+        'es',
+        guideLocaleType,
+        {
+          id: 'es',
+        },
       )
       const article = new InstanceElement(
         'Test1',
@@ -65,20 +85,24 @@ describe('oneTranslationPerLocalValidator',
           ],
         },
       )
-      heTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
-        articleType.elemID.createNestedID('instance', 'Test1'), article
-      )]
-      enTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
-        articleType.elemID.createNestedID('instance', 'Test1'), article
-      )]
+      heTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(article.elemID, article),
+      ]
+      enTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(article.elemID, article),
+      ]
+      esTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [
+        new ReferenceExpression(article.elemID, article),
+      ]
 
       const errors = await oneTranslationPerLocaleValidator(
-        [toChange({ after: heTranslation })]
+        [toChange({ after: heTranslation })],
+        elementSource.createInMemoryElementSource([esLocale])
       )
       expect(errors).toHaveLength(0)
     })
 
-    it('should return an error when article have different translations with same locale', async () => {
+    it('should return an error when article has different translations with same locale', async () => {
       const enTranslation = new InstanceElement(
         'Test2',
         articleTranslationType,
@@ -117,7 +141,8 @@ describe('oneTranslationPerLocalValidator',
       )]
 
       const errors = await oneTranslationPerLocaleValidator(
-        [toChange({ after: enTranslation }), toChange({ after: enTranslation2 })]
+        [toChange({ after: enTranslation }), toChange({ after: enTranslation2 })],
+        elementSource.createInMemoryElementSource([]),
       )
       expect(errors).toEqual([{
         elemID: article.elemID,
@@ -136,7 +161,8 @@ describe('oneTranslationPerLocalValidator',
         undefined,
       )
       const errors = await oneTranslationPerLocaleValidator(
-        [toChange({ after: noParentTranslation })]
+        [toChange({ after: noParentTranslation })],
+        elementSource.createInMemoryElementSource([]),
       )
       expect(errors).toHaveLength(0)
     })

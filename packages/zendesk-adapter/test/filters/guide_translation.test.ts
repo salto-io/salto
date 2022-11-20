@@ -21,10 +21,10 @@ import {
   InstanceElement,
   ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/help_center_translation'
+import filterCreator from '../../src/filters/guide_translation'
 import { createFilterCreatorParams } from '../utils'
 import { ZENDESK } from '../../src/constants'
-import { removedTranslationParentId } from '../../src/filters/help_center_section_and_category'
+import { removedTranslationParentId } from '../../src/filters/guide_section_and_category'
 
 describe('guild section translation filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
@@ -32,13 +32,13 @@ describe('guild section translation filter', () => {
 
   const sectionTypeName = 'section'
   const sectionTranslationTypename = 'section_translation'
-  const helpCenterLocaleTypename = 'help_center_locale'
+  const guideLocaleTypename = 'guide_locale'
   const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
   const sectionTranslationType = new ObjectType(
     { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
   )
   const helpCenterLocaleType = new ObjectType(
-    { elemID: new ElemID(ZENDESK, helpCenterLocaleTypename) }
+    { elemID: new ElemID(ZENDESK, guideLocaleTypename) }
   )
 
 

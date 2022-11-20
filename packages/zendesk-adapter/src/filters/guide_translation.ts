@@ -21,7 +21,7 @@ import {
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { removedTranslationParentId } from './help_center_section_and_category'
+import { removedTranslationParentId } from './guide_section_and_category'
 
 export const TRANSLATIONS_TYPE_NAME = ['section_translation', 'category_translation', 'article_translation']
 

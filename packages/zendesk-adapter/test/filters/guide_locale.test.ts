@@ -18,10 +18,10 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import ZendeskClient from '../../src/client/client'
-import filterCreator from '../../src/filters/help_center_locale'
+import filterCreator from '../../src/filters/guide_locale'
 import { createFilterCreatorParams } from '../utils'
 
-describe('help center locale filter', () => {
+describe('guide locale filter', () => {
   let mockClient: MockInterface<ZendeskClient>
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
@@ -56,9 +56,9 @@ describe('help center locale filter', () => {
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'zendesk.help_center_locale',
-          'zendesk.help_center_locale.instance.en_us@b',
-          'zendesk.help_center_locale.instance.es',
+          'zendesk.guide_locale',
+          'zendesk.guide_locale.instance.en_us@b',
+          'zendesk.guide_locale.instance.es',
         ])
       const locales = elements.filter(isInstanceElement)
       const enLocale = locales.find(locale => locale.value.id === 'en-us')

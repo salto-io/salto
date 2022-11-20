@@ -175,6 +175,26 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['get', 'post'],
+    url: '/rest/api/3/fieldconfigurationscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/fieldconfigurationscheme/\\d+',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/fieldconfigurationscheme/mapping.+',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/fieldconfigurationscheme/\\d+/mapping',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/fieldconfigurationscheme/\\d+/mapping/delete',
+  },
+  {
+    httpMethods: ['get', 'post'],
     url: '/rest/api/3/fieldconfiguration',
   },
   {

@@ -24,7 +24,7 @@ import { ZENDESK } from '../../src/constants'
 import filterCreator, {
   GUIDE_SETTINGS_PREFERENCE_TYPE,
   HELP_CENTER_TYPE,
-} from '../../src/filters/help_center_guide_settings'
+} from '../../src/filters/guide_guide_settings'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 

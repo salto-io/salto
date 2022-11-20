@@ -81,7 +81,7 @@ import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
-import hcLocalesFilter from './filters/help_center_locale'
+import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
@@ -91,27 +91,26 @@ import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article'
-import helpCenterFetchArticle from './filters/help_center_fetch_article'
+import helpCenterFetchArticle from './filters/guide_fetch_article'
 import articleBodyFilter from './filters/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
-import hcSectionCategoryFilter from './filters/help_center_section_and_category'
-import hcTranslationFilter from './filters/help_center_translation'
-import fetchCategorySection from './filters/help_center_fetch_section_and_category'
-import hcParentSection, { addParentFields } from './filters/help_center_parent_to_section'
-import hcGuideSettings from './filters/help_center_guide_settings'
+import guideSectionCategoryFilter from './filters/guide_section_and_category'
+import guideTranslationFilter from './filters/guide_translation'
+import fetchCategorySection from './filters/guide_fetch_section_and_category'
+import guideParentSection, { addParentFields } from './filters/guide_parent_to_section'
+import guideGuideSettings from './filters/guide_guide_settings'
 import removeBrandLogoFilter from './filters/remove_brand_logo_field'
 import categoryOrderFilter from './filters/guide_order/category_order'
 import sectionOrderFilter from './filters/guide_order/section_order'
 import articleOrderFilter from './filters/guide_order/article_order'
-import hcServiceUrl from './filters/help_center_service_url'
+import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegementFilter from './filters/everyone_user_segment'
-import hcLanguageSettings from './filters/guide_language_translations'
+import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
-
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -154,10 +153,10 @@ export const DEFAULT_FILTERS = [
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
-  // tagsFilter and hcLocalesFilter
+  // tagsFilter and guideLocalesFilter
   usersFilter,
   tagsFilter,
-  hcLocalesFilter,
+  guideLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
@@ -169,11 +168,11 @@ export const DEFAULT_FILTERS = [
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
   articleFilter,
-  hcSectionCategoryFilter,
-  hcTranslationFilter,
-  hcLanguageSettings,
-  hcGuideSettings,
-  hcServiceUrl,
+  guideSectionCategoryFilter,
+  guideTranslationFilter,
+  guideLanguageSettings,
+  guideGuideSettings,
+  guideServiceUrl,
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
@@ -193,7 +192,7 @@ export const DEFAULT_FILTERS = [
   fetchCategorySection,
   helpCenterFetchArticle,
   articleBodyFilter,
-  hcParentSection,
+  guideParentSection,
   serviceUrlFilter,
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
@@ -240,7 +239,7 @@ const zendeskGuideEntriesFunc = (
         typeName,
         typesConfig,
       })).flat()
-      // Defining Zendesk Guide element to its corresponding help center (= subdomain)
+      // Defining Zendesk Guide element to its corresponding guide (= subdomain)
       return brandPaginatorResponseValues.flatMap(response => {
         const responseEntryName = typesConfig[typeName].transformation?.dataField
         if (responseEntryName === undefined) {

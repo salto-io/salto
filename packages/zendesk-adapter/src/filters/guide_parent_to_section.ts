@@ -22,7 +22,7 @@ import {
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { addRemovalChangesId } from './help_center_section_and_category'
+import { addRemovalChangesId } from './guide_section_and_category'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLES_FIELD, SECTIONS_FIELD } from '../constants'
 
 const PARENT_SECTION_ID_FIELD = 'parent_section_id'

@@ -157,6 +157,17 @@ module.exports = {
         'no-unused-expressions': 'off',
         '@typescript-eslint/no-unused-expressions': ['error'],
         '@typescript-eslint/await-thenable': ['error'],
+        'max-len':
+            [
+                'error',
+                {
+                    'code': 120,
+                    'ignoreUrls': true,
+                    'ignoreStrings': true,
+                    'ignoreTemplateLiterals': true,
+                    'ignoreRegExpLiterals': true
+                }
+            ]
     },
     overrides: [
         {

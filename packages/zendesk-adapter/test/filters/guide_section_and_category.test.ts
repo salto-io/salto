@@ -21,7 +21,7 @@ import {
   ObjectType, ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/help_center_section_and_category'
+import filterCreator from '../../src/filters/guide_section_and_category'
 
 
 import { ZENDESK } from '../../src/constants'
@@ -34,12 +34,12 @@ describe('guid section filter', () => {
   const sectionTypeName = 'section'
   const sectionTranslationTypename = 'section_translation'
   const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
-  const helpCenterLocaleTypename = 'help_center_locale'
+  const guideLocaleTypename = 'guide_locale'
   const sectionTranslationType = new ObjectType(
     { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
   )
   const helpCenterLocaleType = new ObjectType(
-    { elemID: new ElemID(ZENDESK, helpCenterLocaleTypename) }
+    { elemID: new ElemID(ZENDESK, guideLocaleTypename) }
   )
 
   const helpCenterLocaleInstance = new InstanceElement(

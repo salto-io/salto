@@ -642,7 +642,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
     serializationStrategy: 'id',
-    target: { type: 'help_center_locale' },
+    target: { type: 'guide_locale' },
   },
   {
     src: {
@@ -653,7 +653,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     serializationStrategy: 'id',
-    target: { type: 'help_center_locale' },
+    target: { type: 'guide_locale' },
   },
   {
     src: { field: 'publish', parentTypes: ['permission_group'] },

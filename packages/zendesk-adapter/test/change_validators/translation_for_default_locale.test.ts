@@ -31,7 +31,7 @@ describe('translationForDefaultLocaleValidator',
   () => {
     const sectionTypeName = 'section'
     const sectionTranslationTypename = 'section_translation'
-    const helpCenterLocaleTypename = 'help_center_locale'
+    const guideLocaleTypename = 'guide_locale'
     const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
     const sectionTranslationType = new ObjectType(
       { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
@@ -43,7 +43,7 @@ describe('translationForDefaultLocaleValidator',
       { elemID: new ElemID(ZENDESK, articleTranslationTypename) }
     )
     const helpCenterLocaleType = new ObjectType(
-      { elemID: new ElemID(ZENDESK, helpCenterLocaleTypename) }
+      { elemID: new ElemID(ZENDESK, guideLocaleTypename) }
     )
 
 

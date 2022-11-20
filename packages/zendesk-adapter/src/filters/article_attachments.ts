@@ -29,6 +29,7 @@ import ZendeskClient from '../client/client'
 import { FilterCreator } from '../filter'
 import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../constants'
 import { getZendeskError } from '../errors'
+// import { prepRef } from './article_body'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -98,7 +99,7 @@ const createAttachmentInstance = ({
   )
 }
 
-const createAttachmentType = (): ObjectType =>
+export const createAttachmentType = (): ObjectType =>
   new ObjectType({
     elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME),
     fields: {
@@ -137,7 +138,7 @@ const getAttachmentContent = async ({
   return createAttachmentInstance({ attachment, attachmentType, article, content })
 }
 
-const getArticleAttachments = async ({ client, article, attachmentType }: {
+export const getArticleAttachments = async ({ client, article, attachmentType }: {
   client: ZendeskClient
   article: InstanceElement
   attachmentType: ObjectType
@@ -168,7 +169,7 @@ const getArticleAttachments = async ({ client, article, attachmentType }: {
   return attachmentInstances
 }
 
-const createUnassociatedAttachment = async (
+export const createUnassociatedAttachment = async (
   client: ZendeskClient,
   attachmentInstance: InstanceElement,
 ): Promise<void> => {
@@ -180,11 +181,24 @@ const createUnassociatedAttachment = async (
     const form = new FormData()
     form.append('inline', attachmentInstance.value.inline.toString())
     form.append('file', fileContent, attachmentInstance.value.filename)
-    await client.post({
+    const res = await client.post({
       url: '/api/v2/help_center/articles/attachments',
       data: form,
       headers: { ...form.getHeaders() },
     })
+    if (res === undefined) {
+      log.error('Received an empty response from Zendesk API. Not adding article attachments')
+      return
+    }
+    if (Array.isArray(res.data)) {
+      log.error(`Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`)
+      return
+    }
+    const createdAttachment = [res.data.article_attachment]
+    if (!isAttachments(createdAttachment)) {
+      return
+    }
+    attachmentInstance.value.id = createdAttachment[0].id
   } catch (err) {
     throw getZendeskError(attachmentInstance.elemID.getFullName(), err)
   }
@@ -221,10 +235,8 @@ const filterCreator: FilterCreator = ({ client, brandIdToClient = {} }) => ({
     await awu(changes)
       .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-      .forEach(attachmentInstance => createUnassociatedAttachment(
-        client,
-        getChangeData(attachmentInstance)
-      ))
+      .map(getChangeData)
+      .forEach(attachmentInstance => createUnassociatedAttachment(client, attachmentInstance))
   },
 
   // Modification changes aren't supported ATM
@@ -236,6 +248,24 @@ const filterCreator: FilterCreator = ({ client, brandIdToClient = {} }) => ({
         && isAdditionOrModificationChange(change),
     )
     const [additionChanges, modificationChanges] = _.partition(relevantChanges, isAdditionChange)
+
+    // await awu(additionChanges)
+    //   .map(getChangeData)
+    //   .map(attachmentInstance => attachmentInstance.annotations[CORE_ANNOTATIONS.PARENT][0])
+    // await awu(relevantChanges)
+    //   .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+    //   .map(getChangeData)
+    //   .forEach(articleInstance => {
+    //     try {
+    //       replaceTemplatesWithValues(
+    //         { values: [articleInstance.value], fieldName: 'body' },
+    //         {},
+    //         prepRef,
+    //       )
+    //     } catch (e) {
+    //       log.error('Error parsing article body value in deployment', e)
+    //     }
+    //   })
 
     const modificationChangeErrors = modificationChanges
       .map(getChangeData)

@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
-  isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
+  Change, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'

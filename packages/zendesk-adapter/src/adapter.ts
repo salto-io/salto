@@ -94,7 +94,6 @@ import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article'
 import helpCenterFetchArticle from './filters/guide_fetch_article'
 import articleBodyFilter from './filters/article_body'
-import articleAttachmentsFilter from './filters/article_attachments'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
 import customFieldOptionsFilter from './filters/add_restriction'
@@ -171,8 +170,8 @@ export const DEFAULT_FILTERS = [
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
-  articleAttachmentsFilter,
   articleFilter,
+  // articleAttachmentsFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,
   guideLanguageSettings,

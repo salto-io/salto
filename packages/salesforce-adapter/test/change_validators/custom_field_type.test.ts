@@ -50,7 +50,7 @@ describe('custom field type change validator', () => {
     })
 
     it('should have no error when changing a field but not its type', async () => {
-      const beforeField = createField(customObj, Types.compoundDataTypes.Address, 'Something')
+      const beforeField = createField(customObj, Types.compoundDataTypes.Name, 'Something')
       const afterField = beforeField.clone()
       afterField.annotate({ testAnnotation: 'testAnnotationValue' })
       const changeErrors = await runChangeValidator(beforeField, afterField)

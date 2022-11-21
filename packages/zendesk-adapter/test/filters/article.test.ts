@@ -17,12 +17,13 @@ import {
   ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, toChange,
   getChangeData,
   isInstanceElement,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/article'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
@@ -105,6 +106,45 @@ describe('article filter', () => {
       user_segment_id: new ReferenceExpression(userSegmentInstance.elemID, userSegmentInstance),
     }
   )
+  const articleWithAttachmentInstance = new InstanceElement(
+    'articleWithAttachment',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+    {
+      id: 3333,
+      author_id: 'author@salto.io',
+      comments_disabled: false,
+      draft: false,
+      promoted: false,
+      position: 0,
+      section_id: '12345',
+      source_locale: 'en-us',
+      locale: 'en-us',
+      outdated: false,
+      permission_group_id: '666',
+      brand: brandInstance.value.id,
+      title: 'title',
+    }
+  )
+  const content = Buffer.from('test')
+  const articleAttachmentInstance = new InstanceElement(
+    'testAttachment',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) }),
+    {
+      id: 20222022,
+      filename: 'attachmentFileName.png',
+      contentType: 'image/png',
+      content: new StaticFile({
+        filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
+      }),
+      inline: 'false',
+      brand: brandInstance.value.id,
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
+      articleWithAttachmentInstance.elemID,
+      articleWithAttachmentInstance,
+    )] },
+  )
   const articleTranslationInstance = new InstanceElement(
     'testArticleTranslation',
     new ObjectType({ elemID: new ElemID(ZENDESK, 'article_translation') }),
@@ -166,30 +206,35 @@ describe('article filter', () => {
       mockGet = jest.spyOn(client, 'getSinglePage')
       mockGet.mockImplementation(params => {
         if ([
-          '/api/v2/help_center/articles/1111/attachments',
-          '/api/v2/help_center/articles/2222/attachments',
+          '/api/v2/help_center/articles/3333/attachments',
         ].includes(params.url)) {
           return {
             status: 200,
             data: {
               article_attachments: [
-                // {
-                //   id: attachmentId,
-                //   file_name: filename,
-                //   content_type: 'image/png',
-                //   inline: true,
-                //   content_url: `https://ignore.zendesk.com/hc/article_attachments/${attachmentId}/${filename}`,
-                // },
+                {
+                  id: articleAttachmentInstance.value.id,
+                  file_name: articleAttachmentInstance.value.filename,
+                  content_type: articleAttachmentInstance.value.contentType,
+                  inline: articleAttachmentInstance.value.inline,
+                  content_url: 'https://yo.com',
+                },
               ],
             },
           }
         }
-        // if (params.url === `/hc/article_attachments/${attachmentId}/${filename}`) {
-        //   return {
-        //     status: 200,
-        //     data: content,
-        //   }
-        // }
+        if ([
+          '/api/v2/help_center/articles/2222/attachments',
+          '/api/v2/help_center/articles/1111/attachments',
+        ].includes(params.url)) {
+          return { status: 200, data: { article_attachments: [] } }
+        }
+        if (params.url === '/hc/article_attachments/20222022/attachmentFileName.png') {
+          return {
+            status: 200,
+            data: content,
+          }
+        }
         throw new Error('Err')
       })
     })
@@ -213,6 +258,20 @@ describe('article filter', () => {
         .filter(isInstanceElement)
         .find(i => i.elemID.name === 'userSegmentArticle')
       expect(fetchedArticle?.value).toEqual(anotherArticleInstance.value)
+    })
+    it('should create article_attachment instance', async () => {
+      const clonedElements = [articleWithAttachmentInstance].map(e => e.clone())
+      await filter.onFetch(clonedElements)
+      expect(clonedElements.map(e => e.elemID.getFullName()).sort())
+        .toEqual([
+          'zendesk.article.instance.articleWithAttachment',
+          'zendesk.article_attachment',
+          'zendesk.article_attachment.instance.title__attachmentFileName_png@uuv',
+        ])
+      const fetchedAttachment = clonedElements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'title__attachmentFileName_png@uuv')
+      expect(fetchedAttachment?.value).toEqual(articleAttachmentInstance.value)
     })
   })
 

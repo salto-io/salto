@@ -62,7 +62,7 @@ const checkOnlyChangeValidators
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
   config: SalesforceConfig
-  isSandBox: boolean
+  isSandbox: boolean
   checkOnly: boolean
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)

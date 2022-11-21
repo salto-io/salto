@@ -22,11 +22,12 @@ import {
   isModificationChange,
   ModificationChange,
   isAdditionOrModificationChange,
-  isAdditionChange, AdditionChange,
+  isAdditionChange, AdditionChange, ElemID,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { config } from '@salto-io/logging/dist/src/internal/env'
-import { FLOW_METADATA_TYPE } from '../constants'
+import { isEmpty, isUndefined } from 'lodash'
+import { detailedCompare } from '@salto-io/adapter-utils'
+import { FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 
@@ -38,23 +39,29 @@ const isFlowChange = (change: ModificationChange<InstanceElement> | AdditionChan
 
 const isActiveFlowChange = (change: ModificationChange<InstanceElement>):
     boolean => (
-  change.data.before.value.status === ACTIVE && change.data.before.value.status === ACTIVE
+  change.data.before.value.status === ACTIVE && change.data.after.value.status === ACTIVE
 )
 
 const isDeactivateChange = (change: ModificationChange<InstanceElement>):
     boolean => (
-  change.data.before.value.status === ACTIVE && change.data.before.value.status !== ACTIVE
+  change.data.before.value.status === ACTIVE && change.data.after.value.status !== ACTIVE
 )
 
 const isActivatingChange = (change: ModificationChange<InstanceElement>):
     boolean => (
-  change.data.before.value.status !== ACTIVE && change.data.before.value.status === ACTIVE
+  change.data.before.value.status !== ACTIVE && change.data.after.value.status === ACTIVE
 )
 
-const isNonStatusChange = (change: ModificationChange<InstanceElement>):
-    boolean => (
-  change.data.before.value.status !== ACTIVE && change.data.before.value.status === ACTIVE
-)
+const isStatusChangeOnly = (change: ModificationChange<InstanceElement>):
+    boolean => {
+  const afterClone = change.data.after.clone()
+  afterClone.value.status = ACTIVE
+  const diffWithoutStatus = detailedCompare(
+    change.data.before,
+    afterClone,
+  )
+  return isEmpty(diffWithoutStatus)
+}
 
 const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean): ChangeError => {
   if (preferActive) {
@@ -68,7 +75,7 @@ const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean
   return {
     elemID: instance.elemID,
     severity: 'Info',
-    message: 'Cannot deactivate active flows via Salto',
+    message: ' deactivate active flows',
     detailedMessage: `You cannot deactivate active flows via Salto. Flow name: ${instance.elemID.getFullName()}`,
   }
 }
@@ -96,22 +103,11 @@ const activeFlowModificationError = (instance: InstanceElement, enableActiveDepl
       message: 'When editing an active flow, a new version of the flow will be created',
       detailedMessage: `When editing an active flow, a new version of the flow will be created and the previous one will be deactivated. Flow name: ${instance.elemID.getFullName()}`,
       deployActions: {
-        preAction: {
-          title: 'Disable CPQ Triggers',
-          description: 'CPQ triggers should be disabled before deploying:',
-          subActions: [
-            'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-            'Check the "Triggers Disabled" checkbox',
-            'Click "Save"',
-          ],
-        },
         postAction: {
           title: 'Re-enable CPQ Triggers',
           description: 'CPQ triggers should now be re-enabled:',
           subActions: [
             'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-            'Uncheck the "Triggers Disabled" checkbox',
-            'Click "Save"',
           ],
         },
       },
@@ -131,25 +127,14 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'When editing an active flow, a new version of the flow will be created',
+      message: 'When editing adfn active flow, a new version of the flow will be created',
       detailedMessage: `When editing an active flow, a new version of the flow will be created and the previous one will be deactivated. Flow name: ${instance.elemID.getFullName()}`,
       deployActions: {
-        preAction: {
-          title: 'Disable CPQ Triggers',
-          description: 'CPQ triggers should be disabled before deploying:',
-          subActions: [
-            'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-            'Check the "Triggers Disabled" checkbox',
-            'Click "Save"',
-          ],
-        },
         postAction: {
           title: 'Re-enable CPQ Triggers',
           description: 'CPQ triggers should now be re-enabled:',
           subActions: [
             'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-            'Uncheck the "Triggers Disabled" checkbox',
-            'Click "Save"',
           ],
         },
       },
@@ -169,25 +154,14 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'When editing an active flow, a new version of the flow will be created',
-      detailedMessage: `When editing an active flow, a new version of the flow will be created and the previous one will be deactivated. Flow name: ${instance.elemID.getFullName()}`,
+      message: 'When editing an actasive flow, a new version of the flow will be created',
+      detailedMessage: '',
       deployActions: {
-        preAction: {
-          title: 'Disable CPQ Triggers',
-          description: 'CPQ triggers should be disabled before deploying:',
-          subActions: [
-            'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-            'Check the "Triggers Disabled" checkbox',
-            'Click "Save"',
-          ],
-        },
         postAction: {
           title: 'Re-enable CPQ Triggers',
           description: 'CPQ triggers should now be re-enabled:',
           subActions: [
             'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-            'Uncheck the "Triggers Disabled" checkbox',
-            'Click "Save"',
           ],
         },
       },
@@ -205,11 +179,15 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
  * Handling addition and modification regarding active flows
  */
 const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): ChangeValidator =>
-  async (changes, elementSource) => {
-    const isSandbox = false
-    const isActiveDeployEnabled = false
-    const isPreferActiveVersion = false
-    // const flowSetting = elementSource
+  async (changes, elementsSource) => {
+    let flowSetting
+    // TODO: change to preferActiveFlowVersions
+    const isPreferActiveVersion = config.enumFieldPermissions ?? false
+    if (!isUndefined(elementsSource)) {
+      flowSetting = await elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
+    }
+    const isActiveDeployEnabled = isUndefined(flowSetting)
+      ? false : flowSetting.value.enableFlowDeployAsActiveEnabled
     const flowChanges = await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
@@ -220,10 +198,10 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): Chan
       .filter(isModificationChange)
       .filter(isDeactivateChange)
       .map(change => {
-        if (isNonStatusChange(change)) {
-          return inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion)
+        if (isStatusChangeOnly(change)) {
+          return deactivatingError(getChangeData(change))
         }
-        return deactivatingError(getChangeData(change))
+        return inActiveNewVersionInfo(getChangeData(change), isPreferActiveVersion)
       })
 
     if (isSandbox) {
@@ -255,4 +233,4 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): Chan
     return [...deactivateFlows, ...activeFlowModification, ...activatingFlow, ...activeFlowAddition]
   }
 
-export default changeValidator
+export default activeFlowValidator

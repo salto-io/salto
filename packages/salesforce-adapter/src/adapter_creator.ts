@@ -191,13 +191,13 @@ export const adapter: Adapter = {
       validate: salesforceAdapter.validate.bind(salesforceAdapter),
       deployModifiers: {
         changeValidator: createChangeValidator(
-          { config, isSandBox: credentials.isSandbox, checkOnly: false }
+          { config, isSandbox: credentials.isSandbox, checkOnly: false }
         ),
         getChangeGroupIds,
       },
       validationModifiers: {
         changeValidator: createChangeValidator(
-          { config, isSandBox: credentials.isSandbox, checkOnly: true }
+          { config, isSandbox: credentials.isSandbox, checkOnly: true }
         ),
       },
     }

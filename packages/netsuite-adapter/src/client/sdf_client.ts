@@ -641,7 +641,8 @@ export default class SdfClient {
           throw e
         }
         if (ids.length === 1) {
-          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s. %d retries left', index, total, type, retriesLeft - 1)
+          const [objectId] = ids
+          log.debug('Retrying to fetch chunk %d/%d with a single object \'%s\' of type: %s. %d retries left', index, total, objectId, type, retriesLeft - 1)
           return importObjectsChunk({ type, ids, index, total }, retriesLeft - 1)
         }
         log.debug('Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks', index, total, ids.length, type)

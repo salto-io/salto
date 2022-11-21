@@ -1663,7 +1663,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'author_id', fieldType: 'unknown' },
+        { fieldName: 'author_id', fieldType: 'string' },
         { fieldName: 'translations', fieldType: 'list<article_translation>' },
         { fieldName: 'attachments', fieldType: 'list<article_attachment>' },
       ],

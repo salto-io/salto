@@ -20,9 +20,9 @@ import {
   AdditionChange,
   Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceElement, isObjectType, isReferenceExpression,
-  isRemovalChange, ModificationChange, ReferenceExpression, Element,
+  isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { getParent, replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
+import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
@@ -168,7 +168,11 @@ const filterCreator: FilterCreator = ({
           if (unresolvedInstance === undefined) {
             return
           }
-          const parentArticleRef = getParent(unresolvedInstance)
+          const parentArticleList = unresolvedInstance.annotations[CORE_ANNOTATIONS.PARENT]
+          if (!_.isArray(parentArticleList)) {
+            return
+          }
+          const parentArticleRef = parentArticleList[0]
           if (!isReferenceExpression(parentArticleRef)) {
             return
           }
@@ -224,7 +228,10 @@ const filterCreator: FilterCreator = ({
         },
       )
       const leftoverChanges = nonArticleChanges
-        .filter(change => getChangeData(change).elemID.typeName !== ARTICLE_ATTACHMENT_TYPE_NAME)
+        .filter(change => !(
+          isAdditionChange(change)
+          && getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
+        ))
       return { deployResult, leftoverChanges }
     },
 

@@ -90,7 +90,7 @@ describe('adapters.ts', () => {
       _.assign(mockAdapter, {
         configType: mockConfigType,
         getDefaultConfig: mockFunction<NonNullable<Adapter['getDefaultConfig']>>()
-          .mockResolvedValue([new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })]),
+          .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
       })
 
       createDefaultInstanceFromTypeMock.mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'aaa' }))

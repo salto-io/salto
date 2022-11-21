@@ -93,8 +93,8 @@ export const getDefaultAdapterConfig = async (
   accountName?: string,
 ): Promise<InstanceElement[] | undefined> => {
   const { getDefaultConfig } = adapterCreators[adapterName]
-  const defaultConf = (getDefaultConfig !== undefined) ? await getDefaultConfig()
-    : ([await getAdapterConfigFromType(adapterName) ?? []].flat())
+  const defaultConf = [(getDefaultConfig !== undefined) ? (await getDefaultConfig() ?? [])
+    : (await getAdapterConfigFromType(adapterName) ?? [])].flat()
   if (defaultConf.length === 0) {
     return undefined
   }
@@ -196,6 +196,10 @@ export const getAdaptersCreatorConfigs = async (
     async account => {
       const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account],
         account)
+      await getConfig(account, defaultConfig)
+      createElemIDReplacedElementsSource(filterElementsSource(
+        elementsSource, account
+      ), account, accountToServiceName[account])
       return [
         account,
         {

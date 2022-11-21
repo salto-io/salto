@@ -199,7 +199,7 @@ export const DEFAULT_FILTERS = [
   ...ducktypeCommonFilters,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
-  collisionErrorsFilter,
+  collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   // defaultDeployFilter should be last!

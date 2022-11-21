@@ -26,10 +26,14 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../constants'
 
 const log = logger(module)
+
+const areLocalesEqual = (instance: InstanceElement): boolean =>
+  _.isEqual(instance.value.locale, instance.value.source_locale)
 
 type ArticleTranslationResponse = {
   translation: {
@@ -47,10 +51,14 @@ const isArticleTranslationResponse = createSchemeGuard<ArticleTranslationRespons
   EXPECTED_TRANSLATION_SCHEMA, 'Received invalid article translation result'
 )
 
-const isExtraArticle = (parentInstance: Element): boolean =>
+/**
+ * checks if the article represents a different translation than the source_local
+ */
+const isTranslationRepresentingArticle = (parentInstance: Element): boolean => (
   isInstanceElement(parentInstance)
   && (parentInstance.elemID.typeName === ARTICLE_TYPE_NAME)
-  && (!_.isEqual(parentInstance.value.locale, parentInstance.value.source_locale))
+  && (!areLocalesEqual(parentInstance))
+)
 
 const isTranslationType = (elem: Element): boolean =>
   isObjectType(elem)
@@ -59,7 +67,7 @@ const isTranslationType = (elem: Element): boolean =>
 const createTranslationType = () :ObjectType => new ObjectType({
   elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME),
   fields: {
-    // can't get id
+    // can't get id since translation is deduced from the article instance and the id is the article's
     locale: { refType: BuiltinTypes.STRING },
     html_url: { refType: BuiltinTypes.STRING },
     title: { refType: BuiltinTypes.STRING },
@@ -76,9 +84,11 @@ const createTranslationType = () :ObjectType => new ObjectType({
   path: [ZENDESK, elementsUtils.TYPES_PATH, ARTICLE_TRANSLATION_TYPE_NAME],
 })
 
+
 /**
- * On fetch, this filter creates article_translation instances from article instances. in preDeploy, only for remove
- * changes it gets the id of the translation.
+ * On fetch, this filter creates article_translation instances from article instances. This is done in order to reduce
+ * the number of API calls. In preDeploy, only for removal changes, since the article_translation instances don't have
+ * an internal id, and it is needed for deletion, the filter acquires the id of the translation.
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
@@ -92,48 +102,60 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const articles = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
-      .filter(instance => instance.value.id !== undefined)
-
-    const groupedById = _.groupBy(articles, 'value.id')
-
-    articles
-      .filter(parentInstance => _.isEqual(parentInstance.value.locale, parentInstance.value.source_locale))
-      .forEach(instance => {
-        instance.value.translations = []
-      })
-
-    articles
-      .forEach(instance => {
-        const articleTranslationInstance = new InstanceElement(
-          `${instance.elemID.name}_${instance.value.locale}`,
-          articleTranslationType,
-          {
-            html_url: instance.value.html_url,
-            locale: instance.value.locale,
-            title: instance.value.title,
-            body: instance.value.body,
-            draft: instance.value.draft,
-            created_at: instance.value.created_at,
-            updated_at: instance.value.updated_at,
-            outdated: instance.value.outdated,
-            brand: instance.value.brand,
-          },
-        )
-        const parent = groupedById[instance.value.id]
-          .find(parentInstance => _.isEqual(parentInstance.value.locale, parentInstance.value.source_locale))
-        if (parent === undefined) {
-          log.error('could not find article translation parent')
-          return
+      .filter(instance => {
+        if (instance.value.id === undefined) {
+          log.error(`article instance ${instance.elemID.name} does not have an id field`)
+          return false
         }
-        parent.value.translations.push(
-          new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance)
-        )
-        articleTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
-          new ReferenceExpression(parent.elemID, parent),
-        ]
-        elements.push(articleTranslationInstance)
+        return true
       })
-    _.remove(elements, isExtraArticle)
+
+    const defaultTranslationArticlesById = _.keyBy(articles.filter(inst => !isTranslationRepresentingArticle(inst)), 'value.id')
+
+    const createTranslation = (instance: InstanceElement): InstanceElement | undefined => {
+      const parent = defaultTranslationArticlesById[instance.value.id]
+      if (parent === undefined) {
+        log.error(`could not find article translation parent for article id ${instance.value.id}: ${instance.value.title}`)
+        return undefined
+      }
+      return new InstanceElement(
+        `${instance.elemID.name}_${instance.value.locale}`,
+        articleTranslationType,
+        {
+          html_url: instance.value.html_url,
+          locale: instance.value.locale,
+          title: instance.value.title,
+          body: instance.value.body,
+          draft: instance.value.draft,
+          created_at: instance.value.created_at,
+          updated_at: instance.value.updated_at,
+          outdated: instance.value.outdated,
+          brand: instance.value.brand,
+        },
+        undefined, // path will be set later
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(instance.elemID, parent)] },
+      )
+    }
+
+    const articlesById = _.groupBy(articles, 'value.id')
+    // {123: [ translation, translation] }
+    const translationsById = _.mapValues(
+      articlesById,
+      instances => instances.map(createTranslation).filter(values.isDefined)
+    )
+
+    Object.entries(translationsById).forEach(([articleId, translations]) => {
+      const parentArticle = defaultTranslationArticlesById[articleId]
+      if (parentArticle === undefined) {
+        // already logged earlier
+        return
+      }
+      parentArticle.value.translations = translations.map(
+        translation => new ReferenceExpression(translation.elemID, translation)
+      )
+      elements.push(...translations)
+    })
+    _.remove(elements, isTranslationRepresentingArticle)
   },
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     const relaventChanges = changes
@@ -146,14 +168,16 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         const parentId = getChangeData(change).annotations[CORE_ANNOTATIONS.PARENT][0]?.id
         const { locale } = getChangeData(change).value
         if (parentId === undefined || locale === undefined) {
-          log.error('could not find article translation parent or locale')
+          log.error(
+            `could not find article translation parent or locale for article translation ${getChangeData(change).elemID.name}`
+          )
           return
         }
         const response = await client.getSinglePage({
           url: `/api/v2/help_center/articles/${parentId}/translations/${locale}`,
         })
         if (!isArticleTranslationResponse(response.data)) {
-          log.error('Failed to get the article traslation')
+          log.error(`Failed to get data from the service for article translation ${getChangeData(change).elemID.name}`)
           return
         }
         getChangeData(change).value.id = response.data.translation.id

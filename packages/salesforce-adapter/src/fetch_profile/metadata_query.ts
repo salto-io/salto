@@ -79,7 +79,8 @@ export const buildMetadataQuery = (
     if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
       return true
     }
-    // only in use when config.preferActiveFlowVersions is true, in order to fetch the active flows
+    // We should really do this only when config.preferActiveFlowVersions is true
+    // if you have another use-case to pass the config here also handle this please
     if (type === FLOW_DEFINITION_METADATA_TYPE && target.includes(FLOW_METADATA_TYPE)) {
       return true
     }

@@ -23,7 +23,6 @@ export type FilterContext = {
   unsupportedSystemFields?: string[]
   systemFields?: string[]
   enumFieldPermissions?: boolean
-  preferActiveFlowVersions?: boolean
   fetchProfile: FetchProfile
   elementsSource: ReadOnlyElementsSource
   separateFieldToFiles?: string[]

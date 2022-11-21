@@ -130,6 +130,7 @@ salesforce {
 | fetchAllCustomSettings                         | true                    | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option                                                               |
 | [optionalFeatures](#optional-features)         | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved |
 | maxInstancesPerType                            | 5000                    | Do not fetch metadataTypes and CustomObjects with more instances than this number, and add those to the exclude lists                                                                                                 |
+| preferActiveFlowVersions                       | false                   | Fetch the active version of each flow if exist, instead of the latest version                                                                                                                                         |
 
 ## Metadata configuration options
 

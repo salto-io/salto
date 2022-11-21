@@ -26,7 +26,7 @@ import {
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
   SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  ChangeValidatorConfig, ENUM_FIELD_PERMISSIONS, PREFER_ACTIVE_FLOW_VERSIONS,
+  ChangeValidatorConfig, ENUM_FIELD_PERMISSIONS,
 } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
@@ -110,13 +110,6 @@ SalesforceConfig => {
     }
   }
 
-  const validatePreferActiveFlowVersions = (preferActiveFlowVersions: boolean | undefined):
-      void => {
-    if (preferActiveFlowVersions !== undefined && !_.isBoolean(preferActiveFlowVersions)) {
-      throw new ConfigValidationError(['preferActiveFlowVersions'], 'Enabled preferActiveFlowVersions configuration must be true or false if it is defined')
-    }
-  }
-
   validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {}, [FETCH_CONFIG])
 
   validateClientConfig(config?.value?.client)
@@ -125,13 +118,10 @@ SalesforceConfig => {
 
   validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
 
-  validatePreferActiveFlowVersions(config?.value?.preferActiveFlowVersions)
-
   const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
     fetch: config?.value?.[FETCH_CONFIG],
     maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
     enumFieldPermissions: config?.value?.[ENUM_FIELD_PERMISSIONS],
-    preferActiveFlowVersions: config?.value?.[PREFER_ACTIVE_FLOW_VERSIONS],
     client: config?.value?.[CLIENT_CONFIG],
     validators: config?.value?.validators,
   }

@@ -28,6 +28,7 @@ import { mockFileProperties } from '../connection'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import * as fetchModule from '../../src/fetch'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('fetch flows filter', () => {
   const { client } = mockClient()
@@ -56,7 +57,9 @@ describe('fetch flows filter', () => {
       beforeAll(async () => {
         elements = [flowType, flowDefinitionType]
         filter = fetchFlowFilter(
-          { config: { ...defaultFilterContext, preferActiveFlowVersions: true }, client },
+          { config: { ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({ preferActiveFlowVersions: true }) },
+          client },
         ) as FilterWith<'onFetch'>
         await filter.onFetch(elements)
       })

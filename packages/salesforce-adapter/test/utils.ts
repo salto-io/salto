@@ -347,5 +347,4 @@ export const defaultFilterContext: FilterContext = {
   fetchProfile: buildFetchProfile({}),
   elementsSource: buildElementsSourceFromElements([]),
   enumFieldPermissions: false,
-  preferActiveFlowVersions: false,
 }

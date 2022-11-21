@@ -26,6 +26,8 @@ export type FetchProfile = {
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number
+  readonly preferActiveFlowVersions: boolean
+
 }
 
 export const buildFetchProfile = ({
@@ -35,12 +37,14 @@ export const buildFetchProfile = ({
   optionalFeatures,
   target,
   maxInstancesPerType,
+  preferActiveFlowVersions,
 }: FetchParameters): FetchProfile => ({
   metadataQuery: buildMetadataQuery(metadata, target),
   dataManagement: data && buildDataManagement(data),
   isFeatureEnabled: name => optionalFeatures?.[name] ?? true,
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
   maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
+  preferActiveFlowVersions: preferActiveFlowVersions ?? false,
 })
 
 export const validateFetchParameters = (

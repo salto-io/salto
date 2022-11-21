@@ -2948,27 +2948,31 @@ describe('workspace', () => {
     let workspace: Workspace
     let adaptersConfig: MockInterface<AdaptersConfigSource>
     const configElemId = new ElemID('dummy', 'new')
+    const configObjectType = new ObjectType({ elemID: configElemId })
+    const configInstanceElement = new InstanceElement('aaa', configObjectType)
     const resolveMock = jest.spyOn(ExpressionsModule, 'resolve')
     beforeEach(async () => {
+      resolveMock.mockClear()
       adaptersConfig = mockAdaptersConfigSource()
+      adaptersConfig.getAdapter.mockResolvedValue(configInstanceElement)
       adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([
-        new ObjectType({ elemID: configElemId }),
+        configObjectType,
       ]))
       workspace = await createWorkspace(undefined, undefined, undefined, adaptersConfig)
       resolveMock.mockImplementation(async elem => elem)
     })
-    afterEach(() => {
-      jest.clearAllMocks()
+    afterAll(() => {
+      resolveMock.mockRestore()
     })
     describe('when called with name only', () => {
       it('should return the unresolved accountConfig', async () => {
-        expect(await workspace.accountConfig('new')).toEqual(configElemId)
+        expect(await workspace.accountConfig('new')).toEqual(configInstanceElement)
         expect(resolveMock).not.toHaveBeenCalled()
       })
     })
     describe('when called with shouldResolve', () => {
       it('should return the resolved accountConfig', async () => {
-        expect(await workspace.accountConfig('new', undefined, true)).toEqual({})
+        expect(await workspace.accountConfig('new', undefined, true)).toEqual(configInstanceElement)
         expect(resolveMock).toHaveBeenCalled()
       })
     })

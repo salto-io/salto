@@ -24,6 +24,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefIdType, getRefNameType } from './references/workflow_properties'
+import { GROUP_NAME_REGEX } from './filters/group_name'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -51,8 +52,13 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
+export const stripUUID: referenceUtils.ContextValueMapperFunc = val => {
+  const match = val.match(GROUP_NAME_REGEX)
+  return match ? match[1] : val
+}
+
 export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesIdContext' | 'workflowStatusPropertiesNameContext'
-| 'parentFieldId'
+| 'parentFieldId' | 'groupName'
 
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
@@ -62,6 +68,7 @@ export const contextStrategyLookup: Record<
   workflowStatusPropertiesIdContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefIdType }),
   workflowStatusPropertiesNameContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefNameType }),
   parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
+  groupName: neighborContextFunc({ contextFieldName: 'name', contextValueMapper: stripUUID }),
 }
 
 type ReferenceSerializationStrategyName = 'groupName' | referenceUtils.ReferenceSerializationStrategyName

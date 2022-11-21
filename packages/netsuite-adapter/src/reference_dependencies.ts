@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   isInstanceElement, isPrimitiveType, ElemID, getFieldType,
-  isReferenceExpression, Value, isServiceId, isObjectType, Element,
+  isReferenceExpression, Value, isServiceId, isObjectType, ChangeDataType,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -30,14 +30,14 @@ const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
-const elementFullName = (element: Element): string => element.elemID.getFullName()
+const elementFullName = (element: ChangeDataType): string => element.elemID.getFullName()
 
 export const findDependingElementsFromRefs = async (
-  element: Element
-): Promise<Element[]> => {
-  const visitedIdToElement = new Map<string, Element>()
+  element: ChangeDataType
+): Promise<ChangeDataType[]> => {
+  const visitedIdToElement = new Map<string, ChangeDataType>()
   const isRefToServiceId = async (
-    topLevelParent: Element,
+    topLevelParent: ChangeDataType,
     elemId: ElemID
   ): Promise<boolean> => {
     if (isInstanceElement(topLevelParent)) {
@@ -53,7 +53,7 @@ export const findDependingElementsFromRefs = async (
   const createDependingElementsCallback: TransformFunc = async ({ value }) => {
     if (isReferenceExpression(value)) {
       const { topLevelParent, elemID } = value
-      if (topLevelParent
+      if ((isObjectType(topLevelParent) || isInstanceElement((topLevelParent)))
         && !visitedIdToElement.has(elementFullName(topLevelParent))
         && elemID.adapter === NETSUITE
         && await isRefToServiceId(topLevelParent, elemID)) {
@@ -77,12 +77,12 @@ export const findDependingElementsFromRefs = async (
  * Here we add automatically all of the referenced elements.
  */
 const getAllReferencedElements = async (
-  sourceElements: ReadonlyArray<Element>
-): Promise<ReadonlyArray<Element>> => {
+  sourceElements: ReadonlyArray<ChangeDataType>
+): Promise<ReadonlyArray<ChangeDataType>> => {
   const visited = new Set<string>(sourceElements.map(elementFullName))
   const getNewReferencedElement = async (
-    element: Element
-  ): Promise<Element[]> => {
+    element: ChangeDataType
+  ): Promise<ChangeDataType[]> => {
     const newElements = (await findDependingElementsFromRefs(element))
       .filter(elem => !visited.has(elementFullName(elem)))
     newElements.forEach(elem => {
@@ -106,22 +106,22 @@ const getAllReferencedElements = async (
  * Here we add manually all of the quirks we identified.
  */
 const getRequiredReferencedElements = async (
-  sourceElements: ReadonlyArray<Element>
-): Promise<ReadonlyArray<Element>> => {
+  sourceElements: ReadonlyArray<ChangeDataType>
+): Promise<ReadonlyArray<ChangeDataType>> => {
   const getReferencedElement = (
     value: Value,
-    predicate: (element: Element) => boolean
-  ): Element | undefined => (
+    predicate: (element: ChangeDataType) => boolean
+  ): ChangeDataType | undefined => (
     (isReferenceExpression(value)
-      && value.topLevelParent
+      && (isObjectType(value.topLevelParent) || isInstanceElement(value.topLevelParent))
       && predicate(value.topLevelParent))
       ? value.topLevelParent
       : undefined
   )
 
   const getRequiredDependency = (
-    element: Element
-  ): Element | undefined => {
+    element: ChangeDataType
+  ): ChangeDataType | undefined => {
     if (isObjectType(element) && isCustomRecordType(element)) {
       return getReferencedElement(
         element.annotations.customsegment,
@@ -174,9 +174,9 @@ const getRequiredReferencedElements = async (
 }
 
 export const getReferencedElements = async (
-  elements: ReadonlyArray<Element>,
+  elements: ReadonlyArray<ChangeDataType>,
   deployAllReferencedElements: boolean
-): Promise<ReadonlyArray<Element>> => (
+): Promise<ReadonlyArray<ChangeDataType>> => (
   deployAllReferencedElements
     ? getAllReferencedElements(elements)
     : getRequiredReferencedElements(elements)

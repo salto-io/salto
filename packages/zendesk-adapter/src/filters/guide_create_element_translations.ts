@@ -37,7 +37,7 @@ type ArticleTranslationResponse = {
   }
 }
 
-const EXPECTED_TRANSLATION_SCHEMA = Joi.object({
+export const EXPECTED_TRANSLATION_SCHEMA = Joi.object({
   translation: Joi.object({
     id: Joi.number().required(),
   }).unknown(true).required(),
@@ -50,7 +50,7 @@ const isArticleTranslationResponse = createSchemeGuard<ArticleTranslationRespons
 const isExtraArticle = (parentInstance: Element): boolean =>
   isInstanceElement(parentInstance)
   && (parentInstance.elemID.typeName === ARTICLE_TYPE_NAME)
-  && (parentInstance.value.locale !== parentInstance.value.source_locale)
+  && (!_.isEqual(parentInstance.value.locale, parentInstance.value.source_locale))
 
 const isTranslationType = (elem: Element): boolean =>
   isObjectType(elem)
@@ -94,7 +94,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const groupedById = _.groupBy(articles, 'value.id')
 
     articles
-      .filter(parentInstance => parentInstance.value.locale === parentInstance.value.source_locale)
+      .filter(parentInstance => _.isEqual(parentInstance.value.locale, parentInstance.value.source_locale))
       .forEach(instance => {
         instance.value.translations = []
       })
@@ -117,9 +117,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           },
         )
         const parent = groupedById[instance.value.id]
-          .find(
-            parentInstance => parentInstance.value.locale === parentInstance.value.source_locale
-          )
+          .find(parentInstance => _.isEqual(parentInstance.value.locale, parentInstance.value.source_locale))
         if (parent === undefined) {
           log.error('could not find article translation parent')
           return
@@ -142,7 +140,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     relaventChanges
       .forEach(async change => {
         // parent is an object
-        const parentId = getChangeData(change).annotations[CORE_ANNOTATIONS.PARENT][0].id
+        const parentId = getChangeData(change).annotations[CORE_ANNOTATIONS.PARENT][0]?.id
         const { locale } = getChangeData(change).value
         if (parentId === undefined || locale === undefined) {
           log.error('could not find article translation parent or locale')

@@ -107,8 +107,9 @@ describe('adapters.ts', () => {
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
     })
     it('should use getDefaultConfig when defined', async () => {
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
-      expect(mockAdapter.getDefaultConfig).toHaveBeenCalled()
+      const mockAdapterConfigOverrides = {} as InstanceElement
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockAdapterConfigOverrides)
+      expect(mockAdapter.getDefaultConfig).toHaveBeenCalledWith(mockAdapterConfigOverrides)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })

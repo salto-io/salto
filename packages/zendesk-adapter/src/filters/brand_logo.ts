@@ -81,7 +81,7 @@ const getLogoContent = async (
   logoFileName: string,
 ): Promise<Buffer | undefined> => {
   const res = await client.getResource({
-    url: `/brands/${logoId}/${logoFileName}`,
+    url: `/system/brands/${logoId}/${logoFileName}`,
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data

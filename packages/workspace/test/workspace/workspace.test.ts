@@ -53,7 +53,7 @@ import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 import { createElementSelector } from '../../src/workspace/element_selector'
-import * as ExpressionsModule from '../../src/expressions'
+import * as expressionsModule from '../../src/expressions'
 
 const { awu } = collections.asynciterable
 
@@ -2950,7 +2950,7 @@ describe('workspace', () => {
     const configElemId = new ElemID('dummy', 'new')
     const configObjectType = new ObjectType({ elemID: configElemId })
     const configInstanceElement = new InstanceElement('aaa', configObjectType)
-    const resolveMock = jest.spyOn(ExpressionsModule, 'resolve')
+    const resolveMock = jest.spyOn(expressionsModule, 'resolve')
     beforeEach(async () => {
       resolveMock.mockClear()
       adaptersConfig = mockAdaptersConfigSource()

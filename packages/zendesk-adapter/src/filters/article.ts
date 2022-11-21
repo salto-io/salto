@@ -86,7 +86,7 @@ const haveAttachmentsBeenAdded = (
   return addedAttachments.length > 0
 }
 
-const AssociateAttachments = async (
+const associateAttachments = async (
   client: ZendeskClient,
   articleChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   addedAtarticleNameToAttachmentstachments: Record<string, number[]>
@@ -212,7 +212,7 @@ const filterCreator: FilterCreator = ({
             change, client, config.apiDefinitions, ['translations', 'attachments'],
           )
           if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
-            await AssociateAttachments(client, change, articleNameToAttachments)
+            await associateAttachments(client, change, articleNameToAttachments)
           }
         },
       )

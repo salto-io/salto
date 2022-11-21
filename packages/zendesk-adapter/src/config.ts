@@ -1652,7 +1652,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['&section_id', 'title'],
       fileNameFields: ['&section_id', 'title'],
-      standaloneFields: [{ fieldName: 'translations' }, { fieldName: 'attachments' }],
+      standaloneFields: [
+        { fieldName: 'translations' },
+        { fieldName: 'attachments' },
+      ],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
@@ -1662,6 +1665,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'author_id', fieldType: 'unknown' },
         { fieldName: 'translations', fieldType: 'list<article_translation>' },
+        { fieldName: 'attachments', fieldType: 'list<article_attachment>' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'vote_sum' },
@@ -1700,7 +1704,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   [ARTICLE_ATTACHMENT_TYPE_NAME]: {
     transformation: {
-      idFields: ['&brand', 'filename'],
+      idFields: ['filename'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },

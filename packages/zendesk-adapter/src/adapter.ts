@@ -171,7 +171,6 @@ export const DEFAULT_FILTERS = [
   // everyoneUserSegementFilter needs to be before articleFilter
   everyoneUserSegementFilter,
   articleFilter,
-  // articleAttachmentsFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,
   guideLanguageSettings,

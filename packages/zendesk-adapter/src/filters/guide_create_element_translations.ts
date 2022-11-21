@@ -76,7 +76,10 @@ const createTranslationType = () :ObjectType => new ObjectType({
   path: [ZENDESK, elementsUtils.TYPES_PATH, ARTICLE_TRANSLATION_TYPE_NAME],
 })
 
-
+/**
+ * On fetch, this filter creates article_translation instances from article instances. in preDeploy, only for remove
+ * changes it gets the id of the translation.
+ */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     if (!config.fetch.enableGuide) {

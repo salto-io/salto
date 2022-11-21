@@ -1692,9 +1692,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   article_translation: {
-    // request: {
-    //   url: '/api/v2/help_center/articles/{articleId}/translations',
-    // },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,

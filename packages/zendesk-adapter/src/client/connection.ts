@@ -25,7 +25,7 @@ const log = logger(module)
 export const instanceUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com`
 const baseUrl = instanceUrl
 // A URL for resource files
-const resourceUrl = (subdomain: string): string => (new URL('/system', instanceUrl(subdomain))).href
+const resourceUrl = (subdomain: string): string => (new URL('/', instanceUrl(subdomain))).href
 
 const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110

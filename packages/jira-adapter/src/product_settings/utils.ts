@@ -22,6 +22,9 @@ export const addTypeNameOverrides = (
   additionalTypes: config.TypeNameOverrideConfig[]
 ):JiraApiConfig => {
   const duplicateConfig = _.cloneDeep(configuration)
-  duplicateConfig.platformSwagger.typeNameOverrides?.push(...additionalTypes)
+  if (duplicateConfig.platformSwagger.typeNameOverrides === undefined) {
+    duplicateConfig.platformSwagger.typeNameOverrides = []
+  }
+  duplicateConfig.platformSwagger.typeNameOverrides.push(...additionalTypes)
   return duplicateConfig
 }

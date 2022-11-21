@@ -32,7 +32,7 @@ import { removeTitleAndBody } from './guide_fetch_article'
 import { prepRef } from './article_body'
 import { EVERYONE } from './everyone_user_segment'
 import ZendeskClient from '../client/client'
-import { createAttachmentType, createUnassociatedAttachment, getArticleAttachments } from './article_attachments'
+import { createAttachmentType, createUnassociatedAttachment, getArticleAttachments } from './article/utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -136,7 +136,10 @@ const filterCreator: FilterCreator = ({
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
       setupArticleUserSegmentId(elements, articleInstances)
-      const attachmentType = createAttachmentType()
+      const attachmentType = elements
+        .filter(isObjectType)
+        .find(objType => objType.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
+        ?? createAttachmentType()
       const articleAttachments = (await Promise.all(articleInstances
         .map(async article => getArticleAttachments({
           client: brandIdToClient[article.value.brand],
@@ -145,13 +148,8 @@ const filterCreator: FilterCreator = ({
         })))).flat()
 
       // Verify article_attachment type added only once
-      const existingAttachmentType = elements
-        .filter(isObjectType)
-        .find(objType => objType.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-      if (existingAttachmentType === undefined) {
-        elements.push(attachmentType)
-      }
-      elements.push(...articleAttachments)
+      _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
+      elements.push(attachmentType, ...articleAttachments)
     },
 
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {

@@ -18,20 +18,16 @@ import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
 import { naclCase, normalizeFilePathPart, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
-  isAdditionChange, isAdditionOrModificationChange, isInstanceElement, isObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement,
   isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import ZendeskClient from '../client/client'
-import { FilterCreator } from '../filter'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../constants'
-import { getZendeskError } from '../errors'
-// import { prepRef } from './article_body'
+import ZendeskClient from '../../client/client'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ZENDESK } from '../../constants'
+import { getZendeskError } from '../../errors'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 
@@ -203,85 +199,3 @@ export const createUnassociatedAttachment = async (
     throw getZendeskError(attachmentInstance.elemID.getFullName(), err)
   }
 }
-
-/**
- * Adds the articles attachments instances
- */
-const filterCreator: FilterCreator = ({ client, brandIdToClient = {} }) => ({
-  onFetch: async elements => log.time(async () => {
-    const articleInstances = elements
-      .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
-    const attachmentType = createAttachmentType()
-    const articleAttachments = (await Promise.all(articleInstances
-      .map(async article => getArticleAttachments({
-        client: brandIdToClient[article.value.brand],
-        attachmentType,
-        article,
-      })))).flat()
-
-    // Verify article_attachment type added only once
-    const existingAttachmentType = elements
-      .filter(isObjectType)
-      .find(objType => objType.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-    if (existingAttachmentType === undefined) {
-      elements.push(attachmentType)
-    }
-    elements.push(...articleAttachments)
-  }, 'Article attachment filter'),
-
-  preDeploy: async (changes: Change<InstanceElement>[]) => {
-    // Associating attachments occurs in the article filter
-    await awu(changes)
-      .filter(isAdditionChange)
-      .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-      .map(getChangeData)
-      .forEach(attachmentInstance => createUnassociatedAttachment(client, attachmentInstance))
-  },
-
-  // Modification changes aren't supported ATM
-  // Removal changes are supported via the standard deploy method
-  deploy: async (changes: Change<InstanceElement>[]) => {
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
-        && isAdditionOrModificationChange(change),
-    )
-    const [additionChanges, modificationChanges] = _.partition(relevantChanges, isAdditionChange)
-
-    // await awu(additionChanges)
-    //   .map(getChangeData)
-    //   .map(attachmentInstance => attachmentInstance.annotations[CORE_ANNOTATIONS.PARENT][0])
-    // await awu(relevantChanges)
-    //   .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
-    //   .map(getChangeData)
-    //   .forEach(articleInstance => {
-    //     try {
-    //       replaceTemplatesWithValues(
-    //         { values: [articleInstance.value], fieldName: 'body' },
-    //         {},
-    //         prepRef,
-    //       )
-    //     } catch (e) {
-    //       log.error('Error parsing article body value in deployment', e)
-    //     }
-    //   })
-
-    const modificationChangeErrors = modificationChanges
-      .map(getChangeData)
-      .map(instance => getZendeskError(
-        instance.elemID.getFullName(),
-        new Error('article_attachment modification changes aren\'t supported')
-      ))
-
-    return {
-      deployResult: {
-        appliedChanges: additionChanges,
-        errors: modificationChangeErrors,
-      },
-      leftoverChanges,
-    }
-  },
-})
-
-export default filterCreator

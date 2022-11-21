@@ -23,7 +23,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
   SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
-import { getRefIdType, getRefNameType } from './references/workflow_properties'
+import { getRefType } from './references/workflow_properties'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -51,7 +51,7 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
-export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesIdContext' | 'workflowStatusPropertiesNameContext'
+export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesContext'
 | 'parentFieldId'
 
 export const contextStrategyLookup: Record<
@@ -59,18 +59,23 @@ export const contextStrategyLookup: Record<
 > = {
   parentSelectedFieldType: neighborContextFunc({ contextFieldName: 'selectedFieldType', levelsUp: 1, contextValueMapper: toTypeName }),
   parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
-  workflowStatusPropertiesIdContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefIdType }),
-  workflowStatusPropertiesNameContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefNameType }),
+  workflowStatusPropertiesContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefType }),
   parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
 }
 
-type ReferenceSerializationStrategyName = 'groupName' | referenceUtils.ReferenceSerializationStrategyName
+type ReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | referenceUtils.ReferenceSerializationStrategyName
 const JiraReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
-  groupName: {
+  groupStrategyById: {
+    serialize: ({ ref }) =>
+      (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id),
+    lookup: val => val,
+    lookupIndexName: 'id',
+  },
+  groupStrategyByOriginalName: {
     serialize: ({ ref }) =>
       (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id),
     lookup: val => val,
@@ -375,12 +380,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'groups', parentTypes: ['ConditionConfiguration'] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'group', parentTypes: ['ConditionConfiguration'] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   {
@@ -395,22 +400,22 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'groups', parentTypes: ['ApplicationRole'] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'defaultGroups', parentTypes: ['ApplicationRole'] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'name', parentTypes: ['GroupName'] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   {
@@ -440,7 +445,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'groups', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   // Overlapping rules, serialization strategies guarantee no conflict
@@ -467,7 +472,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'value', parentTypes: [AUTOMATION_EMAIL_RECIPENT, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_GROUP] },
-    JiraSerializationStrategy: 'groupName',
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
   {
@@ -529,8 +534,13 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'value', parentTypes: ['WorkflowProperty'] },
-    JiraSerializationStrategy: 'groupName',
-    target: { typeContext: 'workflowStatusPropertiesIdContext' },
+    JiraSerializationStrategy: 'groupStrategyById',
+    target: { typeContext: 'workflowStatusPropertiesContext' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
+    target: { typeContext: 'workflowStatusPropertiesContext' },
   },
 ]
 

@@ -304,7 +304,6 @@ salesforce {
         }
     }
   }
-  fetchAllCustomSettings = false
   maxItemsInRetrieveRequest = 2500
 }
 ```

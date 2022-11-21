@@ -18,11 +18,11 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   AdditionChange,
-  Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionChange,
+  Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceElement, isObjectType, isReferenceExpression,
-  isRemovalChange, ModificationChange, ReferenceExpression,
+  isRemovalChange, ModificationChange, ReferenceExpression, Element,
 } from '@salto-io/adapter-api'
-import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
+import { getParent, replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
@@ -57,6 +57,27 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   }
 }
 
+const setupArticleUserSegmentId = (
+  elements: Element[],
+  articleInstances: InstanceElement[],
+): void => {
+  const everyoneUserSegmentInstance = elements
+    .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
+    .find(instance => instance.elemID.name === EVERYONE)
+  if (everyoneUserSegmentInstance === undefined) {
+    log.info("Couldn't find Everyone user_segment instance.")
+    return
+  }
+  articleInstances
+    .filter(article => article.value[USER_SEGMENT_ID_FIELD] === undefined)
+    .forEach(article => {
+      article.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
+        everyoneUserSegmentInstance.elemID,
+        everyoneUserSegmentInstance,
+      )
+    })
+}
+
 // The default user_segment we added will be resolved to undefined
 // So in order to create a new article we need to add a null value user_segment_id
 const setUserSegmentIdForAdditionChanges = (
@@ -76,9 +97,10 @@ const haveAttachmentsBeenAdded = (
 ): boolean => {
   const addedAttachments = isAdditionChange(articleChange)
     ? articleChange.data.after.value.attachments
-    : _.difference(
+    : _.differenceWith(
       articleChange.data.after.value.attachments,
       articleChange.data.before.value.attachments,
+      _.isEqual
     )
   if (!_.isArray(addedAttachments)) {
     return false
@@ -110,25 +132,10 @@ const filterCreator: FilterCreator = ({
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
     onFetch: async elements => {
-      const everyoneUserSegmentInstance = elements
-        .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
-        .find(instance => instance.elemID.name === EVERYONE)
-      if (everyoneUserSegmentInstance === undefined) {
-        log.info("Couldn't find Everyone user_segment instance.")
-        return
-      }
       const articleInstances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
-      articleInstances
-        .filter(article => article.value[USER_SEGMENT_ID_FIELD] === undefined)
-        .forEach(article => {
-          article.value[USER_SEGMENT_ID_FIELD] = new ReferenceExpression(
-            everyoneUserSegmentInstance.elemID,
-            everyoneUserSegmentInstance,
-          )
-        })
-
+      setupArticleUserSegmentId(elements, articleInstances)
       const attachmentType = createAttachmentType()
       const articleAttachments = (await Promise.all(articleInstances
         .map(async article => getArticleAttachments({
@@ -161,7 +168,7 @@ const filterCreator: FilterCreator = ({
           if (unresolvedInstance === undefined) {
             return
           }
-          const parentArticleRef = unresolvedInstance.annotations[CORE_ANNOTATIONS.PARENT][0]
+          const parentArticleRef = getParent(unresolvedInstance)
           if (!isReferenceExpression(parentArticleRef)) {
             return
           }

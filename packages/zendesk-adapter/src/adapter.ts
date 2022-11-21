@@ -109,7 +109,7 @@ import categoryOrderFilter from './filters/guide_order/category_order'
 import sectionOrderFilter from './filters/guide_order/section_order'
 import articleOrderFilter from './filters/guide_order/article_order'
 import guideServiceUrl from './filters/guide_service_url'
-import everyoneUserSegementFilter from './filters/everyone_user_segment'
+import everyoneUserSegmentFilter from './filters/everyone_user_segment'
 import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
 import guideElementTranslations from './filters/guide_create_element_translations'
@@ -168,8 +168,8 @@ export const DEFAULT_FILTERS = [
   sectionOrderFilter,
   articleOrderFilter,
   // help center filters need to be before fieldReferencesFilter (assume fields are strings)
-  // everyoneUserSegementFilter needs to be before articleFilter
-  everyoneUserSegementFilter,
+  // everyoneUserSegmentFilter needs to be before articleFilter
+  everyoneUserSegmentFilter,
   articleFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,

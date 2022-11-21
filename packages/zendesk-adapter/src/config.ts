@@ -17,7 +17,13 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { BRAND_TYPE_NAME, ZENDESK } from './constants'
+import {
+  ARTICLE_ORDER_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  ZENDESK,
+} from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -2220,6 +2226,9 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   'article_translation',
   'category_translation',
   'section_translation',
+  CATEGORY_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
 ]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {

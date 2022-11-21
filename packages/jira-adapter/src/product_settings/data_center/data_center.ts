@@ -15,8 +15,9 @@
 */
 import { config as configUtils } from '@salto-io/adapter-components'
 import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../../config/api_config'
-import { DC_DEFAULT_API_DEFINITIONS } from './api_config'
+import { DC_ADDITIONAL_TYPE_NAME_OVERRIDES, DC_DEFAULT_API_DEFINITIONS } from './api_config'
 import { ProductSettings } from '../product_settings'
+import { addTypeNameOverrides } from '../utils'
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch'
 
@@ -205,6 +206,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get', 'put'],
     url: '/rest/api/3/fieldconfiguration/\\d+/fields',
   },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/priority',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/priority/.+',
+  },
 ]
 
 const replaceRestVersion = (url: string): string => url.replace(
@@ -234,7 +243,7 @@ const wrapConnection: ProductSettings['wrapConnection'] = connection => ({
 
 export const DATA_CENTER_SETTINGS: ProductSettings = {
   defaultApiDefinitions: configUtils.mergeWithDefaultConfig(
-    DEFAULT_API_DEFINITIONS,
+    addTypeNameOverrides(DEFAULT_API_DEFINITIONS, DC_ADDITIONAL_TYPE_NAME_OVERRIDES),
     DC_DEFAULT_API_DEFINITIONS,
   ) as JiraApiConfig,
   wrapConnection,

@@ -26,7 +26,7 @@ import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { TRANSLATIONS_TYPE_NAME } from './help_center_translation'
+import { TRANSLATIONS_TYPE_NAME } from './guide_translation'
 import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
 
 

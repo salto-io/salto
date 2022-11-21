@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import { getCustomField } from './data_types_custom_fields'
 import { isCustomRecordType } from '../types'
-import { INDEX, SCRIPT_ID } from '../constants'
+import { INDEX, SCRIPT_ID, SOAP, SOURCE } from '../constants'
 import { CUSTOM_FIELDS, CUSTOM_FIELDS_LIST } from '../custom_records/custom_record_type'
 
 const { makeArray } = collections.array
 
-const toCustomRecordTypeReference = (type: ObjectType): string => `[${SCRIPT_ID}=${type.elemID.name}]`
+const toCustomRecordTypeReference = (type: ObjectType): string => `[${SCRIPT_ID}=${type.annotations[SCRIPT_ID]}]`
 
 const addFieldsToType = (
   type: ObjectType,
@@ -48,16 +48,38 @@ const removeCustomFieldsAnnotation = (type: ObjectType): void => {
   delete type.annotations[CUSTOM_FIELDS]
 }
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const removeInstancesAnnotation = (type: ObjectType): void => {
+  delete type.annotationRefTypes.instances
+  delete type.annotations.instances
+}
+
+const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
     const customRecordTypeObjects = types.filter(isCustomRecordType)
     const nameToType = _.keyBy(types, type => type.elemID.name)
     const customRecordTypesMap = _.keyBy(customRecordTypeObjects, toCustomRecordTypeReference)
+    const typeNameToInstances = _.groupBy(
+      elements.filter(isInstanceElement),
+      inst => inst.elemID.typeName
+    )
     customRecordTypeObjects.forEach(type => {
       addFieldsToType(type, nameToType, customRecordTypesMap)
       removeCustomFieldsAnnotation(type)
+      if (type.elemID.name in typeNameToInstances) {
+        removeInstancesAnnotation(type)
+      }
     })
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isAdditionChange)
+      .map(getChangeData)
+      .filter(isObjectType)
+      .filter(isCustomRecordType)
+      .forEach(type => {
+        type.annotate({ [SOURCE]: SOAP })
+      })
   },
 })
 

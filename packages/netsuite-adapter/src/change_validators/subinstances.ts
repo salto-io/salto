@@ -16,12 +16,13 @@
 import {
   ChangeValidator, isInstanceChange, isRemovalOrModificationChange,
 } from '@salto-io/adapter-api'
+import { IS_SUB_INSTANCE } from '../constants'
 
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .map(change => (isRemovalOrModificationChange(change) ? change.data.before : change.data.after))
-    .filter(instance => instance.value.isSubInstance)
+    .filter(instance => instance.value[IS_SUB_INSTANCE])
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',

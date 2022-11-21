@@ -22,7 +22,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
-import filterCreator from '../../src/filters/help_center_service_url'
+import filterCreator from '../../src/filters/guide_service_url'
 import { createFilterCreatorParams } from '../utils'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
@@ -34,7 +34,7 @@ import {
   BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../../src/constants'
 
-describe('help center service_url filter', () => {
+describe('guide service_url filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType

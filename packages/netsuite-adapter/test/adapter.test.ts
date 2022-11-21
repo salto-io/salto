@@ -109,6 +109,7 @@ describe('Adapter', () => {
           { name: TRANSACTION_FORM },
         ],
         fileCabinet: ['^Some/File/Regex$'],
+        customRecords: [],
       },
     },
     [CLIENT_CONFIG]: {
@@ -306,6 +307,7 @@ describe('Adapter', () => {
             [INCLUDE]: {
               types: [{ name: 'someType.*' }],
               fileCabinet: ['someFilePath'],
+              customRecords: [],
             },
           },
         }
@@ -327,6 +329,7 @@ describe('Adapter', () => {
             [EXCLUDE]: {
               types: [{ name: 'someTypeToSkip.*' }],
               fileCabinet: ['someFilePathToSkip'],
+              customRecords: [],
             },
           },
         }
@@ -400,6 +403,7 @@ describe('Adapter', () => {
               { name: TRANSACTION_FORM },
             ],
             fileCabinet: ['Some/File/Regex'],
+            customRecords: [],
           },
         },
         [FETCH_TARGET]: {
@@ -964,6 +968,9 @@ describe('Adapter', () => {
         isFileMatch: () => true,
         isParentFolderMatch: () => true,
         areSomeFilesMatch: () => true,
+        isCustomRecordTypeMatch: () => true,
+        areAllCustomRecordsMatch: () => true,
+        isCustomRecordMatch: () => true,
       })
 
       getSystemInformationMock.mockReset()
@@ -976,6 +983,7 @@ describe('Adapter', () => {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
+        getCustomRecords: () => [],
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -1031,6 +1039,7 @@ describe('Adapter', () => {
           getSystemInformation: getSystemInformationMock,
           getNetsuiteWsdl: () => undefined,
           getConfigRecords: () => [],
+          getCustomRecords: () => [],
         } as unknown as SuiteAppClient
 
         adapter = new NetsuiteAdapter({

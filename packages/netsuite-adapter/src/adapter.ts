@@ -27,10 +27,9 @@ import {
   createInstanceElement,
 } from './transformer'
 import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from './types'
-import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS, CUSTOM_RECORD_TYPE } from './constants'
+import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, INTEGRATION, FETCH_TARGET, SKIP_LIST, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS, CUSTOM_RECORD_TYPE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
-import replaceInstanceReferencesFilter from './filters/element_references'
+import replaceElementReferences from './filters/element_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
@@ -58,8 +57,9 @@ import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import configFeaturesFilter from './filters/config_features'
 import omitSdfUntypedValues from './filters/omit_sdf_untyped_values'
 import omitFieldsFilter from './filters/omit_fields'
-import addFieldsToCustomRecordType from './filters/custom_record_type_fields'
 import currencyExchangeRate from './filters/currency_exchange_rate'
+import customRecordTypesType from './filters/custom_record_types'
+import customRecordsFilter from './filters/custom_records'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -72,6 +72,7 @@ import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
+import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames, isStandardTypeName } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
@@ -126,7 +127,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = createFilterCreatorsWithLogs({
-      addFieldsToCustomRecordType,
+      customRecordTypesType,
       omitSdfUntypedValues,
       omitFieldsFilter,
       dataInstancesIdentifiers,
@@ -139,7 +140,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       // convertListsToMaps must run after convertLists and consistentValues
       // and must run before replaceInstanceReferencesFilter
       convertListsToMaps,
-      replaceInstanceReferencesFilter,
+      replaceElementReferences,
       SDFInternalIds,
       dataInstancesAttributes,
       redundantFields,
@@ -160,6 +161,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       accountSpecificValues,
       suiteAppConfigElementsFilter,
       configFeaturesFilter,
+      customRecordsFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
     }),
@@ -241,8 +243,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       )
       : undefined
 
-    const dataElementsPromise = getDataElements(this.client, fetchQuery,
-      this.getElemIdFunc)
+    const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
+    const configRecordsPromise = this.client.getConfigRecords()
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       getStandardTypesNames(),
@@ -296,10 +298,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
       standardTypes.customrecordtype.type
     )
 
+    const customRecordsPromise = getCustomRecords(
+      this.client,
+      customRecordTypes,
+      fetchQuery,
+      this.getElemIdFunc
+    )
+
     const dataElements = await dataElementsPromise
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
-      ? toConfigElements(await this.client.getConfigRecords(), fetchQuery).concat(getConfigTypes())
+      ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
       : []
+    const customRecords = await customRecordsPromise
 
     const elements = [
       ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),
@@ -308,6 +318,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...instances,
       ...(serverTimeElements ? [serverTimeElements.type, serverTimeElements.instance] : []),
       ...customRecordTypes,
+      ...customRecords,
     ]
 
     await this.createFiltersRunner(isPartial).onFetch(elements)

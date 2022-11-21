@@ -27,6 +27,10 @@ describe('NetsuiteQuery', () => {
           { name: 'account', ids: ['.*'] },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
+        customRecords: [
+          { name: 'custrecord1' },
+          { name: 'custrecord2', ids: ['record1', 'record2'] },
+        ],
       })
 
       describe('isTypeMatch', () => {
@@ -112,6 +116,33 @@ describe('NetsuiteQuery', () => {
         it('should match file paths that match the received regexes (old format)', () => {
           expect(queryOldFormat.isFileMatch('eeeaaa')).toBeTruthy()
           expect(queryOldFormat.isFileMatch('ffffqqqq')).toBeTruthy()
+        })
+      })
+      describe('isCustomRecordTypeMatch', () => {
+        it('should match the received types', () => {
+          expect(query.isCustomRecordTypeMatch('custrecord1')).toBeTruthy()
+          expect(query.isCustomRecordTypeMatch('custrecord2')).toBeTruthy()
+        })
+
+        it('should not match types the were not received', () => {
+          expect(query.isCustomRecordTypeMatch('custrecord3')).toBeFalsy()
+        })
+      })
+      describe('areAllCustomRecordsMatch', () => {
+        it('when there is .* should return true', () => {
+          expect(query.areAllCustomRecordsMatch('custrecord1')).toBeTruthy()
+          expect(query.areAllCustomRecordsMatch('custrecord2')).toBeFalsy()
+        })
+      })
+      describe('isCustomRecordMatch', () => {
+        it('should match objects that match the received regexes', () => {
+          expect(query.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord1' })).toBeTruthy()
+          expect(query.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord2' })).toBeTruthy()
+        })
+
+        it('should not match objects that do not match the received regexes', () => {
+          expect(query.isCustomRecordMatch({ instanceId: 'record3', type: 'custrecord2' })).toBeFalsy()
+          expect(query.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord3' })).toBeFalsy()
         })
       })
     })
@@ -299,6 +330,9 @@ describe('NetsuiteQuery', () => {
         { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['bbb.*'],
+      customRecords: [
+        { name: 'cust.*' },
+      ],
     })
     const secondQuery = buildNetsuiteQuery({
       types: [
@@ -307,6 +341,10 @@ describe('NetsuiteQuery', () => {
         { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['.*ddd'],
+      customRecords: [
+        { name: '.*record1' },
+        { name: '.*record2', ids: ['record1', 'record2'] },
+      ],
     })
     const bothQuery = andQuery(firstQuery, secondQuery)
 
@@ -342,6 +380,22 @@ describe('NetsuiteQuery', () => {
     it('should return whether both queries has some files match', () => {
       expect(bothQuery.areSomeFilesMatch()).toBeTruthy()
     })
+
+    it('should match only custom record types that match both queries', () => {
+      expect(bothQuery.isCustomRecordTypeMatch('custrecord1')).toBeTruthy()
+      expect(bothQuery.isCustomRecordTypeMatch('custrecord2')).toBeTruthy()
+      expect(bothQuery.isCustomRecordTypeMatch('custrecord3')).toBeFalsy()
+    })
+
+    it('should match all custom records if both queries match all objects', () => {
+      expect(bothQuery.areAllCustomRecordsMatch('custrecord1')).toBeTruthy()
+      expect(bothQuery.areAllCustomRecordsMatch('custrecord2')).toBeFalsy()
+    })
+
+    it('should match only custom records that match both queries', () => {
+      expect(bothQuery.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord2' })).toBeTruthy()
+      expect(bothQuery.isCustomRecordMatch({ instanceId: 'record3', type: 'custrecord2' })).toBeFalsy()
+    })
   })
 
   describe('notQuery', () => {
@@ -350,6 +404,9 @@ describe('NetsuiteQuery', () => {
         { name: 'addressForm', ids: ['aaa.*'] },
       ],
       fileCabinet: ['bbb.*'],
+      customRecords: [
+        { name: 'custrecord1', ids: ['record1'] },
+      ],
     })
     const inverseQuery = notQuery(query)
 
@@ -372,6 +429,22 @@ describe('NetsuiteQuery', () => {
       expect(inverseQuery.isObjectMatch({ instanceId: 'aaa', type: 'addressForm' })).toBeFalsy()
       expect(inverseQuery.isObjectMatch({ instanceId: 'aaa', type: 'advancedpdftemplate' })).toBeTruthy()
       expect(inverseQuery.isObjectMatch({ instanceId: 'bbb', type: 'addressForm' })).toBeTruthy()
+    })
+
+    it('should match all custom record types', () => {
+      expect(inverseQuery.isCustomRecordTypeMatch('custrecord1')).toBeTruthy()
+      expect(inverseQuery.isCustomRecordTypeMatch('custrecord2')).toBeTruthy()
+    })
+
+    it('should match all custom records if did not match any object before', () => {
+      expect(inverseQuery.areAllCustomRecordsMatch('custrecord2')).toBeTruthy()
+      expect(inverseQuery.areAllCustomRecordsMatch('custrecord1')).toBeFalsy()
+    })
+
+    it('should match only custom records that do not match the original query', () => {
+      expect(inverseQuery.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord1' })).toBeFalsy()
+      expect(inverseQuery.isCustomRecordMatch({ instanceId: 'record2', type: 'custrecord1' })).toBeTruthy()
+      expect(inverseQuery.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord2' })).toBeTruthy()
     })
   })
 })

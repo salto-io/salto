@@ -17,14 +17,11 @@ import { getChangeData, InstanceElement, isInstanceChange, isModificationChange 
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith } from '../filter'
-import { isDataObjectType } from '../types'
-import { CUSTOM_FIELD_PREFIX } from '../constants'
+import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix } from '../types'
 
 const { awu } = collections.asynciterable
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  onFetch: async () => {},
+const filterCreator = (): FilterWith<'preDeploy'> => ({
   preDeploy: async changes => {
     await awu(changes)
       .filter(isModificationChange)
@@ -36,11 +33,15 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
         const nullFields = _(change.data.before.value)
           .keys()
           .filter(key => change.data.after.value[key] === undefined)
-          .map(key => (key.startsWith(CUSTOM_FIELD_PREFIX)
-            ? key.slice(CUSTOM_FIELD_PREFIX.length, key.length)
+          .map(key => (isCustomFieldName(key)
+            ? removeCustomFieldPrefix(key)
             : key))
           .value()
-        change.data.after.value['platformCore:nullFieldList'] = { 'platformCore:name': nullFields }
+        if (!_.isEmpty(nullFields)) {
+          change.data.after.value['platformCore:nullFieldList'] = {
+            'platformCore:name': nullFields,
+          }
+        }
       })
   },
 })

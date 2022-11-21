@@ -50,6 +50,8 @@ export const FOLDER = 'folder'
 export const SELECT_OPTION = 'selectOption'
 export const CONFIG_FEATURES = 'companyFeatures'
 export const CURRENCY = 'currency'
+export const RECORD_REF = 'recordRef'
+export const EMPLOYEE = 'employee'
 
 // Type Annotations
 export const SOURCE = 'source'
@@ -57,15 +59,20 @@ export const METADATA_TYPE = 'metadataType'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'
+export const SOAP_SCRIPT_ID = 'scriptId'
 export const INTERNAL_ID = 'internalId'
+export const ID_FIELD = 'id'
 export const PATH = 'path'
 export const PERMITTED_ROLE = 'permittedrole'
 export const RECORD_TYPE = 'recordType'
 export const APPLICATION_ID = 'application_id'
+export const IS_SUB_INSTANCE = 'isSubInstance'
+export const PARENT = 'parent'
 export const CUSTOM_FIELD_PREFIX = 'custom_'
 export const EXCHANGE_RATE = 'exchangeRate'
 
 // Field Annotations
+export const SOAP = 'soap'
 export const IS_ATTRIBUTE = 'isAttribute'
 export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'
 export const LIST_MAPPED_BY_FIELD = 'map_key_field'

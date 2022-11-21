@@ -14,11 +14,34 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { DEFAULT_API_DEFINITIONS } from '../config/api_config'
+import { config } from '@salto-io/adapter-components'
+import { DEFAULT_API_DEFINITIONS, JiraApiConfig } from '../config/api_config'
 import { ProductSettings } from './product_settings'
+import { addTypeNameOverrides } from './utils'
+
+
+const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
+  types: {
+    Priorities: {
+      request: {
+        url: '/rest/api/3/priority/search',
+        paginationField: 'startAt',
+      },
+    },
+  },
+}
+const CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES = [
+  {
+    originalName: 'PageBeanPriority',
+    newName: 'Priorities',
+  },
+]
 
 export const CLOUD_SETTINGS: ProductSettings = {
-  defaultApiDefinitions: DEFAULT_API_DEFINITIONS,
+  defaultApiDefinitions: config.mergeWithDefaultConfig(
+    addTypeNameOverrides(DEFAULT_API_DEFINITIONS, CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES),
+    CLOUD_DEFAULT_API_DEFINITIONS,
+  ) as JiraApiConfig,
   wrapConnection: _.identity,
   type: 'cloud',
 }

@@ -13,16 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FILE_CABINET_PATH_SEPARATOR, SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME } from '../constants'
+import { config } from '@salto-io/adapter-components'
+import _ from 'lodash'
+import { JiraApiConfig } from '../config/api_config'
 
-
-export const ATTRIBUTE_PREFIX = '@_'
-export const CDATA_TAG_NAME = '__cdata'
-
-export const fileCabinetTopLevelFolders = [
-  `${FILE_CABINET_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
-  `${FILE_CABINET_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
-  `${FILE_CABINET_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
-]
-
-export const XSI_TYPE = 'xsi:type'
+export const addTypeNameOverrides = (
+  configuration: JiraApiConfig,
+  additionalTypes: config.TypeNameOverrideConfig[]
+):JiraApiConfig => {
+  const duplicateConfig = _.cloneDeep(configuration)
+  if (duplicateConfig.platformSwagger.typeNameOverrides === undefined) {
+    duplicateConfig.platformSwagger.typeNameOverrides = []
+  }
+  duplicateConfig.platformSwagger.typeNameOverrides.push(...additionalTypes)
+  return duplicateConfig
+}

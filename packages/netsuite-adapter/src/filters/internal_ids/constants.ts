@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-export const TABLE_NAME_TO_ID_PARAMETER_MAP: Record<string, string> = {
+export const TABLE_NAME_TO_ID_PARAMETER_MAP: Record<string, 'id' | 'internalid'> = {
   allparserplugin: 'id',
   bundleinstallationscript: 'id',
   bundleinstallationscriptdeployment: 'id',

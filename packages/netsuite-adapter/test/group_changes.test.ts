@@ -322,8 +322,4 @@ describe('Group Changes with Salto suiteApp', () => {
   it('should not set group id for non SDF types instances', () => {
     expect(changeGroupIds.has(nonSdfInstance.elemID.getFullName())).toBe(false)
   })
-
-  it('should not set group id for non SDF types', () => {
-    expect(changeGroupIds.has(dummyType.elemID.getFullName())).toBe(false)
-  })
 })

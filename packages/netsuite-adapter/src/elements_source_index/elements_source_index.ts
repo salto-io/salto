@@ -14,21 +14,73 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, TypeElement, TypeReference, ElemID, ObjectType, Element, isObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, isCustomRecordType, isFileCabinetInstance } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { getElementServiceIdRecords } from '../filters/element_references'
+import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE } from '../constants'
+import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-export const getDataInstanceId = (
-  internalId: string,
-  type: TypeElement | TypeReference
-): string => `${type.elemID.name}-${internalId}`
+const CUSTOM_VALUES = 'customvalues'
+const CUSTOM_VALUE = 'customvalue'
+
+export const getDataInstanceId = (internalId: string, typeNameOrId: string): string =>
+  `${typeNameOrId}-${internalId}`
+
+export const isCustomListInstance = (instance: InstanceElement): boolean =>
+  instance.elemID.typeName === CUSTOM_LIST
+
+export const getCustomListValues = (instance: InstanceElement): [Value, string][] => (
+  _.isPlainObject(instance.value[CUSTOM_VALUES]?.[CUSTOM_VALUE])
+    ? Object.entries(instance.value[CUSTOM_VALUES]?.[CUSTOM_VALUE])
+      .map(([key, value]) => [value, key])
+    : []
+)
+
+const toCustomListValueElemID = (instanceElemId: ElemID, valueKey: string): ElemID =>
+  instanceElemId.createNestedID(CUSTOM_VALUES, CUSTOM_VALUE, valueKey)
+
+export const assignToInternalIdsIndex = async (
+  element: Element,
+  internalIdsIndex: Record<string, ElemID>,
+  elementsSource?: ReadOnlyElementsSource
+): Promise<void> => {
+  const values = getElementValueOrAnnotations(element)
+  const internalId = values[INTERNAL_ID]
+  if (!internalId || values[IS_SUB_INSTANCE]) {
+    return
+  }
+  const { elemID } = element
+  if (isObjectType(element) && isCustomRecordType(element)) {
+    const customRecordTypeId = TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
+    internalIdsIndex[getDataInstanceId(internalId, CUSTOM_RECORD_TYPE)] = elemID
+    internalIdsIndex[getDataInstanceId(internalId, customRecordTypeId)] = elemID
+  }
+  if (isInstanceElement(element)) {
+    const { typeName } = elemID
+    internalIdsIndex[getDataInstanceId(internalId, typeName)] = elemID
+    if (typeName in TYPES_TO_INTERNAL_ID) {
+      internalIdsIndex[getDataInstanceId(internalId, TYPES_TO_INTERNAL_ID[typeName])] = elemID
+    }
+    const type = await element.getType(elementsSource)
+    if (isCustomRecordType(type) && type.annotations[INTERNAL_ID]) {
+      internalIdsIndex[getDataInstanceId(internalId, type.annotations[INTERNAL_ID])] = elemID
+    }
+    if (isCustomListInstance(element)) {
+      getCustomListValues(element)
+        .filter(([value]) => value[INTERNAL_ID]).forEach(([value, key]) => {
+          const valueElemId = toCustomListValueElemID(elemID, key)
+          internalIdsIndex[getDataInstanceId(value[INTERNAL_ID], internalId)] = valueElemId
+        })
+    }
+  }
+}
 
 const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   Promise<ElementsSourceIndexes> => {
@@ -38,15 +90,8 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   const pathToInternalIdsIndex: Record<string, number> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
 
-  const updateInternalIdsIndex = (element: InstanceElement | ObjectType): void => {
-    const { internalId, isSubInstance } = getElementValueOrAnnotations(element)
-    if (internalId === undefined || isSubInstance) {
-      return
-    }
-    internalIdsIndex[getDataInstanceId(
-      internalId,
-      isInstanceElement(element) ? element.refType : element
-    )] = element.elemID
+  const updateInternalIdsIndex = async (element: Element): Promise<void> => {
+    await assignToInternalIdsIndex(element, internalIdsIndex, elementsSource)
   }
 
   const updateCustomFieldsIndex = (element: InstanceElement): void => {
@@ -85,14 +130,14 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     .forEach(async element => {
       if (isInstanceElement(element)) {
         await updateServiceIdRecordsIndex(element)
-        updateInternalIdsIndex(element)
+        await updateInternalIdsIndex(element)
         updateCustomFieldsIndex(element)
         updatePathToInternalIdsIndex(element)
         updateElemIdToChangedByIndex(element)
       }
       if (isObjectType(element) && isCustomRecordType(element)) {
         await updateServiceIdRecordsIndex(element)
-        updateInternalIdsIndex(element)
+        await updateInternalIdsIndex(element)
         updateElemIdToChangedByIndex(element)
       }
     })

@@ -88,13 +88,18 @@ export type DeployListResults = DeployListError | DeployListSuccess
 export const isDeployListSuccess = (result: DeployListResults): result is DeployListSuccess =>
   result.writeResponseList.status.attributes.isSuccess === 'true'
 
+export type RecordValue = Record<string, unknown> & {
+  attributes: {
+    internalId: string
+  }
+}
 
 export type SearchResponse = {
   searchResult: {
     totalPages: number
     searchId: string
     recordList: {
-      record: Record<string, unknown>[]
+      record: RecordValue[]
     } | null
   }
 }
@@ -118,9 +123,14 @@ export type SearchErrorResponse = {
 export type GetAllResponse = {
   getAllResult: {
     recordList: {
-      record: Record<string, unknown>[]
+      record: RecordValue[]
     }
   }
+}
+
+export type CustomRecordTypeRecords = {
+  type: string
+  records: RecordValue[]
 }
 
 export const SOAP_FIELDS_TYPES = {

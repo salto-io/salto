@@ -720,6 +720,14 @@ fields_to_create = {
         ANNOTATIONS: {},
         IS_LIST: True,
     }],
+    'customlist_customvalues_customvalue': [{
+        NAME: 'internalId',
+        TYPE: 'BuiltinTypes.STRING',
+        ANNOTATIONS: {
+            '[CORE_ANNOTATIONS.HIDDEN_VALUE]': 'true',
+        },
+        IS_LIST: False,
+    }]
 }
 
 types_to_create = [{

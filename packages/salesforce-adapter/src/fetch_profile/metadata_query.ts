@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { regex } from '@salto-io/lowerdash'
-import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD } from '../constants'
+import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
@@ -77,6 +77,10 @@ export const buildMetadataQuery = (
       return true
     }
     if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
+      return true
+    }
+    // only in use when config.preferActiveFlowVersions is true, in order to fetch the active flows
+    if (type === FLOW_DEFINITION_METADATA_TYPE && target.includes(FLOW_METADATA_TYPE)) {
       return true
     }
     return false

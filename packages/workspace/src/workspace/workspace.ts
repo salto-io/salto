@@ -1025,19 +1025,21 @@ export const loadWorkspace = async (
     accountConfig: async (name, defaultValue, shouldResolve) => {
       const unresolvedAccountConfig = await adaptersConfig.getAdapter(name, defaultValue)
       if (!unresolvedAccountConfig) {
-        log.error('Failed to get account config, received undefined')
+        log.error('Failed to get accountConfig, received undefined')
         return undefined
       }
-      if (!(unresolvedAccountConfig instanceof InstanceElement)) {
-        log.error('Failed to get account config, expected InstanceElement')
+      if (!shouldResolve) {
+        return unresolvedAccountConfig
+      }
+      const resolvedAccountConfig = (await resolve(
+        [unresolvedAccountConfig],
+        adaptersConfig.getElements(),
+      ))[0]
+      if (!(resolvedAccountConfig instanceof InstanceElement)) {
+        log.error('Failed to resolve accountConfig, expected InstanceElement')
         return undefined
       }
-      return shouldResolve
-        ? (await resolve(
-          [unresolvedAccountConfig],
-          adaptersConfig.getElements(),
-        ))[0] as InstanceElement
-        : unresolvedAccountConfig
+      return resolvedAccountConfig
     },
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
     accountConfigPaths: adaptersConfig.getElementNaclFiles,

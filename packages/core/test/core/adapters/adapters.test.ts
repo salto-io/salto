@@ -31,9 +31,11 @@ jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual<{}>('@salto-io/workspace'),
   configSource: jest.fn(),
 }))
+
+const createDefaultInstanceFromTypeMock = jest.fn()
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
-  createDefaultInstanceFromType: jest.fn(),
+  createDefaultInstanceFromType: jest.fn((...args) => createDefaultInstanceFromTypeMock(...args)),
 }))
 
 jest.mock('../../../src/core/adapters/creators', () => {
@@ -79,9 +81,6 @@ describe('adapters.ts', () => {
 
   describe('getDefaultAdapterConfig', () => {
     const { mockAdapter } = adapterCreators
-    const createDefaultInstanceFromTypeMock = createDefaultInstanceFromType as jest.MockedFunction<
-      typeof createDefaultInstanceFromType
-    >
     beforeEach(() => {
       const mockConfigType = new ObjectType({
         elemID: new ElemID('mockAdapter', ElemID.CONFIG_NAME),
@@ -144,7 +143,9 @@ describe('adapters.ts', () => {
     const serviceName = 'salesforce'
     const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
     const d1Type = new ObjectType({ elemID: new ElemID('d1', 'type2') })
-
+    beforeEach(() => {
+      createDefaultInstanceFromTypeMock.mockResolvedValue([])
+    })
     it('should return default adapter config when there is no config', async () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
@@ -156,10 +157,7 @@ describe('adapters.ts', () => {
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
-          config: await createDefaultInstanceFromType(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType
-          ),
+          config: undefined,
           getElemIdFunc: undefined,
         })
       )

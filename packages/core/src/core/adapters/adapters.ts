@@ -93,7 +93,7 @@ export const getDefaultAdapterConfig = async (
   accountName?: string,
 ): Promise<InstanceElement[] | undefined> => {
   const { getDefaultConfig } = adapterCreators[adapterName]
-  const defaultConf = [(getDefaultConfig !== undefined) ? (await getDefaultConfig() ?? [])
+  const defaultConf = [(getDefaultConfig !== undefined) ? await getDefaultConfig()
     : (await getAdapterConfigFromType(adapterName) ?? [])].flat()
   if (defaultConf.length === 0) {
     return undefined

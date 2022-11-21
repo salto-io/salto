@@ -135,7 +135,7 @@ export type Adapter = {
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
   getDefaultConfig?: (adapterConfigOverrides?: InstanceElement)
-    => Promise<InstanceElement | undefined>
+    => Promise<InstanceElement>
   install?: () => Promise<AdapterInstallResult>
 }
 

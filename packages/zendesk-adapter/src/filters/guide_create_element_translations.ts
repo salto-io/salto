@@ -33,6 +33,7 @@ import { ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../co
 const log = logger(module)
 
 const areLocalesEqual = (instance: InstanceElement): boolean =>
+  // locale and source_locale should not be reference expressions yet
   _.isEqual(instance.value.locale, instance.value.source_locale)
 
 type ArticleTranslationResponse = {
@@ -52,7 +53,7 @@ const isArticleTranslationResponse = createSchemeGuard<ArticleTranslationRespons
 )
 
 /**
- * checks if the article represents a different translation than the source_local
+ * checks if the article represents a different translation than the source_locale
  */
 const isTranslationRepresentingArticle = (parentInstance: Element): boolean => (
   isInstanceElement(parentInstance)
@@ -138,7 +139,6 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     }
 
     const articlesById = _.groupBy(articles, 'value.id')
-    // {123: [ translation, translation] }
     const translationsById = _.mapValues(
       articlesById,
       instances => instances.map(createTranslation).filter(values.isDefined)

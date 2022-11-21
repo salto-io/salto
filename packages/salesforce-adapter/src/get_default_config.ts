@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
 import { configType } from './types'
+import * as constants from './constants'
 
 const log = logger(module)
 
@@ -297,23 +297,29 @@ export const configWithCPQ = new InstanceElement(
   }
 )
 
-const adapterConfigOverridesScheme = Joi.object({
-  cpq: Joi.boolean(),
+export const adapterConfigOverridesObjectType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'adapterConfigOverridesType'),
+  fields: {
+    cpq: { refType: BuiltinTypes.BOOLEAN },
+  },
 })
-const schemaGuard = (value: unknown): value is { cpq?: boolean } => {
-  const { error } = adapterConfigOverridesScheme.validate(value, { allowUnknown: true })
-  if (error !== undefined) {
-    log.error(`Received an invalid schema for adapterConfigOverridesScheme values: ${error.message}, ${safeJsonStringify(value)}`)
-    return false
+
+const objectTypeGuard = async (instance: InstanceElement): Promise<boolean> => {
+  if ((await instance.getType()).isEqual(adapterConfigOverridesObjectType)) {
+    return true
   }
-  return true
+  log.error(`Received an invalid instance for adapterConfigOverrides. Instance: ${safeJsonStringify(instance)}`)
+  return false
 }
 
 export const getDefaultConfig = async (
   adapterConfigOverrides?: InstanceElement
 ): Promise<InstanceElement> => {
-  if (schemaGuard(adapterConfigOverrides?.value) && adapterConfigOverrides?.value.cpq) {
+  if (adapterConfigOverrides
+    && await objectTypeGuard(adapterConfigOverrides) && adapterConfigOverrides.value.cpq
+  ) {
     return configWithCPQ
   }
+  (await adapterConfigOverrides?.getType())?.isEqual(adapterConfigOverridesObjectType)
   return createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
 }

@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { configType } from '../src/types'
-import { configWithCPQ, getDefaultConfig } from '../src/get_default_config'
+import { adapterConfigOverridesObjectType, configWithCPQ, getDefaultConfig } from '../src/get_default_config'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType)
 const mockCreateDefaultInstanceFromType = jest.fn()
@@ -41,15 +42,9 @@ jest.mock('@salto-io/logging', () => ({
 describe('get_default_config', () => {
   let adapterConfigOverrides: InstanceElement | undefined
   let resultConfig: InstanceElement
-  const mockObjType = new ObjectType({
-    elemID: new ElemID('test-utils', 'adapterConfigOverrides'),
-    fields: {
-      cpq: { refType: BuiltinTypes.BOOLEAN },
-    },
-  })
 
   const createMockAdapterConfigOverrides = (value: Values): InstanceElement =>
-    new InstanceElement('adapterConfigOverrides', mockObjType, value)
+    new InstanceElement('adapterConfigOverrides', adapterConfigOverridesObjectType, value)
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -90,15 +85,18 @@ describe('get_default_config', () => {
     })
   })
 
-  describe('when input contains cpq which isn\'t a boolean', () => {
+  describe('when input is not a valid adapterConfigOverridesObjectType', () => {
     beforeEach(async () => {
-      adapterConfigOverrides = createMockAdapterConfigOverrides({ cpq: 'I am a string' })
+      const differentObjType = new ObjectType({
+        elemID: new ElemID('mock'),
+      })
+      adapterConfigOverrides = new InstanceElement('adapterConfigOverrides', differentObjType, { cpq: true })
       resultConfig = await getDefaultConfig(adapterConfigOverrides)
     })
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(mockLogError).toHaveBeenCalledWith('Received an invalid schema for adapterConfigOverridesScheme values: "cpq" must be a boolean, {"cpq":"I am a string"}')
+      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for adapterConfigOverrides. Instance: ${safeJsonStringify(adapterConfigOverrides)}`)
     })
   })
 })

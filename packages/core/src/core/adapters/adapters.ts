@@ -196,10 +196,6 @@ export const getAdaptersCreatorConfigs = async (
     async account => {
       const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account],
         account)
-      await getConfig(account, defaultConfig)
-      createElemIDReplacedElementsSource(filterElementsSource(
-        elementsSource, account
-      ), account, accountToServiceName[account])
       return [
         account,
         {

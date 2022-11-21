@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
@@ -72,7 +72,7 @@ const JiraReferenceSerializationStrategyLookup: Record<
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   groupName: {
     serialize: ({ ref }) =>
-      (isInstanceElement(ref.value) ? ref.value.value.originalName : ref.value),
+      (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id),
     lookup: val => val,
     lookupIndexName: 'originalName',
   },
@@ -529,13 +529,8 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'value', parentTypes: ['WorkflowProperty'] },
-    serializationStrategy: 'id',
+    JiraSerializationStrategy: 'groupName',
     target: { typeContext: 'workflowStatusPropertiesIdContext' },
-  },
-  {
-    src: { field: 'value', parentTypes: ['WorkflowProperty'] },
-    serializationStrategy: 'nameWithPath',
-    target: { typeContext: 'workflowStatusPropertiesNameContext' },
   },
 ]
 

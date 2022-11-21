@@ -32,7 +32,7 @@ describe('custom field type change validator', () => {
 
     it('should have error for custom field type change to an invalid field type', async () => {
       const beforeField = createField(customObj, Types.primitiveDataTypes.Time, 'Something')
-      const afterField = createField(customObj, Types.compoundDataTypes.Address, 'Something')
+      const afterField = createField(customObj, Types.compoundDataTypes.Name, 'Something')
       const changeErrors = await runChangeValidator(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
@@ -41,7 +41,7 @@ describe('custom field type change validator', () => {
     })
 
     it('should have error for field creation with invalid field type', async () => {
-      const field = createField(customObj, Types.compoundDataTypes.Address, 'Something')
+      const field = createField(customObj, Types.compoundDataTypes.Name, 'Something')
       const changeErrors = await runChangeValidator(undefined, field)
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors

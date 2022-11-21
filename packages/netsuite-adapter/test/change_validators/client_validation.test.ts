@@ -19,7 +19,7 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../sr
 import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
-import { ManifestValidationError, ObjectsDeployError } from '../../src/errors'
+import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 
 describe('client validation', () => {
@@ -136,6 +136,21 @@ File: ~/Objects/customrecord1.xml`
       detailedMessage,
       elemID: getChangeData(changes[0]).elemID,
       message: 'Validation Error on SDF',
+      severity: 'Error',
+    })
+  })
+
+  it('should have settings deploy error', async () => {
+    const detailedMessage = 'Validation of account settings failed.'
+    mockValidate.mockReturnValue([new SettingsDeployError(`${detailedMessage}`, new Set(['workflow']))])
+    const changeErrors = await clientValidation(
+      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage,
+      elemID: getChangeData(changes[0]).elemID,
+      message: 'SDF Settings Validation Error',
       severity: 'Error',
     })
   })

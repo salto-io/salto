@@ -27,18 +27,16 @@ import { Filter } from '../filter'
 
 
 const { awu } = collections.asynciterable
+const VALIDATION_FAIL = 'Validation failed.'
 
 const mapObjectDeployErrorToInstance = (error: Error): Record<string, string> => {
   const scriptIdToErrorRecord: Record<string, string> = {}
-  const errorMessageChunks = error.message.split('Validation failed.')[1].split('\n\n')
+  const errorMessageChunks = error.message.split(VALIDATION_FAIL)?.[1].split('\n\n')
   errorMessageChunks.forEach(chunk => {
-    const caughtScriptId = getGroupItemFromRegex(
+    const objectErrorScriptId = getGroupItemFromRegex(
       chunk, objectValidationErrorRegex, OBJECT_ID
     )
-    if (caughtScriptId.length > 0) {
-      const cleanScriptId = caughtScriptId[0]
-      scriptIdToErrorRecord[cleanScriptId] = chunk
-    }
+    objectErrorScriptId.forEach(scriptId => { scriptIdToErrorRecord[scriptId] = chunk })
   })
   return scriptIdToErrorRecord
 }
@@ -100,12 +98,14 @@ const changeValidator: ClientChangeValidator = async (
               detailedErrorMessage = `settings deploy error:
               no changes matched the failedConfigType list: ${Array.from(failedConfigTypes)}`
             }
-            return groupChanges.map(change => ({
-              message: 'SDF Settings Validation Error',
-              severity: 'Error' as const,
-              elemID: getChangeData(change).elemID,
-              detailedMessage: detailedErrorMessage,
-            }))
+            return groupChanges
+              .filter(change => error.failedConfigTypes.has(getChangeData(change).elemID.typeName))
+              .map(change => ({
+                message: 'SDF Settings Validation Error',
+                severity: 'Error' as const,
+                elemID: getChangeData(change).elemID,
+                detailedMessage: detailedErrorMessage,
+              }))
           }
           const message = error instanceof ManifestValidationError
             ? 'SDF Manifest Validation Error'

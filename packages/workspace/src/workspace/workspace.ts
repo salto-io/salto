@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -1035,7 +1035,7 @@ export const loadWorkspace = async (
         [unresolvedAccountConfig],
         adaptersConfig.getElements(),
       ))[0]
-      if (!(resolvedAccountConfig instanceof InstanceElement)) {
+      if (!isInstanceElement(resolvedAccountConfig)) {
         log.error('Failed to resolve accountConfig, expected InstanceElement')
         return undefined
       }

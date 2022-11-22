@@ -19,30 +19,30 @@ import {
 } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD } from '../constants'
 
-export const wasFullnameChanged = (change: ModificationChange<InstanceElement>): boolean => {
+export const wasFullNameChanged = (change: ModificationChange<InstanceElement>): boolean => {
   const { before, after } = change.data
   return before.value[INSTANCE_FULL_NAME_FIELD] !== after.value[INSTANCE_FULL_NAME_FIELD]
 }
 
-const fullnameChangeError = (instance: InstanceElement): ChangeError =>
+const fullNameChangeError = (instance: InstanceElement): ChangeError =>
   ({
     elemID: instance.elemID,
     severity: 'Error',
-    message: `You cannot change the fullName property of an object. ID of object that was changed: ${instance.elemID}`,
-    detailedMessage: 'You cannot change the fullName property of an object.',
+    message: `You cannot change the fullName property of an element. ID of element that was changed: ${instance.elemID}`,
+    detailedMessage: 'You cannot change the fullName property of an element.',
   })
 
 /**
- * It is forbidden to add or modify a field with unknown type.
- * A missing type means this field is not accessible on Salesforce.
+ * It is forbidden to modify the fullName property of objects - it is used as an identifier and
+ * changing it is not supported.
  */
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .filter(wasFullnameChanged)
+    .filter(wasFullNameChanged)
     .map(getChangeData)
-    .map(fullnameChangeError)
+    .map(fullNameChangeError)
 )
 
 export default changeValidator

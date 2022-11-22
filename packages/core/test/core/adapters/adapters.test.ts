@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, Adapter, AdapterOperationsContext } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, AdapterOperationsContext, Adapter } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -88,8 +88,13 @@ describe('adapters.ts', () => {
 
       _.assign(mockAdapter, {
         configType: mockConfigType,
-        getDefaultConfig: mockFunction<NonNullable<Adapter['getDefaultConfig']>>()
-          .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
+        adapterConfigGetter: {
+          getDefaultConfig: mockFunction<NonNullable<Adapter['adapterConfigGetter']>['getDefaultConfig']>()
+            .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
+          configOverrides: new ObjectType({
+            elemID: new ElemID('test'),
+          }),
+        },
       })
 
       createDefaultInstanceFromTypeMock.mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'aaa' }))
@@ -100,16 +105,20 @@ describe('adapters.ts', () => {
     })
 
     it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
-      delete mockAdapter.getDefaultConfig
+      delete mockAdapter.adapterConfigGetter
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(createDefaultInstanceFromType).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
     })
-    it('should use getDefaultConfig when defined', async () => {
-      const mockAdapterConfigOverrides = {} as InstanceElement
+    it('should use getDefaultConfig when adapterConfigGetter is defined', async () => {
+      const mockObjType = new ObjectType({
+        elemID: new ElemID('test'),
+      })
+      const mockAdapterConfigOverrides = new InstanceElement('test', mockObjType)
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockAdapterConfigOverrides)
-      expect(mockAdapter.getDefaultConfig).toHaveBeenCalledWith(mockAdapterConfigOverrides)
+      expect(mockAdapter.adapterConfigGetter?.getDefaultConfig)
+        .toHaveBeenCalledWith(mockAdapterConfigOverrides)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })

@@ -297,15 +297,17 @@ export const configWithCPQ = new InstanceElement(
   }
 )
 
-export const adapterConfigOverridesObjectType = new ObjectType({
-  elemID: new ElemID(constants.SALESFORCE, 'adapterConfigOverridesType'),
+const configOverridesElemId = new ElemID(constants.SALESFORCE, 'adapterConfigOverridesType')
+
+export const configOverrides = new ObjectType({
+  elemID: configOverridesElemId,
   fields: {
     cpq: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 
-const objectTypeGuard = async (instance: InstanceElement): Promise<boolean> => {
-  if ((await instance.getType()).isEqual(adapterConfigOverridesObjectType)) {
+const isConfigOverridesInstance = (instance: InstanceElement): boolean => {
+  if (instance.refType.elemID.isEqual(configOverridesElemId)) {
     return true
   }
   log.error(`Received an invalid instance for adapterConfigOverrides. Instance: ${safeJsonStringify(instance)}`)
@@ -316,10 +318,14 @@ export const getDefaultConfig = async (
   adapterConfigOverrides?: InstanceElement
 ): Promise<InstanceElement> => {
   if (adapterConfigOverrides
-    && await objectTypeGuard(adapterConfigOverrides) && adapterConfigOverrides.value.cpq
+    && isConfigOverridesInstance(adapterConfigOverrides) && adapterConfigOverrides.value.cpq
   ) {
     return configWithCPQ
   }
-  (await adapterConfigOverrides?.getType())?.isEqual(adapterConfigOverridesObjectType)
   return createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+}
+
+export const adapterConfigGetter = {
+  configOverrides,
+  getDefaultConfig,
 }

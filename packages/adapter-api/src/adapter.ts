@@ -129,13 +129,18 @@ export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
 
 export type AccountId = string
 
+type AdapterConfigGetter = {
+  configOverrides: ObjectType
+  getDefaultConfig: (adapterConfigOverrides?: InstanceElement)
+    => Promise<InstanceElement>
+}
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
-  getDefaultConfig?: (adapterConfigOverrides?: InstanceElement)
-    => Promise<InstanceElement>
+  adapterConfigGetter?: AdapterConfigGetter
   install?: () => Promise<AdapterInstallResult>
 }
 

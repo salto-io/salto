@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { configType } from '../src/types'
-import { adapterConfigOverridesObjectType, configWithCPQ, getDefaultConfig } from '../src/get_default_config'
+import { configOverrides, configWithCPQ, getDefaultConfig } from '../src/adapter_config_getter'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType)
 const mockCreateDefaultInstanceFromType = jest.fn()
@@ -44,7 +44,7 @@ describe('get_default_config', () => {
   let resultConfig: InstanceElement
 
   const createMockAdapterConfigOverrides = (value: Values): InstanceElement =>
-    new InstanceElement('adapterConfigOverrides', adapterConfigOverridesObjectType, value)
+    new InstanceElement('adapterConfigOverrides', configOverrides, value)
 
   beforeEach(() => {
     jest.clearAllMocks()

@@ -17,15 +17,18 @@ import {
   ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, toChange,
   getChangeData,
   isInstanceElement,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { ARTICLE_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/article'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
+
+jest.useFakeTimers()
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -43,6 +46,20 @@ describe('article filter', () => {
   let client: ZendeskClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
   let filter: FilterType
+  let mockGet: jest.SpyInstance
+  let mockPost: jest.SpyInstance
+
+  const brandType = new ObjectType({
+    elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
+  })
+  const brandInstance = new InstanceElement(
+    'brandName',
+    brandType,
+    {
+      id: 121255,
+      subdomain: 'igonre',
+    }
+  )
   const userSegmentInstance = new InstanceElement(
     'notEveryone',
     new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) }),
@@ -56,6 +73,7 @@ describe('article filter', () => {
     'testArticle',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
     {
+      id: 1111,
       author_id: 'author@salto.io',
       comments_disabled: false,
       draft: false,
@@ -66,13 +84,14 @@ describe('article filter', () => {
       locale: 'en-us',
       outdated: false,
       permission_group_id: '666',
-      brand: '1',
+      brand: brandInstance.value.id,
     }
   )
   const anotherArticleInstance = new InstanceElement(
     'userSegmentArticle',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
     {
+      id: 2222,
       author_id: 'author@salto.io',
       comments_disabled: false,
       draft: false,
@@ -83,9 +102,48 @@ describe('article filter', () => {
       locale: 'en-us',
       outdated: false,
       permission_group_id: '666',
-      brand: '1',
+      brand: brandInstance.value.id,
       user_segment_id: new ReferenceExpression(userSegmentInstance.elemID, userSegmentInstance),
     }
+  )
+  const articleWithAttachmentInstance = new InstanceElement(
+    'articleWithAttachment',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+    {
+      id: 333333,
+      author_id: 'author@salto.io',
+      comments_disabled: false,
+      draft: false,
+      promoted: false,
+      position: 0,
+      section_id: '12345',
+      source_locale: 'en-us',
+      locale: 'en-us',
+      outdated: false,
+      permission_group_id: '666',
+      brand: brandInstance.value.id,
+      title: 'title',
+    }
+  )
+  const content = Buffer.from('test')
+  const articleAttachmentInstance = new InstanceElement(
+    'testAttachment',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) }),
+    {
+      id: 20222022,
+      filename: 'attachmentFileName.png',
+      contentType: 'image/png',
+      content: new StaticFile({
+        filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
+      }),
+      inline: 'false',
+      brand: brandInstance.value.id,
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
+      articleWithAttachmentInstance.elemID,
+      articleWithAttachmentInstance,
+    )] },
   )
   const articleTranslationInstance = new InstanceElement(
     'testArticleTranslation',
@@ -94,7 +152,7 @@ describe('article filter', () => {
       locale: { id: 'en-us' },
       title: 'The title of the article',
       draft: false,
-      brand: '1',
+      brand: brandInstance.value.id,
       body: '<p>ppppp</p>',
     },
     undefined,
@@ -104,6 +162,28 @@ describe('article filter', () => {
   articleInstance.value.translations = [
     new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
   ]
+  const translationWithAttachmentInstance = new InstanceElement(
+    'translationWithAttachment',
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'article_translation') }),
+    {
+      locale: { id: 'en-us' },
+      title: 'This translation has attachment',
+      draft: false,
+      brand: brandInstance.value.id,
+      // body: '<p>aaa<img src="${ zendesk.brand.instance.Salto.brandName }/hc/article_attachme
+      // nts/${ zendesk.article_attachment.instance.
+      // title__attachmentFileName_png@uuv }" alt="pic.png">zzz</p>',
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
+      articleWithAttachmentInstance.elemID,
+      articleWithAttachmentInstance,
+    )] },
+  )
+  articleWithAttachmentInstance.value.translations = [new ReferenceExpression(
+    translationWithAttachmentInstance.elemID,
+    translationWithAttachmentInstance,
+  )]
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) })
   const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
 
@@ -115,15 +195,17 @@ describe('article filter', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
     })
     const elementsSource = buildElementsSourceFromElements([
       userSegmentType,
       everyoneUserSegmentInstance,
     ])
+    const brandIdToClient = { [brandInstance.value.id]: client }
     filter = filterCreator(createFilterCreatorParams({
       client,
       elementsSource,
+      brandIdToClient,
       config: {
         ...DEFAULT_CONFIG,
         [FETCH_CONFIG]: {
@@ -141,8 +223,42 @@ describe('article filter', () => {
   describe('onFetch', () => {
     let elements: (InstanceElement | ObjectType)[]
 
-    beforeAll(() => {
+    beforeEach(() => {
       elements = generateElements()
+      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet.mockImplementation(params => {
+        if ([
+          '/api/v2/help_center/articles/333333/attachments',
+        ].includes(params.url)) {
+          return {
+            status: 200,
+            data: {
+              article_attachments: [
+                {
+                  id: articleAttachmentInstance.value.id,
+                  file_name: articleAttachmentInstance.value.filename,
+                  content_type: articleAttachmentInstance.value.contentType,
+                  inline: articleAttachmentInstance.value.inline,
+                  content_url: 'https://yo.com',
+                },
+              ],
+            },
+          }
+        }
+        if ([
+          '/api/v2/help_center/articles/2222/attachments',
+          '/api/v2/help_center/articles/1111/attachments',
+        ].includes(params.url)) {
+          return { status: 200, data: { article_attachments: [] } }
+        }
+        if (params.url === '/hc/article_attachments/20222022/attachmentFileName.png') {
+          return {
+            status: 200,
+            data: content,
+          }
+        }
+        throw new Error('Err')
+      })
     })
 
     it('should add Everyone user_segment_id field', async () => {
@@ -164,6 +280,25 @@ describe('article filter', () => {
         .filter(isInstanceElement)
         .find(i => i.elemID.name === 'userSegmentArticle')
       expect(fetchedArticle?.value).toEqual(anotherArticleInstance.value)
+    })
+    it('should create article_attachment instance', async () => {
+      const clonedElements = [articleWithAttachmentInstance].map(e => e.clone())
+      await filter.onFetch(clonedElements)
+      expect(clonedElements.map(e => e.elemID.getFullName()).sort())
+        .toEqual([
+          'zendesk.article.instance.articleWithAttachment',
+          'zendesk.article_attachment',
+          'zendesk.article_attachment.instance.title__attachmentFileName_png@uuv',
+        ])
+      const fetchedAttachment = clonedElements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'title__attachmentFileName_png@uuv')
+      expect(fetchedAttachment?.value).toEqual(articleAttachmentInstance.value)
+      const fetchedArticle = clonedElements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'articleWithAttachment')
+      expect(fetchedArticle?.value.attachments).toHaveLength(1)
+      expect(fetchedArticle?.value.attachments[0].elemID.name).toBe('title__attachmentFileName_png@uuv')
     })
   })
 
@@ -188,6 +323,20 @@ describe('article filter', () => {
   })
 
   describe('deploy', () => {
+    beforeEach(() => {
+      mockPost = jest.spyOn(client, 'post')
+      // For article_attachment UT
+      mockPost.mockImplementation(params => {
+        if ([
+          '/api/v2/help_center/articles/333333/bulk_attachments',
+        ].includes(params.url)) {
+          return {
+            status: 200,
+          }
+        }
+        throw new Error('Err')
+      })
+    })
     it('should pass the correct params to deployChange on create', async () => {
       const id = 2
       mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
@@ -197,7 +346,7 @@ describe('article filter', () => {
         change: { action: 'add', data: { after: articleInstance } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: ['translations'],
+        fieldsToIgnore: ['translations', 'attachments'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -207,7 +356,7 @@ describe('article filter', () => {
     })
 
     it('should pass the correct params to deployChange on update', async () => {
-      const id = 2
+      const id = 3333
       const clonedArticleBefore = articleInstance.clone()
       const clonedArticleAfter = articleInstance.clone()
       clonedArticleBefore.value.id = id
@@ -221,7 +370,7 @@ describe('article filter', () => {
         change: { action: 'modify', data: { before: clonedArticleBefore, after: clonedArticleAfter } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: ['translations'],
+        fieldsToIgnore: ['translations', 'attachments'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -257,11 +406,35 @@ describe('article filter', () => {
         change: { action: 'add', data: { after: articleInstance } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: ['translations'],
+        fieldsToIgnore: ['translations', 'attachments'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+
+    it('should associate attachments to articles on creation', async () => {
+      const clonedArticle = articleWithAttachmentInstance.clone()
+      const clonedAttachment = articleAttachmentInstance.clone()
+      clonedArticle.value.attachments = [
+        new ReferenceExpression(clonedAttachment.elemID, clonedAttachment),
+      ]
+      const id = 2
+      mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
+      const res = await filter.deploy([
+        { action: 'add', data: { after: clonedArticle } },
+        { action: 'add', data: { after: clonedAttachment } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockPost).toHaveBeenCalledTimes(1)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([
+          { action: 'add', data: { after: clonedArticle } },
+          // { action: 'add', data: { after: clonedAttachment } },
+        ])
     })
   })
 

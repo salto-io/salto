@@ -1550,12 +1550,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       serviceUrl: '/secure/admin/ListEventTypes.jspa',
     },
   },
-  Priorities: {
-    request: {
-      url: '/rest/api/3/priority/search',
-      paginationField: 'startAt',
-    },
-  },
   Priority: {
     transformation: {
       fieldsToHide: [
@@ -1775,10 +1769,6 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       {
         originalName: 'PageBeanNotificationScheme',
         newName: 'NotificationSchemes',
-      },
-      {
-        originalName: 'PageBeanPriority',
-        newName: 'Priorities',
       },
       {
         originalName: 'rest__api__3__projectCategory',

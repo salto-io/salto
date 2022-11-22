@@ -38,6 +38,7 @@ import exchangeRateValidator from './change_validators/currency_exchange_rate'
 import netsuiteClientValidation from './change_validators/client_validation'
 import NetsuiteClient from './client/client'
 import { AdditionalDependencies } from './client/types'
+import { Filter } from './filter'
 
 
 const changeValidators: ChangeValidator[] = [
@@ -78,6 +79,7 @@ const getChangeValidator: ({
   fetchByQuery,
   deployReferencedElements,
   additionalDependencies,
+  filtersRunner,
 } : {
   client: NetsuiteClient
   withSuiteApp: boolean
@@ -86,6 +88,7 @@ const getChangeValidator: ({
   fetchByQuery: FetchByQueryFunc
   deployReferencedElements?: boolean
   additionalDependencies: AdditionalDependencies
+  filtersRunner: Required<Filter>
   }) => ChangeValidator = (
     {
       client,
@@ -95,6 +98,7 @@ const getChangeValidator: ({
       fetchByQuery,
       deployReferencedElements,
       additionalDependencies,
+      filtersRunner,
     }
   ) =>
     async changes => {
@@ -109,7 +113,8 @@ const getChangeValidator: ({
           changes,
           client,
           additionalDependencies,
-          deployReferencedElements
+          filtersRunner,
+          deployReferencedElements,
         ) : [],
       ]))
 

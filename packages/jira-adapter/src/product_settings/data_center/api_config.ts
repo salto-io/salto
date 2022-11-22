@@ -15,6 +15,13 @@
 */
 import { JiraApiConfig } from '../../config/api_config'
 
+export const DC_ADDITIONAL_TYPE_NAME_OVERRIDES = [
+  {
+    originalName: 'rest__api__3__priority',
+    newName: 'Priorities',
+  },
+]
+
 export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
   types: {
     IssueEvent: {
@@ -38,10 +45,17 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         serviceUrl: '/secure/Dashboard.jspa?selectPageId={id}',
       },
     },
-
     Automation: {
       transformation: {
         serviceUrl: '/secure/AutomationGlobalAdminAction!default.jspa#/rule/{id}',
+      },
+    },
+    Priorities: {
+      request: {
+        url: '/rest/api/3/priority',
+      },
+      transformation: {
+        dataField: '.',
       },
     },
   },

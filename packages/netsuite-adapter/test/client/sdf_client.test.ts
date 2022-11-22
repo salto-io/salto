@@ -33,7 +33,7 @@ import SdfClient, {
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
@@ -1344,12 +1344,11 @@ Validate preferences -- Success
 Validate flags -- Success
 Validate for circular dependencies -- Success
 *** ERROR ***
-
 Validation failed.
 
 An error occurred during custom object validation. (custform_114_t1441298_782)
 File: ~/Objects/custform_114_t1441298_782.xml
-`
+        `
         mockExecuteAction.mockImplementation(({ commandName }) => {
           if (commandName === COMMANDS.DEPLOY_PROJECT) {
             throw errorMessage
@@ -1373,6 +1372,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
         }
         expect(isRejected).toBe(true)
       })
+
       it('should throw ObjectsDeployError when deploy failed with error object message', async () => {
         const errorMessage = `
 The deployment process has encountered an error.
@@ -1776,7 +1776,7 @@ File: ~/AccountConfiguration/features.xml`
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
     })
     describe('validate only', () => {
-      const failObject = 'failObject'
+      const failObject = 'fail_object'
       const deployParams: [CustomTypeInfo[], undefined, SdfDeployParams] = [
         [
           { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
@@ -1793,49 +1793,36 @@ File: ~/AccountConfiguration/features.xml`
         await client.deploy(...deployParams)
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
       })
-      it('should throw ObjectsValidationError', async () => {
-        let projectPath: string
-        let errorMessage: string
-        const objectErrorMessage = 'some validation error message.'
-        mockExecuteAction.mockImplementation(context => {
-          if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            projectPath = context.arguments.parentdirectory
-            return Promise.resolve({ isSuccess: () => true })
-          }
-          if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
-            errorMessage = `
-Errors for file ${projectPath}/src/Objects/${failObject}.xml.
-     Line 1 - Error Message: ${objectErrorMessage}
-Errors for file ${projectPath}/src/Objects/${failObject}.xml.`
-            throw new Error(errorMessage)
-          }
-          return Promise.resolve({ isSuccess: () => true })
-        })
-
-        try {
-          await client.deploy(...deployParams)
-          // should throw before this test
-          expect(false).toBeTruthy()
-        } catch (e) {
-          expect(e instanceof ObjectsValidationError).toBeTruthy()
-          expect(e.invalidObjects instanceof Map).toBeTruthy()
-          expect(e.invalidObjects.get(failObject)).toContain(objectErrorMessage)
-        }
-      })
       it('should throw ManifestValidationError', async () => {
-        let projectPath: string
         let errorMessage: string
-        const manifestErrorMessage = 'some manifest validation error message.'
+        const errorReferenceName = 'someRefName'
+        const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
-          if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            projectPath = context.arguments.parentdirectory
-            return Promise.resolve({ isSuccess: () => true })
-          }
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
-            errorMessage = `
-Errors for file ${projectPath}/src/manifest.xml.
-     Line 1 - Error Message: ${manifestErrorMessage}
-`
+            errorMessage = `Warning: The validation process has encountered an error.
+Validating against TSTDRV2257860 - Salto Development - Administrator.
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Success
+
+WARNING -- One or more potential issues were found during custom object validation. (${failObject})
+Details: Missing or invalid field attribute value for field label. When specifying a scriptid as the field value, set translate = T.
+File: ~/Objects/${failObject}.xml
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+Validate account settings -- Failed
+*** ERROR ***
+
+Validation of account settings failed.
+
+An error occurred during account settings validation.
+Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
             throw new Error(errorMessage)
           }
           return Promise.resolve({ isSuccess: () => true })
@@ -1847,7 +1834,7 @@ Errors for file ${projectPath}/src/manifest.xml.
           expect(false).toBeTruthy()
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
-          expect(e.message).toEqual(manifestErrorMessage)
+          expect(e.message).toContain(manifestErrorMessage)
         }
       })
       it('should throw error', async () => {

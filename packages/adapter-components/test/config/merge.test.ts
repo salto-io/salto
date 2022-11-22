@@ -54,4 +54,8 @@ describe('mergeWithDefaultConfig', () => {
   it('input should be affected', () => {
     expect(defaultConfig).not.toEqual(mergedConfig)
   })
+  it('should handle single config', () => {
+    mergedConfig = mergeWithDefaultConfig(defaultConfig)
+    expect(mergedConfig).toEqual(defaultConfig)
+  })
 })

@@ -14,20 +14,21 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, ObjectType, isObjectType, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA } from './constants'
-import { isCustomRecordType } from '../../types'
-import { CUSTOM_RECORD_TYPE } from '../../constants'
+import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
+import { CUSTOM_RECORD_TYPE, INTERNAL_ID } from '../../constants'
 
 const { isDefined } = lowerDashValues
+const { awu } = collections.asynciterable
 const log = logger(module)
 const UNDERSCORE = '_'
 export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
@@ -191,17 +192,30 @@ const fetchSystemNotes = async (
   return indexSystemNotes(distinctSortedSystemNotes(systemNotes))
 }
 
+const getInternalId = (element: Element): Value =>
+  getElementValueOrAnnotations(element)[INTERNAL_ID]
+
+const hasInternalId = (element: Element): boolean =>
+  isDefined(getInternalId(element))
+
 const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
   elements
     .filter(isInstanceElement)
-    .filter(instance => isDefined(instance.value.internalId))
+    .filter(hasInternalId)
     .filter(instance => instance.elemID.typeName.toLowerCase() in TYPES_TO_INTERNAL_ID)
 
 const getCustomRecordTypesWithInternalIds = (elements: Element[]): ObjectType[] =>
   elements
     .filter(isObjectType)
     .filter(isCustomRecordType)
-    .filter(type => isDefined(type.annotations.internalId))
+    .filter(hasInternalId)
+
+const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceElement[]> =>
+  awu(elements)
+    .filter(isInstanceElement)
+    .filter(hasInternalId)
+    .filter(async instance => isCustomRecordType(await instance.getType()))
+    .toArray()
 
 const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
@@ -222,11 +236,16 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
     }
     const instancesWithInternalId = getInstancesWithInternalIds(elements)
     const customRecordTypesWithInternalIds = getCustomRecordTypesWithInternalIds(elements)
+    const customRecordsWithInternalIds = await getCustomRecordsWithInternalIds(elements)
 
     const queryIds = _.uniq(instancesWithInternalId
       .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]))
     if (customRecordTypesWithInternalIds.length > 0) {
-      queryIds.push(TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE])
+      queryIds.push(
+        ...customRecordTypesWithInternalIds
+          .map(getInternalId)
+          .concat(TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE])
+      )
     }
 
     if (_.isEmpty(queryIds)) {
@@ -258,17 +277,24 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
 
     instancesWithInternalId.forEach(instance => {
       const employeeId = systemNotes[getRecordIdAndTypeStringKey(
-        instance.value.internalId,
+        getInternalId(instance),
         TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]
       )]
       setChangedBy(instance, employeeId)
     })
     customRecordTypesWithInternalIds.forEach(type => {
       const employeeId = systemNotes[getRecordIdAndTypeStringKey(
-        type.annotations.internalId,
+        getInternalId(type),
         TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
       )]
       setChangedBy(type, employeeId)
+    })
+    await awu(customRecordsWithInternalIds).forEach(async instance => {
+      const employeeId = systemNotes[getRecordIdAndTypeStringKey(
+        getInternalId(instance),
+        getInternalId(await instance.getType())
+      )]
+      setChangedBy(instance, employeeId)
     })
   },
 })

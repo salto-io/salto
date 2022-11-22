@@ -127,6 +127,8 @@ const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
   tagValueProcessor: val => he.decode(val),
 }
 
+const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
+
 const safeQuoteArgument = (argument: Value): Value => {
   if (typeof argument === 'string') {
     return shellQuote.quote([argument])
@@ -293,7 +295,7 @@ export default class SdfClient {
         // eslint-disable-next-line @typescript-eslint/return-await
         return await call()
       } catch (e) {
-        throw _.isObject(e) ? e : new Error(String(e))
+        throw toError(e)
       }
     }
   )
@@ -637,11 +639,11 @@ export default class SdfClient {
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
         log.warn(e)
+        const [objectId] = ids
         if (retriesLeft === 0) {
-          throw e
+          throw new Error(`Failed to fetch object '${objectId}' of type '${type}' with error: ${toError(e).message}. Exclude it and fetch again.`)
         }
         if (ids.length === 1) {
-          const [objectId] = ids
           log.debug('Retrying to fetch chunk %d/%d with a single object \'%s\' of type: %s. %d retries left', index, total, objectId, type, retriesLeft - 1)
           return importObjectsChunk({ type, ids, index, total }, retriesLeft - 1)
         }
@@ -1011,11 +1013,10 @@ export default class SdfClient {
         executor
       )
     } catch (e) {
-      const error = e instanceof Error ? e : new Error(String(e))
       if (validateOnly) {
-        throw SdfClient.customizeValidationError(error, projectName, customizationInfos)
+        throw SdfClient.customizeValidationError(toError(e), projectName, customizationInfos)
       }
-      throw SdfClient.customizeDeployError(error)
+      throw SdfClient.customizeDeployError(toError(e))
     }
   }
 

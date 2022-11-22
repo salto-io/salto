@@ -110,7 +110,7 @@ describe('article filter', () => {
     'articleWithAttachment',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
     {
-      id: 3333,
+      id: 333333,
       author_id: 'author@salto.io',
       comments_disabled: false,
       draft: false,
@@ -228,7 +228,7 @@ describe('article filter', () => {
       mockGet = jest.spyOn(client, 'getSinglePage')
       mockGet.mockImplementation(params => {
         if ([
-          '/api/v2/help_center/articles/3333/attachments',
+          '/api/v2/help_center/articles/333333/attachments',
         ].includes(params.url)) {
           return {
             status: 200,
@@ -294,6 +294,11 @@ describe('article filter', () => {
         .filter(isInstanceElement)
         .find(i => i.elemID.name === 'title__attachmentFileName_png@uuv')
       expect(fetchedAttachment?.value).toEqual(articleAttachmentInstance.value)
+      const fetchedArticle = clonedElements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.name === 'articleWithAttachment')
+      expect(fetchedArticle?.value.attachments).toHaveLength(1)
+      expect(fetchedArticle?.value.attachments[0].elemID.name).toBe('title__attachmentFileName_png@uuv')
     })
   })
 
@@ -323,7 +328,7 @@ describe('article filter', () => {
       // For article_attachment UT
       mockPost.mockImplementation(params => {
         if ([
-          '/api/v2/help_center/articles/1111/bulk_attachments',
+          '/api/v2/help_center/articles/333333/bulk_attachments',
         ].includes(params.url)) {
           return {
             status: 200,
@@ -406,6 +411,30 @@ describe('article filter', () => {
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
+
+    it('should associate attachments to articles on creation', async () => {
+      const clonedArticle = articleWithAttachmentInstance.clone()
+      const clonedAttachment = articleAttachmentInstance.clone()
+      clonedArticle.value.attachments = [
+        new ReferenceExpression(clonedAttachment.elemID, clonedAttachment),
+      ]
+      const id = 2
+      mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
+      const res = await filter.deploy([
+        { action: 'add', data: { after: clonedArticle } },
+        { action: 'add', data: { after: clonedAttachment } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockPost).toHaveBeenCalledTimes(1)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([
+          { action: 'add', data: { after: clonedArticle } },
+          // { action: 'add', data: { after: clonedAttachment } },
+        ])
     })
   })
 

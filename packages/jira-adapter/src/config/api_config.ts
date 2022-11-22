@@ -1422,7 +1422,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         method: 'post',
       },
       remove: {
-        url: '/rest/api/3/group?groupId={groupId}',
+        url: '/rest/api/3/group?groupname={name}',
         method: 'delete',
       },
     },

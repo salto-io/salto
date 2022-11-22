@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, Element, isInstanceElement, isField, isObjectType } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -170,7 +170,7 @@ export default class NetsuiteClient {
   }
 
   private static async toCustomizationInfos(
-    elements: Element[],
+    elements: ChangeDataType[],
     deployReferencedElements: boolean
   ): Promise<CustomizationInfo[]> {
     const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange } from '@salto-io/adapter-api'
+import { ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange, ChangeDataType } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
 import { isStandardInstanceOrCustomRecordType, isFileCabinetInstance } from '../types'
@@ -27,7 +27,7 @@ export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
   failedFilePaths: FailedFiles
   failedTypes: FailedTypes
-  elements: Element[]
+  elements: ChangeDataType[]
 }
 
 export type FetchByQueryFunc = (
@@ -45,8 +45,8 @@ export type QueryChangeValidator = (
 
 type DependencyType = 'referenced' | 'required'
 type AdditionalElement = {
-  element: Element
-  referer: Element
+  element: ChangeDataType
+  referer: ChangeDataType
   dependency: DependencyType
 }
 
@@ -69,7 +69,7 @@ const getIdentifingValuesByType = async (
 )
 
 const getCustomRecordTypeIdentifingValues = (
-  elements: Element[]
+  elements: ChangeDataType[]
 ): Record<string, string[]> => {
   const customRecordTypeScriptIds = elements.map(element => (isField(element)
     ? element.parent.annotations[SCRIPT_ID]
@@ -81,9 +81,9 @@ const getCustomRecordTypeIdentifingValues = (
 }
 
 const getMatchingServiceElements = async (
-  baseElements: Element[],
+  baseElements: ChangeDataType[],
   fetchByQuery: FetchByQueryFunc
-): Promise<Record<string, Element>> => {
+): Promise<Record<string, ChangeDataType>> => {
   const [instances, elements] = _.partition(baseElements, isInstanceElement)
   const filePaths = instances
     .filter(isFileCabinetInstance)
@@ -108,7 +108,7 @@ const getMatchingServiceElements = async (
 }
 
 const getAdditionalElements = async (
-  elements: Element[],
+  elements: ChangeDataType[],
   deployAllReferencedElements: boolean
 ): Promise<AdditionalElement[]> => {
   const dependency: DependencyType = deployAllReferencedElements ? 'referenced' : 'required'
@@ -150,22 +150,22 @@ const toAdditionalElementWarning = (
 })
 
 const hasChangedInService = (
-  change: RemovalChange<Element> | ModificationChange<Element>,
-  serviceElement: Element
+  change: RemovalChange<ChangeDataType> | ModificationChange<ChangeDataType>,
+  serviceElement: ChangeDataType
 ): boolean => (
   !isEqualElements(change.data.before, serviceElement)
 )
 
 const isChangeTheSameInService = (
-  change: ModificationChange<Element> | AdditionChange<Element>,
-  serviceElement: Element
+  change: ModificationChange<ChangeDataType> | AdditionChange<ChangeDataType>,
+  serviceElement: ChangeDataType
 ): boolean => (
   isEqualElements(change.data.after, serviceElement)
 )
 
 const isModificationOverridingChange = (
   change: Change,
-  matchingServiceElement: Element,
+  matchingServiceElement: ChangeDataType,
 ): boolean => (
   isModificationChange(change)
   && hasChangedInService(change, matchingServiceElement)
@@ -174,7 +174,7 @@ const isModificationOverridingChange = (
 
 const isRemovalOverridingChange = (
   change: Change,
-  matchingServiceElement: Element,
+  matchingServiceElement: ChangeDataType,
 ): boolean => (
   isRemovalChange(change)
   && hasChangedInService(change, matchingServiceElement)
@@ -182,7 +182,7 @@ const isRemovalOverridingChange = (
 
 const isAdditionOverridingChange = (
   change: Change,
-  matchingServiceElement: Element,
+  matchingServiceElement: ChangeDataType,
 ): boolean => (
   isAdditionChange(change)
   && matchingServiceElement !== undefined
@@ -203,7 +203,7 @@ const changeValidator: QueryChangeValidator = async (
   fetchByQuery: FetchByQueryFunc,
   deployAllReferencedElements = false
 ) => {
-  const elements: Element[] = changes
+  const elements = changes
     .map(getChangeData)
     .filter(elem => isInstanceElement(elem) || isStandardInstanceOrCustomRecordType(elem))
 

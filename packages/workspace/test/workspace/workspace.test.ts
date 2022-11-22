@@ -53,6 +53,7 @@ import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 import { createElementSelector } from '../../src/workspace/element_selector'
+import * as expressionsModule from '../../src/expressions'
 
 const { awu } = collections.asynciterable
 
@@ -2939,6 +2940,58 @@ describe('workspace', () => {
         expect(workspaceConf.setWorkspaceConfig as jest.Mock).toHaveBeenLastCalledWith(
           expect.objectContaining({ currentEnv: 'default' })
         )
+      })
+    })
+  })
+
+  describe('accountConfig', () => {
+    let workspace: Workspace
+    let adaptersConfig: MockInterface<AdaptersConfigSource>
+    const configElemId = new ElemID('dummy', 'new')
+    const configObjectType = new ObjectType({ elemID: configElemId })
+    const configInstanceElement = new InstanceElement('aaa', configObjectType)
+    const resolveMock = jest.spyOn(expressionsModule, 'resolve')
+    beforeEach(async () => {
+      resolveMock.mockClear()
+      adaptersConfig = mockAdaptersConfigSource()
+      adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([
+        configObjectType,
+      ]))
+      workspace = await createWorkspace(undefined, undefined, undefined, adaptersConfig)
+    })
+    afterAll(() => {
+      resolveMock.mockRestore()
+    })
+    describe('when called with name only', () => {
+      it('should return the unresolved accountConfig', async () => {
+        adaptersConfig.getAdapter.mockResolvedValue(configInstanceElement)
+        resolveMock.mockImplementation(async elem => elem)
+        expect(await workspace.accountConfig('new')).toEqual(configInstanceElement)
+        expect(resolveMock).not.toHaveBeenCalled()
+      })
+    })
+    describe('when called with shouldResolve', () => {
+      it('should return the resolved accountConfig', async () => {
+        adaptersConfig.getAdapter.mockResolvedValue(configInstanceElement)
+        resolveMock.mockImplementation(async elem => elem)
+        expect(await workspace.accountConfig('new', undefined, true)).toEqual(configInstanceElement)
+        expect(resolveMock).toHaveBeenCalled()
+      })
+    })
+    describe('when getAdapter return undefined', () => {
+      it('should return undefined', async () => {
+        adaptersConfig.getAdapter.mockResolvedValue(undefined)
+        resolveMock.mockImplementation(async elem => elem)
+        expect(await workspace.accountConfig('new')).toEqual(undefined)
+        expect(resolveMock).not.toHaveBeenCalled()
+      })
+    })
+    describe('when resolve returned Element', () => {
+      it('should return undefined', async () => {
+        adaptersConfig.getAdapter.mockResolvedValue(configInstanceElement)
+        resolveMock.mockResolvedValue([configObjectType])
+        expect(await workspace.accountConfig('new', undefined, true)).toEqual(undefined)
+        expect(resolveMock).toHaveBeenCalled()
       })
     })
   })

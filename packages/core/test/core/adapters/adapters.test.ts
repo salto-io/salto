@@ -88,10 +88,10 @@ describe('adapters.ts', () => {
 
       _.assign(mockAdapter, {
         configType: mockConfigType,
-        adapterConfigGetter: {
-          getDefaultConfig: mockFunction<NonNullable<Adapter['adapterConfigGetter']>['getDefaultConfig']>()
+        configCustomization: {
+          getConfig: mockFunction<NonNullable<Adapter['configCustomization']>['getConfig']>()
             .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
-          configOverrides: new ObjectType({
+          configCustomizationObjectType: new ObjectType({
             elemID: new ElemID('test'),
           }),
         },
@@ -105,19 +105,19 @@ describe('adapters.ts', () => {
     })
 
     it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
-      delete mockAdapter.adapterConfigGetter
+      delete mockAdapter.configCustomization
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(createDefaultInstanceFromType).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
     })
-    it('should use getDefaultConfig when adapterConfigGetter is defined', async () => {
+    it('should use getConfig when configCustomization is defined', async () => {
       const mockObjType = new ObjectType({
         elemID: new ElemID('test'),
       })
       const mockAdapterConfigOverrides = new InstanceElement('test', mockObjType)
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockAdapterConfigOverrides)
-      expect(mockAdapter.adapterConfigGetter?.getDefaultConfig)
+      expect(mockAdapter.configCustomization?.getConfig)
         .toHaveBeenCalledWith(mockAdapterConfigOverrides)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })

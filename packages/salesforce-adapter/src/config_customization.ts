@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ConfigCustomization, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { configType } from './types'
@@ -299,7 +299,7 @@ export const configWithCPQ = new InstanceElement(
 
 const configOverridesElemId = new ElemID(constants.SALESFORCE, 'adapterConfigOverridesType')
 
-export const configOverrides = new ObjectType({
+export const configCustomizationObjectType = new ObjectType({
   elemID: configOverridesElemId,
   fields: {
     cpq: { refType: BuiltinTypes.BOOLEAN },
@@ -314,7 +314,7 @@ const isConfigOverridesInstance = (instance: InstanceElement): boolean => {
   return false
 }
 
-export const getDefaultConfig = async (
+export const getConfig = async (
   adapterConfigOverrides?: InstanceElement
 ): Promise<InstanceElement> => {
   if (adapterConfigOverrides
@@ -325,7 +325,7 @@ export const getDefaultConfig = async (
   return createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
 }
 
-export const adapterConfigGetter = {
-  configOverrides,
-  getDefaultConfig,
+export const configCustomization: ConfigCustomization = {
+  configCustomizationObjectType,
+  getConfig,
 }

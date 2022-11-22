@@ -59,6 +59,7 @@ const DEFAULT_SDF_DEPLOY_PARAMS = {
       objects: [],
     },
   },
+  validateOnly: false,
 }
 
 jest.mock('../src/config', () => ({
@@ -608,7 +609,7 @@ describe('Adapter', () => {
           .toHaveBeenCalledWith(
             [await toCustomizationInfo(expectedResolvedInstance)],
             undefined,
-            DEFAULT_SDF_DEPLOY_PARAMS
+            DEFAULT_SDF_DEPLOY_PARAMS,
           )
         expect(post.isEqual(instance)).toBe(true)
       })
@@ -621,7 +622,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(fileInstance)],
           undefined,
-          DEFAULT_SDF_DEPLOY_PARAMS
+          DEFAULT_SDF_DEPLOY_PARAMS,
         )
         expect(post.isEqual(fileInstance)).toBe(true)
       })
@@ -634,7 +635,7 @@ describe('Adapter', () => {
         expect(client.deploy).toHaveBeenCalledWith(
           [await toCustomizationInfo(folderInstance)],
           undefined,
-          DEFAULT_SDF_DEPLOY_PARAMS
+          DEFAULT_SDF_DEPLOY_PARAMS,
         )
         expect(post.isEqual(folderInstance)).toBe(true)
       })
@@ -654,7 +655,7 @@ describe('Adapter', () => {
             [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
           ),
           undefined,
-          DEFAULT_SDF_DEPLOY_PARAMS
+          DEFAULT_SDF_DEPLOY_PARAMS,
         )
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
@@ -880,6 +881,7 @@ describe('Adapter', () => {
           fetchByQuery: expect.anything(),
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
+          filtersRunner: expect.anything(),
           additionalDependencies: expect.anything(),
         })
       })
@@ -908,6 +910,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: false,
           fetchByQuery: expect.anything(),
+          filtersRunner: expect.anything(),
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),
@@ -938,6 +941,7 @@ describe('Adapter', () => {
           withSuiteApp: expect.anything(),
           warnStaleData: true,
           fetchByQuery: expect.anything(),
+          filtersRunner: expect.anything(),
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),

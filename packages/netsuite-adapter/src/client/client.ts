@@ -36,7 +36,7 @@ import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { convertElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError } from '../errors'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
@@ -201,33 +201,14 @@ export default class NetsuiteClient {
       .toArray()
   }
 
-  private async sdfValidate(
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
+  private async sdfDeploy({
+    changes, deployReferencedElements, additionalDependencies, validateOnly = false,
+  }: {
+    changes: ReadonlyArray<Change>
+    deployReferencedElements: boolean
     additionalDependencies: AdditionalDependencies
-  ): Promise<void> {
-    const someElementToDeploy = getChangeData(changes[0])
-    const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
-
-    const customizationInfos = await NetsuiteClient.toCustomizationInfos(
-      changes.map(getChangeData),
-      deployReferencedElements
-    )
-    await log.time(
-      () => this.sdfClient.deploy(
-        customizationInfos,
-        suiteAppId,
-        { additionalDependencies, validateOnly: true }
-      ),
-      'sdfValidate'
-    )
-  }
-
-  private async sdfDeploy(
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
-    additionalDependencies: AdditionalDependencies
-  ): Promise<DeployResult> {
+    validateOnly?: boolean
+  }): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
 
     const someElementToDeploy = getChangeData(changes[0])
@@ -246,12 +227,19 @@ export default class NetsuiteClient {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
         await log.time(
-          () => this.sdfClient.deploy(customizationInfos, suiteAppId, { additionalDependencies }),
+          () => this.sdfClient.deploy(
+            customizationInfos,
+            suiteAppId,
+            { additionalDependencies, validateOnly }
+          ),
           'sdfDeploy'
         )
         return { errors, appliedChanges: changesToDeploy }
       } catch (error) {
         errors.push(error)
+        if (error instanceof ManifestValidationError) {
+          log.debug('manifest validation errror: sdf deploy failed')
+        }
         if (error instanceof FeaturesDeployError) {
           const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
             error, changesToDeploy
@@ -294,10 +282,16 @@ export default class NetsuiteClient {
     groupID: string,
     deployReferencedElements: boolean,
     additionalSdfDependencies: AdditionalDependencies,
-  ): Promise<void> {
+  ): Promise<ReadonlyArray<Error>> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      await this.sdfValidate(changes, deployReferencedElements, additionalSdfDependencies)
+      return (await this.sdfDeploy({
+        changes,
+        deployReferencedElements,
+        additionalDependencies: additionalSdfDependencies,
+        validateOnly: true,
+      })).errors
     }
+    return []
   }
 
   @NetsuiteClient.logDecorator
@@ -310,7 +304,11 @@ export default class NetsuiteClient {
   ):
     Promise<DeployResult> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      return this.sdfDeploy(changes, deployReferencedElements, additionalSdfDependencies)
+      return this.sdfDeploy({
+        changes,
+        deployReferencedElements,
+        additionalDependencies: additionalSdfDependencies,
+      })
     }
 
     const instancesChanges = changes.filter(isInstanceChange)

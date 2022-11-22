@@ -462,6 +462,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
           ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
+        filtersRunner: this.createFiltersRunner(this.isPartialFetch()),
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }

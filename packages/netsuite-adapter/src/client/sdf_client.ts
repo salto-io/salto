@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -105,15 +105,13 @@ const FEATURES_TAG = 'features'
 const FEATURE_ID = 'featureId'
 const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_ID}>\\w+)\\(.*?\\) feature has FAILED`)
 
-const OBJECT_ID = 'objectId'
+export const OBJECT_ID = 'objectId'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
-const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
+export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
-
-const ERROR_MESSAGE = 'errorMessage'
-const errorMessageRegex = RegExp(`Error Message: (?<${ERROR_MESSAGE}>.*)`)
+const manifestErrorRegex = RegExp('^Details: The manifest', 'm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -188,37 +186,11 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
 
-const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
+export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
   Array.from(matchAll(str, regex))
     .map(r => r.groups)
     .filter(isDefined)
     .map(groups => groups[item])
-
-type ErrorMatcher = { getValidationErrorMessage: (filePath: string) => string }
-const createErrorMatcher = (lines: string[]): ErrorMatcher => {
-  const indexesMap = new Map<string, number[]>()
-  lines.forEach((line, index) => {
-    if (!indexesMap.has(line)) {
-      indexesMap.set(line, [])
-    }
-    indexesMap.get(line)?.push(index)
-  })
-
-  return {
-    getValidationErrorMessage: filePath => {
-      const invalidObjectErrorMessage = `Errors for file ${filePath}.`
-      const custInfoErrorIndexes = indexesMap.get(invalidObjectErrorMessage)
-      return _(custInfoErrorIndexes)
-        .map(errorIndex => {
-          const errorMessageLine = lines[errorIndex + 1]
-          return errorMessageLine?.match(errorMessageRegex)?.groups?.[ERROR_MESSAGE]
-            ?? lines[errorIndex]
-        })
-        .uniq()
-        .join(os.EOL)
-    },
-  }
-}
 
 type Project = {
   projectName: string
@@ -938,8 +910,10 @@ export default class SdfClient {
 
   private static customizeDeployError(error: Error): Error {
     const errorMessage = error.message
-
     if (settingsValidationErrorRegex.test(errorMessage)) {
+      if (manifestErrorRegex.test(errorMessage)) {
+        return new ManifestValidationError(errorMessage)
+      }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
     if (!deployStartMessageRegex.test(errorMessage)) {
@@ -971,31 +945,6 @@ export default class SdfClient {
     )
   }
 
-  private static customizeValidationError(
-    error: Error,
-    projectName: string,
-    customizationInfos: CustomizationInfo[]
-  ): Error {
-    const errorMatcher = createErrorMatcher(error.message.split(os.EOL))
-    const manifestErrorMessage = errorMatcher
-      .getValidationErrorMessage(SdfClient.getManifestFilePath(projectName))
-    if (manifestErrorMessage) {
-      return new ManifestValidationError(manifestErrorMessage)
-    }
-    const objectsDirPath = SdfClient.getObjectsDirPath(projectName)
-    const failedObjects = customizationInfos
-      .filter(isCustomTypeInfo)
-      .map((custInfo): [string, string] | undefined => {
-        const errorMessage = errorMatcher
-          .getValidationErrorMessage(`${osPath.join(objectsDirPath, custInfo.scriptId)}.xml`)
-        return errorMessage ? [custInfo.scriptId, errorMessage] : undefined
-      })
-      .filter(isDefined)
-    return failedObjects.length > 0
-      ? new ObjectsValidationError(error.message, new Map(failedObjects))
-      : error
-  }
-
   private async runDeployCommands(
     { executor, projectName, type }: Project,
     customizationInfos: CustomizationInfo[],
@@ -1005,18 +954,20 @@ export default class SdfClient {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
     try {
+      const custCommandArguments = {
+        ...(type === 'AccountCustomization' ? { ccountspecificvalues: 'WARNING' } : {}),
+        ...(validateOnly ? { server: true } : {}),
+      }
       await this.executeProjectAction(
         validateOnly ? COMMANDS.VALIDATE_PROJECT : COMMANDS.DEPLOY_PROJECT,
         // SuiteApp project type can't contain account specific values
         // and thus the flag is not supported
-        type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {},
+        custCommandArguments,
         executor
       )
     } catch (e) {
-      if (validateOnly) {
-        throw SdfClient.customizeValidationError(toError(e), projectName, customizationInfos)
-      }
-      throw SdfClient.customizeDeployError(toError(e))
+      const error = e instanceof Error ? e : new Error(String(e))
+      throw SdfClient.customizeDeployError(error)
     }
   }
 

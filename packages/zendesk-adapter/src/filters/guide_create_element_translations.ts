@@ -134,7 +134,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           brand: instance.value.brand,
         },
         undefined, // path will be set later
-        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(instance.elemID, parent)] },
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] },
       )
     }
 

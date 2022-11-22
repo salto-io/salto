@@ -16,19 +16,22 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
-  isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
+  Change, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 
 const BODY_FIELD = 'body'
 
+const BASE_URL_REGEX = /(https:\/\/.*\.zendesk\.com)/
+const ATTACHED_IMG_URL_REGEX = /(https:\/\/.*?\.zendesk\.com\/hc\/article_attachments\/\d*)/g
+const ARTICLE_ATTACHMENT_ID_URL_REGEX = /\/article_attachments\/(\d*)/
 const ARTICLE_REF_URL_REGEX = /(https:\/\/.*\.zendesk\.com\/hc\/.*\/articles\/\d*)/g
 const ARTICLE_REF_URL_GROUPS_REGEX = /((?<urlSubdomain>https:\/\/.*\.zendesk\.com)(?<translation>\/hc\/.*\/articles\/)(?<urlArticleId>\d*))/g
 
@@ -42,6 +45,8 @@ const referenceArticleUrl = ({
   articleInstances: InstanceElement[]
 }): TemplatePart[] => {
   const urlParts = ARTICLE_REF_URL_GROUPS_REGEX.exec(articleUrl)?.groups ?? {}
+  // https://stackoverflow.com/questions/4724701/regexp-exec-returns-null-sporadically
+  ARTICLE_REF_URL_GROUPS_REGEX.lastIndex = 0
   const { urlSubdomain, translation, urlArticleId } = urlParts
 
   const urlBrand = brandInstances
@@ -58,21 +63,68 @@ const referenceArticleUrl = ({
   ]
 }
 
-const updateArticleBody = (
-  articleInstace: InstanceElement,
-  brandInstances: InstanceElement[],
-  articleInstances: InstanceElement[],
-): void => {
-  const originalArticleBody = articleInstace.value[BODY_FIELD]
+const referenceAttachedImageUrl = ({
+  imageUrl,
+  brandInstances,
+  articleAttachmentsById,
+}: {
+  imageUrl: string
+  brandInstances: InstanceElement[]
+  articleAttachmentsById: Record<string, InstanceElement>
+}): TemplatePart[] => {
+  const urlSubdomain = imageUrl.match(BASE_URL_REGEX)?.pop()
+  const urlBrand = brandInstances
+    .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
+  const urlArticleAttachmentId = imageUrl.match(ARTICLE_ATTACHMENT_ID_URL_REGEX)?.pop()
+  if (urlArticleAttachmentId === undefined) {
+    return [imageUrl]
+  }
+  const referencedArticleAttachment = articleAttachmentsById[urlArticleAttachmentId]
+  if (!isInstanceElement(urlBrand) || !isInstanceElement(referencedArticleAttachment)) {
+    return [imageUrl]
+  }
+  return [
+    new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url),
+    '/hc/article_attachments/',
+    new ReferenceExpression(referencedArticleAttachment.elemID, referencedArticleAttachment),
+  ]
+}
+
+const updateArticleBody = ({
+  articleInstance,
+  brandInstances,
+  articleInstances,
+  articleAttachmentsById,
+} : {
+  articleInstance: InstanceElement
+  brandInstances: InstanceElement[]
+  articleInstances: InstanceElement[]
+  articleAttachmentsById: Record<string, InstanceElement>
+}): void => {
+  const originalArticleBody = articleInstance.value[BODY_FIELD]
   if (!_.isString(originalArticleBody)) {
     return
   }
   const processedArticleBody = extractTemplate(
     originalArticleBody,
-    [ARTICLE_REF_URL_REGEX],
-    articleUrl => referenceArticleUrl({ articleUrl, brandInstances, articleInstances }),
+    [ARTICLE_REF_URL_REGEX, ATTACHED_IMG_URL_REGEX],
+    expression => {
+      const articleUrlReference = expression.match(ARTICLE_REF_URL_REGEX)
+      if (articleUrlReference) {
+        return referenceArticleUrl({ articleUrl: expression, brandInstances, articleInstances })
+      }
+      const attachedImageReference = expression.match(ATTACHED_IMG_URL_REGEX)
+      if (attachedImageReference) {
+        return referenceAttachedImageUrl({
+          imageUrl: expression,
+          brandInstances,
+          articleAttachmentsById,
+        })
+      }
+      return expression
+    },
   )
-  articleInstace.value.body = processedArticleBody
+  articleInstance.value.body = processedArticleBody
 }
 
 /**
@@ -100,11 +152,22 @@ const filterCreator: FilterCreator = () => {
         .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
       const articleInstances = instances
         .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
+      const articleAttachmentsById: Record<string, InstanceElement> = _.keyBy(
+        instances.filter(
+          e => e.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME && e.value.id !== undefined
+        ),
+        instance => _.toString(instance.value.id)
+      )
       instances
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
-          updateArticleBody(articleInstance, brandInstances, articleInstances)))
+          updateArticleBody({
+            articleInstance,
+            brandInstances,
+            articleInstances,
+            articleAttachmentsById,
+          })))
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)

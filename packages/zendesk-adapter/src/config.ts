@@ -18,6 +18,7 @@ import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adap
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import {
+  ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
@@ -1651,7 +1652,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['&section_id', 'title'],
       fileNameFields: ['&section_id', 'title'],
-      standaloneFields: [{ fieldName: 'translations' }],
+      standaloneFields: [
+        { fieldName: 'translations' },
+        { fieldName: 'attachments' },
+      ],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
@@ -1659,8 +1663,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'author_id', fieldType: 'unknown' },
+        { fieldName: 'author_id', fieldType: 'string' },
         { fieldName: 'translations', fieldType: 'list<article_translation>' },
+        { fieldName: 'attachments', fieldType: 'list<article_attachment>' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'vote_sum' },
@@ -1693,6 +1698,22 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         method: 'delete',
         urlParamsToFields: {
           articleId: 'id',
+        },
+      },
+    },
+  },
+  [ARTICLE_ATTACHMENT_TYPE_NAME]: {
+    transformation: {
+      idFields: ['filename'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+    },
+    deployRequests: {
+      remove: {
+        url: '/api/v2/help_center/articles/attachments/{articleAttachmentId}',
+        method: 'delete',
+        urlParamsToFields: {
+          articleAttachmentId: 'id',
         },
       },
     },
@@ -2223,6 +2244,7 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   'article_translation',
   'category_translation',
   'section_translation',
+  ARTICLE_ATTACHMENT_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,

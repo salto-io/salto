@@ -30,6 +30,7 @@ export type ChildParentRelationship = {
 const ADDITIONAL_CHILD_PARENT_RELATIONSHIPS: ChildParentRelationship[] = [
   { parent: 'macro', child: 'macro_attachment', fieldName: 'attachments' },
   { parent: 'brand', child: 'brand_logo', fieldName: 'logo' },
+  { parent: 'article', child: 'article_attachment', fieldName: 'attachments' },
 ]
 
 export const getChildAndParentTypeNames = (config: ZendeskApiConfig): ChildParentRelationship[] => {

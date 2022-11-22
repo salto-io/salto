@@ -156,6 +156,8 @@ describe('adapter', () => {
           'zendesk.article',
           'zendesk.article.instance.brandWithGuide_greatCategory_greatSection_Title_Yo__@uuussa',
           'zendesk.article.instance.myBrand_Development_Apex_How_can_agents_leverage_knowledge_to_help_customers_@uuusssssssa',
+          'zendesk.article__attachments',
+          'zendesk.article_attachment',
           'zendesk.article_order',
           'zendesk.article_order.instance.brandWithGuide_greatCategory_greatSection__',
           'zendesk.article_order.instance.myBrand_Development_Apex__',

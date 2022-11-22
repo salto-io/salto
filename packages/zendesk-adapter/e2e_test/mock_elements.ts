@@ -226,4 +226,21 @@ export const mockDefaultValues: Record<string, Values> = {
     active: true,
     system: false,
   },
+  category: {
+    locale: 'en-us',
+    source_locale: 'en-us',
+    outdated: false,
+    name: 'test',
+    description: 'this is a test',
+    brand: 10378734785303,
+  },
+  category_translation: {
+    locale: 'en-us',
+    outdated: false,
+    title: 'test',
+    draft: false,
+    hidden: false,
+    description: 'this is a test',
+    brand: 10378734785303,
+  },
 }

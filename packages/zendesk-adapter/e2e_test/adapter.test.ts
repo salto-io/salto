@@ -29,7 +29,7 @@ import {
   GUIDE_SUPPORTED_TYPES,
   SUPPORTED_TYPES,
 } from '../src/config'
-import { ZENDESK, BRAND_TYPE_NAME } from '../src/constants'
+import { ZENDESK, BRAND_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
@@ -108,6 +108,7 @@ describe('Zendesk adapter E2E', () => {
     let elements: Element[] = []
     const createName = (type: string): string => `Test${type}${testSuffix}`
     const createSubdomainName = (): string => `test${testSuffix}`
+
 
     const automationInstance = createInstanceElement(
       'automation',
@@ -260,6 +261,32 @@ describe('Zendesk adapter E2E', () => {
     const userSegmentInstance = createInstanceElement(
       'user_segment',
       { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
+    )
+    // guide instances
+    const categoryName = createName('category')
+    const categoryInstance = createInstanceElement(
+      'category',
+      {
+        name: categoryName,
+      }
+    )
+    const categoryTranslationType = new ObjectType({
+      elemID: new ElemID(ZENDESK, CATEGORY_TRANSLATION_TYPE_NAME),
+    })
+    const categoryTranslationInstance = new InstanceElement(
+      `${categoryName}_en_us`,
+      categoryTranslationType,
+      {
+        locale: 'en-us',
+        outdated: false,
+        title: categoryName,
+        draft: false,
+        hidden: false,
+        description: 'this is a test',
+        brand: 10378734785303,
+      },
+      undefined,
+
     )
     let groupIdToInstances: Record<string, InstanceElement[]>
 

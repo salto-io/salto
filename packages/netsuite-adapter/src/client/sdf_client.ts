@@ -966,8 +966,7 @@ export default class SdfClient {
         executor
       )
     } catch (e) {
-      const error = e instanceof Error ? e : new Error(String(e))
-      throw SdfClient.customizeDeployError(error)
+      throw SdfClient.customizeDeployError(toError(e))
     }
   }
 

@@ -32,6 +32,7 @@ describe('netsuite system note author information', () => {
   let folderInstance: InstanceElement
   let accountInstance: InstanceElement
   let customRecordType: ObjectType
+  let customRecord: InstanceElement
   let missingInstance: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
@@ -56,6 +57,7 @@ describe('netsuite system note author information', () => {
       { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01' },
       { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01' },
       { recordid: '2', recordtypeid: '-112', field: '', name: '3', date: '2022-01-01' },
+      { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01' },
       { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3', date: '2022-01-01' },
       { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3', date: '2022-01-01' },
     ])
@@ -66,6 +68,7 @@ describe('netsuite system note author information', () => {
       annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE },
     })
     customRecordType.annotations.internalId = '1'
+    customRecord = new InstanceElement('value_123', customRecordType, { internalId: '123' })
     fileInstance = new InstanceElement(FILE, new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
     fileInstance.value.internalId = '2'
     folderInstance = new InstanceElement(
@@ -74,7 +77,14 @@ describe('netsuite system note author information', () => {
     folderInstance.value.internalId = '2'
     missingInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     missingInstance.value.internalId = '8'
-    elements = [accountInstance, customRecordType, missingInstance, fileInstance, folderInstance]
+    elements = [
+      accountInstance,
+      customRecordType,
+      customRecord,
+      missingInstance,
+      fileInstance,
+      folderInstance,
+    ]
     filterOpts = {
       client,
       elementsSourceIndex: {
@@ -89,7 +99,7 @@ describe('netsuite system note author information', () => {
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     const fieldSystemNotesQuery = "SELECT name, field, recordid, date from (SELECT name, field, recordid, TO_CHAR(MAX(date), 'YYYY-MM-DD') AS date FROM (SELECT name, REGEXP_SUBSTR(field, '^(MEDIAITEMFOLDER.|MEDIAITEM.)') AS field, recordid, date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%')) GROUP BY name, field, recordid) ORDER BY name, field, recordid ASC"
-    const recordTypeSystemNotesQuery = "SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, TO_CHAR(MAX(date), 'YYYY-MM-DD') as date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (recordtypeid = '-112' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC"
+    const recordTypeSystemNotesQuery = "SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, TO_CHAR(MAX(date), 'YYYY-MM-DD') as date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (recordtypeid = '-112' OR recordtypeid = '1' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, fieldSystemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, recordTypeSystemNotesQuery)
@@ -98,9 +108,9 @@ describe('netsuite system note author information', () => {
 
   it('should query information from api when there are no files', async () => {
     await filterCreator(filterOpts).onFetch?.(
-      [accountInstance, customRecordType, missingInstance]
+      [accountInstance, customRecordType, customRecord, missingInstance]
     )
-    const systemNotesQuery = "SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, TO_CHAR(MAX(date), 'YYYY-MM-DD') as date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (recordtypeid = '-112' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC"
+    const systemNotesQuery = "SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, TO_CHAR(MAX(date), 'YYYY-MM-DD') as date FROM systemnote WHERE date >= TO_DATE('2022-01-01', 'YYYY-MM-DD') AND (recordtypeid = '-112' OR recordtypeid = '1' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
@@ -115,6 +125,7 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
+    expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
     expect(Object.values(missingInstance.annotations)).toHaveLength(0)
     expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
@@ -125,6 +136,7 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(Object.values(accountInstance.annotations)).toHaveLength(0)
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+    expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
     expect(Object.values(fileInstance.annotations)).toHaveLength(0)
     expect(Object.values(folderInstance.annotations)).toHaveLength(0)
   })
@@ -164,6 +176,7 @@ describe('netsuite system note author information', () => {
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+      expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -193,6 +206,7 @@ describe('netsuite system note author information', () => {
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+      expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -211,10 +225,12 @@ describe('netsuite system note author information', () => {
       }
     })
     it('should not change any elements in fetch', async () => {
+      runSuiteQLMock.mockReset()
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+      expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -237,6 +253,7 @@ describe('netsuite system note author information', () => {
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+      expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
@@ -268,6 +285,7 @@ describe('netsuite system note author information', () => {
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
       expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+      expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
       expect(Object.values(fileInstance.annotations)).toHaveLength(0)
       expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })

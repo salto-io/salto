@@ -18,7 +18,7 @@ import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { StandardType } from '../autogen/types'
 import { ServiceUrlSetter } from './types'
 
-const TYPE_TO_URL: Record<StandardType | 'file' | 'folder', string| undefined> = {
+const TYPE_TO_URL: Record<StandardType | 'file' | 'folder' | 'customrecordactionscript', string| undefined> = {
   file: 'app/common/media/mediaitemfolders.nl',
   folder: 'app/common/media/mediaitemfolders.nl',
   addressForm: 'app/common/custom/custaddressentryforms.nl',
@@ -79,6 +79,8 @@ const TYPE_TO_URL: Record<StandardType | 'file' | 'folder', string| undefined> =
   promotionsplugin: undefined,
   publisheddashboard: undefined,
   workbook: undefined,
+  financiallayout: undefined,
+  reportdefinition: undefined,
 }
 
 const setServiceUrl: ServiceUrlSetter = (elements, client) => {

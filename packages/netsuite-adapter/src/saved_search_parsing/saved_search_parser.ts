@@ -20,15 +20,15 @@ import _ from 'lodash'
 import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
 
-type ElementParts = { definition: ElementCompact; dependency: ElementCompact[] }
-type AttributeValue = string | boolean | number
-type AttributeObject = { _attributes: { clazz:string; field:string }; _text:string }
-type RecordValueObject = AttributeObject[] | AttributeObject
-type RecordObject = { values: { Value:RecordValueObject}}
+export type ElementParts = { definition: ElementCompact; dependency: ElementCompact[] }
+export type AttributeValue = string | boolean | number
+export type AttributeObject = { _attributes: { clazz:string; field:string }; _text:string }
+export type RecordValueObject = AttributeObject[] | AttributeObject
+export type RecordObject = { values: { Value:RecordValueObject}}
 type FilterObject = { descriptor: { values: { Value: AttributeObject[] }}
  values: { values: {Record: RecordObject | RecordObject[]} }}
 
-const getJson = async (definition: string): Promise<ElementCompact> => {
+export const getJson = async (definition: string): Promise<ElementCompact> => {
   const gzip = Buffer.from(definition.split('@').slice(-1)[0], 'base64')
   const xmlValue = await ungzip(gzip)
   return xml2js(xmlValue.toString(), { compact: true })
@@ -37,10 +37,10 @@ const getJson = async (definition: string): Promise<ElementCompact> => {
 const getSearchDefinition = (search: ElementCompact): ElementCompact =>
   search['nssoc:SerializedObjectContainer']['nssoc:definition'].SearchDefinition
 
-const getSearchDependency = (search: ElementCompact): ElementCompact[] =>
+export const getSearchDependency = (search: ElementCompact): ElementCompact[] =>
   search['nssoc:SerializedObjectContainer']['nssoc:dependencies']['nssoc:dependency']
 
-const getAttributeValue = (attribute: AttributeObject): AttributeValue => {
+export const getAttributeValue = (attribute: AttributeObject): AttributeValue => {
   if (attribute._attributes.clazz === 'boolean') {
     return attribute._text === 'true'
   }
@@ -50,7 +50,7 @@ const getAttributeValue = (attribute: AttributeObject): AttributeValue => {
   return attribute._text
 }
 
-const getObjectFromValues = (values: RecordValueObject): Values =>
+export const getObjectFromValues = (values: RecordValueObject): Values =>
   Object.fromEntries(collections.array.makeArray(values)
     .filter(i => i._text !== undefined)
     .map(i => [i._attributes.field, getAttributeValue(i)]))
@@ -71,10 +71,10 @@ const getFilter = (filter: FilterObject): Values => {
 const extractSearchDefinitionValues = (search: ElementCompact): Values[] =>
   collections.array.makeArray(search.values?.SearchFilter).map(getFilter)
 
-const getFlags = (search: ElementCompact): Values =>
+export const getFlags = (search: ElementCompact): Values =>
   getObjectFromValues(search.descriptor.values.Value)
 
-const extractSearchRecordsValues = (search: ElementCompact): Values[] =>
+export const extractSearchRecordsValues = (search: ElementCompact): Values[] =>
   collections.array.makeArray(search.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
 
@@ -92,14 +92,14 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
     .map((record:RecordObject) => getObjectFromValues(record.values.Value))
 }
 
-const safeAssignKeyValue = (instance:Values, key: string, value: Values): void => {
+export const safeAssignKeyValue = (instance:Values, key: string, value: Values): void => {
   if (Array.isArray(value) && _.isEmpty(value)) {
     return
   }
   Object.assign(instance, { [key]: value })
 }
 
-const getSearchPartsFromDefinition = async (definition:string): Promise<ElementParts> => {
+export const getSearchPartsFromDefinition = async (definition:string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
   return { definition: getSearchDefinition(parsedXml),
     dependency: getSearchDependency(parsedXml) }

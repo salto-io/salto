@@ -27,7 +27,6 @@ import { cmscontenttypeType } from './types/standard_types/cmscontenttype'
 import { crmcustomfieldType } from './types/standard_types/crmcustomfield'
 import { customglpluginType } from './types/standard_types/customglplugin'
 import { customlistType } from './types/standard_types/customlist'
-import { customrecordactionscriptType } from './types/standard_types/customrecordactionscript'
 import { customrecordtypeType } from './types/standard_types/customrecordtype'
 import { customsegmentType } from './types/standard_types/customsegment'
 import { customtransactiontypeType } from './types/standard_types/customtransactiontype'
@@ -38,6 +37,7 @@ import { emailtemplateType } from './types/standard_types/emailtemplate'
 import { entitycustomfieldType } from './types/standard_types/entitycustomfield'
 import { entryFormType } from './types/standard_types/entryForm'
 import { ficonnectivitypluginType } from './types/standard_types/ficonnectivityplugin'
+import { financiallayoutType } from './types/standard_types/financiallayout'
 import { fiparserpluginType } from './types/standard_types/fiparserplugin'
 import { integrationType } from './types/standard_types/integration'
 import { itemcustomfieldType } from './types/standard_types/itemcustomfield'
@@ -52,6 +52,7 @@ import { plugintypeType } from './types/standard_types/plugintype'
 import { portletType } from './types/standard_types/portlet'
 import { promotionspluginType } from './types/standard_types/promotionsplugin'
 import { publisheddashboardType } from './types/standard_types/publisheddashboard'
+import { reportdefinitionType } from './types/standard_types/reportdefinition'
 import { restletType } from './types/standard_types/restlet'
 import { roleType } from './types/standard_types/role'
 import { savedcsvimportType } from './types/standard_types/savedcsvimport'
@@ -73,6 +74,7 @@ import { workbookbuilderpluginType } from './types/standard_types/workbookbuilde
 import { workflowType } from './types/standard_types/workflow'
 import { workflowactionscriptType } from './types/standard_types/workflowactionscript'
 
+
 const standardTypesNamesList = [
   'addressForm',
   'advancedpdftemplate',
@@ -87,7 +89,6 @@ const standardTypesNamesList = [
   'crmcustomfield',
   'customglplugin',
   'customlist',
-  'customrecordactionscript',
   'customrecordtype',
   'customsegment',
   'customtransactiontype',
@@ -98,6 +99,7 @@ const standardTypesNamesList = [
   'entitycustomfield',
   'entryForm',
   'ficonnectivityplugin',
+  'financiallayout',
   'fiparserplugin',
   'integration',
   'itemcustomfield',
@@ -112,6 +114,7 @@ const standardTypesNamesList = [
   'portlet',
   'promotionsplugin',
   'publisheddashboard',
+  'reportdefinition',
   'restlet',
   'role',
   'savedcsvimport',
@@ -160,7 +163,6 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
   const crmcustomfield = crmcustomfieldType()
   const customglplugin = customglpluginType()
   const customlist = customlistType()
-  const customrecordactionscript = customrecordactionscriptType()
   const customrecordtype = customrecordtypeType()
   const customsegment = customsegmentType()
   const customtransactiontype = customtransactiontypeType()
@@ -171,6 +173,7 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
   const entitycustomfield = entitycustomfieldType()
   const entryForm = entryFormType()
   const ficonnectivityplugin = ficonnectivitypluginType()
+  const financiallayout = financiallayoutType()
   const fiparserplugin = fiparserpluginType()
   const integration = integrationType()
   const itemcustomfield = itemcustomfieldType()
@@ -185,6 +188,7 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
   const portlet = portletType()
   const promotionsplugin = promotionspluginType()
   const publisheddashboard = publisheddashboardType()
+  const reportdefinition = reportdefinitionType()
   const restlet = restletType()
   const role = roleType()
   const savedcsvimport = savedcsvimportType()
@@ -259,10 +263,6 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
       type: customlist.type,
       innerTypes: customlist.innerTypes,
     },
-    customrecordactionscript: {
-      type: customrecordactionscript.type,
-      innerTypes: customrecordactionscript.innerTypes,
-    },
     customrecordtype: {
       type: customrecordtype.type,
       innerTypes: customrecordtype.innerTypes,
@@ -302,6 +302,10 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
     ficonnectivityplugin: {
       type: ficonnectivityplugin.type,
       innerTypes: ficonnectivityplugin.innerTypes,
+    },
+    financiallayout: {
+      type: financiallayout.type,
+      innerTypes: financiallayout.innerTypes,
     },
     fiparserplugin: {
       type: fiparserplugin.type,
@@ -358,6 +362,10 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
     publisheddashboard: {
       type: publisheddashboard.type,
       innerTypes: publisheddashboard.innerTypes,
+    },
+    reportdefinition: {
+      type: reportdefinition.type,
+      innerTypes: reportdefinition.innerTypes,
     },
     restlet: {
       type: restlet.type,

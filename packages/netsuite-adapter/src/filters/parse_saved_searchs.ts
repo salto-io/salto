@@ -20,7 +20,7 @@ import { NETSUITE, SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
 import { savedsearchType } from '../saved_search_parsing/parsed_saved_search'
 import { savedsearchType as oldSavedSearch } from '../autogen/types/standard_types/savedsearch'
-import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
+import { parseDefinition, getSearchPartsFromDefinition } from '../saved_search_parsing/saved_search_parser'
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
   onFetch: async elements => {
@@ -46,6 +46,13 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
         }
       }
     }
+
+    const temp = elements
+      .filter(e => e.elemID.typeName === 'reportdefinition')
+      .filter(isInstanceElement)
+      .map(async e => getSearchPartsFromDefinition(e.value.definition))
+
+    console.log(temp)
 
     _.remove(elements, e => isObjectType(e) && e.elemID.name === SAVED_SEARCH)
     _.remove(elements, e => isObjectType(e) && e.elemID.isEqual(new ElemID(NETSUITE, 'savedsearch_dependencies')))

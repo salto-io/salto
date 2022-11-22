@@ -162,6 +162,28 @@ describe('article filter', () => {
   articleInstance.value.translations = [
     new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
   ]
+  const translationWithAttachmentInstance = new InstanceElement(
+    'translationWithAttachment',
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'article_translation') }),
+    {
+      locale: { id: 'en-us' },
+      title: 'This translation has attachment',
+      draft: false,
+      brand: brandInstance.value.id,
+      // body: '<p>aaa<img src="${ zendesk.brand.instance.Salto.brandName }/hc/article_attachme
+      // nts/${ zendesk.article_attachment.instance.
+      // title__attachmentFileName_png@uuv }" alt="pic.png">zzz</p>',
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
+      articleWithAttachmentInstance.elemID,
+      articleWithAttachmentInstance,
+    )] },
+  )
+  articleWithAttachmentInstance.value.translations = [new ReferenceExpression(
+    translationWithAttachmentInstance.elemID,
+    translationWithAttachmentInstance,
+  )]
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) })
   const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
 

@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import {
   AdditionChange,
   Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
-  isAdditionOrModificationChange, isInstanceElement, isObjectType, isReferenceExpression,
+  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression,
   isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
@@ -100,12 +100,29 @@ const haveAttachmentsBeenAdded = (
     : _.differenceWith(
       articleChange.data.after.value.attachments,
       articleChange.data.before.value.attachments,
-      _.isEqual
+      (afterAttachment, beforeAttachment) => (
+        isReferenceExpression(beforeAttachment)
+        && isReferenceExpression(afterAttachment)
+        && _.isEqual(afterAttachment.elemID, beforeAttachment.elemID))
     )
   if (!_.isArray(addedAttachments)) {
     return false
   }
   return addedAttachments.length > 0
+}
+
+const getAttachmentArticleRef = (
+  attachmentInstance: InstanceElement
+): ReferenceExpression | undefined => {
+  const parentArticleList = attachmentInstance.annotations[CORE_ANNOTATIONS.PARENT]
+  if (!_.isArray(parentArticleList)) {
+    return undefined
+  }
+  const parentArticleRef = parentArticleList[0]
+  if (!isReferenceExpression(parentArticleRef)) {
+    return undefined
+  }
+  return parentArticleRef
 }
 
 const associateAttachments = async (
@@ -136,10 +153,7 @@ const filterCreator: FilterCreator = ({
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
       setupArticleUserSegmentId(elements, articleInstances)
-      const attachmentType = elements
-        .filter(isObjectType)
-        .find(objType => objType.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-        ?? createAttachmentType()
+      const attachmentType = createAttachmentType()
       const articleAttachments = (await Promise.all(articleInstances
         .map(async article => getArticleAttachments({
           client: brandIdToClient[article.value.brand],
@@ -162,16 +176,13 @@ const filterCreator: FilterCreator = ({
         .forEach(async attachmentInstance => {
           await createUnassociatedAttachment(client, attachmentInstance)
           // Keeping article-attachment relation for deploy stage
-          const unresolvedInstance = await elementsSource.get(attachmentInstance.elemID)
-          if (unresolvedInstance === undefined) {
+          const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
+          if (instanceBeforeResolve === undefined) {
             return
           }
-          const parentArticleList = unresolvedInstance.annotations[CORE_ANNOTATIONS.PARENT]
-          if (!_.isArray(parentArticleList)) {
-            return
-          }
-          const parentArticleRef = parentArticleList[0]
-          if (!isReferenceExpression(parentArticleRef)) {
+          const parentArticleRef = getAttachmentArticleRef(instanceBeforeResolve)
+          if (parentArticleRef === undefined) {
+            log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
             return
           }
           const parentArticleName = parentArticleRef.elemID.name

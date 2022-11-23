@@ -95,7 +95,7 @@ describe('config_creator', () => {
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Received instance with refType ElemId: ${options?.refType.elemID.getFullName()}`)
+      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Received instance with refType ElemId full name: ${options?.refType.elemID.getFullName()}`)
     })
   })
 })

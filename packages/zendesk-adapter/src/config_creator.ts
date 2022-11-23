@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { configType } from './config'
 import * as constants from './constants'
@@ -24,19 +24,21 @@ const log = logger(module)
 
 const optionsElemId = new ElemID(constants.ZENDESK, 'configOptionsType')
 
-export const optionsType = new ObjectType({
+type ConfigOptionsType = {
+  enableGuide?: boolean
+}
+export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
     enableGuide: { refType: BuiltinTypes.BOOLEAN },
   },
 })
-
 const isOptionsTypeInstance = (instance: InstanceElement):
-  instance is InstanceElement & { value: { enableGuide?: boolean } } => {
+  instance is InstanceElement & { value: ConfigOptionsType } => {
   if (instance.refType.elemID.isEqual(optionsElemId)) {
     return true
   }
-  log.error(`Received an invalid instance for config options. Received instance with refType ElemId: ${instance.refType.elemID.getFullName()}`)
+  log.error(`Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`)
   return false
 }
 

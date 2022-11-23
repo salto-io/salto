@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ConfigCustomization, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ConfigOpt, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { configType } from './types'
@@ -297,35 +297,35 @@ export const configWithCPQ = new InstanceElement(
   }
 )
 
-const configOverridesElemId = new ElemID(constants.SALESFORCE, 'adapterConfigOverridesType')
+const configOptElemId = new ElemID(constants.SALESFORCE, 'configOptType')
 
-export const configCustomizationObjectType = new ObjectType({
-  elemID: configOverridesElemId,
+export const configOptObjectType = new ObjectType({
+  elemID: configOptElemId,
   fields: {
     cpq: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 
-const isConfigOverridesInstance = (instance: InstanceElement): boolean => {
-  if (instance.refType.elemID.isEqual(configOverridesElemId)) {
+const isConfigOptInstance = (instance: InstanceElement): boolean => {
+  if (instance.refType.elemID.isEqual(configOptElemId)) {
     return true
   }
-  log.error(`Received an invalid instance for adapterConfigOverrides. Instance: ${safeJsonStringify(instance)}`)
+  log.error(`Received an invalid instance for configOpt. Instance: ${safeJsonStringify(instance)}`)
   return false
 }
 
 export const getConfig = async (
-  adapterConfigOverrides?: InstanceElement
+  configOpt?: InstanceElement
 ): Promise<InstanceElement> => {
-  if (adapterConfigOverrides
-    && isConfigOverridesInstance(adapterConfigOverrides) && adapterConfigOverrides.value.cpq
+  if (configOpt
+    && isConfigOptInstance(configOpt) && configOpt.value.cpq
   ) {
     return configWithCPQ
   }
   return createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
 }
 
-export const configCustomization: ConfigCustomization = {
-  configCustomizationObjectType,
+export const configOpt: ConfigOpt = {
+  configOptObjectType,
   getConfig,
 }

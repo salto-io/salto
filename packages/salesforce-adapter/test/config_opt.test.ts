@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { configType } from '../src/types'
-import { configCustomizationObjectType, configWithCPQ, getConfig } from '../src/config_customization'
+import { configOptObjectType, configWithCPQ, getConfig } from '../src/config_opt'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType)
 const mockCreateDefaultInstanceFromType = jest.fn()
@@ -39,12 +39,12 @@ jest.mock('@salto-io/logging', () => ({
     }),
 }))
 
-describe('get_default_config', () => {
-  let adapterConfigOverrides: InstanceElement | undefined
+describe('config_opt', () => {
+  let configOpt: InstanceElement | undefined
   let resultConfig: InstanceElement
 
-  const createMockAdapterConfigOverrides = (value: Values): InstanceElement =>
-    new InstanceElement('adapterConfigOverrides', configCustomizationObjectType, value)
+  const createMockConfigOptInstance = (value: Values): InstanceElement =>
+    new InstanceElement('configOpt', configOptObjectType, value)
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -52,8 +52,8 @@ describe('get_default_config', () => {
 
   describe('when input contains cpq equal true', () => {
     beforeEach(async () => {
-      adapterConfigOverrides = createMockAdapterConfigOverrides({ cpq: true })
-      resultConfig = await getConfig(adapterConfigOverrides)
+      configOpt = createMockConfigOptInstance({ cpq: true })
+      resultConfig = await getConfig(configOpt)
     })
     it('should return adapter config with cpq', async () => {
       expect(resultConfig).toEqual(configWithCPQ)
@@ -63,8 +63,8 @@ describe('get_default_config', () => {
 
   describe('when input contains cpq equal false', () => {
     beforeEach(async () => {
-      adapterConfigOverrides = createMockAdapterConfigOverrides({ cpq: false })
-      resultConfig = await getConfig(adapterConfigOverrides)
+      configOpt = createMockConfigOptInstance({ cpq: false })
+      resultConfig = await getConfig(configOpt)
     })
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
@@ -75,8 +75,8 @@ describe('get_default_config', () => {
 
   describe('when input does not contain cpq', () => {
     beforeEach(async () => {
-      adapterConfigOverrides = createMockAdapterConfigOverrides({})
-      resultConfig = await getConfig(adapterConfigOverrides)
+      configOpt = createMockConfigOptInstance({})
+      resultConfig = await getConfig(configOpt)
     })
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
@@ -85,18 +85,18 @@ describe('get_default_config', () => {
     })
   })
 
-  describe('when input is not a valid adapterConfigOverridesObjectType', () => {
+  describe('when input is not a valid configOptObjectType', () => {
     beforeEach(async () => {
       const differentObjType = new ObjectType({
         elemID: new ElemID('mock'),
       })
-      adapterConfigOverrides = new InstanceElement('adapterConfigOverrides', differentObjType, { cpq: true })
-      resultConfig = await getConfig(adapterConfigOverrides)
+      configOpt = new InstanceElement('configOpt', differentObjType, { cpq: true })
+      resultConfig = await getConfig(configOpt)
     })
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for adapterConfigOverrides. Instance: ${safeJsonStringify(adapterConfigOverrides)}`)
+      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for configOpt. Instance: ${safeJsonStringify(configOpt)}`)
     })
   })
 })

@@ -88,10 +88,10 @@ describe('adapters.ts', () => {
 
       _.assign(mockAdapter, {
         configType: mockConfigType,
-        configCustomization: {
-          getConfig: mockFunction<NonNullable<Adapter['configCustomization']>['getConfig']>()
+        configOpt: {
+          getConfig: mockFunction<NonNullable<Adapter['configOpt']>['getConfig']>()
             .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
-          configCustomizationObjectType: new ObjectType({
+          configOptObjectType: new ObjectType({
             elemID: new ElemID('test'),
           }),
         },
@@ -104,21 +104,21 @@ describe('adapters.ts', () => {
       createDefaultInstanceFromTypeMock.mockReset()
     })
 
-    it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
-      delete mockAdapter.configCustomization
+    it('should call createDefaultInstanceFromType when configOpt is undefined', async () => {
+      delete mockAdapter.configOpt
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(createDefaultInstanceFromType).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
     })
-    it('should use getConfig when configCustomization is defined', async () => {
+    it('should use getConfig when configOpt is defined', async () => {
       const mockObjType = new ObjectType({
         elemID: new ElemID('test'),
       })
-      const mockAdapterConfigOverrides = new InstanceElement('test', mockObjType)
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockAdapterConfigOverrides)
-      expect(mockAdapter.configCustomization?.getConfig)
-        .toHaveBeenCalledWith(mockAdapterConfigOverrides)
+      const mockConfigOpt = new InstanceElement('test', mockObjType)
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockConfigOpt)
+      expect(mockAdapter.configOpt?.getConfig)
+        .toHaveBeenCalledWith(mockConfigOpt)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })

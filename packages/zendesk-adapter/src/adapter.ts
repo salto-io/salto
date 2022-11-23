@@ -113,6 +113,7 @@ import everyoneUserSegmentFilter from './filters/everyone_user_segment'
 import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
 import guideElementTranslations from './filters/guide_create_element_translations'
+import guideDefaultLanguage from './filters/guide_default_language_settings'
 
 
 const { makeArray } = collections.array
@@ -201,6 +202,7 @@ export const DEFAULT_FILTERS = [
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
+  guideDefaultLanguage, // needs to be before deployBrandedGuideTypesFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   // defaultDeployFilter should be last!

@@ -16,9 +16,9 @@
 import { ElemID, InstanceElement, ObjectType,
   BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import filterCreator from '../../src/filters/article_body'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { createFilterCreatorParams } from '../utils'
+import filterCreator from '../../../src/filters/article/article_body'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../../src/constants'
+import { createFilterCreatorParams } from '../../utils'
 
 describe('article body filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>

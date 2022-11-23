@@ -21,8 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../constants'
+import { FilterCreator } from '../../filter'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

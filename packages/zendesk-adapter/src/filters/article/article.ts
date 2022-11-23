@@ -23,16 +23,16 @@ import {
   isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../filter'
-import { deployChange, deployChanges } from '../deployment'
-import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
-import { addRemovalChangesId, isTranslation } from './guide_section_and_category'
-import { lookupFunc } from './field_references'
-import { removeTitleAndBody } from './guide_fetch_article'
+import { FilterCreator } from '../../filter'
+import { deployChange, deployChanges } from '../../deployment'
+import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../constants'
+import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
+import { lookupFunc } from '../field_references'
+import { removeTitleAndBody } from '../guide_fetch_article'
 import { prepRef } from './article_body'
-import { EVERYONE } from './everyone_user_segment'
-import ZendeskClient from '../client/client'
-import { createAttachmentType, createUnassociatedAttachment, getArticleAttachments } from './article/utils'
+import { EVERYONE } from '../everyone_user_segment'
+import ZendeskClient from '../../client/client'
+import { createAttachmentType, createUnassociatedAttachment, getArticleAttachments } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -225,7 +225,7 @@ const filterCreator: FilterCreator = ({
       )
       addRemovalChangesId(articleChanges)
       setUserSegmentIdForAdditionChanges(articleChanges)
-      const deployResult = await deployChanges(
+      const articleDeployResult = await deployChanges(
         articleChanges,
         async change => {
           await deployChange(
@@ -236,11 +236,17 @@ const filterCreator: FilterCreator = ({
           }
         },
       )
-      const leftoverChanges = nonArticleChanges
-        .filter(change => !(
+      const [attachmentAdditions, leftoverChanges] = _.partition(
+        nonArticleChanges,
+        change => (
           isAdditionChange(change)
           && getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
-        ))
+        )
+      )
+      const deployResult = {
+        appliedChanges: [...articleDeployResult.appliedChanges, ...attachmentAdditions],
+        errors: articleDeployResult.errors,
+      }
       return { deployResult, leftoverChanges }
     },
 

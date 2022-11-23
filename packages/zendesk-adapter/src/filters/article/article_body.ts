@@ -20,7 +20,8 @@ import {
   isInstanceChange, isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import wu from 'wu'
 import { FilterCreator } from '../../filter'
 import {
   ARTICLE_ATTACHMENTS_FIELD,
@@ -34,6 +35,8 @@ import {
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { isDefined } = lowerDashValues
+
 
 const BODY_FIELD = 'body'
 
@@ -77,16 +80,12 @@ const referenceUrls = ({ urlPart, urlBrand, additionalInstances }: {
     return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
   }
 
-  // Attempt to match other instances
-  for (const { idRegex, field } of ELEMENTS_REGEXES) {
-    const result = createInstanceReference({ urlPart, urlBrand, idToInstance: additionalInstances[field], idRegex })
-    if (result !== undefined) {
-      return result
-    }
-  }
+  // Attempt to match other instances, stop on the first result
+  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field }) =>
+    createInstanceReference({ urlPart, urlBrand, idToInstance: additionalInstances[field], idRegex })).find(isDefined)
 
   // If nothing matched, return the original url
-  return [urlPart]
+  return result ?? [urlPart]
 }
 
 const matchBrand = (url: string, brands: Record<string, InstanceElement>): InstanceElement | undefined => {

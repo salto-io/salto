@@ -75,6 +75,7 @@ import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import customMetadataTypeFilter from './filters/custom_metadata_type'
+import convertToLowerCaseFilter from './filters/convert_to_lowercase'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -147,6 +148,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // should run after convertListsFilter
   { creator: replaceFieldValuesFilter },
   { creator: valueToStaticFileFilter },
+  { creator: convertToLowerCaseFilter },
   { creator: fieldReferencesFilter },
   // should run after customObjectsInstancesFilter for now
   { creator: referenceAnnotationsFilter },

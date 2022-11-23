@@ -34,7 +34,7 @@ import { updateDeprecatedConfiguration } from './deprecated_config'
 import createChangeValidator, { changeValidators } from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
-import { configOpt } from './config_opt'
+import { configCreator } from './config_creator'
 
 const log = logger(module)
 
@@ -218,5 +218,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  configOpt,
+  configCreator,
 }

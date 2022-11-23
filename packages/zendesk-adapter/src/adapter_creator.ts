@@ -32,7 +32,7 @@ import {
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
-import { configOpt } from './config_opt'
+import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
@@ -179,5 +179,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  configOpt,
+  configCreator,
 }

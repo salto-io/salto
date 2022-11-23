@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { configType } from '../src/types'
-import { configOptObjectType, configWithCPQ, getConfig } from '../src/config_opt'
+import { optionsType, configWithCPQ, getConfig } from '../src/config_creator'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType)
 const mockCreateDefaultInstanceFromType = jest.fn()
@@ -39,12 +39,12 @@ jest.mock('@salto-io/logging', () => ({
     }),
 }))
 
-describe('config_opt', () => {
-  let configOpt: InstanceElement | undefined
+describe('config_creator', () => {
+  let options: InstanceElement | undefined
   let resultConfig: InstanceElement
 
-  const createMockConfigOptInstance = (value: Values): InstanceElement =>
-    new InstanceElement('configOpt', configOptObjectType, value)
+  const createMockOptionsInstance = (value: Values): InstanceElement =>
+    new InstanceElement('options', optionsType, value)
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -52,8 +52,8 @@ describe('config_opt', () => {
 
   describe('when input contains cpq equal true', () => {
     beforeEach(async () => {
-      configOpt = createMockConfigOptInstance({ cpq: true })
-      resultConfig = await getConfig(configOpt)
+      options = createMockOptionsInstance({ cpq: true })
+      resultConfig = await getConfig(options)
     })
     it('should return adapter config with cpq', async () => {
       expect(resultConfig).toEqual(configWithCPQ)
@@ -63,8 +63,8 @@ describe('config_opt', () => {
 
   describe('when input contains cpq equal false', () => {
     beforeEach(async () => {
-      configOpt = createMockConfigOptInstance({ cpq: false })
-      resultConfig = await getConfig(configOpt)
+      options = createMockOptionsInstance({ cpq: false })
+      resultConfig = await getConfig(options)
     })
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
@@ -75,8 +75,8 @@ describe('config_opt', () => {
 
   describe('when input does not contain cpq', () => {
     beforeEach(async () => {
-      configOpt = createMockConfigOptInstance({})
-      resultConfig = await getConfig(configOpt)
+      options = createMockOptionsInstance({})
+      resultConfig = await getConfig(options)
     })
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
@@ -85,18 +85,18 @@ describe('config_opt', () => {
     })
   })
 
-  describe('when input is not a valid configOptObjectType', () => {
+  describe('when input is not a valid optionsType', () => {
     beforeEach(async () => {
       const differentObjType = new ObjectType({
         elemID: new ElemID('mock'),
       })
-      configOpt = new InstanceElement('configOpt', differentObjType, { cpq: true })
-      resultConfig = await getConfig(configOpt)
+      options = new InstanceElement('options', differentObjType, { cpq: true })
+      resultConfig = await getConfig(options)
     })
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for configOpt. Instance: ${safeJsonStringify(configOpt)}`)
+      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Instance: ${safeJsonStringify(options)}`)
     })
   })
 })

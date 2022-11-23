@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ConfigOpt, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { configType } from './config'
@@ -22,29 +22,29 @@ import * as constants from './constants'
 
 const log = logger(module)
 
-const configOptElemId = new ElemID(constants.ZENDESK, 'configOptType')
+const optionsElemId = new ElemID(constants.ZENDESK, 'configOptionsType')
 
-export const configOptObjectType = new ObjectType({
-  elemID: configOptElemId,
+export const optionsType = new ObjectType({
+  elemID: optionsElemId,
   fields: {
     enableGuide: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 
-const isConfigOptInstance = (instance: InstanceElement): boolean => {
-  if (instance.refType.elemID.isEqual(configOptElemId)) {
+const isOptionsTypeInstance = (instance: InstanceElement): boolean => {
+  if (instance.refType.elemID.isEqual(optionsElemId)) {
     return true
   }
-  log.error(`Received an invalid instance for configOpt. Instance: ${safeJsonStringify(instance)}`)
+  log.error(`Received an invalid instance for config options. Instance: ${safeJsonStringify(instance)}`)
   return false
 }
 
 export const getConfig = async (
-  configOpt?: InstanceElement
+  options?: InstanceElement
 ): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (configOpt
-    && isConfigOptInstance(configOpt) && configOpt.value.enableGuide
+  if (options
+    && isOptionsTypeInstance(options) && options.value.enableGuide
   ) {
     const configWithGuide = defaultConf.clone()
     configWithGuide.value = { ...configWithGuide.value, enableGuide: true }
@@ -53,7 +53,7 @@ export const getConfig = async (
   return defaultConf
 }
 
-export const configOpt: ConfigOpt = {
-  configOptObjectType,
+export const configCreator: ConfigCreator = {
+  optionsType,
   getConfig,
 }

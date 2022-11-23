@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { configType } from '../src/config'
-import { configOptObjectType, getConfig } from '../src/config_opt'
+import { optionsType, getConfig } from '../src/config_creator'
 
 const mockDefaultInstanceFromTypeResult = new InstanceElement('mock name', configType, {})
 const mockCreateDefaultInstanceFromType = jest.fn()
@@ -39,12 +39,12 @@ jest.mock('@salto-io/logging', () => ({
     }),
 }))
 
-describe('config_opt', () => {
-  let configOpt: InstanceElement | undefined
+describe('config_creator', () => {
+  let options: InstanceElement | undefined
   let resultConfig: InstanceElement
 
-  const createMockConfigOptInstance = (value: Values): InstanceElement =>
-    new InstanceElement('configOpt', configOptObjectType, value)
+  const createMockOptionsInstance = (value: Values): InstanceElement =>
+    new InstanceElement('options', optionsType, value)
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -52,8 +52,8 @@ describe('config_opt', () => {
 
   describe('when input contains enableGuide equal true', () => {
     beforeEach(async () => {
-      configOpt = createMockConfigOptInstance({ enableGuide: true })
-      resultConfig = await getConfig(configOpt)
+      options = createMockOptionsInstance({ enableGuide: true })
+      resultConfig = await getConfig(options)
     })
     it('should return adapter config with guide', async () => {
       expect(resultConfig.value.enableGuide).toBeTruthy()
@@ -63,8 +63,8 @@ describe('config_opt', () => {
 
   describe('when input contains enableGuide equal false', () => {
     beforeEach(async () => {
-      configOpt = createMockConfigOptInstance({ enableGuide: false })
-      resultConfig = await getConfig(configOpt)
+      options = createMockOptionsInstance({ enableGuide: false })
+      resultConfig = await getConfig(options)
     })
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
@@ -76,8 +76,8 @@ describe('config_opt', () => {
 
   describe('when input does not contain enableGuide', () => {
     beforeEach(async () => {
-      configOpt = createMockConfigOptInstance({})
-      resultConfig = await getConfig(configOpt)
+      options = createMockOptionsInstance({})
+      resultConfig = await getConfig(options)
     })
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
@@ -87,19 +87,19 @@ describe('config_opt', () => {
     })
   })
 
-  describe('when input is not a valid configOptObjectType', () => {
+  describe('when input is not a valid optionsType', () => {
     beforeEach(async () => {
       const differentObjType = new ObjectType({
         elemID: new ElemID('mock'),
       })
-      configOpt = new InstanceElement('configOpt', differentObjType, { enableGuide: true })
-      resultConfig = await getConfig(configOpt)
+      options = new InstanceElement('options', differentObjType, { enableGuide: true })
+      resultConfig = await getConfig(options)
     })
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
       expect(resultConfig.value.enableGuide).toBeUndefined()
-      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for configOpt. Instance: ${safeJsonStringify(configOpt)}`)
+      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Instance: ${safeJsonStringify(options)}`)
     })
   })
 })

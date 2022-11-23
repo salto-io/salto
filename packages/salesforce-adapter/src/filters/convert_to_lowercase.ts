@@ -50,7 +50,14 @@ const convertField = async (
  */
 export const makeFilter = (): LocalFilterCreator => () => ({
   /**
-   * Upon fetch, mark all list fields as list fields in all fetched types
+   * Upon fetch, convert the contents of specific fields to lowercase.
+   * The fullName property of some elements is always lower case, regardless of how the element's
+   * name is displayed to the user. This causes issues when fields refer to said elements, because
+   * the contents of the fields is the same mixed-case value that is displayed to the user.
+   * (e.g. the entitlementProcess field of some EntitlementTemplate instance can be 'Some Process'
+   * whereas the fullName property of the matching EntitlementProcess is 'some process').
+   * In order to work around this issue, we convert certain fields to lower case on ingestion, and
+   * assume they will be converted to a reference shortly after.
    *
    * @param elements the already fetched elements
    */

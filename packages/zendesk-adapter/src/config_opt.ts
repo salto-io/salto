@@ -46,9 +46,9 @@ export const getConfig = async (
   if (configOpt
     && isConfigOptInstance(configOpt) && configOpt.value.enableGuide
   ) {
-    const configWithGuid = defaultConf.clone()
-    configWithGuid.value = { ...configWithGuid.value, enableGuide: true }
-    return configWithGuid
+    const configWithGuide = defaultConf.clone()
+    configWithGuide.value = { ...configWithGuide.value, enableGuide: true }
+    return configWithGuide
   }
   return defaultConf
 }

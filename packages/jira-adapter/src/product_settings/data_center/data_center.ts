@@ -218,6 +218,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get'],
     url: '/rest/api/3/group/bulk',
   },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuetypescheme',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuetypescheme/mapping.+',
+  },
 ]
 
 const replaceRestVersion = (url: string): string => url.replace(

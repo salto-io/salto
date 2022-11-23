@@ -26,41 +26,37 @@ import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { detailedCompare, getPath } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
-import { isInstanceOfType } from './utils'
+import { isInstanceOfTypeChange } from './utils'
 import {
   INSTANCE_FULL_NAME_FIELD,
-  INSTANCE_LABEL_FIELD,
+  LABEL,
   PERMISSION_SET_METADATA_TYPE,
   PROFILE_METADATA_TYPE,
 } from '../constants'
 import { apiName } from '../transformers/transformer'
 
-const isInstanceOfTypeProfile = isInstanceOfType(PROFILE_METADATA_TYPE)
-
 export const LOGIN_IP_RANGES_FIELD = 'loginIpRanges'
 export const LAYOUT_ASSIGNMENTS_FIELD = 'layoutAssignments'
-
 
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
 
-const isProfileRelatedChange = async (change: Change): Promise<boolean> => (
-  isInstanceOfTypeProfile(getChangeData(change))
+const isRelatedChange = async (change: Change): Promise<boolean> => (
+  isInstanceOfTypeChange(PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE)(change)
 )
 
-const isPermissionSetRelatedChange = async (change: Change): Promise<boolean> => (
-  isInstanceOfType(PERMISSION_SET_METADATA_TYPE)(getChangeData(change))
-)
-
-const toMinifiedProfileChange = (
+const toMinifiedChange = async (
   change: Change<InstanceElement>,
-): Change<InstanceElement> => {
+): Promise<Change<InstanceElement>> => {
   const [before, after] = getAllChangeData(change)
   const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
   const minifiedAfter = after.clone()
-  minifiedAfter.value = {
+  minifiedAfter.value = (await apiName(before) === PROFILE_METADATA_TYPE) ? {
     [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
     [LOGIN_IP_RANGES_FIELD]: after.value[LOGIN_IP_RANGES_FIELD] ?? [],
+  } : {
+    [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
+    [LABEL]: after.value[LABEL],
   }
 
   const newLayoutAssignmentNames: string[] = []
@@ -75,8 +71,6 @@ const toMinifiedProfileChange = (
         newLayoutAssignmentNames.push(changePath[changePath.length - 1])
         return
       }
-      //  This code makes sure we deploy the whole parent value
-      //  of nested attributes (for example, a change in userPermissions)
       const minifiedValuePath = changePath.length > 2
         ? changePath.slice(0, -1)
         : changePath
@@ -93,38 +87,6 @@ const toMinifiedProfileChange = (
     )
   }
   return toChange({
-    before, // We don't really care about the before instance.
-    after: minifiedAfter,
-  })
-}
-
-const toMinifiedPermissionSetChange = (
-  change: Change<InstanceElement>,
-): Change<InstanceElement> => {
-  const [before, after] = getAllChangeData(change)
-  const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
-  const minifiedAfter = after.clone()
-  minifiedAfter.value = {
-    [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
-    [INSTANCE_LABEL_FIELD]: after.value[INSTANCE_LABEL_FIELD],
-  }
-  detailedChanges
-    .filter(isAdditionOrModificationChange)
-    .forEach(detailedChange => {
-      const changePath = getPath(before, detailedChange.id)
-      if (_.isUndefined(changePath)) {
-        return
-      }
-      const minifiedValuePath = changePath.length > 2
-        ? changePath.slice(0, -1)
-        : changePath
-      const afterChange = _.get(after, minifiedValuePath)
-      if (isDefined(afterChange)) {
-        _.set(minifiedAfter, minifiedValuePath, afterChange)
-      }
-    })
-
-  return toChange({
     before,
     after: minifiedAfter,
   })
@@ -134,35 +96,23 @@ const filterCreator: LocalFilterCreator = () => {
   let originalChanges: Record<string, Change>
   return {
     preDeploy: async changes => {
-      const profileChanges = await awu(changes)
+      const relatedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
-        .filter(isProfileRelatedChange)
+        .filter(isRelatedChange)
         .toArray()
-      const permissionSetChanges = await awu(changes)
-        .filter(isInstanceChange)
-        .filter(isModificationChange)
-        .filter(isPermissionSetRelatedChange)
-        .toArray()
-      originalChanges = await keyByAsync([...profileChanges, ...permissionSetChanges],
+      originalChanges = await keyByAsync(relatedChanges,
         change => apiName(getChangeData(change)))
 
-      _.pullAll(changes, [...profileChanges, ...permissionSetChanges])
-      changes.push(...profileChanges.map(toMinifiedProfileChange),
-        ...permissionSetChanges.map(toMinifiedPermissionSetChange))
+      _.pullAll(changes, relatedChanges)
+      changes.push(...(await Promise.all(relatedChanges.map(toMinifiedChange))))
     },
     onDeploy: async changes => {
-      const appliedProfileChanges = await awu(changes)
+      const appliedChanges = await awu(changes)
         .filter(isInstanceChange)
         .filter(isModificationChange)
-        .filter(isProfileRelatedChange)
+        .filter(isRelatedChange)
         .toArray()
-      const appliedPermissionSetChanges = await awu(changes)
-        .filter(isInstanceChange)
-        .filter(isModificationChange)
-        .filter(isPermissionSetRelatedChange)
-        .toArray()
-      const appliedChanges = [...appliedProfileChanges, ...appliedPermissionSetChanges]
       const appliedChangesApiNames = await awu(appliedChanges)
         .map(change => apiName(getChangeData(change)))
         .toArray()

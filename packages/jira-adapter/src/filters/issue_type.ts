@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
@@ -51,6 +51,7 @@ const filter: FilterCreator = ({ client }) => ({
 
     await awu(changes)
       .filter(isInstanceChange)
+      .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
       .forEach(change =>
         applyFunctionToChangeData<Change<InstanceElement>>(
@@ -72,6 +73,7 @@ const filter: FilterCreator = ({ client }) => ({
 
     await awu(changes)
       .filter(isInstanceChange)
+      .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_NAME)
       .forEach(change =>
         applyFunctionToChangeData<Change<InstanceElement>>(

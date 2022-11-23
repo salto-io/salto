@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { configType } from '../src/types'
 import { optionsType, configWithCPQ, getConfig } from '../src/config_creator'
 
@@ -96,7 +95,7 @@ describe('config_creator', () => {
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Instance: ${safeJsonStringify(options)}`)
+      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Received instance with refType ElemId: ${options?.refType.elemID.getFullName()}`)
     })
   })
 })

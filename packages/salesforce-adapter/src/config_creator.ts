@@ -15,7 +15,7 @@
 */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { configType } from './types'
 import * as constants from './constants'
@@ -306,23 +306,26 @@ export const optionsType = new ObjectType({
   },
 })
 
-const isOptionsTypeInstance = (instance: InstanceElement): boolean => {
+const isOptionsTypeInstance = (instance: InstanceElement):
+  instance is InstanceElement & { value: { cpq?: boolean } } => {
   if (instance.refType.elemID.isEqual(optionsElemId)) {
     return true
   }
-  log.error(`Received an invalid instance for config options. Instance: ${safeJsonStringify(instance)}`)
+  log.error(`Received an invalid instance for config options. Received instance with refType ElemId: ${instance.refType.elemID.getFullName()}`)
   return false
 }
 
 export const getConfig = async (
   options?: InstanceElement
 ): Promise<InstanceElement> => {
-  if (options
-    && isOptionsTypeInstance(options) && options.value.cpq
-  ) {
+  const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  if (options === undefined || !isOptionsTypeInstance(options)) {
+    return defaultConf
+  }
+  if (options.value.cpq === true) {
     return configWithCPQ
   }
-  return createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  return defaultConf
 }
 
 export const configCreator: ConfigCreator = {

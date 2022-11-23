@@ -15,7 +15,7 @@
 */
 
 import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { configType } from './config'
 import * as constants from './constants'
@@ -31,11 +31,12 @@ export const optionsType = new ObjectType({
   },
 })
 
-const isOptionsTypeInstance = (instance: InstanceElement): boolean => {
+const isOptionsTypeInstance = (instance: InstanceElement):
+  instance is InstanceElement & { value: { enableGuide?: boolean } } => {
   if (instance.refType.elemID.isEqual(optionsElemId)) {
     return true
   }
-  log.error(`Received an invalid instance for config options. Instance: ${safeJsonStringify(instance)}`)
+  log.error(`Received an invalid instance for config options. Received instance with refType ElemId: ${instance.refType.elemID.getFullName()}`)
   return false
 }
 
@@ -43,11 +44,12 @@ export const getConfig = async (
   options?: InstanceElement
 ): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options
-    && isOptionsTypeInstance(options) && options.value.enableGuide
-  ) {
+  if (options === undefined || !isOptionsTypeInstance(options)) {
+    return defaultConf
+  }
+  if (options.value.enableGuide === true) {
     const configWithGuide = defaultConf.clone()
-    configWithGuide.value = { ...configWithGuide.value, enableGuide: true }
+    configWithGuide.value.fetch = { ...configWithGuide.value.fetch, enableGuide: true }
     return configWithGuide
   }
   return defaultConf

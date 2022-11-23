@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { configType } from '../src/config'
 import { optionsType, getConfig } from '../src/config_creator'
 
@@ -56,7 +55,7 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should return adapter config with guide', async () => {
-      expect(resultConfig.value.enableGuide).toBeTruthy()
+      expect(resultConfig.value?.fetch?.enableGuide).toBeTruthy()
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -69,7 +68,7 @@ describe('config_creator', () => {
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(resultConfig.value.enableGuide).toBeUndefined()
+      expect(resultConfig.value?.fetch?.enableGuide).toBeUndefined()
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -82,7 +81,7 @@ describe('config_creator', () => {
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(resultConfig.value.enableGuide).toBeUndefined()
+      expect(resultConfig.value?.fetch?.enableGuide).toBeUndefined()
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -98,8 +97,8 @@ describe('config_creator', () => {
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(resultConfig.value.enableGuide).toBeUndefined()
-      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Instance: ${safeJsonStringify(options)}`)
+      expect(resultConfig.value?.fetch?.enableGuide).toBeUndefined()
+      expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Received instance with refType ElemId: ${options?.refType.elemID.getFullName()}`)
     })
   })
 })

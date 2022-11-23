@@ -778,7 +778,7 @@ export default class SdfClient {
     } catch (e) {
       if (filePaths.length === 1) {
         log.error(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
-        throw new Error(`Failed to import file: ${filePaths[0]}. Consider to add it to the skip list.`)
+        throw new Error(`Failed to import file: ${filePaths[0]}. Consider adding it to the skip list. To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`)
       }
       const middle = (filePaths.length + 1) / 2
       const firstChunkImportResults = await this.importFiles(filePaths.slice(0, middle), executor)

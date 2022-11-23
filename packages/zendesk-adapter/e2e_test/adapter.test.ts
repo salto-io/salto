@@ -15,11 +15,13 @@
 */
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
-import { Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
+import {
+  Change, ChangeId, Element, ElemID, InstanceElement, isInstanceElement, ObjectType,
   isObjectType, toChange, Values, ReferenceExpression, CORE_ANNOTATIONS,
-  FieldDefinition, BuiltinTypes, Value, DeployResult } from '@salto-io/adapter-api'
+  FieldDefinition, BuiltinTypes, Value, DeployResult, ListType,
+} from '@salto-io/adapter-api'
 import { naclCase, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
@@ -29,13 +31,14 @@ import {
   GUIDE_SUPPORTED_TYPES,
   SUPPORTED_TYPES,
 } from '../src/config'
-import { ZENDESK, BRAND_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME } from '../src/constants'
+import { ZENDESK, BRAND_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME, CATEGORY_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
 const { awu } = collections.asynciterable
+const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
 const ALL_SUPPORTED_TYPES = {
   ...GUIDE_SUPPORTED_TYPES,
@@ -44,9 +47,19 @@ const ALL_SUPPORTED_TYPES = {
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
 
-const createInstanceElement = (
-  type: string, valuesOverride: Values, fields?: Record<string, FieldDefinition>
-): InstanceElement => {
+const createInstanceElement = ({
+  type,
+  valuesOverride,
+  fields,
+  parent,
+  name,
+} :{
+  type: string
+  valuesOverride: Values
+  fields?: Record < string, FieldDefinition >
+  parent?: InstanceElement
+  name?: string
+}): InstanceElement => {
   const instValues = {
     ...mockDefaultValues[type],
     ...valuesOverride,
@@ -58,11 +71,16 @@ const createInstanceElement = (
 
   const nameParts = transformationConfig.idFields.map(field => _.get(instValues, field))
   return new InstanceElement(
-    naclCase(nameParts.map(String).join('_')),
+    name ?? naclCase(nameParts.map(String).join('_')),
     new ObjectType({ elemID: new ElemID(ZENDESK, type), fields }),
-    instValues
+    instValues,
+    undefined,
+    parent
+      ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
+      : undefined
   )
 }
+
 
 const deployChanges = async (
   adapterAttr: Reals, changes: Record<ChangeId, Change<InstanceElement>[]>
@@ -110,9 +128,9 @@ describe('Zendesk adapter E2E', () => {
     const createSubdomainName = (): string => `test${testSuffix}`
 
 
-    const automationInstance = createInstanceElement(
-      'automation',
-      {
+    const automationInstance = createInstanceElement({
+      type: 'automation',
+      valuesOverride: {
         title: createName('automation'),
         conditions: {
           all: [
@@ -130,36 +148,36 @@ describe('Zendesk adapter E2E', () => {
           ],
         },
       },
-    )
-    const scheduleInstance = createInstanceElement(
-      'business_hours_schedule',
-      { name: createName('business_hours_schedule') },
-    )
-    const customRoleInstance = createInstanceElement(
-      'custom_role',
-      { name: createName('custom_role') },
-    )
-    const groupInstance = createInstanceElement(
-      'group',
-      { name: createName('group') },
-    )
-    const macroInstance = createInstanceElement(
-      'macro',
-      { title: createName('macro') },
-    )
-    const slaPolicyInstance = createInstanceElement(
-      'sla_policy',
-      { title: createName('sla_policy') },
-    )
-    const viewInstance = createInstanceElement(
-      'view',
-      { title: createName('view') },
-    )
-    const ticketFieldInstance = createInstanceElement(
-      'ticket_field',
-      { raw_title: createName('ticket_field') },
-      { default_custom_field_option: { refType: BuiltinTypes.STRING } },
-    )
+    })
+    const scheduleInstance = createInstanceElement({
+      type: 'business_hours_schedule',
+      valuesOverride: { name: createName('business_hours_schedule') },
+    })
+    const customRoleInstance = createInstanceElement({
+      type: 'custom_role',
+      valuesOverride: { name: createName('custom_role') },
+    })
+    const groupInstance = createInstanceElement({
+      type: 'group',
+      valuesOverride: { name: createName('group') },
+    })
+    const macroInstance = createInstanceElement({
+      type: 'macro',
+      valuesOverride: { title: createName('macro') },
+    })
+    const slaPolicyInstance = createInstanceElement({
+      type: 'sla_policy',
+      valuesOverride: { title: createName('sla_policy') },
+    })
+    const viewInstance = createInstanceElement({
+      type: 'view',
+      valuesOverride: { title: createName('view') },
+    })
+    const ticketFieldInstance = createInstanceElement({
+      type: 'ticket_field',
+      valuesOverride: { raw_title: createName('ticket_field') },
+      fields: { default_custom_field_option: { refType: BuiltinTypes.STRING } },
+    })
     const ticketFieldOptionType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'ticket_field__custom_field_options'),
     })
@@ -205,10 +223,10 @@ describe('Zendesk adapter E2E', () => {
       ticketFieldOption1.elemID, ticketFieldOption1,
     )
     const userFieldName = createName('user_field')
-    const userFieldInstance = createInstanceElement(
-      'user_field',
-      { raw_title: userFieldName, key: userFieldName },
-    )
+    const userFieldInstance = createInstanceElement({
+      type: 'user_field',
+      valuesOverride: { raw_title: userFieldName, key: userFieldName },
+    })
     const userFieldOptionType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'user_field__custom_field_options'),
     })
@@ -251,49 +269,141 @@ describe('Zendesk adapter E2E', () => {
       new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
     ]
     const brandName = createName('brand')
-    const brandInstanceToAdd = createInstanceElement(
-      'brand',
-      {
+    const brandInstanceToAdd = createInstanceElement({
+      type: 'brand',
+      valuesOverride: {
         name: brandName,
         subdomain: createSubdomainName(),
       },
-    )
-    const userSegmentInstance = createInstanceElement(
-      'user_segment',
-      { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
-    )
-    // guide instances
-    const categoryName = createName('category')
-    const categoryInstance = createInstanceElement(
-      'category',
-      {
-        name: categoryName,
-      }
-    )
-    const categoryTranslationType = new ObjectType({
-      elemID: new ElemID(ZENDESK, CATEGORY_TRANSLATION_TYPE_NAME),
     })
-    const categoryTranslationInstance = new InstanceElement(
-      `${categoryName}_en_us`,
-      categoryTranslationType,
-      {
-        locale: 'en-us',
+    const userSegmentInstance = createInstanceElement({
+      type: 'user_segment',
+      valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
+    })
+
+    // ***************** guide instances ******************* //
+
+    const brandInstanceE2eHelpCenter = createInstanceElement({
+      type: 'brand',
+      valuesOverride: {
+        name: 'e2eHelpCenter',
+        subdomain: 'salto100',
+        id: 10378734785303,
+      },
+    })
+    const helpCenterLocaleInstanceEn = createInstanceElement({
+      type: 'guide_locale',
+      valuesOverride: {
+        id: 'en-us',
+      },
+    })
+    const helpCenterLocaleInstanceHe = createInstanceElement({
+      type: 'guide_locale',
+      valuesOverride: {
+        id: 'he',
+      },
+    })
+
+    const categoryName = createName('category')
+    const categoryInstance = replaceInstanceTypeForDeploy({
+      instance: createInstanceElement({
+        type: CATEGORY_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+        name: `e2eHelpCenter_${categoryName}`,
+      }),
+      config: DEFAULT_CONFIG.apiDefinitions,
+    })
+    const categoryEnTranslationInstance = createInstanceElement({
+      type: CATEGORY_TRANSLATION_TYPE_NAME,
+      valuesOverride: {
+        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
         outdated: false,
         title: categoryName,
         draft: false,
         hidden: false,
-        description: 'this is a test',
-        brand: 10378734785303,
+        body: 'this is a test',
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       },
-      undefined,
+      parent: categoryInstance,
+      name: `e2eHelpCenter_${categoryName}__en_us_b@uuuum`,
+    })
+    // const categoryHeTranslationInstance = new InstanceElement(
+    //   `${categoryName}_he`,
+    //   categoryTranslationType,
+    //   {
+    //     locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+    //     outdated: false,
+    //     title: categoryName,
+    //     draft: false,
+    //     hidden: false,
+    //     body: 'this is a test in hebrew',
+    //     brand: 10378734785303,
+    //   },
+    //   undefined,
+    //   { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)] }
+    // )
+    categoryInstance.value.translations = [
+      new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
+    ]
+    // ******************************************************** //
 
-    )
     let groupIdToInstances: Record<string, InstanceElement[]>
+    const deployAndFetch = async (instancesToAdd: InstanceElement[], beforeAll: boolean): Promise<void> => {
+      const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
+        .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
+      const groupIdToInstancesTemp = _.groupBy(
+        instancesToAdd,
+        inst => changeGroups.changeGroupIdMap.get(inst.elemID.getFullName())
+      )
+      groupIdToInstances = beforeAll ? groupIdToInstancesTemp : groupIdToInstances
+      const firstGroupChanges = _.mapValues(
+        groupIdToInstancesTemp,
+        instances => instances.map(inst => toChange({ after: inst }))
+      )
+      await deployChanges(adapterAttr, firstGroupChanges)
+      const fetchResult = await adapterAttr.adapter.fetch({
+        progressReporter:
+          { reportProgress: () => null },
+      })
+      elements = fetchResult.elements
+      expect(fetchResult.errors).toHaveLength(0)
+      adapterAttr = realAdapter(
+        { credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements(elements) },
+        {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            ...DEFAULT_CONFIG[FETCH_CONFIG],
+            include: [
+              { type: '.*' },
+            ],
+            exclude: [],
+            enableGuide: true,
+          },
+          [API_DEFINITIONS_CONFIG]: {
+            ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+            supportedTypes: ALL_SUPPORTED_TYPES,
+          },
+        }
+      )
+    }
 
     beforeAll(async () => {
+      console.log('started beforeall')
       credLease = await credsLease()
       adapterAttr = realAdapter(
-        { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
+        { credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements([
+            // brand and locale are added since other types depend on them
+            brandInstanceE2eHelpCenter,
+            helpCenterLocaleInstanceHe,
+            helpCenterLocaleInstanceEn,
+          ]) },
         {
           ...DEFAULT_CONFIG,
           [FETCH_CONFIG]: {
@@ -327,27 +437,15 @@ describe('Zendesk adapter E2E', () => {
         viewInstance,
         brandInstanceToAdd,
         userSegmentInstance,
+        categoryInstance,
+        categoryEnTranslationInstance,
       ]
-      const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
-        .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
-      groupIdToInstances = _.groupBy(
-        instancesToAdd,
-        inst => changeGroups.changeGroupIdMap.get(inst.elemID.getFullName())
-      )
-      const firstGroupChanges = _.mapValues(
-        groupIdToInstances,
-        instances => instances.map(inst => toChange({ after: inst }))
-      )
-      await deployChanges(adapterAttr, firstGroupChanges)
-      const fetchResult = await adapterAttr.adapter.fetch({
-        progressReporter:
-          { reportProgress: () => null },
-      })
-      elements = fetchResult.elements
-      expect(fetchResult.errors).toHaveLength(0)
+      await deployAndFetch(instancesToAdd, true)
     })
 
     afterAll(async () => {
+      // eslint-disable-next-line no-console
+      console.log('started afterall')
       const firstGroupChanges = _.mapValues(
         groupIdToInstances,
         instancesToRemove => instancesToRemove.map(inst => {
@@ -424,7 +522,7 @@ describe('Zendesk adapter E2E', () => {
     it('should fetch the newly deployed instances', async () => {
       const instances = Object.values(groupIdToInstances).flat()
       instances
-        .filter(inst => !['ticket_field', 'user_field'].includes(inst.elemID.typeName))
+        .filter(inst => !['ticket_field', 'user_field', 'category', 'category_translation'].includes(inst.elemID.typeName))
         .forEach(instanceToAdd => {
           const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
           expect(instance).toBeDefined()
@@ -495,5 +593,6 @@ describe('Zendesk adapter E2E', () => {
         expect(instance).toBeDefined()
       })
     })
+    // it('should add category translation correctly ')
   })
 })

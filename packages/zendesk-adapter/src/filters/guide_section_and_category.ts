@@ -76,14 +76,19 @@ export const isParent = createSchemeGuardForInstance<ParentType>(
  */
 const addTranslationValues = (change: Change<InstanceElement>): void => {
   const currentLocale = getChangeData(change).value.source_locale
-  const translation = getChangeData(change).value.translations
-    .filter(isTranslation) // the translation is not a reference it is already the value
-    .find((tran: TranslationType) => (isReferenceExpression(tran.locale)
-      ? tran.locale.value.value.id === currentLocale
-      : tran.locale === currentLocale))
-  if (translation !== undefined) {
-    getChangeData(change).value.name = translation.title
-    getChangeData(change).value.description = translation.body ?? ''
+  try {
+    const translation = getChangeData(change).value.translations
+      .filter(isTranslation) // the translation is not a reference it is already the value
+      .find((tran: TranslationType) => (isReferenceExpression(tran.locale)
+        ? tran.locale.value.value.id === currentLocale
+        : tran.locale === currentLocale))
+    if (translation !== undefined) {
+      getChangeData(change).value.name = translation.title
+      getChangeData(change).value.description = translation.body ?? ''
+    }
+  } catch (e) {
+    console.log('here!!')
+    console.log(e)
   }
 }
 
@@ -124,7 +129,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       parentChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, ['translations', SECTIONS_FIELD])
+        await deployChange(change, client, config.apiDefinitions, ['translations', SECTIONS_FIELD, 'brand'])
       }
     )
     return { deployResult, leftoverChanges }

@@ -467,25 +467,33 @@ const toConfigSuggestions = (
   failedFilePaths: FailedFiles,
   failedTypes: FailedTypes
 ): NetsuiteConfig => {
-  const fetch: FetchParams = {}
+  const config: NetsuiteConfig = {}
+
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
-    fetch.exclude = createExclude({
-      filePaths: failedFilePaths.otherError,
-      types: failedTypes.unexpectedError,
-    })
+    config[FETCH] = {
+      ...config[FETCH],
+      exclude: createExclude({
+        filePaths: failedFilePaths.otherError,
+        types: failedTypes.unexpectedError,
+      }),
+    }
   }
-
   if (!_.isEmpty(failedFilePaths.lockedError) || !_.isEmpty(failedTypes.lockedError)) {
-    fetch.lockedElementsToExclude = createExclude({
-      filePaths: failedFilePaths.lockedError,
-      types: failedTypes.lockedError,
-    })
+    config[FETCH] = {
+      ...config[FETCH],
+      lockedElementsToExclude: createExclude({
+        filePaths: failedFilePaths.lockedError,
+        types: failedTypes.lockedError,
+      }),
+    }
   }
-
-  return {
-    ...(failedToFetchAllAtOnce ? { fetchAllTypesAatOnce: false } : {}),
-    ...(!_.isEmpty(fetch) ? { fetch } : {}),
+  if (failedToFetchAllAtOnce) {
+    config[CLIENT_CONFIG] = {
+      ...config[CLIENT_CONFIG],
+      fetchAllTypesAtOnce: false,
+    }
   }
+  return config
 }
 
 
@@ -591,28 +599,24 @@ const updateConfigFromFailures = (
   return true
 }
 
-const updateConfigSkipListFormat = (config: NetsuiteConfig): boolean => {
+const updateConfigSkipListFormat = (config: NetsuiteConfig): void => {
   const { skipList = {}, typesToSkip, filePathRegexSkipList } = config
   if (typesToSkip === undefined && filePathRegexSkipList === undefined) {
-    return false
+    return
   }
-
   if (typesToSkip !== undefined) {
     skipList.types = {
       ...skipList.types,
       ...Object.fromEntries(typesToSkip.map(type => [type, ['.*']])),
     }
   }
-
   if (filePathRegexSkipList !== undefined) {
     skipList.filePaths = (skipList.filePaths ?? [])
       .concat(filePathRegexSkipList.map(convertDeprecatedFilePathRegex))
   }
-
+  config[SKIP_LIST] = skipList
   delete config[TYPES_TO_SKIP]
   delete config[FILE_PATHS_REGEX_SKIP_LIST]
-
-  return true
 }
 
 const updateConfigFetchFormat = (config: NetsuiteConfig): boolean => {
@@ -629,7 +633,7 @@ const updateConfigFetchFormat = (config: NetsuiteConfig): boolean => {
     exclude: combineQueryParams(fetch.exclude, typesToExclude),
   } : {
     include: fetchDefault.include,
-    exclude: combineQueryParams(fetchDefault.exclude, typesToExclude),
+    exclude: combineQueryParams(typesToExclude, fetchDefault.exclude),
   }
   return true
 }

@@ -45,11 +45,11 @@ const ELEMENTS_REGEXES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, ARTI
   })
 )
 
-const URL_REGEX = /(https:[^\s"]+)/
+const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
 const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
 // Attempt to match the regex to an element and create a reference to that element
-const createElementReference = ({ urlPart, urlBrand, idToInstance, idRegex }: {
+const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex }: {
   urlPart: string
   urlBrand: InstanceElement
   idToInstance: Record<string, InstanceElement>
@@ -73,14 +73,14 @@ const referenceUrls = ({ urlPart, urlBrand, additionalInstances }: {
 }): TemplatePart[] => {
   const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
   // We already made sure that the brand exists, so we can just return it
-  if (urlSubdomain) {
+  if (urlSubdomain !== undefined) {
     return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
   }
 
   // Attempt to match other instances
   for (const { idRegex, field } of ELEMENTS_REGEXES) {
-    const result = createElementReference({ urlPart, urlBrand, idToInstance: additionalInstances[field], idRegex })
-    if (result) {
+    const result = createInstanceReference({ urlPart, urlBrand, idToInstance: additionalInstances[field], idRegex })
+    if (result !== undefined) {
       return result
     }
   }
@@ -114,7 +114,7 @@ const updateArticleBody = (
     url => {
       // Make sure that a brand exists for that domain
       const urlBrand = matchBrand(url, additionalInstances[BRAND_TYPE_NAME])
-      if (!urlBrand) {
+      if (urlBrand === undefined) {
         return url
       }
       // Extract the referenced instances inside

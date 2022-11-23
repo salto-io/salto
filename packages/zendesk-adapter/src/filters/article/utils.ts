@@ -71,7 +71,7 @@ const createAttachmentInstance = ({
   content: Buffer
 }): InstanceElement => {
   const name = elementsUtils.ducktype.toNestedTypeName(
-    article.value.title, attachment.file_name
+    article.elemID.name, `${attachment.file_name}${attachment.inline ? '_inline' : ''}`
   )
   const naclName = naclCase(name)
   const pathName = pathNaclCase(naclName)

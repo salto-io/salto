@@ -49,6 +49,7 @@ describe('article filter', () => {
   let filter: FilterType
   let mockGet: jest.SpyInstance
   let mockPost: jest.SpyInstance
+  let mockDelete: jest.SpyInstance
 
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
@@ -301,6 +302,19 @@ describe('article filter', () => {
   })
 
   describe('preDeploy', () => {
+    beforeEach(() => {
+      mockDelete = jest.spyOn(client, 'delete')
+      mockDelete.mockImplementation(params => {
+        if ([
+          '/api/v2/help_center/articles/attachments/20222022',
+        ].includes(params.url)) {
+          return {
+            status: 204,
+          }
+        }
+        throw new Error('Err')
+      })
+    })
     it('should add the title and the body to the article instance from its translation', async () => {
       const clonedArticle = articleInstance.clone()
       const clonedTranslation = articleTranslationInstance.clone()
@@ -329,6 +343,27 @@ describe('article filter', () => {
       ])
       expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
       expect(mockAttachmentCreation).toHaveBeenCalledWith(client, clonedAttachment)
+    })
+    it('should create and associate modified attachments', async () => {
+      const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
+        .mockImplementation(jest.fn())
+      const clonedArticle = articleWithAttachmentInstance.clone()
+      const beforeClonedAttachment = articleAttachmentInstance.clone()
+      const afterClonedAttachment = articleAttachmentInstance.clone()
+      afterClonedAttachment.value.content = new StaticFile({
+        filepath: 'zendesk/article_attachment/title/modified.png', encoding: 'binary', content: Buffer.from('modified'),
+      })
+      clonedArticle.value.attachments = [
+        new ReferenceExpression(afterClonedAttachment.elemID, afterClonedAttachment),
+      ]
+      await filter.preDeploy([
+        { action: 'modify', data: { before: beforeClonedAttachment, after: afterClonedAttachment } },
+      ])
+
+      expect(mockDeployChange).toHaveBeenCalledTimes(0)
+      expect(mockDelete).toHaveBeenCalledTimes(1)
+      expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
+      expect(mockAttachmentCreation).toHaveBeenCalledWith(client, afterClonedAttachment)
     })
   })
 

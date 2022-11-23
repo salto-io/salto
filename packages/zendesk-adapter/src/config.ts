@@ -1704,7 +1704,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   [ARTICLE_ATTACHMENT_TYPE_NAME]: {
     transformation: {
-      idFields: ['filename'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },

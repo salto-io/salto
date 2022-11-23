@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD } from '../constants'
 
+
 export const wasFullNameChanged = (change: ModificationChange<InstanceElement>): boolean => {
   const { before, after } = change.data
   return before.value[INSTANCE_FULL_NAME_FIELD] !== after.value[INSTANCE_FULL_NAME_FIELD]
@@ -30,8 +31,8 @@ const fullNameChangeError = (change: ModificationChange<InstanceElement>): Chang
     elemID: after.elemID,
     severity: 'Error',
     message: 'You cannot change the fullName property of an element. '
-      + `The fullName property of '${after.elemID}' was changed from `
-      + `${before.value[INSTANCE_FULL_NAME_FIELD]} to ${after.value[INSTANCE_FULL_NAME_FIELD]}`,
+      + `The fullName property of '${after.elemID.getFullName()}' was changed from `
+      + `'${before.value[INSTANCE_FULL_NAME_FIELD]}' to '${after.value[INSTANCE_FULL_NAME_FIELD]}'`,
     detailedMessage: 'You cannot change the fullName property of an element.',
   }
 }

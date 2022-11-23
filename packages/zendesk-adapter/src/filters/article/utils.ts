@@ -199,3 +199,15 @@ export const createUnassociatedAttachment = async (
     throw getZendeskError(attachmentInstance.elemID.getFullName(), err)
   }
 }
+
+export const deleteArticleAttachment = async (
+  client: ZendeskClient,
+  attachmentInstance: InstanceElement,
+): Promise<void> => {
+  const res = await client.delete({
+    url: `/api/v2/help_center/articles/attachments/${attachmentInstance.value.id}`,
+  })
+  if (res === undefined) {
+    log.error('Received an empty response from Zendesk API when deletd an article attachment')
+  }
+}

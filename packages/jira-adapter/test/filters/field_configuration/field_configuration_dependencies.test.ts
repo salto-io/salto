@@ -213,5 +213,15 @@ describe('fieldConfigurationItemsFilter', () => {
       ])
       expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
+
+    it('should not add generated dependencies if fieldConfigurationScheme is not a reference', async () => {
+      projectInstance.value.fieldConfigurationScheme = '3'
+      await filter.onFetch([
+        projectInstance,
+        fieldInstance,
+        fieldConfigurationInstance,
+      ])
+      expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    })
   })
 })

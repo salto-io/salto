@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, Adapter, AdapterOperationsContext } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, AdapterOperationsContext, Adapter } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -31,9 +31,11 @@ jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual<{}>('@salto-io/workspace'),
   configSource: jest.fn(),
 }))
+
+const createDefaultInstanceFromTypeMock = jest.fn()
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
-  createDefaultInstanceFromType: jest.fn(),
+  createDefaultInstanceFromType: jest.fn((...args) => createDefaultInstanceFromTypeMock(...args)),
 }))
 
 jest.mock('../../../src/core/adapters/creators', () => {
@@ -79,9 +81,6 @@ describe('adapters.ts', () => {
 
   describe('getDefaultAdapterConfig', () => {
     const { mockAdapter } = adapterCreators
-    const createDefaultInstanceFromTypeMock = createDefaultInstanceFromType as jest.MockedFunction<
-      typeof createDefaultInstanceFromType
-    >
     beforeEach(() => {
       const mockConfigType = new ObjectType({
         elemID: new ElemID('mockAdapter', ElemID.CONFIG_NAME),
@@ -89,8 +88,13 @@ describe('adapters.ts', () => {
 
       _.assign(mockAdapter, {
         configType: mockConfigType,
-        getDefaultConfig: mockFunction<NonNullable<Adapter['getDefaultConfig']>>()
-          .mockResolvedValue([new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })]),
+        configOpt: {
+          getConfig: mockFunction<NonNullable<Adapter['configOpt']>['getConfig']>()
+            .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
+          configOptObjectType: new ObjectType({
+            elemID: new ElemID('test'),
+          }),
+        },
       })
 
       createDefaultInstanceFromTypeMock.mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'aaa' }))
@@ -100,16 +104,21 @@ describe('adapters.ts', () => {
       createDefaultInstanceFromTypeMock.mockReset()
     })
 
-    it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
-      delete mockAdapter.getDefaultConfig
+    it('should call createDefaultInstanceFromType when configOpt is undefined', async () => {
+      delete mockAdapter.configOpt
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(createDefaultInstanceFromType).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
     })
-    it('should use getDefaultConfig when defined', async () => {
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
-      expect(mockAdapter.getDefaultConfig).toHaveBeenCalled()
+    it('should use getConfig when configOpt is defined', async () => {
+      const mockObjType = new ObjectType({
+        elemID: new ElemID('test'),
+      })
+      const mockConfigOpt = new InstanceElement('test', mockObjType)
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockConfigOpt)
+      expect(mockAdapter.configOpt?.getConfig)
+        .toHaveBeenCalledWith(mockConfigOpt)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })
@@ -144,7 +153,9 @@ describe('adapters.ts', () => {
     const serviceName = 'salesforce'
     const objectType = new ObjectType({ elemID: new ElemID(serviceName, 'type1') })
     const d1Type = new ObjectType({ elemID: new ElemID('d1', 'type2') })
-
+    beforeEach(() => {
+      createDefaultInstanceFromTypeMock.mockResolvedValue([])
+    })
     it('should return default adapter config when there is no config', async () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
@@ -156,10 +167,7 @@ describe('adapters.ts', () => {
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
-          config: await createDefaultInstanceFromType(
-            ElemID.CONFIG_NAME,
-            adapter.configType as ObjectType
-          ),
+          config: undefined,
           getElemIdFunc: undefined,
         })
       )

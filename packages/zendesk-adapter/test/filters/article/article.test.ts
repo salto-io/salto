@@ -21,12 +21,13 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { createFilterCreatorParams } from '../utils'
-import ZendeskClient from '../../src/client/client'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/article'
-import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
+import { createFilterCreatorParams } from '../../utils'
+import ZendeskClient from '../../../src/client/client'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../../src/constants'
+import filterCreator from '../../../src/filters/article/article'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
+import { createEveryoneUserSegmentInstance } from '../../../src/filters/everyone_user_segment'
+import * as articleUtils from '../../../src/filters/article/utils'
 
 jest.useFakeTimers()
 
@@ -170,9 +171,6 @@ describe('article filter', () => {
       title: 'This translation has attachment',
       draft: false,
       brand: brandInstance.value.id,
-      // body: '<p>aaa<img src="${ zendesk.brand.instance.Salto.brandName }/hc/article_attachme
-      // nts/${ zendesk.article_attachment.instance.
-      // title__attachmentFileName_png@uuv }" alt="pic.png">zzz</p>',
     },
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
@@ -320,6 +318,18 @@ describe('article filter', () => {
       expect(filteredArticle.value.body).toBe('<p>ppppp</p>')
       expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
+    it('should run the creation of unassociated attachment', async () => {
+      const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
+        .mockImplementation(jest.fn())
+      const clonedArticle = articleWithAttachmentInstance.clone()
+      const clonedAttachment = articleAttachmentInstance.clone()
+      await filter.preDeploy([
+        { action: 'add', data: { after: clonedArticle } },
+        { action: 'add', data: { after: clonedAttachment } },
+      ])
+      expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
+      expect(mockAttachmentCreation).toHaveBeenCalledWith(client, clonedAttachment)
+    })
   })
 
   describe('deploy', () => {
@@ -429,11 +439,11 @@ describe('article filter', () => {
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(2)
       expect(res.deployResult.appliedChanges)
         .toEqual([
           { action: 'add', data: { after: clonedArticle } },
-          // { action: 'add', data: { after: clonedAttachment } },
+          { action: 'add', data: { after: clonedAttachment } },
         ])
     })
   })

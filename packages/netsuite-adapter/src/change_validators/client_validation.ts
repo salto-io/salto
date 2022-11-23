@@ -31,7 +31,7 @@ const VALIDATION_FAIL = 'Validation failed.'
 
 const mapObjectDeployErrorToInstance = (error: Error): Record<string, string> => {
   const scriptIdToErrorRecord: Record<string, string> = {}
-  const errorMessageChunks = error.message.split(VALIDATION_FAIL)?.[1].split('\n\n')
+  const errorMessageChunks = error.message.split(VALIDATION_FAIL)[1]?.split('\n\n')
   errorMessageChunks.forEach(chunk => {
     const objectErrorScriptId = getGroupItemFromRegex(
       chunk, objectValidationErrorRegex, OBJECT_ID
@@ -91,20 +91,14 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof SettingsDeployError) {
-            const { failedConfigTypes } = error
-            let detailedErrorMessage = error.message
-            if (!groupChanges.some(change =>
-              failedConfigTypes.has(getChangeData(change).elemID.typeName))) {
-              detailedErrorMessage = `settings deploy error:
-              no changes matched the failedConfigType list: ${Array.from(failedConfigTypes)}`
-            }
-            return groupChanges
+            const failedChanges = groupChanges
               .filter(change => error.failedConfigTypes.has(getChangeData(change).elemID.typeName))
+            return (failedChanges.length > 0 ? failedChanges : groupChanges)
               .map(change => ({
                 message: 'SDF Settings Validation Error',
                 severity: 'Error' as const,
                 elemID: getChangeData(change).elemID,
-                detailedMessage: detailedErrorMessage,
+                detailedMessage: error.message,
               }))
           }
           const message = error instanceof ManifestValidationError

@@ -140,7 +140,7 @@ File: ~/Objects/customrecord1.xml`
     })
   })
 
-  it('should have settings deploy error', async () => {
+  it('should have settings deploy error for a specific change', async () => {
     const detailedMessage = 'Validation of account settings failed.'
     mockValidate.mockReturnValue([new SettingsDeployError(`${detailedMessage}`, new Set(['workflow']))])
     const changeErrors = await clientValidation(
@@ -153,5 +153,19 @@ File: ~/Objects/customrecord1.xml`
       message: 'SDF Settings Validation Error',
       severity: 'Error',
     })
+  })
+  it('should have settings deploy error for all changes', async () => {
+    const detailedMessage = 'Validation of account settings failed.'
+    mockValidate.mockReturnValue([new SettingsDeployError(`${detailedMessage}`, new Set(['abc']))])
+    const changeErrors = await clientValidation(
+      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+    )
+    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors).toEqual(changes.map(change => ({
+      detailedMessage,
+      elemID: getChangeData(change).elemID,
+      message: 'SDF Settings Validation Error',
+      severity: 'Error',
+    })))
   })
 })

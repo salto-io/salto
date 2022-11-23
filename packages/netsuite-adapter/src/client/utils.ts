@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
-import { NetsuiteQueryParameters } from '../query'
+import { NetsuiteTypesQueryParams } from '../query'
 
 export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo
@@ -34,8 +34,8 @@ export const isFolderCustomizationInfo = (customizationInfo: CustomizationInfo):
   customizationInfo.typeName === FOLDER
 
 export const mergeTypeToInstances = (
-  ...typeToInstances: NetsuiteQueryParameters['types'][]
-): NetsuiteQueryParameters['types'] =>
+  ...typeToInstances: NetsuiteTypesQueryParams[]
+): NetsuiteTypesQueryParams =>
   _.mergeWith(
     {},
     ...typeToInstances,

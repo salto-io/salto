@@ -26,10 +26,14 @@ export interface ObjectID {
   type: string
   instanceId: string
 }
+export type NetsuiteTypesQueryParams = Record<string, string[]>
+export type NetsuiteFilePathsQueryParams = string[]
 // deprecated
 export type NetsuiteQueryParameters = {
-  types: Record<string, Array<string>>
-  filePaths: Array<string>
+  types?: NetsuiteTypesQueryParams
+  filePaths?: NetsuiteFilePathsQueryParams
+  // SALTO-2994 uncomment in order to support custom records quick fetch
+  // customRecords?: NetsuiteTypesQueryParams
 }
 
 export type FetchTypeQueryParams = {
@@ -59,11 +63,14 @@ export type FetchParams = {
   [FIELDS_TO_OMIT]?: FieldToOmitParams[]
 }
 
-export const convertToQueryParams = ({ types = {}, filePaths = [] }:
-  Partial<NetsuiteQueryParameters>): QueryParams => {
-  const newTypes = Object.entries(types).map(([name, ids]) => ({ name, ids }))
-  return ({ types: newTypes, fileCabinet: filePaths })
-}
+export const convertToQueryParams = ({
+  types = {}, filePaths = [], // customRecords = {},
+}: NetsuiteQueryParameters): QueryParams => ({
+  types: Object.entries(types).map(([name, ids]) => ({ name, ids })),
+  fileCabinet: filePaths,
+  // SALTO-2994 uncomment in order to support custom records quick fetch
+  // customRecords: Object.entries(customRecords).map(([name, ids]) => ({ name, ids })),
+})
 
 export type TypesQuery = {
   isTypeMatch: (typeName: string) => boolean

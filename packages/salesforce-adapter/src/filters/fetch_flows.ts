@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isUndefined } from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FileProperties } from 'jsforce-types'
 import { Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
@@ -23,10 +24,12 @@ import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, SALESFORCE } from '.
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { createInstanceElement } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { MetadataQuery } from '../fetch_profile/metadata_query'
 import { FetchElements } from '../types'
+import { FetchProfile } from '../fetch_profile/fetch_profile'
 
 const { isDefined } = lowerdashValues
+
+const log = logger(module)
 
 const FLOW_DEFINITION_METADATA_TYPE_ID = new ElemID(
   SALESFORCE, FLOW_DEFINITION_METADATA_TYPE
@@ -36,20 +39,20 @@ const FLOW_METADATA_TYPE_ID = new ElemID(
   SALESFORCE, FLOW_METADATA_TYPE
 )
 
-const fixFlowName = (props: FileProperties, activeVersions: Map<string, string>)
+const fixFilePropertiesName = (props: FileProperties, activeVersions: Map<string, string>)
     : FileProperties => ({
   ...props, fullName: activeVersions.get(`${props.fullName}`) ?? `${props.fullName}`,
 })
 
-export const findActiveVersion = (fileProp: FileProperties[], flowDefinitions: InstanceElement[]):
-    FileProperties[] => {
+export const createActiveVersionFileProperties = (fileProp: FileProperties[],
+  flowDefinitions: InstanceElement[]): FileProperties[] => {
   const activeVersions = new Map<string, string>()
   flowDefinitions.forEach(flow => activeVersions.set(`${flow.value.fullName}`,
     `${flow.value.fullName}${isDefined(flow.value.activeVersionNumber) ? `-${flow.value.activeVersionNumber}` : ''}`))
-  return fileProp.map(prop => fixFlowName(prop, activeVersions))
+  return fileProp.map(prop => fixFilePropertiesName(prop, activeVersions))
 }
 
-const removeFlowVersion = (element: InstanceElement, flowType: ObjectType):InstanceElement => {
+const getFlowWithoutVersion = (element: InstanceElement, flowType: ObjectType): InstanceElement => {
   const prevFullName = element.value.fullName
   const flowName = prevFullName.includes('-') ? prevFullName.split('-').slice(0, -1).join('-') : prevFullName
   return createInstanceElement(
@@ -57,60 +60,69 @@ const removeFlowVersion = (element: InstanceElement, flowType: ObjectType):Insta
     flowType,
     undefined,
     element.annotations
-  ) as InstanceElement
+  )
 }
-const getFlowInstances = async (client: SalesforceClient, metadataQuery: MetadataQuery,
-  maxNum: number, flowType: ObjectType, flowDefinitionType: ObjectType | undefined,
-  preferActiveFlow: boolean, fileProps: FileProperties[]):
-    Promise<FetchElements<InstanceElement[]>> => {
-  let flowsVersionProps = fileProps
-  if (preferActiveFlow) {
-    if (flowDefinitionType === undefined) {
-      return {} as FetchElements<InstanceElement[]>
-    }
-    const { elements: definitionFileProps } = await listMetadataObjects(
-      client, FLOW_DEFINITION_METADATA_TYPE, [],
-    )
-    const flowDefinitionInstances = await fetchMetadataInstances({
-      client,
-      fileProps: definitionFileProps,
-      metadataType: flowDefinitionType,
-      metadataQuery,
-      maxInstancesPerType: maxNum,
-    })
-    flowsVersionProps = findActiveVersion(fileProps, flowDefinitionInstances.elements)
+
+const createActiveVersionProps = async (
+  client: SalesforceClient,
+  fetchProfile: FetchProfile,
+  flowDefinitionType: ObjectType,
+  fileProps: FileProperties[]
+): Promise<FileProperties[]> => {
+  const { elements: definitionFileProps } = await listMetadataObjects(
+    client, FLOW_DEFINITION_METADATA_TYPE, [],
+  )
+  const flowDefinitionInstances = await fetchMetadataInstances({
+    client,
+    fileProps: definitionFileProps,
+    metadataType: flowDefinitionType,
+    metadataQuery: fetchProfile.metadataQuery,
+    maxInstancesPerType: fetchProfile.maxInstancesPerType,
+  })
+  return createActiveVersionFileProperties(fileProps, flowDefinitionInstances.elements)
+}
+
+const getFlowInstances = async (
+  client: SalesforceClient,
+  fetchProfile: FetchProfile,
+  flowType: ObjectType,
+  flowDefinitionType: ObjectType | undefined,
+): Promise<FetchElements<InstanceElement[]>> => {
+  const { elements: fileProps } = await listMetadataObjects(
+    client, FLOW_METADATA_TYPE, [],
+  )
+  if (fetchProfile.preferActiveFlowVersions && isUndefined(flowDefinitionType)) {
+    log.error('Failed to fetch flows active version due to a problem with flowDefinition type')
+    return {} as FetchElements<InstanceElement[]>
   }
+  const flowsVersionProps = fetchProfile.preferActiveFlowVersions && isDefined(flowDefinitionType)
+    ? await createActiveVersionProps(client, fetchProfile, flowDefinitionType, fileProps)
+    : fileProps
   const instances = await fetchMetadataInstances({
     client,
     fileProps: flowsVersionProps,
     metadataType: flowType,
-    metadataQuery,
-    maxInstancesPerType: maxNum,
+    metadataQuery: fetchProfile.metadataQuery,
+    maxInstancesPerType: fetchProfile.maxInstancesPerType,
   })
   return { configChanges: instances.configChanges,
-    elements: instances.elements.map(e => (preferActiveFlow ? removeFlowVersion(e, flowType) : e)) }
+    elements: instances.elements.map(e =>
+      (fetchProfile.preferActiveFlowVersions ? getFlowWithoutVersion(e, flowType) : e)) }
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const flowType = findObjectType(elements, FLOW_METADATA_TYPE_ID)
-    const preferActiveFlow = config.fetchProfile.preferActiveFlowVersions ?? false
     if (flowType === undefined) {
       return {}
     }
-    const flowDefinitionType = findObjectType(
-      elements, FLOW_DEFINITION_METADATA_TYPE_ID
-    )
-    const { elements: fileProps, configChanges } = await listMetadataObjects(
-      client, FLOW_METADATA_TYPE, [],
-    )
-    const instances = await getFlowInstances(client, config.fetchProfile.metadataQuery,
-      config.fetchProfile.maxInstancesPerType, flowType, flowDefinitionType, preferActiveFlow,
-      fileProps)
+    const flowDefinitionType = findObjectType(elements, FLOW_DEFINITION_METADATA_TYPE_ID)
+    const instances = await getFlowInstances(client, config.fetchProfile, flowType,
+      flowDefinitionType)
     instances.elements.forEach(e => elements.push(e))
     _.pull(elements, flowDefinitionType)
     return {
-      configSuggestions: [...instances.configChanges, ...configChanges],
+      configSuggestions: [...instances.configChanges],
     }
   },
 })

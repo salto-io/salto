@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import { defaultFilterContext } from '../utils'
 import mockClient from '../client'
-import fetchFlowFilter, { findActiveVersion } from '../../src/filters/fetch_flows'
+import fetchFlowFilter, { createActiveVersionFileProperties } from '../../src/filters/fetch_flows'
 import {
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
@@ -104,7 +104,7 @@ describe('fetch flows filter', () => {
           mockTypes.FlowDefinition)
         const flowdef2 = createInstanceElement({ fullName: 'flow2', activeVersionNumber: 2 },
           mockTypes.FlowDefinition)
-        const result = findActiveVersion(
+        const result = createActiveVersionFileProperties(
           [mockedFileProperties1, mockedFileProperties2],
           [flowdef1, flowdef2]
         )

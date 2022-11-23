@@ -25,7 +25,7 @@ import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
 import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType, isCustomRecordType } from './types'
 import { APPLICATION_ID } from './constants'
-import { fileCabinetTypesNames } from './types/file_cabinet_types'
+import { isPathAllowedBySdf } from './types/file_cabinet_types'
 
 const { awu } = collections.asynciterable
 
@@ -62,7 +62,7 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
   const isSdfChange = (change: Change): boolean => {
     const changeData = getChangeData(change)
     return isStandardInstanceOrCustomRecordType(changeData)
-      || fileCabinetTypesNames.has(changeData.elemID.typeName)
+      || (isFileCabinetInstance(changeData) && isPathAllowedBySdf(changeData))
       || isSDFConfigTypeName(changeData.elemID.typeName)
   }
   return {

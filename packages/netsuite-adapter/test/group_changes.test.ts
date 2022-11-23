@@ -44,7 +44,17 @@ describe('Group Changes without Salto suiteApp', () => {
     },
   })
 
-  const fileInstance = new InstanceElement('fileInstance', file)
+  const fileInstance = new InstanceElement(
+    'fileInstance',
+    file,
+    { path: '/SuiteScripts/a.txt' }
+  )
+
+  const nonSdfFileInstance = new InstanceElement(
+    'fileInstance2',
+    file,
+    { path: '/not/allowed/path' }
+  )
 
   const dummyType = new ObjectType({ elemID: new ElemID(NETSUITE, 'dummytype') })
   const nonSdfInstance = new InstanceElement('nonSdfInstance', dummyType)
@@ -68,6 +78,7 @@ describe('Group Changes without Salto suiteApp', () => {
       ],
       [nonSdfInstance.elemID.getFullName(), toChange({ after: nonSdfInstance })],
       [dummyType.elemID.getFullName(), toChange({ after: dummyType })],
+      [nonSdfFileInstance.elemID.getFullName(), toChange({ after: nonSdfFileInstance })],
     ]))).changeGroupIdMap
   })
 
@@ -96,6 +107,10 @@ describe('Group Changes without Salto suiteApp', () => {
 
   it('should not set group id for non SDF types', () => {
     expect(changeGroupIds.has(dummyType.elemID.getFullName())).toBe(false)
+  })
+
+  it('should not set group id for FileCabinet instances in non-allowed paths', () => {
+    expect(changeGroupIds.has(nonSdfFileInstance.elemID.getFullName())).toBe(false)
   })
 })
 

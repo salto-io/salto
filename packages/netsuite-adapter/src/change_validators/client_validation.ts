@@ -57,7 +57,10 @@ const changeValidator: ClientChangeValidator = async (
     data: _.mapValues(change.data, (element: Element) => element.clone()),
   })) as Change[]
   await filtersRunner.preDeploy(clonedChanges)
-  const getChangeGroupIds = getChangeGroupIdsFunc(client.isSuiteAppConfigured())
+
+  // SALTO-3016 we can validate only SDF elements because
+  // we need FileCabinet references to be included in the SDF project
+  const getChangeGroupIds = getChangeGroupIdsFunc(false)
   const { changeGroupIdMap } = await getChangeGroupIds(
     new Map(clonedChanges.map(change => [changeId(change), change]))
   )

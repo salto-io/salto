@@ -29,7 +29,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
 
     const cloneReportDefinition = (instance: InstanceElement): InstanceElement =>
     // We create another element not using element.clone because
-    // we need the new element to have a parsed save search type.
+    // we need the new element to have a parsed report definition type.
       new InstanceElement(instance.elemID.name, reportdefinition, instance.value,
         instance.path, instance.annotations)
 
@@ -41,7 +41,9 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       if (isDefined(oldInstance?.value.definition)) {
         if (_.isEqual(await parseDefinition(instance.value.definition),
           await parseDefinition(oldInstance.value.definition))) {
-          oldInstance.value.definition = instance.value.definition
+          // if instances only differ by definition we keep the old
+          // definition to avoid creating a change
+          instance.value.definition = oldInstance.value.definition
         }
       }
     }

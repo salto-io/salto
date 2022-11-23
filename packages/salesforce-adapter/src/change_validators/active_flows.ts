@@ -22,7 +22,7 @@ import {
   isModificationChange,
   ModificationChange,
   isAdditionOrModificationChange,
-  isAdditionChange, AdditionChange, ElemID,
+  isAdditionChange, AdditionChange, ElemID, DeployActions,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isEmpty, isUndefined } from 'lodash'
@@ -63,35 +63,44 @@ const isStatusChangeOnly = (change: ModificationChange<InstanceElement>):
   return isEmpty(diffWithoutStatus)
 }
 
+const newVersionInfo = (instance: InstanceElement): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Info',
+  message: 'Deploying these changes will create a new active version of this flow',
+  detailedMessage: `Deploying these changes will create a new active version of this flow. Flow name: ${instance.elemID.getFullName()}`,
+})
+
 const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean): ChangeError => {
   if (preferActive) {
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'When editing an active flow, a new version of the flow will be created',
-      detailedMessage: `When editing an active flow, a new version of the flow will be created and the previous one will be deactivated. Flow name: ${instance.elemID.getFullName()}`,
+      message: 'Deploying these changes will create a new inactive version of this flow',
+      detailedMessage: `Deploying these changes will create a new inactive version of this flow. Flow name: ${instance.elemID.getFullName()}`,
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Info',
-    message: ' deactivate active flows',
-    detailedMessage: `You cannot deactivate active flows via Salto. Flow name: ${instance.elemID.getFullName()}`,
+    message: ' Deploying these changes will create a new inactive version of this flow',
+    detailedMessage: `Bear in mind that the new inactive version will not appear in Salto since your Salto environment is configured to prefer fetching active flow versions. Flow name: ${instance.elemID.getFullName()}`,
   }
 }
 
 const deactivatingError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
-  message: 'Cannot delete flow',
-  detailedMessage: `Cannot delete flow via metadata API. Flow name: ${instance.elemID.getFullName()}`,
+  message: 'Deactivating a flow not supported',
+  detailedMessage: `Deactivating a flow not supported via metadata API. Flow name: ${instance.elemID.getFullName()}`,
 })
 
-const newVersionInfo = (instance: InstanceElement): ChangeError => ({
-  elemID: instance.elemID,
-  severity: 'Info',
-  message: 'When editing an active flow, a new version of the flow will be created',
-  detailedMessage: `A new version of the flow will be created as active and the previous one will be deactivated. Flow name: ${instance.elemID.getFullName()}`,
+const testCoveragePostDeploy = (): DeployActions => ({
+  postAction: {
+    title: 'Flows test coverage',
+    subActions: [
+      'Please make sure that activation of the new flow version was not blocked due to insufficient test coverage and manually activate it if needed.',
+    ],
+  },
 })
 
 const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean):
@@ -100,24 +109,16 @@ const activeFlowModificationError = (instance: InstanceElement, enableActiveDepl
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'When editing an active flow, a new version of the flow will be created',
-      detailedMessage: `When editing an active flow, a new version of the flow will be created and the previous one will be deactivated. Flow name: ${instance.elemID.getFullName()}`,
-      deployActions: {
-        postAction: {
-          title: 'Re-enable CPQ Triggers',
-          description: 'CPQ triggers should now be re-enabled:',
-          subActions: [
-            'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-          ],
-        },
-      },
+      message: 'Deploying these changes will create a new active version of this flow',
+      detailedMessage: `Deploying these changes will create a new active version of this flow in case the test coverage percentage is greater than the number specified in your salesforce org config. Otherwise, a new inactive version of this flow will be created. Flow name: ${instance.elemID.getFullName()}`,
+      deployActions: testCoveragePostDeploy(),
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Info',
-    message: 'Cannot deactivate active flows via Salto',
-    detailedMessage: `You cannot deactivate active flows via Salto. Flow name: ${instance.elemID.getFullName()}`,
+    message: 'Your salesforce org is configured to disallow modifications to active flows',
+    detailedMessage: `Your salesforce org is configured to disallow modifications to active flows. Therefore, deploying these changes will create a new inactive version that will need to be activated manually.. Flow name: ${instance.elemID.getFullName()}`,
   }
 }
 
@@ -127,24 +128,16 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'When editing adfn active flow, a new version of the flow will be created',
-      detailedMessage: `When editing an active flow, a new version of the flow will be created and the previous one will be deactivated. Flow name: ${instance.elemID.getFullName()}`,
-      deployActions: {
-        postAction: {
-          title: 'Re-enable CPQ Triggers',
-          description: 'CPQ triggers should now be re-enabled:',
-          subActions: [
-            'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-          ],
-        },
-      },
+      message: 'Activating this flow will work in case of sufficient test coverage as defined in your salesforce org config',
+      detailedMessage: `Activating this flow will work in case of sufficient test coverage as defined in your salesforce org config. Flow name: ${instance.elemID.getFullName()}`,
+      deployActions: testCoveragePostDeploy(),
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Cannot deactivate active flows via Salto',
-    detailedMessage: `You cannot deactivate active flows via Salto. Flow name: ${instance.elemID.getFullName()}`,
+    message: 'Your salesforce org is configured to disallow flow activations via the API',
+    detailedMessage: `Your salesforce org is configured to disallow flow activations via the API. Flow name: ${instance.elemID.getFullName()}`,
   }
 }
 
@@ -154,24 +147,16 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
     return {
       elemID: instance.elemID,
       severity: 'Info',
-      message: 'When editing an actasive flow, a new version of the flow will be created',
+      message: 'Addition of a new active flow depends on test coverage',
       detailedMessage: '',
-      deployActions: {
-        postAction: {
-          title: 'Re-enable CPQ Triggers',
-          description: 'CPQ triggers should now be re-enabled:',
-          subActions: [
-            'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
-          ],
-        },
-      },
+      deployActions: testCoveragePostDeploy(),
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Cannot deactivate active flows via Salto',
-    detailedMessage: `You cannot deactivate active flows via Salto. Flow name: ${instance.elemID.getFullName()}`,
+    message: 'Your salesforce org is configured to disallow creation of active flows',
+    detailedMessage: `Your salesforce org is configured to disallow creation of active flows. Please update the flow status to ‘DRAFT’ and manually activate it after deploying a new inactive version.. Flow name: ${instance.elemID.getFullName()}`,
   }
 }
 
@@ -180,21 +165,19 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
  */
 const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): ChangeValidator =>
   async (changes, elementsSource) => {
-    let flowSetting
+    const flowSettings = isUndefined(elementsSource)
+      ? undefined : await elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
     // TODO: change to preferActiveFlowVersions
-    const isPreferActiveVersion = config.enumFieldPermissions ?? false
-    if (!isUndefined(elementsSource)) {
-      flowSetting = await elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
-    }
-    const isActiveDeployEnabled = isUndefined(flowSetting)
-      ? false : flowSetting.value.enableFlowDeployAsActiveEnabled
+    const isPreferActiveVersion = config.fetch?.fetchAllCustomSettings ?? false
+    const isEnableFlowDeployAsActiveEnabled = isUndefined(flowSettings)
+      ? false : flowSettings.value.enableFlowDeployAsActiveEnabled
     const flowChanges = await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .filter(isFlowChange)
       .toArray()
 
-    const deactivateFlows = flowChanges
+    const deactivatingFlowChangeErrors = flowChanges
       .filter(isModificationChange)
       .filter(isDeactivateChange)
       .map(change => {
@@ -210,27 +193,28 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): Chan
         .filter(isActiveFlowChange)
         .map(getChangeData)
         .map(newVersionInfo)
-      return [...deactivateFlows, ...sandboxFlowModification]
+      return [...deactivatingFlowChangeErrors, ...sandboxFlowModification]
     }
     const activeFlowModification = flowChanges
       .filter(isModificationChange)
       .filter(isActiveFlowChange)
       .map(getChangeData)
-      .map(flow => activeFlowModificationError(flow, isActiveDeployEnabled))
+      .map(flow => activeFlowModificationError(flow, isEnableFlowDeployAsActiveEnabled))
 
     const activatingFlow = flowChanges
       .filter(isModificationChange)
       .filter(isActivatingChange)
       .map(getChangeData)
-      .map(flow => activatingFlowError(flow, isActiveDeployEnabled))
+      .map(flow => activatingFlowError(flow, isEnableFlowDeployAsActiveEnabled))
 
     const activeFlowAddition = flowChanges
       .filter(isAdditionChange)
       .map(getChangeData)
       .filter(flow => flow.value.status === ACTIVE)
-      .map(flow => activeFlowAdditionError(flow, isActiveDeployEnabled))
+      .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled))
 
-    return [...deactivateFlows, ...activeFlowModification, ...activatingFlow, ...activeFlowAddition]
+    return [...deactivatingFlowChangeErrors, ...activeFlowModification,
+      ...activatingFlow, ...activeFlowAddition]
   }
 
 export default activeFlowValidator

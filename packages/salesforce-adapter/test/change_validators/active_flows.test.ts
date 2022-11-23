@@ -13,13 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { Change, ChangeValidator, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { elementSource } from '@salto-io/workspace'
 import activeFlowChangeValidator from '../../src/change_validators/active_flows'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('active flows change validator', () => {
   let flowChanges: Change
+  let changeValidator: ChangeValidator
   describe('deactivate a flow', () => {
     let beforeRecord: InstanceElement
     let statusChange: InstanceElement
@@ -34,9 +37,10 @@ describe('active flows change validator', () => {
 
     it('should have error when trying to deactivate a flow', async () => {
       flowChanges = toChange({ before: beforeRecord, after: statusChange })
-      const changeErrors = await activeFlowChangeValidator(
-        [flowChanges]
+      changeValidator = activeFlowChangeValidator(
+        { }, true
       )
+      const changeErrors = await changeValidator([flowChanges])
       expect(changeErrors).toHaveLength(1)
       const [changeError] = changeErrors
       expect(changeError.severity).toEqual('Error')
@@ -44,12 +48,13 @@ describe('active flows change validator', () => {
 
     it('should inform that a new inactive flow version will be created', async () => {
       flowChanges = toChange({ before: beforeRecord, after: otherModifications })
-      const changeErrors = await activeFlowChangeValidator(
-        [flowChanges]
+      changeValidator = activeFlowChangeValidator(
+        { fetch: { fetchAllCustomSettings: true } }, true // TODO: change to preferActive
       )
-      expect(changeErrors).toHaveLength(1)
+      const changeErrors = await changeValidator([flowChanges])
       const [changeError] = changeErrors
       expect(changeError.severity).toEqual('Info')
+      expect(changeError.detailedMessage).toInclude('Deploying these changes will create a new inactive version of this flow')
     })
   })
   describe('editing an active flow', () => {
@@ -60,88 +65,108 @@ describe('active flows change validator', () => {
       flowChanges = toChange({ before: beforeRecord, after: afterRecord })
     })
     describe('sandbox env', () => {
-      it('should have info message regarding the new flow version', async () => {
-        const changeErrors = await activeFlowChangeValidator(
-          [flowChanges]
+      beforeEach(() => {
+        changeValidator = activeFlowChangeValidator(
+          { }, true
         )
+      })
+      it('should have info message regarding the new flow version', async () => {
+        const changeErrors = await changeValidator([flowChanges])
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
         expect(changeError.severity).toEqual('Info')
       })
     })
     describe('non-sandbox env', () => {
-      it('should have info message and post deploy action regarding the new flow version', async () => {
-        const changeErrors = await activeFlowChangeValidator(
-          [flowChanges]
-        ) // config enablActiveDeploy true
-        expect(changeErrors).toHaveLength(1)
-        const [changeError] = changeErrors
-        expect(changeError.severity).toEqual('Info')
+      const flowSettings = createInstanceElement({ fullName: '',
+        enableFlowDeployAsActiveEnabled: true }, mockTypes.FlowSettings)
+      const elementsSource = elementSource.createInMemoryElementSource([flowSettings])
+      beforeEach(() => {
+        changeValidator = activeFlowChangeValidator(
+          { }, false
+        )
       })
-      it('should have info message regarding the new flow version', async () => {
-        const changeErrors = await activeFlowChangeValidator(
-          [flowChanges]
-        ) // config enablActiveDeploy false
-        expect(changeErrors).toHaveLength(1)
-        const [changeError] = changeErrors
-        expect(changeError.severity).toEqual('Info')
+      describe('active flow modifications', () => {
+        it('should have info message and post deploy action regarding the new flow version', async () => {
+          const changeErrors = await changeValidator(
+            [flowChanges], elementsSource
+          )
+          expect(changeErrors).toHaveLength(1)
+          const [changeError] = changeErrors
+          expect(changeError.severity).toEqual('Info')
+          expect(changeError.message).toEqual('Deploying these changes will create a new active version of this flow') // add string
+        })
+        it('should have info message regarding the new flow version', async () => {
+          const changeErrors = await changeValidator(
+            [flowChanges]
+          ) // enableActiveDeploy setting is false
+          expect(changeErrors).toHaveLength(1)
+          const [changeError] = changeErrors
+          expect(changeError.severity).toEqual('Info')
+          expect(changeError.message).toEqual('Your salesforce org is configured to disallow modifications to active flows') // add string
+        })
       })
-    })
-  })
-  describe('activating a flow', () => {
-    beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'flow3', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
-      const afterRecord = beforeRecord.clone()
-      afterRecord.value.state = 'Active'
-      flowChanges = toChange({ before: beforeRecord, after: afterRecord })
-    })
-    it('should have info message and post deploy action regarding the new flow version', async () => {
-      const changeErrors = await activeFlowChangeValidator(
-        [flowChanges]
-      ) // config enablActiveDeploy true
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.severity).toEqual('Info')
-    })
-    it('should have error message regarding the new flow version', async () => {
-      const changeErrors = await activeFlowChangeValidator(
-        [flowChanges]
-      ) // config enablActiveDeploy false
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.severity).toEqual('Info')
-    })
-  })
-  describe('adding an active flow', () => {
-    beforeEach(() => {
-      const afterRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
-      flowChanges = toChange({ after: afterRecord })
-    })
-    it('should have post deploy action regarding the new flow version', async () => {
-      const changeErrors = await activeFlowChangeValidator(
-        [flowChanges]
-      ) // config enablActiveDeploy true
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.severity).toEqual('Info')
-    })
-    it('should have error message regarding the new flow version', async () => {
-      const changeErrors = await activeFlowChangeValidator(
-        [flowChanges]
-      ) // config enablActiveDeploy false
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.severity).toEqual('Info')
+      describe('activating a flow', () => {
+        beforeEach(() => {
+          const beforeRecord = createInstanceElement({ fullName: 'flow3', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
+          const afterRecord = beforeRecord.clone()
+          afterRecord.value.status = 'Active'
+          flowChanges = toChange({ before: beforeRecord, after: afterRecord })
+        })
+        it('should have info message and post deploy action regarding the new flow version', async () => {
+          const changeErrors = await changeValidator(
+            [flowChanges], buildElementsSourceFromElements([flowSettings])
+          )
+          expect(changeErrors).toHaveLength(1)
+          const [changeError] = changeErrors
+          expect(changeError.severity).toEqual('Info')
+        })
+        it('should have error message regarding the new flow version', async () => {
+          const changeErrors = await changeValidator(
+            [flowChanges]
+          ) // enableActiveDeploy setting is false
+          expect(changeErrors).toHaveLength(1)
+          const [changeError] = changeErrors
+          expect(changeError.severity).toEqual('Error')
+        })
+      })
+      describe('adding an active flow', () => {
+        beforeEach(() => {
+          const afterRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
+          flowChanges = toChange({ after: afterRecord })
+        })
+        it('should have post deploy action regarding the new flow version', async () => {
+          const changeErrors = await changeValidator(
+            [flowChanges], buildElementsSourceFromElements([flowSettings])
+          )
+          expect(changeErrors).toHaveLength(1)
+          const [changeError] = changeErrors
+          expect(changeError.severity).toEqual('Info')
+        })
+        it('should have error message regarding the new flow version', async () => {
+          const changeErrors = await changeValidator(
+            [flowChanges]
+          ) // enableActiveDeploy setting is false
+          expect(changeErrors).toHaveLength(1)
+          const [changeError] = changeErrors
+          expect(changeError.severity).toEqual('Error')
+        })
+      })
     })
   })
   describe('adding and editing a draft flow', () => {
+    beforeEach(() => {
+      changeValidator = activeFlowChangeValidator(
+        { }, false
+      )
+    })
     describe('add a new draft flow', () => {
       beforeEach(() => {
         const afterRecord = createInstanceElement({ fullName: 'flow2', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
         flowChanges = toChange({ after: afterRecord })
       })
       it('should not throw any error', async () => {
-        const changeErrors = await activeFlowChangeValidator(
+        const changeErrors = await changeValidator(
           [flowChanges]
         )
         expect(changeErrors).toHaveLength(0)
@@ -155,7 +180,7 @@ describe('active flows change validator', () => {
         flowChanges = toChange({ before: beforeRecord, after: afterRecord })
       })
       it('should not throw any error', async () => {
-        const changeErrors = await activeFlowChangeValidator(
+        const changeErrors = await changeValidator(
           [flowChanges]
         )
         expect(changeErrors).toHaveLength(0)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeError, isModificationChange, isInstanceChange, ChangeValidator, getChangeData,
+  ChangeError, isModificationChange, isInstanceChange, ChangeValidator,
   InstanceElement, ModificationChange,
 } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD } from '../constants'
@@ -24,13 +24,17 @@ export const wasFullNameChanged = (change: ModificationChange<InstanceElement>):
   return before.value[INSTANCE_FULL_NAME_FIELD] !== after.value[INSTANCE_FULL_NAME_FIELD]
 }
 
-const fullNameChangeError = (instance: InstanceElement): ChangeError =>
-  ({
-    elemID: instance.elemID,
+const fullNameChangeError = (change: ModificationChange<InstanceElement>): ChangeError => {
+  const { before, after } = change.data
+  return {
+    elemID: after.elemID,
     severity: 'Error',
-    message: `You cannot change the fullName property of an element. ID of element that was changed: ${instance.elemID}`,
+    message: 'You cannot change the fullName property of an element. '
+      + `The fullName property of '${after.elemID}' was changed from `
+      + `${before.value[INSTANCE_FULL_NAME_FIELD]} to ${after.value[INSTANCE_FULL_NAME_FIELD]}`,
     detailedMessage: 'You cannot change the fullName property of an element.',
-  })
+  }
+}
 
 /**
  * It is forbidden to modify the fullName property of objects - it is used as an identifier and
@@ -41,7 +45,6 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isModificationChange)
     .filter(isInstanceChange)
     .filter(wasFullNameChanged)
-    .map(getChangeData)
     .map(fullNameChangeError)
 )
 

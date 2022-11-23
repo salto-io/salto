@@ -155,7 +155,7 @@ export const getArticleAttachments = async ({ client, article, attachmentType }:
     return []
   }
   const attachmentInstances = (await Promise.all(
-    _.orderBy(attachments, 'id').map(async attachment =>
+    _.orderBy(attachments, ['file_name', 'inline']).map(async attachment =>
       getAttachmentContent({ client, attachment, article, attachmentType }))
   )).filter(values.isDefined)
   if (attachmentInstances.length > 0) {

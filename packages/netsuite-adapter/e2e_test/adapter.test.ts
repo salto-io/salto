@@ -29,11 +29,9 @@ import { credsLease, realAdapter } from './adapter'
 import { getElementValueOrAnnotations, getMetadataTypes, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
-  CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
+  CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD,
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, PATH, ROLE, SCRIPT_ID,
-  SKIP_LIST, CONFIG_FEATURES,
-  TRANSACTION_COLUMN_CUSTOM_FIELD,
-  WARN_STALE_DATA, WORKFLOW, FETCH, INCLUDE, NETSUITE,
+  CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
@@ -94,17 +92,17 @@ describe('Netsuite adapter E2E with real account', () => {
       }
       // Due to a known SDF bug, sometimes we fail to fetch all types at once but succeed
       // when trying to fetch type by type. In this case we wouldn't like to fail the test
-      expect(updatedConfig.value?.[SKIP_LIST]?.typesToSkip).toBeUndefined()
+      expect(updatedConfig.value?.skipList?.typesToSkip).toBeUndefined()
 
       if (withSuiteApp) {
       // When using SuiteApp some private files under the folders /SuiteBundles and /SuiteApps
       // might be added to the skipList
-        expect(updatedConfig.value?.[SKIP_LIST]?.filePaths
+        expect(updatedConfig.value?.skipList?.filePaths
           ?.filter((path: string) => (!path.startsWith('/SuiteBundles') && !path.startsWith('/SuiteApps'))) ?? []).toHaveLength(0)
       } else {
-        expect(updatedConfig.value?.[SKIP_LIST]?.filePaths).toBeUndefined()
+        expect(updatedConfig.value?.skipList?.filePaths).toBeUndefined()
       }
-      expect(updatedConfig.value?.[FETCH_ALL_TYPES_AT_ONCE] ?? false).toBe(false)
+      expect(updatedConfig.value?.fetchAllTypesAtOnce ?? false).toBe(false)
     }
 
     const randomNumber = String(Date.now()).substring(6)
@@ -391,7 +389,7 @@ describe('Netsuite adapter E2E with real account', () => {
       beforeAll(async () => {
         const adapterAttrWithoutElementsSource = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },
-          { [FETCH]: { [INCLUDE]: { types: [], fileCabinet: ['/Images.*'], customRecords: [] } } }
+          { fetch: { include: { types: [], fileCabinet: ['/Images.*'], customRecords: [] } } }
         )
         const mockFetchOpts: MockInterface<FetchOptions> = {
           progressReporter: { reportProgress: jest.fn() },
@@ -475,7 +473,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: true } },
+              { deploy: { warnOnStaleWorkspaceData: true } },
             )
             adapter = adapterAttr.adapter
           })
@@ -499,7 +497,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: false } },
+              { deploy: { warnOnStaleWorkspaceData: false } },
             )
             adapter = adapterAttr.adapter
           })
@@ -531,7 +529,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: true } },
+              { deploy: { warnOnStaleWorkspaceData: true } },
             )
             adapter = adapterAttr.adapter
           })
@@ -555,7 +553,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: false } },
+              { deploy: { warnOnStaleWorkspaceData: false } },
             )
             adapter = adapterAttr.adapter
           })

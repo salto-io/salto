@@ -22,18 +22,11 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { getMetadataTypes, metadataTypesToList } from '../src/types'
-import {
-  ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
-  FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
-  FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET, NETSUITE,
-  USE_CHANGES_DETECTION, FETCH, EXCLUDE, INCLUDE, SKIP_LIST, DEPLOY, WARN_STALE_DATA,
-  CONFIG_FEATURES,
-  ADDITIONAL_DEPS,
-} from '../src/constants'
+import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { FilterCreator } from '../src/filter'
-import { configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
+import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
 import NetsuiteClient from '../src/client/client'
@@ -101,8 +94,8 @@ const secondDummyFilter: FilterCreator = () => ({
 describe('Adapter', () => {
   const client = createClient()
   const config = {
-    [FETCH]: {
-      [EXCLUDE]: {
+    fetch: {
+      exclude: {
         types: [
           { name: 'account', ids: ['aaa'] },
           { name: 'subsidiary', ids: ['.*'] },
@@ -113,9 +106,9 @@ describe('Adapter', () => {
         customRecords: [],
       },
     },
-    [CLIENT_CONFIG]: {
-      [FETCH_ALL_TYPES_AT_ONCE]: true,
-      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 1,
+    client: {
+      fetchAllTypesAtOnce: true,
+      fetchTypeTimeoutInMinutes: 1,
     },
   }
 
@@ -267,7 +260,7 @@ describe('Adapter', () => {
 
     describe('fetchConfig', () => {
       const configWithoutFetch = {
-        ..._.omit(config, FETCH),
+        ..._.omit(config, CONFIG.fetch),
       }
       const createAdapter = (configInput: NetsuiteConfig): NetsuiteAdapter =>
         new NetsuiteAdapter({
@@ -290,7 +283,7 @@ describe('Adapter', () => {
       it('should fetch all types and instances when fetch config is defined with no values', async () => {
         const configWithEmptyDefinedFetch = {
           ...configWithoutFetch,
-          [FETCH]: {},
+          fetch: {},
         }
         const adapter = createAdapter(configWithEmptyDefinedFetch)
         const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
@@ -304,8 +297,8 @@ describe('Adapter', () => {
       it('should fetch all types and instances in include when exclude config is undefined', async () => {
         const configWithIncludeButNoExclude = {
           ...configWithoutFetch,
-          [FETCH]: {
-            [INCLUDE]: {
+          fetch: {
+            include: {
               types: [{ name: 'someType.*' }],
               fileCabinet: ['someFilePath'],
               customRecords: [],
@@ -326,8 +319,8 @@ describe('Adapter', () => {
       it('should fetch all types and instances that are not in exclude when include config is undefined', async () => {
         const configWithExcludeButNoInclude = {
           ...configWithoutFetch,
-          [FETCH]: {
-            [EXCLUDE]: {
+          fetch: {
+            exclude: {
               types: [{ name: 'someTypeToSkip.*' }],
               fileCabinet: ['someFilePathToSkip'],
               customRecords: [],
@@ -348,13 +341,13 @@ describe('Adapter', () => {
       it('should fetch all types and instances besides those in skipList or Types To Skip when fetch config is undefined', async () => {
         const configWithSkipListAndTypesToSkip = {
           ...configWithoutFetch,
-          [SKIP_LIST]: {
+          skipList: {
             types: {
               typeToSkip: ['.*'],
             },
             filePaths: ['someFilePathToSkip'],
           },
-          [TYPES_TO_SKIP]: ['skipThisType'],
+          typesToSkip: ['skipThisType'],
         }
         const adapter = createAdapter(configWithSkipListAndTypesToSkip)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
@@ -370,13 +363,13 @@ describe('Adapter', () => {
       it('should fetch all types and instances without those in Types To Skip, skipList and exclude when fetch config, skipList and typeToSkip are defined', async () => {
         const configWithAllFormats = {
           ...config,
-          [SKIP_LIST]: {
+          skipList: {
             types: {
               typeToSkip: ['.*'],
             },
             filePaths: ['someFilePathToSkip'],
           },
-          [TYPES_TO_SKIP]: ['skipThisType'],
+          typesToSkip: ['skipThisType'],
         }
         const adapter = createAdapter(configWithAllFormats)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
@@ -397,8 +390,8 @@ describe('Adapter', () => {
 
     describe('fetchTarget', () => {
       const conf = {
-        [FETCH]: {
-          [EXCLUDE]: {
+        fetch: {
+          exclude: {
             types: [
               { name: SAVED_SEARCH },
               { name: TRANSACTION_FORM },
@@ -407,7 +400,7 @@ describe('Adapter', () => {
             customRecords: [],
           },
         },
-        [FETCH_TARGET]: {
+        fetchTarget: {
           types: {
             [SAVED_SEARCH]: ['.*'],
             addressForm: ['.*'],
@@ -765,10 +758,10 @@ describe('Adapter', () => {
     describe('deployReferencedElements', () => {
       it('should call getReferencedInstances with deployReferencedElements=true', async () => {
         const configWithDeployReferencedElements = {
-          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
-          [FETCH_ALL_TYPES_AT_ONCE]: true,
-          [DEPLOY]: {
-            [DEPLOY_REFERENCED_ELEMENTS]: true,
+          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
+          fetchAllTypesAtOnce: true,
+          deploy: {
+            deployReferencedElements: true,
           },
         }
         const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
@@ -803,10 +796,10 @@ describe('Adapter', () => {
       })
       it('should call deploy with additional dependencies', async () => {
         const configWithAdditionalSdfDependencies = {
-          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
-          [FETCH_ALL_TYPES_AT_ONCE]: true,
-          [DEPLOY]: {
-            [ADDITIONAL_DEPS]: {
+          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
+          fetchAllTypesAtOnce: true,
+          deploy: {
+            additionalDependencies: {
               include: {
                 objects: ['addedObject'],
                 features: ['addedFeature'],
@@ -858,9 +851,9 @@ describe('Adapter', () => {
     describe('warnOnStaleWorkspaceData', () => {
       it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData is undefined in config', async () => {
         const configWithoutWarnStaleData = {
-          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
-          [FETCH_ALL_TYPES_AT_ONCE]: true,
-          [DEPLOY]: {
+          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
+          fetchAllTypesAtOnce: true,
+          deploy: {
           },
         }
         const adapter = new NetsuiteAdapter({
@@ -888,10 +881,10 @@ describe('Adapter', () => {
 
       it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData=false in config', async () => {
         const configWithoutWarnStaleData = {
-          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
-          [FETCH_ALL_TYPES_AT_ONCE]: true,
-          [DEPLOY]: {
-            [WARN_STALE_DATA]: false,
+          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
+          fetchAllTypesAtOnce: true,
+          deploy: {
+            warnOnStaleWorkspaceData: false,
           },
         }
         const adapter = new NetsuiteAdapter({
@@ -919,10 +912,10 @@ describe('Adapter', () => {
 
       it('should call getChangeValidator with warnStaleData=true if warnOnStaleWorkspaceData=true in config', async () => {
         const configWithoutWarnStaleData = {
-          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
-          [FETCH_ALL_TYPES_AT_ONCE]: true,
-          [DEPLOY]: {
-            [WARN_STALE_DATA]: true,
+          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
+          fetchAllTypesAtOnce: true,
+          deploy: {
+            warnOnStaleWorkspaceData: true,
           },
         }
         const adapter = new NetsuiteAdapter({
@@ -1052,7 +1045,7 @@ describe('Adapter', () => {
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: {
             ...config,
-            [FETCH_TARGET]: {
+            fetchTarget: {
               types: {
                 workflow: ['.*'],
               },
@@ -1103,13 +1096,13 @@ describe('Adapter', () => {
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: {
             ...config,
-            [FETCH_TARGET]: {
+            fetchTarget: {
               types: {
                 workflow: ['.*'],
               },
               filePaths: [],
             },
-            [USE_CHANGES_DETECTION]: false,
+            useChangesDetection: false,
           },
           getElemIdFunc: mockGetElemIdFunc,
         })

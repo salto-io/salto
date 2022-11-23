@@ -27,7 +27,7 @@ import {
   createInstanceElement,
 } from './transformer'
 import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from './types'
-import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, INTEGRATION, FETCH_TARGET, SKIP_LIST, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE, VALIDATE, ADDITIONAL_DEPS, CUSTOM_RECORD_TYPE } from './constants'
+import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
@@ -177,29 +177,29 @@ export default class NetsuiteAdapter implements AdapterOperations {
   }: NetsuiteAdapterParams) {
     this.client = client
     this.elementsSource = elementsSource
-    this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
+    this.typesToSkip = typesToSkip.concat(makeArray(config.typesToSkip))
     this.filePathRegexSkipList = filePathRegexSkipList
-      .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
+      .concat(makeArray(config.filePathRegexSkipList))
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
-    this.fetchInclude = config[FETCH]?.[INCLUDE]
-    this.fetchExclude = config[FETCH]?.[EXCLUDE]
-    this.lockedElements = config[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
-    this.fetchTarget = config[FETCH_TARGET]
-    this.skipList = config[SKIP_LIST] // old version
-    this.useChangesDetection = config[USE_CHANGES_DETECTION] ?? DEFAULT_USE_CHANGES_DETECTION
-    this.deployReferencedElements = config[DEPLOY]?.[DEPLOY_REFERENCED_ELEMENTS]
-     ?? config[DEPLOY_REFERENCED_ELEMENTS]
-    this.warnStaleData = config[DEPLOY]?.[WARN_STALE_DATA]
-    this.validateBeforeDeploy = config[DEPLOY]?.[VALIDATE] ?? DEFAULT_VALIDATE
+    this.fetchInclude = config.fetch?.include
+    this.fetchExclude = config.fetch?.exclude
+    this.lockedElements = config.fetch?.lockedElementsToExclude
+    this.fetchTarget = config.fetchTarget
+    this.skipList = config.skipList // old version
+    this.useChangesDetection = config.useChangesDetection ?? DEFAULT_USE_CHANGES_DETECTION
+    this.deployReferencedElements = config.deploy?.deployReferencedElements
+     ?? config.deployReferencedElements
+    this.warnStaleData = config.deploy?.warnOnStaleWorkspaceData
+    this.validateBeforeDeploy = config.deploy?.validate ?? DEFAULT_VALIDATE
     this.additionalDependencies = {
       include: {
-        features: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[INCLUDE]?.features ?? [],
-        objects: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[INCLUDE]?.objects ?? [],
+        features: config.deploy?.additionalDependencies?.include?.features ?? [],
+        objects: config.deploy?.additionalDependencies?.include?.objects ?? [],
       },
       exclude: {
-        features: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[EXCLUDE]?.features ?? [],
-        objects: config[DEPLOY]?.[ADDITIONAL_DEPS]?.[EXCLUDE]?.objects ?? [],
+        features: config.deploy?.additionalDependencies?.exclude?.features ?? [],
+        objects: config.deploy?.additionalDependencies?.exclude?.objects ?? [],
       },
     }
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)

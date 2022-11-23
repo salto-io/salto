@@ -18,11 +18,7 @@ import { readFile, readDir, writeFile, mkdirp, rm, rename } from '@salto-io/file
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
-import {
-  APPLICATION_ID,
-  CONFIG_FEATURES,
-  FILE_CABINET_PATH_SEPARATOR, INSTALLED_SUITEAPPS,
-} from '../../src/constants'
+import { APPLICATION_ID, CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../../src/constants'
 import SdfClient, {
   ATTRIBUTES_FILE_SUFFIX,
   ATTRIBUTES_FOLDER_NAME,
@@ -654,7 +650,7 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ [INSTALLED_SUITEAPPS]: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(2)

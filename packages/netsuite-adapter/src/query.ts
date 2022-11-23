@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { regex, strings } from '@salto-io/lowerdash'
 import { getStandardTypesNames } from './autogen/types'
-import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES, STRICT_INSTANCE_STRUCTURE, FIELDS_TO_OMIT } from './constants'
+import { CONFIG_FEATURES } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from './types'
 
@@ -53,14 +53,23 @@ export type FieldToOmitParams = {
 }
 
 export type FetchParams = {
-  [INCLUDE]?: QueryParams
-  [EXCLUDE]?: QueryParams
-  [LOCKED_ELEMENTS_TO_EXCLUDE]?: QueryParams
-  [AUTHOR_INFO_CONFIG]?: {
+  include?: QueryParams
+  exclude?: QueryParams
+  lockedElementsToExclude?: QueryParams
+  authorInformation?: {
     enable?: boolean
   }
-  [STRICT_INSTANCE_STRUCTURE]?: boolean
-  [FIELDS_TO_OMIT]?: FieldToOmitParams[]
+  strictInstanceStructure?: boolean
+  fieldsToOmit?: FieldToOmitParams[]
+}
+
+export const FETCH_PARAMS: Record<keyof FetchParams, keyof FetchParams> = {
+  include: 'include',
+  exclude: 'exclude',
+  lockedElementsToExclude: 'lockedElementsToExclude',
+  authorInformation: 'authorInformation',
+  strictInstanceStructure: 'strictInstanceStructure',
+  fieldsToOmit: 'fieldsToOmit',
 }
 
 export const convertToQueryParams = ({
@@ -147,7 +156,7 @@ export const validateFetchParameters = ({ types, fileCabinet }:
 
 export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void => {
   if (!Array.isArray(fieldsToOmitConfig)) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} "${FIELDS_TO_OMIT}" field is expected to be an array`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} "${FETCH_PARAMS.fieldsToOmit}" field is expected to be an array`)
   }
   const corruptedTypes = fieldsToOmitConfig.filter(obj => typeof obj.type !== 'string')
   if (corruptedTypes.length !== 0) {

@@ -16,8 +16,11 @@
 import { InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { extendGeneratedDependencies, getParents } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, PROJECT_TYPE } from '../../constants'
+
+const log = logger(module)
 
 const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
   if (!isReferenceExpression(instance.value.issueTypeScreenScheme)) {
@@ -36,11 +39,17 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
     .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []
 }
 
-const getProjectFieldConfigurations = (instance: InstanceElement): InstanceElement[] =>
-  instance.value.fieldConfigurationScheme?.value.value.items
+const getProjectFieldConfigurations = (instance: InstanceElement): InstanceElement[] => {
+  const fieldConfigurationRef = instance.value.fieldConfigurationScheme
+  if (!isReferenceExpression(fieldConfigurationRef)) {
+    log.warn(`${instance.elemID.getFullName()} has a field configuration scheme value that is not a reference so we can't calculate the _generated_dependencies`)
+    return []
+  }
+  return fieldConfigurationRef.value.value.items
     ?.map((item: Values) => item.fieldConfigurationId)
     .filter(isReferenceExpression)
     .map((fieldConfigRef: ReferenceExpression) => fieldConfigRef.value) ?? []
+}
 
 
 const getProjectUsedFieldConfigItems = (

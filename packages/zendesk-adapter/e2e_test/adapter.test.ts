@@ -24,6 +24,7 @@ import { naclCase, buildElementsSourceFromElements } from '@salto-io/adapter-uti
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+// import { resolve } from '@salto-io/workspace/dist/src/expressions'
 import {
   DEFAULT_CONFIG,
   API_DEFINITIONS_CONFIG,
@@ -31,7 +32,13 @@ import {
   GUIDE_SUPPORTED_TYPES,
   SUPPORTED_TYPES,
 } from '../src/config'
-import { ZENDESK, BRAND_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME, CATEGORY_TYPE_NAME } from '../src/constants'
+import {
+  ZENDESK,
+  BRAND_TYPE_NAME,
+  CATEGORY_TRANSLATION_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
+} from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
@@ -116,6 +123,7 @@ const cleanup = async (adapterAttr: Reals): Promise<void> => {
     )
   }
 }
+
 
 describe('Zendesk adapter E2E', () => {
   describe('fetch and deploy', () => {
@@ -332,21 +340,6 @@ describe('Zendesk adapter E2E', () => {
       parent: categoryInstance,
       name: `e2eHelpCenter_${categoryName}__en_us_b@uuuum`,
     })
-    // const categoryHeTranslationInstance = new InstanceElement(
-    //   `${categoryName}_he`,
-    //   categoryTranslationType,
-    //   {
-    //     locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
-    //     outdated: false,
-    //     title: categoryName,
-    //     draft: false,
-    //     hidden: false,
-    //     body: 'this is a test in hebrew',
-    //     brand: 10378734785303,
-    //   },
-    //   undefined,
-    //   { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)] }
-    // )
     categoryInstance.value.translations = [
       new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
     ]
@@ -391,6 +384,23 @@ describe('Zendesk adapter E2E', () => {
           },
         }
       )
+    }
+
+    /**
+     * returns a record of the elemID.name and the instance from elements that corresponds to the elemID.
+     */
+    const checkInstancesAreDefined = (originalInstances: InstanceElement[]):
+      Record<string, InstanceElement | undefined> => {
+      const nameToElemId = _.keyBy(originalInstances, instance => instance.elemID.name)
+      const nameToElementInstance = _.mapValues(
+        nameToElemId,
+        instance => {
+          const val = elements.filter(isInstanceElement).find(e => instance.elemID.isEqual(e.elemID))
+          expect(val).toBeDefined()
+          return val
+        }
+      )
+      return nameToElementInstance
     }
 
     beforeAll(async () => {
@@ -455,6 +465,7 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
+      // elements = await resolve(elements, adapterAttr.adapter.elementsSource)
       await deployChanges(adapterAttr, firstGroupChanges)
       if (credLease.return) {
         await credLease.return()
@@ -593,6 +604,125 @@ describe('Zendesk adapter E2E', () => {
         expect(instance).toBeDefined()
       })
     })
-    // it('should add category translation correctly ')
+    it('should handel guide elements correctly ', async () => {
+      const checkedFirstDefinition = checkInstancesAreDefined([categoryInstance, categoryEnTranslationInstance])
+      const category = checkedFirstDefinition[categoryInstance.elemID.name]
+      if (category === undefined) {
+        return
+      }
+
+      const categoryHeTranslationInstance = createInstanceElement({
+        type: CATEGORY_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          outdated: false,
+          title: `${categoryName} hebrew`,
+          draft: false,
+          hidden: false,
+          body: 'this is a test in hebrew',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: category,
+        name: `e2eHelpCenter_${categoryName}__he`,
+      })
+      const sectionName = createName('section')
+      const sectionInstance = createInstanceElement({
+        type: SECTION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          category_id: new ReferenceExpression(category.elemID, category),
+          direct_parent_id: new ReferenceExpression(category.elemID, category),
+          direct_parent_type: CATEGORY_TYPE_NAME,
+        },
+        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+        name: `e2eHelpCenter_${categoryName}_${sectionName}`,
+      })
+      const sectionEnTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          title: sectionName,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: sectionInstance,
+        name: `e2eHelpCenter_${categoryName}_${sectionName}__en_us_b@uuuuum`,
+      })
+      sectionInstance.value.translations = [
+        new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
+      ]
+      // normally should add the translation to the category instance (but since change validator is not run it is
+      // not needed)
+      const toAdd = [categoryHeTranslationInstance, sectionInstance, sectionEnTranslationInstance]
+      await deployAndFetch(toAdd, false)
+      const checkedsSecondDefinition = checkInstancesAreDefined([
+        categoryHeTranslationInstance,
+        sectionInstance,
+        sectionEnTranslationInstance,
+      ])
+      const section = checkedsSecondDefinition[sectionInstance.elemID.name]
+      if (section === undefined) {
+        return
+      }
+      const sectionHeTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          outdated: false,
+          title: sectionName,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: sectionInstance,
+        name: `e2eHelpCenter_${categoryName}_${sectionName}__he`,
+      })
+      const section2Name = createName('section')
+      const section2Instance = createInstanceElement({
+        type: SECTION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          category_id: new ReferenceExpression(category.elemID, category),
+          direct_parent_id: new ReferenceExpression(section.elemID, section),
+          direct_parent_type: SECTION_TYPE_NAME,
+        },
+        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+        name: `e2eHelpCenter_${categoryName}_${sectionName}_${section2Name}`,
+      })
+      const section2EnTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          title: sectionName,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: section2Instance,
+        name: `e2eHelpCenter_${categoryName}_${sectionName}_${section2Name}__en_us_b@uuuuum`,
+      })
+      section2Instance.value.translations = [
+        new ReferenceExpression(section2EnTranslationInstance.elemID, section2EnTranslationInstance),
+      ]
+
+      const toAdd2 = [sectionHeTranslationInstance, section2Instance, section2EnTranslationInstance]
+      await deployAndFetch(toAdd2, false)
+
+      checkInstancesAreDefined([
+        sectionHeTranslationInstance,
+        section2Instance,
+        section2EnTranslationInstance,
+      ])
+    })
   })
 })

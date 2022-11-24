@@ -506,6 +506,7 @@ export default class ZendeskAdapter implements AdapterOperations {
             lookupFunc,
             async (element, getLookUpName, elementsSource) =>
               resolveValues(element, getLookUpName, elementsSource, true),
+            this.elementsSource
           )))
       .toArray()
     const [guideResolvedChanges, supportResolvedChanges] = _.partition(

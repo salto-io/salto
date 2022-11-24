@@ -76,19 +76,14 @@ export const isParent = createSchemeGuardForInstance<ParentType>(
  */
 const addTranslationValues = (change: Change<InstanceElement>): void => {
   const currentLocale = getChangeData(change).value.source_locale
-  try {
-    const translation = getChangeData(change).value.translations
-      .filter(isTranslation) // the translation is not a reference it is already the value
-      .find((tran: TranslationType) => (isReferenceExpression(tran.locale)
-        ? tran.locale.value.value.id === currentLocale
-        : tran.locale === currentLocale))
-    if (translation !== undefined) {
-      getChangeData(change).value.name = translation.title
-      getChangeData(change).value.description = translation.body ?? ''
-    }
-  } catch (e) {
-    console.log('here!!')
-    console.log(e)
+  const translation = getChangeData(change).value.translations
+    .filter(isTranslation) // the translation is not a reference it is already the value
+    .find((tran: TranslationType) => (isReferenceExpression(tran.locale)
+      ? tran.locale.value.value.id === currentLocale
+      : tran.locale === currentLocale))
+  if (translation !== undefined) {
+    getChangeData(change).value.name = translation.title
+    getChangeData(change).value.description = translation.body ?? ''
   }
 }
 

@@ -1889,6 +1889,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'sections', fieldType: 'list<section>' },
         { fieldName: 'articles', fieldType: 'list<article>' },
+        { fieldName: 'translations', fieldType: 'list<section_translation>' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

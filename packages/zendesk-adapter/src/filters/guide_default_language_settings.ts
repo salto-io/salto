@@ -16,20 +16,25 @@
 import {
   Change,
   getChangeData,
-  InstanceElement, isAdditionOrModificationChange,
+  InstanceElement, isAdditionChange, isAdditionOrModificationChange,
   isInstanceChange,
-  isInstanceElement,
+  isInstanceElement, isModificationChange,
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG } from '../config'
 import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
+import { deployChange, deployChanges } from '../deployment'
+import { getZendeskError } from '../errors'
+
+const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
+
 /**
  On fetch - Add 'default' field for guide_language_settings from a url request
  Before deploy - remove the field (update the default?)
  */
-const filterCreator: FilterCreator = ({ config, brandIdToClient = {} }) => ({
+const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) => ({
   onFetch: async elements => {
     if (!config[FETCH_CONFIG].enableGuide) {
       return
@@ -45,7 +50,7 @@ const filterCreator: FilterCreator = ({ config, brandIdToClient = {} }) => ({
     // Request the default locale for each brand
     const defaultLocaleRequestPromises = brands.map(async brand => {
       const brandId = brand.value.id
-      const res = await brandIdToClient[brandId].getSinglePage({ url: '/hc/api/internal/default_locale' })
+      const res = await brandIdToClient[brandId].getSinglePage({ url: DEFAULT_LOCALE_API })
       brandToDefaultTranslation[brandId] = res.data
     })
 
@@ -58,11 +63,50 @@ const filterCreator: FilterCreator = ({ config, brandIdToClient = {} }) => ({
       settings.value.default = brandToDefaultTranslation[settings.value.brand.value.value.id] === settings.value.locale
     })
   },
-  preDeploy: async (changes: Change<InstanceElement>[]) => {
-    const guideLanguageSettingsChanges = changes.filter(isInstanceChange).filter(isAdditionOrModificationChange)
-      .filter(change => GUIDE_LANGUAGE_SETTINGS_TYPE_NAME.includes(getChangeData(change).elemID.typeName))
+  deploy: async (changes: Change<InstanceElement>[]) => {
+    const [guideLanguageSettingsChanges, leftoverChanges] = _.partition(
+      changes,
+      change => isInstanceChange(change)
+            && GUIDE_LANGUAGE_SETTINGS_TYPE_NAME.includes(getChangeData(change).elemID.typeName),
+    )
 
-    guideLanguageSettingsChanges.forEach(setting => _.omit(setting.data.after.value, 'default'))
+    const deployResult = await deployChanges(
+      guideLanguageSettingsChanges,
+      async change => {
+        await deployChange(change, client, config.apiDefinitions, ['default']) // Deploying with this field doesn't seem to do anything, but we ignore it to be safe
+      }
+    )
+
+    const newDefaultChange = guideLanguageSettingsChanges.filter(isAdditionOrModificationChange).find(change => {
+      if (getChangeData(change).value.default === true) {
+        // Addition change needs to be updated, modification only updates if it changed from false to true
+        if (isAdditionChange(change) || (isModificationChange(change) && change.data.before.value.default === false)) {
+          return true
+        }
+      }
+      return false
+    })
+
+    // If there was a change of the default language, send an api request to update it
+    if (newDefaultChange !== undefined) {
+      const newDataValue = newDefaultChange.data.after.value
+      const brandId = newDataValue.brand
+      try {
+        await brandIdToClient[brandId].put({
+          url: DEFAULT_LOCALE_API,
+          data: { locale: newDataValue.locale },
+        })
+      } catch (err) {
+        const zendeskError = getZendeskError(getChangeData(newDefaultChange).elemID.getFullName(), err)
+        deployResult.errors = [...deployResult.errors, zendeskError]
+      }
+    }
+
+
+    return {
+      deployResult,
+      leftoverChanges,
+    }
   },
 })
 

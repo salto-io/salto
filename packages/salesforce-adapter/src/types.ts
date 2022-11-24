@@ -165,6 +165,7 @@ export type FetchParameters = {
   optionalFeatures?: OptionalFeatures
   target?: string[]
   maxInstancesPerType?: number
+  preferActiveFlowVersions?: boolean
 }
 
 export type DeprecatedMetadataParams = {
@@ -582,6 +583,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
       },
     },
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
+    preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -188,6 +188,16 @@ export const mockTypes = {
       actionType: { refType: BuiltinTypes.STRING },
     },
   }),
+  FlowDefinition: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FlowDefinition',
+      suffix: 'flowDefinition',
+      dirName: 'flowDefinition',
+    },
+    fields: {
+      activeVersionNumber: { refType: BuiltinTypes.NUMBER },
+    },
+  }),
   QuickAction: createMetadataObjectType({
     annotations: {
       metadataType: 'QuickAction',

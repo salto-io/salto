@@ -17,23 +17,20 @@ import {
   Change,
   getAllChangeData,
   getChangeData,
-  InstanceElement, isAdditionOrModificationChange,
+  InstanceElement,
+  isAdditionOrModificationChange,
   isInstanceChange,
   isModificationChange,
-  toChange,
+  toChange, Value,
+  Values,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { detailedCompare, getPath } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isInstanceOfTypeChange } from './utils'
-import {
-  INSTANCE_FULL_NAME_FIELD,
-  LABEL,
-  PERMISSION_SET_METADATA_TYPE,
-  PROFILE_METADATA_TYPE,
-} from '../constants'
-import { apiName } from '../transformers/transformer'
+import { PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, LABEL } from '../constants'
+import { apiName, metadataType } from '../transformers/transformer'
 
 export const LOGIN_IP_RANGES_FIELD = 'loginIpRanges'
 export const LAYOUT_ASSIGNMENTS_FIELD = 'layoutAssignments'
@@ -41,9 +38,29 @@ export const LAYOUT_ASSIGNMENTS_FIELD = 'layoutAssignments'
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
 
+const typeToRemainingFields: Record<string, Record<string, { default?: Value }>> = {
+  [PROFILE_METADATA_TYPE]: {
+    [INSTANCE_FULL_NAME_FIELD]: {},
+    [LOGIN_IP_RANGES_FIELD]: { default: [] },
+  },
+  [PERMISSION_SET_METADATA_TYPE]: {
+    [INSTANCE_FULL_NAME_FIELD]: {},
+    [LABEL]: {},
+  },
+}
+
 const isRelatedChange = async (change: Change): Promise<boolean> => (
-  isInstanceOfTypeChange(PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE)(change)
+  isInstanceOfTypeChange(...Object.keys(typeToRemainingFields))(change)
 )
+
+const fillRemainingFields = (type: string, afterValues: Values): Values => {
+  const remainingFields = typeToRemainingFields[type]
+  return Object.fromEntries(
+    Object.keys(remainingFields).map(
+      fieldName => [fieldName, afterValues[fieldName] ?? remainingFields[fieldName].default]
+    )
+  )
+}
 
 const toMinifiedChange = async (
   change: Change<InstanceElement>,
@@ -51,14 +68,7 @@ const toMinifiedChange = async (
   const [before, after] = getAllChangeData(change)
   const detailedChanges = detailedCompare(before, after, { createFieldChanges: true })
   const minifiedAfter = after.clone()
-  minifiedAfter.value = (await apiName(before) === PROFILE_METADATA_TYPE) ? {
-    [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
-    [LOGIN_IP_RANGES_FIELD]: after.value[LOGIN_IP_RANGES_FIELD] ?? [],
-  } : {
-    [INSTANCE_FULL_NAME_FIELD]: after.value[INSTANCE_FULL_NAME_FIELD],
-    [LABEL]: after.value[LABEL],
-  }
-
+  minifiedAfter.value = fillRemainingFields(await metadataType(before), after.value)
   const newLayoutAssignmentNames: string[] = []
   detailedChanges
     .filter(isAdditionOrModificationChange)

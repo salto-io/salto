@@ -18,7 +18,7 @@ import { mockTypes } from '../mock_elements'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { LAYOUT_ASSIGNMENTS_FIELD, LOGIN_IP_RANGES_FIELD } from '../../src/filters/minify_deploy'
 import { defaultFilterContext } from '../utils'
-import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
+import { INSTANCE_FULL_NAME_FIELD, LABEL } from '../../src/constants'
 
 describe('minifyDeployFilter', () => {
   describe('deploy flow', () => {
@@ -74,6 +74,7 @@ describe('minifyDeployFilter', () => {
         mockTypes.PermissionSet,
         {
           [INSTANCE_FULL_NAME_FIELD]: PERMISSION_SET_FULL_NAME,
+          [LABEL]: PERMISSION_SET_FULL_NAME,
           nonModifiedField: '1',
           anotherNonModifiedField: '2',
           modifiedField: 'before',
@@ -143,6 +144,7 @@ describe('minifyDeployFilter', () => {
         const [, afterPermissionSet] = getAllChangeData(afterPreDeployChanges[1])
         expect(afterPermissionSet.value).toEqual({
           [INSTANCE_FULL_NAME_FIELD]: PERMISSION_SET_FULL_NAME,
+          [LABEL]: PERMISSION_SET_FULL_NAME,
           modifiedField: 'after',
           modifiedNestedField: {
             modifiedAttr: 'after',

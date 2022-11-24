@@ -225,6 +225,7 @@ const zendeskGuideEntriesFunc = (
   brandsList: InstanceElement[],
   brandToPaginator: Record<string, clientUtils.Paginator>,
 ): elementUtils.ducktype.EntriesRequester => {
+  // noinspection UnnecessaryLocalVariableJS
   const getZendeskGuideEntriesResponseValues = async ({
     args,
     typeName,

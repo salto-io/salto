@@ -32,16 +32,22 @@ type DeployOrValidateParams = {
   checkOnly: boolean
 }
 
+const addAccountToErrors = (deployResult: Promise<DeployResult>, accountName: string): Promise<DeployResult> => (
+  deployResult.then(result => {
+    result.errors.forEach(err => { err.account = accountName }); return deployResult
+  })
+)
+
 const deployOrValidate = (
   { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
 ): Promise<DeployResult> => {
   if (!checkOnly) {
-    return adapter.deploy(opts)
+    return addAccountToErrors(adapter.deploy(opts), adapterName)
   }
   if (_.isUndefined(adapter.validate)) {
     throw new Error(`Check-Only deployment is not supported in adapter ${adapterName}`)
   }
-  return adapter.validate(opts)
+  return addAccountToErrors(adapter.validate(opts), adapterName)
 }
 
 const deployAction = (

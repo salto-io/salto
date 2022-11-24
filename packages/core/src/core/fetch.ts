@@ -407,6 +407,7 @@ const fetchAndProcessMergeErrors = async (
     accountName: string,
   ): Promise<void> => {
     errors.forEach(error => {
+      error.account = accountName
       if (isSaltoElementError(error)) {
         error.elemID = createAdapterReplacedID(error.elemID, accountName)
       }
@@ -446,6 +447,7 @@ const fetchAndProcessMergeErrors = async (
             progressReporter: progressReporters[accountName],
           })
           const { updatedConfig, errors } = fetchResult
+          errors?.forEach(err => { err.account = accountName; err.service = accountToServiceNameMap[accountName] })
           if (
             fetchResult.elements.length > 0 && accountName !== accountToServiceNameMap[accountName]
           ) {
@@ -898,7 +900,7 @@ export const fetchChangesFromWorkspace = async (
       config => config.elemID.adapter,
     )
     Object.entries(configsByAdapter).forEach(([adapter, configs]) => {
-      log.warn(`Found different configs for ${adapter} - 
+      log.warn(`Found different configs for ${adapter} -
       ${configs.map(config => safeJsonStringify(config.value, undefined, 2)).join('\n')}`)
     })
   }

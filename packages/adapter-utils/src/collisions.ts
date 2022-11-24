@@ -35,8 +35,8 @@ export const groupInstancesByTypeAndElemID = async (
   ))
 
 
-export const createWarningFromMsg = (message: string): SaltoError =>
-  ({ message, severity: 'Warning' })
+export const createWarningFromMsg = (message: string, serviceName: string): SaltoError =>
+  ({ message, severity: 'Warning', service: serviceName })
 
 export const getInstanceDesc = (instanceId: string, baseUrl?: string): string =>
   (baseUrl ? `${baseUrl}/${instanceId}` : `Instance with Id - ${instanceId}`)
@@ -76,7 +76,7 @@ const logInstancesWithCollidingElemID = async (
         .map(instance => _.pickBy(instance.value, val => val != null))
       const relevantInstanceValuesStr = relevantInstanceValues
         .map(instValues => safeJsonStringify(instValues, elementExpressionStringifyReplacer, 2)).join('\n')
-      log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
+      log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values -
   ${relevantInstanceValuesStr}`)
     })
   })
@@ -134,6 +134,7 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
         ...overflowMsg,
         '',
         epilogue,
-      ].join('\n'))
+      ].join('\n'),
+      adapterName)
     }))
 }

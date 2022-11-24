@@ -40,6 +40,7 @@ describe('collision errors', () => {
       expect(filterResult.errors).toHaveLength(1)
       expect(filterResult.errors?.[0]).toEqual({
         severity: 'Warning',
+        service: 'zendesk',
         message: `Omitted 2 instances of obj due to Salto ID collisions.
 Current Salto ID configuration for obj is defined as [name].
 

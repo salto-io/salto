@@ -23,6 +23,8 @@ export type SaltoError = {
     message: string
     severity: SeverityLevel
     source?: SaltoErrorSource
+    account?: string
+    service?: string
 }
 
 export type SaltoElementError = SaltoError & {

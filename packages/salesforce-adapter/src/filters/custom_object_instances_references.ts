@@ -115,7 +115,8 @@ const createWarnings = async (
         ...overflowMsg,
         '',
         epilogue,
-      ].join('\n'))
+      ].join('\n'),
+      SALESFORCE)
     })
 
   const typesOfIllegalRefSources = _.uniq([...illegalRefSources]
@@ -123,7 +124,7 @@ const createWarnings = async (
     .map(source => source.type))
 
   const illegalOriginsWarnings = illegalRefSources.size === 0 ? [] : [createWarningFromMsg(`Omitted ${illegalRefSources.size} instances due to the previous SaltoID collisions and/or missing instances.
-  Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`)]
+  Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`, SALESFORCE)]
 
   return [
     ...collisionWarnings,

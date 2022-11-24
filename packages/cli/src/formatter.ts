@@ -49,7 +49,10 @@ export const emptyLine = (): string => ''
 
 const planItemName = (step: PlanItem): string => step.groupKey
 
-const formatError = (err: { message: string }): string => header(err.message)
+const formatError = (err: { message: string; account?: string; service?: string }): string => {
+  const origin = err.account ?? err.service
+  return header([origin ? `[${err.account ?? err.service}]` : '', `${err.message}`].join(''))
+}
 
 export const formatWordsSeries = (words: string[]): string => (words.length > 1
   ? `${words.slice(0, -1).join(', ')} and ${_.last(words)}`

@@ -36,7 +36,7 @@ export type DeployExtraProperties = {
 
 export type DeployResult = {
   appliedChanges: ReadonlyArray<Change>
-  errors: ReadonlyArray<Error>
+  errors: ReadonlyArray<Error & {service?:string; account?: string}>
   extraProperties?: DeployExtraProperties
 }
 

@@ -277,8 +277,8 @@ describe('config', () => {
 
   it('should combine configuration messages when needed', () => {
     const newSkipList = _.cloneDeep(skipList)
-    newSkipList.types.someType = ['.*']
-    newSkipList.filePaths.push('.*someRegex.*')
+    newSkipList.types = { ...newSkipList.types, someType: ['.*'] }
+    newSkipList.filePaths?.push('.*someRegex.*')
     const config = {
       ...currentConfigWithSkipList,
       [TYPES_TO_SKIP]: ['someType'],

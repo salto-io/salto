@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, strings, values } from '@salto-io/lowerdash'
+import { strings, values } from '@salto-io/lowerdash'
 import {
-  InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
+  InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
@@ -26,17 +26,12 @@ import {
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
-  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, ADDITIONAL_DEPS, VALIDATE,
-  STRICT_INSTANCE_STRUCTURE,
-  FIELDS_TO_OMIT,
-  CURRENCY,
+  INSTALLED_SUITEAPPS, ADDITIONAL_DEPS, VALIDATE, CURRENCY,
   EXCHANGE_RATE,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
-
-const { makeArray } = collections.array
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
@@ -48,16 +43,52 @@ export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
 export const DEFAULT_USE_CHANGES_DETECTION = true
 
-const clientConfigType = new ObjectType({
+export type DeployParams = {
+  [WARN_STALE_DATA]?: boolean
+  [VALIDATE]?: boolean
+  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+  [ADDITIONAL_DEPS]?: {
+    [INCLUDE]?: Partial<AdditionalSdfDeployDependencies>
+    [EXCLUDE]?: Partial<AdditionalSdfDeployDependencies>
+  }
+}
+
+export type SdfClientConfig = {
+  [FETCH_ALL_TYPES_AT_ONCE]?: boolean
+  [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]?: number
+  [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
+  [SDF_CONCURRENCY_LIMIT]?: number
+  [INSTALLED_SUITEAPPS]?: string[]
+}
+
+export type SuiteAppClientConfig = {
+  [SUITEAPP_CONCURRENCY_LIMIT]?: number
+}
+
+export type NetsuiteConfig = {
+  [TYPES_TO_SKIP]?: string[]
+  [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
+  [DEPLOY]?: DeployParams
+  [CONCURRENCY_LIMIT]?: number
+  [CLIENT_CONFIG]?: SdfClientConfig
+  [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
+  [FETCH]?: FetchParams
+  [FETCH_TARGET]?: NetsuiteQueryParameters
+  [SKIP_LIST]?: NetsuiteQueryParameters
+  [USE_CHANGES_DETECTION]?: boolean
+  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+}
+
+const clientConfigType = createMatchingObjectType<SdfClientConfig>({
   elemID: new ElemID(NETSUITE, 'clientConfig'),
   fields: {
-    [FETCH_ALL_TYPES_AT_ONCE]: {
+    fetchAllTypesAtOnce: {
       refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
       },
     },
-    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
+    fetchTypeTimeoutInMinutes: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
         // We set DEFAULT_COMMAND_TIMEOUT_IN_MINUTES to FETCH_TYPE_TIMEOUT_IN_MINUTES since we did
@@ -68,7 +99,7 @@ const clientConfigType = new ObjectType({
         }),
       },
     },
-    [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: {
+    maxItemsInImportObjectsRequest: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
@@ -77,7 +108,7 @@ const clientConfigType = new ObjectType({
         }),
       },
     },
-    [SDF_CONCURRENCY_LIMIT]: {
+    sdfConcurrencyLimit: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
@@ -87,8 +118,7 @@ const clientConfigType = new ObjectType({
         }),
       },
     },
-
-    [INSTALLED_SUITEAPPS]: {
+    installedSuiteApps: {
       refType: new ListType(BuiltinTypes.STRING),
     },
   },
@@ -97,10 +127,10 @@ const clientConfigType = new ObjectType({
   },
 })
 
-const suiteAppClientConfigType = new ObjectType({
+const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>({
   elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),
   fields: {
-    [SUITEAPP_CONCURRENCY_LIMIT]: {
+    suiteAppConcurrencyLimit: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
@@ -116,7 +146,7 @@ const suiteAppClientConfigType = new ObjectType({
   },
 })
 
-const queryConfigType = new ObjectType({
+const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
   elemID: new ElemID(NETSUITE, 'queryConfig'),
   fields: {
     types: {
@@ -125,27 +155,31 @@ const queryConfigType = new ObjectType({
         [CORE_ANNOTATIONS.DEFAULT]: {},
       },
     },
-
     filePaths: {
       refType: (new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
     },
+    // SALTO-2994 uncomment in order to support custom records quick fetch
+    // customRecords: {
+    //   refType: new MapType(new ListType(BuiltinTypes.STRING)),
+    //   annotations: {
+    //     [CORE_ANNOTATIONS.DEFAULT]: {},
+    //   },
+    // },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
 
-const fetchTypeQueryParamsConfigType = new ObjectType({
+const fetchTypeQueryParamsConfigType = createMatchingObjectType<FetchTypeQueryParams>({
   elemID: new ElemID(NETSUITE, 'fetchTypeQueryParams'),
   fields: {
     name: {
       refType: BuiltinTypes.STRING,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
+      annotations: { _required: true },
     },
     ids: { refType: new ListType(BuiltinTypes.STRING) },
   },
@@ -154,14 +188,16 @@ const fetchTypeQueryParamsConfigType = new ObjectType({
   },
 })
 
-const queryParamsConfigType = new ObjectType({
+const queryParamsConfigType = createMatchingObjectType<QueryParams>({
   elemID: new ElemID(NETSUITE, 'queryParams'),
   fields: {
     types: {
       refType: new ListType(fetchTypeQueryParamsConfigType),
+      annotations: { _required: true },
     },
     fileCabinet: {
       refType: new ListType(BuiltinTypes.STRING),
+      annotations: { _required: true },
     },
     customRecords: {
       refType: new ListType(fetchTypeQueryParamsConfigType),
@@ -173,7 +209,7 @@ const queryParamsConfigType = new ObjectType({
 })
 
 export const fetchDefault: FetchParams = {
-  [INCLUDE]: {
+  include: {
     types: [{
       name: '.*',
     }],
@@ -194,7 +230,7 @@ export const fetchDefault: FetchParams = {
       ],
     },
   ],
-  [EXCLUDE]: {
+  exclude: {
     types: [
       // Has a definition field which is a long XML and it contains 'translationScriptId'
       // value that changes every fetch
@@ -224,7 +260,7 @@ export const fetchDefault: FetchParams = {
   },
 }
 
-const authorInfoConfig = new ObjectType({
+const authorInfoConfig = createMatchingObjectType<FetchParams['authorInformation']>({
   elemID: new ElemID(NETSUITE, 'authorInfo'),
   fields: {
     enable: {
@@ -256,27 +292,17 @@ const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
 const fetchConfigType = createMatchingObjectType<FetchParams>({
   elemID: new ElemID(NETSUITE, 'fetchConfig'),
   fields: {
-    [INCLUDE]: { refType: queryParamsConfigType },
-    [EXCLUDE]: { refType: queryParamsConfigType },
-    [LOCKED_ELEMENTS_TO_EXCLUDE]: { refType: queryParamsConfigType },
-    [AUTHOR_INFO_CONFIG]: { refType: authorInfoConfig },
-    [STRICT_INSTANCE_STRUCTURE]: { refType: BuiltinTypes.BOOLEAN },
-    [FIELDS_TO_OMIT]: { refType: new ListType(fieldsToOmitConfig) },
+    include: { refType: queryParamsConfigType },
+    exclude: { refType: queryParamsConfigType },
+    lockedElementsToExclude: { refType: queryParamsConfigType },
+    authorInformation: { refType: authorInfoConfig },
+    strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
+    fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
-
-export type DeployParams = {
-  [WARN_STALE_DATA]?: boolean
-  [VALIDATE]?: boolean
-  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
-  [ADDITIONAL_DEPS]?: {
-    [INCLUDE]?: Partial<AdditionalSdfDeployDependencies>
-    [EXCLUDE]?: Partial<AdditionalSdfDeployDependencies>
-  }
-}
 
 const additionalDependenciesInnerType = createMatchingObjectType<
 Partial<AdditionalSdfDeployDependencies>
@@ -307,10 +333,10 @@ DeployParams['additionalDependencies']
 const deployConfigType = createMatchingObjectType<DeployParams>({
   elemID: new ElemID(NETSUITE, 'deployConfig'),
   fields: {
-    [WARN_STALE_DATA]: { refType: BuiltinTypes.BOOLEAN },
-    [VALIDATE]: { refType: BuiltinTypes.BOOLEAN },
-    [DEPLOY_REFERENCED_ELEMENTS]: { refType: BuiltinTypes.BOOLEAN },
-    [ADDITIONAL_DEPS]: { refType: additionalDependenciesType },
+    warnOnStaleWorkspaceData: { refType: BuiltinTypes.BOOLEAN },
+    validate: { refType: BuiltinTypes.BOOLEAN },
+    deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
+    additionalDependencies: { refType: additionalDependenciesType },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -364,23 +390,22 @@ export const validateDeployParams = (
   }
 }
 
-const configID = new ElemID(NETSUITE)
-export const configType = new ObjectType({
-  elemID: configID,
+export const configType = createMatchingObjectType<NetsuiteConfig>({
+  elemID: new ElemID(NETSUITE),
   fields: {
-    [FETCH]: {
+    fetch: {
       refType: fetchConfigType,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: fetchDefault,
       },
     },
-    [FILE_PATHS_REGEX_SKIP_LIST]: {
+    filePathRegexSkipList: {
       refType: new ListType(BuiltinTypes.STRING),
     },
-    [DEPLOY]: {
+    deploy: {
       refType: deployConfigType,
     },
-    [CONCURRENCY_LIMIT]: {
+    concurrencyLimit: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -389,19 +414,25 @@ export const configType = new ObjectType({
         }),
       },
     },
-    [CLIENT_CONFIG]: {
+    client: {
       refType: clientConfigType,
     },
-
-    [SUITEAPP_CLIENT_CONFIG]: {
+    suiteAppClient: {
       refType: suiteAppClientConfigType,
     },
-
-    [FETCH_TARGET]: {
+    fetchTarget: {
       refType: queryConfigType,
     },
-
-    [USE_CHANGES_DETECTION]: {
+    useChangesDetection: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    typesToSkip: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    skipList: {
+      refType: queryConfigType,
+    },
+    deployReferencedElements: {
       refType: BuiltinTypes.BOOLEAN,
     },
   },
@@ -409,32 +440,6 @@ export const configType = new ObjectType({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
-
-export type SdfClientConfig = {
-  [FETCH_ALL_TYPES_AT_ONCE]?: boolean
-  [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]?: number
-  [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
-  [SDF_CONCURRENCY_LIMIT]?: number
-  [INSTALLED_SUITEAPPS]?: string[]
-}
-
-export type SuiteAppClientConfig = {
-  [SUITEAPP_CONCURRENCY_LIMIT]?: number
-}
-
-export type NetsuiteConfig = {
-  [TYPES_TO_SKIP]?: string[]
-  [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
-  [DEPLOY]?: DeployParams
-  [CONCURRENCY_LIMIT]?: number
-  [CLIENT_CONFIG]?: SdfClientConfig
-  [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
-  [FETCH]?: FetchParams
-  [FETCH_TARGET]?: NetsuiteQueryParameters
-  [SKIP_LIST]?: NetsuiteQueryParameters
-  [USE_CHANGES_DETECTION]?: boolean
-  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
-}
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
   + ' In order to complete the fetch operation, Salto needs to stop managing these items by modifying the configuration.'
@@ -448,7 +453,10 @@ export const UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT = 'Some type names have been ch
 export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
 + ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
 
-const createExclude = (failedPaths: NetsuiteQueryParameters['filePaths'], failedTypes: NetsuiteQueryParameters['types']): QueryParams =>
+const createExclude = ({
+  filePaths: failedPaths = [],
+  types: failedTypes = {},
+}: Pick<NetsuiteQueryParameters, 'types' | 'filePaths'>): QueryParams =>
   ({
     fileCabinet: failedPaths.map(_.escapeRegExp),
     types: Object.entries(failedTypes).map(([name, ids]) => ({ name, ids })),
@@ -458,23 +466,34 @@ const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
   failedFilePaths: FailedFiles,
   failedTypes: FailedTypes
-): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof SdfClientConfig, Value>> => {
-  const fetch: FetchParams = {}
+): NetsuiteConfig => {
+  const config: NetsuiteConfig = {}
+
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
-    fetch[EXCLUDE] = createExclude(failedFilePaths.otherError, failedTypes.unexpectedError)
+    config[FETCH] = {
+      ...config[FETCH],
+      exclude: createExclude({
+        filePaths: failedFilePaths.otherError,
+        types: failedTypes.unexpectedError,
+      }),
+    }
   }
-
   if (!_.isEmpty(failedFilePaths.lockedError) || !_.isEmpty(failedTypes.lockedError)) {
-    fetch[LOCKED_ELEMENTS_TO_EXCLUDE] = createExclude(
-      failedFilePaths.lockedError,
-      failedTypes.lockedError,
-    )
+    config[FETCH] = {
+      ...config[FETCH],
+      lockedElementsToExclude: createExclude({
+        filePaths: failedFilePaths.lockedError,
+        types: failedTypes.lockedError,
+      }),
+    }
   }
-
-  return {
-    ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
-    ...(!_.isEmpty(fetch) ? { [FETCH]: fetch } : {}),
+  if (failedToFetchAllAtOnce) {
+    config[CLIENT_CONFIG] = {
+      ...config[CLIENT_CONFIG],
+      fetchAllTypesAtOnce: false,
+    }
   }
+  return config
 }
 
 
@@ -531,11 +550,13 @@ export const combineQueryParams = (
   }
 }
 
+const emptyQueryParams = (): QueryParams => combineQueryParams(undefined, undefined)
+
 const updateConfigFromFailures = (
   failedToFetchAllAtOnce: boolean,
   failedFilePaths: FailedFiles,
   failedTypes: FailedTypes,
-  configToUpdate: NetsuiteConfig,
+  config: NetsuiteConfig,
 ): boolean => {
   const suggestions = toConfigSuggestions(
     failedToFetchAllAtOnce, failedFilePaths, failedTypes
@@ -544,170 +565,145 @@ const updateConfigFromFailures = (
     return false
   }
 
-  if (suggestions.fetchAllTypesAtOnce !== undefined) {
-    configToUpdate[CLIENT_CONFIG] = _.pickBy({
-      ...(configToUpdate[CLIENT_CONFIG] ?? {}),
-      [FETCH_ALL_TYPES_AT_ONCE]: suggestions.fetchAllTypesAtOnce,
-    }, values.isDefined)
+  const {
+    fetch: currentFetchConfig,
+    client: currentClientConfig,
+  } = config
+  const {
+    fetch: suggestedFetchConfig,
+    client: suggestedClientConfig,
+  } = suggestions
+
+  if (suggestedClientConfig?.fetchAllTypesAtOnce !== undefined) {
+    config[CLIENT_CONFIG] = {
+      ...currentClientConfig,
+      fetchAllTypesAtOnce: suggestedClientConfig.fetchAllTypesAtOnce,
+    }
   }
 
-  const currentFetch = configToUpdate[FETCH]
-  const currentExclude = currentFetch?.[EXCLUDE] !== undefined
-    ? _.cloneDeep(currentFetch[EXCLUDE])
-    : { types: [], fileCabinet: [] }
-
-
-  const suggestedExclude = suggestions[FETCH]?.[EXCLUDE]
-  const newExclude = combineQueryParams(currentExclude, suggestedExclude)
-
-  const newLockedElementToExclude = currentFetch?.[LOCKED_ELEMENTS_TO_EXCLUDE] !== undefined
-    || suggestions[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE] !== undefined
-    ? combineQueryParams(
-      currentFetch?.[LOCKED_ELEMENTS_TO_EXCLUDE],
-      suggestions[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
-    )
-    : undefined
-
-  configToUpdate[FETCH] = {
-    ...(configToUpdate[FETCH] ?? {}),
-    [EXCLUDE]: newExclude,
-    ...(newLockedElementToExclude !== undefined
-      ? { [LOCKED_ELEMENTS_TO_EXCLUDE]: newLockedElementToExclude }
-      : {}),
+  const updatedFetchConfig = {
+    ...currentFetchConfig,
+    exclude: combineQueryParams(currentFetchConfig?.exclude, suggestedFetchConfig?.exclude),
   }
 
+  const newLockedElementToExclude = combineQueryParams(
+    currentFetchConfig?.lockedElementsToExclude,
+    suggestedFetchConfig?.lockedElementsToExclude
+  )
+
+  if (!_.isEqual(newLockedElementToExclude, emptyQueryParams())) {
+    updatedFetchConfig.lockedElementsToExclude = newLockedElementToExclude
+  }
+
+  config[FETCH] = updatedFetchConfig
   return true
 }
 
-const updateConfigSkipListFormat = (
-  configToUpdate: InstanceElement,
-): boolean => {
-  if (configToUpdate.value[TYPES_TO_SKIP] === undefined
-    && configToUpdate.value[FILE_PATHS_REGEX_SKIP_LIST] === undefined) {
+const updateConfigSkipListFormat = (config: NetsuiteConfig): void => {
+  const { skipList = {}, typesToSkip, filePathRegexSkipList } = config
+  if (typesToSkip === undefined && filePathRegexSkipList === undefined) {
+    return
+  }
+  if (typesToSkip !== undefined) {
+    skipList.types = {
+      ...skipList.types,
+      ...Object.fromEntries(typesToSkip.map(type => [type, ['.*']])),
+    }
+  }
+  if (filePathRegexSkipList !== undefined) {
+    skipList.filePaths = (skipList.filePaths ?? [])
+      .concat(filePathRegexSkipList.map(convertDeprecatedFilePathRegex))
+  }
+  config[SKIP_LIST] = skipList
+  delete config[TYPES_TO_SKIP]
+  delete config[FILE_PATHS_REGEX_SKIP_LIST]
+}
+
+const updateConfigFetchFormat = (config: NetsuiteConfig): boolean => {
+  const { skipList, fetch } = config
+  if (skipList === undefined) {
     return false
   }
 
-  const currentSkipList = configToUpdate.value[SKIP_LIST]
-  const newSkipList: Partial<NetsuiteQueryParameters> = currentSkipList !== undefined
-    ? _.cloneDeep(currentSkipList)
-    : {}
+  const typesToExclude = convertToQueryParams(skipList)
+  delete config[SKIP_LIST]
 
-  const deprecatedTypesToSkip = configToUpdate.value[TYPES_TO_SKIP]
-  if (deprecatedTypesToSkip !== undefined) {
-    if (newSkipList.types === undefined) {
-      newSkipList.types = {}
-    }
-
-    _.assign(newSkipList.types, Object.fromEntries(
-      makeArray(deprecatedTypesToSkip).map((type: string) => [type, ['.*']])
-    ))
+  config[FETCH] = fetch !== undefined ? {
+    include: fetch.include,
+    exclude: combineQueryParams(fetch.exclude, typesToExclude),
+  } : {
+    include: fetchDefault.include,
+    exclude: combineQueryParams(typesToExclude, fetchDefault.exclude),
   }
-
-  const deprecatedFilePathRegexSkipList = configToUpdate.value[FILE_PATHS_REGEX_SKIP_LIST]
-  if (deprecatedFilePathRegexSkipList !== undefined) {
-    if (newSkipList.filePaths === undefined) {
-      newSkipList.filePaths = []
-    }
-
-    newSkipList.filePaths.push(
-      ...makeArray(deprecatedFilePathRegexSkipList).map(convertDeprecatedFilePathRegex)
-    )
-  }
-
-  configToUpdate.value[SKIP_LIST] = newSkipList
-  delete configToUpdate.value[TYPES_TO_SKIP]
-  delete configToUpdate.value[FILE_PATHS_REGEX_SKIP_LIST]
-
   return true
 }
 
-const updateConfigFetchFormat = (
-  configToUpdate: InstanceElement,
-): boolean => {
-  if (configToUpdate.value[SKIP_LIST] === undefined) {
-    return false
-  }
-
-  const typesToExclude: QueryParams = configToUpdate.value[SKIP_LIST] !== undefined
-    ? convertToQueryParams(configToUpdate.value[SKIP_LIST])
-    : { types: [], fileCabinet: [] }
-
-  delete configToUpdate.value[SKIP_LIST]
-
-  const currentFetch = configToUpdate.value[FETCH]
-  if (currentFetch !== undefined) {
-    configToUpdate.value[FETCH] = {
-      [INCLUDE]: currentFetch[INCLUDE],
-      [EXCLUDE]: combineQueryParams(currentFetch[EXCLUDE], typesToExclude),
-    }
-    return true
-  }
-
-  const newFetch: FetchParams = {
-    [INCLUDE]: fetchDefault[INCLUDE],
-    [EXCLUDE]: combineQueryParams(typesToExclude, fetchDefault[EXCLUDE]),
-  }
-  configToUpdate.value[FETCH] = newFetch
-  return true
-}
-
-const updateSuiteAppTypes = (
-  configToUpdate: InstanceElement,
-): boolean => {
+const updateSuiteAppTypes = (config: NetsuiteConfig): boolean => {
   let didUpdate = false
-  configToUpdate.value?.[FETCH]?.[EXCLUDE]?.types?.forEach((excludeItem: FetchTypeQueryParams) => {
-    if (excludeItem.name !== undefined) {
-      const fixedName = strings.lowerCaseFirstLetter(excludeItem.name)
-      if (excludeItem.name !== fixedName && fixedName in TYPES_TO_INTERNAL_ID) {
-        excludeItem.name = fixedName
-        didUpdate = true
-      }
+  config[FETCH]?.exclude?.types.forEach(excludeItem => {
+    const fixedName = strings.lowerCaseFirstLetter(excludeItem.name)
+    if (excludeItem.name !== fixedName && fixedName in TYPES_TO_INTERNAL_ID) {
+      excludeItem.name = fixedName
+      didUpdate = true
     }
   })
   return didUpdate
 }
 
-const updateConfigDeployFormat = (
-  configToUpdate: InstanceElement,
-): boolean => {
-  const deployReferencedElements = configToUpdate.value[DEPLOY_REFERENCED_ELEMENTS]
+const updateConfigDeployFormat = (config: NetsuiteConfig): boolean => {
+  const { deployReferencedElements } = config
   if (deployReferencedElements === undefined) {
     return false
   }
   // we want to migrate deployReferencedElements only if its value is 'true'
   // (and not if it evaluated to true)
   if (deployReferencedElements === true) {
-    configToUpdate.value[DEPLOY] = {
-      [DEPLOY_REFERENCED_ELEMENTS]: deployReferencedElements,
+    config[DEPLOY] = {
+      ...config[DEPLOY],
+      deployReferencedElements,
     }
   }
-  delete configToUpdate.value[DEPLOY_REFERENCED_ELEMENTS]
+  delete config[DEPLOY_REFERENCED_ELEMENTS]
   return true
 }
 
-const updateConfigFormat = (
-  configToUpdate: InstanceElement,
-): {
+const updateConfigFormat = (config: NetsuiteConfig): {
   didUpdateFetchFormat: boolean
   didUpdateDeployFormat: boolean
   didUpdateSuiteAppTypesFormat: boolean
 } => {
-  updateConfigSkipListFormat(configToUpdate)
+  updateConfigSkipListFormat(config)
   return {
-    didUpdateFetchFormat: updateConfigFetchFormat(configToUpdate),
-    didUpdateDeployFormat: updateConfigDeployFormat(configToUpdate),
-    didUpdateSuiteAppTypesFormat: updateSuiteAppTypes(configToUpdate),
+    didUpdateFetchFormat: updateConfigFetchFormat(config),
+    didUpdateDeployFormat: updateConfigDeployFormat(config),
+    didUpdateSuiteAppTypesFormat: updateSuiteAppTypes(config),
   }
 }
 
-const splitConfig = (config: InstanceElement): InstanceElement[] => {
-  const lockedElementsToExclude = config.value[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
+const toConfigInstance = (config: NetsuiteConfig): InstanceElement =>
+  new InstanceElement(ElemID.CONFIG_NAME, configType, _.pickBy(config, values.isDefined))
+
+const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
+  const {
+    lockedElementsToExclude,
+    ...allFetchConfigExceptLockedElements
+  } = config[FETCH] ?? {}
   if (lockedElementsToExclude === undefined) {
-    return [config]
+    return [toConfigInstance(config)]
   }
-  delete config.value[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
-  const lockedElementsToExcludeConf = new InstanceElement(ElemID.CONFIG_NAME, configType, { [FETCH]: { [LOCKED_ELEMENTS_TO_EXCLUDE]: lockedElementsToExclude } }, ['lockedElements'])
-  return [config, lockedElementsToExcludeConf]
+  config[FETCH] = allFetchConfigExceptLockedElements
+  const lockedElementsConfig: NetsuiteConfig = {
+    fetch: { lockedElementsToExclude },
+  }
+  return [
+    toConfigInstance(config),
+    new InstanceElement(
+      ElemID.CONFIG_NAME,
+      configType,
+      lockedElementsConfig,
+      ['lockedElements']
+    ),
+  ]
 }
 
 export const getConfigFromConfigChanges = (
@@ -716,24 +712,19 @@ export const getConfigFromConfigChanges = (
   failedTypes: FailedTypes,
   currentConfig: NetsuiteConfig
 ): { config: InstanceElement[]; message: string } | undefined => {
-  const conf = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    configType,
-    _.pickBy(_.cloneDeep(currentConfig), values.isDefined),
-  )
-
+  const config = _.cloneDeep(currentConfig)
   const {
     didUpdateFetchFormat,
     didUpdateDeployFormat,
     didUpdateSuiteAppTypesFormat,
-  } = updateConfigFormat(conf)
+  } = updateConfigFormat(config)
   const didUpdateFromFailures = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
     failedTypes,
-    conf.value
+    config
   )
-  const message = [
+  const messages = [
     didUpdateFromFailures
       ? STOP_MANAGING_ITEMS_MSG
       : undefined,
@@ -746,7 +737,10 @@ export const getConfigFromConfigChanges = (
     didUpdateDeployFormat
       ? UPDATE_DEPLOY_CONFIG
       : undefined,
-  ].filter(values.isDefined).join(' In addition, ')
+  ].filter(values.isDefined)
 
-  return message !== '' ? { config: splitConfig(conf), message } : undefined
+  return messages.length > 0 ? {
+    config: splitConfig(config),
+    message: messages.join(' In addition, '),
+  } : undefined
 }

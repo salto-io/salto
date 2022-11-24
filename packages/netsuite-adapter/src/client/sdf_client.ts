@@ -40,7 +40,7 @@ import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
-import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
+import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SdfCredentials } from './credentials'
 import {
@@ -665,7 +665,7 @@ export default class SdfClient {
     }
   }
 
-  private static createFailedImportsMap(failedImports: FailedImport[]): NetsuiteQueryParameters['types'] {
+  private static createFailedImportsMap(failedImports: FailedImport[]): NetsuiteTypesQueryParams {
     return _(failedImports)
       .groupBy(failedImport => SdfClient.fixTypeName(failedImport.customObject.type))
       .mapValues(failedImportsGroup => failedImportsGroup.map(

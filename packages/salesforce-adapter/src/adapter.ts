@@ -39,7 +39,7 @@ import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
 import emailTemplateFilter from './filters/email_template_static_files'
-import profileDeployFilter from './filters/profile_deploy'
+import minifyDeployFilter from './filters/minify_deploy'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
@@ -142,7 +142,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: splitCustomLabels },
   { creator: customMetadataTypeFilter },
   { creator: xmlAttributesFilter },
-  { creator: profileDeployFilter },
+  { creator: minifyDeployFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },

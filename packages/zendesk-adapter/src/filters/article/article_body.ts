@@ -20,110 +20,112 @@ import {
   isInstanceChange, isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import wu from 'wu'
 import { FilterCreator } from '../../filter'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME } from '../../constants'
+import {
+  ARTICLE_ATTACHMENTS_FIELD,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME, ARTICLES_FIELD,
+  BRAND_TYPE_NAME, CATEGORIES_FIELD,
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME, SECTIONS_FIELD,
+} from '../../constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { isDefined } = lowerDashValues
+
 
 const BODY_FIELD = 'body'
 
-const BASE_URL_REGEX = /(https:\/\/.*\.zendesk\.com)/
-const ATTACHED_IMG_URL_REGEX = /(https:\/\/.*?\.zendesk\.com\/hc\/article_attachments\/\d*)/g
-const ARTICLE_ATTACHMENT_ID_URL_REGEX = /\/article_attachments\/(\d*)/
-const ARTICLE_REF_URL_REGEX = /(https:\/\/.*\.zendesk\.com\/hc\/.*\/articles\/\d*)/g
-const ARTICLE_REF_URL_GROUPS_REGEX = /((?<urlSubdomain>https:\/\/.*\.zendesk\.com)(?<translation>\/hc\/.*\/articles\/)(?<urlArticleId>\d*))/g
+const ELEMENTS_REGEXES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, ARTICLE_ATTACHMENTS_FIELD].map(
+  field => ({
+    field,
+    urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
+    idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
+  })
+)
 
-const referenceArticleUrl = ({
-  articleUrl,
-  brandInstances,
-  articleInstances,
-}: {
-  articleUrl: string
-  brandInstances: InstanceElement[]
-  articleInstances: InstanceElement[]
-}): TemplatePart[] => {
-  const urlParts = ARTICLE_REF_URL_GROUPS_REGEX.exec(articleUrl)?.groups ?? {}
-  // https://stackoverflow.com/questions/4724701/regexp-exec-returns-null-sporadically
-  ARTICLE_REF_URL_GROUPS_REGEX.lastIndex = 0
-  const { urlSubdomain, translation, urlArticleId } = urlParts
+const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
+const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
-  const urlBrand = brandInstances
-    .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
-  const referencedArticle = articleInstances
-    .find(articleInstance => articleInstance.value.id.toString() === urlArticleId)
-  if (!isInstanceElement(urlBrand) || !isInstanceElement(referencedArticle)) {
-    return [articleUrl]
+// Attempt to match the regex to an element and create a reference to that element
+const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex }: {
+  urlPart: string
+  urlBrand: InstanceElement
+  idToInstance: Record<string, InstanceElement>
+  idRegex: RegExp
+}): TemplatePart[] | undefined => {
+  const { url, id } = urlPart.match(idRegex)?.groups ?? {}
+  if (url !== undefined && id !== undefined) {
+    const referencedInstance = idToInstance[id]
+    if (referencedInstance !== undefined && referencedInstance.value.brand === urlBrand.value.id) {
+      // We want to keep the original url and replace just the id
+      return [url, new ReferenceExpression(referencedInstance.elemID, referencedInstance)]
+    }
   }
-  return [
-    new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url),
-    translation,
-    new ReferenceExpression(referencedArticle.elemID, referencedArticle),
-  ]
+  return undefined
 }
 
-const referenceAttachedImageUrl = ({
-  imageUrl,
-  brandInstances,
-  articleAttachmentsById,
-}: {
-  imageUrl: string
-  brandInstances: InstanceElement[]
-  articleAttachmentsById: Record<string, InstanceElement>
+const referenceUrls = ({ urlPart, urlBrand, additionalInstances }: {
+  urlPart: string
+  urlBrand: InstanceElement
+  additionalInstances: Record<string, Record<string, InstanceElement>>
 }): TemplatePart[] => {
-  const urlSubdomain = imageUrl.match(BASE_URL_REGEX)?.pop()
-  const urlBrand = brandInstances
-    .find(brandInstance => brandInstance.value.brand_url === urlSubdomain)
-  const urlArticleAttachmentId = imageUrl.match(ARTICLE_ATTACHMENT_ID_URL_REGEX)?.pop()
-  if (urlArticleAttachmentId === undefined) {
-    return [imageUrl]
+  const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
+  // We already made sure that the brand exists, so we can just return it
+  if (urlSubdomain !== undefined) {
+    return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
   }
-  const referencedArticleAttachment = articleAttachmentsById[urlArticleAttachmentId]
-  if (!isInstanceElement(urlBrand) || !isInstanceElement(referencedArticleAttachment)) {
-    return [imageUrl]
-  }
-  return [
-    new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url),
-    '/hc/article_attachments/',
-    new ReferenceExpression(referencedArticleAttachment.elemID, referencedArticleAttachment),
-  ]
+
+  // Attempt to match other instances, stop on the first result
+  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field }) =>
+    createInstanceReference({ urlPart, urlBrand, idToInstance: additionalInstances[field], idRegex })).find(isDefined)
+
+  // If nothing matched, return the original url
+  return result ?? [urlPart]
 }
 
-const updateArticleBody = ({
-  articleInstance,
-  brandInstances,
-  articleInstances,
-  articleAttachmentsById,
-} : {
-  articleInstance: InstanceElement
-  brandInstances: InstanceElement[]
-  articleInstances: InstanceElement[]
-  articleAttachmentsById: Record<string, InstanceElement>
-}): void => {
+const matchBrand = (url: string, brands: Record<string, InstanceElement>): InstanceElement | undefined => {
+  const urlSubdomain = url.match(DOMAIN_REGEX)?.pop()
+  const urlBrand = urlSubdomain ? brands[urlSubdomain] : undefined
+  if (urlBrand !== undefined) {
+    return urlBrand
+  }
+  return undefined
+}
+
+const updateArticleBody = (
+  articleInstance: InstanceElement,
+  additionalInstances: Record<string, Record<string, InstanceElement>>
+): void => {
   const originalArticleBody = articleInstance.value[BODY_FIELD]
   if (!_.isString(originalArticleBody)) {
     return
   }
+
+  // Find the urls that are in the body
   const processedArticleBody = extractTemplate(
     originalArticleBody,
-    [ARTICLE_REF_URL_REGEX, ATTACHED_IMG_URL_REGEX],
-    expression => {
-      const articleUrlReference = expression.match(ARTICLE_REF_URL_REGEX)
-      if (articleUrlReference) {
-        return referenceArticleUrl({ articleUrl: expression, brandInstances, articleInstances })
+    [URL_REGEX],
+    url => {
+      // Make sure that a brand exists for that domain
+      const urlBrand = matchBrand(url, additionalInstances[BRAND_TYPE_NAME])
+      if (urlBrand === undefined) {
+        return url
       }
-      const attachedImageReference = expression.match(ATTACHED_IMG_URL_REGEX)
-      if (attachedImageReference) {
-        return referenceAttachedImageUrl({
-          imageUrl: expression,
-          brandInstances,
-          articleAttachmentsById,
-        })
-      }
-      return expression
-    },
+      // Extract the referenced instances inside
+      const urlParts = extractTemplate(
+        url,
+        [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)],
+        urlPart => referenceUrls({ urlPart, urlBrand, additionalInstances })
+      )
+      return _.isString(urlParts) ? urlParts : urlParts.parts
+    }
   )
+
   articleInstance.value.body = processedArticleBody
 }
 
@@ -148,26 +150,27 @@ const filterCreator: FilterCreator = () => {
   return {
     onFetch: async elements => {
       const instances = elements.filter(isInstanceElement)
-      const brandInstances = instances
-        .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
-      const articleInstances = instances
-        .filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME)
-      const articleAttachmentsById: Record<string, InstanceElement> = _.keyBy(
-        instances.filter(
-          e => e.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME && e.value.id !== undefined
-        ),
-        instance => _.toString(instance.value.id)
-      )
+      const additionalInstances = {
+        [BRAND_TYPE_NAME]:
+            _.keyBy(instances.filter(e => e.elemID.typeName === BRAND_TYPE_NAME), i => _.toString(i.value.brand_url)),
+        [CATEGORIES_FIELD]:
+            _.keyBy(instances.filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME), i => _.toString(i.value.id)),
+        [SECTIONS_FIELD]:
+            _.keyBy(instances.filter(e => e.elemID.typeName === SECTION_TYPE_NAME), i => _.toString(i.value.id)),
+        [ARTICLES_FIELD]:
+            _.keyBy(instances.filter(e => e.elemID.typeName === ARTICLE_TYPE_NAME), i => _.toString(i.value.id)),
+        [ARTICLE_ATTACHMENTS_FIELD]:
+            _.keyBy(
+              instances.filter(e => e.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME && e.value.id !== undefined),
+              i => _.toString(i.value.id)
+            ),
+      }
+
       instances
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
-          updateArticleBody({
-            articleInstance,
-            brandInstances,
-            articleInstances,
-            articleAttachmentsById,
-          })))
+          updateArticleBody(articleInstance, additionalInstances)))
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)

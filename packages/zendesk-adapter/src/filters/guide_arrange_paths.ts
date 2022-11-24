@@ -76,7 +76,7 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [SECTION_ORDER_TYPE_NAME]: 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
-  [GUIDE_LOCALE]: 'guide_locale',
+  [GUIDE_LOCALE]: 'locale',
 }
 
 /**

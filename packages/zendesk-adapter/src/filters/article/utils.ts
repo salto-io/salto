@@ -27,9 +27,10 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { ARTICLE_ATTACHMENT_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
+import { ZendeskApiConfig } from '../../config'
 
 const log = logger(module)
-const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
+const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH, generateInstanceNameFromConfig } = elementsUtils
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
 export const ATTACHMENTS_FIELD_NAME = 'attachments'
@@ -63,33 +64,34 @@ const isAttachments = (value: unknown): value is Attachment[] => {
 }
 
 const createAttachmentInstance = ({
-  attachment, attachmentType, article, content,
+  attachment, attachmentType, article, content, apiDefinitions,
 }: {
   attachment: Attachment
   attachmentType: ObjectType
   article: InstanceElement
   content: Buffer
+  apiDefinitions: ZendeskApiConfig
 }): InstanceElement => {
-  const name = elementsUtils.ducktype.toNestedTypeName(
-    article.elemID.name, `${attachment.file_name}${attachment.inline ? '_inline' : ''}`
-  )
+  const resourcePathName = `${normalizeFilePathPart(article.value.title)}/${normalizeFilePathPart(attachment.file_name)}`
+  const attachmentValues = {
+    id: attachment.id,
+    filename: attachment.file_name,
+    contentType: attachment.content_type,
+    content: new StaticFile({
+      filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
+      content,
+    }),
+    inline: attachment.inline,
+    brand: article.value.brand,
+  }
+
+  const name = generateInstanceNameFromConfig(attachmentValues, ARTICLE_ATTACHMENT_TYPE_NAME, apiDefinitions)
   const naclName = naclCase(name)
   const pathName = pathNaclCase(naclName)
-  const resourcePathName = `${normalizeFilePathPart(article.value.title)}/${normalizeFilePathPart(attachment.file_name)}`
   return new InstanceElement(
     naclName,
     attachmentType,
-    {
-      id: attachment.id,
-      filename: attachment.file_name,
-      contentType: attachment.content_type,
-      content: new StaticFile({
-        filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
-        content,
-      }),
-      inline: attachment.inline,
-      brand: article.value.brand,
-    },
+    attachmentValues,
     [ZENDESK, RECORDS_PATH, ARTICLE_ATTACHMENT_TYPE_NAME, pathName],
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(article.elemID, article)] },
   )
@@ -113,12 +115,13 @@ export const createAttachmentType = (): ObjectType =>
   })
 
 const getAttachmentContent = async ({
-  client, attachment, article, attachmentType,
+  client, attachment, article, attachmentType, apiDefinitions,
 }: {
   client: ZendeskClient
   attachment: Attachment
   article: InstanceElement
   attachmentType: ObjectType
+  apiDefinitions: ZendeskApiConfig
 }): Promise<InstanceElement | undefined> => {
   const res = await client.getSinglePage({
     url: `/hc/article_attachments/${attachment.id}/${attachment.file_name}`,
@@ -131,13 +134,14 @@ const getAttachmentContent = async ({
     }. Not adding article attachments`)
     return undefined
   }
-  return createAttachmentInstance({ attachment, attachmentType, article, content })
+  return createAttachmentInstance({ attachment, attachmentType, article, content, apiDefinitions })
 }
 
-export const getArticleAttachments = async ({ client, article, attachmentType }: {
+export const getArticleAttachments = async ({ client, article, attachmentType, apiDefinitions }: {
   client: ZendeskClient
   article: InstanceElement
   attachmentType: ObjectType
+  apiDefinitions: ZendeskApiConfig
 }): Promise<InstanceElement[]> => {
   const listAttachmentsResponse = await client.getSinglePage({
     url: `/api/v2/help_center/articles/${article.value.id}/attachments`,
@@ -156,7 +160,7 @@ export const getArticleAttachments = async ({ client, article, attachmentType }:
   }
   const attachmentInstances = (await Promise.all(
     _.orderBy(attachments, ['file_name', 'content_type', 'inline']).map(async attachment =>
-      getAttachmentContent({ client, attachment, article, attachmentType }))
+      getAttachmentContent({ client, attachment, article, attachmentType, apiDefinitions }))
   )).filter(values.isDefined)
   if (attachmentInstances.length > 0) {
     article.value[ATTACHMENTS_FIELD_NAME] = attachmentInstances

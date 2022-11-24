@@ -33,6 +33,7 @@ import { prepRef } from './article_body'
 import { EVERYONE } from '../everyone_user_segment'
 import ZendeskClient from '../../client/client'
 import { createAttachmentType, createUnassociatedAttachment, deleteArticleAttachment, getArticleAttachments } from './utils'
+import { API_DEFINITIONS_CONFIG } from '../../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -198,6 +199,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           client: brandIdToClient[article.value.brand],
           attachmentType,
           article,
+          apiDefinitions: config[API_DEFINITIONS_CONFIG],
         })))).flat()
 
       // Verify article_attachment type added only once

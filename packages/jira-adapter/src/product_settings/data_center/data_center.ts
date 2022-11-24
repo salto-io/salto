@@ -219,8 +219,12 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/group/bulk',
   },
   {
-    httpMethods: ['get'],
+    httpMethods: ['get', 'post'],
     url: '/rest/api/3/issuetypescheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/issuetypescheme/\\d+',
   },
   {
     httpMethods: ['get'],

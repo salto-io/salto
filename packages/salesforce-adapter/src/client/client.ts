@@ -121,6 +121,7 @@ const errorMessagesToRetry = [
   'SERVER_UNAVAILABLE',
   'system may be currently unavailable',
   'Unexpected internal servlet state',
+  'socket hang up',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

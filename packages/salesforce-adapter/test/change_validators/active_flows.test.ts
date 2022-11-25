@@ -49,7 +49,7 @@ describe('active flows change validator', () => {
     it('should inform that a new inactive flow version will be created', async () => {
       flowChanges = toChange({ before: beforeRecord, after: otherModifications })
       changeValidator = activeFlowChangeValidator(
-        { fetch: { fetchAllCustomSettings: true } }, true // TODO: change to preferActive
+        { fetch: { preferActiveFlowVersions: true } }, true
       )
       const changeErrors = await changeValidator([flowChanges])
       const [changeError] = changeErrors

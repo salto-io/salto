@@ -167,8 +167,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): Chan
   async (changes, elementsSource) => {
     const flowSettings = isUndefined(elementsSource)
       ? undefined : await elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
-    // TODO: change to preferActiveFlowVersions
-    const isPreferActiveVersion = config.fetch?.fetchAllCustomSettings ?? false
+    const isPreferActiveVersion = config.fetch?.preferActiveFlowVersions ?? false
     const isEnableFlowDeployAsActiveEnabled = isUndefined(flowSettings)
       ? false : flowSettings.value.enableFlowDeployAsActiveEnabled
     const flowChanges = await awu(changes)

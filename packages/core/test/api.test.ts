@@ -28,12 +28,14 @@ import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { createElementSource } from './common/helpers'
 import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
-import { getLoginStatuses } from '../src/api'
+import { getAdapterConfigOptionsType, getLoginStatuses } from '../src/api'
 
 const { awu } = collections.asynciterable
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 const mockServiceWithInstall = 'adapterWithInstallMethod'
+const mockServiceWithConfigCreator = 'adapterWithConfigCreator'
+
 
 const ACCOUNTS = [mockService, emptyMockService]
 
@@ -85,9 +87,22 @@ describe('api.ts', () => {
     install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
   }
 
+  const mockConfigOptionsObjectType = new ObjectType({
+    elemID: new ElemID('mock'),
+  })
+
+  const mockAdapterWithConfigCreator = {
+    ...mockAdapter,
+    configCreator: {
+      getConfig: jest.fn(),
+      optionsType: mockConfigOptionsObjectType,
+    },
+  }
+
   adapterCreators[mockService] = mockAdapter
   adapterCreators[emptyMockService] = mockEmptyAdapter
   adapterCreators[mockServiceWithInstall] = mockAdapterWithInstall
+  adapterCreators[mockServiceWithConfigCreator] = mockAdapterWithConfigCreator
 
   const typeWithHiddenField = new ObjectType({
     elemID: new ElemID(mockService, 'dummyHidden'),
@@ -712,6 +727,14 @@ describe('api.ts', () => {
       expect(Object.keys(statuses).length).toEqual(2)
       expect(Object.keys(statuses)).toContain('salto1')
       expect(Object.keys(statuses)).toContain('salto2')
+    })
+  })
+  describe('getAdapterConfigOptionsType', () => {
+    it('should returns adapter configCreator.optionsType when defined', () => {
+      expect(getAdapterConfigOptionsType(mockServiceWithConfigCreator)).toEqual(mockConfigOptionsObjectType)
+    })
+    it('should returns undefined when adapter configCreator is undefined', () => {
+      expect(getAdapterConfigOptionsType(mockService)).toBeUndefined()
     })
   })
 })

@@ -15,7 +15,7 @@
 */
 import { Change, ChangeValidator, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { elementSource } from '@salto-io/workspace'
+// import { elementSource } from '@salto-io/workspace'
 import activeFlowChangeValidator from '../../src/change_validators/active_flows'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
@@ -80,7 +80,8 @@ describe('active flows change validator', () => {
     describe('non-sandbox env', () => {
       const flowSettings = createInstanceElement({ fullName: '',
         enableFlowDeployAsActiveEnabled: true }, mockTypes.FlowSettings)
-      const elementsSource = elementSource.createInMemoryElementSource([flowSettings])
+      const elementsSource = buildElementsSourceFromElements([flowSettings])
+      // const elementsSources = elementSource.createInMemoryElementSource([flowSettings])
       beforeEach(() => {
         changeValidator = activeFlowChangeValidator(
           { }, false
@@ -115,7 +116,7 @@ describe('active flows change validator', () => {
         })
         it('should have info message and post deploy action regarding the new flow version', async () => {
           const changeErrors = await changeValidator(
-            [flowChanges], buildElementsSourceFromElements([flowSettings])
+            [flowChanges], elementsSource
           )
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
@@ -137,7 +138,7 @@ describe('active flows change validator', () => {
         })
         it('should have post deploy action regarding the new flow version', async () => {
           const changeErrors = await changeValidator(
-            [flowChanges], buildElementsSourceFromElements([flowSettings])
+            [flowChanges], elementsSource
           )
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors

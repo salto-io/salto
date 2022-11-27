@@ -61,7 +61,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       parentChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, ['translations', PARENT_SECTION_ID_FIELD, ARTICLES_FIELD, SECTIONS_FIELD])
+        await deployChange(change, client, config.apiDefinitions, ['translations', PARENT_SECTION_ID_FIELD, ARTICLES_FIELD, SECTIONS_FIELD, 'brand'])
       }
     )
     // need to deploy separately parent_section_id if exists since zendesk API does not support

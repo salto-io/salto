@@ -24,7 +24,7 @@ import { naclCase, buildElementsSourceFromElements } from '@salto-io/adapter-uti
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-// import { resolve } from '@salto-io/workspace/dist/src/expressions'
+import { resolve } from '../../workspace/src/expressions'
 import {
   DEFAULT_CONFIG,
   API_DEFINITIONS_CONFIG,
@@ -37,7 +37,11 @@ import {
   BRAND_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
-  SECTION_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  SECTION_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  PERMISSION_GROUP_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
 } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { getChangeGroupIds } from '../src/group_change'
@@ -365,25 +369,25 @@ describe('Zendesk adapter E2E', () => {
       })
       elements = fetchResult.elements
       expect(fetchResult.errors).toHaveLength(0)
-      adapterAttr = realAdapter(
-        { credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements(elements) },
-        {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            ...DEFAULT_CONFIG[FETCH_CONFIG],
-            include: [
-              { type: '.*' },
-            ],
-            exclude: [],
-            enableGuide: true,
-          },
-          [API_DEFINITIONS_CONFIG]: {
-            ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-            supportedTypes: ALL_SUPPORTED_TYPES,
-          },
-        }
-      )
+      // adapterAttr = realAdapter(
+      //   { credentials: credLease.value,
+      //     elementsSource: buildElementsSourceFromElements(elements) },
+      //   {
+      //     ...DEFAULT_CONFIG,
+      //     [FETCH_CONFIG]: {
+      //       ...DEFAULT_CONFIG[FETCH_CONFIG],
+      //       include: [
+      //         { type: '.*' },
+      //       ],
+      //       exclude: [],
+      //       enableGuide: true,
+      //     },
+      //     [API_DEFINITIONS_CONFIG]: {
+      //       ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+      //       supportedTypes: ALL_SUPPORTED_TYPES,
+      //     },
+      //   }
+      // )
     }
 
     /**
@@ -404,6 +408,7 @@ describe('Zendesk adapter E2E', () => {
     }
 
     beforeAll(async () => {
+      // eslint-disable-next-line no-console
       console.log('started beforeall')
       credLease = await credsLease()
       adapterAttr = realAdapter(
@@ -456,6 +461,7 @@ describe('Zendesk adapter E2E', () => {
     afterAll(async () => {
       // eslint-disable-next-line no-console
       console.log('started afterall')
+      elements = await resolve(elements, buildElementsSourceFromElements(elements))
       const firstGroupChanges = _.mapValues(
         groupIdToInstances,
         instancesToRemove => instancesToRemove.map(inst => {
@@ -465,7 +471,6 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
-      // elements = await resolve(elements, adapterAttr.adapter.elementsSource)
       await deployChanges(adapterAttr, firstGroupChanges)
       if (credLease.return) {
         await credLease.return()
@@ -660,12 +665,8 @@ describe('Zendesk adapter E2E', () => {
       // not needed)
       const toAdd = [categoryHeTranslationInstance, sectionInstance, sectionEnTranslationInstance]
       await deployAndFetch(toAdd, false)
-      const checkedsSecondDefinition = checkInstancesAreDefined([
-        categoryHeTranslationInstance,
-        sectionInstance,
-        sectionEnTranslationInstance,
-      ])
-      const section = checkedsSecondDefinition[sectionInstance.elemID.name]
+      const checkedSecondDefinition = checkInstancesAreDefined([...toAdd])
+      const section = checkedSecondDefinition[sectionInstance.elemID.name]
       if (section === undefined) {
         return
       }
@@ -680,9 +681,10 @@ describe('Zendesk adapter E2E', () => {
           body: 'this is a test',
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
-        parent: sectionInstance,
+        parent: section,
         name: `e2eHelpCenter_${categoryName}_${sectionName}__he`,
       })
+      // both sections have the same name, as one is inside the other there is no collision in elemID
       const section2Name = createName('section')
       const section2Instance = createInstanceElement({
         type: SECTION_TYPE_NAME,
@@ -691,6 +693,7 @@ describe('Zendesk adapter E2E', () => {
           source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           category_id: new ReferenceExpression(category.elemID, category),
+          parent_section_id: new ReferenceExpression(section.elemID, section),
           direct_parent_id: new ReferenceExpression(section.elemID, section),
           direct_parent_type: SECTION_TYPE_NAME,
         },
@@ -702,27 +705,79 @@ describe('Zendesk adapter E2E', () => {
         valuesOverride: {
           locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
           outdated: false,
-          title: sectionName,
+          title: section2Name,
           draft: false,
           hidden: false,
           body: 'this is a test',
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: section2Instance,
-        name: `e2eHelpCenter_${categoryName}_${sectionName}_${section2Name}__en_us_b@uuuuum`,
+        name: `e2eHelpCenter_${categoryName}_${sectionName}_${section2Name}__en_us_b@uuuuuum`,
       })
       section2Instance.value.translations = [
         new ReferenceExpression(section2EnTranslationInstance.elemID, section2EnTranslationInstance),
       ]
+      // create articles
+      const permissionGroup = elements
+        .filter(e => e.elemID.typeName === PERMISSION_GROUP_TYPE_NAME)
+        .filter(isInstanceElement)
+        .find(e => e.value.name === 'Admins')
+      const everyoneUserSegment = elements
+        .filter(e => e.elemID.typeName === USER_SEGMENT_TYPE_NAME)
+        .filter(isInstanceElement)
+        .find(e => e.value.user_type === 'Everyone')
 
-      const toAdd2 = [sectionHeTranslationInstance, section2Instance, section2EnTranslationInstance]
-      await deployAndFetch(toAdd2, false)
+      expect(permissionGroup).toBeDefined()
+      expect(everyoneUserSegment).toBeDefined()
+      if (permissionGroup === undefined || everyoneUserSegment === undefined) {
+        return
+      }
 
-      checkInstancesAreDefined([
+      const articleName = createName('article')
+      const articleInstance = createInstanceElement({
+        type: ARTICLE_TYPE_NAME,
+        valuesOverride: {
+          author_id: 'neta.marcus+zendesk@salto.io',
+          draft: true,
+          promoted: false,
+          section_id: new ReferenceExpression(section.elemID, section),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
+        },
+        name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}`,
+      })
+
+      const articleTranslationEn = createInstanceElement({
+        type: ARTICLE_TYPE_NAME,
+        valuesOverride: {
+          draft: true,
+          title: `${articleName}`,
+          body: 'this is a test',
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: articleInstance,
+        name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}__en_us_b@uuuuuum`,
+      })
+
+      articleInstance.value.translations = [
+        new ReferenceExpression(articleTranslationEn.elemID, articleTranslationEn),
+      ]
+
+      const toAdd2 = [
         sectionHeTranslationInstance,
         section2Instance,
         section2EnTranslationInstance,
-      ])
+        articleInstance,
+        articleTranslationEn,
+      ]
+      await deployAndFetch(toAdd2, false)
+      checkInstancesAreDefined([...toAdd2])
     })
   })
 })

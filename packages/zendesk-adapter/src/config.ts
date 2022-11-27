@@ -1887,6 +1887,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'parent_section_id', fieldType: 'number' },
         { fieldName: 'sections', fieldType: 'list<section>' },
         { fieldName: 'articles', fieldType: 'list<article>' },
         { fieldName: 'translations', fieldType: 'list<section_translation>' },

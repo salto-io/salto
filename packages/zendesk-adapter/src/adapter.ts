@@ -82,7 +82,6 @@ import slaPolicyFilter from './filters/sla_policy'
 import macroAttachmentsFilter from './filters/macro_attachments'
 import omitInactiveFilter from './filters/omit_inactive'
 import tagsFilter from './filters/tag'
-import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
@@ -159,7 +158,6 @@ export const DEFAULT_FILTERS = [
   // tagsFilter and guideLocalesFilter
   usersFilter,
   tagsFilter,
-  guideLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter

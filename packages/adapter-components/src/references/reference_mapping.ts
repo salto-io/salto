@@ -42,7 +42,7 @@ export type ReferenceSerializationStrategy = {
   }>
 )
 
-export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath'
+export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath' | 'locale'
 export const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -66,6 +66,11 @@ export const ReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'name',
     getReferenceId: topLevelId => topLevelId.createNestedID('name'),
+  },
+  locale: {
+    lookup: val => val,
+    lookupIndexName: 'locale',
+    serialize: ({ ref }) => ref.value.value.locale,
   },
 }
 

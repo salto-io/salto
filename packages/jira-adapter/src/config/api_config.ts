@@ -687,9 +687,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     request: {
       url: '/rest/api/3/project/{projectId}/permissionscheme',
-      queryParams: {
-        expand: 'all',
-      },
     },
     deployRequests: {
       add: {
@@ -720,65 +717,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  Projects: {
-    request: {
-      url: '/rest/api/3/project/search',
-      paginationField: 'startAt',
-      queryParams: {
-        expand: 'description,lead,url',
-      },
-      recurseInto: [
-        {
-          type: 'PageBeanComponentWithIssueCount',
-          toField: 'components',
-          context: [{ name: 'projectIdOrKey', fromField: 'id' }],
-        },
-        {
-          type: 'ContainerOfWorkflowSchemeAssociations',
-          toField: 'workflowScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'PermissionScheme',
-          toField: 'permissionScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'NotificationScheme',
-          toField: 'notificationScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'ProjectSecurityScheme',
-          toField: 'issueSecurityScheme',
-          context: [{ name: 'projectKeyOrId', fromField: 'key' }],
-          isSingle: true,
-        },
-        {
-          type: 'PageBeanIssueTypeScreenSchemesProjects',
-          toField: 'issueTypeScreenScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'PageBeanIssueTypeSchemeProjects',
-          toField: 'issueTypeScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'PageBeanFieldConfigurationSchemeProjects',
-          toField: 'fieldConfigurationScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-      ],
-    },
-  },
-
   RoleActor: {
     transformation: {
       fieldsToOmit: [
@@ -1772,10 +1710,6 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       {
         originalName: 'rest__api__3__projectCategory',
         newName: 'ProjectCategories',
-      },
-      {
-        originalName: 'PageBeanProject',
-        newName: 'Projects',
       },
       {
         originalName: 'ComponentWithIssueCount',

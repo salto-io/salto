@@ -39,6 +39,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/workflowscheme',
   },
   {
+    httpMethods: ['get'],
+    url: '/rest/api/3/workflowscheme/project.+',
+  },
+  {
     httpMethods: ['post'],
     url: '/rest/api/3/workflowscheme/.+/draft/publish',
   },
@@ -175,6 +179,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/issuetypescreenscheme/mapping.+',
   },
   {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuetypescreenscheme/project.+',
+  },
+  {
     httpMethods: ['get', 'post'],
     url: '/rest/api/3/fieldconfigurationscheme',
   },
@@ -193,6 +201,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['post'],
     url: '/rest/api/3/fieldconfigurationscheme/\\d+/mapping/delete',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/fieldconfigurationscheme/project.+',
   },
   {
     httpMethods: ['get', 'post'],
@@ -229,6 +241,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['get'],
     url: '/rest/api/3/issuetypescheme/mapping.+',
+  },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/issuetypescheme/project.+',
   },
 ]
 

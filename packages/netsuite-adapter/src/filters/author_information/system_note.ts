@@ -237,12 +237,16 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
     const instancesWithInternalId = getInstancesWithInternalIds(elements)
     const customRecordTypesWithInternalIds = getCustomRecordTypesWithInternalIds(elements)
     const customRecordsWithInternalIds = await getCustomRecordsWithInternalIds(elements)
+    const customRecordTypeNames = new Set(
+      customRecordsWithInternalIds.map(({ elemID }) => elemID.typeName)
+    )
 
     const queryIds = _.uniq(instancesWithInternalId
       .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]))
     if (customRecordTypesWithInternalIds.length > 0) {
       queryIds.push(
         ...customRecordTypesWithInternalIds
+          .filter(({ elemID }) => customRecordTypeNames.has(elemID.name))
           .map(getInternalId)
           .concat(TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE])
       )

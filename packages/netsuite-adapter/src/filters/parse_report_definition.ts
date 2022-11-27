@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { ElemID, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { isDefined } from '@salto-io/lowerdash/src/values'
+import { values } from '@salto-io/lowerdash'
 import { parseDefinition } from '../report_definition_parsing/report_definition_parser'
 import { NETSUITE, REPORT_DEFINITION } from '../constants'
 import { FilterCreator } from '../filter'
+import { reportdefinitionType as oldReportDefinition } from '../autogen/types/standard_types/reportdefinition'
 import { reportdefinitionType } from '../report_definition_parsing/parsed_report_definition'
 
 
@@ -38,7 +39,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       oldInstance: InstanceElement
     ): Promise<void> => {
       Object.assign(instance.value, await parseDefinition(instance.value.definition))
-      if (isDefined(oldInstance?.value.definition)) {
+      if (values.isDefined(oldInstance?.value.definition)) {
         if (_.isEqual(await parseDefinition(instance.value.definition),
           await parseDefinition(oldInstance.value.definition))) {
           // if instances only differ by definition we keep the old
@@ -66,6 +67,18 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
         })
     )
     elements.push(...parsedInstances)
+  },
+  preDeploy: async changes => {
+    const reportdefinition = oldReportDefinition().type
+    const removeValuesFromInstance = (instance: InstanceElement): void => {
+      instance.value = _.pickBy(instance.value, (_val, key) => key in reportdefinition.fields)
+    }
+
+    changes
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === REPORT_DEFINITION)
+      .forEach(instance => removeValuesFromInstance(instance))
   },
 })
 

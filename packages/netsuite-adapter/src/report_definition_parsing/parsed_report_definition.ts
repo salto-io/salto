@@ -78,11 +78,11 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-      KEY_COMPONENT: { refType: BuiltinTypes.NUMBER },
+      KEY_COMPONENT: { refType: BuiltinTypes.STRING },
       FIELD_TABLE: { refType: BuiltinTypes.STRING },
       FIELD_ALIAS: { refType: BuiltinTypes.STRING },
       FIELD_TARGET_TABLE: { refType: BuiltinTypes.STRING },
-      FIELD_FOREIGN_KEY: { refType: BuiltinTypes.NUMBER },
+      FIELD_FOREIGN_KEY: { refType: BuiltinTypes.STRING },
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
       FLAG_DESCENDING: { refType: BuiltinTypes.BOOLEAN },
       FLAG_SUBTOTAL: { refType: BuiltinTypes.BOOLEAN },
@@ -99,19 +99,19 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       FIELD_TABLE: { refType: BuiltinTypes.STRING },
       FIELD_ALIAS: { refType: BuiltinTypes.STRING },
       FIELD_TARGET_TABLE: { refType: BuiltinTypes.STRING },
-      FIELD_FOREIGN_KEY: { refType: BuiltinTypes.NUMBER },
+      FIELD_FOREIGN_KEY: { refType: BuiltinTypes.STRING },
       KEY_CUSTOM_FIELD: { refType: BuiltinTypes.STRING },
       FLAG_DIMENSION: { refType: BuiltinTypes.BOOLEAN },
       FIELD_UNIT_TYPE: { refType: BuiltinTypes.NUMBER },
       FALG_ROLLUP: { refType: BuiltinTypes.BOOLEAN },
       FIELD_DATE_FILTER_INDEX: { refType: BuiltinTypes.NUMBER },
-      FIELD_COMPARISON_TYPE: { refType: BuiltinTypes.STRING }, // VERFIY THIS!!
+      FIELD_COMPARISON_TYPE: { refType: BuiltinTypes.STRING },
       FLAG_APPLY_FORWARDING: { refType: BuiltinTypes.BOOLEAN },
       FIELD_ALT_DATE_SEGMENT: { refType: BuiltinTypes.STRING },
       FLAG_MEASURE: { refType: BuiltinTypes.BOOLEAN },
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
       FIELD_LABEL: { refType: BuiltinTypes.STRING },
-      FIELD_NEG_LABLE: { refType: BuiltinTypes.STRING }, // VERIFY THIS!!
+      FIELD_NEG_LABLE: { refType: BuiltinTypes.STRING },
       FIELD_URL: { refType: BuiltinTypes.STRING },
       FIELD_URL_TYPE: { refType: BuiltinTypes.STRING },
       FLAG_DUAL_COLUMN: { refType: BuiltinTypes.BOOLEAN },
@@ -128,12 +128,12 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       FLAG_DIV_BY_THOUSAND: { refType: BuiltinTypes.BOOLEAN },
       FLAG_NEG_IN_RED: { refType: BuiltinTypes.BOOLEAN },
       FIELD_NEG_VAL_FORMAT: { refType: BuiltinTypes.STRING },
-      FIELD_GROUP: { refType: BuiltinTypes.STRING }, // VERIFY THIS!!
-      FIELD_PARENT_GROUP: { refType: BuiltinTypes.STRING }, // VERIFY THIS!
-      FIELD_COLUMN_FILTER_GROUP: { refType: BuiltinTypes.STRING }, // VERIFY THIS!
+      FIELD_GROUP: { refType: BuiltinTypes.STRING },
+      FIELD_PARENT_GROUP: { refType: BuiltinTypes.STRING },
+      FIELD_COLUMN_FILTER_GROUP: { refType: BuiltinTypes.STRING },
       FIELD_FORMAT: { refType: BuiltinTypes.STRING },
-      FIELD_FORMULA: { refType: BuiltinTypes.STRING }, // VERIFY THIS!!
-      FIELD_FORMULA_BY_SEQ: { refType: BuiltinTypes.STRING }, // VERIFY THIS!!
+      FIELD_FORMULA: { refType: BuiltinTypes.STRING },
+      FIELD_FORMULA_BY_SEQ: { refType: BuiltinTypes.STRING },
       FLAG_TOTAL_FORMULA: { refType: BuiltinTypes.BOOLEAN },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
@@ -195,12 +195,12 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-      KEY_REPORT_ID: { refType: BuiltinTypes.STRING },
+      KEY_REPORT_ID: { refType: BuiltinTypes.NUMBER },
       KEY_SCRIPT_ID: { refType: BuiltinTypes.STRING },
       KEY_PACKAGE: { refType: BuiltinTypes.STRING },
       FIELD_KEY: { refType: BuiltinTypes.NUMBER },
       FIELD_CODE: { refType: BuiltinTypes.STRING },
-      FIELD_DESCRIPTION: { refType: BuiltinTypes.STRING }, // VERFIY THIS!
+      FIELD_DESCRIPTION: { refType: BuiltinTypes.STRING },
       FIELD_NAME: { refType: BuiltinTypes.STRING },
       FIELD_ORIGINAL_TITLE: { refType: BuiltinTypes.STRING },
       FIELD_PERM_TYPE: { refType: BuiltinTypes.STRING },
@@ -220,14 +220,14 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       KEY_ENTITY: { refType: BuiltinTypes.STRING },
       FLAG_SHOW_LINK: { refType: BuiltinTypes.BOOLEAN },
       FLAG_SUPPORTS_CONSOL_SUBSIDIARY: { refType: BuiltinTypes.BOOLEAN },
-      KEY_DEF_TOGGLE: { refType: BuiltinTypes.STRING }, // VERIFY THIS!!
+      KEY_DEF_TOGGLE: { refType: BuiltinTypes.NUMBER },
       FIELD_TOGGLE_TYPE: { refType: BuiltinTypes.STRING },
-      FIELD_TOGGLE_URL: { refType: BuiltinTypes.STRING }, // VERIFY THIS!
+      FIELD_TOGGLE_URL: { refType: BuiltinTypes.STRING },
       FLAG_AFFECTED_BY_COGS: { refType: BuiltinTypes.BOOLEAN },
-      FIELD_DEPRECATION_REASON: { refType: BuiltinTypes.STRING }, // VERIFY THIS!
+      FIELD_DEPRECATION_REASON: { refType: BuiltinTypes.STRING },
       FLAG_ACTIVITY_ONLY: { refType: BuiltinTypes.BOOLEAN },
       KEY_AUDIENCE: { refType: BuiltinTypes.NUMBER },
-      KEY_ACCESS_AUDIENCE: { refType: BuiltinTypes.STRING }, // VERIFY THIS!
+      KEY_ACCESS_AUDIENCE: { refType: BuiltinTypes.STRING },
       scriptid: {
         refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
         annotations: {
@@ -243,7 +243,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
         },
       },
       dependencies: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: createRefToElmWithValue(reportDefinitionDependencies),
         annotations: {
         },
       },

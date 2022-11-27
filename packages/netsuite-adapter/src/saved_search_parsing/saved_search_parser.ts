@@ -44,7 +44,7 @@ export const getAttributeValue = (attribute: AttributeObject): AttributeValue =>
   if (attribute._attributes.clazz === 'boolean') {
     return attribute._text === 'true'
   }
-  if (attribute._attributes.clazz === 'int') {
+  if (['int', 'double'].includes(attribute._attributes.clazz)) {
     return Number(attribute._text)
   }
   return attribute._text
@@ -78,7 +78,7 @@ export const extractSearchRecordsValues = (search: ElementCompact): Values[] =>
   collections.array.makeArray(search.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
 
-const getAudience = (search: ElementCompact[]): Values => {
+export const getAudience = (search: ElementCompact[]): Values => {
   const record = collections.array.makeArray(search).filter(i => Object.keys(i).includes('Record'))[0]
   return record === undefined ? [] : getObjectFromValues(record.Record.values.Value)
 }

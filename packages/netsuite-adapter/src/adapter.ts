@@ -61,6 +61,7 @@ import currencyExchangeRate from './filters/currency_exchange_rate'
 import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
+import parseReprotDefintion from './filters/parse_report_definition'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
@@ -136,6 +137,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
       parseSavedSearch,
+      parseReprotDefintion,
       convertLists,
       consistentValues,
       // convertListsToMaps must run after convertLists and consistentValues

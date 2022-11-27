@@ -27,7 +27,18 @@ import {
   RecordObject,
   getObjectFromValues,
   AttributeObject,
+  getAttributeValue
 } from '../saved_search_parsing/saved_search_parser'
+
+const LAYOUTS = 'layouts'
+const PARAMETERS = 'parameters'
+const COMPONENTS = 'components'
+const SORTS = 'sorts'
+const UI_PREFERENCES = 'ui_preferences'
+const FIELDS = 'fields'
+const CRITERIA = 'criteria'
+const AUDIENCE = 'audience'
+
 
 type InnerParamObject =
 {
@@ -41,9 +52,7 @@ type InnerParamObject =
 }
   _text: string
 }
-
 type ReportCriterionParent = { _attributs: { class:string; reference: string}}
-
 type ReportCriterionDescriptor =
 {
  components: InnerParamObject
@@ -55,15 +64,12 @@ type ReportCriterionDescriptor =
   }
  parent: ReportCriterionParent
 }
-
 type ReportCriterionValues = { _attributs: { class: string }; Record: RecordObject }
-
 type ReportCriterionObject = {
  descriptor: ReportCriterionDescriptor
  parent: ReportCriterionParent
  values: ReportCriterionValues
 }
-
 type ReportCriteria =
 {
   type: InnerParamObject
@@ -72,7 +78,6 @@ type ReportCriteria =
     ReportCriterion: ReportCriterionObject[]
   }
 }
-
 type ParameterObject =
 {
   key: InnerParamObject
@@ -107,13 +112,27 @@ const getUiPreferences = (uiPref: ElementCompact): Values =>
 export const parseDefinition = async (definition: string): Promise<Value> => {
   const reportParts = await getReportPartsFromDefinition(definition)
   const returnInstance = {}
-  safeAssignKeyValue(returnInstance, 'layouts', extractSearchRecordsValues(reportParts.definition.layouts))
-  safeAssignKeyValue(returnInstance, 'components', extractSearchRecordsValues(reportParts.definition.components))
-  safeAssignKeyValue(returnInstance, 'parameters', getReportParameters(reportParts.definition.parameters.values))
-  safeAssignKeyValue(returnInstance, 'sorts', extractSearchRecordsValues(reportParts.definition.sorts))
-  safeAssignKeyValue(returnInstance, 'fields', extractSearchRecordsValues(reportParts.definition.fields))
-  safeAssignKeyValue(returnInstance, 'ui_preferences', getUiPreferences(reportParts.definition.uiPreferences))
-  safeAssignKeyValue(returnInstance, 'criteria', getReportCriteria(reportParts.definition.criteria))
+  safeAssignKeyValue(
+    returnInstance, LAYOUTS, extractSearchRecordsValues(reportParts.definition.layouts)
+  )
+  safeAssignKeyValue(
+    returnInstance, COMPONENTS, extractSearchRecordsValues(reportParts.definition.components)
+  )
+  safeAssignKeyValue(
+    returnInstance, PARAMETERS, getReportParameters(reportParts.definition.parameters.values)
+  )
+  safeAssignKeyValue(
+    returnInstance, SORTS, extractSearchRecordsValues(reportParts.definition.sorts)
+  )
+  safeAssignKeyValue(
+    returnInstance, FIELDS, extractSearchRecordsValues(reportParts.definition.fields)
+  )
+  safeAssignKeyValue(
+    returnInstance, UI_PREFERENCES, getUiPreferences(reportParts.definition.uiPreferences)
+  )
+  safeAssignKeyValue(
+    returnInstance, CRITERIA, getReportCriteria(reportParts.definition.criteria)
+  )
   Object.assign(returnInstance, getFlags(reportParts.definition))
   return returnInstance
 }

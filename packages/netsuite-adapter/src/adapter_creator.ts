@@ -19,9 +19,9 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import { CLIENT_CONFIG, CONFIG, configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams } from './config'
+import { CLIENT_CONFIG, CONFIG, configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams, validateFetchConfig } from './config'
 import { NETSUITE } from './constants'
-import { validateFetchParameters, convertToQueryParams, validateFieldsToOmitConfig } from './query'
+import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
@@ -74,34 +74,23 @@ export const defaultCredentialsType = new ObjectType({
 })
 
 const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
-  if (!Array.isArray(installedSuiteApps)
-    || installedSuiteApps.some(suiteApp => typeof suiteApp !== 'string')) {
-    throw Error(`received an invalid ${CLIENT_CONFIG.installedSuiteApps} value: ${installedSuiteApps}`)
-  }
-
+  validateArrayOfStrings(installedSuiteApps, [CONFIG.client, CLIENT_CONFIG.installedSuiteApps])
   const invalidValues = installedSuiteApps.filter(id => !SUITEAPP_ID_FORMAT_REGEX.test(id))
   if (invalidValues.length !== 0) {
-    throw Error(`${CLIENT_CONFIG.installedSuiteApps} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
+    throw new Error(`${CLIENT_CONFIG.installedSuiteApps} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
   }
 }
 
-const validateArrayOfStrings = (values: Record<string, unknown>): void => {
-  Object.entries(values).forEach(([key, value]) => {
-    if (!_.isArray(value) || !value.every(_.isString)) {
-      throw Error(`invalid config - '${key}' should be a list of strings`)
-    }
-  })
+const validateRegularExpressions = (regularExpressions: string[]): void => {
+  const invalidRegularExpressions = regularExpressions
+    .filter(strRegex => !regex.isValidRegex(strRegex))
+  if (!_.isEmpty(invalidRegularExpressions)) {
+    const errMessage = `received an invalid ${CONFIG.filePathRegexSkipList} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
+    throw new Error(errMessage)
+  }
 }
 
-function validateConfig(config: unknown): asserts config is NetsuiteConfig {
-  const validateRegularExpressions = (regularExpressions: string[]): void => {
-    const invalidRegularExpressions = regularExpressions
-      .filter(strRegex => !regex.isValidRegex(strRegex))
-    if (!_.isEmpty(invalidRegularExpressions)) {
-      const errMessage = `received an invalid ${CONFIG.filePathRegexSkipList} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
-      throw Error(errMessage)
-    }
-  }
+function validateConfig(config: Record<string, unknown>): asserts config is NetsuiteConfig {
   const {
     fetch,
     fetchTarget,
@@ -110,38 +99,52 @@ function validateConfig(config: unknown): asserts config is NetsuiteConfig {
     client,
     filePathRegexSkipList,
     typesToSkip,
-  } = config as NetsuiteConfig
-  if (client?.fetchAllTypesAtOnce && fetchTarget !== undefined) {
-    log.warn(`${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`)
-    client.fetchAllTypesAtOnce = false
-  }
+  } = _.pick(config, Object.values(CONFIG))
+
   if (filePathRegexSkipList !== undefined) {
-    validateArrayOfStrings({ filePathRegexSkipList })
+    validateArrayOfStrings(filePathRegexSkipList, CONFIG.filePathRegexSkipList)
     validateRegularExpressions(filePathRegexSkipList)
   }
   if (typesToSkip !== undefined) {
-    validateArrayOfStrings({ typesToSkip })
+    validateArrayOfStrings(typesToSkip, CONFIG.typesToSkip)
   }
+
+  if (client !== undefined) {
+    validatePlainObject(client, CONFIG.client)
+    const {
+      fetchAllTypesAtOnce,
+      installedSuiteApps,
+    } = _.pick(client, Object.values(CLIENT_CONFIG))
+
+    if (fetchAllTypesAtOnce && fetchTarget !== undefined) {
+      log.warn(`${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`)
+      client[CLIENT_CONFIG.fetchAllTypesAtOnce] = false
+    }
+    if (installedSuiteApps !== undefined) {
+      validateInstalledSuiteApps(installedSuiteApps)
+    }
+  }
+
   if (fetchTarget !== undefined) {
+    validatePlainObject(fetchTarget, CONFIG.fetchTarget)
+    validateNetsuiteQueryParameters(fetchTarget, CONFIG.fetchTarget)
     validateFetchParameters(convertToQueryParams(fetchTarget))
   }
+
   if (skipList !== undefined) {
+    validatePlainObject(skipList, CONFIG.skipList)
+    validateNetsuiteQueryParameters(skipList, CONFIG.skipList)
     validateFetchParameters(convertToQueryParams(skipList))
   }
-  if (fetch?.include !== undefined) {
-    validateFetchParameters(fetch.include)
+
+  if (fetch !== undefined) {
+    validatePlainObject(fetch, CONFIG.fetch)
+    validateFetchConfig(fetch)
   }
-  if (fetch?.exclude !== undefined) {
-    validateFetchParameters(fetch.exclude)
-  }
-  if (fetch?.fieldsToOmit !== undefined) {
-    validateFieldsToOmitConfig(fetch.fieldsToOmit)
-  }
+
   if (deploy !== undefined) {
+    validatePlainObject(deploy, CONFIG.deploy)
     validateDeployParams(deploy)
-  }
-  if (client?.installedSuiteApps !== undefined) {
-    validateInstalledSuiteApps(client.installedSuiteApps)
   }
 }
 
@@ -162,7 +165,7 @@ const netsuiteConfigFromConfig = (
       return false
     })
   } catch (e) {
-    e.message = `failed to load Netsuite config: ${e.message}`
+    e.message = `Failed to load Netsuite config: ${e.message}`
     log.error(e.message)
     throw e
   }
@@ -190,7 +193,7 @@ const netsuiteCredentialsFromCredentials = (
   const throwOnInvalidAccountId = (credentials: Credentials): void => {
     const isValidAccountIdFormat = /^[A-Za-z0-9_\\-]+$/.test(credentials.accountId)
     if (!isValidAccountIdFormat) {
-      throw Error(`received an invalid accountId value: (${credsInstance.value.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`)
+      throw new Error(`received an invalid accountId value: (${credsInstance.value.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`)
     }
   }
 

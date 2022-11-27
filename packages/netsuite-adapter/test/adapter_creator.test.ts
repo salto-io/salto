@@ -338,6 +338,43 @@ describe('NetsuiteAdapter creator', () => {
       ).toThrow()
     })
 
+    it('should throw an error when fetchTarget is invalid', () => {
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              fetchTarget: {
+                types: ['type1', 'type2'],
+              },
+            }
+          ),
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow('fetchTarget.types should be an object')
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              fetchTarget: {
+                types: {
+                  type1: 'id',
+                },
+              },
+            }
+          ),
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow('fetchTarget.types.type1 should be a list of strings')
+    })
+
     it('should throw an error when include is invalid', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,

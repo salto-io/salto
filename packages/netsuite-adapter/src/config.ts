@@ -14,16 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { strings, values } from '@salto-io/lowerdash'
+import { strings, types as lowerdashTypes, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { CURRENCY, DATASET, EXCHANGE_RATE, NETSUITE, WORKBOOK } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
+import { AdditionalDependencies, AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
@@ -45,6 +45,13 @@ export type DeployParams = {
   }
 }
 
+export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
+  warnOnStaleWorkspaceData: 'warnOnStaleWorkspaceData',
+  validate: 'validate',
+  deployReferencedElements: 'deployReferencedElements',
+  additionalDependencies: 'additionalDependencies',
+}
+
 export type SdfClientConfig = {
   fetchAllTypesAtOnce?: boolean
   maxItemsInImportObjectsRequest?: number
@@ -53,7 +60,7 @@ export type SdfClientConfig = {
   installedSuiteApps?: string[]
 }
 
-export const CLIENT_CONFIG: Record<keyof SdfClientConfig, keyof SdfClientConfig> = {
+export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
   fetchAllTypesAtOnce: 'fetchAllTypesAtOnce',
   maxItemsInImportObjectsRequest: 'maxItemsInImportObjectsRequest',
   fetchTypeTimeoutInMinutes: 'fetchTypeTimeoutInMinutes',
@@ -79,7 +86,7 @@ export type NetsuiteConfig = {
   deployReferencedElements?: boolean
 }
 
-export const CONFIG: Record<keyof NetsuiteConfig, keyof NetsuiteConfig> = {
+export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   typesToSkip: 'typesToSkip',
   filePathRegexSkipList: 'filePathRegexSkipList',
   deploy: 'deploy',
@@ -357,26 +364,50 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
   },
 })
 
-const validateAdditionalDependencies = (
-  additionalDependencies: DeployParams['additionalDependencies']
+const additionalDependenciesConfigPath: string[] = [
+  CONFIG.deploy,
+  DEPLOY_PARAMS.additionalDependencies,
+]
+
+const validateAdditionalSdfDeployDependencies = (
+  { features, objects }: Record<keyof AdditionalSdfDeployDependencies, unknown>,
+  configName: string
 ): void => {
-  if (!_.isObject(additionalDependencies)) {
-    throw new Error(`Expected "additionalDependencies" to be an object or to be undefined, but received:\n ${additionalDependencies}`)
+  if (features !== undefined) {
+    validateArrayOfStrings(features, additionalDependenciesConfigPath.concat(configName, 'features'))
   }
-  const { include, exclude } = additionalDependencies
-  Object.entries({ include, exclude }).forEach(([configName, configValue]) => {
-    if (configValue === undefined) {
-      return
-    }
-    const { features, objects } = configValue
-    Object.entries({ features, objects }).forEach(([fieldName, fieldValue]) => {
-      if (fieldValue !== undefined && (
-        !_.isArray(fieldValue) || fieldValue.some(item => typeof item !== 'string')
-      )) {
-        throw new Error(`Expected "${configName}.${fieldName}" to be a list of strings or to be undefined, but received:\n ${fieldValue}`)
-      }
-    })
-  })
+  if (objects !== undefined) {
+    validateArrayOfStrings(objects, additionalDependenciesConfigPath.concat(configName, 'objects'))
+  }
+}
+
+const validateAdditionalDependencies = (
+  { include, exclude }: Record<keyof AdditionalDependencies, unknown>
+): void => {
+  if (include !== undefined) {
+    validatePlainObject(include, additionalDependenciesConfigPath.concat('include'))
+    validateAdditionalSdfDeployDependencies(include, 'include')
+  }
+  if (exclude !== undefined) {
+    validatePlainObject(exclude, additionalDependenciesConfigPath.concat('exclude'))
+    validateAdditionalSdfDeployDependencies(exclude, 'exclude')
+  }
+}
+
+export const validateFetchConfig = ({
+  include, exclude, fieldsToOmit,
+}: Record<keyof FetchParams, unknown>): void => {
+  if (include !== undefined) {
+    validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
+    validateFetchParameters(include)
+  }
+  if (exclude !== undefined) {
+    validatePlainObject(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
+    validateFetchParameters(exclude)
+  }
+  if (fieldsToOmit !== undefined) {
+    validateFieldsToOmitConfig(fieldsToOmit)
+  }
 }
 
 export const validateDeployParams = (
@@ -385,7 +416,7 @@ export const validateDeployParams = (
     warnOnStaleWorkspaceData,
     validate,
     additionalDependencies,
-  }: Partial<DeployParams>
+  }: Record<keyof DeployParams, unknown>
 ): void => {
   if (deployReferencedElements !== undefined
     && typeof deployReferencedElements !== 'boolean') {
@@ -400,6 +431,7 @@ export const validateDeployParams = (
     throw new Error(`Expected "validate" to be a boolean or to be undefined, but received:\n ${validate}`)
   }
   if (additionalDependencies !== undefined) {
+    validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
   }
 }
@@ -535,7 +567,7 @@ const combineFetchTypeQueryParams = (
     name,
     ...types.some(type => type.ids === undefined)
       ? {}
-      : { ids: _.uniq(types.flatMap(type => type.ids as string[])) },
+      : { ids: _.uniq(types.flatMap(type => type.ids ?? [])) },
   }))
   .value()
 

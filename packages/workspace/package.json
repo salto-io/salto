@@ -44,7 +44,6 @@
   },
   "devDependencies": {
     "@salto-io/dag": "0.3.26",
-    "@salto-io/salesforce-adapter": "0.3.26",
     "@salto-io/test-utils": "0.3.26",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",

@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { regex, strings } from '@salto-io/lowerdash'
+import { collections, regex, strings, types as lowerdashTypes } from '@salto-io/lowerdash'
 import { getStandardTypesNames } from './autogen/types'
-import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE, AUTHOR_INFO_CONFIG, CONFIG_FEATURES, STRICT_INSTANCE_STRUCTURE, FIELDS_TO_OMIT } from './constants'
+import { CONFIG_FEATURES } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from './types'
+
+const { makeArray } = collections.array
 
 const ERROR_MESSAGE_PREFIX = 'Received invalid adapter config input.'
 
@@ -53,14 +55,23 @@ export type FieldToOmitParams = {
 }
 
 export type FetchParams = {
-  [INCLUDE]?: QueryParams
-  [EXCLUDE]?: QueryParams
-  [LOCKED_ELEMENTS_TO_EXCLUDE]?: QueryParams
-  [AUTHOR_INFO_CONFIG]?: {
+  include?: QueryParams
+  exclude?: QueryParams
+  lockedElementsToExclude?: QueryParams
+  authorInformation?: {
     enable?: boolean
   }
-  [STRICT_INSTANCE_STRUCTURE]?: boolean
-  [FIELDS_TO_OMIT]?: FieldToOmitParams[]
+  strictInstanceStructure?: boolean
+  fieldsToOmit?: FieldToOmitParams[]
+}
+
+export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
+  include: 'include',
+  exclude: 'exclude',
+  lockedElementsToExclude: 'lockedElementsToExclude',
+  authorInformation: 'authorInformation',
+  strictInstanceStructure: 'strictInstanceStructure',
+  fieldsToOmit: 'fieldsToOmit',
 }
 
 export const convertToQueryParams = ({
@@ -95,8 +106,9 @@ export type NetsuiteQuery = TypesQuery & FileCabinetQuery & CustomRecordsQuery
 const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
   regex.isFullRegexMatch(str, type.name)
 
-export const validateFetchParameters = ({ types, fileCabinet }:
-  Partial<QueryParams>): void => {
+export const validateFetchParameters = ({
+  types, fileCabinet, // SALTO-2198 validate customRecords too
+}: Partial<Record<keyof QueryParams, unknown>>): void => {
   if (!Array.isArray(types) || !Array.isArray(fileCabinet)) {
     const typesErr = !Array.isArray(types) ? ' "types" field is expected to be an array\n' : ''
     const fileCabinetErr = !Array.isArray(fileCabinet) ? ' "fileCabinet" field is expected to be an array\n' : ''
@@ -107,7 +119,7 @@ export const validateFetchParameters = ({ types, fileCabinet }:
   if (corruptedTypesNames.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type name to be a string, but found:\n${JSON.stringify(corruptedTypesNames, null, 4)}.`)
   }
-  const corruptedTypesIds = types.filter(obj => (obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some(id => typeof id !== 'string'))))
+  const corruptedTypesIds = types.filter(obj => (obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some((id: unknown) => typeof id !== 'string'))))
   if (corruptedTypesIds.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
   }
@@ -147,7 +159,7 @@ export const validateFetchParameters = ({ types, fileCabinet }:
 
 export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void => {
   if (!Array.isArray(fieldsToOmitConfig)) {
-    throw new Error(`${ERROR_MESSAGE_PREFIX} "${FIELDS_TO_OMIT}" field is expected to be an array`)
+    throw new Error(`${ERROR_MESSAGE_PREFIX} "${FETCH_PARAMS.fieldsToOmit}" field is expected to be an array`)
   }
   const corruptedTypes = fieldsToOmitConfig.filter(obj => typeof obj.type !== 'string')
   if (corruptedTypes.length !== 0) {
@@ -273,3 +285,41 @@ export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
   areAllCustomRecordsMatch: typeName => !query.isCustomRecordTypeMatch(typeName),
   isCustomRecordMatch: objectID => !query.isCustomRecordMatch(objectID),
 })
+
+export function validateArrayOfStrings(
+  value: unknown,
+  configPath: string | string[]
+): asserts value is string[] {
+  if (!_.isArray(value) || !value.every(_.isString)) {
+    throw new Error(`${makeArray(configPath).join('.')} should be a list of strings`)
+  }
+}
+
+export function validatePlainObject(
+  value: unknown,
+  configPath: string | string[]
+): asserts value is Record<string, unknown> {
+  if (!_.isPlainObject(value)) {
+    throw new Error(`${makeArray(configPath).join('.')} should be an object`)
+  }
+}
+
+const netsuiteQueryParamsKeys: lowerdashTypes.TypeKeysEnum<NetsuiteQueryParameters> = {
+  types: 'types',
+  filePaths: 'filePaths',
+}
+export function validateNetsuiteQueryParameters(
+  values: Record<string, unknown>,
+  configName: string
+): asserts values is NetsuiteQueryParameters {
+  const { types, filePaths } = _.pick(values, Object.values(netsuiteQueryParamsKeys))
+  if (filePaths !== undefined) {
+    validateArrayOfStrings(filePaths, [configName, netsuiteQueryParamsKeys.filePaths])
+  }
+  if (types !== undefined) {
+    validatePlainObject(types, [configName, netsuiteQueryParamsKeys.types])
+    Object.entries(types).forEach(([key, value]) => {
+      validateArrayOfStrings(value, [configName, netsuiteQueryParamsKeys.types, key])
+    })
+  }
+}

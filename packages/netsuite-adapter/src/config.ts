@@ -14,24 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { strings, values } from '@salto-io/lowerdash'
+import { strings, types as lowerdashTypes, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import {
-  FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
-  SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
-  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
-  SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
-  INSTALLED_SUITEAPPS, ADDITIONAL_DEPS, VALIDATE, CURRENCY,
-  EXCHANGE_RATE,
-} from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams } from './query'
+import { CURRENCY, DATASET, EXCHANGE_RATE, NETSUITE, WORKBOOK } from './constants'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
+import { AdditionalDependencies, AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
@@ -44,39 +36,68 @@ export const DEFAULT_VALIDATE = true
 export const DEFAULT_USE_CHANGES_DETECTION = true
 
 export type DeployParams = {
-  [WARN_STALE_DATA]?: boolean
-  [VALIDATE]?: boolean
-  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
-  [ADDITIONAL_DEPS]?: {
-    [INCLUDE]?: Partial<AdditionalSdfDeployDependencies>
-    [EXCLUDE]?: Partial<AdditionalSdfDeployDependencies>
+  warnOnStaleWorkspaceData?: boolean
+  validate?: boolean
+  deployReferencedElements?: boolean
+  additionalDependencies?: {
+    include?: Partial<AdditionalSdfDeployDependencies>
+    exclude?: Partial<AdditionalSdfDeployDependencies>
   }
 }
 
+export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
+  warnOnStaleWorkspaceData: 'warnOnStaleWorkspaceData',
+  validate: 'validate',
+  deployReferencedElements: 'deployReferencedElements',
+  additionalDependencies: 'additionalDependencies',
+}
+
 export type SdfClientConfig = {
-  [FETCH_ALL_TYPES_AT_ONCE]?: boolean
-  [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]?: number
-  [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
-  [SDF_CONCURRENCY_LIMIT]?: number
-  [INSTALLED_SUITEAPPS]?: string[]
+  fetchAllTypesAtOnce?: boolean
+  maxItemsInImportObjectsRequest?: number
+  fetchTypeTimeoutInMinutes?: number
+  sdfConcurrencyLimit?: number
+  installedSuiteApps?: string[]
+}
+
+export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
+  fetchAllTypesAtOnce: 'fetchAllTypesAtOnce',
+  maxItemsInImportObjectsRequest: 'maxItemsInImportObjectsRequest',
+  fetchTypeTimeoutInMinutes: 'fetchTypeTimeoutInMinutes',
+  sdfConcurrencyLimit: 'sdfConcurrencyLimit',
+  installedSuiteApps: 'installedSuiteApps',
 }
 
 export type SuiteAppClientConfig = {
-  [SUITEAPP_CONCURRENCY_LIMIT]?: number
+  suiteAppConcurrencyLimit?: number
 }
 
 export type NetsuiteConfig = {
-  [TYPES_TO_SKIP]?: string[]
-  [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
-  [DEPLOY]?: DeployParams
-  [CONCURRENCY_LIMIT]?: number
-  [CLIENT_CONFIG]?: SdfClientConfig
-  [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
-  [FETCH]?: FetchParams
-  [FETCH_TARGET]?: NetsuiteQueryParameters
-  [SKIP_LIST]?: NetsuiteQueryParameters
-  [USE_CHANGES_DETECTION]?: boolean
-  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+  typesToSkip?: string[]
+  filePathRegexSkipList?: string[]
+  deploy?: DeployParams
+  concurrencyLimit?: number
+  client?: SdfClientConfig
+  suiteAppClient?: SuiteAppClientConfig
+  fetch?: FetchParams
+  fetchTarget?: NetsuiteQueryParameters
+  skipList?: NetsuiteQueryParameters
+  useChangesDetection?: boolean
+  deployReferencedElements?: boolean
+}
+
+export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
+  typesToSkip: 'typesToSkip',
+  filePathRegexSkipList: 'filePathRegexSkipList',
+  deploy: 'deploy',
+  concurrencyLimit: 'concurrencyLimit',
+  client: 'client',
+  suiteAppClient: 'suiteAppClient',
+  fetch: 'fetch',
+  fetchTarget: 'fetchTarget',
+  skipList: 'skipList',
+  useChangesDetection: 'useChangesDetection',
+  deployReferencedElements: 'deployReferencedElements',
 }
 
 const clientConfigType = createMatchingObjectType<SdfClientConfig>({
@@ -307,7 +328,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
 const additionalDependenciesInnerType = createMatchingObjectType<
 Partial<AdditionalSdfDeployDependencies>
 >({
-  elemID: new ElemID(NETSUITE, `${ADDITIONAL_DEPS}Inner`),
+  elemID: new ElemID(NETSUITE, 'additionalDependenciesInner'),
   fields: {
     features: { refType: new ListType(BuiltinTypes.STRING) },
     objects: { refType: new ListType(BuiltinTypes.STRING) },
@@ -320,7 +341,7 @@ Partial<AdditionalSdfDeployDependencies>
 const additionalDependenciesType = createMatchingObjectType<
 DeployParams['additionalDependencies']
 >({
-  elemID: new ElemID(NETSUITE, ADDITIONAL_DEPS),
+  elemID: new ElemID(NETSUITE, 'additionalDependencies'),
   fields: {
     include: { refType: additionalDependenciesInnerType },
     exclude: { refType: additionalDependenciesInnerType },
@@ -343,26 +364,50 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
   },
 })
 
-const validateAdditionalDependencies = (
-  additionalDependencies: DeployParams['additionalDependencies']
+const additionalDependenciesConfigPath: string[] = [
+  CONFIG.deploy,
+  DEPLOY_PARAMS.additionalDependencies,
+]
+
+const validateAdditionalSdfDeployDependencies = (
+  { features, objects }: Record<keyof AdditionalSdfDeployDependencies, unknown>,
+  configName: string
 ): void => {
-  if (!_.isObject(additionalDependencies)) {
-    throw new Error(`Expected "additionalDependencies" to be an object or to be undefined, but received:\n ${additionalDependencies}`)
+  if (features !== undefined) {
+    validateArrayOfStrings(features, additionalDependenciesConfigPath.concat(configName, 'features'))
   }
-  const { include, exclude } = additionalDependencies
-  Object.entries({ include, exclude }).forEach(([configName, configValue]) => {
-    if (configValue === undefined) {
-      return
-    }
-    const { features, objects } = configValue
-    Object.entries({ features, objects }).forEach(([fieldName, fieldValue]) => {
-      if (fieldValue !== undefined && (
-        !_.isArray(fieldValue) || fieldValue.some(item => typeof item !== 'string')
-      )) {
-        throw new Error(`Expected "${configName}.${fieldName}" to be a list of strings or to be undefined, but received:\n ${fieldValue}`)
-      }
-    })
-  })
+  if (objects !== undefined) {
+    validateArrayOfStrings(objects, additionalDependenciesConfigPath.concat(configName, 'objects'))
+  }
+}
+
+const validateAdditionalDependencies = (
+  { include, exclude }: Record<keyof AdditionalDependencies, unknown>
+): void => {
+  if (include !== undefined) {
+    validatePlainObject(include, additionalDependenciesConfigPath.concat('include'))
+    validateAdditionalSdfDeployDependencies(include, 'include')
+  }
+  if (exclude !== undefined) {
+    validatePlainObject(exclude, additionalDependenciesConfigPath.concat('exclude'))
+    validateAdditionalSdfDeployDependencies(exclude, 'exclude')
+  }
+}
+
+export const validateFetchConfig = ({
+  include, exclude, fieldsToOmit,
+}: Record<keyof FetchParams, unknown>): void => {
+  if (include !== undefined) {
+    validatePlainObject(include, [CONFIG.fetch, FETCH_PARAMS.include])
+    validateFetchParameters(include)
+  }
+  if (exclude !== undefined) {
+    validatePlainObject(exclude, [CONFIG.fetch, FETCH_PARAMS.exclude])
+    validateFetchParameters(exclude)
+  }
+  if (fieldsToOmit !== undefined) {
+    validateFieldsToOmitConfig(fieldsToOmit)
+  }
 }
 
 export const validateDeployParams = (
@@ -371,7 +416,7 @@ export const validateDeployParams = (
     warnOnStaleWorkspaceData,
     validate,
     additionalDependencies,
-  }: Partial<DeployParams>
+  }: Record<keyof DeployParams, unknown>
 ): void => {
   if (deployReferencedElements !== undefined
     && typeof deployReferencedElements !== 'boolean') {
@@ -386,6 +431,7 @@ export const validateDeployParams = (
     throw new Error(`Expected "validate" to be a boolean or to be undefined, but received:\n ${validate}`)
   }
   if (additionalDependencies !== undefined) {
+    validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
   }
 }
@@ -470,8 +516,8 @@ const toConfigSuggestions = (
   const config: NetsuiteConfig = {}
 
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
-    config[FETCH] = {
-      ...config[FETCH],
+    config.fetch = {
+      ...config.fetch,
       exclude: createExclude({
         filePaths: failedFilePaths.otherError,
         types: failedTypes.unexpectedError,
@@ -479,8 +525,8 @@ const toConfigSuggestions = (
     }
   }
   if (!_.isEmpty(failedFilePaths.lockedError) || !_.isEmpty(failedTypes.lockedError)) {
-    config[FETCH] = {
-      ...config[FETCH],
+    config.fetch = {
+      ...config.fetch,
       lockedElementsToExclude: createExclude({
         filePaths: failedFilePaths.lockedError,
         types: failedTypes.lockedError,
@@ -488,8 +534,8 @@ const toConfigSuggestions = (
     }
   }
   if (failedToFetchAllAtOnce) {
-    config[CLIENT_CONFIG] = {
-      ...config[CLIENT_CONFIG],
+    config.client = {
+      ...config.client,
       fetchAllTypesAtOnce: false,
     }
   }
@@ -521,7 +567,7 @@ const combineFetchTypeQueryParams = (
     name,
     ...types.some(type => type.ids === undefined)
       ? {}
-      : { ids: _.uniq(types.flatMap(type => type.ids as string[])) },
+      : { ids: _.uniq(types.flatMap(type => type.ids ?? [])) },
   }))
   .value()
 
@@ -575,7 +621,7 @@ const updateConfigFromFailures = (
   } = suggestions
 
   if (suggestedClientConfig?.fetchAllTypesAtOnce !== undefined) {
-    config[CLIENT_CONFIG] = {
+    config.client = {
       ...currentClientConfig,
       fetchAllTypesAtOnce: suggestedClientConfig.fetchAllTypesAtOnce,
     }
@@ -595,7 +641,7 @@ const updateConfigFromFailures = (
     updatedFetchConfig.lockedElementsToExclude = newLockedElementToExclude
   }
 
-  config[FETCH] = updatedFetchConfig
+  config.fetch = updatedFetchConfig
   return true
 }
 
@@ -614,9 +660,9 @@ const updateConfigSkipListFormat = (config: NetsuiteConfig): void => {
     skipList.filePaths = (skipList.filePaths ?? [])
       .concat(filePathRegexSkipList.map(convertDeprecatedFilePathRegex))
   }
-  config[SKIP_LIST] = skipList
-  delete config[TYPES_TO_SKIP]
-  delete config[FILE_PATHS_REGEX_SKIP_LIST]
+  config.skipList = skipList
+  delete config.typesToSkip
+  delete config.filePathRegexSkipList
 }
 
 const updateConfigFetchFormat = (config: NetsuiteConfig): boolean => {
@@ -626,9 +672,9 @@ const updateConfigFetchFormat = (config: NetsuiteConfig): boolean => {
   }
 
   const typesToExclude = convertToQueryParams(skipList)
-  delete config[SKIP_LIST]
+  delete config.skipList
 
-  config[FETCH] = fetch !== undefined ? {
+  config.fetch = fetch !== undefined ? {
     include: fetch.include,
     exclude: combineQueryParams(fetch.exclude, typesToExclude),
   } : {
@@ -640,7 +686,7 @@ const updateConfigFetchFormat = (config: NetsuiteConfig): boolean => {
 
 const updateSuiteAppTypes = (config: NetsuiteConfig): boolean => {
   let didUpdate = false
-  config[FETCH]?.exclude?.types.forEach(excludeItem => {
+  config.fetch?.exclude?.types.forEach(excludeItem => {
     const fixedName = strings.lowerCaseFirstLetter(excludeItem.name)
     if (excludeItem.name !== fixedName && fixedName in TYPES_TO_INTERNAL_ID) {
       excludeItem.name = fixedName
@@ -658,12 +704,12 @@ const updateConfigDeployFormat = (config: NetsuiteConfig): boolean => {
   // we want to migrate deployReferencedElements only if its value is 'true'
   // (and not if it evaluated to true)
   if (deployReferencedElements === true) {
-    config[DEPLOY] = {
-      ...config[DEPLOY],
+    config.deploy = {
+      ...config.deploy,
       deployReferencedElements,
     }
   }
-  delete config[DEPLOY_REFERENCED_ELEMENTS]
+  delete config.deployReferencedElements
   return true
 }
 
@@ -687,11 +733,11 @@ const splitConfig = (config: NetsuiteConfig): InstanceElement[] => {
   const {
     lockedElementsToExclude,
     ...allFetchConfigExceptLockedElements
-  } = config[FETCH] ?? {}
+  } = config.fetch ?? {}
   if (lockedElementsToExclude === undefined) {
     return [toConfigInstance(config)]
   }
-  config[FETCH] = allFetchConfigExceptLockedElements
+  config.fetch = allFetchConfigExceptLockedElements
   const lockedElementsConfig: NetsuiteConfig = {
     fetch: { lockedElementsToExclude },
   }

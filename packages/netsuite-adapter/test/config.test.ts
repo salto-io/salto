@@ -16,15 +16,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT } from '../src/config'
-import {
-  FETCH_ALL_TYPES_AT_ONCE,
-  SDF_CONCURRENCY_LIMIT,
-  FETCH_TYPE_TIMEOUT_IN_MINUTES, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
-  CLIENT_CONFIG, SKIP_LIST,
-  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH,
-  INCLUDE, EXCLUDE, DEPLOY_REFERENCED_ELEMENTS, DEPLOY, LOCKED_ELEMENTS_TO_EXCLUDE,
-} from '../src/constants'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT, CONFIG } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -36,17 +28,17 @@ describe('config', () => {
   }
 
   const currentConfigWithSkipList = {
-    [SKIP_LIST]: skipList,
-    [CLIENT_CONFIG]: {
-      [SDF_CONCURRENCY_LIMIT]: 2,
-      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
-      [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+    skipList,
+    client: {
+      sdfConcurrencyLimit: 2,
+      fetchTypeTimeoutInMinutes: 15,
+      maxItemsInImportObjectsRequest: 10,
     },
   }
   const currentConfigWithFetch = {
-    [FETCH]: {
-      [INCLUDE]: fetchDefault[INCLUDE],
-      [EXCLUDE]: {
+    fetch: {
+      include: fetchDefault.include,
+      exclude: {
         types: [
           { name: 'testAll', ids: ['.*'] },
           { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
@@ -54,10 +46,10 @@ describe('config', () => {
         fileCabinet: ['SomeRegex'],
       },
     },
-    [CLIENT_CONFIG]: {
-      [SDF_CONCURRENCY_LIMIT]: 2,
-      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
-      [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+    client: {
+      sdfConcurrencyLimit: 2,
+      fetchTypeTimeoutInMinutes: 15,
+      maxItemsInImportObjectsRequest: 10,
     },
   }
   const newFailedFilePath = '/path/to/file'
@@ -88,14 +80,14 @@ describe('config', () => {
       ElemID.CONFIG_NAME,
       configType,
       {
-        [FETCH]: {
-          [EXCLUDE]: {
+        fetch: {
+          exclude: {
             types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: [newFailedFilePath],
           },
         },
-        [CLIENT_CONFIG]: {
-          [FETCH_ALL_TYPES_AT_ONCE]: false,
+        client: {
+          fetchAllTypesAtOnce: false,
         },
       }
     ))).toBe(true)
@@ -104,8 +96,8 @@ describe('config', () => {
       ElemID.CONFIG_NAME,
       configType,
       {
-        [FETCH]: {
-          [LOCKED_ELEMENTS_TO_EXCLUDE]: {
+        fetch: {
+          lockedElementsToExclude: {
             types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
             fileCabinet: lockedFiles,
           },
@@ -137,15 +129,15 @@ describe('config', () => {
         ElemID.CONFIG_NAME,
         configType,
         {
-          [FETCH]: {
-            [INCLUDE]: currentConfigWithFetch[FETCH][INCLUDE],
-            [EXCLUDE]: newExclude,
+          fetch: {
+            include: currentConfigWithFetch.fetch.include,
+            exclude: newExclude,
           },
-          [CLIENT_CONFIG]: {
-            [FETCH_ALL_TYPES_AT_ONCE]: false,
-            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
-            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
-            [SDF_CONCURRENCY_LIMIT]: 2,
+          client: {
+            fetchAllTypesAtOnce: false,
+            fetchTypeTimeoutInMinutes: 15,
+            maxItemsInImportObjectsRequest: 10,
+            sdfConcurrencyLimit: 2,
           },
         }
       ))).toBe(true)
@@ -155,19 +147,19 @@ describe('config', () => {
 
   it('should convert typesToSkip and filePathsRegexSkipList to fetch', () => {
     const newFetch = {
-      [INCLUDE]: fetchDefault[INCLUDE],
-      [EXCLUDE]: combineQueryParams({
+      include: fetchDefault.include,
+      exclude: combineQueryParams({
         types: [
           { name: 'someType', ids: ['.*'] },
         ],
         fileCabinet: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
       },
-      fetchDefault[EXCLUDE]),
+      fetchDefault.exclude),
     }
     const config = {
-      ..._.omit(currentConfigWithSkipList, SKIP_LIST),
-      [TYPES_TO_SKIP]: ['someType'],
-      [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
+      ..._.omit(currentConfigWithSkipList, CONFIG.skipList),
+      typesToSkip: ['someType'],
+      filePathRegexSkipList: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
     }
     const configChange = getConfigFromConfigChanges(
       false,
@@ -180,11 +172,11 @@ describe('config', () => {
         ElemID.CONFIG_NAME,
         configType,
         {
-          [FETCH]: newFetch,
-          [CLIENT_CONFIG]: {
-            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
-            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
-            [SDF_CONCURRENCY_LIMIT]: 2,
+          fetch: newFetch,
+          client: {
+            fetchTypeTimeoutInMinutes: 15,
+            maxItemsInImportObjectsRequest: 10,
+            sdfConcurrencyLimit: 2,
           },
         }
       ))).toBe(true)
@@ -194,8 +186,8 @@ describe('config', () => {
 
   it('should convert deployReferencedElements when its value is "true" to deploy', () => {
     const config = {
-      ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
-      [DEPLOY_REFERENCED_ELEMENTS]: true,
+      ..._.omit(currentConfigWithFetch, CONFIG.deployReferencedElements),
+      deployReferencedElements: true,
     }
     const configChange = getConfigFromConfigChanges(
       false,
@@ -209,14 +201,14 @@ describe('config', () => {
         ElemID.CONFIG_NAME,
         configType,
         {
-          [FETCH]: configChange?.config[0].value[FETCH],
-          [CLIENT_CONFIG]: {
-            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
-            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
-            [SDF_CONCURRENCY_LIMIT]: 2,
+          fetch: configChange?.config[0].value.fetch,
+          client: {
+            fetchTypeTimeoutInMinutes: 15,
+            maxItemsInImportObjectsRequest: 10,
+            sdfConcurrencyLimit: 2,
           },
-          [DEPLOY]: {
-            [DEPLOY_REFERENCED_ELEMENTS]: true,
+          deploy: {
+            deployReferencedElements: true,
           },
         }
       ))).toBe(true)
@@ -226,8 +218,8 @@ describe('config', () => {
 
   it('should delete deployReferencedElements when its value is "false" without adding deploy section', () => {
     const config = {
-      ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
-      [DEPLOY_REFERENCED_ELEMENTS]: false,
+      ..._.omit(currentConfigWithFetch, CONFIG.deployReferencedElements),
+      deployReferencedElements: false,
     }
     const configChange = getConfigFromConfigChanges(
       false,
@@ -235,8 +227,8 @@ describe('config', () => {
       { lockedError: {}, unexpectedError: {} },
       config
     )
-    expect(configChange?.config?.[0].value[DEPLOY_REFERENCED_ELEMENTS]).toBe(undefined)
-    expect(configChange?.config?.[0].value[DEPLOY]).toBe(undefined)
+    expect(configChange?.config?.[0].value.deployReferencedElements).toBe(undefined)
+    expect(configChange?.config?.[0].value.deploy).toBe(undefined)
     expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
   })
 
@@ -245,10 +237,10 @@ describe('config', () => {
       ...currentConfigWithSkipList,
     }
     const newFetch = {
-      [INCLUDE]: fetchDefault[INCLUDE],
-      [EXCLUDE]: combineQueryParams(
-        currentConfigWithFetch[FETCH][EXCLUDE],
-        fetchDefault[EXCLUDE]
+      include: fetchDefault.include,
+      exclude: combineQueryParams(
+        currentConfigWithFetch.fetch.exclude,
+        fetchDefault.exclude
       ),
     }
 
@@ -263,11 +255,11 @@ describe('config', () => {
         ElemID.CONFIG_NAME,
         configType,
         {
-          [FETCH]: newFetch,
-          [CLIENT_CONFIG]: {
-            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
-            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
-            [SDF_CONCURRENCY_LIMIT]: 2,
+          fetch: newFetch,
+          client: {
+            fetchTypeTimeoutInMinutes: 15,
+            maxItemsInImportObjectsRequest: 10,
+            sdfConcurrencyLimit: 2,
           },
         }
       ))).toBe(true)
@@ -281,8 +273,8 @@ describe('config', () => {
     newSkipList.filePaths?.push('.*someRegex.*')
     const config = {
       ...currentConfigWithSkipList,
-      [TYPES_TO_SKIP]: ['someType'],
-      [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex'],
+      typesToSkip: ['someType'],
+      filePathRegexSkipList: ['someRegex'],
     }
 
     const configChange = getConfigFromConfigChanges(
@@ -297,7 +289,7 @@ describe('config', () => {
 
   it('should omit skipList and update "fetch.exclude". config with skipList AND fetch', () => {
     const conf = { ...currentConfigWithFetch,
-      [SKIP_LIST]: currentConfigWithSkipList[SKIP_LIST] }
+      skipList: currentConfigWithSkipList.skipList }
     const configChange = getConfigFromConfigChanges(
       false,
       { lockedError: [], otherError: [] },
@@ -309,9 +301,9 @@ describe('config', () => {
         ElemID.CONFIG_NAME,
         configType,
         {
-          [FETCH]: {
-            [INCLUDE]: fetchDefault[INCLUDE],
-            [EXCLUDE]: {
+          fetch: {
+            include: fetchDefault.include,
+            exclude: {
               fileCabinet: ['SomeRegex'],
               types: [
                 { name: 'testAll', ids: ['.*'] },
@@ -319,10 +311,10 @@ describe('config', () => {
               ],
             },
           },
-          [CLIENT_CONFIG]: {
-            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
-            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
-            [SDF_CONCURRENCY_LIMIT]: 2,
+          client: {
+            fetchTypeTimeoutInMinutes: 15,
+            maxItemsInImportObjectsRequest: 10,
+            sdfConcurrencyLimit: 2,
           },
         }
       ))).toBe(true)
@@ -330,8 +322,8 @@ describe('config', () => {
 
   it('should convert PascalCase typeNames to camelCase', () => {
     const conf = {
-      [FETCH]: {
-        [EXCLUDE]: {
+      fetch: {
+        exclude: {
           types: [{
             name: 'Subsidiary',
           }],
@@ -346,8 +338,8 @@ describe('config', () => {
       conf,
     )
     expect(configChange?.config?.[0].value).toEqual({
-      [FETCH]: {
-        [EXCLUDE]: {
+      fetch: {
+        exclude: {
           types: [{
             name: 'subsidiary',
           }],
@@ -360,7 +352,7 @@ describe('config', () => {
 
   describe('should have a correct default fetch config', () => {
     it('should exclude all types in a correct syntax', () => {
-      expect(fetchDefault[EXCLUDE]?.types)
+      expect(fetchDefault.exclude?.types)
         .toContainEqual({
           name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
         })

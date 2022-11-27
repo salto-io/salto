@@ -63,7 +63,7 @@ const LINK_TYPE_SCHEME = Joi.object({
 }).unknown(true).required()
 
 const RAW_VALUE_SCHEME = Joi.object({
-  rawValue: Joi.string().required(),
+  rawValue: Joi.string().required().allow(''),
 }).unknown(true).required()
 
 const COMPARE_FIELD_VALUE_SCHEME = Joi.object({

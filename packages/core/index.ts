@@ -62,3 +62,4 @@ export {
   createReadOnlyRemoteMapCreator,
 } from './src/local-workspace/remote_map'
 export { NoWorkspaceConfig } from './src/local-workspace/errors'
+export { adapterCreators } from './src/core/adapters'

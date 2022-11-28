@@ -52,6 +52,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
     _.remove(elements, e => isObjectType(e) && e.elemID.name === REPORT_DEFINITION)
     _.remove(elements, e => isObjectType(e) && e.elemID.isEqual(new ElemID(NETSUITE, 'reportdefinition_dependencies')))
 
+
     const instances = _.remove(elements, e => isInstanceElement(e)
     && e.elemID.typeName === REPORT_DEFINITION)
 

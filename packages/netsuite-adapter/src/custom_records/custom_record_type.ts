@@ -25,7 +25,7 @@ const { mapValuesAsync } = promises.object
 export const CUSTOM_FIELDS = 'customrecordcustomfields'
 export const CUSTOM_FIELDS_LIST = 'customrecordcustomfield'
 
-const toAnnotationRefTypes = (type: ObjectType): Promise<TypeRefMap> =>
+export const toAnnotationRefTypes = (type: ObjectType): Promise<TypeRefMap> =>
   mapValuesAsync(type.fields, async field => {
     const fieldType = await field.getType()
     if (field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]) {

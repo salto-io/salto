@@ -15,20 +15,25 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { convertFieldsTypesFromListToMap, convertElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping } from '../../src/mapped_lists/utils'
+import { convertFieldsTypesFromListToMap, createConvertElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping, convertAnnotationListsToMaps } from '../../src/mapped_lists/utils'
 import { getStandardTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
+import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
+import { toAnnotationRefTypes } from '../../src/custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
 
 describe('mapped lists', () => {
   const standardTypes = getStandardTypes()
-  const { workflow, kpiscorecard } = standardTypes
+  const { workflow, kpiscorecard, customrecordtype } = standardTypes
 
   let instance: InstanceElement
   let transformedInstance: InstanceElement
   let transformedBackInstance: InstanceElement
+  let customRecordType: ObjectType
+  let transformedCustomRecordType: ObjectType
+  let transformedBackCustomRecordType: ObjectType
   beforeAll(async () => {
     instance = new InstanceElement(
       'instanceName',
@@ -88,13 +93,62 @@ describe('mapped lists', () => {
       }
     )
 
-    await awu([...Object.values(workflow.innerTypes), ...Object.values(kpiscorecard.innerTypes)])
+    customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      fields: {
+        scriptid: { refType: BuiltinTypes.SERVICE_ID },
+        internalId: { refType: BuiltinTypes.STRING },
+        custom_custrecord_field: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            scriptid: 'custrecord_field',
+            customfieldfilters: {
+              customfieldfilter: {
+                fldfilter: 'STDITEMPARENT',
+                fldfiltercomparetype: 'EQ',
+                fldfilternotnull: true,
+                fldfilternull: false,
+              },
+            },
+          },
+        },
+      },
+      annotations: {
+        scriptid: 'customrecord1',
+        permissions: {
+          permission: [{
+            permittedlevel: 'EDIT',
+            permittedrole: '[scriptid=customrole1]',
+          }],
+        },
+        metadataType: 'customrecordtype',
+      },
+      annotationRefsOrTypes: await toAnnotationRefTypes(customrecordtype.type),
+    })
+
+    await awu([
+      ...Object.values(workflow.innerTypes),
+      ...Object.values(kpiscorecard.innerTypes),
+      ...Object.values(customrecordtype.innerTypes),
+    ])
       .forEach(t => convertFieldsTypesFromListToMap(t))
+
     transformedInstance = instance.clone()
     transformedInstance.value = await convertInstanceListsToMaps(instance) ?? instance.value
-    transformedBackInstance = await convertElementMapsToLists(transformedInstance)
+    transformedCustomRecordType = customRecordType.clone()
+    transformedCustomRecordType.annotations = await convertAnnotationListsToMaps(customRecordType)
 
-    await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
+    const convertElementMapsToLists = await createConvertElementMapsToLists({ getIndexes: () => ({
+      mapKeyFieldsIndex: {
+        'netsuite.workflow_workflowcustomfields.field.workflowcustomfield': 'scriptid',
+        'netsuite.workflow_workflowstates.field.workflowstate': 'scriptid',
+        'netsuite.workflow_workflowstates_workflowstate.field.workflowactions': 'triggertype',
+        'netsuite.workflow_workflowstates_workflowstate_workflowactions.field.setfieldvalueaction': 'scriptid',
+        'netsuite.customrecordtype_permissions.field.permission': 'permittedrole',
+      },
+    }) } as unknown as LazyElementsSourceIndexes)
+    transformedBackInstance = await convertElementMapsToLists(transformedInstance) as InstanceElement
+    transformedBackCustomRecordType = await convertElementMapsToLists(transformedCustomRecordType) as ObjectType
   })
 
   describe('validateTypesFieldMapping', () => {
@@ -216,6 +270,22 @@ describe('mapped lists', () => {
           },
         },
       },
+    })
+  })
+
+  it('should modify custom record type annotations', () => {
+    expect(transformedCustomRecordType.annotations).toEqual({
+      scriptid: 'customrecord1',
+      permissions: {
+        permission: {
+          customrole1: {
+            permittedlevel: 'EDIT',
+            permittedrole: '[scriptid=customrole1]',
+            index: 0,
+          },
+        },
+      },
+      metadataType: 'customrecordtype',
     })
   })
 
@@ -447,7 +517,10 @@ describe('mapped lists', () => {
         } },
     ])
   })
-  it('should convert map back to a list', () => {
+  it('should convert map back to a list in instance', () => {
     expect(transformedBackInstance.value).toEqual(instance.value)
+  })
+  it('should convert map back to a list in type', () => {
+    expect(transformedBackCustomRecordType.isEqual(customRecordType)).toBeTruthy()
   })
 })

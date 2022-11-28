@@ -54,6 +54,7 @@ export const CURRENCY = 'currency'
 export const RECORD_REF = 'recordRef'
 export const EMPLOYEE = 'employee'
 export const REPORT_DEFINITION = 'reportdefinition'
+export const FINANCIAL_LAYOUT = 'financiallayout'
 
 // Type Annotations
 export const SOURCE = 'source'

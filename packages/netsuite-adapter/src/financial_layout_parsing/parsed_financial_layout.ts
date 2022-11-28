@@ -39,6 +39,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       FIELD_ORDER_TYPE: { refType: BuiltinTypes.STRING },
       FLAG_ORDER_DESC: { refType: BuiltinTypes.BOOLEAN },
     },
+    path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
   })
 
   const financialLayoutRows = new ObjectType({
@@ -65,6 +66,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       FLAG_TOP_ROW: { refType: BuiltinTypes.BOOLEAN },
       RECORDS: { refType: new ListType(financialLayoutRowsRecord) },
     },
+    path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
   })
 
   const financialLayoutDependencies = new ObjectType({
@@ -121,6 +123,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
         },
       },
     },
+    path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
   })
 
   return { type: financiallayout, innerTypes }

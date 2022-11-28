@@ -46,13 +46,13 @@ describe('change validator creator', () => {
           elemID: new ElemID(ZENDESK, 'obj'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter zendesk',
-          detailedMessage: 'Deployment of zendesk.obj is not supported',
+          detailedMessage: 'Deployment of non-instance elements is not supported in adapter zendesk. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.',
         },
         {
           elemID: new ElemID(ZENDESK, 'obj2'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter zendesk',
-          detailedMessage: 'Deployment of zendesk.obj2 is not supported',
+          detailedMessage: 'Deployment of non-instance elements is not supported in adapter zendesk. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.',
         },
       ])
     })
@@ -73,13 +73,13 @@ describe('change validator creator', () => {
           elemID: new ElemID(ZENDESK, 'obj', 'instance', 'inst1'),
           severity: 'Error',
           message: 'Operation not supported',
-          detailedMessage: 'Salto does not support "add" of zendesk.obj.instance.inst1',
+          detailedMessage: 'Salto does not support "add" of zendesk.obj.instance.inst1. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.',
         },
         {
           elemID: new ElemID(ZENDESK, 'obj', 'instance', 'inst2'),
           severity: 'Error',
           message: 'Operation not supported',
-          detailedMessage: 'Salto does not support "remove" of zendesk.obj.instance.inst2',
+          detailedMessage: 'Salto does not support "remove" of zendesk.obj.instance.inst2. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.',
         },
       ])
     })

@@ -28,10 +28,8 @@ const TRUSTED_GROUP_NAME_REGEX = new RegExp(`^${GROUP_NAME}-${UUID_REGEX}$`)
 const isGroupElement = (element: Element): boolean =>
   element.elemID.typeName === GROUP_TYPE_NAME
 
-const isTrustedGroupInstance = (instance: InstanceElement): boolean => {
-  const match = instance.value.name.match(TRUSTED_GROUP_NAME_REGEX)
-  return match?.[1] !== undefined
-}
+const isTrustedGroupInstance = (instance: InstanceElement): boolean =>
+  TRUSTED_GROUP_NAME_REGEX.exec(instance.value.name) !== null
 
 const getInstanceName = (
   instance: InstanceElement,

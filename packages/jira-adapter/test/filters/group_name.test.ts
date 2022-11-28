@@ -51,6 +51,7 @@ describe('group name filter', () => {
       name: 'normal',
     }
   )
+  withUUIDInstance.path = ['trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b']
   beforeEach(async () => {
     mockGetConfigWithDefault.mockReturnValue({ serviceIdField: 'groupId' })
     const elemIdGetter = mockFunction<ElemIdGetter>()
@@ -70,6 +71,11 @@ describe('group name filter', () => {
     await filter.onFetch(elements)
     expect(elements[0].elemID.name).toEqual('normal')
   })
+  // it('should use empty list if no path is available', async () => {
+  //   const elements = [withoutUUIDInstance]
+  //   await filter.onFetch(elements)
+  //   expect(elements[0].elemID.name).toEqual('normal')
+  // })
   it('should not change the name there is no service id in config', async () => {
     mockGetConfigWithDefault.mockReturnValue({ serviceIdField: undefined })
     const elements = [withUUIDInstance]

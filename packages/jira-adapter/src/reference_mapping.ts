@@ -25,7 +25,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 
-const { neighborContextGetter } = referenceUtils
+const { neighborContextGetter, basicLookUp } = referenceUtils
 
 const neighborContextFunc = (args: {
   contextFieldName: string
@@ -63,6 +63,9 @@ export const contextStrategyLookup: Record<
   parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
 }
 
+const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
+  (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id)
+
 type ReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | referenceUtils.ReferenceSerializationStrategyName
 const JiraReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName,
@@ -70,15 +73,13 @@ const JiraReferenceSerializationStrategyLookup: Record<
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
   groupStrategyById: {
-    serialize: ({ ref }) =>
-      (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id),
-    lookup: val => val,
+    serialize: groupNameSerialize,
+    lookup: basicLookUp,
     lookupIndexName: 'id',
   },
   groupStrategyByOriginalName: {
-    serialize: ({ ref }) =>
-      (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id),
-    lookup: val => val,
+    serialize: groupNameSerialize,
+    lookup: basicLookUp,
     lookupIndexName: 'originalName',
   },
 }

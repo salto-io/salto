@@ -429,7 +429,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changeGroup.groupID,
       this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       this.additionalDependencies,
-      this.elementsSourceIndex
+      this.elementsSourceIndex,
     )
 
     const ids = deployResult.appliedChanges.map(
@@ -463,6 +463,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
         filtersRunner: this.createFiltersRunner(this.isPartialFetch()),
+        elementsSourceIndex: this.elementsSourceIndex,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }

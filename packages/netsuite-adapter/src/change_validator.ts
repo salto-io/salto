@@ -39,6 +39,7 @@ import netsuiteClientValidation from './change_validators/client_validation'
 import NetsuiteClient from './client/client'
 import { AdditionalDependencies } from './client/types'
 import { Filter } from './filter'
+import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
 
 const changeValidators: ChangeValidator[] = [
@@ -89,6 +90,7 @@ const getChangeValidator: ({
   deployReferencedElements?: boolean
   additionalDependencies: AdditionalDependencies
   filtersRunner: Required<Filter>
+  elementsSourceIndex: LazyElementsSourceIndexes
   }) => ChangeValidator = (
     {
       client,
@@ -99,6 +101,7 @@ const getChangeValidator: ({
       deployReferencedElements,
       additionalDependencies,
       filtersRunner,
+      elementsSourceIndex,
     }
   ) =>
     async changes => {
@@ -114,6 +117,7 @@ const getChangeValidator: ({
           client,
           additionalDependencies,
           filtersRunner,
+          elementsSourceIndex,
           deployReferencedElements,
         ) : [],
       ]))

@@ -1107,3 +1107,19 @@ export const createSchemeGuardForInstance = <T extends InstanceElement>(
     }
     return true
   }
+
+export const getElementChangeId = (
+  element: Element,
+  id: ElemID
+): ElemID => {
+  // When the name is CONFIG_NAME it is omitted from getFullNameParts
+  const elementIdSize = element.elemID.name === ElemID.CONFIG_NAME
+    ? element.elemID.getFullNameParts().length + 1
+    : element.elemID.getFullNameParts().length
+  // Account for the possibility that the comparison was between two different elements
+  // in that case we cannot simply use the after ID, we have to use the relative path
+  const relativeId = id.getFullNameParts().splice(elementIdSize)
+  return relativeId.length !== 0
+    ? element.elemID.createNestedID(...relativeId)
+    : element.elemID
+}

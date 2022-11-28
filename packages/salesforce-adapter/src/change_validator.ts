@@ -29,8 +29,7 @@ import createCheckOnlyDeployValidator from './change_validators/check_only_deplo
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
-import activeFlowValidator from './change_validators/active_flows'
-import flowDeletionValidator from './change_validators/flow_deletion'
+import flowsValidator from './change_validators/flows'
 import fullNameChangedValidator from './change_validators/fullname_changed'
 
 import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
@@ -49,8 +48,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   cpqValidator: () => cpqValidator,
   sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
   recordTypeDeletion: () => recordTypeDeletionValidator,
-  activeFlowValidator: (config, isSandbox) => activeFlowValidator(config, isSandbox),
-  flowDeletionValidator: () => flowDeletionValidator,
+  flowsValidator: (config, isSandbox) => flowsValidator(config, isSandbox),
   fullNameChangedValidator: () => fullNameChangedValidator,
 }
 

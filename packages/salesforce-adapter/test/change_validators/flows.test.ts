@@ -15,12 +15,11 @@
 */
 import { Change, ChangeValidator, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-// import { elementSource } from '@salto-io/workspace'
-import activeFlowChangeValidator from '../../src/change_validators/active_flows'
+import flowsChangeValidator from '../../src/change_validators/flows'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
-describe('active flows change validator', () => {
+describe('flows change validator', () => {
   let flowChanges: Change
   let changeValidator: ChangeValidator
   describe('deactivate a flow', () => {
@@ -37,7 +36,7 @@ describe('active flows change validator', () => {
 
     it('should have error when trying to deactivate a flow', async () => {
       flowChanges = toChange({ before: beforeRecord, after: statusChange })
-      changeValidator = activeFlowChangeValidator(
+      changeValidator = flowsChangeValidator(
         { }, true
       )
       const changeErrors = await changeValidator([flowChanges])
@@ -48,7 +47,7 @@ describe('active flows change validator', () => {
 
     it('should inform that a new inactive flow version will be created', async () => {
       flowChanges = toChange({ before: beforeRecord, after: otherModifications })
-      changeValidator = activeFlowChangeValidator(
+      changeValidator = flowsChangeValidator(
         { fetch: { preferActiveFlowVersions: true } }, true
       )
       const changeErrors = await changeValidator([flowChanges])
@@ -57,7 +56,7 @@ describe('active flows change validator', () => {
       expect(changeError.detailedMessage).toInclude('Deploying these changes will create a new inactive version of this flow')
     })
   })
-  describe('editing an active flow', () => {
+  describe('adding and editing an active flow', () => {
     beforeEach(() => {
       const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
       const afterRecord = beforeRecord.clone()
@@ -66,7 +65,7 @@ describe('active flows change validator', () => {
     })
     describe('sandbox env', () => {
       beforeEach(() => {
-        changeValidator = activeFlowChangeValidator(
+        changeValidator = flowsChangeValidator(
           { }, true
         )
       })
@@ -83,7 +82,7 @@ describe('active flows change validator', () => {
       const elementsSource = buildElementsSourceFromElements([flowSettings])
       // const elementsSources = elementSource.createInMemoryElementSource([flowSettings])
       beforeEach(() => {
-        changeValidator = activeFlowChangeValidator(
+        changeValidator = flowsChangeValidator(
           { }, false
         )
       })
@@ -155,15 +154,33 @@ describe('active flows change validator', () => {
       })
     })
   })
+  describe('deleting a flow', () => {
+    beforeEach(() => {
+      changeValidator = flowsChangeValidator(
+        { }, false
+      )
+      const beforeRecord = createInstanceElement({ fullName: 'flow', status: 'Active' }, mockTypes.Flow)
+      flowChanges = toChange({ before: beforeRecord })
+    })
+
+    it('should have error when trying to delete a flow', async () => {
+      const changeErrors = await changeValidator(
+        [flowChanges]
+      )
+      expect(changeErrors).toHaveLength(1)
+      const [changeError] = changeErrors
+      expect(changeError.severity).toEqual('Error')
+    })
+  })
   describe('adding and editing a draft flow', () => {
     beforeEach(() => {
-      changeValidator = activeFlowChangeValidator(
+      changeValidator = flowsChangeValidator(
         { }, false
       )
     })
     describe('add a new draft flow', () => {
       beforeEach(() => {
-        const afterRecord = createInstanceElement({ fullName: 'flow2', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
+        const afterRecord = createInstanceElement({ fullName: 'flow', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
         flowChanges = toChange({ after: afterRecord })
       })
       it('should not throw any error', async () => {
@@ -175,7 +192,7 @@ describe('active flows change validator', () => {
     })
     describe('edit draft flow', () => {
       beforeEach(() => {
-        const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
+        const beforeRecord = createInstanceElement({ fullName: 'flow', status: 'Draft', actionType: 'quick' }, mockTypes.Flow)
         const afterRecord = beforeRecord.clone()
         afterRecord.value.actionType = 'fast'
         flowChanges = toChange({ before: beforeRecord, after: afterRecord })

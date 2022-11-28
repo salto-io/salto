@@ -20,28 +20,32 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 const log = logger(module)
 
-// If there is not exactly one default, create a relevant error a d return it
-const validateOnlyOneDefault = (settings: InstanceElement[]): ChangeError | undefined => {
-  if (settings.length === 0) {
+// If there is not exactly one default, create a relevant error and return it
+const validateOnlyOneDefault = (
+  brand: InstanceElement,
+  settings: InstanceElement[],
+): ChangeError | undefined => {
+  const defaultSettings = settings.filter(s => s.value.default)
+  if (defaultSettings.length === 0) {
     return {
-      elemID: settings[0].elemID, // TODO: ?
+      elemID: brand.elemID,
       severity: 'Error',
-      message: 'Brand does not have any default language',
-      detailedMessage: '',
+      message: 'Invalid amount of default languages of a brand',
+      detailedMessage: `There are 0 default languages for brand '${brand.elemID.name}', there must be exactly 1`,
     }
   }
-  if (settings.length > 1) {
+  if (defaultSettings.length > 1) {
     return {
-      elemID: settings[0].elemID,
+      elemID: brand.elemID,
       severity: 'Error',
-      message: 'Brand does not have exactly one default language',
-      detailedMessage: '',
+      message: 'Invalid amount of default languages of a brand',
+      detailedMessage: `There are ${defaultSettings.length} default languages for brand '${brand.elemID.name}', there must be exactly 1. The defaults are: ${defaultSettings.map(ds => ds.elemID.name)}`,
     }
   }
   return undefined
@@ -65,10 +69,13 @@ export const defaultLanguageSettingsValidator: ChangeValidator = async (changes,
     .map(id => elementsSource.get(id)).filter(isInstanceElement)
     .toArray()
 
-  const brandToDefaultLanguageSettings = _.groupBy(
-    languageSettings.filter(settings => settings.value.default),
-    settings => settings.value.brand
-  )
+  const brandsByName = Object.assign({}, ...(await awu(await elementsSource.list())
+    .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
+    .map(id => elementsSource.get(id)).filter(isInstanceElement)
+    .toArray()).map(brand => ({ [brand.elemID.name]: brand })))
 
-  return Object.values(brandToDefaultLanguageSettings).map(validateOnlyOneDefault).filter(isDefined)
+  const brandToLanguageSettings = _.groupBy(languageSettings, settings => settings.value.brand.elemID.name)
+
+  return Object.entries(brandToLanguageSettings)
+    .map(([brandName, settings]) => validateOnlyOneDefault(brandsByName[brandName], settings)).filter(isDefined)
 }

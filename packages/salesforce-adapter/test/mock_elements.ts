@@ -93,6 +93,9 @@ export const mockTypes = {
   Profile: createMetadataObjectType({
     annotations: { metadataType: 'Profile', dirName: 'profiles', suffix: 'profile' },
   }),
+  PermissionSet: createMetadataObjectType({
+    annotations: { metadataType: 'PermissionSet', dirName: 'PermissionSets', suffix: 'permissionSet' },
+  }),
   EmailFolder: createMetadataObjectType({
     annotations: {
       metadataType: 'EmailFolder',
@@ -186,6 +189,16 @@ export const mockTypes = {
     fields: {
       status: { refType: BuiltinTypes.STRING },
       actionType: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  FlowDefinition: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FlowDefinition',
+      suffix: 'flowDefinition',
+      dirName: 'flowDefinition',
+    },
+    fields: {
+      activeVersionNumber: { refType: BuiltinTypes.NUMBER },
     },
   }),
   QuickAction: createMetadataObjectType({

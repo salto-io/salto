@@ -24,11 +24,13 @@ export type FilterResult = {
   errors?: SaltoError[]
 }
 
+export type Filter = filterUtils.Filter<FilterResult>
+export type BrandIdToClient = Record<string, ZendeskClient>
+
 export type FilterAdditionalParams = {
   elementsSource: ReadOnlyElementsSource
+  brandIdToClient?: BrandIdToClient
 }
-
-export type Filter = filterUtils.Filter<FilterResult>
 
 export type FilterCreator = filterUtils.FilterCreator<
     ZendeskClient,

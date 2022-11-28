@@ -91,10 +91,12 @@ export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> =>
 export const getDefaultAdapterConfig = async (
   adapterName: string,
   accountName?: string,
+  options?: InstanceElement
 ): Promise<InstanceElement[] | undefined> => {
-  const { getDefaultConfig } = adapterCreators[adapterName]
-  const defaultConf = (getDefaultConfig !== undefined) ? await getDefaultConfig()
-    : ([await getAdapterConfigFromType(adapterName) ?? []].flat())
+  const { getConfig } = adapterCreators[adapterName]?.configCreator ?? {}
+  const defaultConf = [(getConfig !== undefined)
+    ? await getConfig(options)
+    : (await getAdapterConfigFromType(adapterName) ?? [])].flat()
   if (defaultConf.length === 0) {
     return undefined
   }

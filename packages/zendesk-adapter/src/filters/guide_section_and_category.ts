@@ -16,7 +16,7 @@
 import {
   Change,
   getChangeData,
-  InstanceElement,
+  InstanceElement, isReferenceExpression,
   isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -36,7 +36,7 @@ export const removedTranslationParentId: number[] = []
 export type TranslationType = {
   title: string
   body?: string
-  locale: ReferenceExpression
+  locale: ReferenceExpression | string
 }
 
 type ParentType = InstanceElement & {
@@ -49,7 +49,7 @@ type ParentType = InstanceElement & {
 }
 
 const TRANSLATION_SCHEMA = Joi.object({
-  locale: Joi.object().required(),
+  locale: Joi.required(),
   body: [Joi.string(), Joi.object()],
   title: Joi.string().required(),
 }).unknown(true).required()
@@ -78,7 +78,9 @@ const addTranslationValues = (change: Change<InstanceElement>): void => {
   const currentLocale = getChangeData(change).value.source_locale
   const translation = getChangeData(change).value.translations
     .filter(isTranslation) // the translation is not a reference it is already the value
-    .find((tran: TranslationType) => tran.locale.value.value.id === currentLocale)
+    .find((tran: TranslationType) => (isReferenceExpression(tran.locale)
+      ? tran.locale.value.value.id === currentLocale
+      : tran.locale === currentLocale))
   if (translation !== undefined) {
     getChangeData(change).value.name = translation.title
     getChangeData(change).value.description = translation.body ?? ''

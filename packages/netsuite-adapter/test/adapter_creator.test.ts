@@ -23,22 +23,6 @@ import Bottleneck from 'bottleneck'
 import { adapter } from '../src/adapter_creator'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
-import {
-  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
-  FETCH_TYPE_TIMEOUT_IN_MINUTES, CLIENT_CONFIG,
-  MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST, SUITEAPP_CLIENT_CONFIG,
-  SUITEAPP_CONCURRENCY_LIMIT,
-  FETCH,
-  INCLUDE,
-  EXCLUDE,
-  DEPLOY,
-  DEPLOY_REFERENCED_ELEMENTS,
-  WARN_STALE_DATA,
-  INSTALLED_SUITEAPPS,
-  ADDITIONAL_DEPS,
-  VALIDATE,
-  FIELDS_TO_OMIT,
-} from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SdfCredentials } from '../src/client/credentials'
@@ -72,20 +56,20 @@ describe('NetsuiteAdapter creator', () => {
   const fetchTypeTimeoutInMinutes = 1
   const maxItemsInImportObjectsRequest = 3
   const clientConfig = {
-    [FETCH_ALL_TYPES_AT_ONCE]: false,
-    [FETCH_TYPE_TIMEOUT_IN_MINUTES]: fetchTypeTimeoutInMinutes,
-    [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: maxItemsInImportObjectsRequest,
-    [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
+    fetchAllTypesAtOnce: false,
+    fetchTypeTimeoutInMinutes,
+    maxItemsInImportObjectsRequest,
+    sdfConcurrencyLimit,
     notExistInClient: ['not exist in client'],
   }
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
     {
-      [SKIP_LIST]: {},
-      [TYPES_TO_SKIP]: ['test1'],
-      [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
-      [CLIENT_CONFIG]: clientConfig,
+      skipList: {},
+      typesToSkip: ['test1'],
+      filePathRegexSkipList: ['^/Templates.*'],
+      client: clientConfig,
       notExist: ['not exist'],
     }
   )
@@ -246,8 +230,8 @@ describe('NetsuiteAdapter creator', () => {
       const configuration = config.clone()
       configuration.value = {
         ...config.value,
-        [SUITEAPP_CLIENT_CONFIG]: {
-          [SUITEAPP_CONCURRENCY_LIMIT]: 5,
+        suiteAppClient: {
+          suiteAppConcurrencyLimit: 5,
         },
       }
 
@@ -259,7 +243,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(SuiteAppClient).toHaveBeenCalledWith({
         credentials: { ...cred.value, accountId: 'FOO_A' },
         config: {
-          [SUITEAPP_CONCURRENCY_LIMIT]: 5,
+          suiteAppConcurrencyLimit: 5,
         },
         globalLimiter: expect.any(Bottleneck),
       })
@@ -279,10 +263,10 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
-          [SKIP_LIST]: {},
-          [TYPES_TO_SKIP]: ['test1'],
-          [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
-          [CLIENT_CONFIG]: clientConfig,
+          skipList: {},
+          typesToSkip: ['test1'],
+          filePathRegexSkipList: ['^/Templates.*'],
+          client: clientConfig,
         },
         elementsSource,
         getElemIdFunc: mockGetElemIdFunc,
@@ -294,10 +278,10 @@ describe('NetsuiteAdapter creator', () => {
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          [CLIENT_CONFIG]: {
-            [FETCH_ALL_TYPES_AT_ONCE]: true,
+          client: {
+            fetchAllTypesAtOnce: true,
           },
-          [FETCH_TARGET]: {
+          fetchTarget: {
             filePaths: ['aaa'],
           },
         }
@@ -312,10 +296,10 @@ describe('NetsuiteAdapter creator', () => {
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
         config: {
-          [CLIENT_CONFIG]: {
-            [FETCH_ALL_TYPES_AT_ONCE]: false,
+          client: {
+            fetchAllTypesAtOnce: false,
           },
-          [FETCH_TARGET]: expect.any(Object),
+          fetchTarget: expect.any(Object),
         },
         elementsSource,
         getElemIdFunc: mockGetElemIdFunc,
@@ -341,7 +325,7 @@ describe('NetsuiteAdapter creator', () => {
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          [FILE_PATHS_REGEX_SKIP_LIST]: ['\\'],
+          filePathRegexSkipList: ['\\'],
         }
       )
       expect(
@@ -354,13 +338,50 @@ describe('NetsuiteAdapter creator', () => {
       ).toThrow()
     })
 
+    it('should throw an error when fetchTarget is invalid', () => {
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              fetchTarget: {
+                types: ['type1', 'type2'],
+              },
+            }
+          ),
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow('fetchTarget.types should be an object')
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              fetchTarget: {
+                types: {
+                  type1: 'id',
+                },
+              },
+            }
+          ),
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow('fetchTarget.types.type1 should be a list of strings')
+    })
+
     it('should throw an error when include is invalid', () => {
       const invalidConfig = new InstanceElement(
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          [FETCH]: {
-            [INCLUDE]: {
+          fetch: {
+            include: {
               types: 'supposed to be an array',
             },
           },
@@ -381,8 +402,8 @@ describe('NetsuiteAdapter creator', () => {
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          [FETCH]: {
-            [EXCLUDE]: {
+          fetch: {
+            exclude: {
               types: [
                 { name: ['should be a string'] },
               ],
@@ -405,8 +426,8 @@ describe('NetsuiteAdapter creator', () => {
         ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
-          [FETCH]: {
-            [FIELDS_TO_OMIT]: [{
+          fetch: {
+            fieldsToOmit: [{
               type: 'a',
             }],
           },
@@ -428,8 +449,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [DEPLOY]: {
-              [DEPLOY_REFERENCED_ELEMENTS]: 'should be a boolean',
+            deploy: {
+              deployReferencedElements: 'should be a boolean',
             },
           }
         )
@@ -448,8 +469,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [DEPLOY]: {
-              [WARN_STALE_DATA]: 'should be a boolean',
+            deploy: {
+              warnOnStaleWorkspaceData: 'should be a boolean',
             },
           }
         )
@@ -467,8 +488,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [DEPLOY]: {
-              [VALIDATE]: 'should be a boolean',
+            deploy: {
+              validate: 'should be a boolean',
             },
           }
         )
@@ -486,8 +507,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [DEPLOY]: {
-              [ADDITIONAL_DEPS]: 'should be an object',
+            deploy: {
+              additionalDependencies: 'should be an object',
             },
           }
         )
@@ -505,8 +526,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [DEPLOY]: {
-              [ADDITIONAL_DEPS]: {
+            deploy: {
+              additionalDependencies: {
                 include: { features: ['should be list of strings', 1] },
               },
             },
@@ -526,8 +547,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [DEPLOY]: {
-              [ADDITIONAL_DEPS]: {
+            deploy: {
+              additionalDependencies: {
                 exclude: { objects: ['should be list of strings', 1] },
               },
             },
@@ -550,8 +571,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [CLIENT_CONFIG]: {
-              [INSTALLED_SUITEAPPS]: 2,
+            client: {
+              installedSuiteApps: 2,
             },
           }
         )
@@ -570,8 +591,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [CLIENT_CONFIG]: {
-              [INSTALLED_SUITEAPPS]: ['a.b.c', 2],
+            client: {
+              installedSuiteApps: ['a.b.c', 2],
             },
           }
         )
@@ -590,8 +611,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [CLIENT_CONFIG]: {
-              [INSTALLED_SUITEAPPS]: ['a', 'a.b.c'],
+            client: {
+              installedSuiteApps: ['a', 'a.b.c'],
             },
           }
         )
@@ -610,8 +631,8 @@ describe('NetsuiteAdapter creator', () => {
           ElemID.CONFIG_NAME,
           adapter.configType as ObjectType,
           {
-            [CLIENT_CONFIG]: {
-              [INSTALLED_SUITEAPPS]: ['a.b.c', 'b.c.d'],
+            client: {
+              installedSuiteApps: ['a.b.c', 'b.c.d'],
             },
           }
         )

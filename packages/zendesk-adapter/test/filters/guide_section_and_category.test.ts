@@ -27,7 +27,7 @@ import filterCreator from '../../src/filters/guide_section_and_category'
 import { ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
-describe('guid section filter', () => {
+describe('guid section and category filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
 
@@ -59,7 +59,6 @@ describe('guid section filter', () => {
       body: 'description',
     }
   )
-
   const sectionInstance = new InstanceElement(
     'instance',
     sectionType,
@@ -67,6 +66,27 @@ describe('guid section filter', () => {
       source_locale: 'he',
       translations: [
         sectionTranslationInstance.value,
+      ],
+    }
+  )
+
+  const sectionTranslationStringLocaleInstance = new InstanceElement(
+    'instance',
+    sectionTranslationType,
+    {
+      locale: 'he',
+      title: 'name',
+      body: 'description',
+    }
+  )
+
+  const sectionInstanceStringLocale = new InstanceElement(
+    'instance',
+    sectionType,
+    {
+      source_locale: 'he',
+      translations: [
+        sectionTranslationStringLocaleInstance.value,
       ],
     }
   )
@@ -84,6 +104,13 @@ describe('guid section filter', () => {
       sectionInstance.value.description = sectionTranslationInstance.value.body
       expect(sectionInstanceCopy).toEqual(sectionInstance)
     })
+    it('should add the name and description fields before deploy when locale is string', async () => {
+      const sectionInstanceCopy = sectionInstanceStringLocale.clone()
+      await filter.preDeploy([toChange({ after: sectionInstanceCopy })])
+      sectionInstanceStringLocale.value.name = sectionTranslationStringLocaleInstance.value.title
+      sectionInstanceStringLocale.value.description = sectionTranslationStringLocaleInstance.value.body
+      expect(sectionInstanceCopy).toEqual(sectionInstanceStringLocale)
+    })
   })
 
   describe('onDeploy', () => {
@@ -95,6 +122,17 @@ describe('guid section filter', () => {
         source_locale: 'he',
         translations: [
           sectionTranslationInstance.value,
+        ],
+      })
+    })
+    it('should omit the name and description fields after deploy when locale is string', async () => {
+      const sectionInstanceCopy = sectionInstanceStringLocale.clone()
+      await filter.preDeploy([toChange({ after: sectionInstanceCopy })])
+      await filter.onDeploy([toChange({ after: sectionInstanceCopy })])
+      expect(sectionInstanceCopy.value).toEqual({
+        source_locale: 'he',
+        translations: [
+          sectionTranslationStringLocaleInstance.value,
         ],
       })
     })

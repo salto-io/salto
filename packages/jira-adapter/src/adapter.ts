@@ -42,6 +42,7 @@ import smartValueReferenceFilter from './filters/automation/smart_values/smart_v
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
+import issueTypeFilter from './filters/issue_type'
 import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
 import fieldConfigurationIrrelevantFields from './filters/field_configuration/field_configuration_irrelevant_fields'
 import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
@@ -150,6 +151,7 @@ export const DEFAULT_FILTERS = [
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
+  issueTypeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,

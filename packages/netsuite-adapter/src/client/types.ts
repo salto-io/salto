@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
-import { NetsuiteQueryParameters } from '../query'
+import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from '../query'
 
 export interface CustomizationInfo {
   typeName: string
@@ -40,8 +40,8 @@ export interface FolderCustomizationInfo extends CustomizationInfo {
 }
 
 export type FailedTypes = {
-  unexpectedError: NetsuiteQueryParameters['types']
-  lockedError: NetsuiteQueryParameters['types']
+  unexpectedError: NetsuiteTypesQueryParams
+  lockedError: NetsuiteTypesQueryParams
 }
 
 export type GetCustomObjectsResult = {
@@ -51,8 +51,8 @@ export type GetCustomObjectsResult = {
 }
 
 export type FailedFiles = {
-  lockedError: NetsuiteQueryParameters['filePaths']
-  otherError: NetsuiteQueryParameters['filePaths']
+  lockedError: NetsuiteFilePathsQueryParams
+  otherError: NetsuiteFilePathsQueryParams
 }
 
 export type ImportFileCabinetResult = {

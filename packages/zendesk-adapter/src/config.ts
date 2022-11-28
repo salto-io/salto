@@ -17,7 +17,14 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { BRAND_TYPE_NAME, ZENDESK } from './constants'
+import {
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  ZENDESK,
+} from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -1632,13 +1639,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   articles: {
     request: {
-      url: '/api/v2/help_center/articles',
-      recurseInto: [
-        {
-          type: 'article_translation',
-          toField: 'translations',
-          context: [{ name: 'articleId', fromField: 'id' }],
-        },
+      url: '/api/v2/help_center/{locale}/articles',
+      dependsOn: [
+        { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
       ],
     },
     transformation: {
@@ -1649,13 +1652,21 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['&section_id', 'title'],
       fileNameFields: ['&section_id', 'title'],
-      standaloneFields: [{ fieldName: 'translations' }],
+      standaloneFields: [
+        { fieldName: 'translations' },
+        { fieldName: 'attachments' },
+      ],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'position', fieldType: 'number' },
       ),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'author_id', fieldType: 'unknown' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'author_id', fieldType: 'string' },
+        { fieldName: 'translations', fieldType: 'list<article_translation>' },
+        { fieldName: 'attachments', fieldType: 'list<article_attachment>' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'vote_sum' },
         { fieldName: 'vote_count' },
@@ -1691,10 +1702,23 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  article_translation: {
-    request: {
-      url: '/api/v2/help_center/articles/{articleId}/translations',
+  [ARTICLE_ATTACHMENT_TYPE_NAME]: {
+    transformation: {
+      idFields: ['filename'],
+      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
     },
+    deployRequests: {
+      remove: {
+        url: '/api/v2/help_center/articles/attachments/{articleAttachmentId}',
+        method: 'delete',
+        urlParamsToFields: {
+          articleAttachmentId: 'id',
+        },
+      },
+    },
+  },
+  article_translation: {
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,
@@ -2220,6 +2244,10 @@ export const GUIDE_TYPES_TO_HANDLE_BY_BRAND = [
   'article_translation',
   'category_translation',
   'section_translation',
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
 ]
 
 export const DEFAULT_CONFIG: ZendeskConfig = {

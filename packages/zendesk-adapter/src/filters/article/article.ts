@@ -32,7 +32,7 @@ import { removeTitleAndBody } from '../guide_fetch_article'
 import { prepRef } from './article_body'
 import { EVERYONE } from '../everyone_user_segment'
 import ZendeskClient from '../../client/client'
-import { createAttachmentType, createUnassociatedAttachment, deleteArticleAttachment, getArticleAttachments } from './utils'
+import { createAttachmentType, createUnassociatedAttachment, deleteArticleAttachment, getArticleAttachments, updateArticleTranslationBody } from './utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
 
 const log = logger(module)
@@ -170,8 +170,14 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         return
       }
       // Modified attachments should be associated to an already-existing articles
+      // After association an update to the translations' body is needed
       if (isModificationChange(attachmentChange)) {
-        await associateAttachments(client, parentArticleRef.value.id, [attachmentInstance.value.id])
+        const articleInstance = await elementsSource.get(parentArticleRef.elemID)
+        if (articleInstance === undefined) {
+          return
+        }
+        await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
+        await updateArticleTranslationBody({ client, elementsSource, articleInstance })
         return
       }
       const parentArticleName = parentArticleRef.elemID.name

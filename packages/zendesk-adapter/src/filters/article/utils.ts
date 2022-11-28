@@ -17,19 +17,23 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { naclCase, normalizeFilePathPart, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
+import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections, values } from '@salto-io/lowerdash'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement,
-  isStaticFile, ObjectType, ReferenceExpression, StaticFile,
+  isInstanceElement,
+  isReferenceExpression,
+  isStaticFile, isTemplateExpression, ObjectType, ReadOnlyElementsSource, ReferenceExpression, StaticFile, TemplatePart,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { ARTICLE_ATTACHMENT_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { ZendeskApiConfig } from '../../config'
+import { lookupFunc } from '../field_references'
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH, generateInstanceNameFromConfig } = elementsUtils
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
@@ -214,4 +218,75 @@ export const deleteArticleAttachment = async (
   if (res === undefined) {
     log.error('Received an empty response from Zendesk API when deletd an article attachment')
   }
+}
+
+/**
+ * Process template Expression references by the id type
+ */
+const prepRef = (part: ReferenceExpression): TemplatePart => {
+  if (part.elemID.isTopLevel()) {
+    return part.value.value.id.toString()
+  }
+  if (!_.isString(part.value)) {
+    throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
+  }
+  return part.value
+}
+
+export const updateArticleTranslationBody = async ({
+  client,
+  elementsSource,
+  articleInstance,
+}: {
+  client: ZendeskClient
+  elementsSource: ReadOnlyElementsSource
+  articleInstance: InstanceElement
+}): Promise<void> => {
+  const articleTranslations = articleInstance.value.translations
+  if (!Array.isArray(articleTranslations)) {
+    log.error(`Received an invalid article ${articleInstance.elemID.name} translations value - ${safeJsonStringify(articleTranslations)}`)
+    return
+  }
+  const translationInstances = await awu(articleTranslations)
+    .filter(isReferenceExpression)
+    .map(async translationRef => elementsSource.get(translationRef.elemID))
+    .filter(isInstanceElement)
+    .toArray()
+  await awu(translationInstances)
+    .filter(translationInstance => isTemplateExpression(translationInstance.value.body))
+    .forEach(async translationInstance => {
+      await resolveValues(translationInstance, lookupFunc, elementsSource, true)
+      // const translationBody = translationInstance.value.body
+      // if (!isTemplateExpression(translationBody)) {
+      //   return
+      // }
+      // await awu(translationBody.parts)
+      //   .filter(isReferenceExpression)
+      //   .forEach(async part => {
+      //     const referencedElement = await elementsSource.get(part.elemID)
+      //     if (isInstanceElement(referencedElement)) {
+      //       part = new ReferenceExpression(referencedElement.elemID, referencedElement)
+      //     }
+      //   })
+      // resolveTemplates({ values: [translationInstance.value], fieldName: 'body' }, {})
+      replaceTemplatesWithValues(
+        { values: [translationInstance.value], fieldName: 'body' },
+        {},
+        (part: ReferenceExpression) => {
+          const referencedElement = elementsSource.get(part.elemID)
+          if (!isInstanceElement(referencedElement)) {
+            return part.value
+          }
+          return prepRef(new ReferenceExpression(referencedElement.elemID, referencedElement))
+        }
+      )
+      const localeInstance = elementsSource.get(translationInstance.value.locale.elemID)
+      if (!isInstanceElement(localeInstance)) {
+        return
+      }
+      await client.put({
+        url: `/api/v2/help_center/articles/${articleInstance.value.id}/translations/${localeInstance.value.id}`,
+        data: { translation: { body: translationInstance.value.body } },
+      })
+    })
 }

@@ -89,7 +89,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
   const pathToInternalIdsIndex: Record<string, number> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
-  const mapKeyFieldsIndex: Record<string, string> = {}
+  const mapKeyFieldsIndex: Record<string, string | string[]> = {}
 
   const updateInternalIdsIndex = async (element: Element): Promise<void> => {
     await assignToInternalIdsIndex(element, internalIdsIndex, elementsSource)

@@ -13,17 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getAllChangeData, toChange } from '@salto-io/adapter-api'
+import { Change, CORE_ANNOTATIONS, getAllChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/invalid_listview_filterscope'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
+const createListView = (filterScopeValue: string): InstanceElement => createInstanceElement(
+  { fullName: 'Some.FullName', filterScope: filterScopeValue },
+  mockTypes.ListView,
+  undefined,
+  { [CORE_ANNOTATIONS.PARENT]: 'Opportunity' },
+)
 
 describe('ListView filterScope validator', () => {
   describe('when filterScope changes to invalid value', () => {
     let filterScopeModificationChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'Some.FullName', filterScope: 'Everything' }, mockTypes.ListView)
+      const beforeRecord = createListView('Everything')
       const afterRecord = beforeRecord.clone()
       afterRecord.value.filterScope = 'MyTeamTerritory'
       filterScopeModificationChange = toChange({ before: beforeRecord, after: afterRecord })
@@ -41,7 +47,7 @@ describe('ListView filterScope validator', () => {
   describe('when invalid filterScope value is added', () => {
     let filterScopeAdditionChange: Change
     beforeEach(() => {
-      const record = createInstanceElement({ fullName: 'Some.FullName', filterScope: 'MyTeamTerritory' }, mockTypes.ListView)
+      const record = createListView('MyTerritory')
       filterScopeAdditionChange = toChange({ after: record })
     })
 
@@ -57,7 +63,7 @@ describe('ListView filterScope validator', () => {
   describe('when filterScope is changed to a valid value', () => {
     let filterScopeAdditionChange: Change
     beforeEach(() => {
-      const record = createInstanceElement({ fullName: 'Some.FullName', filterScope: 'Everything' }, mockTypes.ListView)
+      const record = createListView('Everything')
       filterScopeAdditionChange = toChange({ after: record })
     })
 
@@ -70,13 +76,27 @@ describe('ListView filterScope validator', () => {
   describe('when filterScope does not change', () => {
     let irrelevantChange: Change
     beforeEach(() => {
-      const beforeRecord = createInstanceElement({ fullName: 'Some.FullName', filterScope: 'Everything' }, mockTypes.ListView)
-      const afterRecord = createInstanceElement({ fullName: 'Some.FullName', filterScope: 'Everything' }, mockTypes.ListView)
+      const beforeRecord = createListView('Everything')
+      const afterRecord = createListView('Everything')
       irrelevantChange = toChange({ before: beforeRecord, after: afterRecord })
     })
 
     it('should pass validation', async () => {
       const changeErrors = await changeValidator([irrelevantChange])
+      expect(changeErrors).toBeEmpty()
+    })
+  })
+
+  describe('when the parent is not an Opportunity', () => {
+    let filterScopeAdditionChange: Change
+    beforeEach(() => {
+      const record = createListView('MyTeamTerritory')
+      record.annotations = { [CORE_ANNOTATIONS.PARENT]: 'Flow' }
+      filterScopeAdditionChange = toChange({ after: record })
+    })
+
+    it('should pass validation', async () => {
+      const changeErrors = await changeValidator([filterScopeAdditionChange])
       expect(changeErrors).toBeEmpty()
     })
   })

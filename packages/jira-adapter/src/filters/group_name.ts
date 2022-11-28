@@ -22,22 +22,26 @@ import { GROUP_TYPE_NAME, JIRA } from '../constants'
 import { JiraConfig } from '../config/config'
 
 const UUID_REGEX = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
-const GROUP_NAME_REGEX = new RegExp(`^(.*)-${UUID_REGEX}$`)
+const GROUP_NAME = 'trusted-users'
+const TRUSTED_GROUP_NAME_REGEX = new RegExp(`^${GROUP_NAME}-${UUID_REGEX}$`)
 
 const isGroupElement = (element: Element): boolean =>
   element.elemID.typeName === GROUP_TYPE_NAME
+
+const isTrustedGroupInstance = (instance: InstanceElement): boolean => {
+  const match = instance.value.name.match(TRUSTED_GROUP_NAME_REGEX)
+  return match?.[1] !== undefined
+}
 
 const getInstanceName = (
   instance: InstanceElement,
   config: JiraConfig,
   getElemIdFunc?: ElemIdGetter
 ): string => {
-  const match = instance.value.name.match(GROUP_NAME_REGEX)
-  if (!match || !match[1]) {
+  if (!isTrustedGroupInstance(instance)) {
     return instance.elemID.name
   }
-  const baseName = match[1]
-  const defaultName = naclCase(baseName)
+  const defaultName = naclCase(GROUP_NAME)
   const { serviceIdField } = configUtils.getConfigWithDefault(
     config.apiDefinitions.types[instance.elemID.typeName].transformation,
     config.apiDefinitions.typeDefaults.transformation
@@ -62,8 +66,7 @@ const getRenamedInstance = (
 ): InstanceElement => {
   const elementName = getInstanceName(instance, config, getElemIdFunc)
   const originalName = instance.value.name
-  const match = instance.value.name.match(GROUP_NAME_REGEX)
-  const newName = match ? match[1] : instance.value.name
+  const newName = isTrustedGroupInstance(instance) ? GROUP_NAME : instance.value.name
   const newPath = [...(instance.path ?? []).slice(0, -1), pathNaclCase(elementName)]
   return new InstanceElement(
     elementName,
@@ -84,7 +87,7 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
     const newInstances = instances
       .filter(isInstanceElement)
       .map(e => getRenamedInstance(e, config, getElemIdFunc))
-    elements.push(...newInstances)
+    newInstances.forEach(instance => elements.push(instance))
   },
 })
 

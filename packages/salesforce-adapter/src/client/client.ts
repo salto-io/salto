@@ -122,6 +122,9 @@ const errorMessagesToRetry = [
   'system may be currently unavailable',
   'Unexpected internal servlet state',
   'socket hang up',
+  'An internal server error has occurred',
+  'An unexpected connection error occurred',
+  'ECONNREFUSED',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -475,11 +478,13 @@ export default class SalesforceClient {
   }
 
   private retryOnBadResponse<T extends object>(request: () => Promise<T>): Promise<T> {
+    const retryAttempts = this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts
     const requestWithRetry = async (attempts: number): Promise<T> => {
       let res: T
       try {
         res = await request()
       } catch (e) {
+        log.warn(`caught exception: ${e.message}. ${attempts} retry attempts left from ${retryAttempts} in total`)
         if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
           log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
           return requestWithRetry(attempts - 1)
@@ -503,7 +508,7 @@ export default class SalesforceClient {
 
       return res
     }
-    return requestWithRetry(this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts)
+    return requestWithRetry(retryAttempts)
   }
 
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })

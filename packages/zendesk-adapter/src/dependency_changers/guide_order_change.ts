@@ -27,7 +27,7 @@ const createDependencyChange = (
   const orderParent = getChangeData(orderChange.change).annotations[CORE_ANNOTATIONS.PARENT][0]
 
   const parentChanges = changes.filter(change =>
-    getChangeData(change.change).value.id === orderParent.value.value.id)
+    getChangeData(change.change).elemID === orderParent.value.elemID)
 
   return parentChanges.map(parentChange => dependencyChange(
     'remove',

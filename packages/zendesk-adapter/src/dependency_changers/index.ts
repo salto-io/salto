@@ -17,7 +17,7 @@ import { DependencyChanger } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { customFieldOptionDependencyChanger } from './custom_field_option_change'
-import { guideOrderDependencyChanger } from './guide_order_changer'
+import { guideOrderDependencyChanger } from './guide_order_change'
 
 const { awu } = collections.asynciterable
 

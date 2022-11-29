@@ -90,9 +90,8 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
     // If there was a change of the default language, send an api request to update it
     if (newDefaultChange !== undefined) {
       const newDataValue = newDefaultChange.data.after.value
-      const brandId = newDataValue.brand
       try {
-        await brandIdToClient[brandId].put({
+        await client.put({
           url: DEFAULT_LOCALE_API,
           data: { locale: newDataValue.locale },
         })

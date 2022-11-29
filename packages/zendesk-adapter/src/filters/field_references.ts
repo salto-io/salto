@@ -965,7 +965,7 @@ const filter: FilterCreator = ({ config }) => ({
       await referenceUtils.addReferences({
         elements,
         defs: fixedDefs,
-        fieldsToGroupBy: ['id', 'name', 'key', 'value'],
+        fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
         contextStrategyLookup,
         // since ids and references to ids vary inconsistently between string/number, allow both
         isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),

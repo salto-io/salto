@@ -103,7 +103,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
-          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customreport[0-9a-z_]+' }),
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customlayout[0-9a-z_]+' }),
         },
       },
       layout: {

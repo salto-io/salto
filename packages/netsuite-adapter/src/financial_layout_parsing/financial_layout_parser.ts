@@ -32,7 +32,7 @@ import {
 const ROWS = 'rows'
 
 type RowObject = { descriptor: { values: { Value: AttributeObject[] }}
-values: { values: { Record: RecordObject | RecordObject[] }}}
+details?: { values: { Record: RecordObject | RecordObject[] } }}
 
 const getLayoutDefinition = (search: ElementCompact): ElementCompact =>
   search['nssoc:SerializedObjectContainer']['nssoc:definition'].FinancialLayout
@@ -44,22 +44,25 @@ const getLayoutParts = async (definition: string): Promise<ElementParts> => {
 }
 
 const getRowRecords = (row: RowObject): Values[] =>
-  collections.array.makeArray(row.values.values?.Record)
+  collections.array.makeArray(row.details?.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
 
 
-const getLayoutRows = (row: RowObject): Values => {
-  const parsedRow = getObjectFromValues(row.descriptor.values.Value)
-  const records = getRowRecords(row)
-  if (!_.isEmpty(records)) {
-    Object.assign(parsedRow, { RECORDS: records })
-  }
-  return parsedRow
-}
+const getLayoutRows = (rows: RowObject[]): Values =>
+  collections.array.makeArray(rows).map(row => {
+    const parsedRow = getObjectFromValues(row.descriptor.values.Value)
+    const records = getRowRecords(row)
+    if (!_.isEmpty(records)) {
+      Object.assign(parsedRow, { RECORDS: records })
+    }
+    return parsedRow
+  })
+
 
 export const parseDefinition = async (definition: string): Promise<Value> => {
   const layoutParts = await getLayoutParts(definition)
   const returnInstance = {}
-  safeAssignKeyValue(returnInstance, ROWS, getLayoutRows(layoutParts.definition.rows))
+  safeAssignKeyValue(returnInstance, ROWS, getLayoutRows(layoutParts.definition.rows.values.FinancialRowElement))
   Object.assign(returnInstance, getFlags(layoutParts.definition))
+  return returnInstance
 }

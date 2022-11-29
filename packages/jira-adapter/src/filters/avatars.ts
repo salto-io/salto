@@ -16,12 +16,11 @@
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { ISSUE_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const AVATAR_URLS_FIELD = 'avatarUrls'
 const ICON_URL_FIELD = 'iconUrl'
-
-const AVATAR_ID_PATTERN = new RegExp('/rest/api/\\d+/universal_avatar/view/type/\\w+/avatar/(\\d+)')
 
 export const removeDomainPrefix = (url: string, baseUrl: string): string => {
   // This is to make sure the url will always have '/' in the end
@@ -39,38 +38,21 @@ const filter: FilterCreator = ({ client }) => ({
       .forEach(element => {
         walkOnElement({
           element,
-          func: ({ value }) => {
+          func: ({ value, path }) => {
             const objValues = isInstanceElement(value) ? value.value : value
 
             if (!_.isPlainObject(objValues)) {
               return WALK_NEXT_STEP.RECURSE
             }
-
-            let url: string | undefined
-            if (objValues[ICON_URL_FIELD] !== undefined) {
+            if (path.typeName === ISSUE_TYPE_NAME) {
+              delete objValues[ICON_URL_FIELD]
+            } else if (objValues[ICON_URL_FIELD] !== undefined) {
               objValues[ICON_URL_FIELD] = removeDomainPrefix(
                 objValues[ICON_URL_FIELD],
                 client.baseUrl
               )
-              url = objValues[ICON_URL_FIELD]
             }
-
-            if (!_.isEmpty(objValues[AVATAR_URLS_FIELD] ?? {})) {
-              objValues[AVATAR_URLS_FIELD] = _.mapValues(
-                objValues[AVATAR_URLS_FIELD],
-                avatarUrl => removeDomainPrefix(avatarUrl, client.baseUrl)
-              );
-              [url] = Object.values(objValues[AVATAR_URLS_FIELD])
-            }
-
-            if (url !== undefined) {
-              const match = AVATAR_ID_PATTERN.exec(url)
-              if (match !== null) {
-                delete objValues[AVATAR_URLS_FIELD]
-                delete objValues[ICON_URL_FIELD]
-              }
-            }
-
+            delete objValues[AVATAR_URLS_FIELD]
             return WALK_NEXT_STEP.RECURSE
           },
         })

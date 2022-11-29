@@ -173,11 +173,13 @@ export default class SoapClient {
       },
       'q1:name': path.basename(file.path),
       'q1:attachFrom': '_computer',
-      'q1:folder': {
-        attributes: {
-          internalId: file.folder.toString(),
+      ...file.folder ? {
+        'q1:folder': {
+          attributes: {
+            internalId: file.folder.toString(),
+          },
         },
-      },
+      } : {},
       'q1:description': file.description,
       'q1:bundleable': file.bundleable,
       'q1:isInactive': file.isInactive,

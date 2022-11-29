@@ -436,7 +436,7 @@ describe('workflowDeployFilter', () => {
 
       await filter.deploy([change])
 
-      expect(connection.get).not.toHaveBeenCalled()
+      expect(connection.get).not.toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', expect.anything())
     })
   })
 })

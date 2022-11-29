@@ -88,7 +88,7 @@ describe('article body filter', () => {
   const translationWithEmptyBrand = new InstanceElement(
     'translationWithEmptyBrand',
     articleTranslationType,
-    { id: 1, body: '<p><a href="https://brand2.zendesk.com/hc/en-us/articles/123/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://brand.zendesk.com/hc/he/articles/123-extra_string"' },
+    { id: 1, body: '<p><a href="https://brand2.zendesk.com/hc/en-us/articles/124/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://brand.zendesk.com/hc/he/articles/123-extra_string"' },
   )
 
   const translationWithoutReferences = new InstanceElement(
@@ -145,7 +145,7 @@ describe('article body filter', () => {
         .toEqual(new TemplateExpression({ parts: [
           '<p><a href="',
           new ReferenceExpression(emptyBrandInstance.elemID.createNestedID('brand_url'), emptyBrandInstance.value.brand_url),
-          '/hc/en-us/articles/123/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
+          '/hc/en-us/articles/124/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
           new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
           '/hc/he/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
           '-extra_string"',

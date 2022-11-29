@@ -62,9 +62,9 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex }: {
   if (url !== undefined && id !== undefined) {
     const referencedInstance = idToInstance[id]
     // Catch both options because the instance value might be resolved and then the 'brand' field will just be id
-    const brandId = isReferenceExpression(referencedInstance.value.brand)
+    const brandId = isReferenceExpression(referencedInstance?.value.brand)
       ? referencedInstance.value.brand.value.value.id
-      : referencedInstance.value.brand
+      : referencedInstance?.value.brand
     if (brandId === urlBrand.value.id) {
       // We want to keep the original url and replace just the id
       return [url, new ReferenceExpression(referencedInstance.elemID, referencedInstance)]

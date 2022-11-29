@@ -20,6 +20,7 @@ import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { DEFAULT_CONFIG, ZendeskConfig } from '../src/config'
 import ZendeskClient from '../src/client/client'
 import { paginate } from '../src/client/pagination'
+import { BrandIdToClient } from '../src/filter'
 
 type FilterCreatorParams = {
     client: ZendeskClient
@@ -27,6 +28,7 @@ type FilterCreatorParams = {
     config: ZendeskConfig
     fetchQuery: elementUtils.query.ElementQuery
     elementsSource: ReadOnlyElementsSource
+    brandIdToClient: BrandIdToClient
 }
 
 export const createFilterCreatorParams = ({
@@ -40,6 +42,7 @@ export const createFilterCreatorParams = ({
   config = DEFAULT_CONFIG,
   fetchQuery = elementUtils.query.createMockQuery(),
   elementsSource = buildElementsSourceFromElements([]),
+  brandIdToClient = {},
 } : Partial<FilterCreatorParams>) : FilterCreatorParams => ({
-  client, paginator, config, fetchQuery, elementsSource,
+  client, paginator, config, fetchQuery, elementsSource, brandIdToClient,
 })

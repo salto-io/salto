@@ -103,6 +103,9 @@ export const mockTypes = {
   Profile: createMetadataObjectType({
     annotations: { metadataType: 'Profile', dirName: 'profiles', suffix: 'profile' },
   }),
+  PermissionSet: createMetadataObjectType({
+    annotations: { metadataType: 'PermissionSet', dirName: 'PermissionSets', suffix: 'permissionSet' },
+  }),
   EmailFolder: createMetadataObjectType({
     annotations: {
       metadataType: 'EmailFolder',
@@ -198,6 +201,16 @@ export const mockTypes = {
       actionType: { refType: BuiltinTypes.STRING },
     },
   }),
+  FlowDefinition: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FlowDefinition',
+      suffix: 'flowDefinition',
+      dirName: 'flowDefinition',
+    },
+    fields: {
+      activeVersionNumber: { refType: BuiltinTypes.NUMBER },
+    },
+  }),
   QuickAction: createMetadataObjectType({
     annotations: {
       metadataType: 'QuickAction',
@@ -205,15 +218,25 @@ export const mockTypes = {
       suffix: 'quickAction',
     },
     fields: {
+      optionsCreateFeedItem: { refType: BuiltinTypes.BOOLEAN },
+      standardLabel: { refType: BuiltinTypes.STRING },
+      type: { refType: BuiltinTypes.STRING },
+      targetObject: { refType: BuiltinTypes.STRING },
       quickActionLayout: {
         refType: createMetadataObjectType({
           annotations: {
             metadataType: 'QuickActionLayout',
           },
           fields: {
+            layoutSectionStyle: { refType: BuiltinTypes.STRING },
             quickActionLayoutColumns: {
               refType: new ListType(createMetadataObjectType(
-                { annotations: { metadataType: 'QuickActionLayoutColumn' } }
+                {
+                  annotations: { metadataType: 'QuickActionLayoutColumn' },
+                  fields: {
+                    quickActionLayoutItems: { refType: new ListType(BuiltinTypes.STRING) },
+                  },
+                }
               )),
             },
           },

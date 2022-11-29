@@ -514,7 +514,7 @@ const isEqualResolvedValues = (
 )
 
 export const restoreValues: RestoreValuesFunc = async (
-  source, targetElement, getLookUpName, allowEmpty = false
+  source, targetElement, getLookUpName, allowEmpty = true
 ) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
@@ -982,15 +982,20 @@ export const elementExpressionStringifyReplacer: Replacer = (_key, value) => {
   if (isTypeReference(value)) {
     return `TypeReference(${value.elemID.getFullName()}, ${value.type ? '<omitted>' : '<no value>'})`
   }
+  if (isStaticFile(value)) {
+    return `StaticFile(${value.filepath}, ${value.hash ? value.hash : '<unknown hash>'})`
+  }
   if (value instanceof ElemID) {
     return `ElemID(${value.getFullName()})`
   }
   return value
 }
 
-export const safeJsonStringify = (value: Value,
+export const safeJsonStringify = (
+  value: Value,
   replacer?: Replacer,
-  space?: string | number): string =>
+  space?: string | number
+): string =>
   safeStringify(value, replacer, space)
 
 export const getAllReferencedIds = (
@@ -1093,7 +1098,9 @@ export const createSchemeGuardForInstance = <T extends InstanceElement>(
     const { error } = scheme.validate(instance.value)
     if (error !== undefined) {
       if (errorMessage !== undefined) {
-        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(instance)}`)
+        log.error('Error validating instance %s: %s, %s. Value: %s',
+          instance.elemID.getFullName(), errorMessage, error.message,
+          safeJsonStringify(instance.value, elementExpressionStringifyReplacer))
       }
       return false
     }

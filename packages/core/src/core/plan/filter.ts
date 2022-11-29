@@ -131,18 +131,13 @@ export const filterInvalidChanges = (
       getChangeData(diffGraph.getData(nodeId)).elemID
     )
 
-    const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyError => {
-      const message = `Dropped changes to ${
-        droppedID.getFullName()
-      } due to an error in ${causeID.getFullName()}`
-      return {
-        causeID,
-        elemID: droppedID,
-        message,
-        detailedMessage: message,
-        severity: 'Error' as SeverityLevel,
-      }
-    }
+    const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyError => ({
+      causeID,
+      elemID: droppedID,
+      message: 'Element cannot be deployed due to an error in its dependency',
+      detailedMessage: `${droppedID.getFullName()} cannot be deployed due to an error in its dependency ${causeID.getFullName()}. Please resolve that error and try again.`,
+      severity: 'Error' as SeverityLevel,
+    })
 
     const validDiffGraph = new DataNodeMap<DiffNode<ChangeDataType>>()
 

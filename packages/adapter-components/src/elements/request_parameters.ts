@@ -87,7 +87,7 @@ const computeDependsOnURLs = (
     throw new Error(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
   }
   const potentialParams = contextInstances.map(e => e.value[referenceDetails.from.field])
-  return potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p))
+  return _.uniq(potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p)))
 }
 
 export const replaceUrlParams = (url: string, paramValues: Record<string, unknown>): string =>

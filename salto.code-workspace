@@ -111,6 +111,10 @@
 		{
 			"name": "stripe-adapter",
 			"path": "packages/stripe-adapter"
+		},
+		{
+			"name": "aws-utils",
+			"path": "packages/aws-utils"
 		}
 	],
 	"settings": {

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { AdditionChange, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { elementSource } from '@salto-io/workspace'
 import { ZENDESK } from '../../src/constants'
 import {
   createParentReferencesError,
@@ -64,19 +65,23 @@ describe('missingFromParentValidatorCreator', () => {
       new ReferenceExpression(option2.elemID, option2),
     ]
     const addOption3 = toChange({ after: option3 }) as AdditionChange<InstanceElement>
-    const errors = await missingFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
-      toChange({ after: option2 }),
-      addOption3,
-      toChange({ before: ticketField, after: clonedTicketField }),
-    ])
+    const errors = await missingFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])(
+      [
+        toChange({ after: option2 }),
+        addOption3,
+        toChange({ before: ticketField, after: clonedTicketField }),
+      ],
+      elementSource.createInMemoryElementSource([clonedTicketField, ticketFieldType]),
+    )
     expect(errors)
       .toEqual([createParentReferencesError(addOption3, ticketField.elemID.getFullName())])
   })
   it('should return an error when we add an option instance but it does not exist in the parent - parent is not modified', async () => {
     const addOption2 = toChange({ after: option2 }) as AdditionChange<InstanceElement>
-    const errors = await missingFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
-      toChange({ after: option2 }),
-    ])
+    const errors = await missingFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])(
+      [toChange({ after: option2 })],
+      elementSource.createInMemoryElementSource([ticketField, ticketFieldType]),
+    )
     expect(errors)
       .toEqual([createParentReferencesError(addOption2, ticketField.elemID.getFullName())])
   })
@@ -86,10 +91,13 @@ describe('missingFromParentValidatorCreator', () => {
       new ReferenceExpression(option1.elemID, option1),
       new ReferenceExpression(option2.elemID, option2),
     ]
-    const errors = await missingFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])([
-      toChange({ after: option2 }),
-      toChange({ before: ticketField, after: clonedTicketField }),
-    ])
+    const errors = await missingFromParentValidatorCreator(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])(
+      [
+        toChange({ after: option2 }),
+        toChange({ before: ticketField, after: clonedTicketField }),
+      ],
+      elementSource.createInMemoryElementSource([clonedTicketField, ticketFieldType]),
+    )
     expect(errors).toEqual([])
   })
 })

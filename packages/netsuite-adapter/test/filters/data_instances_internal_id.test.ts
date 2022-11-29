@@ -33,11 +33,16 @@ describe('data_instances_internal_id', () => {
       const instance = new InstanceElement(
         'instance',
         new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } }, annotations: { source: 'soap' } }),
-        { recordRef: {} }
+        {
+          recordRef: { internalId: '1' },
+        }
       )
 
       await filterCreator().onFetch([instance])
-      expect(instance.value.recordRef.id).toEqual(ACCOUNT_SPECIFIC_VALUE)
+      expect(instance.value.recordRef).toEqual({
+        internalId: '1',
+        id: ACCOUNT_SPECIFIC_VALUE,
+      })
     })
 
     it('should replace internalId for values without fields', async () => {
@@ -118,7 +123,7 @@ describe('data_instances_internal_id', () => {
       const instance = new InstanceElement(
         'instance',
         type,
-        { recordRef: { internalId: '1', id: '[ACCOUNT_SPECIFIC_VALUE]' } }
+        { recordRef: { internalId: '1', id: ACCOUNT_SPECIFIC_VALUE } }
       )
 
       await filterCreator().preDeploy?.([

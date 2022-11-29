@@ -295,7 +295,7 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const MAX_QUERY_LENGTH = 2000
-export const DEFAULT_ENUM_FIELD_PERMISSIONS = false
+export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   maxAttempts: 3,
   retryDelay: 1000,
@@ -348,6 +348,7 @@ export const GROUP_METADATA_TYPE = 'Group'
 export const FLOW_METADATA_TYPE = 'Flow'
 export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 export const CUSTOM_METADATA = 'CustomMetadata'
+export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
@@ -423,3 +424,5 @@ export const SBAA_NAMESPACE = 'sbaa'
 // sbaa Objects
 export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
+
+export const UNLIMITED_INSTANCES_VALUE = -1

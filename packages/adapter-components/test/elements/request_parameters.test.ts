@@ -110,7 +110,7 @@ describe('request_parameters', () => {
       ).toThrow()
     })
 
-    it('should compute dependsOn urls', () => {
+    it('should compute dependsOn urls without duplicates', () => {
       const Pet = new ObjectType({ elemID: new ElemID('bla', 'Pet') })
       const Owner = new ObjectType({ elemID: new ElemID('bla', 'Owner') })
       expect(computeGetArgs(
@@ -124,6 +124,8 @@ describe('request_parameters', () => {
           Pet: [
             new InstanceElement('dog', Pet, { id: 'dogID' }),
             new InstanceElement('cat', Pet, { id: 'catID' }),
+            new InstanceElement('cat', Pet, { id: 'catID' }),
+            new InstanceElement('dog', Pet, { id: 'dogID' }),
           ],
           Owner: [
             new InstanceElement('o1', Owner, { id: 'ghi' }),

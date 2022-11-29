@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import { createReorderFilterCreator } from './creator'
-
-export const TYPE_NAME = 'organization_field'
+import { ORG_FIELD_TYPE_NAME } from '../../constants'
 
 /**
  * Add organization field order element with all the organization fields ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: TYPE_NAME,
+  typeName: ORG_FIELD_TYPE_NAME,
   orderFieldName: 'organization_field_ids',
   iterateesToSortBy: [
     instance => !instance.value.active,

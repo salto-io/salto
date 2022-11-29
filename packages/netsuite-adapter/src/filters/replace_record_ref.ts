@@ -16,7 +16,7 @@
 import { BuiltinTypes, ElemID, Field, isContainerType, isObjectType, isPrimitiveType, ListType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { NETSUITE } from '../constants'
+import { NETSUITE, PARENT, RECORD_REF } from '../constants'
 import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -410,7 +410,7 @@ const getFieldType = (
   field: Field,
   typeMap: Record<string, TypeElement>
 ): TypeElement | undefined => {
-  if (field.name === 'parent') {
+  if (field.name === PARENT) {
     return type
   }
   const typeName = fieldNameToTypeName[field.name]
@@ -419,7 +419,7 @@ const getFieldType = (
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    const recordRefElemId = new ElemID(NETSUITE, 'recordRef')
+    const recordRefElemId = new ElemID(NETSUITE, RECORD_REF)
 
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.isEqual(recordRefElemId))
     if (recordRefType === undefined) {

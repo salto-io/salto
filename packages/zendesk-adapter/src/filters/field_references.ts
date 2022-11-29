@@ -19,7 +19,7 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { BRAND_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME, FIELD_TYPE_NAMES } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
 
@@ -93,9 +93,6 @@ const TICKET_FIELD_ALTERNATIVE_PREFIX = 'ticket_fields_'
 const ORG_FIELD_PREFIX = 'organization.custom_fields.'
 const USER_FIELD_PREFIX = 'requester.custom_fields.'
 const ALTERNATE_USER_FIELD_PREFIX = 'user.custom_fields.'
-const TICKET_FIELD_TYPE_NAME = 'ticket_field'
-const ORG_FIELD_TYPE_NAME = 'organization_field'
-const USER_FIELD_TYPE_NAME = 'user_field'
 const TICKET_FIELD_OPTION_TYPE_NAME = 'ticket_field__custom_field_options'
 const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 const USER_FIELD_OPTION_TYPE_NAME = 'user_field__custom_field_options'
@@ -362,22 +359,22 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'active', parentTypes: ['organization_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'inactive', parentTypes: ['organization_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'active', parentTypes: ['user_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'inactive', parentTypes: ['user_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'active', parentTypes: ['workspace_order'] },
@@ -442,17 +439,17 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'ticket_field_id' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'ticket_field_ids' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'parent_field_id' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -463,25 +460,25 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
-    src: { field: 'custom_field_options', parentTypes: ['ticket_field'] },
+    src: { field: 'custom_field_options', parentTypes: [TICKET_FIELD_TYPE_NAME] },
     serializationStrategy: 'fullValue',
     target: { type: 'ticket_field__custom_field_options' },
   },
   {
-    src: { field: 'default_custom_field_option', parentTypes: ['ticket_field'] },
+    src: { field: 'default_custom_field_option', parentTypes: [TICKET_FIELD_TYPE_NAME] },
     zendeskSerializationStrategy: 'value',
     target: { type: 'ticket_field__custom_field_options' },
   },
   {
-    src: { field: 'custom_field_options', parentTypes: ['user_field'] },
+    src: { field: 'custom_field_options', parentTypes: [USER_FIELD_TYPE_NAME] },
     serializationStrategy: 'fullValue',
     target: { type: 'user_field__custom_field_options' },
   },
   {
-    src: { field: 'default_custom_field_option', parentTypes: ['user_field'] },
+    src: { field: 'default_custom_field_option', parentTypes: [USER_FIELD_TYPE_NAME] },
     zendeskSerializationStrategy: 'value',
     target: { type: 'user_field__custom_field_options' },
   },
@@ -503,7 +500,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketField',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -514,7 +511,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketField',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -525,7 +522,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketFieldAlternative',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -544,7 +541,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'orgField',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -555,7 +552,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'orgField',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -572,7 +569,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'userField',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -583,7 +580,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'userFieldAlternative',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -594,17 +591,17 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'userField',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__columns'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__custom_fields'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'ticket_form_id' },
@@ -645,7 +642,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
     serializationStrategy: 'id',
-    target: { type: 'help_center_locale' },
+    target: { type: 'guide_locale' },
   },
   {
     src: {
@@ -656,7 +653,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     serializationStrategy: 'id',
-    target: { type: 'help_center_locale' },
+    target: { type: 'guide_locale' },
   },
   {
     src: { field: 'publish', parentTypes: ['permission_group'] },
@@ -726,17 +723,17 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'group_by', parentTypes: ['view__execution'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'sort_by', parentTypes: ['view__execution'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__group', 'view__execution__sort'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'attachments', parentTypes: ['macro'] },
@@ -744,7 +741,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'macro_attachment' },
   },
   {
-    src: { field: 'tag', parentTypes: ['ticket_field', 'organization_field', 'user_field'] },
+    src: { field: 'tag', parentTypes: FIELD_TYPE_NAMES },
     serializationStrategy: 'id',
     target: { type: 'tag' },
   },

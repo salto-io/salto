@@ -22,24 +22,20 @@ import { JIRA } from '../../src/constants'
 describe('avatarsFilter', () => {
   let filter: Filter
   let type: ObjectType
+  let issueTypeType: ObjectType
   beforeEach(async () => {
     filter = avatarsFilter(getFilterParams())
 
     type = new ObjectType({
       elemID: new ElemID(JIRA, 'type'),
     })
+    issueTypeType = new ObjectType({
+      elemID: new ElemID(JIRA, 'IssueType'),
+    })
   })
 
   describe('onFetch', () => {
-    it('should remove avatar value if contains id', async () => {
-      const iconInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          iconUrl: 'https://ori-salto-test.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10303?size=medium',
-        }
-      )
-
+    it('should remove avatar', async () => {
       const avatarsInstance = new InstanceElement(
         'instance',
         type,
@@ -52,20 +48,28 @@ describe('avatarsFilter', () => {
           },
         }
       )
-
-      await filter.onFetch?.([iconInstance, avatarsInstance])
-
-      expect(iconInstance.value).toEqual({})
-
+      await filter.onFetch?.([avatarsInstance])
       expect(avatarsInstance.value).toEqual({})
     })
-
-    it('if url does not contain an id should remove the domain prefix', async () => {
+    it('should remove icons on IssueType elements', async () => {
       const iconInstance = new InstanceElement(
         'instance',
-        type,
+        issueTypeType,
         {
-          iconUrl: 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=medium',
+          iconUrl: 'https://ori-salto-test.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10303?size=medium',
+        }
+      )
+      await filter.onFetch?.([iconInstance])
+      expect(iconInstance.value).toEqual({})
+    })
+    it('should remove avatar and relevant icons in nested fields', async () => {
+      const iconInstance = new InstanceElement(
+        'instance',
+        issueTypeType,
+        {
+          nested: {
+            iconUrl: 'https://ori-salto-test.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10303?size=medium',
+          },
         }
       )
 
@@ -73,28 +77,35 @@ describe('avatarsFilter', () => {
         'instance',
         type,
         {
-          avatarUrls: {
-            '48x48': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg',
-            '24x24': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=small',
-            '16x16': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=xsmall',
-            '32x32': 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=medium',
+          otherNested: {
+            avatarUrls: {
+              '48x48': 'https://ori-salto-test.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10303',
+              '24x24': 'https://ori-salto-test.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10303?size=small',
+              '16x16': 'https://ori-salto-test.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10303?size=xsmall',
+              '32x32': 'https://ori-salto-test.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10303?size=medium',
+            },
           },
         }
       )
 
       await filter.onFetch?.([iconInstance, avatarsInstance])
 
+      expect(iconInstance.value).toEqual({ nested: {} })
+
+      expect(avatarsInstance.value).toEqual({ otherNested: {} })
+    })
+    it('if url starts with base url should remove the domain prefix', async () => {
+      const iconInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          iconUrl: 'https://ori-salto-test.atlassian.net/images/icons/priorities/low.svg?size=medium',
+        }
+      )
+      await filter.onFetch?.([iconInstance])
+
       expect(iconInstance.value).toEqual({
         iconUrl: '/images/icons/priorities/low.svg?size=medium',
-      })
-
-      expect(avatarsInstance.value).toEqual({
-        avatarUrls: {
-          '48x48': '/images/icons/priorities/low.svg',
-          '24x24': '/images/icons/priorities/low.svg?size=small',
-          '16x16': '/images/icons/priorities/low.svg?size=xsmall',
-          '32x32': '/images/icons/priorities/low.svg?size=medium',
-        },
       })
     })
 
@@ -107,32 +118,10 @@ describe('avatarsFilter', () => {
         }
       )
 
-      const avatarsInstance = new InstanceElement(
-        'instance',
-        type,
-        {
-          avatarUrls: {
-            '48x48': 'https://other/images/icons/priorities/low.svg',
-            '24x24': 'https://other/images/icons/priorities/low.svg?size=small',
-            '16x16': 'https://other/images/icons/priorities/low.svg?size=xsmall',
-            '32x32': 'https://other/images/icons/priorities/low.svg?size=medium',
-          },
-        }
-      )
-
-      await filter.onFetch?.([iconInstance, avatarsInstance])
+      await filter.onFetch?.([iconInstance])
 
       expect(iconInstance.value).toEqual({
         iconUrl: 'https://other/images/icons/priorities/low.svg?size=medium',
-      })
-
-      expect(avatarsInstance.value).toEqual({
-        avatarUrls: {
-          '48x48': 'https://other/images/icons/priorities/low.svg',
-          '24x24': 'https://other/images/icons/priorities/low.svg?size=small',
-          '16x16': 'https://other/images/icons/priorities/low.svg?size=xsmall',
-          '32x32': 'https://other/images/icons/priorities/low.svg?size=medium',
-        },
       })
     })
   })

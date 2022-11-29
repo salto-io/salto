@@ -35,6 +35,7 @@ export type ClientRetryConfig = Partial<{
 export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Partial<{
   retry: ClientRetryConfig
   rateLimit: RateLimitConfig
+  maxRequestsPerMinute: number
   pageSize: ClientPageSizeConfig
 }>
 
@@ -90,6 +91,7 @@ export const createClientConfigType = <RateLimitConfig extends ClientRateLimitCo
     fields: {
       retry: { refType: clientRetryConfigType },
       rateLimit: { refType: clientRateLimitConfigType },
+      maxRequestsPerMinute: createFieldDefWithMin(-1),
       pageSize: { refType: clientPageSizeConfigType },
     },
     annotations: {
@@ -109,5 +111,8 @@ export const validateClientConfig = <RateLimitConfig extends ClientRateLimitConf
     if (invalidValues.length > 0) {
       throw Error(`${clientConfigPath}.rateLimit values cannot be set to 0. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
     }
+  }
+  if (clientConfig?.maxRequestsPerMinute === 0) {
+    throw Error(`${clientConfigPath}.maxRequestsPerMinute value cannot be set to 0`)
   }
 }

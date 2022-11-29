@@ -84,7 +84,7 @@ export type ChangeValidatorName = (
   | 'unknownField'
   | 'customFieldType'
   | 'standardFieldLabel'
-  | 'profileMapKeys'
+  | 'mapKeys'
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'cpqValidator'
@@ -92,6 +92,7 @@ export type ChangeValidatorName = (
   | 'recordTypeDeletion'
   | 'activeFlowValidator'
   | 'flowDeletionValidator'
+  | 'fullNameChangedValidator'
 )
 
 export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
@@ -164,6 +165,7 @@ export type FetchParameters = {
   optionalFeatures?: OptionalFeatures
   target?: string[]
   maxInstancesPerType?: number
+  preferActiveFlowVersions?: boolean
 }
 
 export type DeprecatedMetadataParams = {
@@ -549,7 +551,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownField: { refType: BuiltinTypes.BOOLEAN },
     customFieldType: { refType: BuiltinTypes.BOOLEAN },
     standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
-    profileMapKeys: { refType: BuiltinTypes.BOOLEAN },
+    mapKeys: { refType: BuiltinTypes.BOOLEAN },
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
@@ -557,6 +559,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
     activeFlowValidator: { refType: BuiltinTypes.BOOLEAN },
     flowDeletionValidator: { refType: BuiltinTypes.BOOLEAN },
+    fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -580,6 +583,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
       },
     },
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
+    preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

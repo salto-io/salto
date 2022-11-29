@@ -42,13 +42,13 @@ describe('change validator creator', () => {
           elemID: new ElemID(JIRA, 'obj'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter jira',
-          detailedMessage: 'Deployment of jira.obj is not supported',
+          detailedMessage: 'Deployment of non-instance elements is not supported in adapter jira. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.',
         },
         {
           elemID: new ElemID(JIRA, 'obj2'),
           severity: 'Error',
           message: 'Deployment of non-instance elements is not supported in adapter jira',
-          detailedMessage: 'Deployment of jira.obj2 is not supported',
+          detailedMessage: 'Deployment of non-instance elements is not supported in adapter jira. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.',
         },
       ])
     })

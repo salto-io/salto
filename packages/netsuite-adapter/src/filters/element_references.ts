@@ -88,6 +88,15 @@ export const getElementServiceIdRecords = async (
         },
       }
     }
+    const type = await element.getType(elementsSource)
+    if (isCustomRecordType(type)) {
+      return {
+        [`${type.annotations[SCRIPT_ID]}.${element.value[SCRIPT_ID]}`]: {
+          elemID: element.elemID.createNestedID(SCRIPT_ID),
+          serviceID: element.value[SCRIPT_ID],
+        },
+      }
+    }
   }
   if (isObjectType(element) && isCustomRecordType(element)) {
     return getServiceIdsToElemIds(element, elementsSource)

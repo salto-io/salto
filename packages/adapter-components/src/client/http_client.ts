@@ -95,6 +95,7 @@ export abstract class AdapterHTTPClient<
     defaults: {
       retry: Required<ClientRetryConfig>
       rateLimit: Required<TRateLimitConfig>
+      maxRequestsPerMinute: number
       pageSize: Required<ClientPageSizeConfig>
     },
   ) {

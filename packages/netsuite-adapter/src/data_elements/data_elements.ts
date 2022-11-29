@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, Element, BuiltinTypes, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, BuiltinTypes, ElemIdGetter, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import { collections, strings } from '@salto-io/lowerdash'
-import { NETSUITE, RECORDS_PATH } from '../constants'
+import { NETSUITE, RECORDS_PATH, SOAP } from '../constants'
 import { NetsuiteQuery } from '../query'
 import { getTypeIdentifier, TYPE_TO_IDENTIFIER } from './types'
 import NetsuiteClient from '../client/client'
@@ -33,7 +33,7 @@ export type DataTypeConfig = Record<string, string[]>
 
 const setTypeSourceAnnotation = (type: ObjectType): void => {
   type.annotationRefTypes.source = createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING)
-  type.annotations.source = 'soap'
+  type.annotations.source = SOAP
 }
 
 export const getDataTypes = async (
@@ -136,7 +136,7 @@ export const getDataElements = async (
   client: NetsuiteClient,
   query: NetsuiteQuery,
   elemIdGetter?: ElemIdGetter,
-): Promise<Element[]> => {
+): Promise<(ObjectType | InstanceElement)[]> => {
   const types = await getDataTypes(client)
 
   const typesToFetch = Object.keys(TYPE_TO_IDENTIFIER).filter(query.isTypeMatch)

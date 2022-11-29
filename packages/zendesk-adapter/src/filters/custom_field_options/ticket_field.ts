@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import { createCustomFieldOptionsFilterCreator } from './creator'
+import { TICKET_FIELD_TYPE_NAME } from '../../constants'
 
 /**
  * Deploys ticket field and ticket field options
  */
 const filterCreator = createCustomFieldOptionsFilterCreator({
-  parentTypeName: 'ticket_field',
+  parentTypeName: TICKET_FIELD_TYPE_NAME,
   childTypeName: 'ticket_field__custom_field_options',
 })
 

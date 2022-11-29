@@ -14,68 +14,83 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ChangeValidator, getChangeData, InstanceElement,
-  isInstanceElement,
+  Change, ChangeDataType,
+  ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
+  isRemovalOrModificationChange,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
-import _ from 'lodash'
-import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
+import { values } from '@salto-io/lowerdash'
+import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
 
-const { awu } = collections.asynciterable
 const { isDefined } = values
-const log = logger(module)
 
-// If there is not exactly one default, create a relevant error and return it
-const validateOnlyOneDefault = (
-  brand: InstanceElement,
-  settings: InstanceElement[],
-): ChangeError | undefined => {
-  const defaultSettings = settings.filter(s => s.value.default)
-  if (defaultSettings.length === 0) {
-    return {
-      elemID: brand.elemID,
-      severity: 'Error',
-      message: 'Invalid amount of default languages of a brand',
-      detailedMessage: `There are 0 default languages for brand '${brand.elemID.name}', there must be exactly 1`,
+// Sort the default language changes by brand, split into those who were added as default and those who were removed
+const sortDefaultLanguageChanges = (changes: Change<InstanceElement>[])
+    : Record<string, { add: Change[]; remove: Change[] }> => {
+  const brandToChanges: Record<string, { add: Change[]; remove: Change[] }> = {}
+  changes.forEach(change => {
+    const beforeValue = isRemovalOrModificationChange(change) ? change.data.before.value : undefined
+    const afterValue = isAdditionOrModificationChange(change) ? change.data.after.value : undefined
+
+    // Init the dict key-value in case it's the first change of this brand
+    const brandName = beforeValue?.brand.elemID.name ?? afterValue?.brand.elemID.name
+    brandToChanges[brandName] = {
+      add: brandToChanges[brandName] ? brandToChanges[brandName].add : [],
+      remove: brandToChanges[brandName] ? brandToChanges[brandName].remove : [],
     }
-  }
-  if (defaultSettings.length > 1) {
-    return {
-      elemID: brand.elemID,
-      severity: 'Error',
-      message: 'Invalid amount of default languages of a brand',
-      detailedMessage: `There are ${defaultSettings.length} default languages for brand '${brand.elemID.name}', there must be exactly 1. The defaults are: ${defaultSettings.map(ds => ds.elemID.name)}`,
+
+    // Was default and now not - removed
+    if (beforeValue?.default === true && afterValue?.default === false) {
+      brandToChanges[brandName].remove.push(change)
+    // Was not default and now yes - added
+    } else if (beforeValue?.default === false && afterValue?.default === true) {
+      brandToChanges[brandName].add.push(change)
     }
-  }
-  return undefined
+  })
+
+  return brandToChanges
 }
+
+const createTooManyDefaultsError = (addChanges: ChangeDataType[], brand: string): ChangeError[] => addChanges.map(
+  change => ({
+    elemID: change.elemID,
+    severity: 'Error',
+    message: 'Invalid amount of default languages of a brand, there must be exactly one default language',
+    detailedMessage: `Too many default languages were added for brand '${brand}'. (${addChanges.map(addChange => addChange.elemID.name)})`,
+  })
+)
 
 /**
  * Validates that all the elements in the articles order list are references
 */
-export const defaultLanguageSettingsValidator: ChangeValidator = async (changes, elementsSource) => {
+export const defaultLanguageSettingsValidator: ChangeValidator = async changes => {
   // If there was no language settings change, there is nothing to do
-  if (!changes.some(change => GUIDE_LANGUAGE_SETTINGS_TYPE_NAME.includes(getChangeData(change).elemID.typeName))) {
-    return []
-  }
-  if (elementsSource === undefined) {
-    log.warn('Elements source was not passed to defaultLanguageSettingsValidator. Skipping validator')
-    return []
-  }
+  const defaultLanguageChanges = changes.filter(isInstanceChange)
+    .filter(change => GUIDE_LANGUAGE_SETTINGS_TYPE_NAME.includes(getChangeData(change).elemID.typeName))
 
-  const languageSettings = await awu(await elementsSource.list())
-    .filter(id => id.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME && id.idType === 'instance')
-    .map(id => elementsSource.get(id)).filter(isInstanceElement)
-    .toArray()
+  const brandToChanges = sortDefaultLanguageChanges(defaultLanguageChanges)
 
-  const brandsByName = Object.assign({}, ...(await awu(await elementsSource.list())
-    .filter(id => id.typeName === BRAND_TYPE_NAME && id.idType === 'instance')
-    .map(id => elementsSource.get(id)).filter(isInstanceElement)
-    .toArray()).map(brand => ({ [brand.elemID.name]: brand })))
-
-  const brandToLanguageSettings = _.groupBy(languageSettings, settings => settings.value.brand.elemID.name)
-
-  return Object.entries(brandToLanguageSettings)
-    .map(([brandName, settings]) => validateOnlyOneDefault(brandsByName[brandName], settings)).filter(isDefined)
+  return Object.entries(brandToChanges).flatMap(([brand, defaultChanges]): ChangeError[] | undefined => {
+    if (defaultChanges.add.length > 1) {
+      return createTooManyDefaultsError(defaultChanges.add.map(getChangeData), brand)
+    }
+    if (defaultChanges.add.length === 1 && defaultChanges.remove.length === 0) {
+      const changeElement = getChangeData(defaultChanges.add[0])
+      return [{
+        elemID: changeElement.elemID,
+        severity: 'Error',
+        message: 'Invalid amount of default languages of a brand, there must be exactly one default language',
+        detailedMessage: `A default language (${changeElement.elemID.name}) was added for brand '${brand}', but no default language was removed.`,
+      }]
+    }
+    if (defaultChanges.add.length === 0 && defaultChanges.remove.length === 1) {
+      const changeElement = getChangeData(defaultChanges.remove[0])
+      return [{
+        elemID: changeElement.elemID,
+        severity: 'Error',
+        message: 'Invalid amount of default languages of a brand, there must be exactly one default language',
+        detailedMessage: `A default language (${changeElement.elemID.name}) was removed from brand '${brand}', but no default language was added.`,
+      }]
+    }
+    return undefined
+  }).filter(isDefined)
 }

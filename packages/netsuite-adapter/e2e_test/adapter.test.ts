@@ -18,7 +18,7 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
+  ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -397,6 +397,13 @@ describe('Netsuite adapter E2E with real account', () => {
         const { elements } = withSuiteApp
           ? await adapterAttrWithoutElementsSource.adapter.fetch(mockFetchOpts)
           : { elements: [] }
+
+        const fetchedFolder = elements
+          .filter(isInstanceElement)
+          .find(element => element.elemID.isEqual(folderToModify.elemID))
+        if (fetchedFolder && fetchedFolder.value.internalId !== undefined) {
+          folderToModify.value.internalId = fetchedFolder.value.internalId
+        }
 
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp, elements },

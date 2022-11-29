@@ -172,12 +172,12 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       // Modified attachments should be associated to an already-existing articles
       // After association an update to the translations' body is needed
       if (isModificationChange(attachmentChange)) {
-        const articleInstance = await elementsSource.get(parentArticleRef.elemID)
+        const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
         if (articleInstance === undefined) {
           return
         }
         await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
-        await updateArticleTranslationBody({ client, elementsSource, articleInstance })
+        await updateArticleTranslationBody({ client, attachmentInstance })
         return
       }
       const parentArticleName = parentArticleRef.elemID.name

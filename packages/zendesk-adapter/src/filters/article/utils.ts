@@ -17,20 +17,18 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement,
-  isInstanceElement,
-  isReferenceExpression,
-  isStaticFile, isTemplateExpression, ObjectType, ReadOnlyElementsSource, ReferenceExpression, StaticFile, TemplatePart,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile, isTemplateExpression,
+  ObjectType, ReferenceExpression, StaticFile, TemplatePart, Values,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
 import { ARTICLE_ATTACHMENT_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { ZendeskApiConfig } from '../../config'
-import { lookupFunc } from '../field_references'
+import { prepRef } from './article_body'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -220,10 +218,18 @@ export const deleteArticleAttachment = async (
   }
 }
 
+const getResolvedParent = (resolvedInstance: InstanceElement): Values | undefined => {
+  const instanceParentsList = resolvedInstance.annotations[CORE_ANNOTATIONS.PARENT]
+  if (!_.isArray(instanceParentsList)) {
+    return undefined
+  }
+  return instanceParentsList[0]
+}
+
 /**
  * Process template Expression references by the id type
  */
-const prepRef = (part: ReferenceExpression): TemplatePart => {
+export const prepRef2 = (part: ReferenceExpression): TemplatePart => {
   if (part.elemID.isTopLevel()) {
     return part.value.value.id.toString()
   }
@@ -235,58 +241,34 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
 
 export const updateArticleTranslationBody = async ({
   client,
-  elementsSource,
-  articleInstance,
+  attachmentInstance,
 }: {
   client: ZendeskClient
-  elementsSource: ReadOnlyElementsSource
-  articleInstance: InstanceElement
+  attachmentInstance: InstanceElement
 }): Promise<void> => {
-  const articleTranslations = articleInstance.value.translations
+  const articleInstance = getResolvedParent(attachmentInstance)
+  const articleTranslations = articleInstance?.translations
   if (!Array.isArray(articleTranslations)) {
-    log.error(`Received an invalid article ${articleInstance.elemID.name} translations value - ${safeJsonStringify(articleTranslations)}`)
+    log.error(`Received an invalid translations value for attachment ${attachmentInstance.elemID.name} - ${safeJsonStringify(articleTranslations)}`)
     return
   }
-  const translationInstances = await awu(articleTranslations)
+  await awu(articleTranslations)
     .filter(isReferenceExpression)
-    .map(async translationRef => elementsSource.get(translationRef.elemID))
-    .filter(isInstanceElement)
-    .toArray()
-  await awu(translationInstances)
-    .filter(translationInstance => isTemplateExpression(translationInstance.value.body))
+    .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
     .forEach(async translationInstance => {
-      await resolveValues(translationInstance, lookupFunc, elementsSource, true)
-      // const translationBody = translationInstance.value.body
-      // if (!isTemplateExpression(translationBody)) {
-      //   return
-      // }
-      // await awu(translationBody.parts)
-      //   .filter(isReferenceExpression)
-      //   .forEach(async part => {
-      //     const referencedElement = await elementsSource.get(part.elemID)
-      //     if (isInstanceElement(referencedElement)) {
-      //       part = new ReferenceExpression(referencedElement.elemID, referencedElement)
-      //     }
-      //   })
-      // resolveTemplates({ values: [translationInstance.value], fieldName: 'body' }, {})
       replaceTemplatesWithValues(
-        { values: [translationInstance.value], fieldName: 'body' },
+        { values: [translationInstance.value.value], fieldName: 'body' },
         {},
         (part: ReferenceExpression) => {
-          const referencedElement = elementsSource.get(part.elemID)
-          if (!isInstanceElement(referencedElement)) {
-            return part.value
+          if (part.elemID.isEqual(attachmentInstance.elemID)) {
+            return attachmentInstance.value.id.toString()
           }
-          return prepRef(new ReferenceExpression(referencedElement.elemID, referencedElement))
+          return prepRef(part)
         }
       )
-      const localeInstance = elementsSource.get(translationInstance.value.locale.elemID)
-      if (!isInstanceElement(localeInstance)) {
-        return
-      }
       await client.put({
-        url: `/api/v2/help_center/articles/${articleInstance.value.id}/translations/${localeInstance.value.id}`,
-        data: { translation: { body: translationInstance.value.body } },
+        url: `/api/v2/help_center/articles/${articleInstance?.id}/translations/${translationInstance.value.value.locale.value.value.id}`,
+        data: { translation: { body: translationInstance.value.value.body } },
       })
     })
 }

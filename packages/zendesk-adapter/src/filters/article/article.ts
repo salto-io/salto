@@ -177,7 +177,10 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
           return
         }
         await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
-        await updateArticleTranslationBody({ client, attachmentInstance })
+        // Article bodies needs to be updated when modofying inline attachments
+        if (attachmentInstance.value.inline) {
+          await updateArticleTranslationBody({ client, attachmentInstance })
+        }
         return
       }
       const parentArticleName = parentArticleRef.elemID.name

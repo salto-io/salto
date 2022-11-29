@@ -66,12 +66,18 @@ describe('article body filter', () => {
   )
 
   const createInstanceElement = (type: ObjectType): InstanceElement =>
-    new InstanceElement(type.elemID.name, type, { id: 123, brand: 1 },)
+    new InstanceElement(
+      type.elemID.name,
+      type,
+      { id: 123, brand: new ReferenceExpression(brandInstance.elemID, brandInstance) }
+    )
 
   const articleInstance = createInstanceElement(articleType)
   const sectionInstance = createInstanceElement(sectionType)
   const categoryInstance = createInstanceElement(categoryType)
   const attachmentInstance = createInstanceElement(attachmentType)
+  // To test that the code catches both brand as id and brand as reference expression
+  attachmentInstance.value.brand = brandInstance.value.id
 
   const translationWithReferences = new InstanceElement(
     'translationWithReferences',

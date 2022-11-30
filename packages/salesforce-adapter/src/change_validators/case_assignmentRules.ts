@@ -17,16 +17,40 @@ import {
   ChangeError, getChangeData, ChangeValidator,
   isInstanceChange, InstanceElement, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
-import { values, collections } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { isInstanceOfType } from '../filters/utils'
 import { ASSIGNMENT_RULES_METADATA_TYPE } from '../constants'
 import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
-const { isDefined } = values
 
-const isCaseRuleWithTeams = (instance: InstanceElement): boolean =>
-  instance.value.assignmentRule.ruleEntry.some(entry => isDefined(entry.team))
+type RuleEntry = { // with team
+  team: string
+}
+
+type AssignmentRule = {
+  ruleEntry: RuleEntry[]
+}
+
+type AssignmentRules = {
+  assignmentRule: AssignmentRule[]
+}
+
+const RULE_ENTRY = Joi.object({
+  team: Joi.string().required(),
+}).unknown(true)
+
+const ASSIGNMENT_RULE = Joi.object({
+  ruleEntry: Joi.array().has(RULE_ENTRY),
+}).unknown(true)
+
+const ASSIGNMENT_RULES = Joi.object({
+  assignmentRule: Joi.array().items(ASSIGNMENT_RULE).required(),
+}).unknown(true)
+
+const isAssignmentRulesWithTeam = createSchemeGuard<AssignmentRules>(ASSIGNMENT_RULES)
 
 const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
@@ -44,7 +68,7 @@ const changeValidator: ChangeValidator = async changes => awu(changes)
   .map(getChangeData)
   .filter(isInstanceOfType(ASSIGNMENT_RULES_METADATA_TYPE))
   .filter(async change => await apiName(change) === 'Case')
-  .filter(isCaseRuleWithTeams)
+  .filter(instance => isAssignmentRulesWithTeam(instance.value))
   .map(createChangeError)
   .toArray()
 

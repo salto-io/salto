@@ -33,10 +33,13 @@ const log = logger(module)
 const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
+const CUSTOM_OPTION_TYPE = 'ticket_field__custom_field_options'
+export const TICKET_TICKET_FIELD = 'ticket.ticket_field'
+export const TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
-  'ticket.ticket_field': TICKET_FIELD_TYPE_NAME,
-  'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
+  [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
+  [TICKET_FIELD_OPTION_TITLE]: CUSTOM_OPTION_TYPE,
 }
 
 export const SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE = Object.fromEntries(
@@ -145,7 +148,7 @@ const formulaToTemplate = (
   instancesByType: Record<string, InstanceElement[]>,
   enableMissingReferences?: boolean
 ): TemplateExpression | string => {
-  const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
+  const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart | TemplatePart[] => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(/_([\d]+)/).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, so should contain exactly two parts
@@ -153,10 +156,16 @@ const formulaToTemplate = (
       return expression
     }
     const [type, innerId] = splitReference
-    const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]] ?? [])
+    const searchType = (ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type] === CUSTOM_OPTION_TYPE)
+      ? TICKET_TICKET_FIELD
+      : type
+    const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[searchType]] ?? [])
       .find(instance => instance.value.id?.toString() === innerId)
     if (elem) {
-      return new ReferenceExpression(elem.elemID, elem)
+      return [
+        `${type}_`,
+        new ReferenceExpression(elem.elemID, elem),
+      ]
     }
     // if no id was detected we return the original expression.
     if (!enableMissingReferences) {
@@ -169,10 +178,10 @@ const formulaToTemplate = (
       innerId
     )
     missingInstance.value.id = innerId
-    return new ReferenceExpression(
-      missingInstance.elemID,
-      missingInstance
-    )
+    return [
+      `${type}_`,
+      new ReferenceExpression(missingInstance.elemID, missingInstance),
+    ]
   }
 
   const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray):
@@ -242,7 +251,7 @@ const replaceFormulasWithTemplates = async (
 
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
   if (SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]) {
-    return `${SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]}_${part.value.value.id}`
+    return `${part.value.value.id}`
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME
     && _.isString(part.value.value.placeholder)) {

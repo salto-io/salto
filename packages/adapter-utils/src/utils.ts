@@ -454,14 +454,6 @@ export const resolveValues: ResolveValuesFunc = async (
   element, getLookUpName, elementsSource, allowEmpty = true,
 ) => {
   const valuesReplacer: TransformFunc = async ({ value, field, path }) => {
-    // eslint-disable-next-line max-len
-    if (element.elemID.name.startsWith('e2eHelpCenter_Testcategory') && path?.getFullName().includes('translations')) {
-      // eslint-disable-next-line no-console
-      console.log(` path : ${path?.getFullName()}
-      field: ${field?.elemID.getFullName()}
-      value: ${value}`)
-    }
-
     if (isReferenceExpression(value)) {
       return getLookUpName({
         // Make sure the reference here is always resolved

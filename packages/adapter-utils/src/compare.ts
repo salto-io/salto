@@ -316,6 +316,13 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
   })
 }
 
+
+/**
+ * Note: When working with list item changes, separating the changes between
+ * multiple applyDetailedChanges calls might create different results.
+ * E.g., if we have ['a', 'b', 'c'] with a removal change on the index 0 and index 1.
+ * if we apply the together we will get ['c'], but if we apply them separately we will get ['b']
+ */
 export const applyDetailedChanges = (
   element: ChangeDataType,
   detailedChanges: DetailedChange[],

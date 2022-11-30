@@ -21,6 +21,7 @@ import {
   isAdditionOrModificationChange,
   isPrimitiveValue,
   isStaticFile,
+  isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { getElementChangeId, resolvePath, setPath } from './utils'
@@ -212,6 +213,11 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
  *   Here we chose the results for such case to be ['a', 'b'].
  */
 export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void => {
+  const ids = changes.map(change => change.id)
+  if (ids.some(id => !isIndexPathPart(id.name)) || new Set(ids.map(id => id.createParentID().getFullName())).size > 1) {
+    throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
+  }
+
   const parentId = getElementChangeId(element, changes[0].id.createParentID())
   const list = resolvePath(element, parentId)
   changes.filter(isRemovalOrModificationChange)

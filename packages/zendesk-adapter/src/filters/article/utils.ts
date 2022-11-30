@@ -20,8 +20,8 @@ import { logger } from '@salto-io/logging'
 import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile, isTemplateExpression,
-  ObjectType, ReferenceExpression, StaticFile, TemplatePart, Values,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile,
+  isTemplateExpression, ObjectType, ReferenceExpression, StaticFile, Values,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
@@ -224,19 +224,6 @@ const getResolvedParent = (resolvedInstance: InstanceElement): Values | undefine
     return undefined
   }
   return instanceParentsList[0]
-}
-
-/**
- * Process template Expression references by the id type
- */
-export const prepRef2 = (part: ReferenceExpression): TemplatePart => {
-  if (part.elemID.isTopLevel()) {
-    return part.value.value.id.toString()
-  }
-  if (!_.isString(part.value)) {
-    throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
-  }
-  return part.value
 }
 
 export const updateArticleTranslationBody = async ({

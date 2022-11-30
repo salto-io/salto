@@ -14,16 +14,13 @@
 * limitations under the License.
 */
 import { ElemID, Values, Element } from '@salto-io/adapter-api'
-import { createReference } from '../utils'
-import { JIRA } from '../../src/constants'
+import { createReference } from '../../utils'
+import { JIRA } from '../../../src/constants'
 
 
 export const createKanbanBoardValues = (name: string, allElements: Element[]): Values => ({
   name: `kanban${name}`,
   type: 'kanban',
-  location: {
-    projectId: createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
-  },
   filterId: createReference(new ElemID(JIRA, 'Filter', 'instance', 'Filter_for_TP_board@s'), allElements),
   columnConfig: {
     columns: [
@@ -47,9 +44,6 @@ export const createKanbanBoardValues = (name: string, allElements: Element[]): V
 export const createScrumBoardValues = (name: string, allElements: Element[]): Values => ({
   name: `scrum${name}`,
   type: 'scrum',
-  location: {
-    projectId: createReference(new ElemID(JIRA, 'Project', 'instance', 'Test_Project@s'), allElements),
-  },
   filterId: createReference(new ElemID(JIRA, 'Filter', 'instance', 'Filter_for_TP_board@s'), allElements),
   columnConfig: {
     columns: [
@@ -65,7 +59,7 @@ export const createScrumBoardValues = (name: string, allElements: Element[]): Va
     ],
   },
   estimation: {
-    field: createReference(new ElemID(JIRA, 'Field', 'instance', 'Original_estimate__number@suu'), allElements),
+    field: createReference(new ElemID(JIRA, 'Field', 'instance', 'Story_Points__float__c@suuuu'), allElements),
     timeTracking: createReference(new ElemID(JIRA, 'Field', 'instance', 'Remaining_Estimate__number@suu'), allElements),
   },
 })

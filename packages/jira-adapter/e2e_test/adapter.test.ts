@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, toChange } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import _ from 'lodash'
 import { getParents, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import each from 'jest-each'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import 'jest-extended'
@@ -30,18 +29,24 @@ import { getDefaultConfig } from '../src/config/config'
 
 const { awu } = collections.asynciterable
 
-jest.setTimeout(300 * 1000)
+jest.setTimeout(600 * 1000)
 
-describe('Jira E2E', () => {
+each([
+  ['Cloud', false],
+  ['Data Center', true],
+]).describe('Jira %s E2E', (_text, isDataCenter) => {
   let fetchedElements: Element[]
   let credLease: CredsLease<Credentials>
   let adapter: JiraAdapter
 
   beforeAll(async () => {
-    credLease = await credsLease()
-    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }));
-    (config.apiDefinitions.types.Field.transformation as configUtils.TransformationConfig).idFields = ['name']
-    const adapterAttr = realAdapter({ credentials: credLease.value }, config)
+    credLease = await credsLease(isDataCenter)
+    const adapterAttr = realAdapter(
+      {
+        credentials: credLease.value,
+        isDataCenter,
+      },
+    )
     adapter = adapterAttr.adapter
     const { elements } = await adapter.fetch({
       progressReporter:
@@ -64,7 +69,7 @@ describe('Jira E2E', () => {
         .filter(isObjectType)
         .map(e => e.elemID.typeName)
     })
-    it.each(Object.keys(getDefaultConfig({ isDataCenter: false }).apiDefinitions.types))('%s', expectedType => {
+    it.each(Object.keys(getDefaultConfig({ isDataCenter }).apiDefinitions.types))('%s', expectedType => {
       expect(fetchedTypes).toContain(expectedType)
     })
   })
@@ -85,7 +90,7 @@ describe('Jira E2E', () => {
     let instanceGroups: InstanceElement[][]
 
     beforeAll(async () => {
-      instanceGroups = createInstances(fetchedElements)
+      instanceGroups = createInstances(fetchedElements, isDataCenter)
 
       deployResults = await awu(instanceGroups).map(async group => {
         const res = await adapter.deploy({

@@ -25,13 +25,13 @@ import { Credentials } from '../src/auth'
 
 const log = logger(module)
 
-export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> => {
-  const addEnvName = (varName: string): string => (envName === undefined
-    ? varName
-    : [varName, envName].join('_'))
-  const jiraBaseUrlVarName = addEnvName('JIRA_BASE_URL')
-  const jiraUserVarName = addEnvName('JIRA_USER')
-  const jiraTokenVarName = addEnvName('JIRA_TOKEN')
+export const credsSpec = (
+  isDataCenter = false
+): CredsSpec<Required<Credentials>> => {
+  const jiraPrefix = isDataCenter ? 'JIRA_DC' : 'JIRA'
+  const jiraBaseUrlVarName = `${jiraPrefix}_BASE_URL`
+  const jiraUserVarName = `${jiraPrefix}_USER`
+  const jiraTokenVarName = `${jiraPrefix}_TOKEN`
   return {
     envHasCreds: env => jiraBaseUrlVarName in env,
     fromEnv: env => {
@@ -40,14 +40,14 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
         baseUrl: envUtils.required(jiraBaseUrlVarName),
         user: envUtils.required(jiraUserVarName),
         token: envUtils.required(jiraTokenVarName),
-        isDataCenter: false,
+        isDataCenter,
       }
     },
     validate: async (_creds: Credentials): Promise<void> => {
       // TODO
     },
-    typeName: 'jira',
-    globalProp: envName ? `jira_${envName}` : 'jira',
+    typeName: isDataCenter ? 'jira_datacenter' : 'jira',
+    globalProp: 'jira',
   }
 }
 

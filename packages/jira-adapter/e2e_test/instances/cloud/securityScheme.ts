@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, Values, Element, ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
-import { createReference } from '../utils'
-import { JIRA } from '../../src/constants'
-import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
+import { createReference } from '../../utils'
+import { JIRA } from '../../../src/constants'
+import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 export const createSecuritySchemeValues = (name: string, level: InstanceElement): Values => ({
   name,
@@ -50,19 +50,19 @@ export const createSecurityLevelValues = (name: string, allElements: Element[]):
     {
       holder: {
         type: 'projectRole',
-        parameter: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'atlassian_addons_project_access@b'), allElements),
+        parameter: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
       },
     },
     {
       holder: {
         type: 'groupCustomField',
-        parameter: createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Impact__select__c'), allElements),
+        parameter: createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Epic_Status__gh_epic_status__c@suubbuu'), allElements),
       },
     },
     {
       holder: {
         type: 'group',
-        parameter: createReference(new ElemID(JIRA, 'Group', 'instance', 'atlassian_addons_admin@b'), allElements, ['name']),
+        parameter: createReference(new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'), allElements, ['name']),
       },
     },
   ],

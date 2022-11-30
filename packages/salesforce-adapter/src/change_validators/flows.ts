@@ -34,8 +34,8 @@ const { awu } = collections.asynciterable
 const ACTIVE = 'Active'
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 
-const isFlowChange = (change: Change<InstanceElement>)
-    : Promise<boolean> => isInstanceOfType(FLOW_METADATA_TYPE)(getChangeData(change))
+const isFlowChange = (change: Change<InstanceElement>):
+    Promise<boolean> => isInstanceOfType(FLOW_METADATA_TYPE)(getChangeData(change))
 
 const isActiveFlowChange = (change: ModificationChange<InstanceElement>):
     boolean => (

@@ -232,11 +232,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       },
     },
   },
-  'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu': {
-    transformation: {
-      dataField: '.',
-    },
-  },
   api__v1__meta__types__user: {
     transformation: {
       // by default there is an unwanted traversal here
@@ -515,6 +510,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'policies', fieldType: 'list<AuthorizationServerPolicy>' },
         { fieldName: 'clients', fieldType: 'list<OAuth2Client>' },
       ],
+      fieldsToOmit: [
+        { fieldName: '_links' },
+      ],
     },
   },
   AuthorizationServerPolicy: {
@@ -550,11 +548,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     },
   },
   'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu': {
-    transformation: {
-      dataField: '.',
-    },
-  },
-  'api__v1__idps___idpId___credentials__keys@uuuuuu_00123_00125uuuu': {
     transformation: {
       dataField: '.',
     },
@@ -620,6 +613,22 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
+  UserCredentials: {
+    transformation: {
+      fieldsToOmit: [
+        // we not managing secrets
+        { fieldName: 'password' },
+      ],
+    },
+  },
+  Protocol: {
+    transformation: {
+      fieldsToOmit: [
+        // we not managing secrets
+        { fieldName: 'credentials' },
+      ],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
@@ -640,9 +649,6 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
 export const SUPPORTED_TYPES = {
   Application: [
     'api__v1__apps',
-  ],
-  IdentityProviderJsonWebKey: [
-    'api__v1__idps__credentials__keys',
   ],
   Authenticator: ['api__v1__authenticators'],
   AuthorizationServer: ['api__v1__authorizationServers'],

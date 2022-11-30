@@ -614,6 +614,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'customLabel',
     target: { type: CUSTOM_LABEL_METADATA_TYPE },
   },
+  {
+    src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
+    target: { type: 'EntitlementProcess' },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on

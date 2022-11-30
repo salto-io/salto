@@ -78,6 +78,7 @@ import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import deployFlowsFilter from './filters/deploy_flows'
+import enrichStandardObjects from './filters/enrich_standard_objects_from_query'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -105,6 +106,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
+  { creator: enrichStandardObjects, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },

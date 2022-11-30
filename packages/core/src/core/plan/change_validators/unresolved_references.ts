@@ -54,7 +54,7 @@ export const changeValidator: ChangeValidator = async changes => (
         elemID: element.elemID,
         severity: 'Error' as SeverityLevel,
         message: 'Element has unresolved references',
-        detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}`,
+        detailedMessage: `Element ${element.elemID.getFullName()} contains unresolved references: ${unresolvedReferences.map(e => e.getFullName()).join(', ')}. Add the missing dependencies and try again.`,
       })
     })
     .filter(values.isDefined)

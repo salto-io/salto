@@ -117,6 +117,12 @@ describe('automationStructureFilter', () => {
               ],
             },
           },
+          {
+            id: '6',
+            component: 'CONDITION',
+            value: '',
+            updated: 1111,
+          },
         ],
         projects: [
           {
@@ -175,6 +181,10 @@ describe('automationStructureFilter', () => {
     const rawVal = instanceAfterFetch.value.components[5].value.operations[1].value
     instanceAfterFetch.value.components[5].value.operations[1].rawValue = rawVal
     delete instanceAfterFetch.value.components[5].value.operations[1].value
+
+    instanceAfterFetch.value.components[6].rawValue = instanceAfterFetch.value.components[6].value
+    delete instanceAfterFetch.value.components[6].value
+
     changedInstance = instanceAfterFetch.clone()
     changedInstance.value.components[0].component = 'BRANCH'
   })
@@ -220,6 +230,8 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[2].value).toBeObject()
       expect(instance.value.components[5].value.operations[1].value).toBeUndefined()
       expect(instance.value.components[5].value.operations[1].rawValue).toEqual('rawVal')
+      expect(instance.value.components[6].value).toBeUndefined()
+      expect(instance.value.components[6].rawValue).toEqual('')
     })
 
     it('should should split linkType field', async () => {
@@ -256,6 +268,8 @@ describe('automationStructureFilter', () => {
       expect(after.value.components[2].value.linkTypeDirection).toBeUndefined()
       expect(after.value.components[5].value.operations[1].value).toEqual('rawVal')
       expect(after.value.components[5].value.operations[1].rawValue).toBeUndefined()
+      expect(after.value.components[6].value).toEqual('')
+      expect(after.value.components[6].rawValue).toBeUndefined()
     })
     it('should revert compare value structure to be depolyable', async () => {
       const changes = [toChange({ before: instanceAfterFetch, after: changedInstance })]

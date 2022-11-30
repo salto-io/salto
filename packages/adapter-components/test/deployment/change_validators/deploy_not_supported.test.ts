@@ -31,14 +31,14 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID('myAdapter', 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter myAdapter.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Salto does not support myAdapter deployments.',
+          detailedMessage: 'Salto does not support myAdapter deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
         },
         {
           elemID: new ElemID('myAdapter', 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter myAdapter.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Salto does not support myAdapter deployments.',
+          detailedMessage: 'Salto does not support myAdapter deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
         },
       ])
     })

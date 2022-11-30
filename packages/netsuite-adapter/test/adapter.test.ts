@@ -876,6 +876,7 @@ describe('Adapter', () => {
           validate: expect.anything(),
           filtersRunner: expect.anything(),
           additionalDependencies: expect.anything(),
+          elementsSourceIndex: expect.anything(),
         })
       })
 
@@ -907,6 +908,7 @@ describe('Adapter', () => {
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),
+          elementsSourceIndex: expect.anything(),
         })
       })
 
@@ -938,6 +940,7 @@ describe('Adapter', () => {
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),
+          elementsSourceIndex: expect.anything(),
         })
       })
     })

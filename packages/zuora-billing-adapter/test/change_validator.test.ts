@@ -31,14 +31,14 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID(ZUORA_BILLING, 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter zuora_billing.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Salto does not support zuora_billing deployments.',
+          detailedMessage: 'Salto does not support zuora_billing deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
         },
         {
           elemID: new ElemID(ZUORA_BILLING, 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter zuora_billing.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Salto does not support zuora_billing deployments.',
+          detailedMessage: 'Salto does not support zuora_billing deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
         },
       ])
     })

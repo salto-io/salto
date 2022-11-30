@@ -21,6 +21,7 @@ import netsuiteClientValidation from '../src/change_validators/client_validation
 import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
 import { NetsuiteQuery } from '../src/query'
 import NetsuiteClient from '../src/client/client'
+import { LazyElementsSourceIndexes } from '../src/elements_source_index/types'
 
 const DEFAULT_OPTIONS = {
   withSuiteApp: false,
@@ -34,6 +35,7 @@ const DEFAULT_OPTIONS = {
   filtersRunner: {
     preDeploy: jest.fn(),
   } as unknown as Required<Filter>,
+  elementsSourceIndex: jest.fn() as unknown as LazyElementsSourceIndexes,
 }
 
 jest.mock('../src/change_validators/client_validation')
@@ -156,6 +158,7 @@ describe('change validator', () => {
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,
+        DEFAULT_OPTIONS.elementsSourceIndex,
         DEFAULT_OPTIONS.deployReferencedElements,
       )
     })

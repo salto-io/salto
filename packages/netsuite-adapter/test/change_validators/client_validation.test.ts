@@ -21,6 +21,7 @@ import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
 import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
+import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 
 describe('client validation', () => {
   let changes: Change[]
@@ -35,6 +36,8 @@ describe('client validation', () => {
     onFetch: jest.fn(),
     preDeploy: jest.fn(),
   } as unknown as Required<Filter>
+
+  const mockElementsSourceIndex = {} as unknown as LazyElementsSourceIndexes
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -59,7 +62,11 @@ describe('client validation', () => {
   it('should not have errors', async () => {
     mockValidate.mockReturnValue([])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -77,7 +84,11 @@ File: ~/Objects/object_name.xml`
       new ObjectsDeployError(fullErrorMessage, new Set(['object_name'])),
     ])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -101,7 +112,11 @@ File: ~/Objects/customrecord1.xml`
       new ObjectsDeployError(fullErrorMessage, new Set(['customrecord1'])),
     ])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -115,7 +130,11 @@ File: ~/Objects/customrecord1.xml`
     const detailedMessage = 'manifest error'
     mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage)])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
@@ -129,7 +148,11 @@ File: ~/Objects/customrecord1.xml`
     const detailedMessage = 'some error'
     mockValidate.mockReturnValue([new Error(detailedMessage)])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
@@ -144,7 +167,11 @@ File: ~/Objects/customrecord1.xml`
     const detailedMessage = 'Validation of account settings failed.'
     mockValidate.mockReturnValue([new SettingsDeployError(`${detailedMessage}`, new Set(['workflow']))])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -158,7 +185,11 @@ File: ~/Objects/customrecord1.xml`
     const detailedMessage = 'Validation of account settings failed.'
     mockValidate.mockReturnValue([new SettingsDeployError(`${detailedMessage}`, new Set(['abc']))])
     const changeErrors = await clientValidation(
-      changes, client, {} as unknown as AdditionalDependencies, mockFiltersRunner
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors).toEqual(changes.map(change => ({

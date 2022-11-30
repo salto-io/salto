@@ -24,6 +24,7 @@ import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from
 import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'
+import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 
 const { awu } = collections.asynciterable
@@ -46,11 +47,17 @@ export type ClientChangeValidator = (
   client: NetsuiteClient,
   additionalDependencies: AdditionalDependencies,
   filtersRunner: Required<Filter>,
+  elementsSourceIndex: LazyElementsSourceIndexes,
   deployReferencedElements?: boolean
 ) => Promise<ReadonlyArray<ChangeError>>
 
 const changeValidator: ClientChangeValidator = async (
-  changes, client, additionalDependencies, filtersRunner, deployReferencedElements = false
+  changes,
+  client,
+  additionalDependencies,
+  filtersRunner,
+  elementsSourceIndex,
+  deployReferencedElements = false
 ) => {
   const clonedChanges = changes.map(change => ({
     action: change.action,
@@ -76,7 +83,8 @@ const changeValidator: ClientChangeValidator = async (
         groupChanges,
         groupId,
         deployReferencedElements,
-        additionalDependencies
+        additionalDependencies,
+        elementsSourceIndex,
       )
       if (errors.length > 0) {
         return errors.flatMap(error => {

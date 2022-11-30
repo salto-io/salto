@@ -63,14 +63,12 @@ const buildQueryString = (type: string, fields: string[]): string => (
  */
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    log.error(`${elements.length} elements`)
     const saltoTypesOfInterest = enrichmentDefs.map(def => def.targetType)
     const instancesToEnrich = await keyByAsync(
       awu(elements).filter(isInstanceElement).filter(isInstanceOfType(...saltoTypesOfInterest)),
       instance => apiName(instance),
     )
     if (_.isEmpty(instancesToEnrich)) {
-      log.error('No elements of interest!')
       // Not fetching instances of any types we care about. Bail out.
       return
     }

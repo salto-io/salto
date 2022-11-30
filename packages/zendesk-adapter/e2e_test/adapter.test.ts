@@ -900,6 +900,10 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
+      Object.keys(firstGroupChanges)
+        .filter(type => (type.includes(SECTION_TYPE_NAME) || type.includes(ARTICLE_TYPE_NAME)))
+        .forEach(key => delete firstGroupChanges[key])
+
       await deployChanges(adapterAttr, firstGroupChanges)
       if (credLease.return) {
         await credLease.return()

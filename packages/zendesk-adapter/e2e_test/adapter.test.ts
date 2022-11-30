@@ -33,6 +33,7 @@ import {
   ObjectType,
   ReferenceExpression,
   StaticFile,
+  TemplateExpression,
   toChange,
   Value,
   Values,
@@ -60,7 +61,7 @@ import {
   BRAND_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
-  PERMISSION_GROUP_TYPE_NAME,
+  PERMISSION_GROUP_TYPE_NAME, SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
@@ -333,8 +334,9 @@ describe('Zendesk adapter E2E', () => {
     const brandInstanceE2eHelpCenter = createInstanceElement({
       type: 'brand',
       valuesOverride: {
-        name: 'e2eHelpCenter',
+        name: 'c',
         subdomain: 'salto100',
+        brand_url: 'https://salto100.zendesk.com',
         id: 10378734785303,
       },
     })
@@ -465,7 +467,7 @@ describe('Zendesk adapter E2E', () => {
       valuesOverride: {
         locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
         outdated: false,
-        title: sectionName,
+        title: section2Name,
         draft: false,
         hidden: false,
         body: 'this is a test',
@@ -496,18 +498,35 @@ describe('Zendesk adapter E2E', () => {
       valuesOverride: {
         locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
         outdated: false,
-        title: sectionName,
+        title: section3Name,
         draft: false,
         hidden: false,
         body: 'this is a test',
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       },
-      parent: section2Instance,
+      parent: section3Instance,
       name: `e2eHelpCenter_${categoryName}_${section3Name}__en_us_b@uuuuum`,
     })
     section3Instance.value.translations = [
       new ReferenceExpression(section3EnTranslationInstance.elemID, section3EnTranslationInstance),
     ]
+    const sectionOrder = createInstanceElement({
+      type: SECTION_ORDER_TYPE_NAME,
+      valuesOverride: {
+        sections: [
+          new ReferenceExpression(section2Instance.elemID, section2Instance),
+          new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+          new ReferenceExpression(section3Instance.elemID, section3Instance),
+        ],
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+      },
+      parent: categoryInstance,
+      name: `e2eHelpCenter_${categoryName}__`,
+    })
+    categoryInstance.value.sections = [
+      new ReferenceExpression(sectionOrder.elemID, sectionOrder),
+    ]
+
     const insideSectionName = createName('section')
     const insideSectionInstance = createInstanceElement({
       type: SECTION_TYPE_NAME,
@@ -577,12 +596,60 @@ describe('Zendesk adapter E2E', () => {
       name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}`,
     })
 
+    const attachmentName = createName('attachment')
+    const fileName = `nacl${attachmentName}`
+    const articleAttachment = createInstanceElement({
+      type: ARTICLE_ATTACHMENT_TYPE_NAME,
+      valuesOverride: {
+        filename: fileName,
+        contentType: 'image/png',
+        content: new StaticFile({
+          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${fileName}.png`,
+          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
+        }),
+        inline: false,
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+      },
+      parent: articleInstance,
+      name: `${articleName}__${fileName}`,
+    })
+    const inlineFileName = `naclTwo${attachmentName}`
+    const articleInlineAttachment = createInstanceElement({
+      type: ARTICLE_ATTACHMENT_TYPE_NAME,
+      valuesOverride: {
+        filename: inlineFileName,
+        contentType: 'image/png',
+        content: new StaticFile({
+          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${inlineFileName}.png`,
+          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
+        }),
+        inline: true,
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+      },
+      parent: articleInstance,
+      name: `${articleName}__${inlineFileName}`,
+    })
+
+    articleInstance.value.attachments = [
+      new ReferenceExpression(articleAttachment.elemID, articleAttachment),
+      new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
+    ]
+
     const articleTranslationEn = createInstanceElement({
       type: ARTICLE_TRANSLATION_TYPE_NAME,
       valuesOverride: {
         draft: true,
         title: `${articleName}`,
-        body: 'this is a test',
+        body: new TemplateExpression({
+          parts: [
+            '<p>this is a test ',
+            '<img src="',
+            new ReferenceExpression(brandInstanceE2eHelpCenter.elemID.createNestedID('brand_url'), brandInstanceE2eHelpCenter?.value.brand_url),
+            '/hc/article_attachments/',
+            new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
+            `" alt="${inlineFileName}.png"><p>`,
+          ],
+        }),
         locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
         outdated: false,
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -609,29 +676,103 @@ describe('Zendesk adapter E2E', () => {
       new ReferenceExpression(articleTranslationEn.elemID, articleTranslationEn),
     ]
 
-    const attachmentName = createName('attachment')
-    const fileName = `nacl${attachmentName}`
-    const articleAttachment = createInstanceElement({
-      type: ARTICLE_ATTACHMENT_TYPE_NAME,
+    const article2Name = createName('articleTwo')
+    const article2Instance = createInstanceElement({
+      type: ARTICLE_TYPE_NAME,
       valuesOverride: {
-        filename: fileName,
-        contentType: 'image/png',
-        content: new StaticFile({
-          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/nacl${attachmentName}.png`,
-          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
-        }),
-        inline: false,
+        author_id: 'neta.marcus+zendesk@salto.io',
+        draft: true,
+        promoted: false,
+        section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+        outdated: false,
+        permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
       },
-      parent: articleInstance,
-      name: `${articleName}__${fileName}`,
+      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article2Name}`,
     })
 
-    articleInstance.value.attachments = [
-      new ReferenceExpression(articleAttachment.elemID, articleAttachment),
+    const article2TranslationEn = createInstanceElement({
+      type: ARTICLE_TRANSLATION_TYPE_NAME,
+      valuesOverride: {
+        draft: true,
+        title: `${article2Name}`,
+        body: 'this is a test',
+        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+        outdated: false,
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+      },
+      parent: article2Instance,
+      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article2Name}__en_us_b@uuuuuum`,
+    })
+
+    article2Instance.value.translations = [
+      new ReferenceExpression(article2TranslationEn.elemID, article2TranslationEn),
+    ]
+
+    const article3Name = createName('articleThree')
+    const article3Instance = createInstanceElement({
+      type: ARTICLE_TYPE_NAME,
+      valuesOverride: {
+        author_id: 'neta.marcus+zendesk@salto.io',
+        draft: true,
+        promoted: false,
+        section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+        outdated: false,
+        permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
+      },
+      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article3Name}`,
+    })
+
+    const article3TranslationEn = createInstanceElement({
+      type: ARTICLE_TRANSLATION_TYPE_NAME,
+      valuesOverride: {
+        draft: true,
+        title: `${article3Name}`,
+        body: 'this is a test',
+        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+        outdated: false,
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+      },
+      parent: article3Instance,
+      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article3Name}__en_us_b@uuuuuum`,
+    })
+
+    article3Instance.value.translations = [
+      new ReferenceExpression(article3TranslationEn.elemID, article3TranslationEn),
     ]
 
 
+    const guideInstances = [
+      categoryInstance,
+      categoryEnTranslationInstance,
+      categoryHeTranslationInstance,
+      sectionInstance,
+      sectionEnTranslationInstance,
+      sectionHeTranslationInstance,
+      section2Instance,
+      section2EnTranslationInstance,
+      section3Instance,
+      section3EnTranslationInstance,
+      // sectionOrder,
+      insideSectionInstance,
+      insideSectionEnTranslationInstance,
+      articleAttachment,
+      articleInlineAttachment,
+      articleInstance,
+      articleTranslationEn,
+      articleTranslationHe,
+      article2Instance,
+      article2TranslationEn,
+      article3Instance,
+      article3TranslationEn,
+    ]
     // ******************************************************** //
 
     let groupIdToInstances: Record<string, InstanceElement[]>
@@ -705,6 +846,7 @@ describe('Zendesk adapter E2E', () => {
             permissionGroup,
             everyoneUserSegment,
             articleAttachment,
+            articleInlineAttachment,
           ]) },
         {
           ...DEFAULT_CONFIG,
@@ -739,22 +881,8 @@ describe('Zendesk adapter E2E', () => {
         viewInstance,
         brandInstanceToAdd,
         userSegmentInstance,
-        categoryInstance,
-        categoryEnTranslationInstance,
-        categoryHeTranslationInstance,
-        sectionInstance,
-        sectionEnTranslationInstance,
-        sectionHeTranslationInstance,
-        section2Instance,
-        section2EnTranslationInstance,
-        section3Instance,
-        section3EnTranslationInstance,
-        insideSectionInstance,
-        insideSectionEnTranslationInstance,
-        articleInstance,
-        articleTranslationEn,
-        articleTranslationHe,
-        articleAttachment,
+        // guide elements
+        ...guideInstances,
       ]
       await deployAndFetch(instancesToAdd, true)
     })
@@ -915,19 +1043,7 @@ describe('Zendesk adapter E2E', () => {
       })
     })
     it('should handel guide elements correctly ', async () => {
-      checkInstancesAreDefined([
-        categoryInstance,
-        categoryEnTranslationInstance,
-        categoryHeTranslationInstance,
-        sectionInstance,
-        sectionEnTranslationInstance,
-        insideSectionInstance,
-        insideSectionEnTranslationInstance,
-        articleInstance,
-        articleTranslationEn,
-        articleTranslationHe,
-        articleAttachment,
-      ])
+      checkInstancesAreDefined(guideInstances)
     })
   })
 })

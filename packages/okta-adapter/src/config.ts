@@ -608,7 +608,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   AppUserCredentials: {
     transformation: {
       fieldsToOmit: [
-        // we not managing secrets
+        // we are not managing secrets
         { fieldName: 'password' },
       ],
     },
@@ -616,7 +616,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   UserCredentials: {
     transformation: {
       fieldsToOmit: [
-        // we not managing secrets
+        // we are not managing secrets
         { fieldName: 'password' },
       ],
     },
@@ -624,7 +624,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   Protocol: {
     transformation: {
       fieldsToOmit: [
-        // we not managing secrets
+        // we are not managing secrets
         { fieldName: 'credentials' },
       ],
     },

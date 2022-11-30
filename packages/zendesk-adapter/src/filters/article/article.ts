@@ -130,11 +130,12 @@ const associateAttachments = async (
   client: ZendeskClient,
   articleId: number,
   attachmentsIds: number[]
-): Promise<void> => {
-  await client.post({
+): Promise<number> => {
+  const res = await client.post({
     url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
     data: { attachment_ids: attachmentsIds },
   })
+  return res.status
 }
 
 const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSource, articleNameToAttachments }: {
@@ -143,14 +144,6 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   elementsSource: ReadOnlyElementsSource
   articleNameToAttachments: Record<string, number[]>
 }): Promise<InstanceElement[]> => {
-  // We can't really modify article attachments in Zendesk
-  // To do so we're goind to delete the existing attachment and create a new one instead
-  await awu(changes)
-    .filter(isModificationChange)
-    .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-    .map(change => change.data.before)
-    .forEach(attachmentInstance => deleteArticleAttachment(client, attachmentInstance))
-
   // Creating unassociated article attachments
   const attachmentChanges = changes
     .filter(isAdditionOrModificationChange)
@@ -169,18 +162,23 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
         return
       }
-      // Modified attachments should be associated to an already-existing articles
-      // After association an update to the translations' body is needed
+      // We can't really modify article attachments in Zendesk
+      // To do so we're going to delete the existing attachment and create a new one instead
       if (isModificationChange(attachmentChange)) {
         const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
         if (articleInstance === undefined) {
           return
         }
-        await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
+        const res = await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
+        if (res !== 200) {
+          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has been failed.`)
+          return
+        }
         // Article bodies needs to be updated when modofying inline attachments
         if (attachmentInstance.value.inline) {
           await updateArticleTranslationBody({ client, attachmentInstance })
         }
+        await deleteArticleAttachment(client, attachmentChange.data.before)
         return
       }
       const parentArticleName = parentArticleRef.elemID.name

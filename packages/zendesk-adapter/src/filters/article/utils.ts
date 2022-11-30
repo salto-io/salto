@@ -17,11 +17,11 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { getParents, naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile,
-  isTemplateExpression, ObjectType, ReferenceExpression, StaticFile, Values,
+  isTemplateExpression, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
@@ -214,16 +214,8 @@ export const deleteArticleAttachment = async (
     url: `/api/v2/help_center/articles/attachments/${attachmentInstance.value.id}`,
   })
   if (res === undefined) {
-    log.error('Received an empty response from Zendesk API when deletd an article attachment')
+    log.error('Received an empty response from Zendesk API when deleting an article attachment')
   }
-}
-
-const getResolvedParent = (resolvedInstance: InstanceElement): Values | undefined => {
-  const instanceParentsList = resolvedInstance.annotations[CORE_ANNOTATIONS.PARENT]
-  if (!_.isArray(instanceParentsList)) {
-    return undefined
-  }
-  return instanceParentsList[0]
 }
 
 export const updateArticleTranslationBody = async ({
@@ -233,7 +225,7 @@ export const updateArticleTranslationBody = async ({
   client: ZendeskClient
   attachmentInstance: InstanceElement
 }): Promise<void> => {
-  const articleInstance = getResolvedParent(attachmentInstance)
+  const articleInstance = getParents(attachmentInstance)[0]
   const articleTranslations = articleInstance?.translations
   if (!Array.isArray(articleTranslations)) {
     log.error(`Received an invalid translations value for attachment ${attachmentInstance.elemID.name} - ${safeJsonStringify(articleTranslations)}`)

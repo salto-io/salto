@@ -285,10 +285,13 @@ describe('multiple defaults change validator', () => {
                 testRecordType1: {
                   default: false,
                 },
+                testRecordType2: {
+                  default: true,
+                },
               },
               test2: {
                 testRecordType2: {
-                  default: true,
+                  default: false,
                 },
               },
 
@@ -314,7 +317,7 @@ describe('multiple defaults change validator', () => {
               },
               test2: {
                 testRecordType2: {
-                  default: false,
+                  default: true,
                 },
               },
 

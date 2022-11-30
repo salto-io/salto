@@ -21,16 +21,22 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import _, { isPlainObject } from 'lodash'
 import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
-const fieldNameToInnerContextField: Record<string, string> = {
-  applicationVisibilities: 'application',
-  recordTypeVisibilities: 'recordType',
-  standardValue: 'label',
-  customValue: 'label',
+
+type FieldDef = {
+  name: string
+  nested?: boolean
+}
+
+const fieldNameToInnerContextField: Record<string, FieldDef> = {
+  applicationVisibilities: { name: 'application' },
+  recordTypeVisibilities: { name: 'recordType', nested: true },
+  standardValue: { name: 'label' },
+  customValue: { name: 'label' },
 }
 
 type ValueSetInnerObject = {
@@ -65,7 +71,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
     elemID: instance.elemID,
     severity: 'Warning',
     message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.`,
-    detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name] ?? LABEL}s are set to default: ${contexts}`,
+    detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
   }
 }
 
@@ -74,7 +80,7 @@ const createFieldChangeError = (field: Field, contexts: string[]):
   elemID: field.elemID,
   severity: 'Warning',
   message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in type ${field.parent.elemID.name}.`,
-  detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name] ?? LABEL}s are set to default: ${contexts}`,
+  detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
@@ -105,13 +111,16 @@ const getInstancesMultipleDefaultsErrors = async (
   const errors: ChangeError[] = await awu(Object.entries(after.value))
     .filter(([fieldName]) => Object.keys(fieldNameToInnerContextField).includes(fieldName))
     .flatMap(async ([fieldName, value]) => {
+      if (isPlainObject(value) && fieldNameToInnerContextField[fieldName].nested) {
+        return Object.entries(value).flatMap(([innerName, innerValue]) => [])
+      }
       const defaultObjects = await getDefaultObjectsList(
         value,
         await (await after.getType()).fields[fieldName].getType()
       )
       const contexts = defaultObjects
         .filter(val => val.default)
-        .map(obj => obj[fieldNameToInnerContextField[fieldName]])
+        .map(obj => obj[fieldNameToInnerContextField[fieldName].name])
         .map(formatContext)
       return contexts.length > 1
         ? [

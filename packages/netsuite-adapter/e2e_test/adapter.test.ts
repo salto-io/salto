@@ -44,7 +44,7 @@ const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 
 const logging = (message: string): void => {
-  log.debug(message)
+  log.info(message)
   if (process.env.CONSOLE) {
     // eslint-disable-next-line no-console
     console.log(message)

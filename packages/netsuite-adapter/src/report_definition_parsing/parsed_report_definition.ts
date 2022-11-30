@@ -33,17 +33,6 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   const reportDefinitionUiPrefElemID = new ElemID(constants.NETSUITE, 'reportdefinition_uipreferences')
   const reportDefinitionLayoutsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_layouts')
   const reportDefinitionParamsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_parameters')
-  const reportDefinitionAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_audience')
-
-  // const reportDefinitionAudience = new ObjectType({
-  //   elemID: reportDefinitionAudienceElemID,
-  //   annotations: {
-  //   },
-  //   fields: {
-
-  //   },
-  //   path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
-  // })
 
   const reportDefinitionComponents = new ObjectType({
     elemID: reportDefinitionComponentsElemID,

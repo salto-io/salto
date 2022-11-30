@@ -13,46 +13,46 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { reportdefinitionType } from '../../src/autogen/types/standard_types/reportdefinition'
-import reportDefinitionMoveEnvironment from '../../src/change_validators/report_definition_move_environment'
 
-jest.mock('../../src/report_definition_parsing/report_definition_parser', () => ({
+import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { financiallayoutType } from '../../src/autogen/types/standard_types/financiallayout'
+import financialLayoutMoveEnvironment from '../../src/change_validators/financial_layout_move_enironment'
+
+jest.mock('../../src/financial_layout_parsing/financial_layout_parser', () => ({
   parseDefinition: jest.fn().mockResolvedValue({
     test: 'test',
   }),
 }))
 
-describe('move environment report definition change validator', () => {
-  const reportdefinition = reportdefinitionType().type
+describe('move environment financial layout change validator', () => {
+  const financiallayout = financiallayoutType().type
   describe('onAdd', () => {
-    it('should have warning change error when moving an instance with correct definition', async () => {
-      const instance = new InstanceElement('test', reportdefinition)
-      instance.value.definition = 'string'
+    it('should have change error Warning when adding with legal definition', async () => {
+      const instance = new InstanceElement('test', financiallayout)
+      instance.value.layout = 'string'
       instance.value.test = 'test'
-      const changeErrors = await reportDefinitionMoveEnvironment([
-        toChange({ after: instance })])
+      const changeErrors = await financialLayoutMoveEnvironment([toChange({ after: instance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
     })
-    it('should have change error when moving an instance with incorrect definition', async () => {
-      const instance = new InstanceElement('test', reportdefinition)
-      instance.value.definition = 'string'
-      const changeErrors = await reportDefinitionMoveEnvironment([
-        toChange({ after: instance })])
+
+    it('should have change error Error when adding with incorrect definition', async () => {
+      const instance = new InstanceElement('test', financiallayout)
+      instance.value.layout = 'string'
+      const changeErrors = await financialLayoutMoveEnvironment([toChange({ after: instance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
     })
   })
+
   describe('onModify', () => {
-    it('should have change error when moving an instance with incorrect definition', async () => {
-      const instance = new InstanceElement('test', reportdefinition)
-      instance.value.definition = 'string'
+    it('should have an Error when deploying a modified financial layout', async () => {
+      const instance = new InstanceElement('test', financiallayout)
+      instance.value.layout = 'string'
       instance.value.test = 'modified test value'
-      const changeErrors = await reportDefinitionMoveEnvironment([
-        toChange({ before: instance, after: instance })])
+      const changeErrors = await financialLayoutMoveEnvironment([toChange({ before: instance, after: instance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)

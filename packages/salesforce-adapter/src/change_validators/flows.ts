@@ -83,14 +83,14 @@ const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean
       elemID: instance.elemID,
       severity: 'Info',
       message: 'Deploying these changes will create a new inactive version of this flow',
-      detailedMessage: `Deploying these changes will create a new inactive version of this flow. Flow name: ${instance.elemID.getFullName()}`,
+      detailedMessage: `Bear in mind that the new inactive version will not appear in Salto since your Salto environment is configured to prefer fetching active flow versions. Flow name: ${instance.elemID.getFullName()}`,
     }
   }
   return {
     elemID: instance.elemID,
     severity: 'Info',
     message: ' Deploying these changes will create a new inactive version of this flow',
-    detailedMessage: `Bear in mind that the new inactive version will not appear in Salto since your Salto environment is configured to prefer fetching active flow versions. Flow name: ${instance.elemID.getFullName()}`,
+    detailedMessage: `Deploying these changes will create a new inactive version of this flow. Flow name: ${instance.elemID.getFullName()}`,
   }
 }
 
@@ -125,7 +125,7 @@ const activeFlowModificationError = (instance: InstanceElement, enableActiveDepl
     elemID: instance.elemID,
     severity: 'Info',
     message: 'Your salesforce org is configured to disallow modifications to active flows',
-    detailedMessage: `Your salesforce org is configured to disallow modifications to active flows. Therefore, deploying these changes will create a new inactive version that will need to be activated manually.. Flow name: ${instance.elemID.getFullName()}`,
+    detailedMessage: `Your salesforce org is configured to disallow modifications to active flows. Therefore, deploying these changes will create a new inactive version that will need to be activated manually. Flow name: ${instance.elemID.getFullName()}`,
   }
 }
 

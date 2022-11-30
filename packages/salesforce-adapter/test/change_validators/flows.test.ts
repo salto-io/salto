@@ -53,7 +53,7 @@ describe('flows change validator', () => {
       const changeErrors = await changeValidator([flowChanges])
       const [changeError] = changeErrors
       expect(changeError.severity).toEqual('Info')
-      expect(changeError.detailedMessage).toInclude('Deploying these changes will create a new inactive version of this flow')
+      expect(changeError.detailedMessage).toInclude('Bear in mind that the new inactive version will not appear in Salto')
     })
   })
   describe('adding and editing an active flow', () => {

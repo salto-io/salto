@@ -37,7 +37,7 @@ const createDependencyChange = (
   ))
 }
 
-const isOrderRelevantChange = (change: Change<InstanceElement>): boolean =>
+const isRelevantOrderChange = (change: Change<InstanceElement>): boolean =>
   isRemovalChange(change) && isInstanceChange(change)
   && GUIDE_ORDER_TYPES.includes(change.data.before.elemID.typeName)
 
@@ -52,7 +52,7 @@ export const guideOrderDependencyChanger: DependencyChanger = async changes => {
         isInstanceChange(change.change)
     )
 
-  const relevantOrderChanges = instanceChanges.filter(({ change }) => isOrderRelevantChange(change))
+  const relevantOrderChanges = instanceChanges.filter(({ change }) => isRelevantOrderChange(change))
 
   return relevantOrderChanges.flatMap(change => createDependencyChange(change, instanceChanges))
 }

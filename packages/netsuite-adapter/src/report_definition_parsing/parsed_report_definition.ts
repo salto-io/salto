@@ -33,6 +33,17 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   const reportDefinitionUiPrefElemID = new ElemID(constants.NETSUITE, 'reportdefinition_uipreferences')
   const reportDefinitionLayoutsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_layouts')
   const reportDefinitionParamsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_parameters')
+  const reportDefinitionAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_audience')
+
+  // const reportDefinitionAudience = new ObjectType({
+  //   elemID: reportDefinitionAudienceElemID,
+  //   annotations: {
+  //   },
+  //   fields: {
+
+  //   },
+  //   path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
+  // })
 
   const reportDefinitionComponents = new ObjectType({
     elemID: reportDefinitionComponentsElemID,
@@ -103,7 +114,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       KEY_CUSTOM_FIELD: { refType: BuiltinTypes.STRING },
       FLAG_DIMENSION: { refType: BuiltinTypes.BOOLEAN },
       FIELD_UNIT_TYPE: { refType: BuiltinTypes.NUMBER },
-      FALG_ROLLUP: { refType: BuiltinTypes.BOOLEAN },
+      FLAG_ROLLUP: { refType: BuiltinTypes.BOOLEAN },
       FIELD_DATE_FILTER_INDEX: { refType: BuiltinTypes.NUMBER },
       FIELD_COMPARISON_TYPE: { refType: BuiltinTypes.STRING },
       FLAG_APPLY_FORWARDING: { refType: BuiltinTypes.BOOLEAN },
@@ -169,6 +180,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       FIELD_STANDARD_LAYOUT: { refType: BuiltinTypes.BOOLEAN },
       KEY_SCRIPT_ID: { refType: BuiltinTypes.STRING },
     },
+    path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
   const reportDefinitionParameters = new ObjectType({
@@ -178,6 +190,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     fields: {
       Map: { refType: new MapType(BuiltinTypes.STRING) },
     },
+    path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
   innerTypes.reportDefinitionDependencies = reportDefinitionDependencies
@@ -268,7 +281,6 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       uiPreferences: {
         refType: createRefToElmWithValue(new ListType(reportDefinitionUiPref)),
       },
-
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })

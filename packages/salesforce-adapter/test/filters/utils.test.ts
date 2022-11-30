@@ -14,7 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { addDefaults, isCustomMetadataRecordInstance, isCustomMetadataRecordType } from '../../src/filters/utils'
+import {
+  addDefaults,
+  isCustomMetadataRecordInstance,
+  isCustomMetadataRecordType,
+  isMetadataValues,
+} from '../../src/filters/utils'
 import { SALESFORCE, LABEL, API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
@@ -223,6 +228,19 @@ describe('addDefaults', () => {
     })
     it('should return false for non customMetadataRecordType', async () => {
       expect(await isCustomMetadataRecordInstance(profileInstance)).toBeFalse()
+    })
+  })
+  describe('isMetadataValues', () => {
+    it('should return true when values contain a fullName field', () => {
+      expect(isMetadataValues({
+        [INSTANCE_FULL_NAME_FIELD]: 'TestFullName',
+        anotherProperty: 'anotherProperty',
+      })).toBeTrue()
+    })
+    it('should return false when values does not contain a fullName field', () => {
+      expect(isMetadataValues({
+        anotherProperty: 'anotherProperty',
+      })).toBeFalse()
     })
   })
 })

@@ -30,7 +30,7 @@ import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
 import customSettingsFilter from './filters/custom_settings_filter'
-import customObjectsSplitFilter from './filters/custom_object_split'
+import customTypeSplit from './filters/custom_type_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
 import dataInstancesAuthorFilter from './filters/author_information/data_instances'
 import sharingRulesAuthorFilter from './filters/author_information/sharing_rules'
@@ -99,12 +99,12 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: workflowFilter },
   // fetchFlowsFilter should run before flowFilter
   { creator: fetchFlowsFilter, addsNewInformation: true },
+  // customMetadataToObjectTypeFilter should run before customObjectsFromDescribeFilter
+  { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
-  { creator: customMetadataToObjectTypeFilter },
-  // customMetadataToObjectTypeFilter should run before customObjectsToObjectTypeFilter
   { creator: customObjectsToObjectTypeFilter },
   // customObjectsInstancesFilter depends on customObjectsToObjectTypeFilter
   { creator: customObjectsInstancesFilter, addsNewInformation: true },
@@ -159,7 +159,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
-  { creator: customObjectsSplitFilter },
+  { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
 ]
 

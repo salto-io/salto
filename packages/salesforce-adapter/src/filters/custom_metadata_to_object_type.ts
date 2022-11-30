@@ -29,7 +29,7 @@ import {
   CUSTOM_METADATA,
   CUSTOM_METADATA_SUFFIX, CUSTOM_OBJECT,
 } from '../constants'
-import { createCustomObjectChange, createObjectType } from './custom_objects_to_object_type'
+import { createCustomObjectChange, createCustomTypeFromCustomObjectInstance } from './custom_objects_to_object_type'
 import { apiName } from '../transformers/transformer'
 import { isCustomMetadataRecordType, isInstanceOfTypeChange } from './utils'
 
@@ -39,9 +39,10 @@ const { awu, groupByAsync } = collections.asynciterable
 
 const createCustomMetadataRecordType = async (
   instance: InstanceElement,
-  customMetadataType: ObjectType)
+  customMetadataType: ObjectType,
+)
   : Promise<ObjectType> => {
-  const objectType = await createObjectType({ instance, metadataType: CUSTOM_METADATA })
+  const objectType = await createCustomTypeFromCustomObjectInstance({ instance, metadataType: CUSTOM_METADATA })
   objectType.fields = {
     ...objectType.fields,
     // We omit the "values" field, since it will be destructed in the instances later.
@@ -62,7 +63,7 @@ const isCustomMetadataRelatedChange = async (change: Change): Promise<boolean> =
 
 const getApiNameOfRelatedChange = async (change: Change<ObjectType | Field>): Promise<string> => {
   const element = getChangeData(change)
-  return isObjectType(element) ? apiName(element) : apiName(element.parent)
+  return isField(element) ? apiName(element.parent) : apiName(element)
 }
 
 const filterCreator: LocalFilterCreator = ({ config }) : FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => {

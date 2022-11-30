@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import { isCustomMetadataRecordInstance, isCustomMetadataRecordType, isInstanceOfType } from './utils'
+import { isCustomMetadataRecordInstance, isCustomMetadataRecordType, isInstanceOfType, isMetadataValues } from './utils'
 import {
   CUSTOM_METADATA, CUSTOM_METADATA_SUFFIX,
   FIELD_TYPE_NAMES,
@@ -44,6 +44,7 @@ import {
   createInstanceElement,
   isNull,
   MetadataValues,
+  XsdType,
 } from '../transformers/transformer'
 
 const log = logger(module)
@@ -51,7 +52,6 @@ const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
 const { isDefined } = lowerdashValues
 
-type XsiType = 'xsd:boolean' | 'xsd:date' | 'xsd:dateTime' | 'xsd:picklist' | 'xsd:string' | 'xsd:int' | 'xsd:double'
 const SUPPORTED_CUSTOM_METADATA_FIELD_TYPES = [
   FIELD_TYPE_NAMES.CHECKBOX, FIELD_TYPE_NAMES.METADATA_RELATIONSHIP,
   FIELD_TYPE_NAMES.DATE, FIELD_TYPE_NAMES.DATETIME,
@@ -63,7 +63,7 @@ const SUPPORTED_CUSTOM_METADATA_FIELD_TYPES = [
 
 type CustomMetadataFieldType = typeof SUPPORTED_CUSTOM_METADATA_FIELD_TYPES[number]
 
-const FIELD_TYPE_TO_XSI_TYPE: Record<CustomMetadataFieldType, XsiType> = {
+const FIELD_TYPE_TO_XSI_TYPE: Record<CustomMetadataFieldType, XsdType> = {
   LongTextArea: 'xsd:string',
   MetadataRelationship: 'xsd:string',
   Checkbox: 'xsd:boolean',
@@ -92,7 +92,7 @@ type ServiceMDTRecordFieldValue = {
     'attr_xsi:type': string
   }
 }
-export type ServiceMDTRecordValue = Values & {
+export type ServiceMDTRecordValue = MetadataValues & {
   values: ServiceMDTRecordFieldValue | ServiceMDTRecordFieldValue[]
 }
 
@@ -132,15 +132,15 @@ const additionalNamespaces = Object.fromEntries([
   [`${XML_ATTRIBUTE_PREFIX}xmlns:xsi`, 'http://www.w3.org/2001/XMLSchema-instance'],
 ])
 
-const resolveCustomMetadataType = async (
+const getCustomMetadataType = async (
   instance: InstanceElement,
   customMetadataTypes: ObjectType[],
 ): Promise<ObjectType> => {
   const customMetadataTypeName = (await apiName(instance)).split('.')[0].concat(CUSTOM_METADATA_SUFFIX)
-  const correctType = customMetadataTypes
-    .find(objectType => objectType.elemID.typeName === customMetadataTypeName)
+  const correctType = await awu(customMetadataTypes)
+    .find(async objectType => await apiName(objectType) === customMetadataTypeName)
   if (correctType === undefined) {
-    log.warn('Could not fix type for CustomMetadataType Instance %o, since its CustomMetadata record type was not found', instance)
+    log.warn('Could not fix type for CustomMetadataType Instance %s, since its CustomMetadata record type was not found', instance.elemID.getFullName())
     return instance.getType()
   }
   return correctType
@@ -159,7 +159,8 @@ const formatMDTRecordValuesToNacl = (values: ServiceMDTRecordValue): Values => (
   _.omit({
     ...values,
     ...extractValuesToFields(values),
-  }, 'values', Object.keys(additionalNamespaces))
+  },
+  'values', Object.keys(additionalNamespaces))
 )
 
 const getCustomFieldsXsiTypes = async (
@@ -211,16 +212,20 @@ const formatRecordValuesForService = async (
   }
 }
 
-const toInstanceWithCorrectType = async (
+const getInstanceWithCorrectType = async (
   instance: InstanceElement,
   customMetadataRecordTypes: ObjectType[]
-): Promise<InstanceElement> => {
-  const correctType = await resolveCustomMetadataType(instance, customMetadataRecordTypes)
+): Promise<InstanceElement | undefined> => {
+  const correctType = await getCustomMetadataType(instance, customMetadataRecordTypes)
 
   const formattedValues = isServiceMDTRecordValues(instance.value)
     ? formatMDTRecordValuesToNacl(instance.value)
     : instance.value
-  return createInstanceElement(formattedValues as MetadataValues, correctType)
+  if (!isMetadataValues(formattedValues)) {
+    log.warn('CustomMetadata instance %s is missing the fullName field, skipping.', instance.elemID.getFullName())
+    return undefined
+  }
+  return createInstanceElement(formattedValues, correctType)
 }
 
 const CUSTOM_METADATA_TYPE = new ObjectType({
@@ -257,7 +262,8 @@ const filterCreator: LocalFilterCreator = () => {
         .filter(isInstanceOfType(CUSTOM_METADATA))
         .toArray()
       const newInstances = await awu(oldInstances)
-        .map(instance => toInstanceWithCorrectType(instance, customMetadataRecordTypes))
+        .map(instance => getInstanceWithCorrectType(instance, customMetadataRecordTypes))
+        .filter(isDefined)
         .toArray()
       _.pullAll(elements, oldInstances)
       elements.push(...newInstances)

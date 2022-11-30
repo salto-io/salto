@@ -59,6 +59,8 @@ const splitFields = async (
       standardFieldsFileName(customObject.elemID.name),
     ],
   })
+
+
   const customFieldsObject = new ObjectType(
     {
       elemID: customObject.elemID,

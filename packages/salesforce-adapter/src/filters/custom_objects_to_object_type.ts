@@ -381,7 +381,7 @@ const DEFAULT_TYPES_FROM_INSTANCE: TypesFromInstance = {
   standardAnnotationTypes: {},
 }
 
-export const createObjectType = async ({
+export const createCustomTypeFromCustomObjectInstance = async ({
   instance,
   typesFromInstance = DEFAULT_TYPES_FROM_INSTANCE,
   fieldsToSkip = [],
@@ -427,7 +427,7 @@ const createFromInstance = async (
   typesFromInstance: TypesFromInstance,
   fieldsToSkip?: string[],
 ): Promise<Element[]> => {
-  const object = await createObjectType({
+  const object = await createCustomTypeFromCustomObjectInstance({
     instance,
     typesFromInstance,
     fieldsToSkip,

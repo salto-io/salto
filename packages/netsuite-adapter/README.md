@@ -39,6 +39,8 @@ Deleting record of CustomTypes & FileCabinet is not supported.
 
 E2E tests need real NetSuite credentials to run.
 
+Run `CONSOLE=1 yarn e2e-test` to print log messages to stdout.
+
 ### Using a specific set of credentials
 
 Add the following environment variables to bash_profile:

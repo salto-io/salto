@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable no-console */
+import process from 'process'
+import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
@@ -38,8 +39,17 @@ import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
 
+const log = logger(module)
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
+
+const logging = (message: string): void => {
+  log.debug(message)
+  if (process.env.CONSOLE) {
+    // eslint-disable-next-line no-console
+    console.log(message)
+  }
+}
 
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
@@ -68,7 +78,7 @@ describe('Netsuite adapter E2E with real account', () => {
   beforeAll(async () => {
     await adapterCreator.install?.()
     credentialsLease = await credsLease()
-    console.log(`using account ${credentialsLease.value.accountId}`)
+    logging(`using account ${credentialsLease.value.accountId}`)
   })
 
   afterAll(async () => {
@@ -86,6 +96,11 @@ describe('Netsuite adapter E2E with real account', () => {
   ]).describe('%s', (_text, withSuiteApp) => {
     let fetchResult: FetchResult
     let fetchedElements: Element[]
+
+
+    const logMessage = (message: string): void => {
+      logging(`${withSuiteApp ? '(suiteapp) ' : ' '}${message}`)
+    }
 
     const validateConfigSuggestions = (updatedConfig?: InstanceElement): void => {
       if (updatedConfig === undefined) {
@@ -343,7 +358,7 @@ describe('Netsuite adapter E2E with real account', () => {
         .value()
 
       return awu(changesGroups).map(async ([id, group]) => {
-        console.log(`${withSuiteApp ? '(suiteapp) ' : ' '}running deploy for group ${id} with ${group.length} changes`)
+        logMessage(`running deploy for group ${id} with ${group.length} changes`)
         const result = await nsAdapter.deploy({
           changeGroup: { groupID: id, changes: group },
         })
@@ -380,7 +395,7 @@ describe('Netsuite adapter E2E with real account', () => {
       let deployResult: DeployResult
       beforeAll(async () => {
         if (withSuiteApp) {
-          console.log(`${withSuiteApp ? '(suiteapp) ' : ' '}running fetch to get folder internalId`)
+          logMessage('running fetch to get folder internalId')
         }
         const { elements } = withSuiteApp
           // in order to deploy folder modification (/Images) and file addition (/Images/e2eTest.js)
@@ -434,7 +449,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       let deployResult: DeployResult
       beforeAll(async () => {
-        console.log(`${withSuiteApp ? '(suiteapp) ' : ' '}running deploy for group SDF with ${changes.length} changes`)
+        logMessage(`running deploy for group SDF with ${changes.length} changes`)
         deployResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes } })
       })
 
@@ -467,7 +482,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
           it('should have warning when applying change validator', async () => {
             const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
-            console.log(`${withSuiteApp ? '(suiteapp) ' : ' '}running safe deploy validation on standard instance`)
+            logMessage('running safe deploy validation on standard instance')
             const changeErrors: ReadonlyArray<ChangeError> = await awu([
               adapter.deployModifiers?.changeValidator,
             ])
@@ -524,7 +539,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
           it('should have warning when applying change validator', async () => {
             const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
-            console.log(`${withSuiteApp ? '(suiteapp) ' : ' '}running safe deploy validation on static resource`)
+            logMessage('running safe deploy validation on static resource')
             const changeErrors: ReadonlyArray<ChangeError> = await awu([
               adapter.deployModifiers?.changeValidator,
             ])
@@ -571,7 +586,7 @@ describe('Netsuite adapter E2E with real account', () => {
         const mockFetchOpts: MockInterface<FetchOptions> = {
           progressReporter: { reportProgress: jest.fn() },
         }
-        console.log(`${withSuiteApp ? '(suiteapp) ' : ' '}running fetch`)
+        logMessage('running fetch')
         fetchResult = await adapter.fetch(mockFetchOpts)
         fetchedElements = fetchResult.elements
       })

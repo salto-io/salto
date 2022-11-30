@@ -66,9 +66,9 @@ export const contextStrategyLookup: Record<
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
   (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id)
 
-type ReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | referenceUtils.ReferenceSerializationStrategyName
+type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName'
 const JiraReferenceSerializationStrategyLookup: Record<
-  ReferenceSerializationStrategyName,
+  JiraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
 > = {
   ...referenceUtils.ReferenceSerializationStrategyLookup,
@@ -87,7 +87,7 @@ const JiraReferenceSerializationStrategyLookup: Record<
 type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 ReferenceContextStrategyName
 > & {
-  JiraSerializationStrategy?: ReferenceSerializationStrategyName
+  JiraSerializationStrategy?: JiraReferenceSerializationStrategyName
 }
 export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
 ReferenceContextStrategyName

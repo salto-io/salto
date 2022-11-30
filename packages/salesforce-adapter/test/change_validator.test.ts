@@ -37,7 +37,9 @@ describe('createSalesforceChangeValidator', () => {
   describe('when checkOnly is false', () => {
     describe('with no validator config', () => {
       beforeEach(() => {
-        validator = createSalesforceChangeValidator({ config: {}, checkOnly: false })
+        validator = createSalesforceChangeValidator({ config: {},
+          isSandbox: false,
+          checkOnly: false })
       })
       it('should create a validator', () => {
         expect(validator).toBeDefined()
@@ -53,6 +55,7 @@ describe('createSalesforceChangeValidator', () => {
       beforeEach(() => {
         validator = createSalesforceChangeValidator({
           config: { validators: { customFieldType: false } },
+          isSandbox: false,
           checkOnly: false,
         })
       })
@@ -61,7 +64,7 @@ describe('createSalesforceChangeValidator', () => {
       })
       it('should put the disabled validator in the disabled list', () => {
         const enabledValidatorsCount = Object.values(_.omit(changeValidators, 'customFieldType')).length
-        const disabledValidators = [changeValidators.customFieldType({})]
+        const disabledValidators = [changeValidators.customFieldType({}, false,)]
         expect(createChangeValidator).toHaveBeenCalledWith(
           expect.arrayContaining([]), disabledValidators
         )
@@ -79,6 +82,7 @@ describe('createSalesforceChangeValidator', () => {
               },
             },
           },
+          isSandbox: false,
           checkOnly: false,
         })
       )
@@ -106,6 +110,7 @@ describe('createSalesforceChangeValidator', () => {
     beforeEach(() => {
       validator = createSalesforceChangeValidator({
         config: {},
+        isSandbox: false,
         checkOnly: true,
       })
     })

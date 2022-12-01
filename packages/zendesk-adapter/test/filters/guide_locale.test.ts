@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import guideLocaleFilter from '../../src/filters/guide_locale'
 import { createFilterCreatorParams } from '../utils'
@@ -38,8 +38,8 @@ const languageSetting1 = new InstanceElement('settings1', languageSettingsType, 
 const languageSetting2 = new InstanceElement('settings2', languageSettingsType, { brand: 2, locale: 'he' })
 
 const category1 = new InstanceElement('category1', categoryType, { brand: 1, locale: 'en-us', source_locale: 'en-us' })
-// Notice that the settings for this 'source' does not exist - so it should stay the same
-const category2 = new InstanceElement('category2', categoryType, { brand: 2, locale: 'en-us', source_locale: 'he' })
+// Notice that the settings for this 'source_locale' does not exist on that brand - so it should stay the same
+const category2 = new InstanceElement('category2', categoryType, { brand: 2, locale: 'he', source_locale: 'en-us' })
 
 const categoryTranslation1 = new InstanceElement('translation1', categoryTranslationType, { brand: 1, locale: 'en-us' })
 const categoryTranslation2 = new InstanceElement('translation2', categoryTranslationType, { brand: 2, locale: 'he' })
@@ -53,7 +53,16 @@ describe('onFetch', () => {
       brand1, brand2, languageSetting1, languageSetting2,
       category1, category2, categoryTranslation1, categoryTranslation2,
     ])
-    // eslint-disable-next-line no-console
-    console.log(brand1)
+    const resultLanguageSetting1 = (new ReferenceExpression(languageSetting1.elemID, languageSetting1))
+    const resultLanguageSetting2 = (new ReferenceExpression(languageSetting2.elemID, languageSetting2))
+
+    expect(category1.value.locale).toMatchObject(resultLanguageSetting1)
+    expect(category2.value.locale).toMatchObject(resultLanguageSetting2)
+
+    expect(category1.value.source_locale).toMatchObject(resultLanguageSetting1)
+    expect(category2.value.source_locale).toBe('en-us') // The 'en-us' translation is of another brand
+
+    expect(categoryTranslation1.value.locale).toMatchObject(resultLanguageSetting1)
+    expect(categoryTranslation2.value.locale).toMatchObject(resultLanguageSetting2)
   })
 })

@@ -927,10 +927,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       serviceUrl: '/secure/admin/EditResolution!default.jspa?id={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddResolution.jspa',
-      modify: '/secure/admin/EditResolution.jspa',
-      query: '/rest/api/3/resolution',
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/resolution',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/resolution/{id}',
+        method: 'put',
+      },
     },
   },
 
@@ -1633,7 +1638,7 @@ const SUPPORTED_TYPES = {
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'FilterDetails',
@@ -1775,7 +1780,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     ],
   },
   jiraSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/software-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'rest__agile__1_0__board@uuuuvuu',

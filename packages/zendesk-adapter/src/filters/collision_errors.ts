@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, Element, SaltoError } from '@salto-io/adapter-api'
+import { isInstanceElement, Element } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -27,7 +27,7 @@ const log = logger(module)
  * Adds collision warnings
  */
 const filterCreator: FilterCreator = ({ config }) => ({
-  onFetch: async (elements: Element[]): Promise<{ errors: SaltoError[] }> => log.time(async () => {
+  onFetch: async (elements: Element[]) => log.time(async () => {
     const collistionWarnings = await getAndLogCollisionWarnings({
       adapterName: ZENDESK,
       configurationName: 'service',

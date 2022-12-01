@@ -148,7 +148,7 @@ const filterCreator: FilterCreator = ({
 }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
-    onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
+    onFetch: async (elements: Element[]) => log.time(async () => {
       const articleInstances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)

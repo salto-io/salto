@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Change, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
   isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -152,7 +152,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
 const filterCreator: FilterCreator = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
-    onFetch: async elements => {
+    onFetch: async (elements: Element[]) => log.time(async () => {
       const instances = elements.filter(isInstanceElement)
       const additionalInstances = {
         [BRAND_TYPE_NAME]:
@@ -175,7 +175,7 @@ const filterCreator: FilterCreator = () => {
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
           updateArticleBody(articleInstance, additionalInstances)))
-    },
+    }, 'articleBodyFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)

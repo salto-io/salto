@@ -148,7 +148,7 @@ const filterCreator: FilterCreator = ({
 }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
-    onFetch: async elements => {
+    onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
       const articleInstances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
@@ -164,8 +164,7 @@ const filterCreator: FilterCreator = ({
       // Verify article_attachment type added only once
       _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
       elements.push(attachmentType, ...articleAttachments)
-    },
-
+    }, 'articlesFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       // Creating unassociated article attachments
       const addedArticleAttachments = changes

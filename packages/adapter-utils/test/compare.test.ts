@@ -243,6 +243,56 @@ describe('detailedCompare', () => {
           },
         ])
       })
+
+      it('should detect addition and modification correctly', () => {
+        beforeInst.value.list = ['c', 'a', 'b', 'e']
+        afterInst.value.list = ['a', 'd', 'h']
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0'),
+            data: { before: 'c' },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: { before: 'a', after: 'a' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { after: 'd' },
+            action: 'add',
+            elemIDs: {
+              after: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('3'),
+            data: { before: 'e' },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('3'),
+            },
+          },
+          {
+            id: listID.createNestedID('4'),
+            data: { before: 'b', after: 'h' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+              after: listID.createNestedID('2'),
+            },
+          },
+        ])
+      })
     })
   })
 

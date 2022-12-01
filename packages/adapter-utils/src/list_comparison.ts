@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
 import _ from 'lodash'
 import {
   ChangeDataType, DetailedChange, Value, isReferenceExpression,
@@ -24,6 +23,7 @@ import {
   isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
+import wu from 'wu'
 import { getElementChangeId, resolvePath, setPath } from './utils'
 
 const getSingleValueKey = (value: Value): string => {
@@ -89,11 +89,7 @@ type IndexMappingItem = {
  */
 export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMappingItem[] => {
   const afterIndexMap = buildKeyToIndicesMap(after)
-  const beforeIndexToAfterIndex: Record<number, number> = {}
-  const mappingItems: IndexMappingItem[] = []
-
-  const unmappedAfterIndices = new Set(Array(after.length).keys())
-  const unmappedBeforeIndices: number[] = []
+  const matchedAfterIndexes = new Set<number>()
 
   // We want to maintain the following invariant in our mapping:
   // - let A and B be indices in the before array that do not have an exact match
@@ -102,84 +98,84 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
   // In order the maintain this, we need to keep track of the possible indices for comparison.
   // so for each before index, we maintain the highest after index that was seen before it, meaning
   // that before index cannot be matched with an after index lower than that value
-  const minPossibleAfterIndex = new Map<number, number>()
-
   let maxAfterIndexMatched = -1
-  before.forEach((value, beforeIndex) => {
+  const matchesAfterKeyMatch = before.map((value, beforeIndex) => {
     const key = getListItemKey(value)
-    const matchingAfterIndex = (afterIndexMap[key] ?? []).shift()
-    if (matchingAfterIndex !== undefined) {
-      // this is a re-order
-      unmappedAfterIndices.delete(matchingAfterIndex)
+    const matchedAfterIndex = (afterIndexMap[key] ?? []).shift()
 
-      beforeIndexToAfterIndex[beforeIndex] = matchingAfterIndex
-      mappingItems.push({ beforeIndex, afterIndex: matchingAfterIndex })
-
-      maxAfterIndexMatched = Math.max(maxAfterIndexMatched, matchingAfterIndex)
-    } else {
-      // no exact match, remember this index as one that needs to be mapped later
-      // we do not try to match it now because we don't know which before indices
-      // are going to be matched by later items in the after array, so we don't want
-      // to "take" any items from the before array until this loop is done, so we do nothing
-      unmappedBeforeIndices.push(beforeIndex)
-      // The afterIndex of this beforeIndex must be matched with a beforeIndex that is larger than any beforeIndex
-      // matched so far. So we set this maxBeforeIndexMatched as the minimal beforeIndex
-      // possible for the afterIndex of this beforeIndex
-      minPossibleAfterIndex.set(beforeIndex, maxAfterIndexMatched)
+    // this is a re-order
+    if (matchedAfterIndex !== undefined) {
+      maxAfterIndexMatched = Math.max(maxAfterIndexMatched, matchedAfterIndex)
+      matchedAfterIndexes.add(matchedAfterIndex)
+    }
+    return {
+      beforeIndex,
+      afterIndex: matchedAfterIndex,
+      // The min after index is the max  after index we matched to so far
+      minAfterIndex: maxAfterIndexMatched,
     }
   })
 
+  maxAfterIndexMatched = -1
   // After finding matches by key, we prefer matching equal indices because they provide
   // the clearest difference (only value difference with no index difference)
-  const exactIndexMatches = unmappedBeforeIndices.filter(
-    beforeIndex => unmappedAfterIndices.has(beforeIndex)
-  )
-  exactIndexMatches.forEach(index => {
-    mappingItems.push({ beforeIndex: index, afterIndex: index })
-    beforeIndexToAfterIndex[index] = index
-    unmappedAfterIndices.delete(index)
-  })
-
-  // Make sure all before indices are mapped to something
-  let maxPossibleAfterIndex = after.length
-  _.times(before.length).reverse().forEach(beforeIndex => {
-    if (beforeIndexToAfterIndex[beforeIndex] !== undefined) {
-      // Any afterIndex smaller than this afterIndex must not be matched with a beforeIndex
-      // larger than the match we have here, so we update the maxPossibleBeforeIndex here
-      maxPossibleAfterIndex = Math.min(maxPossibleAfterIndex, beforeIndexToAfterIndex[beforeIndex])
-    } else {
-      const afterIndex = wu(unmappedAfterIndices).find(
-        idx =>
-          idx < maxPossibleAfterIndex
-          && idx > (minPossibleAfterIndex.get(beforeIndex) ?? -1)
-      )
-      if (afterIndex === undefined) {
-        // No available after index - we will mark this before index as a removal
-        mappingItems.push({ beforeIndex })
-      } else {
-        mappingItems.push({ beforeIndex, afterIndex })
-        unmappedAfterIndices.delete(afterIndex)
-        maxPossibleAfterIndex = Math.min(maxPossibleAfterIndex, afterIndex)
+  const matchesAfterIndexMatch = matchesAfterKeyMatch
+    .map(({ beforeIndex, afterIndex, minAfterIndex }) => {
+      if (!matchedAfterIndexes.has(beforeIndex) && afterIndex === undefined && beforeIndex < after.length) {
+        matchedAfterIndexes.add(beforeIndex)
+        maxAfterIndexMatched = beforeIndex
+        return { beforeIndex, afterIndex: beforeIndex, minAfterIndex }
       }
-    }
-  })
+
+      return { beforeIndex, afterIndex, minAfterIndex: Math.max(maxAfterIndexMatched, minAfterIndex) }
+    })
+
+
+  const afterIndexes = _.times(after.length).reverse()
+
+  let maxPossibleAfterIndex = after.length
+  const matches: IndexMappingItem[] = matchesAfterIndexMatch
+    .reverse()
+    .map(({ beforeIndex, afterIndex, minAfterIndex }) => {
+      if (afterIndex !== undefined) {
+        maxPossibleAfterIndex = Math.min(afterIndex, maxPossibleAfterIndex)
+        return { beforeIndex, afterIndex }
+      }
+
+      const reversedMaxPossibleAfterIndex = after.length - maxPossibleAfterIndex
+      const reversedMinAfterIndex = after.length - minAfterIndex
+
+      const selectedAfterIndex = reversedMinAfterIndex - reversedMaxPossibleAfterIndex > 0
+        ? wu(afterIndexes)
+          .slice(reversedMaxPossibleAfterIndex, reversedMinAfterIndex)
+          .find(index => !matchedAfterIndexes.has(index))
+        : undefined
+
+      if (selectedAfterIndex === undefined) {
+        return { beforeIndex, afterIndex }
+      }
+
+      matchedAfterIndexes.add(selectedAfterIndex)
+      maxPossibleAfterIndex = selectedAfterIndex
+      return { beforeIndex, afterIndex: selectedAfterIndex }
+    })
 
   // Make sure all after indices are mapped to something - all the remaining indices
   // at this point will be marked as additions
-  unmappedAfterIndices.forEach(afterIndex => {
-    mappingItems.push({ afterIndex })
-  })
+  _.times(after.length)
+    .filter(index => !matchedAfterIndexes.has(index))
+    .forEach(afterIndex => matches.push({ afterIndex, beforeIndex: undefined }))
 
   // Sort mapping to maintain that items appear in a consistent order according to their
   // location in the after array.
-  const orderedItems = _(mappingItems)
+  const orderedItems = _(matches)
     .filter(item => item.afterIndex !== undefined)
     .sortBy(item => item.afterIndex)
     .value()
 
   // Insert remove changes in their original location in the array, this seems to give
   // to most intuitive result
-  _(mappingItems)
+  _(matches)
     .filter((item): item is { beforeIndex: number } => item.beforeIndex !== undefined
       && item.afterIndex === undefined)
     .sortBy(item => item.beforeIndex)

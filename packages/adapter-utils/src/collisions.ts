@@ -67,8 +67,8 @@ export const getInstancesWithCollidingElemID = (instances: InstanceElement[]): I
 
 const logInstancesWithCollidingElemID = async (
   typeToElemIDtoInstances: Record<string, Record<string, InstanceElement[]>>,
-  skipLogCollisionStringify?: boolean)
-: Promise<void> => {
+  skipLogCollisionStringify?: boolean
+): Promise<void> => {
   Object.entries(typeToElemIDtoInstances).forEach(([type, elemIDtoInstances]) => {
     const instancesCount = Object.values(elemIDtoInstances).flat().length
     log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)

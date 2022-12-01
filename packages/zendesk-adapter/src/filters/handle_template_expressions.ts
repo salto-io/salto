@@ -41,12 +41,8 @@ export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
 }
 
-export const SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE = Object.fromEntries(
-  Object.entries(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
-    .map(entry => [entry[1], entry[0]])
-)
 
-const POTENTIAL_REFERENCE_TYPES = [TICKET_TICKET_FIELD, TICKET_FIELD_OPTION_TITLE]
+const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
 const typeSearchRegexes: RegExp[] = []
 BRACKETS.forEach(([opener, closer]) => {
   POTENTIAL_REFERENCE_TYPES.forEach(type => {
@@ -246,7 +242,7 @@ const replaceFormulasWithTemplates = async (
 }
 
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
-  if (SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]) {
+  if (Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE).includes(part.elemID.typeName)) {
     return `${part.value.value.id}`
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME

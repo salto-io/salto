@@ -67,14 +67,14 @@ export const getInstancesWithCollidingElemID = (instances: InstanceElement[]): I
 
 const logInstancesWithCollidingElemID = async (
   typeToElemIDtoInstances: Record<string, Record<string, InstanceElement[]>>,
-  skipCollisionStringify?: boolean)
+  skipLogCollisionStringify?: boolean)
 : Promise<void> => {
   Object.entries(typeToElemIDtoInstances).forEach(([type, elemIDtoInstances]) => {
     const instancesCount = Object.values(elemIDtoInstances).flat().length
     log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
     Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
       // For some reason safeJsonStringify is really slow, so we use this flag to avoid it in case of big environments
-      if (skipCollisionStringify) {
+      if (skipLogCollisionStringify) {
         log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID}`)
         return
       }
@@ -99,7 +99,7 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownElements = MAX_BREAKDOWN_ELEMENTS,
   maxBreakdownDetailsElements = MAX_BREAKDOWN_DETAILS_ELEMENTS,
   baseUrl,
-  skipCollisionStringify,
+  skipLogCollisionStringify,
 }: {
   instances: InstanceElement[]
   getTypeName: (instance: InstanceElement) => Promise<string>
@@ -111,10 +111,10 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownElements?: number
   maxBreakdownDetailsElements?: number
   baseUrl?: string
-  skipCollisionStringify?: boolean
+  skipLogCollisionStringify?: boolean
 }): Promise<SaltoError[]> => {
   const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instances, getTypeName)
-  await logInstancesWithCollidingElemID(typeToElemIDtoInstances, skipCollisionStringify)
+  await logInstancesWithCollidingElemID(typeToElemIDtoInstances, skipLogCollisionStringify)
   return Promise.all(Object.entries(typeToElemIDtoInstances)
     .map(async ([type, elemIDtoInstances]) => {
       const numInstances = Object.values(elemIDtoInstances)

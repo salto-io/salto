@@ -37,7 +37,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       ).idFields,
       idFieldsName: 'idFields',
-      skipCollisionStringify: config[FETCH_CONFIG].skipCollisionStringify,
+      skipLogCollisionStringify: config[FETCH_CONFIG].enableGuide,
     })
     return { errors: collistionWarnings }
   },

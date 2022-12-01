@@ -38,6 +38,7 @@ export const TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
+  [TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
 }
 
 export const SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE = Object.fromEntries(
@@ -154,7 +155,7 @@ const formulaToTemplate = (
       return [expression]
     }
     const [type, innerId] = splitReference
-    const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[TICKET_TICKET_FIELD]] ?? [])
+    const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]] ?? [])
       .find(instance => instance.value.id?.toString() === innerId)
     if (elem) {
       return [
@@ -169,7 +170,7 @@ const formulaToTemplate = (
     // if no id was detected and enableMissingReferences we return a missing reference expression.
     const missingInstance = createMissingInstance(
       ZENDESK,
-      ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[TICKET_TICKET_FIELD],
+      ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
       innerId
     )
     missingInstance.value.id = innerId

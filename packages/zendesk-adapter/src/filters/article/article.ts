@@ -25,7 +25,7 @@ import {
 import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
-import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../constants'
+import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME } from '../../constants'
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
 import { removeTitleAndBody } from '../guide_fetch_article'
@@ -144,7 +144,8 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   elementsSource: ReadOnlyElementsSource
   articleNameToAttachments: Record<string, number[]>
 }): Promise<InstanceElement[]> => {
-  // Creating unassociated article attachments
+  const translationChanges = changes
+    .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
   const attachmentChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
@@ -176,7 +177,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         }
         // Article bodies needs to be updated when modofying inline attachments
         if (attachmentInstance.value.inline) {
-          await updateArticleTranslationBody({ client, attachmentInstance })
+          await updateArticleTranslationBody({ client, attachmentInstance, translationChanges })
         }
         await deleteArticleAttachment(client, attachmentChange.data.before)
         return

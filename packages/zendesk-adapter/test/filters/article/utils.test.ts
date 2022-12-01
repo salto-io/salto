@@ -170,7 +170,11 @@ describe('article utility functions', () => {
       const clonedAttachment = articleAttachmentInstance.clone()
       clonedAttachment.value.id = 250595
       clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clondedArticle.value] })
-      await articleUtils.updateArticleTranslationBody({ client, attachmentInstance: clonedAttachment })
+      await articleUtils.updateArticleTranslationBody({
+        client,
+        attachmentInstance: clonedAttachment,
+        translationChanges: [],
+      })
       expect(mockPut).toHaveBeenCalledTimes(1)
     })
   })

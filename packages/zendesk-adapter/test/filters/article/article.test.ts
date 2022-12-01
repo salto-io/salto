@@ -199,6 +199,7 @@ describe('article filter', () => {
     const elementsSource = buildElementsSourceFromElements([
       userSegmentType,
       everyoneUserSegmentInstance,
+      articleAttachmentInstance,
     ])
     const brandIdToClient = { [brandInstance.value.id]: client }
     filter = filterCreator(createFilterCreatorParams({
@@ -303,6 +304,17 @@ describe('article filter', () => {
 
   describe('preDeploy', () => {
     beforeEach(() => {
+      mockPost = jest.spyOn(client, 'post')
+      mockPost.mockImplementation(params => {
+        if ([
+          '/api/v2/help_center/articles/333333/bulk_attachments',
+        ].includes(params.url)) {
+          return {
+            status: 200,
+          }
+        }
+        throw new Error('Err')
+      })
       mockDelete = jest.spyOn(client, 'delete')
       mockDelete.mockImplementation(params => {
         if ([

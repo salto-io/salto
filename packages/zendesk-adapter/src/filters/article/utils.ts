@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { getParents, naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile,
+  BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isReferenceExpression, isStaticFile,
   isTemplateExpression, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -221,9 +221,11 @@ export const deleteArticleAttachment = async (
 export const updateArticleTranslationBody = async ({
   client,
   attachmentInstance,
+  translationChanges,
 }: {
   client: ZendeskClient
   attachmentInstance: InstanceElement
+  translationChanges: Change<InstanceElement>[]
 }): Promise<void> => {
   const articleInstance = getParents(attachmentInstance)[0]
   const articleTranslations = articleInstance?.translations
@@ -231,8 +233,12 @@ export const updateArticleTranslationBody = async ({
     log.error(`Received an invalid translations value for attachment ${attachmentInstance.elemID.name} - ${safeJsonStringify(articleTranslations)}`)
     return
   }
+  const changedTranslationInstancesNames = translationChanges
+    .map(getChangeData)
+    .map(instance => instance.elemID.name)
   await awu(articleTranslations)
     .filter(isReferenceExpression)
+    .filter(translationInstance => !changedTranslationInstancesNames.includes(translationInstance.value.elemID.name))
     .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
     .forEach(async translationInstance => {
       replaceTemplatesWithValues(

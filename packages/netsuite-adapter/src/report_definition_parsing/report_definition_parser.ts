@@ -92,8 +92,11 @@ const getReportPartsFromDefinition = async (definition: string): Promise<Element
     dependency: getSearchDependency(parsedXml) }
 }
 
-const getReportParameters = (reportParameter: { Map: ParameterObject[] }): Values =>
-  Object.fromEntries(reportParameter.Map.map(i => [i.key._text, i.value._text]))
+const getReportParameters = (reportParameter: { Map: ParameterObject[] }): Values => {
+  const paramObject: Record<string, Value> = {}
+  paramObject.Map = Object.fromEntries(reportParameter.Map.map(i => [i.key._text, i.value._text]))
+  return paramObject
+}
 
 const getReportCriteria = (criteria: ReportCriteria): Values =>
   collections.array.makeArray(criteria.values?.ReportCriterion)

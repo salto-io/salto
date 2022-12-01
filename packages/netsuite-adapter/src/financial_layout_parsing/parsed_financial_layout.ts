@@ -99,7 +99,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       KEY_DEFAULT_FORMULA_STYLE: { refType: BuiltinTypes.NUMBER },
       KEY_DEFAULT_TEXT_STYLE: { refType: BuiltinTypes.NUMBER },
       scriptid: {
-        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        refType: BuiltinTypes.SERVICE_ID,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
@@ -107,18 +107,18 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
         },
       },
       layout: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       dependencies: {
-        refType: createRefToElmWithValue(financialLayoutDependencies),
+        refType: financialLayoutDependencies,
         annotations: {
         },
       },
       rows: {
-        refType: createRefToElmWithValue(new ListType(financialLayoutRows)),
+        refType: new ListType(financialLayoutRows),
         annotations: {
         },
       },

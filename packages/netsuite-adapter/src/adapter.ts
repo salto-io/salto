@@ -27,7 +27,7 @@ import {
   createInstanceElement,
 } from './transformer'
 import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from './types'
-import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE } from './constants'
+import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
@@ -344,11 +344,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
 
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+    const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
+      .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
-      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
+      types: Object.fromEntries(this.typesToSkip.concat(explicitIncludeTypeList).map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
-
     const fetchQuery = [
       this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),

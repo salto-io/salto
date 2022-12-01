@@ -66,7 +66,6 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       dependencies: {
         refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
     },
@@ -231,7 +230,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       KEY_AUDIENCE: { refType: BuiltinTypes.NUMBER },
       KEY_ACCESS_AUDIENCE: { refType: BuiltinTypes.STRING },
       scriptid: {
-        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        refType: BuiltinTypes.SERVICE_ID,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
@@ -239,36 +238,36 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
         },
       },
       definition: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       dependencies: {
-        refType: createRefToElmWithValue(reportDefinitionDependencies),
+        refType: reportDefinitionDependencies,
         annotations: {
         },
       },
       components: {
-        refType: createRefToElmWithValue(new ListType(reportDefinitionComponents)),
+        refType: new ListType(reportDefinitionComponents),
       },
       criteria: {
-        refType: createRefToElmWithValue(new ListType(reportDefinitionCriteria)),
+        refType: new ListType(reportDefinitionCriteria),
       },
       fields: {
-        refType: createRefToElmWithValue(new ListType(reportDefinitionFields)),
+        refType: new ListType(reportDefinitionFields),
       },
       layouts: {
-        refType: createRefToElmWithValue(new ListType(reportDefinitionLayouts)),
+        refType: new ListType(reportDefinitionLayouts),
       },
       parameters: {
-        refType: createRefToElmWithValue(new MapType(reportDefinitionParameters)),
+        refType: new MapType(reportDefinitionParameters),
       },
       sorts: {
-        refType: createRefToElmWithValue(new ListType(reportDefinitionSorts)),
+        refType: new ListType(reportDefinitionSorts),
       },
       uiPreferences: {
-        refType: createRefToElmWithValue(new ListType(reportDefinitionUiPref)),
+        refType: new ListType(reportDefinitionUiPref),
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],

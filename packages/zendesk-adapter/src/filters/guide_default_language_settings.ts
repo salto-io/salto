@@ -31,8 +31,8 @@ import { getZendeskError } from '../errors'
 const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
 
 /**
- On fetch - Add 'default' field for guide_language_settings from a url request
- Before deploy - remove the field (update the default?)
+ On fetch - Add 'default' field for guide_language_settings from an url request
+ On deploy - ignore the field
  */
 const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) => ({
   onFetch: async elements => {

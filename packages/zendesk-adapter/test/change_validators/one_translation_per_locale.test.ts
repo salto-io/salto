@@ -121,6 +121,7 @@ describe('oneTranslationPerLocalValidator',
         'Test2',
         articleTranslationType,
         {
+          // Check that the validator can catch both a string and a reference expression
           locale: new ReferenceExpression(enusLocale.elemID, enusLocale),
         },
         undefined,

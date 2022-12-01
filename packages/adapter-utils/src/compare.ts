@@ -37,17 +37,17 @@ const compareListWithOrderMatching = ({
   const indexMapping = getArrayIndexMapping(before, after)
 
   const itemsChanges = _.flatten(
-    indexMapping.map((item, changeIdx) => {
-      const itemChangeId = id.createNestedID(changeIdx.toString())
-      const itemBeforeId = item.beforeIdx !== undefined
-        ? beforeId?.createNestedID(item.beforeIdx.toString())
+    indexMapping.map((item, changeIndex) => {
+      const itemChangeId = id.createNestedID(changeIndex.toString())
+      const itemBeforeId = item.beforeIndex !== undefined
+        ? beforeId?.createNestedID(item.beforeIndex.toString())
         : undefined
-      const itemAfterId = item.afterIdx !== undefined
-        ? afterId?.createNestedID(item.afterIdx.toString())
+      const itemAfterId = item.afterIndex !== undefined
+        ? afterId?.createNestedID(item.afterIndex.toString())
         : undefined
 
-      const itemBeforeValue = item.beforeIdx !== undefined ? before[item.beforeIdx] : undefined
-      const itemAfterValue = item.afterIdx !== undefined ? after[item.afterIdx] : undefined
+      const itemBeforeValue = item.beforeIndex !== undefined ? before[item.beforeIndex] : undefined
+      const itemAfterValue = item.afterIndex !== undefined ? after[item.afterIndex] : undefined
       // eslint-disable-next-line no-use-before-define
       const innerChanges = getValuesChanges({
         id: itemChangeId,
@@ -61,7 +61,7 @@ const compareListWithOrderMatching = ({
         innerChanges.length === 1
         && innerChanges.some(change => change.id.isEqual(itemChangeId))
       )
-      if (item.beforeIdx !== item.afterIdx && !hasChangeDirectlyOnItem) {
+      if (item.beforeIndex !== item.afterIndex && !hasChangeDirectlyOnItem) {
         // This item changed its index, so if we don't already have a change
         // on this item, we need to add one
         innerChanges.push({

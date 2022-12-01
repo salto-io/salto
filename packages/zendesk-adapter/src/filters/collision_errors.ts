@@ -18,7 +18,7 @@ import { config as configUtils } from '@salto-io/adapter-components'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
-import { API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../config'
 
 /**
  * Adds collision warnings
@@ -37,6 +37,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       ).idFields,
       idFieldsName: 'idFields',
+      skipCollisionStringify: config[FETCH_CONFIG].skipCollisionStringify,
     })
     return { errors: collistionWarnings }
   },

@@ -66,6 +66,7 @@ export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
     greedyAppReferences?: boolean
     appReferenceLocators?: IdLocator[]
     enableGuide?: boolean
+    skipCollisionStringify?: boolean
   }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }

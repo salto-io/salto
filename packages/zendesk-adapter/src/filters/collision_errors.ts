@@ -37,7 +37,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       ).idFields,
       idFieldsName: 'idFields',
-      // Needed to skipsafeJsonStringify which takes a lot of tim (SALTO-3059)
+      // Needed because 'safeJsonStringify' is really slow, which causes problems with articles stress test (SALTO-3059)
       skipLogCollisionStringify: config[FETCH_CONFIG].enableGuide,
     })
     return { errors: collistionWarnings }

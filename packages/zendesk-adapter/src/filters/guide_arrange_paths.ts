@@ -13,7 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import {
+  Element,
+  isInstanceElement,
+  InstanceElement,
+  isReferenceExpression,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
@@ -55,10 +61,14 @@ const TRANSLATIONS = [
   SECTION_TRANSLATION_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME]
 
-const OTHER_TYPES = [
-  ...TRANSLATIONS,
+const ORDER_TYPES = [
   SECTION_ORDER_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
+]
+
+const OTHER_TYPES = [
+  ...TRANSLATIONS,
+
   ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
 export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
@@ -79,6 +89,54 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [GUIDE_LOCALE]: 'locale',
 }
 
+
+const getTranslationLocale = (instance?: InstanceElement): string => {
+  if (instance === undefined) {
+    return 'no locale'
+  }
+  if (isReferenceExpression(instance.value.locale)) {
+    return instance.value.locale.value.value?.id ?? 'no locale' // will have to change after seroussi change
+  }
+  return instance.value.locale ?? 'no locale'
+}
+
+const getNameFromTranslation = (instance?: InstanceElement): string => {
+  if (instance === undefined) {
+    return 'no title'
+  }
+  const sourceLocale = isReferenceExpression(instance.value.source_locale)
+    ? instance.value.source_locale.value.value?.id
+    : instance.value.source_locale
+  const translation = instance.value.translations
+    .filter(isReferenceExpression)
+    .map((reference: ReferenceExpression) => reference.value)
+    .find((tran: InstanceElement) => (isReferenceExpression(tran.value.locale)
+      ? tran.value.locale.value.value?.id === sourceLocale
+      : tran.value.locale === sourceLocale))
+  return translation?.value.title ?? 'no title'
+}
+
+
+const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
+  [CATEGORY_ORDER_TYPE_NAME]: () => 'category_order',
+  [SECTION_ORDER_TYPE_NAME]: () => 'section_order',
+  [ARTICLE_ORDER_TYPE_NAME]: () => 'article_order',
+  [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
+  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? 'no_locale',
+  [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
+  [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,
+  [CATEGORY_TRANSLATION_TYPE_NAME]: getTranslationLocale,
+  [ARTICLE_TYPE_NAME]: getNameFromTranslation,
+  [CATEGORY_TYPE_NAME]: getNameFromTranslation,
+  [SECTION_TYPE_NAME]: getNameFromTranslation,
+}
+
+
+const getName = (instance: InstanceElement): string =>
+  (GUIDE_ELEMENT_NAME[instance.elemID.typeName] === undefined
+    ? pathNaclCase(instance.elemID.name)
+    : GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance))
+
 /**
  * calculates a path which is not related to a specific brand
  */
@@ -93,8 +151,12 @@ const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | unde
 /**
  * calculates a path which is related to a specific brand and does not have a parent
  */
-const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: string | undefined)
-  : readonly string[] => {
+const pathForBrandSpecificRootElements = (
+  instance: InstanceElement,
+  brandName: string | undefined,
+  needTypeDirectory: boolean
+)
+: readonly string[] => {
   if (brandName === undefined) {
     log.error('brandName was not found for instance %s.', instance.elemID.getFullName())
     return [
@@ -108,12 +170,16 @@ const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: 
     ...GUIDE_PATH,
     'brands',
     brandName,
-    GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    pathNaclCase(instance.elemID.name),
   ]
-  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
-    newPath.push(pathNaclCase(instance.elemID.name))
+  const name = getName(instance)
+
+  if (needTypeDirectory) {
+    newPath.push(GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName])
   }
+  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
+    newPath.push(name)
+  }
+  newPath.push(name)
   return newPath
 }
 
@@ -140,14 +206,15 @@ const pathForOtherLevels = ({
       pathNaclCase(instance.elemID.name),
     ]
   }
+  const name = getName(instance)
   const newPath = parentPath.slice(0, parentPath.length - 1)
   if (needTypeDirectory) {
     newPath.push(GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName])
   }
   if (needOwnFolder) {
-    newPath.push(pathNaclCase(instance.elemID.name))
+    newPath.push(name)
   }
-  newPath.push(pathNaclCase(instance.elemID.name))
+  newPath.push(name)
   return newPath
 }
 
@@ -193,7 +260,11 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance !== undefined)
       .forEach(instance => {
         const brandElemId = instance.value.brand?.elemID.getFullName()
-        instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId])
+        const needTypeDirectory = [
+          CATEGORY_TYPE_NAME,
+          GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+        ].includes(instance.elemID.typeName)
+        instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId], needTypeDirectory)
       })
 
     // sections under category
@@ -239,7 +310,7 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    // others (translations, article attachments, order)
+    // others (translations, article attachments)
     OTHER_TYPES
       .flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
@@ -248,6 +319,19 @@ const filterCreator: FilterCreator = () => ({
         instance.path = pathForOtherLevels({
           instance,
           needTypeDirectory: true,
+          needOwnFolder: false,
+          parent: parentsById[parentId],
+        })
+      })
+
+    ORDER_TYPES
+      .flatMap(type => guideGrouped[type])
+      .filter(instance => instance !== undefined)
+      .forEach(instance => {
+        const parentId = getParent(instance).value.id
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: false,
           needOwnFolder: false,
           parent: parentsById[parentId],
         })

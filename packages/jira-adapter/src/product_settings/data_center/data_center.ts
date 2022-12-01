@@ -43,6 +43,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/workflowscheme/project.+',
   },
   {
+    httpMethods: ['put'],
+    url: '/rest/api/3/workflowscheme/project',
+  },
+  {
     httpMethods: ['post'],
     url: '/rest/api/3/workflowscheme/.+/draft/publish',
   },
@@ -185,6 +189,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['get'],
     url: '/rest/api/3/issuetypescreenscheme/project.+',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescreenscheme/project',
   },
   {
     httpMethods: ['get', 'post'],

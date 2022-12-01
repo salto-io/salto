@@ -19,7 +19,7 @@ import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '@sa
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
-import { API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG, FETCH_CONFIG } from '../config'
 
 const log = logger(module)
 
@@ -40,6 +40,8 @@ const filterCreator: FilterCreator = ({ config }) => ({
         config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       ).idFields,
       idFieldsName: 'idFields',
+      // Needed because 'safeJsonStringify' is really slow, which causes problems with articles stress test (SALTO-3059)
+      skipLogCollisionStringify: config[FETCH_CONFIG].enableGuide,
     })
     return { errors: collistionWarnings }
   }, 'collisionErrorsFilter'),

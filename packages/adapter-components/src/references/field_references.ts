@@ -144,23 +144,27 @@ export const replaceReferenceValues = async <
         if (checkMissingRef(element)) {
           return new ReferenceExpression(referenceId)
         }
-        return (
-          isEqualValue(
-            !isRelativeSerializer(serializer)
-              ? await serializer.serialize({
-                ref: new ReferenceExpression(element.elemID, elem),
-                field,
-                element: instance,
-              })
-              : resolvePath(element, referenceId),
-            val,
-          ) ? new ReferenceExpression(
-              referenceId,
-              elem !== undefined && !referenceId.isEqual(elem.elemID)
-                ? resolvePath(elem, referenceId)
-                : elem
-            )
-            : undefined
+
+        const serializedRefExpression = !isRelativeSerializer(serializer)
+          ? await serializer.serialize({
+            ref: new ReferenceExpression(element.elemID, elem),
+            field,
+            element: instance,
+          })
+          : resolvePath(element, referenceId)
+
+        const transformedFieldVal = serializer.reverseLookup ? serializer.reverseLookup(val) : val
+
+        if (!isEqualValue(serializedRefExpression, transformedFieldVal)) {
+          log.warn(`Invalid reference ${transformedFieldVal} => [${serializedRefExpression}(element '${element.elemID.getFullName()}')]`)
+          return undefined
+        }
+
+        return new ReferenceExpression(
+          referenceId,
+          elem !== undefined && !referenceId.isEqual(elem.elemID)
+            ? resolvePath(elem, referenceId)
+            : elem
         )
       }
       if (elem === undefined) {

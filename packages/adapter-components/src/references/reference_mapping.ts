@@ -32,6 +32,7 @@ export type GetReferenceIdFunc = (topLevelId: ElemID) => ElemID
 export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
   lookupIndexName?: string
+  reverseLookup?: LookupFunc
 } & (
   types.OneOf<{
     serialize: GetLookupNameFunc

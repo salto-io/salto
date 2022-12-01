@@ -41,6 +41,7 @@ type LookupFunc = (val: Value, context?: string) => string
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
   lookup: LookupFunc
+  reverseLookup?: LookupFunc
 }
 
 const safeApiName = ({ ref, path, relative }: {
@@ -56,7 +57,7 @@ const safeApiName = ({ ref, path, relative }: {
   return apiName(value, relative)
 }
 
-type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
+type ReferenceSerializationStrategyName = 'absoluteApiName'| 'absoluteApiNameCaseInsensitive'| 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
  | 'mapKey'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
@@ -64,6 +65,21 @@ const ReferenceSerializationStrategyLookup: Record<
   absoluteApiName: {
     serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
     lookup: val => val,
+  },
+  absoluteApiNameCaseInsensitive: {
+    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
+    lookup: val => {
+      if (_.isString(val)) {
+        return val.toLocaleLowerCase()
+      }
+      return val
+    },
+    reverseLookup: val => {
+      if (_.isString(val)) {
+        return val.toLocaleLowerCase()
+      }
+      return val
+    },
   },
   relativeApiName: {
     serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
@@ -593,6 +609,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'secondaryRoutingPriorityField', parentTypes: ['ServiceChannel'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborRelatedEntityTypeLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
+    serializationStrategy: 'absoluteApiNameCaseInsensitive',
+    target: { type: 'EntitlementProcess' },
   },
 ]
 

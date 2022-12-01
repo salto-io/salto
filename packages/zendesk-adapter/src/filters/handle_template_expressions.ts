@@ -33,13 +33,11 @@ const log = logger(module)
 const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
-const CUSTOM_OPTION_TYPE = 'ticket_field__custom_field_options'
 export const TICKET_TICKET_FIELD = 'ticket.ticket_field'
 export const TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
-  [TICKET_FIELD_OPTION_TITLE]: CUSTOM_OPTION_TYPE,
 }
 
 export const SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE = Object.fromEntries(
@@ -47,7 +45,7 @@ export const SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE = Object.fromEntries(
     .map(entry => [entry[1], entry[0]])
 )
 
-const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
+const POTENTIAL_REFERENCE_TYPES = [TICKET_TICKET_FIELD, TICKET_FIELD_OPTION_TITLE]
 const typeSearchRegexes: RegExp[] = []
 BRACKETS.forEach(([opener, closer]) => {
   POTENTIAL_REFERENCE_TYPES.forEach(type => {
@@ -148,18 +146,15 @@ const formulaToTemplate = (
   instancesByType: Record<string, InstanceElement[]>,
   enableMissingReferences?: boolean
 ): TemplateExpression | string => {
-  const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart | TemplatePart[] => {
+  const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(/_([\d]+)/).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, so should contain exactly two parts
     if (splitReference.length !== 2) {
-      return expression
+      return [expression]
     }
     const [type, innerId] = splitReference
-    const searchType = (ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type] === CUSTOM_OPTION_TYPE)
-      ? TICKET_TICKET_FIELD
-      : type
-    const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[searchType]] ?? [])
+    const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[TICKET_TICKET_FIELD]] ?? [])
       .find(instance => instance.value.id?.toString() === innerId)
     if (elem) {
       return [
@@ -169,12 +164,12 @@ const formulaToTemplate = (
     }
     // if no id was detected we return the original expression.
     if (!enableMissingReferences) {
-      return expression
+      return [expression]
     }
     // if no id was detected and enableMissingReferences we return a missing reference expression.
     const missingInstance = createMissingInstance(
       ZENDESK,
-      ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
+      ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[TICKET_TICKET_FIELD],
       innerId
     )
     missingInstance.value.id = innerId

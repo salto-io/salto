@@ -23,14 +23,14 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, IdLocator } from '../config'
 import { APP_INSTALLATION_TYPE_NAME } from './app'
-import { ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE } from './handle_template_expressions'
 import { TICKET_FIELD_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
 const DELIMITERS = /(\\n | ,)/g
+const CUSTOM_OPTION_TYPE = 'ticket_field__custom_field_options'
 
-const APP_INSTLLATION_SPECIFIC_TYPES = ['group']
+const APP_INSTLLATION_SPECIFIC_TYPES = ['group', TICKET_FIELD_TYPE_NAME, CUSTOM_OPTION_TYPE]
 
 const GENERAL_ID_REGEX = '([\\d]{10,})'
 
@@ -108,8 +108,7 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async (elements: InstanceElement[]): Promise<void> => log.time(async () =>
       getAppInstallations(elements)
         .forEach(app => replaceFieldsWithTemplates(app, _.groupBy(elements.filter(
-          e => [...Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE),
-            ...APP_INSTLLATION_SPECIFIC_TYPES]
+          e => [...APP_INSTLLATION_SPECIFIC_TYPES]
             .includes((e.elemID.typeName))
         ), e => e.elemID.typeName), locators)),
     'Create template creation filter'),

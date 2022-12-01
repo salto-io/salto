@@ -23,6 +23,8 @@ import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
 
 const { isDefined } = values
 
+const ERROR_MESSAGE = 'Invalid amount of default languages of a brand, there must be exactly one default language'
+
 // Sort the default language changes by brand, split into those who were added as default and those who were removed
 const sortDefaultLanguageChanges = (changes: Change<InstanceElement>[])
     : Record<string, { add: Change[]; remove: Change[] }> => {
@@ -54,7 +56,7 @@ const createTooManyDefaultsErrors = (addChanges: ChangeDataType[], brand: string
   change => ({
     elemID: change.elemID,
     severity: 'Error',
-    message: 'Invalid amount of default languages of a brand, there must be exactly one default language',
+    message: ERROR_MESSAGE,
     detailedMessage: `Too many default languages were added for brand '${brand}'. (${addChanges.map(addChange => addChange.elemID.name)})`,
   })
 )
@@ -81,7 +83,7 @@ export const defaultLanguageSettingsValidator: ChangeValidator = async changes =
       return [{
         elemID: changeElement.elemID,
         severity: 'Error',
-        message: 'Invalid amount of default languages of a brand, there must be exactly one default language',
+        message: ERROR_MESSAGE,
         detailedMessage: `A default language (${changeElement.elemID.name}) was added for brand '${brand}', but no default language was removed.`,
       }]
     }
@@ -91,7 +93,7 @@ export const defaultLanguageSettingsValidator: ChangeValidator = async changes =
       return [{
         elemID: changeElement.elemID,
         severity: 'Error',
-        message: 'Invalid amount of default languages of a brand, there must be exactly one default language',
+        message: ERROR_MESSAGE,
         detailedMessage: `A default language (${changeElement.elemID.name}) was removed from brand '${brand}', but no default language was added.`,
       }]
     }

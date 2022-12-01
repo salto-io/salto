@@ -50,7 +50,7 @@ const sortDefaultLanguageChanges = (changes: Change<InstanceElement>[])
   return brandToChanges
 }
 
-const createTooManyDefaultsError = (addChanges: ChangeDataType[], brand: string): ChangeError[] => addChanges.map(
+const createTooManyDefaultsErrors = (addChanges: ChangeDataType[], brand: string): ChangeError[] => addChanges.map(
   change => ({
     elemID: change.elemID,
     severity: 'Error',
@@ -60,7 +60,8 @@ const createTooManyDefaultsError = (addChanges: ChangeDataType[], brand: string)
 )
 
 /**
- * Validates that all the elements in the articles order list are references
+ * Validates that there is only one default language per brand ( count(removed defaults) == count(added defaults) )
+ * count(removed defaults) can be either 0 or 1, since there is only 1 default language on fetch
 */
 export const defaultLanguageSettingsValidator: ChangeValidator = async changes => {
   // If there was no language settings change, there is nothing to do
@@ -70,9 +71,11 @@ export const defaultLanguageSettingsValidator: ChangeValidator = async changes =
   const brandToChanges = sortDefaultLanguageChanges(defaultLanguageChanges)
 
   return Object.entries(brandToChanges).flatMap(([brand, defaultChanges]): ChangeError[] | undefined => {
+    // Impossible to set more than 1 default languages
     if (defaultChanges.add.length > 1) {
-      return createTooManyDefaultsError(defaultChanges.add.map(getChangeData), brand)
+      return createTooManyDefaultsErrors(defaultChanges.add.map(getChangeData), brand)
     }
+    // Impossible to add a default language without removing the previous
     if (defaultChanges.add.length === 1 && defaultChanges.remove.length === 0) {
       const changeElement = getChangeData(defaultChanges.add[0])
       return [{
@@ -82,6 +85,7 @@ export const defaultLanguageSettingsValidator: ChangeValidator = async changes =
         detailedMessage: `A default language (${changeElement.elemID.name}) was added for brand '${brand}', but no default language was removed.`,
       }]
     }
+    // Impossible to remove the default language without settings a new once
     if (defaultChanges.add.length === 0 && defaultChanges.remove.length === 1) {
       const changeElement = getChangeData(defaultChanges.remove[0])
       return [{

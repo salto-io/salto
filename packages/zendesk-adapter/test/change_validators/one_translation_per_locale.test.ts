@@ -34,7 +34,7 @@ describe('oneTranslationPerLocalValidator',
     const articleTranslationType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'article_translation'),
     })
-    const guideLocaleType = new ObjectType({
+    const guideLanguageSettingsType = new ObjectType({
       elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
     })
 
@@ -65,9 +65,9 @@ describe('oneTranslationPerLocalValidator',
       )
       const esLocale = new InstanceElement(
         'es',
-        guideLocaleType,
+        guideLanguageSettingsType,
         {
-          id: 'es',
+          locale: 'es',
         },
       )
       const article = new InstanceElement(
@@ -102,6 +102,13 @@ describe('oneTranslationPerLocalValidator',
     })
 
     it('should return an error when article has different translations with same locale', async () => {
+      const enusLocale = new InstanceElement(
+        'en-us',
+        guideLanguageSettingsType,
+        {
+          locale: 'en-us',
+        },
+      )
       const enTranslation = new InstanceElement(
         'Test2',
         articleTranslationType,
@@ -114,7 +121,7 @@ describe('oneTranslationPerLocalValidator',
         'Test2',
         articleTranslationType,
         {
-          locale: 'en-us',
+          locale: new ReferenceExpression(enusLocale.elemID, enusLocale),
         },
         undefined,
       )
@@ -141,7 +148,7 @@ describe('oneTranslationPerLocalValidator',
 
       const errors = await oneTranslationPerLocaleValidator(
         [toChange({ after: enTranslation }), toChange({ after: enTranslation2 })],
-        elementSource.createInMemoryElementSource([]),
+        elementSource.createInMemoryElementSource([enusLocale]),
       )
       expect(errors).toEqual([{
         elemID: article.elemID,

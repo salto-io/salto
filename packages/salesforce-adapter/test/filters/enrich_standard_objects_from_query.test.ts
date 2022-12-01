@@ -14,18 +14,21 @@
 * limitations under the License.
 */
 
-import { MockInterface } from '@salto-io/test-utils'
-import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { Element, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'
 import { defaultFilterContext } from '../utils'
-import Connection from '../../src/client/jsforce'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/enrich_standard_objects_from_query'
 import { createInstanceElement, createMetadataObjectType } from '../../src/transformers/transformer'
+import SalesforceClient from '../../src/client/client'
+import { SalesforceRecord } from '../../src/client/types'
+import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
 
+const log = logger(module)
 
 describe('Enrich standard objects from query filter', () => {
-  let connection: MockInterface<Connection>
+  let client: SalesforceClient
   let filter: FilterWith<'onFetch'>
   let entitlementProcessType: ObjectType
 
@@ -41,43 +44,59 @@ describe('Enrich standard objects from query filter', () => {
   })
 
   beforeEach(() => {
-    const adapter = mockAdapter({})
-    connection = adapter.connection
+    const mocks = mockAdapter({})
+    client = mocks.client
+
     filter = filterCreator({
       config: {
         ...defaultFilterContext,
         systemFields: ['SystemField', 'NameSystemField'],
       },
-      client: adapter.client,
+      client,
     }) as typeof filter
   })
 
   describe('onFetch', () => {
-    let elements: InstanceElement[]
+    let testElement: Element
 
-    beforeEach(() => {
-      const mockQueryResult = {
+    const setupMocks = (): void => {
+      const mockQueryResult: SalesforceRecord = {
+        [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
         Name: 'Some Name',
         NameNorm: 'some name',
       }
-      connection.query.mockResolvedValue({
-        done: true,
-        totalSize: 1,
-        records: [mockQueryResult],
-        nextRecordsUrl: undefined,
-      })
+      client.queryAll = async (_queryString: string): Promise<AsyncIterable<SalesforceRecord[]>> => (
+        Promise.resolve({
+          [Symbol.asyncIterator]: (): AsyncIterator<SalesforceRecord[]> => {
+            let callCnt = 0
+            return {
+              next: () => {
+                if (callCnt < 1) {
+                  callCnt += 1
+                  return Promise.resolve({ done: false, value: [mockQueryResult] })
+                }
+                return Promise.resolve({ done: true, value: undefined })
+              },
+            }
+          },
+        })
+      )
+    }
 
-      elements = [createInstanceElement(
+    beforeEach(() => {
+      testElement = createInstanceElement(
         {
           fullName: 'some name',
         },
         entitlementProcessType,
-      )]
+      )
     })
 
     it('should enrich objects', async () => {
-      await filter.onFetch(elements)
-      expect(elements[0].value.fullName).toEqual('Some Name')
+      setupMocks()
+      await filter.onFetch([testElement])
+      log.warn(`In the test - elements[0].fullName: ${(testElement as InstanceElement).value.fullName}`)
+      expect((testElement as InstanceElement).value.fullName).toEqual('Some Name')
     })
   })
 })

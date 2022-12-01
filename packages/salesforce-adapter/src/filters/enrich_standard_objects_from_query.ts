@@ -73,7 +73,7 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
 
-    enrichmentDefs.forEach(async def => {
+    await awu(enrichmentDefs).forEach(async def => {
       const queryString = buildQueryString(def.sourceType, def.fields.map(f => f.source))
       await awu(await client.queryAll(queryString))
         .flat()

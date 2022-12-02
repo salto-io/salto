@@ -41,7 +41,6 @@ type LookupFunc = (val: Value, context?: string) => string
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
   lookup: LookupFunc
-  reverseLookup?: LookupFunc
 }
 
 const safeApiName = ({ ref, path, relative }: {
@@ -57,7 +56,7 @@ const safeApiName = ({ ref, path, relative }: {
   return apiName(value, relative)
 }
 
-type ReferenceSerializationStrategyName = 'absoluteApiName'| 'absoluteApiNameCaseInsensitive'| 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
+type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
  | 'mapKey'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
@@ -65,21 +64,6 @@ const ReferenceSerializationStrategyLookup: Record<
   absoluteApiName: {
     serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
     lookup: val => val,
-  },
-  absoluteApiNameCaseInsensitive: {
-    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
-    lookup: val => {
-      if (_.isString(val)) {
-        return val.toLocaleLowerCase()
-      }
-      return val
-    },
-    reverseLookup: val => {
-      if (_.isString(val)) {
-        return val.toLocaleLowerCase()
-      }
-      return val
-    },
   },
   relativeApiName: {
     serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
@@ -146,6 +130,7 @@ type SourceDef = {
 export type FieldReferenceDefinition = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
+  validationStrategy?: referenceUtils.ReferenceValidationStrategyName
   // If target is missing, the definition is used for resolving
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
@@ -612,8 +597,8 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
   {
     src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
-    serializationStrategy: 'absoluteApiNameCaseInsensitive',
     target: { type: 'EntitlementProcess' },
+    validationStrategy: 'asCaseInsensitiveString',
   },
 ]
 
@@ -662,6 +647,7 @@ const matchInstanceType = async (
 export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
+  validationStrategy: referenceUtils.ReferenceValidationStrategy
   target?: referenceUtils.ExtendedReferenceTargetDefinition<ReferenceContextStrategyName>
 
   constructor(def: FieldReferenceDefinition) {
@@ -669,6 +655,7 @@ export class FieldReferenceResolver {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'absoluteApiName'
     ]
+    this.validationStrategy = referenceUtils.ReferenceValidationStrategyLookup[def.validationStrategy ?? 'asString']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined

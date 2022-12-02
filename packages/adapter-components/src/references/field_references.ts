@@ -24,6 +24,7 @@ import {
   CreateMissingRefFunc,
   GetReferenceIdFunc,
   ReferenceSerializationStrategyLookup,
+  ReferenceValidationStrategy,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -35,9 +36,6 @@ const { isDefined } = lowerDashValues
 const doNothing: ContextFunc = async () => undefined
 
 const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
-
-type ValueIsEqualFunc = (lhs?: string | number, rhs?: string | number) => boolean
-const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
 
 export const MISSING_ANNOTATION = 'salto_missing_ref'
 const checkMissingRef = (element: Element): boolean =>
@@ -56,7 +54,6 @@ export const replaceReferenceValues = async <
   fieldsWithResolvedReferences,
   elemByElemID,
   contextStrategyLookup = emptyContextStrategyLookup,
-  isEqualValue = defaultIsEqualFunc,
 }: {
   instance: InstanceElement
   resolverFinder: ReferenceResolverFinder<T>
@@ -64,7 +61,6 @@ export const replaceReferenceValues = async <
   fieldsWithResolvedReferences: Set<string>
   elemByElemID: multiIndex.Index<[string], Element>
   contextStrategyLookup?: Record<T, ContextFunc>
-  isEqualValue?: ValueIsEqualFunc
 }): Promise<Values> => {
   const getRefElem = async ({ val, target, field, path, lookupIndexName, createMissingReference }: {
     val: string | number
@@ -122,6 +118,7 @@ export const replaceReferenceValues = async <
   ): Promise<Value> => {
     const toValidatedReference = async (
       serializer: ReferenceSerializationStrategy,
+      validator: ReferenceValidationStrategy,
       elem: Element | undefined,
     ): Promise<ReferenceExpression | undefined> => {
       const getReferenceExpression = async (element: Element):
@@ -153,10 +150,8 @@ export const replaceReferenceValues = async <
           })
           : resolvePath(element, referenceId)
 
-        const transformedFieldVal = serializer.reverseLookup ? serializer.reverseLookup(val) : val
-
-        if (!isEqualValue(serializedRefExpression, transformedFieldVal)) {
-          log.warn(`Invalid reference ${transformedFieldVal} => [${serializedRefExpression}(element '${element.elemID.getFullName()}')]`)
+        if (!validator.validate(val, serializedRefExpression)) {
+          log.warn(`Invalid reference ${val} => [${serializedRefExpression} (element '${element.elemID.getFullName()}')]`)
           return undefined
         }
 
@@ -181,6 +176,7 @@ export const replaceReferenceValues = async <
       .filter(refResolver => refResolver.target !== undefined)
       .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
+        refResolver.validationStrategy,
         await getRefElem({
           val,
           field,
@@ -229,14 +225,12 @@ export const addReferences = async <
   defs,
   fieldsToGroupBy = ['id'],
   contextStrategyLookup,
-  isEqualValue,
   fieldReferenceResolverCreator,
 }: {
   elements: Element[]
   defs: GenericFieldReferenceDefinition[]
   fieldsToGroupBy?: string[]
   contextStrategyLookup?: Record<T, ContextFunc>
-  isEqualValue?: ValueIsEqualFunc
   fieldReferenceResolverCreator?:
     (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>
 }): Promise<void> => {
@@ -269,7 +263,6 @@ export const addReferences = async <
       fieldsWithResolvedReferences,
       elemByElemID,
       contextStrategyLookup,
-      isEqualValue,
     })
   })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])

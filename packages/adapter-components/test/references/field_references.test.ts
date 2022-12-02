@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue, Field } from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { addReferences, generateLookupFunc } from '../../src/references/field_references'
@@ -263,6 +262,7 @@ describe('Field references', () => {
       {
         src: { field: 'value' },
         serializationStrategy: 'id',
+        validationStrategy: 'exact',
         target: { typeContext: 'parentSubject' },
       },
       {
@@ -404,27 +404,6 @@ describe('Field references', () => {
       expect(folders).toHaveLength(2)
       expect(folders[0].value.parent_id).not.toBeInstanceOf(ReferenceExpression)
       expect(folders[0].value.parent_id).toEqual('invalid')
-    })
-    it('should resolve fields if isEqualValue() returns true for values', async () => {
-      const clonedElements = generateElements()
-      await addReferences({
-        elements: clonedElements,
-        defs: fieldNameToTypeMappingDefs,
-        fieldsToGroupBy: ['id', 'name'],
-        contextStrategyLookup: {
-          parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
-          parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
-          neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
-          fail: neighborContextFunc({ contextFieldName: 'fail', contextValueMapper: () => { throw new Error('fail') } }),
-        },
-        isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
-      })
-
-      const inst = clonedElements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst1'
-      )[0] as InstanceElement
-      expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
     it('should not create missing reference if enableMissingReference is false (or not specified)', async () => {
       const triggerWithMissingReference = elements.filter(

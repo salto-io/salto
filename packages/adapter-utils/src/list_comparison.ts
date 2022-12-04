@@ -14,17 +14,38 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import objectHash from 'object-hash'
 import {
-  ChangeDataType, DetailedChange, Value, isReferenceExpression,
+  ChangeDataType,
+  DetailedChange,
+  Value,
+  isReferenceExpression,
   isRemovalOrModificationChange,
   isAdditionOrModificationChange,
   isPrimitiveValue,
   isStaticFile,
   isIndexPathPart,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { getElementChangeId, resolvePath, setPath } from './utils'
+
+type KeyFunction = (value: Value) => string
+
+/**
+ * Function that calculate a string to represent an item in a list based on all of its values
+ */
+const getListItemExactKey: KeyFunction = value =>
+  objectHash(value, {
+    replacer: val => {
+      if (isReferenceExpression(val)) {
+        // Returning without the reference value
+        return new ReferenceExpression(val.elemID)
+      }
+      return val
+    },
+  })
 
 const getSingleValueKey = (value: Value): string => {
   if (isReferenceExpression(value)) {
@@ -38,11 +59,12 @@ const getSingleValueKey = (value: Value): string => {
 
 /**
  * Function that calculate a string to represent an item in the list
+ * based only on its top level values
  *
  * Based on experiments, we found looking only on the top level values
  * to be a good heuristic for representing an item in a list
  */
-const getListItemKey = (value: Value): string => {
+const getListItemTopLevelKey: KeyFunction = value => {
   if (_.isPlainObject(value) || Array.isArray(value)) {
     return Object.keys(value)
       .filter(key => isPrimitiveValue(value[key]) || isReferenceExpression(value[key]) || isStaticFile(value[key]))
@@ -57,8 +79,8 @@ const getListItemKey = (value: Value): string => {
   return ''
 }
 
-const buildKeyToIndicesMap = (list: Value[]): Record<string, number[]> => {
-  const keyToIndex = list.map((value, index) => ({ key: getListItemKey(value), index }))
+const buildKeyToIndicesMap = (list: Value[], keyFunc: KeyFunction): Record<string, number[]> => {
+  const keyToIndex = list.map((value, index) => ({ key: keyFunc(value), index }))
   return _.mapValues(
     _.groupBy(
       keyToIndex,
@@ -80,6 +102,8 @@ type IndexMappingItem = {
  *
  * How to works:
  * 1. Assume the items with the same key have and different indexes were moved
+ *   a. First try with a key that is based on the entire item
+ *   b. Then try with a that is based only on the top level values of the item
  * 2. Assume the items with different key and the same indexes were modified
  * 3. Match the rest of items with the following heuristic
  *   - For an item I1 in the before list, match it to an item I2 in the after list such that
@@ -88,7 +112,9 @@ type IndexMappingItem = {
  * 5. The unmatched items in the after list are assumed to be items that were added to the list
  */
 export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMappingItem[] => {
-  const afterIndexMap = buildKeyToIndicesMap(after)
+  const afterIndexExactMap = buildKeyToIndicesMap(after, getListItemExactKey)
+  const afterIndexTopLevelMap = buildKeyToIndicesMap(after, getListItemTopLevelKey)
+
   const matchedAfterIndexes = new Set<number>()
 
   // We want to maintain the following invariant in our mapping:
@@ -99,13 +125,44 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
   // so for each before index, we maintain the highest after index that was seen before it, meaning
   // that before index cannot be matched with an after index lower than that value
   let maxAfterIndexMatched = -1
-  const matchesAfterKeyMatch = before.map((value, beforeIndex) => {
-    const key = getListItemKey(value)
-    const matchedAfterIndex = (afterIndexMap[key] ?? []).shift()
+  const matchesAfterExactKeyMatch = before.map((value, beforeIndex) => {
+    const key = getListItemExactKey(value)
+    const matchedAfterIndex = (afterIndexExactMap[key] ?? []).shift()
 
     // this is a re-order
     if (matchedAfterIndex !== undefined) {
       maxAfterIndexMatched = Math.max(maxAfterIndexMatched, matchedAfterIndex)
+      matchedAfterIndexes.add(matchedAfterIndex)
+    }
+    return {
+      beforeIndex,
+      afterIndex: matchedAfterIndex,
+      // The min after index is the max  after index we matched to so far
+      minAfterIndex: maxAfterIndexMatched,
+      beforeValue: value,
+    }
+  })
+
+  maxAfterIndexMatched = -1
+  // We now try to match the before and after matches based
+  // on the fallback key function that looks only at the top level values
+  const matchesAfterKeyMatch = matchesAfterExactKeyMatch.map(({
+    beforeIndex,
+    afterIndex,
+    minAfterIndex,
+    beforeValue,
+  }) => {
+    if (afterIndex !== undefined) {
+      maxAfterIndexMatched = Math.max(maxAfterIndexMatched, minAfterIndex)
+      return { beforeIndex, afterIndex, minAfterIndex }
+    }
+
+    const key = getListItemTopLevelKey(beforeValue)
+    const matchedAfterIndex = (afterIndexTopLevelMap[key] ?? []).shift()
+
+    // this is a re-order
+    if (matchedAfterIndex !== undefined && !matchedAfterIndexes.has(matchedAfterIndex)) {
+      maxAfterIndexMatched = Math.max(maxAfterIndexMatched, matchedAfterIndex, minAfterIndex)
       matchedAfterIndexes.add(matchedAfterIndex)
     }
     return {

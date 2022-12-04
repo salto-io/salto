@@ -37,6 +37,7 @@
     "fast-safe-stringify": "^2.0.7",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
+    "object-hash": "^3.0.0",
     "truncate-utf8-bytes": "^1.0.2",
     "wu": "^2.1.0"
   },
@@ -45,6 +46,7 @@
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/moxios": "^0.4.10",
+    "@types/object-hash": "^3.0.0",
     "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
     "@types/truncate-utf8-bytes": "^1.0.0",

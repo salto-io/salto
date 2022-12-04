@@ -24,6 +24,11 @@ import {
 import { getElementChangeId, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
 
+export type DetailedCompareOptions = CompareOptions & {
+  createFieldChanges?: boolean
+  compareListItems?: boolean
+}
+
 const compareListWithOrderMatching = ({
   id, before, after, beforeId, afterId, options,
 }: {
@@ -32,7 +37,7 @@ const compareListWithOrderMatching = ({
   after: Value
   beforeId: ElemID | undefined
   afterId: ElemID | undefined
-  options: CompareOptions | undefined
+  options: DetailedCompareOptions | undefined
 }): DetailedChange[] => {
   const indexMapping = getArrayIndexMapping(before, after)
 
@@ -92,7 +97,7 @@ const getValuesChanges = ({
   after: Value
   beforeId: ElemID | undefined
   afterId: ElemID | undefined
-  options?: CompareOptions
+  options?: DetailedCompareOptions
 }): DetailedChange[] => {
   if (isElement(before) && isElement(after)
     && isEqualElements(before, after, options)) {
@@ -199,10 +204,6 @@ const getAnnotationTypeChanges = ({
     })
   }
   return []
-}
-
-export type DetailedCompareOptions = CompareOptions & {
-  createFieldChanges?: boolean
 }
 
 export const detailedCompare = (

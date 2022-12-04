@@ -293,6 +293,66 @@ describe('detailedCompare', () => {
           },
         ])
       })
+
+      it('should first try to match exact items and then items that has the same top level values', () => {
+        beforeInst.value.list = [
+          {
+            value1: 'a',
+            value2: ['a'],
+          },
+          {
+            value1: 'a',
+            value2: ['b'],
+          },
+        ]
+
+        afterInst.value.list = [
+          {
+            value1: 'a',
+            value2: ['c'],
+          },
+          {
+            value1: 'a',
+            value2: ['a'],
+          },
+        ]
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0', 'value2', '0'),
+            data: { before: 'b', after: 'c' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1', 'value2', '0'),
+              after: listID.createNestedID('0', 'value2', '0'),
+            },
+          },
+          {
+            id: listID.createNestedID('0'),
+            data: {
+              before: { value1: 'a', value2: ['b'] },
+              after: { value1: 'a', value2: ['c'] },
+            },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: {
+              before: { value1: 'a', value2: ['a'] },
+              after: { value1: 'a', value2: ['a'] },
+            },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+              after: listID.createNestedID('1'),
+            },
+          },
+        ])
+      })
     })
   })
 

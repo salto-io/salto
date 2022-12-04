@@ -13,19 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { neighborContextGetter, ContextFunc, ContextValueMapperFunc, findParentPath } from './context'
-export { addReferences, replaceReferenceValues, generateLookupFunc, MISSING_ANNOTATION } from './field_references'
-export {
-  ReferenceSerializationStrategy,
-  ReferenceSerializationStrategyName,
-  ReferenceSerializationStrategyLookup,
-  MissingReferenceStrategy,
-  MissingReferenceStrategyName,
-  FieldReferenceDefinition,
-  FieldReferenceResolver,
-  ReferenceResolverFinder,
-  ReferenceTargetDefinition,
-  ExtendedReferenceTargetDefinition,
-  LookupFunc,
-  basicLookUp,
-} from './reference_mapping'
+
+import { basicLookUp } from '../../src/references/reference_mapping'
+
+describe('basic look up', () => {
+  it('should return the same val', () => {
+    expect(basicLookUp((1))).toEqual(1)
+  })
+})

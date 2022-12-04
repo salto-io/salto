@@ -24,17 +24,8 @@ const KEY_ID_REGEX_TO_TYPE = {
   'jira\\.permission\\..*\\.groupCF': FIELD_TYPE_NAME,
   'jira\\.permission\\..*\\.userCF': FIELD_TYPE_NAME,
   [RESOLUTION_KEY_PATTERN]: RESOLUTION_TYPE_NAME,
-}
-
-const KEY_NAME_REGEX_TO_TYPE = {
   'jira\\.permission\\..*\\.group': GROUP_TYPE_NAME,
 }
 
-const getRefType = (key: string, regexToTypeMapping: Record<string, string>): string | undefined =>
-  Object.entries(regexToTypeMapping).find(([keyRegex]) => new RegExp(keyRegex).test(key))?.[1]
-
-export const getRefIdType = (key: string): string | undefined =>
-  getRefType(key, KEY_ID_REGEX_TO_TYPE)
-
-export const getRefNameType = (key: string): string | undefined =>
-  getRefType(key, KEY_NAME_REGEX_TO_TYPE)
+export const getRefType = (key: string): string | undefined =>
+  Object.entries(KEY_ID_REGEX_TO_TYPE).find(([keyRegex]) => new RegExp(keyRegex).test(key))?.[1]

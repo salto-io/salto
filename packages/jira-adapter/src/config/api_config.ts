@@ -1353,8 +1353,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Group: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'originalName', fieldType: 'string' },
+      ],
       fieldsToHide: [
         { fieldName: 'groupId' },
+        { fieldName: 'originalName' },
       ],
       serviceIdField: 'groupId',
     },

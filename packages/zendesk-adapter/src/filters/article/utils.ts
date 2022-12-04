@@ -17,11 +17,11 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { getParents, naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isReferenceExpression, isStaticFile,
-  isTemplateExpression, ObjectType, ReferenceExpression, StaticFile,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile,
+  isTemplateExpression, ObjectType, ReferenceExpression, StaticFile, Values,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
@@ -220,39 +220,36 @@ export const deleteArticleAttachment = async (
 
 export const updateArticleTranslationBody = async ({
   client,
-  attachmentInstance,
-  translationChanges,
+  articleValues,
+  attachmentInstances,
 }: {
   client: ZendeskClient
-  attachmentInstance: InstanceElement
-  translationChanges: Change<InstanceElement>[]
+  articleValues: Values
+  attachmentInstances: InstanceElement[]
 }): Promise<void> => {
-  const articleInstance = getParents(attachmentInstance)[0]
-  const articleTranslations = articleInstance?.translations
+  const attachmentElementsNames = attachmentInstances.map(instance => instance.elemID.name)
+  const articleTranslations = articleValues?.translations
   if (!Array.isArray(articleTranslations)) {
-    log.error(`Received an invalid translations value for attachment ${attachmentInstance.elemID.name} - ${safeJsonStringify(articleTranslations)}`)
+    log.error(`Received an invalid translations value for attachment ${articleValues.name} - ${safeJsonStringify(articleTranslations)}`)
     return
   }
-  const changedTranslationInstancesNames = translationChanges
-    .map(getChangeData)
-    .map(instance => instance.elemID.name)
   await awu(articleTranslations)
     .filter(isReferenceExpression)
-    .filter(translationInstance => !changedTranslationInstancesNames.includes(translationInstance.value.elemID.name))
     .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
     .forEach(async translationInstance => {
       replaceTemplatesWithValues(
         { values: [translationInstance.value.value], fieldName: 'body' },
         {},
         (part: ReferenceExpression) => {
-          if (part.elemID.isEqual(attachmentInstance.elemID)) {
-            return attachmentInstance.value.id.toString()
+          const attachmentIndex = attachmentElementsNames.findIndex(name => name === part.elemID.name)
+          if (attachmentIndex !== -1) {
+            return attachmentInstances[attachmentIndex].value.id.toString()
           }
           return prepRef(part)
         }
       )
       await client.put({
-        url: `/api/v2/help_center/articles/${articleInstance?.id}/translations/${translationInstance.value.value.locale.value.value.id}`,
+        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.id}`,
         data: { translation: { body: translationInstance.value.value.body } },
       })
     })

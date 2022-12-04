@@ -172,8 +172,8 @@ describe('article utility functions', () => {
       clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clondedArticle.value] })
       await articleUtils.updateArticleTranslationBody({
         client,
-        attachmentInstance: clonedAttachment,
-        translationChanges: [],
+        articleValues: clondedArticle.value,
+        attachmentInstances: [clonedAttachment],
       })
       expect(mockPut).toHaveBeenCalledTimes(1)
     })

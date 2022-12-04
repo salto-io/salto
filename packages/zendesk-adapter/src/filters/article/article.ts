@@ -22,10 +22,10 @@ import {
   isAdditionOrModificationChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource,
   isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
+import { getParents, replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
-import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME } from '../../constants'
+import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../constants'
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
 import { removeTitleAndBody } from '../guide_fetch_article'
@@ -144,8 +144,6 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   elementsSource: ReadOnlyElementsSource
   articleNameToAttachments: Record<string, number[]>
 }): Promise<InstanceElement[]> => {
-  const translationChanges = changes
-    .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
   const attachmentChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
@@ -175,10 +173,6 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
           log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has been failed.`)
           return
         }
-        // Article bodies needs to be updated when modofying inline attachments
-        if (attachmentInstance.value.inline) {
-          await updateArticleTranslationBody({ client, attachmentInstance, translationChanges })
-        }
         await deleteArticleAttachment(client, attachmentChange.data.before)
         return
       }
@@ -187,6 +181,16 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         articleNameToAttachments[parentArticleName] || []
       ).concat(attachmentInstance.value.id)
     })
+  // Article bodies needs to be updated when modifying inline attachments
+  const modifiedInlineAttachments = attachmentChanges
+    .filter(isModificationChange)
+    .map(getChangeData)
+    .filter(attachmentInstance => attachmentInstance.value.inline)
+  if (modifiedInlineAttachments.length > 0) {
+    // All the attachments in the current change_group share the same parent article instance
+    const articleValues = getParents(modifiedInlineAttachments[0])[0]
+    await updateArticleTranslationBody({ client, articleValues, attachmentInstances: modifiedInlineAttachments })
+  }
   return attachmentChanges.map(getChangeData)
 }
 

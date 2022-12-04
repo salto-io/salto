@@ -35,6 +35,8 @@ type KeyFunction = (value: Value) => string
 
 /**
  * Function that calculate a string to represent an item in a list based on all of its values
+ *
+ * Note: this function ignores the value of compareReferencesByValue and always look at the reference id
  */
 const getListItemExactKey: KeyFunction = value =>
   objectHash(value, {
@@ -47,6 +49,9 @@ const getListItemExactKey: KeyFunction = value =>
     },
   })
 
+/**
+ * Note: this function ignores the value of compareReferencesByValue and always look at the reference id
+ */
 const getSingleValueKey = (value: Value): string => {
   if (isReferenceExpression(value)) {
     return value.elemID.getFullName()

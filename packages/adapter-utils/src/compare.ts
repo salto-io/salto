@@ -134,8 +134,7 @@ const getValuesChanges = ({
     if (options?.compareListItems) {
       return compareListWithOrderMatching({ id, before, after, beforeId, afterId, options })
     }
-    // If there is an addition or deletion in the list we treat the whole list as changed
-    // This is because we cannot serialize addition / deletion from a list properly
+    // If compareListItems is false and there is an addition or deletion in the list we treat the whole list as changed
     if (before.length === after.length) {
       return _.flatten(
         _.times(before.length).map(

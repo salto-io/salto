@@ -49,7 +49,7 @@ const validateModificationChange = (
       elemID: before.elemID,
       severity: 'Error',
       message: 'Currency contains a field that cannot be deployed.',
-      detailedMessage: 'Could not deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
+      detailedMessage: 'Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
     }
   }
   return undefined
@@ -73,9 +73,11 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
     deployActions: {
       postAction: {
         title: 'Edit \'locale\' field',
-        description: 'set the \'locale\' of the newly created currency to the desired value',
+        description: 'Set the \'locale\' of the newly created currency to the desired value',
         subActions: [
-
+          'Within the NetSuite UI, nevigate to Lists > Accounting > Currencies',
+          'Choose the newly created currency',
+          'Set \'DEFAULT LOCALE\' to the correct value',
         ],
       },
     },

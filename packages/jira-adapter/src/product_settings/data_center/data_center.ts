@@ -219,6 +219,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/fieldconfigurationscheme/project.+',
   },
   {
+    httpMethods: ['put'],
+    url: '/rest/api/3/fieldconfigurationscheme/project',
+  },
+  {
     httpMethods: ['get', 'post'],
     url: '/rest/api/3/fieldconfiguration',
   },
@@ -265,6 +269,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['put'],
     url: '/rest/api/3/resolution/.*',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescheme/project',
   },
 ]
 

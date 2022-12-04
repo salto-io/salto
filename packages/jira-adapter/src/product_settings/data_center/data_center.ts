@@ -297,15 +297,15 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['put'],
-    url: '/rest/api/3/issuetypescheme/.*/issuetype',
+    url: '/rest/api/3/issuetypescheme/.+/issuetype',
   },
   {
     httpMethods: ['delete'],
-    url: '/rest/api/3/issuetypescheme/.*/issuetype/.*',
+    url: '/rest/api/3/issuetypescheme/.+/issuetype/.+',
   },
   {
     httpMethods: ['put'],
-    url: '/rest/api/3/issuetypescheme/.*/issuetype/move',
+    url: '/rest/api/3/issuetypescheme/.+/issuetype/move',
   },
 ]
 

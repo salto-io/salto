@@ -210,9 +210,23 @@ describe('sdf client', () => {
   const addDependenciesCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
   const deployProjectCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.DEPLOY_PROJECT })
+    .objectContaining({
+      commandName: COMMANDS.DEPLOY_PROJECT,
+      arguments: { accountspecificvalues: 'WARNING' },
+    })
+  const deploySuiteAppProjectCommandMatcher = expect
+    .objectContaining({
+      commandName: COMMANDS.DEPLOY_PROJECT,
+      arguments: {},
+    })
   const validateProjectCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.VALIDATE_PROJECT })
+    .objectContaining({
+      commandName: COMMANDS.VALIDATE_PROJECT,
+      arguments: {
+        accountspecificvalues: 'WARNING',
+        server: true,
+      },
+    })
   const deleteAuthIdCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.MANAGE_AUTH,
     arguments: expect.objectContaining({
@@ -1275,7 +1289,7 @@ describe('sdf client', () => {
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deploySuiteAppProjectCommandMatcher)
       })
 
       it('should succeed for TemplateCustomTypeInfo', async () => {

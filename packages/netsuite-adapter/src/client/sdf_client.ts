@@ -955,7 +955,7 @@ export default class SdfClient {
     await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
     try {
       const custCommandArguments = {
-        ...(type === 'AccountCustomization' ? { ccountspecificvalues: 'WARNING' } : {}),
+        ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
         ...(validateOnly ? { server: true } : {}),
       }
       await this.executeProjectAction(

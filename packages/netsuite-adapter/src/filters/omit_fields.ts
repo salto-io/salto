@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { isInstanceElement, isObjectType, Values } from '@salto-io/adapter-api'
+import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, regex } from '@salto-io/lowerdash'
 import { FilterCreator, FilterWith } from '../filter'
 import { FieldToOmitParams } from '../query'
+import { CUSTOM_RECORD_TYPE } from '../constants'
+import { isCustomRecordType } from '../types'
+import { CUSTOM_FIELDS_LIST } from '../custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
 const { isFullRegexMatch } = regex
@@ -34,46 +37,62 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
     }
 
     const fieldsToOmitByType = Object.fromEntries(
-      elements.filter(isObjectType).map(elem => elem.elemID.name).map(
-        (typeName: string): [string, string[]] => [
+      elements.filter(isObjectType).map(elem => elem.elemID.name).concat(CUSTOM_FIELDS_LIST)
+        .map((typeName: string): [string, string[]] => [
           typeName,
           fieldsToOmit
             .filter(params => isFullRegexMatch(typeName, params.type))
             .flatMap(params => params.fields),
-        ]
-      ).filter(([_t, fields]) => fields.length > 0)
+        ])
+        .filter(([_t, fields]) => fields.length > 0)
     )
 
     if (_.isEmpty(fieldsToOmitByType)) {
       return
     }
 
-    const omitByRegex = (fields: string[]) => (_val: unknown, key: string) =>
-      fields.some(fieldToOmit => isFullRegexMatch(key, fieldToOmit))
+    const omitValues = (value: Values, typeName: string): Values => (
+      typeName in fieldsToOmitByType
+        ? _.omitBy(value, (_val, key) => fieldsToOmitByType[typeName]
+          .some(fieldToOmit => isFullRegexMatch(key, fieldToOmit)))
+        : value
+    )
+
+    const transformFunc: TransformFunc = async ({ value, field }) => {
+      if (!_.isPlainObject(value)) {
+        return value
+      }
+      const fieldType = await field?.getType()
+      if (!isObjectType(fieldType)) {
+        return value
+      }
+      return omitValues(value, fieldType.elemID.name)
+    }
 
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        const updatedValues = instance.elemID.typeName in fieldsToOmitByType
-          ? _.omitBy(instance.value, omitByRegex(fieldsToOmitByType[instance.elemID.typeName]))
-          : instance.value
         instance.value = await transformValues({
-          values: updatedValues,
+          values: omitValues(instance.value, instance.elemID.typeName),
           type: await instance.getType(),
-          transformFunc: async ({ value, field }) => {
-            if (!_.isPlainObject(value)) {
-              return value
-            }
-            const fieldType = await field?.getType()
-            if (!isObjectType(fieldType)) {
-              return value
-            }
-            return fieldType.elemID.name in fieldsToOmitByType
-              ? _.omitBy(value, omitByRegex(fieldsToOmitByType[fieldType.elemID.name]))
-              : value
-          },
+          transformFunc,
           strict: false,
         }) ?? {}
+      })
+
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomRecordType)
+      .forEach(async type => {
+        type.annotations = omitValues(type.annotations, CUSTOM_RECORD_TYPE)
+        type.annotations = await transformElementAnnotations({
+          element: type,
+          transformFunc,
+          strict: false,
+        })
+        Object.values(type.fields).forEach(field => {
+          field.annotations = omitValues(field.annotations, CUSTOM_FIELDS_LIST)
+        })
       })
   },
 })

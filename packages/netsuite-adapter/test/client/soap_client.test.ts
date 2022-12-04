@@ -227,6 +227,7 @@ describe('soap_client', () => {
           isInactive: false,
           isPrivate: false,
           description: 'desc',
+          parent: undefined,
         },
       ])).toEqual([
         6233,
@@ -265,6 +266,7 @@ describe('soap_client', () => {
           isInactive: false,
           isPrivate: false,
           description: 'desc',
+          parent: undefined,
         },
       ])).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
@@ -292,6 +294,7 @@ describe('soap_client', () => {
           isInactive: false,
           isPrivate: false,
           description: 'desc',
+          parent: undefined,
         },
       ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
     })
@@ -318,6 +321,7 @@ describe('soap_client', () => {
           isInactive: false,
           isPrivate: false,
           description: 'desc',
+          parent: undefined,
         },
       ])).rejects.toThrow(InvalidSuiteAppCredentialsError)
     })

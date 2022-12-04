@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Change, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceChange, isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart,
+  Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression, TemplateExpression, TemplatePart,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -61,7 +61,11 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex }: {
   const { url, id } = urlPart.match(idRegex)?.groups ?? {}
   if (url !== undefined && id !== undefined) {
     const referencedInstance = idToInstance[id]
-    if (referencedInstance !== undefined && referencedInstance.value.brand === urlBrand.value.id) {
+    // Catch both options because the instance value might be resolved and then the 'brand' field will just be id
+    const brandId = isReferenceExpression(referencedInstance?.value.brand)
+      ? referencedInstance.value.brand.value.value.id
+      : referencedInstance?.value.brand
+    if (brandId === urlBrand.value.id) {
       // We want to keep the original url and replace just the id
       return [url, new ReferenceExpression(referencedInstance.elemID, referencedInstance)]
     }
@@ -148,7 +152,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
 const filterCreator: FilterCreator = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
-    onFetch: async elements => {
+    onFetch: async (elements: Element[]) => log.time(async () => {
       const instances = elements.filter(isInstanceElement)
       const additionalInstances = {
         [BRAND_TYPE_NAME]:
@@ -171,7 +175,7 @@ const filterCreator: FilterCreator = () => {
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
           updateArticleBody(articleInstance, additionalInstances)))
-    },
+    }, 'articleBodyFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)

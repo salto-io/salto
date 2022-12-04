@@ -245,6 +245,14 @@ export const mockTypes = {
 
     },
   }),
+  FlowSettings: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FlowSettings',
+    },
+    fields: {
+      enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
+    },
+  }),
   // CustomMetadataRecordType with name MDType__mdt
   CustomMetadataRecordType: new ObjectType({
     elemID: new ElemID(SALESFORCE, 'MDType__mdt'),

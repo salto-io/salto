@@ -81,7 +81,6 @@ import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
-import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
@@ -164,7 +163,6 @@ export const DEFAULT_FILTERS = [
   projectFilter,
   projectComponentFilter,
   screenFilter,
-  resolutionFilter,
   priorityFilter,
   statusDeploymentFilter,
   securitySchemeFilter,

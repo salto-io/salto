@@ -18,7 +18,7 @@ import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
   isInstanceElement,
-  ReadOnlyElementsSource,
+  ReadOnlyElementsSource, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   client as clientUtils,
@@ -523,7 +523,11 @@ export default class ZendeskAdapter implements AdapterOperations {
     ))
     const subdomainToGuideChanges = _.groupBy(
       guideResolvedChanges,
-      change => resolvedBrandIdToSubdomain[getChangeData(change).value.brand]
+      change => {
+        const { brand } = getChangeData(change).value
+        // If the change was in SKIP_RESOLVE_TYPE_NAMES, brand is a reference expression
+        return resolvedBrandIdToSubdomain[isReferenceExpression(brand) ? brand.value.value.id : brand]
+      }
     )
     const subdomainsList = brandsList
       .map(brandInstance => brandInstance.value.subdomain)

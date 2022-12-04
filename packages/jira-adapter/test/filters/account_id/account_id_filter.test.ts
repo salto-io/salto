@@ -156,17 +156,14 @@ describe('account_id_filter', () => {
       common.checkSimpleInstanceIds((displayChanges[1] as ModificationChange<InstanceElement>).data.after, '2')
     })
     it('does not change non deployable objects on deploy', async () => {
-      await filter.onFetch([boardInstance, dashboardInstance])
+      await filter.onFetch([boardInstance])
       displayChanges.push(toChange({ after: boardInstance }))
-      displayChanges.push(toChange({ after: dashboardInstance }))
       await filter.preDeploy(displayChanges)
       expect(boardInstance.value.admins.users[0].id).toEqual('acc3')
       expect(boardInstance.value.admins.users[1].id).toEqual('acc31')
-      expect(dashboardInstance.value.inner.owner.id).toEqual('acc4')
       await filter.onDeploy(displayChanges)
       expect(boardInstance.value.admins.users[0].id).toEqual('acc3')
       expect(boardInstance.value.admins.users[1].id).toEqual('acc31')
-      expect(dashboardInstance.value.inner.owner.id).toEqual('acc4')
     })
     it('does not change removal objects', async () => {
       await filter.preDeploy([toChange({ before: displayNamesInstances[1] })])

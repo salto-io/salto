@@ -29,6 +29,11 @@ export type ChangedType = {
 
 export type Change = ChangedType | ChangedObject
 
+export type ChangedCustomRecord = {
+  typeId: string
+  objectId: string
+}
+
 export type DateRange = {
   start: Date
   end: Date

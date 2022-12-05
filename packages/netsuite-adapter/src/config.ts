@@ -182,13 +182,12 @@ const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
     },
-    // SALTO-2994 uncomment in order to support custom records quick fetch
-    // customRecords: {
-    //   refType: new MapType(new ListType(BuiltinTypes.STRING)),
-    //   annotations: {
-    //     [CORE_ANNOTATIONS.DEFAULT]: {},
-    //   },
-    // },
+    customRecords: {
+      refType: new MapType(new ListType(BuiltinTypes.STRING)),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: {},
+      },
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

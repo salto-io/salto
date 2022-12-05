@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { describe } from 'jest-circus'
-import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams, validateFieldsToOmitConfig } from '../src/query'
+import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams, validateFieldsToOmitConfig, getFixedTargetFetch } from '../src/query'
 
 describe('NetsuiteQuery', () => {
   describe('buildNetsuiteQuery', () => {
@@ -106,6 +106,9 @@ describe('NetsuiteQuery', () => {
             addressForm: ['aaa.*', 'bbb.*'],
           },
           filePaths: ['eee.*', 'fff.*'],
+          customRecords: {
+            customrecord1: ['.*'],
+          },
         }))
         it('should match the received types from (old format)', () => {
           expect(queryOldFormat.isTypeMatch('addressForm')).toBeTruthy()
@@ -116,6 +119,75 @@ describe('NetsuiteQuery', () => {
         it('should match file paths that match the received regexes (old format)', () => {
           expect(queryOldFormat.isFileMatch('eeeaaa')).toBeTruthy()
           expect(queryOldFormat.isFileMatch('ffffqqqq')).toBeTruthy()
+        })
+        it('should match the received custom record type', () => {
+          expect(queryOldFormat.isCustomRecordTypeMatch('customrecord1')).toBeTruthy()
+          expect(queryOldFormat.isCustomRecordTypeMatch('customrecord2')).toBeFalsy()
+        })
+      })
+      describe('getFixedTargetFetch', () => {
+        it('should keep query without custom records', () => {
+          expect(getFixedTargetFetch({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+            },
+            filePaths: ['eee.*', 'fff.*'],
+          })).toEqual({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+            },
+            filePaths: ['eee.*', 'fff.*'],
+          })
+        })
+        it('should add custom record types to "types"', () => {
+          expect(getFixedTargetFetch({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+              customrecordtype: ['customrecord2'],
+            },
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })).toEqual({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+              customrecordtype: ['customrecord2', 'customrecord1'],
+              customsegment: [],
+            },
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })
+        })
+        it('should generate "types" when query includes only custom records', () => {
+          expect(getFixedTargetFetch({
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })).toEqual({
+            types: {
+              customrecordtype: ['customrecord1'],
+              customsegment: [],
+            },
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })
+        })
+        it('should include customsegment too', () => {
+          expect(getFixedTargetFetch({
+            customRecords: {
+              customrecord_cseg1: ['.*'],
+            },
+          })).toEqual({
+            types: {
+              customrecordtype: ['customrecord_cseg1'],
+              customsegment: ['cseg1'],
+            },
+            customRecords: {
+              customrecord_cseg1: ['.*'],
+            },
+          })
         })
       })
       describe('isCustomRecordTypeMatch', () => {
@@ -168,6 +240,9 @@ describe('NetsuiteQuery', () => {
           { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
+        customRecords: [
+          { name: 'customrecord.*', ids: ['.*'] },
+        ],
       })).not.toThrow()
     })
 
@@ -179,6 +254,9 @@ describe('NetsuiteQuery', () => {
             { name: 'addressForm', ids: ['aa(a.*', 'bbb.*'] },
           ],
           fileCabinet: ['eee.*', 'f(ff.*'],
+          customRecords: [
+            { name: 'customrecord.*', ids: ['val_123.*', 'val_(456.*'] },
+          ],
         })
       } catch (e) {
         error = e
@@ -187,8 +265,10 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('aa(a.*')
       expect(error?.message).toContain('f(ff.*')
+      expect(error?.message).toContain('val_(456.*')
       expect(error?.message).not.toContain('bbb.*')
       expect(error?.message).not.toContain('eee.*')
+      expect(error?.message).not.toContain('val_123.*')
     })
 
     it('should throw an error when type has invalid "name" reg expression', () => {
@@ -225,6 +305,24 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string, but found:')
     })
+    it('should throw an error when customRecords has undefined "name"', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: [
+            { name: 'aa' },
+            {},
+          ],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record name to be a string, but found:')
+    })
     it('should throw an error when fileCabinet is undefined', () => {
       let error: Error | undefined
       try {
@@ -253,6 +351,21 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. "types" field is expected to be an array')
     })
+    it('should throw an error when customRecords is not array', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: {},
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. "customRecords" field is expected to be an array')
+    })
     it('should throw an error when types has invalid ids field', () => {
       let error: Error | undefined
       try {
@@ -269,6 +382,24 @@ describe('NetsuiteQuery', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. Expected type ids to be an array of strings, but found:')
+    })
+    it('should throw an error when customRecords has invalid ids field', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: [{
+            name: 'aaa',
+            ids: ['string', 1],
+          }],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record ids to be an array of strings, but found:')
     })
     it('should throw an error with all invalid types', () => {
       let error: Error | undefined

@@ -34,11 +34,12 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     const dataTypes = elements.filter(isObjectType).filter(isDataObjectType)
     const supportedTypeNames = SUPPORTED_TYPES
       .concat(dataTypes.filter(isCustomRecordType).map(({ elemID }) => elemID.name))
-    const supportedDataTypes = (
-      await elementUtils.filterTypes(NETSUITE, dataTypes, supportedTypeNames)
-    ).filter(e => !sdfTypeNames.has(e.elemID.getFullName().toLowerCase()))
 
-    _.remove(elements, e => isObjectType(e) && isDataObjectType(e))
+    const supportedDataTypes = (await elementUtils.filterTypes(NETSUITE, dataTypes, supportedTypeNames))
+      .filter(e => !sdfTypeNames.has(e.elemID.getFullName().toLowerCase()))
+      .filter(e => !isObjectType(e) || !isCustomRecordType(e))
+
+    _.remove(elements, e => isObjectType(e) && isDataObjectType(e) && !isCustomRecordType(e))
     elements.push(...supportedDataTypes)
   },
 })

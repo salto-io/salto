@@ -129,7 +129,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions')
+      expect(changeErrors[0].detailedMessage).toContain('Can not deploy currency - field display symbol can not be edited. To enable editing this field, enable override currency format and try again. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions')
     })
 
     it('should have changeError when modifying currencyPrecision', async () => {
@@ -141,7 +141,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('Could not deploy - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions')
+      expect(changeErrors[0].detailedMessage).toContain('Can not deploy currency - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions')
     })
   })
 })

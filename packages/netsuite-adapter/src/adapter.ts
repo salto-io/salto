@@ -140,9 +140,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       consistentValues,
       // convertListsToMaps must run after convertLists and consistentValues
       // and must run before replaceInstanceReferencesFilter
-      currencyUndeployableFieldsFilter,
       convertListsToMaps,
       replaceElementReferences,
+      currencyUndeployableFieldsFilter,
       SDFInternalIds,
       dataInstancesAttributes,
       redundantFields,

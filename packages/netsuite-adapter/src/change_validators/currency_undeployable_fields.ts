@@ -28,6 +28,8 @@ import { values } from '@salto-io/lowerdash'
 import { CURRENCY } from '../constants'
 
 const { isDefined } = values
+const DISPLAY_SYMBOL = 'display symbol'
+const SYMBOL_PLACEMENT = 'symbol placement'
 
 
 const validateModificationChange = (
@@ -39,17 +41,18 @@ const validateModificationChange = (
       elemID: before.elemID,
       severity: 'Error',
       message: 'Editing of \'currencyPrecision\' is not supported',
-      detailedMessage: 'Could not deploy - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
+      detailedMessage: 'Can not deploy currency - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
     }
   }
   if ((before.value.displaySymbol !== after.value.displaySymbol
     || before.value.symbolPlacement !== after.value.symbolPlacement)
   && !before.value.overrideCurrencyFormat) {
+    const changedField = before.value.displaySymbol !== after.value.displaySymbol ? DISPLAY_SYMBOL : SYMBOL_PLACEMENT
     return {
       elemID: before.elemID,
       severity: 'Error',
-      message: 'Currency contains a field that cannot be deployed.',
-      detailedMessage: 'Failed to deploy - override currency format is disabled. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions',
+      message: 'Currency contains a field that cannot be edited.',
+      detailedMessage: `Can not deploy currency - field ${changedField} can not be edited. To enable editing this field, enable override currency format and try again. Please see https://docs.salto.io/docs/netsuite#deploy-troubleshooting for instructions`,
     }
   }
   return undefined
@@ -75,8 +78,8 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
         title: 'Edit \'locale\' field',
         description: 'Set the \'locale\' of the newly created currency to the desired value',
         subActions: [
-          'Within the NetSuite UI, nevigate to Lists > Accounting > Currencies',
-          'Choose the newly created currency',
+          'Within the NetSuite UI, navigate to Lists > Accounting > Currencies',
+          `Choose the newly created currency (${instance.value.name})`,
           'Set \'DEFAULT LOCALE\' to the correct value',
         ],
       },

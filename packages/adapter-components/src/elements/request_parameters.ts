@@ -17,9 +17,11 @@ import _ from 'lodash'
 import { Element, Values, isInstanceElement, isPrimitiveValue, InstanceElement } from '@salto-io/adapter-api'
 import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ClientGetWithPaginationParams } from '../client'
 import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER, UrlParams } from '../config/request'
 
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 const FIELD_PATH_DELIMITER = '.'
@@ -70,24 +72,31 @@ const computeDependsOnURLs = (
     throw new Error(`cannot resolve endpoint ${url} - missing context`)
   }
 
-  if (urlParams.length > 1) {
-    // not needed yet (when it is, we will need to decide which combinations to use)
-    throw new Error(`too many variables in endpoint ${url}`)
-  }
-  const argName = urlParams[0].slice(1, -1)
-  const referenceDetails = dependsOn.find(({ pathParam }) => pathParam === argName)
-  if (referenceDetails === undefined) {
-    log.error('could not resolve path param %s in url %s with dependsOn config %s', argName, url, safeJsonStringify(dependsOn))
-    throw new Error(`could not resolve path param ${argName} in url ${url}`)
-  }
-  const contextInstances = (contextElements[referenceDetails.from.type] ?? []).filter(
-    isInstanceElement
-  )
-  if (contextInstances.length === 0) {
-    throw new Error(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
-  }
-  const potentialParams = contextInstances.map(e => e.value[referenceDetails.from.field])
-  return _.uniq(potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p)))
+  const potentialParamsByArg = urlParams.map(urlParam => {
+    const argName = urlParam.slice(1, -1)
+    const referenceDetails = dependsOn.find(({ pathParam }) => pathParam === argName)
+    if (referenceDetails === undefined) {
+      log.error('could not resolve path param %s in url %s with dependsOn config %s', argName, url, safeJsonStringify(dependsOn))
+      throw new Error(`could not resolve path param ${argName} in url ${url}`)
+    }
+    const contextInstances = (contextElements[referenceDetails.from.type] ?? []).filter(
+      isInstanceElement
+    )
+    if (contextInstances.length === 0) {
+      throw new Error(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
+    }
+    const potentialParams = contextInstances
+      .map(e => e.value[referenceDetails.from.field])
+      .filter(isDefined)
+      .map(_.toString)
+    return _.uniq(potentialParams).map(val => ({ [urlParam]: val }))
+  })
+
+  const allArgCombinations = potentialParamsByArg.reduce((acc, potentialParams) => acc.flatMap(
+    combo => potentialParams.map(param => ({ ...combo, ...param }))
+  ))
+
+  return allArgCombinations.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, match => p[match]))
 }
 
 export const replaceUrlParams = (url: string, paramValues: Record<string, unknown>): string =>

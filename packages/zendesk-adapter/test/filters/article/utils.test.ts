@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, StaticFile,
+  ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, StaticFile, TemplateExpression,
 } from '@salto-io/adapter-api'
+import { LOCALE_TYPE_NAME } from '../../../src/filters/guide_locale'
 import ZendeskClient from '../../../src/client/client'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../../src/constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../../src/constants'
 import * as articleUtils from '../../../src/filters/article/utils'
 
 jest.useFakeTimers()
@@ -25,6 +26,7 @@ jest.useFakeTimers()
 describe('article utility functions', () => {
   let client: ZendeskClient
   let mockPost: jest.SpyInstance
+  let mockPut: jest.SpyInstance
 
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
@@ -75,6 +77,41 @@ describe('article utility functions', () => {
       articleWithAttachmentInstance,
     )] },
   )
+  const localeInstance = new InstanceElement(
+    'testLocale',
+    new ObjectType({ elemID: new ElemID(ZENDESK, LOCALE_TYPE_NAME) }),
+    { id: 'en-us' },
+  )
+  const articleTranslationInstance = new InstanceElement(
+    'testTranslation',
+    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }),
+    {
+      id: 888888,
+      locale: new ReferenceExpression(localeInstance.elemID, localeInstance),
+      title: 'Hello world!',
+      body: new TemplateExpression({ parts: [
+        '<p><img src="',
+        new ReferenceExpression(brandInstance.elemID, brandInstance),
+        '/hc/article_attachments/',
+        new ReferenceExpression(articleAttachmentInstance.elemID, articleAttachmentInstance),
+        '" alt="attachmentFileName.png">',
+      ] }),
+      draft: false,
+      created_at: '2022-10-31T08:30:41Z',
+      updated_at: '2022-10-31T14:46:30Z',
+      outdated: false,
+      brand: brandInstance.value.id,
+      guide_translation: 'en_us',
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
+      articleWithAttachmentInstance.elemID,
+      articleWithAttachmentInstance,
+    )] },
+  )
+  articleWithAttachmentInstance.value.translations = [
+    new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
+  ]
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -114,6 +151,31 @@ describe('article utility functions', () => {
       await articleUtils.createUnassociatedAttachment(client, clonedAttachment)
       expect(mockPost).toHaveBeenCalledTimes(1)
       expect(clonedAttachment.value.id).toBe(20222022)
+    })
+  })
+  describe('updateArticleTranslationBody function', () => {
+    beforeEach(() => {
+      mockPut = jest.spyOn(client, 'put')
+      mockPut.mockImplementation(params => {
+        if (
+          params.url === '/api/v2/help_center/articles/333333/translations/en-us'
+        ) {
+          return { status: 200 }
+        }
+        throw new Error('Err')
+      })
+    })
+    it('should update the article translation\'s body', async () => {
+      const clondedArticle = articleWithAttachmentInstance.clone()
+      const clonedAttachment = articleAttachmentInstance.clone()
+      clonedAttachment.value.id = 250595
+      clonedAttachment.annotate({ [CORE_ANNOTATIONS.PARENT]: [clondedArticle.value] })
+      await articleUtils.updateArticleTranslationBody({
+        client,
+        articleValues: clondedArticle.value,
+        attachmentInstances: [clonedAttachment],
+      })
+      expect(mockPut).toHaveBeenCalledTimes(1)
     })
   })
 })

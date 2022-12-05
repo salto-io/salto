@@ -18,11 +18,11 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   AdditionChange,
-  Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
-  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression,
+  Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isModificationChange,
+  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource,
   isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
+import { getParents, replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
 import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../constants'
@@ -32,7 +32,8 @@ import { removeTitleAndBody } from '../guide_fetch_article'
 import { prepRef } from './article_body'
 import { EVERYONE } from '../everyone_user_segment'
 import ZendeskClient from '../../client/client'
-import { createAttachmentType, createUnassociatedAttachment, getArticleAttachments } from './utils'
+import { createAttachmentType, createUnassociatedAttachment, deleteArticleAttachment, getArticleAttachments, updateArticleTranslationBody } from './utils'
+import { API_DEFINITIONS_CONFIG } from '../../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -127,25 +128,85 @@ const getAttachmentArticleRef = (
 
 const associateAttachments = async (
   client: ZendeskClient,
-  articleChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  addedAtarticleNameToAttachmentstachments: Record<string, number[]>
-): Promise<void> => {
-  const changedArticle = getChangeData(articleChange)
-  await client.post({
-    url: `/api/v2/help_center/articles/${changedArticle.value.id}/bulk_attachments`,
-    data: { attachment_ids: addedAtarticleNameToAttachmentstachments[changedArticle.elemID.name] },
+  articleId: number,
+  attachmentsIds: number[]
+): Promise<number> => {
+  const res = await client.post({
+    url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
+    data: { attachment_ids: attachmentsIds },
   })
+  return res.status
+}
+
+const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSource, articleNameToAttachments }: {
+  changes: Change<InstanceElement>[]
+  client: ZendeskClient
+  elementsSource: ReadOnlyElementsSource
+  articleNameToAttachments: Record<string, number[]>
+}): Promise<InstanceElement[]> => {
+  const attachmentChanges = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
+  await awu(attachmentChanges)
+    .forEach(async attachmentChange => {
+      const attachmentInstance = getChangeData(attachmentChange)
+      await createUnassociatedAttachment(client, attachmentInstance)
+      // Keeping article-attachment relation for deploy stage
+      const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
+      if (instanceBeforeResolve === undefined) {
+        log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} instance.`)
+        // Deleting the newly created udpated-id attachment instance
+        await deleteArticleAttachment(client, attachmentInstance)
+        return
+      }
+      const parentArticleRef = getAttachmentArticleRef(instanceBeforeResolve)
+      if (parentArticleRef === undefined) {
+        log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
+        await deleteArticleAttachment(client, attachmentInstance)
+        return
+      }
+      // We can't really modify article attachments in Zendesk
+      // To do so we're going to delete the existing attachment and create a new one instead
+      if (isModificationChange(attachmentChange)) {
+        const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
+        if (articleInstance === undefined) {
+          log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
+          await deleteArticleAttachment(client, attachmentInstance)
+          return
+        }
+        const res = await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
+        if (res !== 200) {
+          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has failed with response status ${res}`)
+          await deleteArticleAttachment(client, attachmentInstance)
+          return
+        }
+        await deleteArticleAttachment(client, attachmentChange.data.before)
+        return
+      }
+      const parentArticleName = parentArticleRef.elemID.name
+      articleNameToAttachments[parentArticleName] = (
+        articleNameToAttachments[parentArticleName] || []
+      ).concat(attachmentInstance.value.id)
+    })
+  // Article bodies needs to be updated when modifying inline attachments
+  // There might be another request if the article_translation 'body' fields also changed
+  // (To Do: SALTO-3076)
+  const modifiedInlineAttachments = attachmentChanges
+    .filter(isModificationChange)
+    .map(getChangeData)
+    .filter(attachmentInstance => attachmentInstance.value.inline)
+  if (modifiedInlineAttachments.length > 0) {
+    // All the attachments in the current change_group share the same parent article instance
+    const articleValues = getParents(modifiedInlineAttachments[0])[0]
+    await updateArticleTranslationBody({ client, articleValues, attachmentInstances: modifiedInlineAttachments })
+  }
+  return attachmentChanges.map(getChangeData)
 }
 
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
-const filterCreator: FilterCreator = ({
-  config,
-  client,
-  elementsSource,
-  brandIdToClient = {},
-}) => {
+const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdToClient = {} }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
     onFetch: async (elements: Element[]) => log.time(async () => {
@@ -159,6 +220,7 @@ const filterCreator: FilterCreator = ({
           client: brandIdToClient[article.value.brand],
           attachmentType,
           article,
+          apiDefinitions: config[API_DEFINITIONS_CONFIG],
         })))).flat()
 
       // Verify article_attachment type added only once
@@ -166,30 +228,9 @@ const filterCreator: FilterCreator = ({
       elements.push(attachmentType, ...articleAttachments)
     }, 'articlesFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      // Creating unassociated article attachments
-      const addedArticleAttachments = changes
-        .filter(isAdditionChange)
-        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-        .map(getChangeData)
-      await awu(addedArticleAttachments)
-        .forEach(async attachmentInstance => {
-          await createUnassociatedAttachment(client, attachmentInstance)
-          // Keeping article-attachment relation for deploy stage
-          const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
-          if (instanceBeforeResolve === undefined) {
-            return
-          }
-          const parentArticleRef = getAttachmentArticleRef(instanceBeforeResolve)
-          if (parentArticleRef === undefined) {
-            log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
-            return
-          }
-          const parentArticleName = parentArticleRef.elemID.name
-          articleNameToAttachments[parentArticleName] = (
-            articleNameToAttachments[parentArticleName] || []
-          ).concat(attachmentInstance.value.id)
-        })
-
+      const addedArticleAttachments = await handleArticleAttachmentsPreDeploy(
+        { changes, client, elementsSource, articleNameToAttachments }
+      )
       await awu(changes)
         .filter(isAdditionChange)
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
@@ -230,15 +271,20 @@ const filterCreator: FilterCreator = ({
           await deployChange(
             change, client, config.apiDefinitions, ['translations', 'attachments'],
           )
+          const articleInstance = getChangeData(change)
           if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
-            await associateAttachments(client, change, articleNameToAttachments)
+            await associateAttachments(
+              client,
+              articleInstance.value.id,
+              articleNameToAttachments[articleInstance.elemID.name],
+            )
           }
         },
       )
       const [attachmentAdditions, leftoverChanges] = _.partition(
         nonArticleChanges,
         change => (
-          isAdditionChange(change)
+          isAdditionOrModificationChange(change)
           && getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
         )
       )

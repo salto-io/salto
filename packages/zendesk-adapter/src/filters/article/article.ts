@@ -154,11 +154,16 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       // Keeping article-attachment relation for deploy stage
       const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
       if (instanceBeforeResolve === undefined) {
+        log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} instance.`)
+        // Deleting the newly created udpated-id attachment instance
+        await deleteArticleAttachment(client, attachmentInstance)
         return
       }
       const parentArticleRef = getAttachmentArticleRef(instanceBeforeResolve)
       if (parentArticleRef === undefined) {
+        // Deleting the newly created udpated-id attachment instance
         log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
+        await deleteArticleAttachment(client, attachmentInstance)
         return
       }
       // We can't really modify article attachments in Zendesk
@@ -166,11 +171,14 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       if (isModificationChange(attachmentChange)) {
         const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
         if (articleInstance === undefined) {
+          log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
+          // Deleting the newly created udpated-id attachment instance
+          await deleteArticleAttachment(client, attachmentInstance)
           return
         }
         const res = await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
         if (res !== 200) {
-          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has been failed.`)
+          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has failed with response status ${res}`)
           return
         }
         await deleteArticleAttachment(client, attachmentChange.data.before)
@@ -182,6 +190,8 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       ).concat(attachmentInstance.value.id)
     })
   // Article bodies needs to be updated when modifying inline attachments
+  // There might be another request if the article_translation 'body' fields also changed
+  // (To Do: SALTO-3076)
   const modifiedInlineAttachments = attachmentChanges
     .filter(isModificationChange)
     .map(getChangeData)

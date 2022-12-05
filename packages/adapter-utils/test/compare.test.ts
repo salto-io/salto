@@ -787,6 +787,48 @@ describe('applyDetailedChanges', () => {
       expect(outputInst.value.a).toEqual(afterInst.value.a)
     })
   })
+
+  describe('Should apply changes in the correct order', () => {
+    let beforeInst: InstanceElement
+    beforeEach(() => {
+      const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+      beforeInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: _.times(11),
+        }
+      )
+
+      const listChanges: DetailedChange[] = [
+        {
+          id: beforeInst.elemID.createNestedID('a', '2'),
+          data: {
+            after: 'a',
+          },
+          action: 'add',
+          elemIDs: {
+            after: beforeInst.elemID.createNestedID('a', '2'),
+          },
+        },
+        {
+          id: beforeInst.elemID.createNestedID('a', '10'),
+          data: {
+            after: 'b',
+          },
+          action: 'add',
+          elemIDs: {
+            after: beforeInst.elemID.createNestedID('a', '10'),
+          },
+        },
+      ]
+
+      applyDetailedChanges(beforeInst, listChanges)
+    })
+    it('should apply the changes', () => {
+      expect(beforeInst.value.a).toEqual([0, 1, 'a', 2, 3, 4, 5, 6, 7, 8, 'b', 9, 10])
+    })
+  })
   describe('when before element and after element have different IDs', () => {
     describe('with value from a different instance', () => {
       let beforeInst: InstanceElement

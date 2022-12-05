@@ -26,17 +26,24 @@ import {
   isStaticFile,
   isIndexPathPart,
   ReferenceExpression,
+  isTemplateExpression,
+  PrimitiveValue,
+  TemplateExpression,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import wu from 'wu'
+import { logger } from '@salto-io/logging'
 import { getElementChangeId, resolvePath, setPath } from './utils'
+
+const log = logger(module)
 
 type KeyFunction = (value: Value) => string
 
 /**
- * Function that calculate a string to represent an item in a list based on all of its values
+ * Calculate a string to represent an item in a list based on all of its values
  *
- * Note: this function ignores the value of compareReferencesByValue and always look at the reference id
+ * Note: this function ignores the value of compareReferencesByValue and always looks at the reference id
  */
 const getListItemExactKey: KeyFunction = value =>
   objectHash(value, {
@@ -49,21 +56,32 @@ const getListItemExactKey: KeyFunction = value =>
     },
   })
 
+type TopLevelType = PrimitiveValue | ReferenceExpression | TemplateExpression | StaticFile
+
+const isValidTopLevelType = (value: unknown): value is TopLevelType =>
+  isPrimitiveValue(value)
+    || isReferenceExpression(value)
+    || isTemplateExpression(value)
+    || isStaticFile(value)
+
 /**
- * Note: this function ignores the value of compareReferencesByValue and always look at the reference id
+ * Note: this function ignores the value of compareReferencesByValue and always looks at the reference id
  */
-const getSingleValueKey = (value: Value): string => {
+const getSingleValueKey = (value: TopLevelType): string => {
   if (isReferenceExpression(value)) {
     return value.elemID.getFullName()
   }
   if (isStaticFile(value)) {
     return value.filepath
   }
+  if (isTemplateExpression(value)) {
+    return value.parts.map(getSingleValueKey).join('')
+  }
   return value.toString()
 }
 
 /**
- * Function that calculate a string to represent an item in the list
+ * Calculate a string to represent an item in the list
  * based only on its top level values
  *
  * Based on experiments, we found looking only on the top level values
@@ -72,15 +90,17 @@ const getSingleValueKey = (value: Value): string => {
 const getListItemTopLevelKey: KeyFunction = value => {
   if (_.isPlainObject(value) || Array.isArray(value)) {
     return Object.keys(value)
-      .filter(key => isPrimitiveValue(value[key]) || isReferenceExpression(value[key]) || isStaticFile(value[key]))
+      .filter(key => isValidTopLevelType(value[key]))
       .sort()
       .flatMap(key => [key, ':', getSingleValueKey(value[key])])
       .join('')
   }
 
-  if (!_.isObject(value) || isReferenceExpression(value) || isStaticFile(value)) {
+  if (isValidTopLevelType(value)) {
     return getSingleValueKey(value)
   }
+
+  // When there aren't any top level keys
   return ''
 }
 
@@ -105,16 +125,26 @@ type IndexMappingItem = {
  * of the items in the old list to the indexes of the mapping in the after
  * list based on a heuristic we created.
  *
- * How to works:
- * 1. Assume the items with the same key have and different indexes were moved
+ * How it works:
+ * 1. Assume the items with the same key and different indexes were moved
  *   a. First try with a key that is based on the entire item
- *   b. Then try with a that is based only on the top level values of the item
+ *   b. Then try with a key that is based only on the top level values of the item
  * 2. Assume the items with different key and the same indexes were modified
  * 3. Match the rest of items with the following heuristic
  *   - For an item I1 in the before list, match it to an item I2 in the after list such that
  *     for each item J, if beforeIndex(J) < beforeIndex(I1) then afterIndex(J) < afterIndex(I2)
  * 4. The unmatched items in the before list are assumed to be items that were removed from the list
  * 5. The unmatched items in the after list are assumed to be items that were added to the list
+ *
+ * Notes about the output of this function:
+ * - All the before indexes will have a match (either to an index or to undefined (if they were removed))
+ * - All the after indexes will have a match (either to an index or to undefined (if they were added))
+ * - Each before and after index will appear exactly once in the mapping
+ * - The mapping items are sorted such that:
+ *   - The modification and addition changes will be sorted by their after index
+ *   - The removal changes will be in the index of their before index
+ *
+ * Any implementation that satisfies these properties would work with the rest of the code
  */
 export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMappingItem[] => {
   const afterIndexExactMap = buildKeyToIndicesMap(after, getListItemExactKey)
@@ -266,12 +296,12 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
  *   every change should be applied to the index in its after element id (and not after that)
  *
  * - If not all the detailed changes are applied, the results are ambiguous.
- *   E.g., if we have ['a', 'b'] that was turn into ['b'], but we omit the removal change of 'b',
+ *   E.g., if we have ['a', 'b'] that was turned into ['b'], but we omit the removal change of 'b',
  *   then we are left only with a reorder change for 'b' between index 1 to index 0.
  *   In such scenario it is not clear whether the results should be ['b', 'a'] or ['a', 'b'].
  *   Here we chose the results for such case to be ['a', 'b'].
  */
-export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void => {
+export const applyListChanges = (element: ChangeDataType, changes: DetailedChange[]): void => log.time(() => {
   const ids = changes.map(change => change.id)
   if (ids.some(id => !isIndexPathPart(id.name)) || new Set(ids.map(id => id.createParentID().getFullName())).size > 1) {
     throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
@@ -284,7 +314,7 @@ export const applyListChanges = (element: ChangeDataType, changes: DetailedChang
 
   _(changes)
     .filter(isAdditionOrModificationChange)
-    .sortBy(change => change.elemIDs?.after?.getFullName())
+    .sortBy(change => Number(change.elemIDs?.after?.name))
     .forEach(change => {
       const index = Number(change.elemIDs?.after?.name)
       if (list[index] === undefined) {
@@ -295,4 +325,4 @@ export const applyListChanges = (element: ChangeDataType, changes: DetailedChang
     })
 
   setPath(element, parentId, list.filter(values.isDefined))
-}
+}, 'applyListChanges')

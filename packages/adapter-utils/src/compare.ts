@@ -21,8 +21,11 @@ import {
   CompareOptions,
   isIndexPathPart,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { getElementChangeId, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
+
+const log = logger(module)
 
 export type DetailedCompareOptions = CompareOptions & {
   createFieldChanges?: boolean
@@ -38,7 +41,7 @@ const compareListWithOrderMatching = ({
   beforeId: ElemID | undefined
   afterId: ElemID | undefined
   options: DetailedCompareOptions | undefined
-}): DetailedChange[] => {
+}): DetailedChange[] => log.time(() => {
   const indexMapping = getArrayIndexMapping(before, after)
 
   const itemsChanges = _.flatten(
@@ -84,7 +87,7 @@ const compareListWithOrderMatching = ({
   )
 
   return itemsChanges
-}
+}, 'compareListWithOrderMatching')
 
 /**
  * Create detailed changes from change data (before and after values)
@@ -293,6 +296,9 @@ export const detailedCompare = (
   return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges, ...valueChanges]
 }
 
+/**
+ * This function returns if a change contains a moving of a item in a list for one index to another
+*/
 const isOrderChange = (change: DetailedChange): boolean => (
   isIndexPathPart(change.id.name)
   && isIndexPathPart(change.elemIDs?.before?.name ?? '')
@@ -300,12 +306,20 @@ const isOrderChange = (change: DetailedChange): boolean => (
     && Number(change.elemIDs?.before?.name) !== Number(change.elemIDs?.after?.name)
 )
 
+/**
+ * When comparing lists with compareListItem, we might get a change about an item
+ * in a list that moved from one index to another, and a change about an inner value
+ * in that item that was changed. In that case we would want to ignore the inner change
+ * since the item change already contains it.
+ */
 const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
-  // For performance, avoiding the sort of no need to filter
+  // For performance, avoiding the sort if no need to filter
   if (changes.every(change => !isOrderChange(change))) {
     return changes
   }
-  const sortedChanges = _.sortBy(changes, change => change.id.getFullName())
+  // The sort here is to make sure a change of inner values in list items
+  // will appear after the change of the item itself.
+  const sortedChanges = _.sortBy(changes, change => change.id.getFullNameParts())
   let lastId = sortedChanges[0].id
   return sortedChanges.filter(change => {
     const skip = lastId.isParentOf(change.id)
@@ -321,7 +335,9 @@ const filterChangesForApply = (changes: DetailedChange[]): DetailedChange[] => {
  * Note: When working with list item changes, separating the changes between
  * multiple applyDetailedChanges calls might create different results.
  * E.g., if we have ['a', 'b', 'c'] with a removal change on the index 0 and index 1.
- * if we apply the together we will get ['c'], but if we apply them separately we will get ['b']
+ * if we apply the together we will get ['c'], but if we apply them separately we will get ['b'].
+ * So in order to get the expected results, all the detailed changes should be passed to this
+ * function in a single call
  */
 export const applyDetailedChanges = (
   element: ChangeDataType,

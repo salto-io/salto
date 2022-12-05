@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { describe } from 'jest-circus'
-import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams, validateFieldsToOmitConfig, modifyFetchTarget } from '../src/query'
+import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams, validateFieldsToOmitConfig, getFixedTargetFetch } from '../src/query'
 
 describe('NetsuiteQuery', () => {
   describe('buildNetsuiteQuery', () => {
@@ -125,9 +125,9 @@ describe('NetsuiteQuery', () => {
           expect(queryOldFormat.isCustomRecordTypeMatch('customrecord2')).toBeFalsy()
         })
       })
-      describe('modifyFetchTarget', () => {
+      describe('getFixedTargetFetch', () => {
         it('should keep query without custom records', () => {
-          expect(modifyFetchTarget({
+          expect(getFixedTargetFetch({
             types: {
               addressForm: ['aaa.*', 'bbb.*'],
             },
@@ -140,7 +140,7 @@ describe('NetsuiteQuery', () => {
           })
         })
         it('should add custom record types to "types"', () => {
-          expect(modifyFetchTarget({
+          expect(getFixedTargetFetch({
             types: {
               addressForm: ['aaa.*', 'bbb.*'],
               customrecordtype: ['customrecord2'],
@@ -160,7 +160,7 @@ describe('NetsuiteQuery', () => {
           })
         })
         it('should generate "types" when query includes only custom records', () => {
-          expect(modifyFetchTarget({
+          expect(getFixedTargetFetch({
             customRecords: {
               customrecord1: ['.*'],
             },
@@ -175,7 +175,7 @@ describe('NetsuiteQuery', () => {
           })
         })
         it('should include customsegment too', () => {
-          expect(modifyFetchTarget({
+          expect(getFixedTargetFetch({
             customRecords: {
               customrecord_cseg1: ['.*'],
             },

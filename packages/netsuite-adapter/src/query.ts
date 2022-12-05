@@ -81,7 +81,7 @@ export const convertToQueryParams = ({
   customRecords: Object.entries(customRecords).map(([name, ids]) => ({ name, ids })),
 })
 
-export const modifyFetchTarget = (
+export const getFixedTargetFetch = (
   query: NetsuiteQueryParameters | undefined
 ): NetsuiteQueryParameters | undefined => {
   if (query?.customRecords === undefined) {

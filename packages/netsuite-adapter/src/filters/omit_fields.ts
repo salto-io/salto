@@ -52,7 +52,7 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
 
     const typesForDeepTransformation = new Set(
       typeNames.filter(typeName => fieldsToOmit
-        .some(({ type, subtype }) => subtype !== undefined && isFullRegexMatch(typeName, type)))
+        .some(({ type, subtype }) => subtype !== undefined && subtype !== type && isFullRegexMatch(typeName, type)))
     )
 
     const omitValues = (value: Values, typeName: string): Values => (

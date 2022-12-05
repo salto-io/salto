@@ -36,20 +36,24 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
       return
     }
 
+    const typeNames = elements.filter(isObjectType).map(elem => elem.elemID.name).concat(CUSTOM_FIELDS_LIST)
     const fieldsToOmitByType = Object.fromEntries(
-      elements.filter(isObjectType).map(elem => elem.elemID.name).concat(CUSTOM_FIELDS_LIST)
-        .map((typeName: string): [string, string[]] => [
-          typeName,
-          fieldsToOmit
-            .filter(params => isFullRegexMatch(typeName, params.type))
-            .flatMap(params => params.fields),
-        ])
-        .filter(([_t, fields]) => fields.length > 0)
+      typeNames.map((typeName: string): [string, string[]] => [
+        typeName,
+        fieldsToOmit
+          .filter(({ type, subtype }) => isFullRegexMatch(typeName, subtype !== undefined ? subtype : type))
+          .flatMap(params => params.fields),
+      ]).filter(([_t, fields]) => fields.length > 0)
     )
 
     if (_.isEmpty(fieldsToOmitByType)) {
       return
     }
+
+    const typesForDeepTransformation = new Set(
+      typeNames.filter(typeName => fieldsToOmit
+        .some(({ type, subtype }) => subtype !== undefined && subtype !== type && isFullRegexMatch(typeName, type)))
+    )
 
     const omitValues = (value: Values, typeName: string): Values => (
       typeName in fieldsToOmitByType
@@ -72,12 +76,15 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        instance.value = await transformValues({
-          values: omitValues(instance.value, instance.elemID.typeName),
-          type: await instance.getType(),
-          transformFunc,
-          strict: false,
-        }) ?? {}
+        instance.value = omitValues(instance.value, instance.elemID.typeName)
+        if (typesForDeepTransformation.has(instance.elemID.typeName)) {
+          instance.value = await transformValues({
+            values: instance.value,
+            type: await instance.getType(),
+            transformFunc,
+            strict: false,
+          }) ?? {}
+        }
       })
 
     await awu(elements)
@@ -85,11 +92,13 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
       .filter(isCustomRecordType)
       .forEach(async type => {
         type.annotations = omitValues(type.annotations, CUSTOM_RECORD_TYPE)
-        type.annotations = await transformElementAnnotations({
-          element: type,
-          transformFunc,
-          strict: false,
-        })
+        if (typesForDeepTransformation.has(CUSTOM_RECORD_TYPE)) {
+          type.annotations = await transformElementAnnotations({
+            element: type,
+            transformFunc,
+            strict: false,
+          })
+        }
         Object.values(type.fields).forEach(field => {
           field.annotations = omitValues(field.annotations, CUSTOM_FIELDS_LIST)
         })

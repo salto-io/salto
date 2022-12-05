@@ -299,6 +299,9 @@ const fieldsToOmitConfig = createMatchingObjectType<FieldToOmitParams>({
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
+    subtype: {
+      refType: BuiltinTypes.STRING,
+    },
     fields: {
       refType: new ListType(BuiltinTypes.STRING),
       annotations: { _required: true },

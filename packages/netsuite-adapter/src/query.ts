@@ -74,13 +74,11 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
 }
 
 export const convertToQueryParams = ({
-  types = {}, filePaths = [], customRecords,
+  types = {}, filePaths = [], customRecords = {},
 }: NetsuiteQueryParameters): QueryParams => ({
   types: Object.entries(types).map(([name, ids]) => ({ name, ids })),
   fileCabinet: filePaths,
-  ...customRecords ? {
-    customRecords: Object.entries(customRecords).map(([name, ids]) => ({ name, ids })),
-  } : {},
+  customRecords: Object.entries(customRecords).map(([name, ids]) => ({ name, ids })),
 })
 
 export const modifyFetchTarget = (

@@ -53,6 +53,19 @@ export const simpleGetArgs: ComputeGetArgsFunc = (
   return [{ url, queryParams, recursiveQueryParams, paginationField }]
 }
 
+export const replaceUrlParams = (url: string, paramValues: Record<string, unknown>): string => (
+  url.replace(
+    ARG_PLACEHOLDER_MATCHER,
+    val => {
+      const replacement = paramValues[val.slice(1, -1)] ?? val
+      if (!isPrimitiveValue(replacement)) {
+        throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
+      }
+      return replacement.toString()
+    }
+  )
+)
+
 const computeDependsOnURLs = (
   {
     url,
@@ -89,27 +102,15 @@ const computeDependsOnURLs = (
       .map(e => e.value[referenceDetails.from.field])
       .filter(isDefined)
       .map(_.toString)
-    return _.uniq(potentialParams).map(val => ({ [urlParam]: val }))
+    return _.uniq(potentialParams).map(val => ({ [argName]: val }))
   })
 
   const allArgCombinations = potentialParamsByArg.reduce((acc, potentialParams) => acc.flatMap(
     combo => potentialParams.map(param => ({ ...combo, ...param }))
   ))
 
-  return allArgCombinations.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, match => p[match]))
+  return allArgCombinations.map(p => replaceUrlParams(url, p))
 }
-
-export const replaceUrlParams = (url: string, paramValues: Record<string, unknown>): string =>
-  url.replace(
-    ARG_PLACEHOLDER_MATCHER,
-    val => {
-      const replacement = paramValues[val.slice(1, -1)] ?? val
-      if (!isPrimitiveValue(replacement)) {
-        throw new Error(`Cannot replace param ${val} in ${url} with non-primitive value ${replacement}`)
-      }
-      return replacement.toString()
-    }
-  )
 
 export const createUrl = ({
   instance, baseUrl, urlParamsToFields, additionalUrlVars,

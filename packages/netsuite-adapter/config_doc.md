@@ -31,7 +31,8 @@ netsuite {
       ]
     }
     fieldsToOmit = [{
-      type = "workflow_workflowstates_workflowstate"
+      type = "workflow"
+      subtype = "workflow_workflowstates_workflowstate"
       fields = [
         "positionx",
         "positiony",

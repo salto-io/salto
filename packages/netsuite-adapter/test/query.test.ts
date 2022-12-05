@@ -425,6 +425,9 @@ describe('NetsuiteQuery', () => {
       expect(() => {
         validateFieldsToOmitConfig([{ type: 'a', fields: ['b'] }])
       }).not.toThrow()
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', subtype: 'c', fields: ['b'] }])
+      }).not.toThrow()
     })
     it('should throw an error when input is not an array', () => {
       expect(() => {
@@ -435,6 +438,11 @@ describe('NetsuiteQuery', () => {
       expect(() => {
         validateFieldsToOmitConfig([{ type: { name: 'a' }, fields: ['b'] }])
       }).toThrow('Expected "type" field to be a string')
+    })
+    it('should throw an error when "subtype" field is not a string', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', subtype: { name: 'c' }, fields: ['b'] }])
+      }).toThrow('Expected "subtype" field to be a string')
     })
     it('should throw an error when "fields" field is not an array', () => {
       expect(() => {
@@ -449,6 +457,9 @@ describe('NetsuiteQuery', () => {
     it('should throw an error when regexes are invalid', () => {
       expect(() => {
         validateFieldsToOmitConfig([{ type: 'aa(a.*', fields: ['bb(b.*'] }])
+      }).toThrow('The following regular expressions are invalid')
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'aaa.*', subtype: 'cc(c.*', fields: ['bbb.*'] }])
       }).toThrow('The following regular expressions are invalid')
     })
   })

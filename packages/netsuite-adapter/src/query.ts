@@ -50,6 +50,7 @@ export type QueryParams = {
 
 export type FieldToOmitParams = {
   type: string
+  subtype?: string
   fields: string[]
 }
 
@@ -202,6 +203,10 @@ export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void =>
   if (corruptedTypes.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "type" field to be a string, but found:\n${JSON.stringify(corruptedTypes, null, 4)}.`)
   }
+  const corruptedSubtypes = fieldsToOmitConfig.filter(obj => obj.subtype !== undefined && typeof obj.subtype !== 'string')
+  if (corruptedSubtypes.length !== 0) {
+    throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "subtype" field to be a string, but found:\n${JSON.stringify(corruptedSubtypes, null, 4)}.`)
+  }
   const corruptedFields = fieldsToOmitConfig.filter(
     obj => !Array.isArray(obj.fields)
     || obj.fields.length === 0
@@ -211,7 +216,7 @@ export const validateFieldsToOmitConfig = (fieldsToOmitConfig: unknown): void =>
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected "fields" field to be an array of strings, but found:\n${JSON.stringify(corruptedFields, null, 4)}.`)
   }
   const invalidRegexes = fieldsToOmitConfig
-    .flatMap(obj => [obj.type, ...obj.fields])
+    .flatMap(obj => [obj.type, ...(obj.subtype ? [obj.subtype] : []), ...obj.fields])
     .filter(reg => !regex.isValidRegex(reg))
   if (invalidRegexes.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} The following regular expressions are invalid:\n${JSON.stringify(invalidRegexes, null, 4)}.`)

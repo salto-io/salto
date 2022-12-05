@@ -377,6 +377,27 @@ describe('article filter', () => {
       expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
       expect(mockAttachmentCreation).toHaveBeenCalledWith(client, afterClonedAttachment)
     })
+    it('should delete new attachment in case associate fails', async () => {
+      const mockAttachmentDeletion = jest.spyOn(articleUtils, 'deleteArticleAttachment')
+        .mockImplementation(jest.fn())
+      mockPost.mockReturnValueOnce({ status: 400 })
+      const clonedArticle = articleWithAttachmentInstance.clone()
+      const beforeClonedAttachment = articleAttachmentInstance.clone()
+      const afterClonedAttachment = articleAttachmentInstance.clone()
+      afterClonedAttachment.value.content = new StaticFile({
+        filepath: 'zendesk/article_attachment/title/modified.png', encoding: 'binary', content: Buffer.from('modified'),
+      })
+      clonedArticle.value.attachments = [
+        new ReferenceExpression(afterClonedAttachment.elemID, afterClonedAttachment),
+      ]
+      await filter.preDeploy([
+        { action: 'modify', data: { before: beforeClonedAttachment, after: afterClonedAttachment } },
+      ])
+
+      expect(mockDeployChange).toHaveBeenCalledTimes(0)
+      expect(mockAttachmentDeletion).toHaveBeenCalledTimes(1)
+      expect(mockAttachmentDeletion).toHaveBeenCalledWith(client, afterClonedAttachment)
+    })
   })
 
   describe('deploy', () => {

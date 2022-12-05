@@ -161,7 +161,6 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       }
       const parentArticleRef = getAttachmentArticleRef(instanceBeforeResolve)
       if (parentArticleRef === undefined) {
-        // Deleting the newly created udpated-id attachment instance
         log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
         await deleteArticleAttachment(client, attachmentInstance)
         return
@@ -172,13 +171,13 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
         if (articleInstance === undefined) {
           log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
-          // Deleting the newly created udpated-id attachment instance
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }
         const res = await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
         if (res !== 200) {
           log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has failed with response status ${res}`)
+          await deleteArticleAttachment(client, attachmentInstance)
           return
         }
         await deleteArticleAttachment(client, attachmentChange.data.before)

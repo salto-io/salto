@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { apiName } from '../transformers/transformer'
+import { isInstanceOfType } from '../filters/utils'
 
 const { awu } = collections.asynciterable
 
@@ -42,15 +43,14 @@ const INVALID_FILTERSCOPES: ForbiddenFilterScope[] = [
 ]
 
 export const isFilterScopeInvalid = async (
-  element: InstanceElement
+  instance: InstanceElement
 ): Promise<boolean> => {
-  const parentTypes = getParents(element)
-  if ((await apiName(await element.getType())) !== 'ListView') {
+  if ((await apiName(await instance.getType())) !== 'ListView') {
     return false
   }
   return INVALID_FILTERSCOPES.some(filterScopeDef => (
-    parentTypes.some(parentType => parentType === filterScopeDef.parentType)
-    && element.value.filterScope === filterScopeDef.filterScope
+    getParents(instance).some(parentType => parentType === filterScopeDef.parentType)
+    && instance.value.filterScope === filterScopeDef.filterScope
   ))
 }
 
@@ -73,7 +73,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(async elem => getParents(elem).some(parent => typesOfInterest.includes(parent)))
+    .filter(async elem => getParents(elem).some(isInstanceOfType(...typesOfInterest)))
     .filter(async elem => isFilterScopeInvalid(elem))
     .map(invalidListViewFilterScopeError)
     .toArray()

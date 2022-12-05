@@ -683,6 +683,7 @@ export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value):
     log.warn(`Failed to set: can not set the whole Element - ${rootElement.elemID.getFullName()}`)
     return
   }
+  // Handle assignment in objects
   if (value === undefined) {
     _.unset(rootElement, path)
   } else {

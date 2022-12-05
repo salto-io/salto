@@ -286,6 +286,13 @@ export class ElemID {
       : relPath
   }
 
+  replaceParentId(newParent: ElemID): ElemID {
+    const relativeId = this.fullNameParts().splice(newParent.fullNameParts().length)
+    return relativeId.length !== 0
+      ? newParent.createNestedID(...relativeId)
+      : newParent
+  }
+
   isAttrID(): boolean {
     return this.idType === 'attr'
       || (

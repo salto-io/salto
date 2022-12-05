@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { collections, regex, strings, types as lowerdashTypes } from '@salto-io/lowerdash'
 import { getStandardTypesNames } from './autogen/types'
-import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE } from './constants'
+import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from './constants'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { SUITEAPP_CONFIG_TYPE_NAMES } from './types'
+import { removeCustomRecordTypePrefix, SUITEAPP_CONFIG_TYPE_NAMES } from './types'
 
 const { makeArray } = collections.array
 
@@ -92,11 +92,17 @@ export const modifyFetchTarget = (
   // using this config: { types: { customrecordtype: [<customRecordTypes>] } }.
   // without that addition, the custom record types wouldn't be fetched
   // and we wouldn't be able to fetch the custom record instances.
-  const customRecordTypesQuery = (types?.[CUSTOM_RECORD_TYPE] ?? []).concat(Object.keys(customRecords))
+  const customRecordTypeNames = Object.keys(customRecords)
+  // custom record types that have custom segments are fetch by them
+  // so we need to fetch the matching custom segments too.
+  const customSegmentNames = customRecordTypeNames.map(removeCustomRecordTypePrefix).filter(name => name.length > 0)
+  const customRecordTypesQuery = (types?.[CUSTOM_RECORD_TYPE] ?? []).concat(customRecordTypeNames)
+  const customSegmentsQuery = (types?.[CUSTOM_SEGMENT] ?? []).concat(customSegmentNames)
   return {
     types: {
       ...types,
       [CUSTOM_RECORD_TYPE]: customRecordTypesQuery,
+      [CUSTOM_SEGMENT]: customSegmentsQuery,
     },
     filePaths,
     customRecords,

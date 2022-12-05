@@ -27,7 +27,8 @@ import { ChangedObject, ChangedType, DateRange } from './types'
 import NetsuiteClient from '../client/client'
 import { convertSavedSearchStringToDate } from './date_formats'
 import { getChangedCustomRecords } from './changes_detectors/custom_records'
-import { CUSTOM_RECORD_TYPE } from '../constants'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
+import { addCustomRecordTypePrefix } from '../types'
 
 const log = logger(module)
 
@@ -189,13 +190,14 @@ export const getChangedObjects = async (
       !SUPPORTED_TYPES.has(type)
       || scriptIds.size !== 0
       || types.size !== 0
-      || (type === CUSTOM_RECORD_TYPE && shouldFetchCustomRecordTypes),
+      || ([CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT].includes(type) && shouldFetchCustomRecordTypes),
     areAllObjectsMatch: () => false,
     isObjectMatch: ({ type, instanceId }) =>
       !SUPPORTED_TYPES.has(type)
       || scriptIds.has(instanceId)
       || types.has(type)
-      || (type === CUSTOM_RECORD_TYPE && instanceId in customRecordsByType),
+      || (type === CUSTOM_RECORD_TYPE && instanceId in customRecordsByType)
+      || (type === CUSTOM_SEGMENT && addCustomRecordTypePrefix(instanceId) in customRecordsByType),
     isFileMatch: filePath =>
       filePaths.has(filePath)
       || unresolvedFolderPaths.some(path => filePath.startsWith(path)),

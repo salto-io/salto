@@ -156,6 +156,28 @@ describe('changes_detector', () => {
     expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
     expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord1'))
   })
+  it('should match custom records of custom segments', async () => {
+    runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'customrecord_cseg1' }, { scriptid: 'customrecord2' }])
+    runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'VAL_123' }])
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      {
+        isTypeMatch: () => false,
+        isFileMatch: () => false,
+        isCustomRecordTypeMatch: (name: string) => name === 'customrecord_cseg1',
+      } as unknown as NetsuiteQuery,
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      serviceIdToLastFetchDate,
+    )
+    expect(changedObjectsQuery.isTypeMatch('customsegment')).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'customsegment', instanceId: 'cseg1' })).toBeTruthy()
+    expect(changedObjectsQuery.isCustomRecordTypeMatch('customrecord_cseg1')).toBeTruthy()
+    expect(changedObjectsQuery.isCustomRecordMatch({ type: 'customrecord_cseg1', instanceId: 'val_123' })).toBeTruthy()
+
+    expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord_cseg1'))
+  })
 
   it('should return all the results of system note query failed', async () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)

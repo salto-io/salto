@@ -152,6 +152,7 @@ describe('NetsuiteQuery', () => {
             types: {
               addressForm: ['aaa.*', 'bbb.*'],
               customrecordtype: ['customrecord2', 'customrecord1'],
+              customsegment: [],
             },
             customRecords: {
               customrecord1: ['.*'],
@@ -166,9 +167,25 @@ describe('NetsuiteQuery', () => {
           })).toEqual({
             types: {
               customrecordtype: ['customrecord1'],
+              customsegment: [],
             },
             customRecords: {
               customrecord1: ['.*'],
+            },
+          })
+        })
+        it('should include customsegment too', () => {
+          expect(modifyFetchTarget({
+            customRecords: {
+              customrecord_cseg1: ['.*'],
+            },
+          })).toEqual({
+            types: {
+              customrecordtype: ['customrecord_cseg1'],
+              customsegment: ['cseg1'],
+            },
+            customRecords: {
+              customrecord_cseg1: ['.*'],
             },
           })
         })

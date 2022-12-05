@@ -13,25 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import { values } from '@salto-io/lowerdash'
-import _ from 'lodash'
-import { SAVED_SEARCH } from '../../constants'
+import _, { isUndefined } from 'lodash'
+import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
+import { NETSUITE, SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
-import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA } from './constants'
+import { SavedSearchesResult,
+  SAVED_SEARCH_RESULT_SCHEMA,
+  ModificationInformation,
+  DateKeys } from './constants'
 
 const log = logger(module)
 const { isDefined } = values
+const DELIMITER = '*'
+
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SAVED_SEARCH
 
 const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearchesResult[]> => {
   const savedSearches = await client.runSavedSearchQuery({
     type: 'savedsearch',
-    columns: ['modifiedby', 'id'],
+    columns: ['modifiedby', 'id', 'datemodified'],
     filters: [],
   })
   if (savedSearches === undefined) {
@@ -45,15 +51,62 @@ const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearches
   return savedSearches
 }
 
-const getSavedSearchesModifiersMap = async (
+const getSavedSearchesMap = async (
   client: NetsuiteClient,
-): Promise<Record<string, string>> => {
+): Promise<Record<string, ModificationInformation>> => {
   const savedSearches = await fetchSavedSearches(client)
-  return Object.fromEntries(savedSearches.map(savedSearch =>
-    (_.isEmpty(savedSearch.modifiedby) ? [] : [savedSearch.id, savedSearch.modifiedby[0].text])))
+  return Object.fromEntries(savedSearches.map(savedSearch => [
+    savedSearch.id,
+    {
+      name: savedSearch.modifiedby[0]?.text, date: savedSearch.datemodified,
+    },
+  ]))
 }
 
-const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+const getDateFormatKey = (key: string): DateKeys => {
+  if (key.includes('Y')) {
+    return 'YYYY'
+  }
+  if (key.includes('M')) {
+    return 'M'
+  }
+  return 'D'
+}
+
+const getFullTime = (timeArray: string[]): string | undefined => {
+  if (isUndefined(timeArray)) {
+    return undefined
+  }
+  return timeArray[1] === 'am' ? '0'.concat(timeArray[0]) : timeArray[0]
+}
+
+export const changeDateFormat = (date: string, dateFormat: string): string => {
+  const re = /(-|\.| |\/|,)+/g
+  const dateAsArray = date.replace(re, DELIMITER).split(DELIMITER)
+  const dateFormatKeysArray = dateFormat
+    .replace(re, DELIMITER).split(DELIMITER).map(getDateFormatKey)
+  const dateAsMap: Record<DateKeys, string> = { YYYY: '', M: '', D: '' }
+  dateFormatKeysArray.forEach((key, i) => {
+    dateAsMap[key] = dateAsArray[i]
+  })
+  const time = dateAsArray.length === 5 ? getFullTime(dateAsArray.slice(3)) : undefined
+  const formatedDate = [dateAsMap.M, dateAsMap.D, dateAsMap.YYYY].join('/')
+  const returnDate = time ? [formatedDate, time].join(' ') : formatedDate
+  return new Date(returnDate.concat('Z')).toISOString()
+}
+
+const isUserPreference = (instance: InstanceElement): boolean =>
+  instance.elemID.typeName === SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES
+
+const getDateFormatFromElemSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<string> => {
+  const elemIdToGet = new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES, 'instance')
+  const sourcedElement = await elementsSource.get(elemIdToGet)
+  return sourcedElement?.value?.DATEFORMAT?.text
+}
+
+const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {
@@ -70,13 +123,32 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
     if (_.isEmpty(savedSearchesInstances)) {
       return
     }
-    const savedSearchesMap = await getSavedSearchesModifiersMap(client)
+
+    const savedSearchesMap = await getSavedSearchesMap(client)
     if (_.isEmpty(savedSearchesMap)) {
       return
     }
+
+    const dateFormat = elements
+      .filter(isInstanceElement)
+      .find(isUserPreference)?.value.configRecord.data.fields?.DATEFORMAT?.text ?? (
+        isPartial ? await getDateFormatFromElemSource(elementsSource) : undefined
+      )
+
     savedSearchesInstances.forEach(search => {
       if (isDefined(savedSearchesMap[search.value.scriptid])) {
-        search.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: savedSearchesMap[search.value.scriptid] })
+        const { name, date } = savedSearchesMap[search.value.scriptid]
+        if (isDefined(name)) {
+          search.annotate(
+            { [CORE_ANNOTATIONS.CHANGED_BY]: name }
+          )
+        }
+        if (isDefined(date) && isDefined(dateFormat)) {
+          const annotationDate = changeDateFormat(date, dateFormat)
+          search.annotate(
+            { [CORE_ANNOTATIONS.CHANGED_AT]: annotationDate }
+          )
+        }
       }
     })
   },

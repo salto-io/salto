@@ -22,7 +22,7 @@ import {
   isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { getElementChangeId, setPath } from './utils'
+import { setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
 
 const log = logger(module)
@@ -87,7 +87,7 @@ const compareListWithOrderMatching = ({
   )
 
   return itemsChanges
-}, 'compareListWithOrderMatching')
+}, `compareListWithOrderMatching - ${id.getFullName()}`)
 
 /**
  * Create detailed changes from change data (before and after values)
@@ -352,7 +352,7 @@ export const applyDetailedChanges = (
       ? detailedChange.elemIDs?.before ?? detailedChange.id
       : detailedChange.elemIDs?.after ?? detailedChange.id
     const data = isRemovalChange(detailedChange) ? undefined : detailedChange.data.after
-    setPath(element, getElementChangeId(element, id), data)
+    setPath(element, id.replaceParentId(element.elemID), data)
   })
 
   _(listItemChanges)

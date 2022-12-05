@@ -34,7 +34,7 @@ import {
 import { values } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { logger } from '@salto-io/logging'
-import { getElementChangeId, resolvePath, setPath } from './utils'
+import { resolvePath, setPath } from './utils'
 
 const log = logger(module)
 
@@ -307,7 +307,7 @@ export const applyListChanges = (element: ChangeDataType, changes: DetailedChang
     throw new Error('Changes that are passed to applyListChanges must be only list item changes of the same list')
   }
 
-  const parentId = getElementChangeId(element, changes[0].id.createParentID())
+  const parentId = changes[0].id.createParentID().replaceParentId(element.elemID)
   const list = resolvePath(element, parentId)
   changes.filter(isRemovalOrModificationChange)
     .forEach(change => { list[Number(change.elemIDs?.before?.name)] = undefined })
@@ -325,4 +325,4 @@ export const applyListChanges = (element: ChangeDataType, changes: DetailedChang
     })
 
   setPath(element, parentId, list.filter(values.isDefined))
-}, 'applyListChanges')
+}, `applyListChanges - ${element.elemID.getFullName()}`)

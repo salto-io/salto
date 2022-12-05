@@ -90,6 +90,10 @@ export const modifyFetchTarget = (
     return query
   }
   const { types, filePaths, customRecords } = query
+  // in case that custom records are fetched, we want to fetch their types too-
+  // using this config: { types: { customrecordtype: [<customRecordTypes>] } }.
+  // without that addition, the custom record types wouldn't be fetched
+  // and we wouldn't be able to fetch the custom record instances.
   const customRecordTypesQuery = (types?.[CUSTOM_RECORD_TYPE] ?? []).concat(Object.keys(customRecords))
   return {
     types: {

@@ -18,7 +18,7 @@ import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
-import { REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
+import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo } from '../service_id_info'
 import { AdditionalDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
@@ -69,6 +69,10 @@ const REQUIRED_FEATURES: RequiredDependencyWithCondition[] = [
   },
   {
     typeName: REPORT_DEFINITION,
+    dependency: 'SERVERSIDESCRIPTING',
+  },
+  {
+    typeName: FINANCIAL_LAYOUT,
     dependency: 'SERVERSIDESCRIPTING',
   },
 ]

@@ -246,6 +246,7 @@ describe('createElementsSourceIndex', () => {
         'netsuite.workflow_workflowstates_workflowstate_workflowtransitions.field.workflowtransition': 'scriptid',
         'netsuite.workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters.field.parameter': 'name',
       })
+  })
   it('should create the right elemIdToChangeAtIndex index', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
     getAllMock.mockImplementation(buildElementsSourceFromElements([

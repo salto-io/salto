@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -24,8 +24,8 @@ import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
-import { isCustomRecordType } from '../../types'
-import { CUSTOM_RECORD_TYPE } from '../../constants'
+import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
+import { CUSTOM_RECORD_TYPE, INTERNAL_ID } from '../../constants'
 import { changeDateFormat } from './saved_searches'
 
 const { isDefined } = lowerDashValues
@@ -317,11 +317,12 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       setChangedAt(type, lastModifiedDate)
     })
     await awu(customRecordsWithInternalIds).forEach(async instance => {
-      const employeeId = systemNotes[getRecordIdAndTypeStringKey(
+      const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
         getInternalId(instance),
         getInternalId(await instance.getType())
-      )]
+      )] ?? {}
       setChangedBy(instance, employeeId)
+      setChangedAt(instance, lastModifiedDate)
     })
   },
 })

@@ -133,6 +133,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
         mapKeyFieldsIndex[field.elemID.getFullName()] = field.annotations[LIST_MAPPED_BY_FIELD]
       }
     })
+  }
   const updateElemIdToChangedAtIndex = (element: Element): void => {
     const changeAt = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     if (changeAt !== undefined) {

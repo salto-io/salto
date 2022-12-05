@@ -181,7 +181,7 @@ export class FieldReferenceResolver<T extends string> {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'fullValue'
     ]
-    this.validationStrategy = ReferenceValidationStrategyLookup[def.validationStrategy ?? 'asString']
+    this.validationStrategy = ReferenceValidationStrategyLookup[def.validationStrategy ?? 'exact']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined

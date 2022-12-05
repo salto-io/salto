@@ -15,8 +15,9 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { referencesRules } from '../reference_mapping'
+import { referencesRules, OktaFieldReferenceResolver } from '../reference_mapping'
 import { FilterCreator } from '../filter'
+
 
 /**
  * Convert field values into references, based on predefined rules.
@@ -27,6 +28,7 @@ const filter: FilterCreator = () => ({
       elements,
       fieldsToGroupBy: ['id', 'name'],
       defs: referencesRules,
+      fieldReferenceResolverCreator: defs => new OktaFieldReferenceResolver(defs),
     })
   },
 })

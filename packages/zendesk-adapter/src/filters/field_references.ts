@@ -264,6 +264,7 @@ export class ZendeskFieldReferenceResolver extends referenceUtils.FieldReference
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
+    this.validationStrategy = referenceUtils.ReferenceValidationStrategyLookup[def.validationStrategy ?? 'asString']
   }
 }
 

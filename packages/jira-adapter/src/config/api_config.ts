@@ -870,11 +870,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
       ],
     },
-    // jspRequests: {
-    //   add: '/secure/admin/AddNotification.jspa',
-    //   remove: '/secure/admin/DeleteNotification.jspa',
-    //   query: '/rest/api/3/notificationscheme/{id}?expand=all',
-    // },
   },
   PageBeanIssueTypeScreenSchemesProjects: {
     request: {

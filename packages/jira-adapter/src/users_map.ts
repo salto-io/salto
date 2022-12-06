@@ -22,25 +22,40 @@ const { toArrayAsync } = collections.asynciterable
 export type IdMap = Record<string, string>
 export type GetIdMapFunc = () => Promise<IdMap>
 
-export const getIdMapFuncCreator = (paginator: clientUtils.Paginator): GetIdMapFunc => {
+export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCenter: boolean)
+    : GetIdMapFunc => {
   let idMap: IdMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
   return async (): Promise<IdMap> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
-        const paginationArgs = {
-          url: '/rest/api/3/users/search',
-          paginationField: 'startAt',
+        let paginationArgs
+        if (isDataCenter) {
+          paginationArgs = {
+            url: '/rest/api/2/user/search?username=.',
+          }
+        } else {
+          paginationArgs = {
+            url: '/rest/api/3/users/search',
+            paginationField: 'startAt',
+          }
         }
         usersCallPromise = toArrayAsync(paginator(
           paginationArgs,
           page => makeArray(page) as clientUtils.ResponseValue[]
         ))
       }
-      idMap = Object.fromEntries((await usersCallPromise)
-        .flat()
-        .filter(user => user.accountId !== undefined)
-        .map(user => [user.accountId, user.displayName]))
+      if (isDataCenter) {
+        idMap = Object.fromEntries((await usersCallPromise)
+          .flat()
+          .filter(user => user.key !== undefined)
+          .map(user => [[user.key, user.name], [user.name, user.key]].flat()))
+      } else {
+        idMap = Object.fromEntries((await usersCallPromise)
+          .flat()
+          .filter(user => user.accountId !== undefined)
+          .map(user => [user.accountId, user.displayName]))
+      }
     }
     return idMap
   }

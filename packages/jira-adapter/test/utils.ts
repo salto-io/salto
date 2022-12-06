@@ -75,7 +75,7 @@ export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
   const paginator = clientUtils.createPaginator(
     { paginationFuncCreator: paginate, client }
   )
-  const getIdMapFunc = getIdMapFuncCreator(paginator)
+  const getIdMapFunc = getIdMapFuncCreator(paginator, client.isDataCenter)
   return { client, paginator, connection, getIdMapFunc }
 }
 

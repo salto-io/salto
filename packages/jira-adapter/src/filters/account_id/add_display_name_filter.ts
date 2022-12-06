@@ -14,8 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement } from '@salto-io/adapter-api'
-
+import { getChangeData, isAdditionOrModificationChange, isInstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -34,10 +33,18 @@ const addDisplayName = (idMap: IdMap): WalkOnUsersCallback => (
   }
 }
 
+const convertKeyToId = (idMap: IdMap): WalkOnUsersCallback => (
+  { value, fieldName }
+): void => {
+  if (Object.prototype.hasOwnProperty.call(idMap, value[fieldName].id)) {
+    value[fieldName].id = idMap[value[fieldName].id]
+  }
+}
+
 /*
  * A filter to add display names beside account ids. The source is a JIRA query.
  */
-const filter: FilterCreator = ({ config, getIdMapFunc }) => ({
+const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
   onFetch: async elements => log.time(async () => {
     if (!(config.fetch.showUserDisplayNames ?? true)) {
       return
@@ -46,9 +53,34 @@ const filter: FilterCreator = ({ config, getIdMapFunc }) => ({
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async element => {
-        walkOnElement({ element, func: walkOnUsers(addDisplayName(idMap)) })
+        if (client.isDataCenter) {
+          walkOnElement({ element, func: walkOnUsers(convertKeyToId(idMap)) })
+        } else {
+          walkOnElement({ element, func: walkOnUsers(addDisplayName(idMap)) })
+        }
       })
   }, 'add_display_name_filter fetch'),
+  preDeploy: async changes => {
+    if (!client.isDataCenter) {
+      return
+    }
+    const idMap = await getIdMapFunc()
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .forEach(element =>
+        walkOnElement({ element, func: walkOnUsers(convertKeyToId(idMap)) }))
+  },
+  onDeploy: async changes => log.time(async () => {
+    const idMap = await getIdMapFunc()
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .forEach(element =>
+        walkOnElement({ element, func: walkOnUsers(convertKeyToId(idMap)) }))
+  }, 'filterName'),
 })
 
 export default filter

@@ -146,4 +146,12 @@ type modifiedbyField = {
 export type SavedSearchesResult = {
   id: string
   modifiedby: modifiedbyField[]
+  datemodified: string
 }
+
+export type ModificationInformation = {
+  name: string
+  date: string
+}
+
+export type DateKeys = 'YYYY' | 'M' | 'D'

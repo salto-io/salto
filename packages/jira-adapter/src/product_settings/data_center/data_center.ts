@@ -219,6 +219,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/fieldconfigurationscheme/project.+',
   },
   {
+    httpMethods: ['put'],
+    url: '/rest/api/3/fieldconfigurationscheme/project',
+  },
+  {
     httpMethods: ['get', 'post'],
     url: '/rest/api/3/fieldconfiguration',
   },
@@ -230,6 +234,27 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get', 'put'],
     url: '/rest/api/3/fieldconfiguration/\\d+/fields',
   },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/dashboard/search',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/dashboard',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/dashboard/\\d+',
+  },
+  {
+    httpMethods: ['get', 'post'],
+    url: '/rest/api/3/dashboard/\\d+/gadget',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/dashboard/\\d+/gadget/\\d+',
+  },
+
   {
     httpMethods: ['post'],
     url: '/rest/api/3/priority',
@@ -265,6 +290,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['put'],
     url: '/rest/api/3/resolution/.*',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescheme/project',
   },
 ]
 

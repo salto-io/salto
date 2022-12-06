@@ -53,6 +53,11 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         serviceUrl: '/secure/Dashboard.jspa?selectPageId={id}',
       },
     },
+    DashboardGadget: {
+      transformation: {
+        idFields: ['position.column', 'position.row'],
+      },
+    },
     Automation: {
       transformation: {
         serviceUrl: '/secure/AutomationGlobalAdminAction!default.jspa#/rule/{id}',

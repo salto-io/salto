@@ -363,6 +363,22 @@ describe('NetsuiteAdapter creator', () => {
             adapter.configType as ObjectType,
             {
               fetchTarget: {
+                customRecords: ['customrecord1', 'customrecord2'],
+              },
+            }
+          ),
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow('fetchTarget.customRecords should be an object')
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              fetchTarget: {
                 types: {
                   type1: 'id',
                 },
@@ -373,6 +389,24 @@ describe('NetsuiteAdapter creator', () => {
           elementsSource: buildElementsSourceFromElements([]),
         })
       ).toThrow('fetchTarget.types.type1 should be a list of strings')
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              fetchTarget: {
+                customRecords: {
+                  customrecord1: 'id',
+                },
+              },
+            }
+          ),
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow('fetchTarget.customRecords.customrecord1 should be a list of strings')
     })
 
     it('should throw an error when include is invalid', () => {

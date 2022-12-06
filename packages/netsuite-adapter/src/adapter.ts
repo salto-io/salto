@@ -60,9 +60,10 @@ import omitFieldsFilter from './filters/omit_fields'
 import currencyExchangeRate from './filters/currency_exchange_rate'
 import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
+import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
-import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
+import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
@@ -141,6 +142,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       // and must run before replaceInstanceReferencesFilter
       convertListsToMaps,
       replaceElementReferences,
+      currencyUndeployableFieldsFilter,
       SDFInternalIds,
       dataInstancesAttributes,
       redundantFields,
@@ -156,6 +158,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       currencyExchangeRate,
       // AuthorInformation filters must run after SDFInternalIds filter
       systemNoteAuthorInformation,
+      // savedSearchesAutorInformation must run before suiteAppConfigElementsFilter
       savedSearchesAuthorInformation,
       translationConverter,
       accountSpecificValues,
@@ -185,7 +188,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.fetchInclude = config.fetch?.include
     this.fetchExclude = config.fetch?.exclude
     this.lockedElements = config.fetch?.lockedElementsToExclude
-    this.fetchTarget = config.fetchTarget
+    this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
     this.skipList = config.skipList // old version
     this.useChangesDetection = config.useChangesDetection ?? DEFAULT_USE_CHANGES_DETECTION
     this.deployReferencedElements = config.deploy?.deployReferencedElements

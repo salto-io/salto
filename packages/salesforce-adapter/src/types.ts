@@ -92,6 +92,7 @@ export type ChangeValidatorName = (
   | 'recordTypeDeletion'
   | 'flowsValidator'
   | 'fullNameChangedValidator'
+  | 'invalidListViewFilterScope'
 )
 
 export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
@@ -558,6 +559,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
     flowsValidator: { refType: BuiltinTypes.BOOLEAN },
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
+    invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

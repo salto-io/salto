@@ -98,6 +98,7 @@ const createAttachmentInstance = ({
     ARTICLE_TYPE_NAME,
     apiDefinitions,
   )
+  // Eventually the element name and path of article_attachment is changed due to it extends the parend id
   const tempName = parentConfigInstanceName
     ? parentConfigInstanceName.concat(`__${configInstanceName}`)
     : configInstanceName

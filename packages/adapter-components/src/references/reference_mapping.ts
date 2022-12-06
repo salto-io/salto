@@ -70,21 +70,28 @@ export const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceValidationStrategy = {
+export type ReferenceSourceTransformation = {
+  transform: (fieldValue: string|number) => string
   validate: (referringFieldValue: string|number, serializedRefExpr: string) => boolean
 }
 
-export type ReferenceValidationStrategyName = 'exact' | 'asString' | 'asCaseInsensitiveString'
-export const ReferenceValidationStrategyLookup: Record<ReferenceValidationStrategyName, ReferenceValidationStrategy> = {
+export type ReferenceSourceTransformationName = 'exact' | 'asString' | 'asCaseInsensitiveString'
+export const ReferenceSourceTransformationLookup: Record<
+ReferenceSourceTransformationName,
+ReferenceSourceTransformation
+> = {
   exact: {
+    transform: fieldValue => _.toString(fieldValue),
     validate: (referringFieldValue, serializedRefExpr) => referringFieldValue === serializedRefExpr,
   },
   asString: {
+    transform: fieldValue => _.toString(fieldValue),
     validate: (referringFieldValue, serializedRefExpr) => (
       _.toString(referringFieldValue) === _.toString(serializedRefExpr)
     ),
   },
   asCaseInsensitiveString: {
+    transform: fieldValue => _.toString(fieldValue).toLocaleLowerCase(),
     validate: (referringFieldValue, serializedRefExpr) => (
       _.toString(referringFieldValue).toLocaleLowerCase() === _.toString(serializedRefExpr).toLocaleLowerCase()
     ),
@@ -138,7 +145,7 @@ export type FieldReferenceDefinition<
 > = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
-  validationStrategy?: ReferenceValidationStrategyName
+  sourceTransformation?: ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
   target?: ReferenceTargetDefinition<T>
   // If missingRefStrategy is missing, we won't replace broken values with missing references
@@ -164,7 +171,7 @@ const matchInstanceType = async (
 
 type FieldReferenceResolverDetails<T extends string> = {
   serializationStrategy: ReferenceSerializationStrategy
-  validationStrategy: ReferenceValidationStrategy
+  sourceTransformation: ReferenceSourceTransformation
   target?: ExtendedReferenceTargetDefinition<T>
   missingRefStrategy?: MissingReferenceStrategy
 }
@@ -172,7 +179,7 @@ type FieldReferenceResolverDetails<T extends string> = {
 export class FieldReferenceResolver<T extends string> {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
-  validationStrategy: ReferenceValidationStrategy
+  sourceTransformation: ReferenceSourceTransformation
   target?: ExtendedReferenceTargetDefinition<T>
   missingRefStrategy?: MissingReferenceStrategy
 
@@ -181,7 +188,7 @@ export class FieldReferenceResolver<T extends string> {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'fullValue'
     ]
-    this.validationStrategy = ReferenceValidationStrategyLookup[def.validationStrategy ?? 'exact']
+    this.sourceTransformation = ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'exact']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined

@@ -24,7 +24,7 @@ import {
   CreateMissingRefFunc,
   GetReferenceIdFunc,
   ReferenceSerializationStrategyLookup,
-  ReferenceValidationStrategy,
+  ReferenceSourceTransformation,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -62,8 +62,9 @@ export const replaceReferenceValues = async <
   elemByElemID: multiIndex.Index<[string], Element>
   contextStrategyLookup?: Record<T, ContextFunc>
 }): Promise<Values> => {
-  const getRefElem = async ({ val, target, field, path, lookupIndexName, createMissingReference }: {
+  const getRefElem = async ({ val, valTransformation, target, field, path, lookupIndexName, createMissingReference }: {
     val: string | number
+    valTransformation: ReferenceSourceTransformation
     field: Field
     path?: ElemID
     target: ExtendedReferenceTargetDefinition<T>
@@ -80,14 +81,14 @@ export const replaceReferenceValues = async <
       const lookup = lookupIndexName !== undefined ? elemLookupMaps[lookupIndexName] : defaultIndex
 
       if (targetType !== undefined && lookup !== undefined) {
-        if (!lookup.get(targetType, _.toString(value))) {
+        if (!lookup.get(targetType, valTransformation.transform(value))) {
           log.warn(`Can't locate referred entity for '${targetType}:${value}'`)
         }
       }
 
       return (
         targetType !== undefined && lookup !== undefined
-          ? lookup.get(targetType, _.toString(value))
+          ? lookup.get(targetType, valTransformation.transform(value))
           : undefined
       )
     }
@@ -125,7 +126,7 @@ export const replaceReferenceValues = async <
   ): Promise<Value> => {
     const toValidatedReference = async (
       serializer: ReferenceSerializationStrategy,
-      validator: ReferenceValidationStrategy,
+      sourceTransformation: ReferenceSourceTransformation,
       elem: Element | undefined,
     ): Promise<ReferenceExpression | undefined> => {
       const getReferenceExpression = async (element: Element):
@@ -157,7 +158,7 @@ export const replaceReferenceValues = async <
           })
           : resolvePath(element, referenceId)
 
-        if (!validator.validate(val, serializedRefExpression)) {
+        if (!sourceTransformation.validate(val, serializedRefExpression)) {
           log.warn(`Invalid reference ${val} => [${serializedRefExpression} (element '${element.elemID.getFullName()}')]`)
           return undefined
         }
@@ -183,9 +184,10 @@ export const replaceReferenceValues = async <
       .filter(refResolver => refResolver.target !== undefined)
       .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
-        refResolver.validationStrategy,
+        refResolver.sourceTransformation,
         await getRefElem({
           val,
+          valTransformation: refResolver.sourceTransformation,
           field,
           path,
           target: refResolver.target as ExtendedReferenceTargetDefinition<T>,

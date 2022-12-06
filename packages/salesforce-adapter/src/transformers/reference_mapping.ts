@@ -130,7 +130,7 @@ type SourceDef = {
 export type FieldReferenceDefinition = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
-  validationStrategy?: referenceUtils.ReferenceValidationStrategyName
+  validationStrategy?: referenceUtils.ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
@@ -647,7 +647,7 @@ const matchInstanceType = async (
 export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
-  validationStrategy: referenceUtils.ReferenceValidationStrategy
+  sourceTransformation: referenceUtils.ReferenceSourceTransformation
   target?: referenceUtils.ExtendedReferenceTargetDefinition<ReferenceContextStrategyName>
 
   constructor(def: FieldReferenceDefinition) {
@@ -655,7 +655,7 @@ export class FieldReferenceResolver {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'absoluteApiName'
     ]
-    this.validationStrategy = referenceUtils.ReferenceValidationStrategyLookup[def.validationStrategy ?? 'asString']
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.validationStrategy ?? 'asString']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined

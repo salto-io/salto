@@ -100,7 +100,7 @@ ReferenceContextStrategyName
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
-    this.validationStrategy = referenceUtils.ReferenceValidationStrategyLookup[def.validationStrategy ?? 'asString']
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
   }
 }
 

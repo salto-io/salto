@@ -760,7 +760,7 @@ describe('Zendesk adapter E2E', () => {
       section2EnTranslationInstance,
       section3Instance,
       section3EnTranslationInstance,
-      // sectionOrder,
+      sectionOrder,
       insideSectionInstance,
       insideSectionEnTranslationInstance,
       articleAttachment,
@@ -776,6 +776,11 @@ describe('Zendesk adapter E2E', () => {
     // ******************************************************** //
 
     let groupIdToInstances: Record<string, InstanceElement[]>
+    /**
+     * deploy instances to add and fetch afterwards.
+     * if beforall is true groupIdToInstances will update to the new elements deployed.
+     * this function allows the deploy and fetch multiple times in the e2e, if needed.
+     */
     const deployAndFetch = async (instancesToAdd: InstanceElement[], beforeAll: boolean): Promise<void> => {
       const changeGroups = await getChangeGroupIds(new Map<string, Change>(instancesToAdd
         .map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])))
@@ -819,7 +824,7 @@ describe('Zendesk adapter E2E', () => {
     /**
      * returns a record of the elemID.name and the instance from elements that corresponds to the elemID.
      */
-    const checkInstancesAreDefined = (originalInstances: InstanceElement[]):
+    const getElementsAfterFetch = (originalInstances: InstanceElement[]):
       Record<string, InstanceElement | undefined> => {
       const nameToElemId = _.keyBy(originalInstances, instance => instance.elemID.name)
       return _.mapValues(
@@ -830,6 +835,17 @@ describe('Zendesk adapter E2E', () => {
           return val
         }
       )
+    }
+
+    const verifyInstanceValues = (
+      fetchInstance: InstanceElement | undefined, orgInstance: InstanceElement, fieldsToCheck: string[]
+    ): void => {
+      expect(fetchInstance).toBeDefined()
+      if (fetchInstance === undefined) {
+        return
+      }
+      const fetchInstanceValues = _.pick(fetchInstance.value, fieldsToCheck)
+      expect(fetchInstanceValues).toMatchObject(orgInstance.value)
     }
 
     beforeAll(async () => {
@@ -1047,7 +1063,9 @@ describe('Zendesk adapter E2E', () => {
       })
     })
     it('should handel guide elements correctly ', async () => {
-      checkInstancesAreDefined(guideInstances)
+      const fetchedElements = getElementsAfterFetch(guideInstances)
+      guideInstances
+        .forEach(elem => verifyInstanceValues(fetchedElements[elem.elemID.name], elem, Object.keys(elem.value)))
     })
   })
 })

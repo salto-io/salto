@@ -2,7 +2,7 @@
 Salesforce CPQ and Advanced Approvals configuration includes both metadata items (e.g. Custom Objects, Apex classes, Triggers, ...) as well as data records of various object types (e.g. Product2, PriceAction__c, PriceCondition__c, ...)
 Salto users are able to manage their CPQ and Advanced Approvals metadata as well as relevant data records from a single place - the Salto workspace.
 
-## Configuring Salto for CPQ 
+## Configuring Salto for CPQ
 By default, Salto's salesforce configuration includes only metadata items that belong to the default package and does not include any data records.
 Users that would like to manage their CPQ and Advanced Approvals configuration using Salto needs to:
 1. Configure Salto to manage metadata items that belong to the `SBQQ` & `sbaa` salesforce packages
@@ -31,10 +31,10 @@ Managing salesforce data records within a Salto workspace is disabled by default
 Salesforce data configuration includes the following information:
 * `includeObjects`: A list of object name patterns. Data records of matching salesforce objects will be managed in the salto workspace.
 * `excludeObjects`: A list of objects name patterns. Data records of matching salesforce objects will be excluded from the salto workspace.
-* `allowReferenceTo`: A list of objects name patterns. Data records of matching salesforce objects will be managed in the salto workspace only in case they are referenced from other managed data records. 
+* `allowReferenceTo`: A list of objects name patterns. Data records of matching salesforce objects will be managed in the salto workspace only in case they are referenced from other managed data records.
 * `saltoIDSettings`: Define cross environment id for data records by providing a list of object fields to construct the cross environment id from. Use `##allMasterDetailFields##` in order to include the SaltoID of referenced MasterDetail records.
 
-### Example Salto Salesforce/CPQ Configuration 
+### Example Salto Salesforce/CPQ Configuration
 ```
 salesforce {
   fetch = {
@@ -89,6 +89,7 @@ salesforce {
         },
         {
           metadataType = "EmailTemplate"
+          name: '^MarketoEmailTemplates/*',
         },
         {
           metadataType = "ContentAsset"

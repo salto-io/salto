@@ -97,7 +97,7 @@ const getTranslationLocale = (instance?: InstanceElement): string => {
     return NO_VALUE_DEFAULT
   }
   if (isReferenceExpression(instance.value.locale)) {
-    return instance.value.locale.value.value?.id ?? NO_VALUE_DEFAULT // will have to change after seroussi change
+    return instance.value.locale.value.value?.id ?? NO_VALUE_DEFAULT // will have to change when locale is changed
   }
   return instance.value.locale ?? NO_VALUE_DEFAULT
 }

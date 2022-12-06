@@ -192,7 +192,6 @@ export const DEFAULT_FILTERS = [
   dynamicContentReferencesFilter,
   referencedIdFieldsFilter,
   // need to be after referencedIdFieldsFilter as 'name' and 'title' is removed
-  fetchCategorySection,
   helpCenterFetchArticle,
   articleBodyFilter,
   guideParentSection,
@@ -203,6 +202,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
+  fetchCategorySection,
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

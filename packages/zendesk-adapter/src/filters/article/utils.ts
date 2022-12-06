@@ -99,7 +99,8 @@ const createAttachmentInstance = ({
     apiDefinitions,
   )
   // Eventually the element name and path of article_attachment is changed due to it extends the parend id
-  const tempName = parentConfigInstanceName
+  const tempName = (parentConfigInstanceName
+    && apiDefinitions.types[ARTICLE_ATTACHMENT_TYPE_NAME].transformation?.extendsParentId)
     ? parentConfigInstanceName.concat(`__${configInstanceName}`)
     : configInstanceName
   const tempNaclName = naclCase(tempName)

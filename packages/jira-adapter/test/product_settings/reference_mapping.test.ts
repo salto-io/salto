@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { resolutionAndPriorityToTypeName } from '../../src/reference_mapping'
+import { JiraFieldReferenceResolver, resolutionAndPriorityToTypeName } from '../../src/reference_mapping'
 
 describe('resolutionAndPriorityToTypeName', () => {
   let inputString : string
@@ -36,5 +36,16 @@ describe('resolutionAndPriorityToTypeName', () => {
       inputString = 'customfield_10003'
       expect(resolutionAndPriorityToTypeName(inputString)).toBeUndefined()
     })
+  })
+})
+describe('JiraFieldReferenceResolver', () => {
+  it('should use fall back when there are no serializationStrategy or JiraSerializationStrategy ', () => {
+    const res = new JiraFieldReferenceResolver(
+      {
+        src: { field: 'value', parentTypes: ['WorkflowProperty'] },
+        target: { typeContext: 'workflowStatusPropertiesContext' },
+      }
+    )
+    expect(res.serializationStrategy).toBeDefined()
   })
 })

@@ -23,7 +23,6 @@ import { Credentials, toCredentialsAccountId } from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
 import { NetsuiteConfig } from '../src/config'
-import { CLIENT_CONFIG, SUITEAPP_CLIENT_CONFIG } from '../src/constants'
 import { mockGetElemIdFunc } from '../test/utils'
 import { credsSpec } from './jest_environment'
 import NetsuiteClient from '../src/client/client'
@@ -50,12 +49,12 @@ export const realAdapter = (
   const client = (adapterParams && adapterParams.client)
     || new NetsuiteClient(new SdfClient({
       credentials: netsuiteCredentials,
-      config: config?.[CLIENT_CONFIG],
+      config: config?.client,
       globalLimiter,
     }),
     withSuiteApp ? new SuiteAppClient({
       credentials: netsuiteCredentials,
-      config: config?.[SUITEAPP_CLIENT_CONFIG],
+      config: config?.suiteAppClient,
       globalLimiter,
     }) : undefined)
   const adapter = new NetsuiteAdapter({

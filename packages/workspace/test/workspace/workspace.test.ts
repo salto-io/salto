@@ -25,8 +25,6 @@ import {
   isStaticFile,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
-// eslint-disable-next-line no-restricted-imports
-import { METADATA_TYPE, INTERNAL_ID_ANNOTATION } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { InvalidValueValidationError, ValidationError } from '../../src/validator'
@@ -56,6 +54,9 @@ import { createElementSelector } from '../../src/workspace/element_selector'
 import * as expressionsModule from '../../src/expressions'
 
 const { awu } = collections.asynciterable
+
+const METADATA_TYPE = 'metadataType'
+const INTERNAL_ID_ANNOTATION = 'internalId'
 
 const changedNaclFile = {
   filename: 'file.nacl',

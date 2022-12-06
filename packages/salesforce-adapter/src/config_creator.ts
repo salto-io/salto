@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ConfigOpt, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
+import { BuiltinTypes, ConfigCreator, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { configType } from './types'
 import * as constants from './constants'
@@ -297,35 +297,41 @@ export const configWithCPQ = new InstanceElement(
   }
 )
 
-const configOptElemId = new ElemID(constants.SALESFORCE, 'configOptType')
+const optionsElemId = new ElemID(constants.SALESFORCE, 'configOptionsType')
 
-export const configOptObjectType = new ObjectType({
-  elemID: configOptElemId,
+type ConfigOptionsType = {
+  cpq?: boolean
+}
+
+export const optionsType = createMatchingObjectType<ConfigOptionsType>({
+  elemID: optionsElemId,
   fields: {
     cpq: { refType: BuiltinTypes.BOOLEAN },
   },
 })
-
-const isConfigOptInstance = (instance: InstanceElement): boolean => {
-  if (instance.refType.elemID.isEqual(configOptElemId)) {
+const isOptionsTypeInstance = (instance: InstanceElement):
+  instance is InstanceElement & { value: ConfigOptionsType } => {
+  if (instance.refType.elemID.isEqual(optionsElemId)) {
     return true
   }
-  log.error(`Received an invalid instance for configOpt. Instance: ${safeJsonStringify(instance)}`)
+  log.error(`Received an invalid instance for config options. Received instance with refType ElemId full name: ${instance.refType.elemID.getFullName()}`)
   return false
 }
 
 export const getConfig = async (
-  configOpt?: InstanceElement
+  options?: InstanceElement
 ): Promise<InstanceElement> => {
-  if (configOpt
-    && isConfigOptInstance(configOpt) && configOpt.value.cpq
-  ) {
+  const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  if (options === undefined || !isOptionsTypeInstance(options)) {
+    return defaultConf
+  }
+  if (options.value.cpq === true) {
     return configWithCPQ
   }
-  return createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+  return defaultConf
 }
 
-export const configOpt: ConfigOpt = {
-  configOptObjectType,
+export const configCreator: ConfigCreator = {
+  optionsType,
   getConfig,
 }

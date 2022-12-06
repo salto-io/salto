@@ -88,10 +88,10 @@ describe('adapters.ts', () => {
 
       _.assign(mockAdapter, {
         configType: mockConfigType,
-        configOpt: {
-          getConfig: mockFunction<NonNullable<Adapter['configOpt']>['getConfig']>()
+        configCreator: {
+          getConfig: mockFunction<NonNullable<Adapter['configCreator']>['getConfig']>()
             .mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })),
-          configOptObjectType: new ObjectType({
+          options: new ObjectType({
             elemID: new ElemID('test'),
           }),
         },
@@ -104,21 +104,21 @@ describe('adapters.ts', () => {
       createDefaultInstanceFromTypeMock.mockReset()
     })
 
-    it('should call createDefaultInstanceFromType when configOpt is undefined', async () => {
-      delete mockAdapter.configOpt
+    it('should call createDefaultInstanceFromType when configCreator is undefined', async () => {
+      delete mockAdapter.configCreator
       const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter')
       expect(createDefaultInstanceFromType).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
     })
-    it('should use getConfig when configOpt is defined', async () => {
+    it('should use getConfig when configCreator is defined', async () => {
       const mockObjType = new ObjectType({
         elemID: new ElemID('test'),
       })
-      const mockConfigOpt = new InstanceElement('test', mockObjType)
-      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockConfigOpt)
-      expect(mockAdapter.configOpt?.getConfig)
-        .toHaveBeenCalledWith(mockConfigOpt)
+      const mockOptions = new InstanceElement('test', mockObjType)
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter', 'mockAdapter', mockOptions)
+      expect(mockAdapter.configCreator?.getConfig)
+        .toHaveBeenCalledWith(mockOptions)
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })

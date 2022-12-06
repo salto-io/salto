@@ -36,13 +36,16 @@ import notYetSupportedValuesValidator from './change_validators/not_yet_supporte
 import workflowAccountSpecificValuesValidator from './change_validators/workflow_account_specific_values'
 import exchangeRateValidator from './change_validators/currency_exchange_rate'
 import netsuiteClientValidation from './change_validators/client_validation'
+import currencyUndeployableFieldsValidator from './change_validators/currency_undeployable_fields'
 import NetsuiteClient from './client/client'
 import { AdditionalDependencies } from './client/types'
 import { Filter } from './filter'
+import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
 
 const changeValidators: ChangeValidator[] = [
   exchangeRateValidator,
+  currencyUndeployableFieldsValidator,
   workflowAccountSpecificValuesValidator,
   accountSpecificValuesValidator,
   dataAccountSpecificValuesValidator,
@@ -89,6 +92,7 @@ const getChangeValidator: ({
   deployReferencedElements?: boolean
   additionalDependencies: AdditionalDependencies
   filtersRunner: Required<Filter>
+  elementsSourceIndex: LazyElementsSourceIndexes
   }) => ChangeValidator = (
     {
       client,
@@ -99,6 +103,7 @@ const getChangeValidator: ({
       deployReferencedElements,
       additionalDependencies,
       filtersRunner,
+      elementsSourceIndex,
     }
   ) =>
     async changes => {
@@ -114,6 +119,7 @@ const getChangeValidator: ({
           client,
           additionalDependencies,
           filtersRunner,
+          elementsSourceIndex,
           deployReferencedElements,
         ) : [],
       ]))

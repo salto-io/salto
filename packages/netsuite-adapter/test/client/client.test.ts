@@ -34,10 +34,16 @@ describe('NetsuiteClient', () => {
       getCredentials: () => ({ accountId: 'someId' }),
       deploy: mockSdfDeploy,
     } as unknown as SdfClient
-    const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
+    const mockElementsSourceIndex = {
+      getIndexes: () => ({ mapKeyFieldsIndex: {} }),
+    } as unknown as LazyElementsSourceIndexes
     const client = new NetsuiteClient(sdfClient)
 
-    const deployParams: [boolean, AdditionalDependencies, LazyElementsSourceIndexes] = [
+    const deployParams: [
+      boolean,
+      AdditionalDependencies,
+      LazyElementsSourceIndexes,
+    ] = [
       false,
       {
         include: { features: [], objects: [] },
@@ -308,7 +314,6 @@ describe('NetsuiteClient', () => {
     describe('validate', () => {
       let type: ObjectType
       let change: Change<InstanceElement>
-      const validateParams: [boolean, AdditionalDependencies] = [deployParams[0], deployParams[1]]
       beforeEach(() => {
         jest.resetAllMocks()
         type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
@@ -317,7 +322,7 @@ describe('NetsuiteClient', () => {
         })
       })
       it('should call sdfValidate', async () => {
-        await client.validate([change], SDF_CHANGE_GROUP_ID, ...validateParams)
+        await client.validate([change], SDF_CHANGE_GROUP_ID, ...deployParams)
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           [{
             scriptId: 'someObject',
@@ -325,11 +330,11 @@ describe('NetsuiteClient', () => {
             values: { scriptid: 'someObject' },
           }],
           undefined,
-          { additionalDependencies: validateParams[1], validateOnly: true }
+          { additionalDependencies: deployParams[1], validateOnly: true }
         )
       })
       it('should skip validation', async () => {
-        await client.validate([change], SUITEAPP_UPDATING_CONFIG_GROUP_ID, ...validateParams)
+        await client.validate([change], SUITEAPP_UPDATING_CONFIG_GROUP_ID, ...deployParams)
         expect(mockSdfDeploy).not.toHaveBeenCalled()
       })
     })
@@ -360,7 +365,11 @@ describe('NetsuiteClient', () => {
 
     const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
 
-    const deployParams: [boolean, AdditionalDependencies, LazyElementsSourceIndexes] = [
+    const deployParams: [
+      boolean,
+      AdditionalDependencies,
+      LazyElementsSourceIndexes,
+    ] = [
       false,
       {
         include: { features: [], objects: [] },

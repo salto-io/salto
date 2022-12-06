@@ -110,11 +110,12 @@ export const deployWorkflow = async (
     // If we created the workflow we can edit it
     getChangeData(change).value.operations = { canEdit: true }
 
-    if (config.client.usePrivateAPI && !client.isDataCenter) {
-      // No need to run in DC since there are not triggers in DC
+    if (config.client.usePrivateAPI) {
       await deployTriggers(resolvedChange, client)
       // No need to run in DC since the main deployment requests already supports deploying steps
-      await deploySteps(getChangeData(change), client)
+      if (!client.isDataCenter) {
+        await deploySteps(getChangeData(change), client)
+      }
     }
   }
 }

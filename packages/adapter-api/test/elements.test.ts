@@ -843,6 +843,44 @@ describe('Test elements.ts', () => {
         expect(nonAnnoType.isAnnotationTypeID()).toBeFalsy()
       })
     })
+
+    describe('replaceParentId', () => {
+      it('should replace the id of the parent with the new id', () => {
+        expect(new ElemID('salto', 'obj', 'instance', 'inst1', 'a')
+          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2')).getFullName())
+          .toBe('salto.obj.instance.inst2.a')
+      })
+
+      it('should return the new id if the two arrays are of the same size', () => {
+        expect(new ElemID('salto', 'obj', 'instance', 'inst1')
+          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2')).getFullName())
+          .toBe('salto.obj.instance.inst2')
+      })
+
+      it('should return the new id the new id is longer than the current one', () => {
+        expect(new ElemID('salto', 'obj', 'instance', 'inst1')
+          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2', 'a')).getFullName())
+          .toBe('salto.obj.instance.inst2.a')
+      })
+
+      it('should work with config elements', () => {
+        expect(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME, 'a')
+          .replaceParentId(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME)).getFullName())
+          .toBe('salto.obj.instance._config.a')
+      })
+
+      it('should work with config element in the current id', () => {
+        expect(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME, 'a')
+          .replaceParentId(new ElemID('salto', 'obj', 'instance', 'inst2')).getFullName())
+          .toBe('salto.obj.instance.inst2.a')
+      })
+
+      it('should work with config element in the new id', () => {
+        expect(new ElemID('salto', 'obj', 'instance', 'inst1', 'a')
+          .replaceParentId(new ElemID('salto', 'obj', 'instance', ElemID.CONFIG_NAME)).getFullName())
+          .toBe('salto.obj.instance._config.a')
+      })
+    })
   })
 
   describe('ListType', () => {

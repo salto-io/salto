@@ -22,8 +22,6 @@ import { getDiffInstance } from '../diff'
 const { awu } = collections.asynciterable
 const { OPERATION_TO_ANNOTATION } = deployment
 
-const ERROR_MESSAGE = (id: ElemID): string => `Changing ${id.getFullName()} is not supported and it will be omitted from deploy`
-
 const detailedNestedElementErrorMessage = (
   path: ElemID,
   action: Change['action'],
@@ -35,7 +33,7 @@ const detailedNestedElementErrorMessage = (
 }
 
 const detailedTopLevelErrorMessage = (action: Change['action'], path: ElemID): string =>
-  `"${action}" operation on ${path.getFullName()} is not supported`
+  `Salto does not support "${action}" of ${path.getFullName()}. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.`
 
 const isDeploymentSupported = (element: Element, action: Change['action']): boolean =>
   element.annotations[OPERATION_TO_ANNOTATION[action]]
@@ -76,7 +74,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: ERROR_MESSAGE(type.elemID),
+          message: 'Operation not supported',
           detailedMessage: detailedTopLevelErrorMessage(change.action, instance.elemID),
         }]
       }
@@ -87,10 +85,10 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
 
       const unsupportedPaths = await getUnsupportedPaths(change)
 
-      return unsupportedPaths.map(({ path, field }) => ({
+      return unsupportedPaths.map(({ path }) => ({
         elemID: instance.elemID,
         severity: 'Info',
-        message: ERROR_MESSAGE(field),
+        message: 'Operation not supported for specific value',
         detailedMessage: detailedNestedElementErrorMessage(path, change.action),
       }))
     })

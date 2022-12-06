@@ -55,7 +55,27 @@ describe('remove_unsupported_types', () => {
 
   it('should remove the unsupported types', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary', 'custrecord'])
+    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'custrecord', 'subsidiary'])
+  })
+
+  it('should not add custom record types that are field types but not in elements (partial fetch)', async () => {
+    elements = [new ObjectType({
+      elemID: customRecordType.elemID,
+      annotations: {
+        source: 'soap',
+        metadataType: 'customrecordtype',
+      },
+      fields: {
+        custom_field: {
+          refType: new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord123'),
+            annotations: { metadataType: 'customrecordtype' },
+          }),
+        },
+      },
+    })]
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(elements.map(e => e.elemID.name)).toEqual(['custrecord'])
   })
 
   it('should do nothing if suiteApp is not installed', async () => {

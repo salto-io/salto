@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable camelcase */
-import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import * as constants from '../constants'
 import { fieldTypes } from './field_types'
 
@@ -136,3 +136,12 @@ export const getFileCabinetTypes = (): Readonly<Record<string, ObjectType>> => (
   file: fileType(),
   folder: folderType(),
 })
+
+const allowedSdfPaths = [
+  '/SuiteScripts/',
+  '/Templates/E-mail Templates/',
+  '/Templates/Marketing Templates/',
+  '/Web Site Hosting Files/',
+] as const
+export const isPathAllowedBySdf = ({ value: { path } }: InstanceElement): boolean =>
+  typeof path === 'string' && allowedSdfPaths.some(allowedPath => path.startsWith(allowedPath))

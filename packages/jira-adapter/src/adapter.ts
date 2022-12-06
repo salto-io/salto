@@ -81,10 +81,10 @@ import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
-import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
+import groupNameFilter from './filters/group_name'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import forbiddenPermissionSchemeFilter from './filters/permission_scheme/forbidden_permission_schemes'
@@ -147,6 +147,7 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
   issueTypeFilter,
@@ -164,7 +165,6 @@ export const DEFAULT_FILTERS = [
   projectFilter,
   projectComponentFilter,
   screenFilter,
-  resolutionFilter,
   priorityFilter,
   statusDeploymentFilter,
   securitySchemeFilter,

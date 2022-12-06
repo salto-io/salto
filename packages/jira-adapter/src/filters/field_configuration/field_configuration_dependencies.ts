@@ -42,7 +42,9 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
 const getProjectFieldConfigurations = (instance: InstanceElement): InstanceElement[] => {
   const fieldConfigurationRef = instance.value.fieldConfigurationScheme
   if (!isReferenceExpression(fieldConfigurationRef)) {
-    log.warn(`${instance.elemID.getFullName()} has a field configuration scheme value that is not a reference so we can't calculate the _generated_dependencies`)
+    if (fieldConfigurationRef !== undefined) {
+      log.warn(`${instance.elemID.getFullName()} has a field configuration scheme value that is not a reference so we can't calculate the _generated_dependencies`)
+    }
     return []
   }
   return fieldConfigurationRef.value.value.items

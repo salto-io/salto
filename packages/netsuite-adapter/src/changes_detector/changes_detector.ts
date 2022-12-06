@@ -26,6 +26,9 @@ import savedSearchDetector from './changes_detectors/savedsearch'
 import { ChangedObject, ChangedType, DateRange } from './types'
 import NetsuiteClient from '../client/client'
 import { convertSavedSearchStringToDate } from './date_formats'
+import { getChangedCustomRecords } from './changes_detectors/custom_records'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
+import { addCustomRecordTypePrefix } from '../types'
 
 const log = logger(module)
 
@@ -126,8 +129,6 @@ export const getChangedObjects = async (
     isFileMatch,
     isParentFolderMatch,
     isCustomRecordTypeMatch,
-    areAllCustomRecordsMatch,
-    isCustomRecordMatch,
   } = query
 
   const instancesChangesPromise = Promise.all(
@@ -140,11 +141,13 @@ export const getChangedObjects = async (
     changedInstances,
     changedFiles,
     changedFolders,
+    changedCustomRecords,
   ] = await Promise.all([
     getSystemNoteChanges(client, dateRange),
     instancesChangesPromise,
     getChangedFiles(client, dateRange),
     getChangedFolders(client, dateRange),
+    getChangedCustomRecords(client, dateRange, { isCustomRecordTypeMatch }),
   ])
 
   const [changedTypes, changedObjects] = _.partition(changedInstances, (change): change is ChangedType => change.type === 'type')
@@ -169,26 +172,44 @@ export const getChangedObjects = async (
 
   const types = new Set(changedTypes.map(type => type.name))
 
+  const shouldFetchCustomRecordTypes = changedCustomRecords.length > 0
+  const customRecordsByType = _(changedCustomRecords)
+    .groupBy(record => record.typeId)
+    .mapValues(records => new Set(records.map(record => record.objectId)))
+    .value()
+
   log.debug('Finished to look for changed objects')
   log.debug(`${scriptIds.size} script ids changes were detected`)
   log.debug(`${types.size} types changes were detected`)
   log.debug(`${filePaths.size} file paths changes were detected`)
   log.debug(`${folderPaths.length} folder paths changes were detected`)
+  log.debug(`${changedCustomRecords.length} custom records changes were detected`)
 
   return {
-    isTypeMatch: typeName => !SUPPORTED_TYPES.has(typeName)
+    isTypeMatch: type =>
+      !SUPPORTED_TYPES.has(type)
       || scriptIds.size !== 0
-      || types.size !== 0,
+      || types.size !== 0
+      || ([CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT].includes(type) && shouldFetchCustomRecordTypes),
     areAllObjectsMatch: () => false,
-    isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
-      || scriptIds.has(objectID.instanceId)
-      || types.has(objectID.type),
-    isFileMatch: filePath => filePaths.has(filePath)
+    isObjectMatch: ({ type, instanceId }) =>
+      !SUPPORTED_TYPES.has(type)
+      || scriptIds.has(instanceId)
+      || types.has(type)
+      || (type === CUSTOM_RECORD_TYPE && instanceId in customRecordsByType)
+      || (type === CUSTOM_SEGMENT && addCustomRecordTypePrefix(instanceId) in customRecordsByType),
+    isFileMatch: filePath =>
+      filePaths.has(filePath)
       || unresolvedFolderPaths.some(path => filePath.startsWith(path)),
     isParentFolderMatch,
-    areSomeFilesMatch: () => filePaths.size !== 0 || folderPaths.length !== 0,
-    isCustomRecordTypeMatch,
-    areAllCustomRecordsMatch,
-    isCustomRecordMatch,
+    areSomeFilesMatch: () =>
+      filePaths.size !== 0
+      || folderPaths.length !== 0,
+    isCustomRecordTypeMatch: type =>
+      type in customRecordsByType,
+    areAllCustomRecordsMatch: () => false,
+    isCustomRecordMatch: ({ type, instanceId }) =>
+      type in customRecordsByType
+      && customRecordsByType[type].has(instanceId),
   }
 }

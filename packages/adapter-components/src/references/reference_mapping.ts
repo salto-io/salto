@@ -41,6 +41,7 @@ export type ReferenceSerializationStrategy = {
     getReferenceId: GetReferenceIdFunc
   }>
 )
+export const basicLookUp: LookupFunc = val => val
 
 export type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name' | 'nameWithPath' | 'locale'
 export const ReferenceSerializationStrategyLookup: Record<
@@ -50,20 +51,20 @@ export const ReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => cloneDeepWithoutRefs(
       isInstanceElement(ref.value) ? ref.value.value : ref.value
     ),
-    lookup: val => val,
+    lookup: basicLookUp,
   },
   id: {
     serialize: ({ ref }) => ref.value.value.id,
-    lookup: val => val,
+    lookup: basicLookUp,
     lookupIndexName: 'id',
   },
   name: {
     serialize: ({ ref }) => ref.value.value.name,
-    lookup: val => val,
+    lookup: basicLookUp,
     lookupIndexName: 'name',
   },
   nameWithPath: {
-    lookup: val => val,
+    lookup: basicLookUp,
     lookupIndexName: 'name',
     getReferenceId: topLevelId => topLevelId.createNestedID('name'),
   },

@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+import { removeCustomRecordTypePrefix } from '../../types'
 import { convertSuiteQLStringToDate, SUITEQL_DATE_FORMAT } from '../date_formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
@@ -54,7 +55,7 @@ const changesDetector: TypeChangesDetector = {
     // are returned without the 'customrecord_' prefix.
     const changesForCustomSegments: ChangedObject[] = changes.map(change => ({
       type: 'object',
-      externalId: change.externalId.slice('customrecord_'.length),
+      externalId: removeCustomRecordTypePrefix(change.externalId),
       time: change.time,
     }))
 

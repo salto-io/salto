@@ -19,7 +19,7 @@ export const deployNotSupportedValidator: ChangeValidator = async changes => (
   changes.map(change => ({
     elemID: getChangeData(change).elemID,
     severity: 'Error',
-    message: `Deploy is not supported in adapter ${getChangeData(change).elemID.adapter}.`,
-    detailedMessage: 'Deploy is not supported.',
+    message: `Salto does not support ${getChangeData(change).elemID.adapter} deployments.`,
+    detailedMessage: `Salto does not support ${getChangeData(change).elemID.adapter} deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.`,
   }))
 )

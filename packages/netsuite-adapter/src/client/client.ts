@@ -34,7 +34,7 @@ import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATIN
 import { DeployResult, getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
-import { convertElementMapsToLists } from '../mapped_lists/utils'
+import { createConvertElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError } from '../errors'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
@@ -171,7 +171,8 @@ export default class NetsuiteClient {
 
   private static async toCustomizationInfos(
     elements: ChangeDataType[],
-    deployReferencedElements: boolean
+    deployReferencedElements: boolean,
+    elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<CustomizationInfo[]> {
     const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
     const fieldsParents = _(elements)
@@ -181,6 +182,7 @@ export default class NetsuiteClient {
       .uniqBy(parent => parent.elemID.name)
       .value()
 
+    const convertElementMapsToLists = await createConvertElementMapsToLists(elementsSourceIndex)
     return awu(await getReferencedElements(
       elements.concat(fieldsParents),
       deployReferencedElements
@@ -202,12 +204,17 @@ export default class NetsuiteClient {
   }
 
   private async sdfDeploy({
-    changes, deployReferencedElements, additionalDependencies, validateOnly = false,
+    changes,
+    deployReferencedElements,
+    additionalDependencies,
+    validateOnly = false,
+    elementsSourceIndex,
   }: {
     changes: ReadonlyArray<Change>
     deployReferencedElements: boolean
     additionalDependencies: AdditionalDependencies
     validateOnly?: boolean
+    elementsSourceIndex: LazyElementsSourceIndexes
   }): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
 
@@ -221,7 +228,8 @@ export default class NetsuiteClient {
       // eslint-disable-next-line no-await-in-loop
       const customizationInfos = await NetsuiteClient.toCustomizationInfos(
         changedInstances,
-        deployReferencedElements
+        deployReferencedElements,
+        elementsSourceIndex,
       )
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
@@ -282,6 +290,7 @@ export default class NetsuiteClient {
     groupID: string,
     deployReferencedElements: boolean,
     additionalSdfDependencies: AdditionalDependencies,
+    elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<ReadonlyArray<Error>> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
       return (await this.sdfDeploy({
@@ -289,6 +298,7 @@ export default class NetsuiteClient {
         deployReferencedElements,
         additionalDependencies: additionalSdfDependencies,
         validateOnly: true,
+        elementsSourceIndex,
       })).errors
     }
     return []
@@ -300,7 +310,7 @@ export default class NetsuiteClient {
     groupID: string,
     deployReferencedElements: boolean,
     additionalSdfDependencies: AdditionalDependencies,
-    elementsSourceIndex: LazyElementsSourceIndexes
+    elementsSourceIndex: LazyElementsSourceIndexes,
   ):
     Promise<DeployResult> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
@@ -308,6 +318,7 @@ export default class NetsuiteClient {
         changes,
         deployReferencedElements,
         additionalDependencies: additionalSdfDependencies,
+        elementsSourceIndex,
       })
     }
 

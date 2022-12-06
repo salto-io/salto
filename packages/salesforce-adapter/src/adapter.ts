@@ -39,7 +39,7 @@ import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
 import emailTemplateFilter from './filters/email_template_static_files'
-import profileDeployFilter from './filters/profile_deploy'
+import minifyDeployFilter from './filters/minify_deploy'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
@@ -75,6 +75,7 @@ import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import customMetadataTypeFilter from './filters/custom_metadata_type'
+import fetchFlowsFilter from './filters/fetch_flows'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -84,6 +85,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
+import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -95,6 +97,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },
+  // fetchFlowsFilter should run before flowFilter
+  { creator: fetchFlowsFilter, addsNewInformation: true },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
@@ -138,7 +142,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: splitCustomLabels },
   { creator: customMetadataTypeFilter },
   { creator: xmlAttributesFilter },
-  { creator: profileDeployFilter },
+  { creator: minifyDeployFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
@@ -269,7 +273,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private fetchProfile: FetchProfile
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [],
+    metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {

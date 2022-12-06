@@ -18,11 +18,7 @@ import { readFile, readDir, writeFile, mkdirp, rm, rename } from '@salto-io/file
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
-import {
-  APPLICATION_ID,
-  CONFIG_FEATURES,
-  FILE_CABINET_PATH_SEPARATOR, INSTALLED_SUITEAPPS,
-} from '../../src/constants'
+import { APPLICATION_ID, CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../../src/constants'
 import SdfClient, {
   ATTRIBUTES_FILE_SUFFIX,
   ATTRIBUTES_FOLDER_NAME,
@@ -214,9 +210,23 @@ describe('sdf client', () => {
   const addDependenciesCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
   const deployProjectCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.DEPLOY_PROJECT })
+    .objectContaining({
+      commandName: COMMANDS.DEPLOY_PROJECT,
+      arguments: { accountspecificvalues: 'WARNING' },
+    })
+  const deploySuiteAppProjectCommandMatcher = expect
+    .objectContaining({
+      commandName: COMMANDS.DEPLOY_PROJECT,
+      arguments: {},
+    })
   const validateProjectCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.VALIDATE_PROJECT })
+    .objectContaining({
+      commandName: COMMANDS.VALIDATE_PROJECT,
+      arguments: {
+        accountspecificvalues: 'WARNING',
+        server: true,
+      },
+    })
   const deleteAuthIdCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.MANAGE_AUTH,
     arguments: expect.objectContaining({
@@ -654,7 +664,7 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ [INSTALLED_SUITEAPPS]: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(2)
@@ -1279,7 +1289,7 @@ describe('sdf client', () => {
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deploySuiteAppProjectCommandMatcher)
       })
 
       it('should succeed for TemplateCustomTypeInfo', async () => {

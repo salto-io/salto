@@ -93,6 +93,9 @@ export const mockTypes = {
   Profile: createMetadataObjectType({
     annotations: { metadataType: 'Profile', dirName: 'profiles', suffix: 'profile' },
   }),
+  PermissionSet: createMetadataObjectType({
+    annotations: { metadataType: 'PermissionSet', dirName: 'PermissionSets', suffix: 'permissionSet' },
+  }),
   EmailFolder: createMetadataObjectType({
     annotations: {
       metadataType: 'EmailFolder',
@@ -188,6 +191,16 @@ export const mockTypes = {
       actionType: { refType: BuiltinTypes.STRING },
     },
   }),
+  FlowDefinition: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FlowDefinition',
+      suffix: 'flowDefinition',
+      dirName: 'flowDefinition',
+    },
+    fields: {
+      activeVersionNumber: { refType: BuiltinTypes.NUMBER },
+    },
+  }),
   QuickAction: createMetadataObjectType({
     annotations: {
       metadataType: 'QuickAction',
@@ -220,6 +233,24 @@ export const mockTypes = {
         }),
       },
 
+    },
+  }),
+  FlowSettings: createMetadataObjectType({
+    annotations: {
+      metadataType: 'FlowSettings',
+    },
+    fields: {
+      enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
+    },
+  }),
+  ListView: createMetadataObjectType({
+    annotations: {
+      metadataType: 'ListView',
+      suffix: 'listview',
+      dirName: 'listview',
+    },
+    fields: {
+      filter: { refType: BuiltinTypes.STRING },
     },
   }),
 }

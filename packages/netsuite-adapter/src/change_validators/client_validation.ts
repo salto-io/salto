@@ -24,6 +24,7 @@ import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from
 import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'
+import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 
 const { awu } = collections.asynciterable
@@ -46,18 +47,27 @@ export type ClientChangeValidator = (
   client: NetsuiteClient,
   additionalDependencies: AdditionalDependencies,
   filtersRunner: Required<Filter>,
+  elementsSourceIndex: LazyElementsSourceIndexes,
   deployReferencedElements?: boolean
 ) => Promise<ReadonlyArray<ChangeError>>
 
 const changeValidator: ClientChangeValidator = async (
-  changes, client, additionalDependencies, filtersRunner, deployReferencedElements = false
+  changes,
+  client,
+  additionalDependencies,
+  filtersRunner,
+  elementsSourceIndex,
+  deployReferencedElements = false
 ) => {
   const clonedChanges = changes.map(change => ({
     action: change.action,
     data: _.mapValues(change.data, (element: Element) => element.clone()),
   })) as Change[]
   await filtersRunner.preDeploy(clonedChanges)
-  const getChangeGroupIds = getChangeGroupIdsFunc(client.isSuiteAppConfigured())
+
+  // SALTO-3016 we can validate only SDF elements because
+  // we need FileCabinet references to be included in the SDF project
+  const getChangeGroupIds = getChangeGroupIdsFunc(false)
   const { changeGroupIdMap } = await getChangeGroupIds(
     new Map(clonedChanges.map(change => [changeId(change), change]))
   )
@@ -73,7 +83,8 @@ const changeValidator: ClientChangeValidator = async (
         groupChanges,
         groupId,
         deployReferencedElements,
-        additionalDependencies
+        additionalDependencies,
+        elementsSourceIndex,
       )
       if (errors.length > 0) {
         return errors.flatMap(error => {

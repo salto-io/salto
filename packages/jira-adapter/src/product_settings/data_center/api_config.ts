@@ -20,6 +20,14 @@ export const DC_ADDITIONAL_TYPE_NAME_OVERRIDES = [
     originalName: 'rest__api__3__priority',
     newName: 'Priorities',
   },
+  {
+    originalName: 'rest__api__3__project',
+    newName: 'Projects',
+  },
+  {
+    originalName: 'rest__api__3__project___projectIdOrKey___components@uuuuuuuu_00123_00125uu',
+    newName: 'ProjectComponents',
+  },
 ]
 
 export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
@@ -45,6 +53,11 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         serviceUrl: '/secure/Dashboard.jspa?selectPageId={id}',
       },
     },
+    DashboardGadget: {
+      transformation: {
+        idFields: ['position.column', 'position.row'],
+      },
+    },
     Automation: {
       transformation: {
         serviceUrl: '/secure/AutomationGlobalAdminAction!default.jspa#/rule/{id}',
@@ -53,6 +66,74 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
     Priorities: {
       request: {
         url: '/rest/api/3/priority',
+      },
+      transformation: {
+        dataField: '.',
+      },
+    },
+    Projects: {
+      request: {
+        url: '/rest/api/3/project',
+        queryParams: {
+          expand: 'description,lead,url',
+        },
+        recurseInto: [
+          {
+            type: 'ProjectComponents',
+            toField: 'components',
+            context: [{ name: 'projectIdOrKey', fromField: 'id' }],
+          },
+          {
+            type: 'ContainerOfWorkflowSchemeAssociations',
+            toField: 'workflowScheme',
+            context: [{ name: 'projectId', fromField: 'id' }],
+            isSingle: true,
+          },
+          {
+            type: 'PermissionScheme',
+            toField: 'permissionScheme',
+            context: [{ name: 'projectId', fromField: 'id' }],
+            isSingle: true,
+          },
+          {
+            type: 'NotificationScheme',
+            toField: 'notificationScheme',
+            context: [{ name: 'projectId', fromField: 'id' }],
+            isSingle: true,
+          },
+          {
+            type: 'ProjectSecurityScheme',
+            toField: 'issueSecurityScheme',
+            context: [{ name: 'projectKeyOrId', fromField: 'key' }],
+            isSingle: true,
+          },
+          {
+            type: 'PageBeanIssueTypeScreenSchemesProjects',
+            toField: 'issueTypeScreenScheme',
+            context: [{ name: 'projectId', fromField: 'id' }],
+            isSingle: true,
+          },
+          {
+            type: 'PageBeanIssueTypeSchemeProjects',
+            toField: 'issueTypeScheme',
+            context: [{ name: 'projectId', fromField: 'id' }],
+            isSingle: true,
+          },
+          {
+            type: 'PageBeanFieldConfigurationSchemeProjects',
+            toField: 'fieldConfigurationScheme',
+            context: [{ name: 'projectId', fromField: 'id' }],
+            isSingle: true,
+          },
+        ],
+      },
+      transformation: {
+        dataField: '.',
+      },
+    },
+    ProjectComponents: {
+      request: {
+        url: '/rest/api/3/project/{projectIdOrKey}/components',
       },
       transformation: {
         dataField: '.',

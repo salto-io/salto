@@ -21,6 +21,8 @@ import { getDefaultAdapterConfig } from '../utils'
 import { NETSUITE } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_fields'
 import { FilterOpts } from '../../src/filter'
+import { toAnnotationRefTypes } from '../../src/custom_records/custom_record_type'
+import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 
 describe('omit fields filter', () => {
   let type: ObjectType
@@ -75,11 +77,81 @@ describe('omit fields filter', () => {
   it('should omit fields in inner type', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { fieldsToOmit: [{ type: 'inner.*', fields: ['.*2'] }] } },
+      config: { fetch: { fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }] } },
     }).onFetch?.([instance, type, innerType])
     expect(instance.value).toEqual({
       field1: true,
       field2: { nested1: 'test' },
+    })
+  })
+  it('should omit fields in custom record type', async () => {
+    const { type: customrecordtype, innerTypes: customrecordInnerTypes } = customrecordtypeType()
+    const customRecordObjectType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      fields: {
+        custom_custfield1: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            scriptid: 'custfield1',
+            label: 'Custom Field 1',
+            isformula: false,
+            ismandatory: false,
+            isparent: false,
+          },
+        },
+      },
+      annotationRefsOrTypes: await toAnnotationRefTypes(customrecordtype),
+      annotations: {
+        scriptid: 'customrecord1',
+        istoplevel: true,
+        permissions: {
+          permission: [
+            {
+              permittedlevel: 'VIEW',
+              permittedrole: 'ADMINISTRATOR',
+            },
+          ],
+        },
+        links: {
+          link: [
+            {
+              linkcategory: 'BASICTRANSACTIONSCUSTOM',
+              linklabel: 'Estimating Tool',
+              linktasktype: 'LIST',
+            },
+          ],
+        },
+        metadataType: 'customrecordtype',
+      },
+    })
+    await filterCreator({
+      ...defaultOpts,
+      config: {
+        fetch: {
+          fieldsToOmit: [
+            { type: 'customrecordtype', fields: ['links'] },
+            { type: 'customrecordtype', subtype: 'customrecordtype_permissions_permission', fields: ['.*level'] },
+            { type: 'customrecordcustomfield', fields: ['is.*'] },
+          ],
+        },
+      },
+    }).onFetch?.([customrecordtype, customRecordObjectType, ...Object.values(customrecordInnerTypes)])
+    expect(customRecordObjectType.annotations).toEqual({
+      scriptid: 'customrecord1',
+      // used to verify that a field that match 'type' but doesn't match the 'subtype' is not omitted
+      istoplevel: true,
+      permissions: {
+        permission: [
+          {
+            permittedrole: 'ADMINISTRATOR',
+          },
+        ],
+      },
+      metadataType: 'customrecordtype',
+    })
+    expect(customRecordObjectType.fields.custom_custfield1.annotations).toEqual({
+      scriptid: 'custfield1',
+      label: 'Custom Field 1',
     })
   })
 })

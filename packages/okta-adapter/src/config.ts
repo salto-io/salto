@@ -38,7 +38,6 @@ export type OktaConfig = {
 }
 
 const DEFAULT_ID_FIELDS = ['name']
-const DEFAULT_SERVICE_ID_FIELD = 'id'
 const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'created' },
   { fieldName: 'lastUpdated' },
@@ -79,6 +78,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: '_links' },
       ],
       idFields: ['profile.name'],
+      serviceIdField: 'id',
     },
     deployRequests: {
       add: {
@@ -119,6 +119,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'targetGroups', fieldType: 'list<Group>' },
       ],
       idFields: ['label'],
+      serviceIdField: 'id',
     },
   },
   api__v1__apps: {
@@ -161,6 +162,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'appUsers' }],
       // TODO SALTO-2644 It's possible to have many applications with the same name
       idFields: ['name', 'status'],
+      serviceIdField: 'id',
       fieldsToHide: [
         { fieldName: 'id' },
         { fieldName: '_links' },
@@ -232,11 +234,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       },
     },
   },
-  'api__v1__apps___appId___credentials__keys@uuuuuu_00123_00125uuuu': {
-    transformation: {
-      dataField: '.',
-    },
-  },
   api__v1__meta__types__user: {
     transformation: {
       // by default there is an unwanted traversal here
@@ -278,6 +275,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'users', fieldType: 'list<IdentityProviderApplicationUser>' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
       ],
+      serviceIdField: 'id',
     },
   },
   api__v1__features: {
@@ -298,6 +296,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'featureDependencies', fieldType: 'list<Feature>' },
       ],
+      serviceIdField: 'id',
     },
   },
   // Policy type is splitted to different kinds of policies
@@ -413,6 +412,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     request: {
       url: '/api/v1/meta/schemas/user/default',
     },
+    transformation: {
+      serviceIdField: 'id',
+    },
   },
   User: {
     transformation: {
@@ -420,6 +422,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'roles', fieldType: 'list<Role>' },
       ],
       idFields: ['profile.firstName', 'profile.lastName'],
+      serviceIdField: 'id',
       fieldsToOmit: [
         { fieldName: 'lastLogin' },
       ],
@@ -433,6 +436,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
       idFields: ['name', 'type'],
       standaloneFields: [{ fieldName: 'policyRules' }],
+      serviceIdField: 'id',
       fieldsToHide: [
         { fieldName: 'id' },
       ],
@@ -456,6 +460,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'lastUpdated' },
         { fieldName: '_links' },
       ],
+      serviceIdField: 'id',
     },
   },
   OrgContactTypeObj: {
@@ -515,6 +520,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'policies', fieldType: 'list<AuthorizationServerPolicy>' },
         { fieldName: 'clients', fieldType: 'list<OAuth2Client>' },
       ],
+      fieldsToOmit: [
+        { fieldName: '_links' },
+      ],
+      serviceIdField: 'id',
     },
   },
   AuthorizationServerPolicy: {
@@ -522,6 +531,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'policyRules', fieldType: 'list<AuthorizationServerPolicyRule>' },
       ],
+      serviceIdField: 'id',
     },
   },
   api__v1__brands: {
@@ -554,29 +564,63 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       dataField: '.',
     },
   },
-  'api__v1__idps___idpId___credentials__keys@uuuuuu_00123_00125uuuu': {
-    transformation: {
-      dataField: '.',
-    },
-  },
   GroupSchema: {
     transformation: {
       idFields: ['title'],
+      serviceIdField: 'id',
     },
   },
   Domain: {
     transformation: {
       isSingleton: true,
+      serviceIdField: 'id',
     },
   },
   OrgSetting: {
     transformation: {
       isSingleton: true,
+      serviceIdField: 'id',
     },
   },
   Brand: {
     transformation: {
       isSingleton: true,
+      serviceIdField: 'id',
+    },
+  },
+  Authenticator: {
+    transformation: {
+      serviceIdField: 'id',
+    },
+  },
+  EventHook: {
+    transformation: {
+      serviceIdField: 'id',
+    },
+  },
+  GroupRule: {
+    transformation: {
+      serviceIdField: 'id',
+    },
+  },
+  InlineHook: {
+    transformation: {
+      serviceIdField: 'id',
+    },
+  },
+  NetworkZone: {
+    transformation: {
+      serviceIdField: 'id',
+    },
+  },
+  TrustedOrigin: {
+    transformation: {
+      serviceIdField: 'id',
+    },
+  },
+  UserType: {
+    transformation: {
+      serviceIdField: 'id',
     },
   },
   GroupSchemaAttribute: {
@@ -610,13 +654,30 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'created' },
         { fieldName: 'lastUpdated' },
       ],
+      serviceIdField: 'id',
     },
   },
   AppUserCredentials: {
     transformation: {
       fieldsToOmit: [
-        // we not managing secrets
+        // we are not managing secrets
         { fieldName: 'password' },
+      ],
+    },
+  },
+  UserCredentials: {
+    transformation: {
+      fieldsToOmit: [
+        // we are not managing secrets
+        { fieldName: 'password' },
+      ],
+    },
+  },
+  Protocol: {
+    transformation: {
+      fieldsToOmit: [
+        // we are not managing secrets
+        { fieldName: 'credentials' },
       ],
     },
   },
@@ -640,9 +701,6 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
 export const SUPPORTED_TYPES = {
   Application: [
     'api__v1__apps',
-  ],
-  IdentityProviderJsonWebKey: [
-    'api__v1__idps__credentials__keys',
   ],
   Authenticator: ['api__v1__authenticators'],
   AuthorizationServer: ['api__v1__authorizationServers'],
@@ -690,7 +748,6 @@ export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
   typeDefaults: {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
-      serviceIdField: DEFAULT_SERVICE_ID_FIELD,
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
     },
   },

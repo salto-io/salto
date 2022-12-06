@@ -78,6 +78,13 @@ export const replaceReferenceValues = async <
       targetType?: string,
     ): Element | undefined => {
       const lookup = lookupIndexName !== undefined ? elemLookupMaps[lookupIndexName] : defaultIndex
+
+      if (targetType !== undefined && lookup !== undefined) {
+        if (!lookup.get(targetType, _.toString(value))) {
+          log.warn(`Can't locate referred entity for '${targetType}:${value}'`)
+        }
+      }
+
       return (
         targetType !== undefined && lookup !== undefined
           ? lookup.get(targetType, _.toString(value))

@@ -47,7 +47,7 @@ import {
   categoryOrderValidator,
   sectionOrderValidator,
   articleOrderValidator,
-  guideOrderDeletionValidator,
+  guideOrderValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -104,7 +104,7 @@ export default ({
     categoryOrderValidator,
     sectionOrderValidator,
     articleOrderValidator,
-    guideOrderDeletionValidator,
+    guideOrderValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

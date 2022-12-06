@@ -58,6 +58,10 @@ export type IdLocator = {
   type: string[]
 }
 
+export type Guide = {
+  brands: string[]
+}
+
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
@@ -66,6 +70,7 @@ export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
     greedyAppReferences?: boolean
     appReferenceLocators?: IdLocator[]
     enableGuide?: boolean
+    guide?: Guide
   }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
@@ -2266,6 +2271,9 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     hideTypes: true,
     enableMissingReferences: true,
     enableGuide: false,
+    guide: {
+      brands: ['.*'],
+    },
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2312,6 +2320,21 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
   },
 })
 
+const GuideType = createMatchingObjectType<Guide>({
+  elemID: new ElemID(ZENDESK, 'GuideType'),
+  fields: {
+    brands: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -2327,6 +2350,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           enableGuide: { refType: BuiltinTypes.BOOLEAN },
+          guide: { refType: GuideType },
         },
       ),
     },

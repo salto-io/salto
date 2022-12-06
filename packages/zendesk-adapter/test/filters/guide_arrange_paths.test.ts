@@ -107,6 +107,7 @@ describe('guide arrange paths', () => {
     {
       id: 1,
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+      name: 'category name',
     },
   )
   const sectionInstance = new InstanceElement(
@@ -117,6 +118,7 @@ describe('guide arrange paths', () => {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
       direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
       direct_parent_type: 'category',
+      name: 'section name',
     }
   )
   const sectionInSectionInstance = new InstanceElement(
@@ -127,6 +129,7 @@ describe('guide arrange paths', () => {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
       direct_parent_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
       direct_parent_type: 'section',
+      name: 'section in section name',
     }
   )
   const articleInstance = new InstanceElement(
@@ -136,6 +139,7 @@ describe('guide arrange paths', () => {
       id: 4,
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
       section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+      source_locale: 'en-us',
     }
   )
   const articleTranslationInstance = new InstanceElement(
@@ -143,17 +147,23 @@ describe('guide arrange paths', () => {
     articleTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+      title: 'article name',
+      locale: 'en-us',
     }
   )
   articleTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
     articleInstance.elemID, articleInstance
   )]
+  articleInstance.value.translations = [
+    new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
+  ]
 
   const sectionTranslationInstance = new InstanceElement(
     'instance10',
     sectionTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+      locale: 'en-us',
     }
   )
   sectionTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
@@ -164,6 +174,7 @@ describe('guide arrange paths', () => {
     categoryTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+      locale: 'en-us',
     }
   )
   categoryTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
@@ -175,6 +186,7 @@ describe('guide arrange paths', () => {
     guideTranslationType,
     {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+      locale: 'en-us',
     }
   )
   const sectionOrderInstance = new InstanceElement(
@@ -230,8 +242,7 @@ describe('guide arrange paths', () => {
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
-          GUIDE_ELEMENT_DIRECTORY[GUIDE_SETTINGS_TYPE_NAME],
-          'instance4',
+          'brand_settings',
         ],
         [
           ...GUIDE_PATH,
@@ -247,90 +258,88 @@ describe('guide arrange paths', () => {
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
-          'instance6',
+          'section name',
+          'section name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
-          'instance7',
-          'instance7',
+          'section name',
+          'section in section name',
+          'section in section name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
-          'instance5',
+          'category name',
+          'category name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
+          'section name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
-          'instance8',
-          'instance8',
+          'article name',
+          'article name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
+          'section name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
-          'instance8',
+          'article name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
-          'instance9',
+          'en-us',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
+          'section name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
-          'instance10',
+          'en-us',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
-          'instance11',
+          'en-us',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[GUIDE_LANGUAGE_SETTINGS_TYPE_NAME],
-          'instance12',
+          'en-us',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
-          GUIDE_ELEMENT_DIRECTORY[SECTION_ORDER_TYPE_NAME],
-          'instance13',
+          'section name',
+          'sections_order',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
-          GUIDE_ELEMENT_DIRECTORY[CATEGORY_ORDER_TYPE_NAME],
-          'instance14',
+          'categories_order',
         ],
       ])
     })
@@ -351,81 +360,80 @@ describe('guide arrange paths', () => {
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
-          GUIDE_ELEMENT_DIRECTORY[GUIDE_SETTINGS_TYPE_NAME],
-          'instance4',
+          'brand_settings',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
-          'instance6',
+          'section name',
+          'section name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
-          'instance7',
-          'instance7',
+          'section name',
+          'section in section name',
+          'section in section name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
-          'instance5',
+          'category name',
+          'category name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
+          'section name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
-          'instance8',
-          'instance8',
+          'article name',
+          'article name',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
+          'section name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
-          'instance8',
+          'article name',
           GUIDE_ELEMENT_DIRECTORY[ARTICLE_TRANSLATION_TYPE_NAME],
-          'instance9',
+          'en-us',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
-          'instance6',
+          'section name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
-          'instance10',
+          'en-us',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
-          'instance5',
+          'category name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TRANSLATION_TYPE_NAME],
-          'instance11',
+          'en-us',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
           GUIDE_ELEMENT_DIRECTORY[GUIDE_LANGUAGE_SETTINGS_TYPE_NAME],
-          'instance12',
+          'en-us',
         ],
       ])
     })

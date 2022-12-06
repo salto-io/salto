@@ -71,10 +71,7 @@ const OTHER_TYPES = [
   ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
 
-const NO_LOCALE_DEFAULT = 'no locale'
-const NO_TITLE_DEFAULT = 'no title'
-const NO_NAME_DEFAULT = 'no name'
-const NO_FILENAME_DEFAULT = 'no filename'
+const NO_VALUE_DEFAULT = 'unknown'
 
 export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [ARTICLE_TRANSLATION_TYPE_NAME]: 'translations',
@@ -91,41 +88,41 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [SECTION_ORDER_TYPE_NAME]: 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
-  [GUIDE_LOCALE]: 'locale', // TODO remove after ido PR
+  [GUIDE_LOCALE]: 'locale',
 }
 
 
 const getTranslationLocale = (instance?: InstanceElement): string => {
   if (instance === undefined) {
-    return NO_LOCALE_DEFAULT
+    return NO_VALUE_DEFAULT
   }
   if (isReferenceExpression(instance.value.locale)) {
-    return instance.value.locale.value.value?.id ?? 'no locale' // will have to change after seroussi change
+    return instance.value.locale.value.value?.id ?? NO_VALUE_DEFAULT // will have to change after seroussi change
   }
-  return instance.value.locale ?? NO_LOCALE_DEFAULT
+  return instance.value.locale ?? NO_VALUE_DEFAULT
 }
 
 const getNameFromTranslation = (instance?: InstanceElement): string => {
   if (instance === undefined) {
-    return NO_TITLE_DEFAULT
+    return NO_VALUE_DEFAULT
   }
   const sourceLocale = isReferenceExpression(instance.value.source_locale)
     ? instance.value.source_locale.value.value?.id
     : instance.value.source_locale
   const translation = instance.value.translations
-    .filter(isReferenceExpression)
+    ?.filter(isReferenceExpression)
     .map((reference: ReferenceExpression) => reference.value)
     .find((tran: InstanceElement) => (isReferenceExpression(tran.value.locale)
       ? tran.value.locale.value.value?.id === sourceLocale
       : tran.value.locale === sourceLocale))
-  return translation?.value.title ?? NO_TITLE_DEFAULT
+  return translation?.value.title ?? NO_VALUE_DEFAULT
 }
 
 const getNameFromTitle = (instance?: InstanceElement): string => {
   if (instance === undefined) {
-    return NO_NAME_DEFAULT
+    return NO_VALUE_DEFAULT
   }
-  return instance.value.name ?? NO_NAME_DEFAULT
+  return instance.value.name ?? NO_VALUE_DEFAULT
 }
 
 
@@ -134,14 +131,14 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
   [SECTION_ORDER_TYPE_NAME]: () => 'sections_order',
   [ARTICLE_ORDER_TYPE_NAME]: () => 'articles_order',
   [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
-  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_LOCALE_DEFAULT,
+  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
   [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [CATEGORY_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [ARTICLE_TYPE_NAME]: getNameFromTranslation,
   [CATEGORY_TYPE_NAME]: getNameFromTitle,
   [SECTION_TYPE_NAME]: getNameFromTitle,
-  [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.filename ?? NO_FILENAME_DEFAULT,
+  [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.filename ?? NO_VALUE_DEFAULT,
 }
 
 

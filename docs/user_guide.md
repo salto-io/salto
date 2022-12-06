@@ -58,11 +58,11 @@ The easiest way to upgrade Salto's CLI is to download a new version and replace 
 
 ### Build From Source
 
-Please refer to [https://github.com/salto-io/salto](https://github.com/salto-io/salto) for build from source instructions (routinely tested on MacOS and Linux, should also work on Windows). 
+Please refer to [https://github.com/salto-io/salto](https://github.com/salto-io/salto) for build from source instructions (routinely tested on MacOS and Linux, should also work on Windows).
 
 ## Quick Start
 
-We will walk you through `initiating` a new Salto `workspace`, adding a service to it, `fetching` the current configuration from the service, making a change to it and `deploying` the change back to the service. 
+We will walk you through `initiating` a new Salto `workspace`, adding a service to it, `fetching` the current configuration from the service, making a change to it and `deploying` the change back to the service.
 
 This quick start guide assumes you have credentials for a `Salesforce` dev account (for the sake of the example). If not, either do the relevant adaptations for the business application you would like to interact with, or open a Salesforce developer account at [https://developer.salesforce.com/signup](https://developer.salesforce.com/signup).
 
@@ -80,7 +80,7 @@ salto init
 
 This will create a new directory named `quickstart` in your home directory which will serve as the `workspace` for this project. Inside this directory, a `salto.config` directory was created, with some Salto configuration files — no need to worry about these for now. Also, you probably noticed that `salto init` prompted for a name for the "first environment", you can just accept the default for now.
 
-### Add a new service account to the workspace
+### Add a new application account to the workspace
 
 Next, we'll connect this workspace to a Salesforce account, by running:
 ```shell
@@ -152,7 +152,7 @@ A `Salto Element ID` conforms with the following schema:
 A few configuration element id examples:
 
 ```bash
-# salesforce object 
+# salesforce object
 salesforce.MyCustomObj__c
 
 # salesforce object's field
@@ -254,11 +254,11 @@ If the `file` function points to a non existing file, the deploy operation will 
 
 ### Multiple Environments
 
-In a typical feature development process, multiple environments are being used. E.g. a feature is developed in a development environment, gets tested in a testing environment and once approved deployed to a production environment. 
+In a typical feature development process, multiple environments are being used. E.g. a feature is developed in a development environment, gets tested in a testing environment and once approved deployed to a production environment.
 
-In Salto, `environments` are first-level citizens, which also enable the encapsulation of commonalities and differences between service accounts. Before showing some examples for working with environments, we should first explain some common terms and operations:
+In Salto, `environments` are first-level citizens, which also enable the encapsulation of commonalities and differences between application accounts. Before showing some examples for working with environments, we should first explain some common terms and operations:
 
-- An `environment` is a collection of `service accounts`.
+- An `environment` is a collection of `application accounts`.
 - A Salto user is able to determine which of the configuration elements are `common` and which are `environment-specific` by executing the `salto element move-to-common` and `salto element move-to-envs` commands
 - A `fetch` operation can work in `align mode`, when it will not modify common configuration, or in standard mode when it will modify both common and environment-specific configuration. As a rule of thumb, `align mode` should be used when the intent is to make sure that the fetched env is aligned with the common configuration elements. When fetching in `align mode`, any modifications to the common elements will be dropped and it should be followed by a deploy operation. Standard fetch mode is used when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
@@ -269,7 +269,7 @@ salto init
 
 Note that you've been prompted to give a name for the first environment in the workspace. You can just accept the "env1" value, or choose the name of your liking (we'll use `prod` for this example)
 
-Next, we'll continue similarly to quick-start by adding a service account and running fetch:
+Next, we'll continue similarly to quick-start by adding a application account and running fetch:
 
 ```shell
 salto account add salesforce
@@ -294,7 +294,7 @@ salto fetch
 
 Lets stop and take a look at our workspace directory structure (for more info see [here](#workspace-directory-structure)):
 ```shell
-— salto.config/ 
+— salto.config/
 - envs/                  # folder for env specific configuration
     — dev/               # folder for the dev environment specific configuration
 	    — salesforce/      # specific config for Salesforce in the dev env
@@ -326,7 +326,7 @@ The workspace is structured as follows:
 - `salto.config` — all workspace specific internal Salto files, including configuration and state files. See [Salto Configuration](salto_configuration.md) for more details.
 - Directory per adapter, named after the adapter (e.g. Salesforce, NetSuite) — NaCl definitions which are **common** across all defined environments which are configured per that adapter.
 - Directory for [Static Files](#static-files) (`static-resources`).
-- envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. 
+- envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment.
   Each environment directory is also divided by adapter (which applies for that environment), furthermore, includes a `static-resources` folder with files **specific** for that environment.
 
 For example, a workspace with 3 environments (named dev, test and prod), each configured with both Salesforce and HubSpot would look like:
@@ -350,7 +350,7 @@ For example, a workspace with 3 environments (named dev, test and prod), each co
 
 ## Salto's configuration
 
-Please see [Salto configuration](salto_configuration.md) 
+Please see [Salto configuration](salto_configuration.md)
 
 ## NaCl syntax and feature reference
 

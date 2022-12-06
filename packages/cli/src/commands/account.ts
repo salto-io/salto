@@ -242,7 +242,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 const accountAddCommandDef: WorkspaceCommandDef<AccountAddArgs> = {
   properties: {
     name: 'add',
-    description: 'Add a service account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
+    description: 'Add an application account to an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
     keyedOptions: [
       {
         // Will be replaced with --no-login
@@ -256,7 +256,7 @@ const accountAddCommandDef: WorkspaceCommandDef<AccountAddArgs> = {
       {
         name: 'accountName',
         type: 'string',
-        description: 'Service account name. Use in case more than one account of a certain service type is added to the same environment.',
+        description: 'Application account name. Use in case more than one account of a certain service type is added to the same environment.',
         required: false,
       },
       AUTH_TYPE_OPTION,
@@ -293,7 +293,7 @@ export const listAction: WorkspaceCommandAction<AccountListArgs> = async (
 const accountListCommandDef: WorkspaceCommandDef<AccountListArgs> = {
   properties: {
     name: 'list',
-    description: 'List all environment service accounts',
+    description: 'List all environment application accounts',
     keyedOptions: [
       ENVIRONMENT_OPTION,
     ],
@@ -340,7 +340,7 @@ export const loginAction: WorkspaceCommandAction<AccountLoginArgs> = async ({
 const accountLoginCommandDef: WorkspaceCommandDef<AccountLoginArgs> = {
   properties: {
     name: 'login',
-    description: 'Login to a service account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
+    description: 'Login to an application account of an environment.\n\nUse the --login-parameters option for non interactive execution.\n\nFor more information about supported login parameters please visit:\nhttps://github.com/salto-io/salto/blob/main/packages/cli/user_guide.md#non-interactive-execution',
     keyedOptions: [
       AUTH_TYPE_OPTION,
       ENVIRONMENT_OPTION,
@@ -350,7 +350,7 @@ const accountLoginCommandDef: WorkspaceCommandDef<AccountLoginArgs> = {
       {
         name: 'accountName',
         type: 'string',
-        description: 'The name of the service account, usually same as service type unless specified differently when adding the account',
+        description: 'The name of the application account, usually same as service type unless specified differently when adding the account',
         required: true,
       },
     ],

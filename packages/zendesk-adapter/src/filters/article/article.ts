@@ -32,7 +32,6 @@ import { removeTitleAndBody } from '../guide_fetch_article'
 import { prepRef } from './article_body'
 import { EVERYONE } from '../everyone_user_segment'
 import ZendeskClient from '../../client/client'
-import { createAttachmentType, createUnassociatedAttachment } from './utils'
 import { createAttachmentType, createUnassociatedAttachment, deleteArticleAttachment, getArticleAttachments, updateArticleTranslationBody } from './utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
 
@@ -207,12 +206,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
-const filterCreator: FilterCreator = ({
-  config,
-  client,
-  elementsSource,
-  brandIdToClient = {},
-}) => {
+const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdToClient = {} }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
     onFetch: async (elements: Element[]) => log.time(async () => {

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Change, Element, getChangeData,
   InstanceElement,
-  isInstanceElement, ReferenceExpression,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME } from '../../constants'
@@ -58,9 +58,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         articleOrderElements.value[ARTICLES_FIELD], a => !a.value.value.promoted
       )
 
-      section.value[ARTICLES_FIELD] = new ReferenceExpression(
-        articleOrderElements.elemID, articleOrderElements
-      )
       elements.push(articleOrderElements)
     })
   },

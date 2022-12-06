@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ZENDESK } from '../../constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { ZendeskApiConfig } from '../../config'
 import { prepRef } from './article_body'
@@ -87,15 +87,30 @@ const createAttachmentInstance = ({
     brand: article.value.brand,
   }
 
-  const name = generateInstanceNameFromConfig(attachmentValues, ARTICLE_ATTACHMENT_TYPE_NAME, apiDefinitions)
-  const naclName = naclCase(name)
-  const pathName = pathNaclCase(naclName)
+  const articleRef = new ReferenceExpression(article.elemID, article)
+  const configInstanceName = generateInstanceNameFromConfig(
+    attachmentValues,
+    ARTICLE_ATTACHMENT_TYPE_NAME,
+    apiDefinitions,
+  )
+  const parentConfigInstanceName = generateInstanceNameFromConfig(
+    article.value,
+    ARTICLE_TYPE_NAME,
+    apiDefinitions,
+  )
+  // Eventually the element name and path of article_attachment is changed due to it extends the parend id
+  const tempName = (parentConfigInstanceName
+    && apiDefinitions.types[ARTICLE_ATTACHMENT_TYPE_NAME].transformation?.extendsParentId)
+    ? parentConfigInstanceName.concat(`__${configInstanceName}`)
+    : configInstanceName
+  const tempNaclName = naclCase(tempName)
+  const tempPathName = pathNaclCase(tempNaclName)
   return new InstanceElement(
-    naclName,
+    tempNaclName,
     attachmentType,
     attachmentValues,
-    [ZENDESK, RECORDS_PATH, ARTICLE_ATTACHMENT_TYPE_NAME, pathName],
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(article.elemID, article)] },
+    [ZENDESK, RECORDS_PATH, ARTICLE_ATTACHMENT_TYPE_NAME, tempPathName],
+    { [CORE_ANNOTATIONS.PARENT]: [articleRef] },
   )
 }
 

@@ -611,7 +611,7 @@ describe('Zendesk adapter E2E', () => {
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       },
       parent: articleInstance,
-      name: `${articleName}__${fileName}`,
+      name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}__${fileName}_false`,
     })
     const inlineFileName = `naclTwo${attachmentName}`
     const articleInlineAttachment = createInstanceElement({
@@ -627,7 +627,7 @@ describe('Zendesk adapter E2E', () => {
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       },
       parent: articleInstance,
-      name: `${articleName}__${inlineFileName}`,
+      name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}__${inlineFileName}_true`,
     })
 
     articleInstance.value.attachments = [
@@ -760,7 +760,7 @@ describe('Zendesk adapter E2E', () => {
       section2EnTranslationInstance,
       section3Instance,
       section3EnTranslationInstance,
-      sectionOrder,
+      // sectionOrder,
       insideSectionInstance,
       insideSectionEnTranslationInstance,
       articleAttachment,

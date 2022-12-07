@@ -14,8 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
+import { TypeElement, BuiltinTypes, ListType, ObjectType, ElemID } from '@salto-io/adapter-api'
+import {
+  INSTANCE_FULL_NAME_FIELD,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  WORKFLOW_METADATA_TYPE,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+  SETTINGS_METADATA_TYPE,
+  SALESFORCE, QUOTE_OBJECT_TYPE, PRODUCT2_OBJECT_TYPE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME,
+} from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
@@ -241,6 +248,42 @@ export const mockTypes = {
     },
     fields: {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
+    },
+  }),
+  [PRODUCT2_OBJECT_TYPE]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, PRODUCT2_OBJECT_TYPE),
+    fields: {
+      ProductCode: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Product2.ProductCode',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: PRODUCT2_OBJECT_TYPE,
+    },
+  }),
+  [QUOTE_OBJECT_TYPE]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, QUOTE_OBJECT_TYPE),
+    fields: {
+      Status: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Quote.Status',
+        },
+      },
+      ProductOption: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Quote.ProductOption',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: QUOTE_OBJECT_TYPE,
     },
   }),
 }

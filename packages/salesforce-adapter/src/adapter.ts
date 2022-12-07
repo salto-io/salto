@@ -60,6 +60,7 @@ import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
+import cpqCustomFieldReferencesFilter from './filters/cpq/custom_field_references'
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
@@ -124,6 +125,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
   { creator: cpqCustomScriptFilter },
   { creator: cpqLookupFieldsFilter },
+  { creator: cpqCustomFieldReferencesFilter },
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },

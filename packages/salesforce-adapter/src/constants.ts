@@ -349,6 +349,10 @@ export const FLOW_METADATA_TYPE = 'Flow'
 export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 
+// Standard Object Types
+export const PRODUCT2_OBJECT_TYPE = 'Product2'
+export const QUOTE_OBJECT_TYPE = 'Quote'
+
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 
@@ -395,6 +399,12 @@ export const CPQ_DEFAULT_OBJECT_FIELD = 'SBQQ__DefaultObject__c'
 export const CPQ_TESTED_OBJECT = 'SBQQ__TestedObject__c'
 export const CPQ_CONSTRAINT_FIELD = 'SBQQ__ConstraintField__c'
 export const CPQ_ACCOUNT = 'SBQQ__Account__c'
+export const CPQ_FILTER_SOURCE_FIELD = 'SBQQ__FilterSourceField__c'
+export const CPQ_FILTER_SOURCE_OBJECT = 'SBQQ__FilterSourceObject__c'
+export const CPQ_HIDDEN_SOURCE_FIELD = 'SBQQ__HiddenSourceField__c'
+export const CPQ_HIDDEN_SOURCE_OBJECT = 'SBQQ__HiddenSourceObject__c'
+export const CPQ_TARGET_FIELD = 'SBQQ__TargetField__c'
+export const CPQ_TARGET_OBJECT = 'SBQQ__TargetObject__c'
 
 export const CPQ_QUOTE_NO_PRE = 'Quote__c'
 export const CPQ_QUOTE_LINE_GROUP_NO_PRE = 'QuoteLineGroup__c'

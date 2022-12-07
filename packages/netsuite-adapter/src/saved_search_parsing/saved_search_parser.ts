@@ -78,7 +78,7 @@ export const extractSearchRecordsValues = (search: ElementCompact): Values[] =>
   collections.array.makeArray(search.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
 
-export const getAudience = (search: ElementCompact[]): Values => {
+const getAudience = (search: ElementCompact[]): Values => {
   const record = collections.array.makeArray(search).filter(i => Object.keys(i).includes('Record'))[0]
   return record === undefined ? [] : getObjectFromValues(record.Record.values.Value)
 }

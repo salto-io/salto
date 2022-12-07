@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isArray } from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
 import {
   BuiltinTypes,
@@ -28,7 +28,7 @@ import {
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceElement,
-  isObjectType,
+  isObjectType, isReferenceExpression, isTemplateExpression,
   ListType,
   ObjectType,
   ReferenceExpression,
@@ -55,7 +55,7 @@ import {
   SUPPORTED_TYPES,
 } from '../src/config'
 import {
-  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
   BRAND_TYPE_NAME,
@@ -334,7 +334,7 @@ describe('Zendesk adapter E2E', () => {
     const brandInstanceE2eHelpCenter = createInstanceElement({
       type: 'brand',
       valuesOverride: {
-        name: 'c',
+        name: 'e2eHelpCenter',
         subdomain: 'salto100',
         brand_url: 'https://salto100.zendesk.com',
         id: 10378734785303,
@@ -398,8 +398,9 @@ describe('Zendesk adapter E2E', () => {
     })
 
     categoryInstance.value.translations = [
-      new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
       new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
+      new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
+
     ]
 
     const sectionName = createName('section')
@@ -445,8 +446,8 @@ describe('Zendesk adapter E2E', () => {
       name: `e2eHelpCenter_${categoryName}_${sectionName}__he`,
     })
     sectionInstance.value.translations = [
-      new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
       new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
+      new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
     ]
     const section2Name = createName('sectionTwo')
     const section2Instance = createInstanceElement({
@@ -523,9 +524,6 @@ describe('Zendesk adapter E2E', () => {
       parent: categoryInstance,
       name: `e2eHelpCenter_${categoryName}__`,
     })
-    categoryInstance.value.sections = [
-      new ReferenceExpression(sectionOrder.elemID, sectionOrder),
-    ]
 
     const insideSectionName = createName('section')
     const insideSectionInstance = createInstanceElement({
@@ -604,7 +602,7 @@ describe('Zendesk adapter E2E', () => {
         filename: fileName,
         contentType: 'image/png',
         content: new StaticFile({
-          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${fileName}.png`,
+          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${fileName}`,
           content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
         }),
         inline: false,
@@ -620,7 +618,7 @@ describe('Zendesk adapter E2E', () => {
         filename: inlineFileName,
         contentType: 'image/png',
         content: new StaticFile({
-          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${inlineFileName}.png`,
+          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${inlineFileName}`,
           content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
         }),
         inline: true,
@@ -642,12 +640,11 @@ describe('Zendesk adapter E2E', () => {
         title: `${articleName}`,
         body: new TemplateExpression({
           parts: [
-            '<p>this is a test ',
-            '<img src="',
+            '<p>this is a test <img src="',
             new ReferenceExpression(brandInstanceE2eHelpCenter.elemID.createNestedID('brand_url'), brandInstanceE2eHelpCenter?.value.brand_url),
             '/hc/article_attachments/',
             new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
-            `" alt="${inlineFileName}.png"><p>`,
+            `" alt="${inlineFileName}.png"></p><p></p>`,
           ],
         }),
         locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
@@ -672,8 +669,8 @@ describe('Zendesk adapter E2E', () => {
     })
 
     articleInstance.value.translations = [
-      new ReferenceExpression(articleTranslationHe.elemID, articleTranslationHe),
       new ReferenceExpression(articleTranslationEn.elemID, articleTranslationEn),
+      new ReferenceExpression(articleTranslationHe.elemID, articleTranslationHe),
     ]
 
     const article2Name = createName('articleTwo')
@@ -748,6 +745,20 @@ describe('Zendesk adapter E2E', () => {
       new ReferenceExpression(article3TranslationEn.elemID, article3TranslationEn),
     ]
 
+    const articleOrder = createInstanceElement({
+      type: ARTICLE_ORDER_TYPE_NAME,
+      valuesOverride: {
+        articles: [
+          new ReferenceExpression(article2Instance.elemID, article2Instance),
+          new ReferenceExpression(articleInstance.elemID, articleInstance),
+          new ReferenceExpression(article3Instance.elemID, article3Instance),
+        ],
+        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+      },
+      parent: sectionInstance,
+      name: `e2eHelpCenter_${categoryName}_${sectionName}__`,
+    })
+
 
     const guideInstances = [
       categoryInstance,
@@ -760,7 +771,7 @@ describe('Zendesk adapter E2E', () => {
       section2EnTranslationInstance,
       section3Instance,
       section3EnTranslationInstance,
-      // sectionOrder,
+      sectionOrder,
       insideSectionInstance,
       insideSectionEnTranslationInstance,
       articleAttachment,
@@ -772,6 +783,7 @@ describe('Zendesk adapter E2E', () => {
       article2TranslationEn,
       article3Instance,
       article3TranslationEn,
+      articleOrder,
     ]
     // ******************************************************** //
 
@@ -837,6 +849,17 @@ describe('Zendesk adapter E2E', () => {
       )
     }
 
+    const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
+      _.zip(orgArray, fetchArray)
+        .forEach(val => {
+          if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
+            expect(val[0].elemID).toMatchObject(val[1].elemID)
+          } else {
+            expect(val[0]).toEqual(val[1])
+          }
+        })
+    }
+
     const verifyInstanceValues = (
       fetchInstance: InstanceElement | undefined, orgInstance: InstanceElement, fieldsToCheck: string[]
     ): void => {
@@ -844,13 +867,26 @@ describe('Zendesk adapter E2E', () => {
       if (fetchInstance === undefined) {
         return
       }
+      const orgInstanceValues = orgInstance.value
       const fetchInstanceValues = _.pick(fetchInstance.value, fieldsToCheck)
-      expect(fetchInstanceValues).toMatchObject(orgInstance.value)
+      fieldsToCheck
+        .forEach(field => {
+          if (isReferenceExpression(orgInstanceValues[field]) && isReferenceExpression(fetchInstanceValues[field])) {
+            expect(fetchInstanceValues[field].elemID).toMatchObject(orgInstanceValues[field].elemID)
+          } else if (isArray(orgInstanceValues[field]) && isArray(fetchInstanceValues[field])) {
+            verifyArray(orgInstanceValues[field], fetchInstanceValues[field])
+          } else if (
+            isTemplateExpression(orgInstanceValues[field])
+            && isTemplateExpression(fetchInstanceValues[field])
+          ) {
+            verifyArray(orgInstanceValues[field].parts, fetchInstanceValues[field].parts)
+          } else {
+            expect(fetchInstanceValues[field]).toEqual(orgInstanceValues[field])
+          }
+        })
     }
 
     beforeAll(async () => {
-      // eslint-disable-next-line no-console
-      console.log('started beforeall')
       credLease = await credsLease()
       adapterAttr = realAdapter(
         { credentials: credLease.value,
@@ -904,8 +940,6 @@ describe('Zendesk adapter E2E', () => {
     })
 
     afterAll(async () => {
-      // eslint-disable-next-line no-console
-      console.log('started afterall')
       elements = await resolve(elements, buildElementsSourceFromElements(elements))
       const firstGroupChanges = _.mapValues(
         groupIdToInstances,
@@ -916,6 +950,8 @@ describe('Zendesk adapter E2E', () => {
             : undefined
         }).filter(values.isDefined)
       )
+      // remove all elements that include article or section since they were removed already when category was removed
+      // this is since the deletion does not take dependencies into account
       Object.keys(firstGroupChanges)
         .filter(type => (type.includes(SECTION_TYPE_NAME) || type.includes(ARTICLE_TYPE_NAME)))
         .forEach(key => delete firstGroupChanges[key])

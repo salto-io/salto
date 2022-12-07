@@ -14,17 +14,21 @@
 * limitations under the License.
 */
 import { Values, Element, ElemID } from '@salto-io/adapter-api'
-import { createReference } from '../utils'
-import { ISSUE_TYPE_NAME, JIRA } from '../../src/constants'
+import { createReference } from '../../utils'
+import { JIRA } from '../../../src/constants'
 
-export const createIssueTypeSchemeValues = (
+export const createFieldConfigurationValues = (
   name: string,
-  allElements: Element[],
 ): Values => ({
   name,
-  defaultIssueTypeId: createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
-  issueTypeIds: [
-    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Bug'), allElements),
-    createReference(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'Epic'), allElements),
-  ],
+  description: name,
+})
+
+export const createFieldConfigurationItemValues = (
+  allElements: Element[],
+): Values => ({
+  id: createReference(new ElemID(JIRA, 'Field', 'instance', 'Assignee__user'), allElements),
+  description: 'For example operating system, software platform and/or hardware specifications (include as appropriate for the issue).',
+  isHidden: false,
+  isRequired: false,
 })

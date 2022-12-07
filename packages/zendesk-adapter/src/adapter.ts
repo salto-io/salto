@@ -174,7 +174,7 @@ export const DEFAULT_FILTERS = [
   guideTranslationFilter,
   guideGuideSettings,
   guideServiceUrl,
-  guideLocalesFilter,
+  guideLocalesFilter, // Needs to be after guideServiceUrl
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,

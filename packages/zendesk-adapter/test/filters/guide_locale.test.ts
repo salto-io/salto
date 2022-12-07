@@ -48,7 +48,7 @@ describe('onFetch', () => {
   const guideConfig = { ...DEFAULT_CONFIG }
   guideConfig[FETCH_CONFIG].enableGuide = true
   const filter = guideLocaleFilter(createFilterCreatorParams({ config: guideConfig })) as filterUtils.FilterWith<'onFetch'>
-  it('should bla bla bla', async () => {
+  it('should replace the locale field with a referenceExpression of language_setting of the same brand', async () => {
     await filter.onFetch([
       brand1, brand2, languageSetting1, languageSetting2,
       category1, category2, categoryTranslation1, categoryTranslation2,

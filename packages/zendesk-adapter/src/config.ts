@@ -1650,8 +1650,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   article: {
     transformation: {
-      idFields: ['&section_id', 'title'],
-      fileNameFields: ['&section_id', 'title'],
+      idFields: ['title', '&section_id'],
+      fileNameFields: ['title', '&section_id'],
       standaloneFields: [
         { fieldName: 'translations' },
         { fieldName: 'attachments' },
@@ -1874,8 +1874,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   section: {
     transformation: {
-      idFields: ['&direct_parent_id', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&direct_parent_id', ...DEFAULT_FILENAME_FIELDS],
+      idFields: [...DEFAULT_ID_FIELDS, '&direct_parent_id'],
+      fileNameFields: [...DEFAULT_ID_FIELDS, '&direct_parent_id'],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'sections__sections',
       fieldsToHide: FIELDS_TO_HIDE.concat(
@@ -2015,8 +2015,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   category: {
     transformation: {
-      idFields: ['&brand', ...DEFAULT_ID_FIELDS],
-      fileNameFields: ['&brand', ...DEFAULT_FILENAME_FIELDS],
+      idFields: [...DEFAULT_ID_FIELDS, '&brand'],
+      fileNameFields: [...DEFAULT_ID_FIELDS, '&brand'],
       standaloneFields: [{ fieldName: 'translations' }],
       sourceTypeName: 'categories__categories',
       fieldsToHide: FIELDS_TO_HIDE.concat(

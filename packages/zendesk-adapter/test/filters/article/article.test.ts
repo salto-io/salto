@@ -288,17 +288,17 @@ describe('article filter', () => {
         .toEqual([
           'zendesk.article.instance.articleWithAttachment',
           'zendesk.article_attachment',
-          'zendesk.article_attachment.instance.12345_title__attachmentFileName_png_false@uuuvu',
+          'zendesk.article_attachment.instance.title_12345__attachmentFileName_png_false@uuuvu',
         ])
       const fetchedAttachment = clonedElements
         .filter(isInstanceElement)
-        .find(i => i.elemID.name === '12345_title__attachmentFileName_png_false@uuuvu')
+        .find(i => i.elemID.name === 'title_12345__attachmentFileName_png_false@uuuvu')
       expect(fetchedAttachment?.value).toEqual(articleAttachmentInstance.value)
       const fetchedArticle = clonedElements
         .filter(isInstanceElement)
         .find(i => i.elemID.name === 'articleWithAttachment')
       expect(fetchedArticle?.value.attachments).toHaveLength(1)
-      expect(fetchedArticle?.value.attachments[0].elemID.name).toBe('12345_title__attachmentFileName_png_false@uuuvu')
+      expect(fetchedArticle?.value.attachments[0].elemID.name).toBe('title_12345__attachmentFileName_png_false@uuuvu')
     })
   })
 

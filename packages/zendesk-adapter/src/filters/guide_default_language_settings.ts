@@ -25,10 +25,9 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG } from '../config'
 import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
-import { deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 
-const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
+export const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
 
 /**
  On fetch - Add 'default' field for guide_language_settings from an url request
@@ -70,13 +69,6 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
             && GUIDE_LANGUAGE_SETTINGS_TYPE_NAME.includes(getChangeData(change).elemID.typeName),
     )
 
-    const deployResult = await deployChanges(
-      guideLanguageSettingsChanges,
-      async change => {
-        await deployChange(change, client, config.apiDefinitions, ['default']) // Deploying with this field doesn't seem to do anything, but we ignore it to be safe
-      }
-    )
-
     const newDefaultChange = guideLanguageSettingsChanges.filter(isAdditionOrModificationChange).find(change => {
       if (getChangeData(change).value.default === true) {
         // Addition change needs to be updated, modification only updates if it changed from false to true
@@ -87,6 +79,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       return false
     })
 
+    const errors = []
     // If there was a change of the default language, send an api request to update it
     if (newDefaultChange !== undefined) {
       const newDataValue = newDefaultChange.data.after.value
@@ -96,15 +89,19 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
           data: { locale: newDataValue.locale },
         })
       } catch (err) {
-        const zendeskError = getZendeskError(getChangeData(newDefaultChange).elemID.getFullName(), err)
-        deployResult.errors = [...deployResult.errors, zendeskError]
+        errors.push(getZendeskError(getChangeData(newDefaultChange).elemID.getFullName(), err))
       }
     }
 
+    // Omit the 'default' property so the instances can be deployed regularly without any custom salto field
+    guideLanguageSettingsChanges.forEach(change => delete getChangeData(change).value.default)
 
     return {
-      deployResult,
-      leftoverChanges,
+      deployResult: {
+        appliedChanges: [],
+        errors,
+      },
+      leftoverChanges: [...leftoverChanges, ...guideLanguageSettingsChanges],
     }
   },
 })

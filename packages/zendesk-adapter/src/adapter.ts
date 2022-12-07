@@ -110,7 +110,6 @@ import sectionOrderFilter from './filters/guide_order/section_order'
 import articleOrderFilter from './filters/guide_order/article_order'
 import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegmentFilter from './filters/everyone_user_segment'
-import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
 import guideElementTranslations from './filters/guide_create_element_translations'
 import guideDefaultLanguage from './filters/guide_default_language_settings'
@@ -173,7 +172,6 @@ export const DEFAULT_FILTERS = [
   articleFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,
-  guideLanguageSettings,
   guideGuideSettings,
   guideServiceUrl,
   guideLocalesFilter,

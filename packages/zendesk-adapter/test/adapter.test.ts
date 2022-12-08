@@ -635,7 +635,7 @@ describe('adapter', () => {
           .filter(isInstanceElement)
           .filter(e => e.elemID.typeName === 'article')
           .map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk.article.instance.brandWithGuide_greatCategory_greatSection_Title_Yo__@uuussa',
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
         ])
 
         config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
@@ -648,7 +648,7 @@ describe('adapter', () => {
           .filter(isInstanceElement)
           .filter(e => e.elemID.typeName === 'article')
           .map(e => e.elemID.getFullName()).sort()).toEqual([
-          'zendesk.article.instance.brandWithGuide_greatCategory_greatSection_Title_Yo__@uuussa',
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
         ])
       })
     })

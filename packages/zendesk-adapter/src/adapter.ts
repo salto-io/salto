@@ -202,7 +202,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
-  fetchCategorySection, // need to be after arrange paths as it uses the 'name field
+  fetchCategorySection, // need to be after arrange paths as it uses the 'name' field
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

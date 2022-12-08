@@ -79,6 +79,9 @@ const ALL_SUPPORTED_TYPES = {
   ...GUIDE_SUPPORTED_TYPES,
   ...SUPPORTED_TYPES,
 }
+
+const HELP_CENTER_BRAND_NAME = 'e2eHelpCenter'
+
 // Set long timeout as we communicate with Zendesk APIs
 jest.setTimeout(600000)
 
@@ -132,7 +135,10 @@ const deployChanges = async (
       deployResult.appliedChanges // need to update reference expressions
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
-        .filter(e => Object.keys(GUIDE_BRAND_SPECIFIC_TYPES).includes(e.elemID.typeName))
+        .filter(e => [
+          ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
+          PERMISSION_GROUP_TYPE_NAME,
+        ].includes(e.elemID.typeName))
         .forEach(updatedElement => {
           const planElement = planElementById[updatedElement.elemID.getFullName()]
           if (planElement !== undefined) {
@@ -164,6 +170,22 @@ const cleanup = async (adapterAttr: Reals): Promise<void> => {
   }
 }
 
+const usedConfig = {
+  ...DEFAULT_CONFIG,
+  [FETCH_CONFIG]: {
+    ...DEFAULT_CONFIG[FETCH_CONFIG],
+    include: [
+      { type: '.*' },
+    ],
+    exclude: [],
+    enableGuide: true,
+  },
+  [API_DEFINITIONS_CONFIG]: {
+    ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+    supportedTypes: ALL_SUPPORTED_TYPES,
+  },
+}
+
 
 describe('Zendesk adapter E2E', () => {
   describe('fetch and deploy', () => {
@@ -172,619 +194,9 @@ describe('Zendesk adapter E2E', () => {
     const testSuffix = uuidv4().slice(0, 8)
     const testOptionValue = uuidv4().slice(0, 8)
     let elements: Element[] = []
+    let guideInstances : InstanceElement[]
     const createName = (type: string): string => `Test${type}${testSuffix}`
     const createSubdomainName = (): string => `test${testSuffix}`
-
-
-    const automationInstance = createInstanceElement({
-      type: 'automation',
-      valuesOverride: {
-        title: createName('automation'),
-        conditions: {
-          all: [
-            {
-              field: 'status',
-              operator: 'is',
-              value: 'solved',
-            },
-            {
-              field: 'SOLVED',
-              operator: 'greater_than',
-              // Two automations can't have the same conditions
-              value: Math.floor(Math.random() * 100000).toString(),
-            },
-          ],
-        },
-      },
-    })
-    const scheduleInstance = createInstanceElement({
-      type: 'business_hours_schedule',
-      valuesOverride: { name: createName('business_hours_schedule') },
-    })
-    const customRoleInstance = createInstanceElement({
-      type: 'custom_role',
-      valuesOverride: { name: createName('custom_role') },
-    })
-    const groupInstance = createInstanceElement({
-      type: 'group',
-      valuesOverride: { name: createName('group') },
-    })
-    const macroInstance = createInstanceElement({
-      type: 'macro',
-      valuesOverride: { title: createName('macro') },
-    })
-    const slaPolicyInstance = createInstanceElement({
-      type: 'sla_policy',
-      valuesOverride: { title: createName('sla_policy') },
-    })
-    const viewInstance = createInstanceElement({
-      type: 'view',
-      valuesOverride: { title: createName('view') },
-    })
-    const ticketFieldInstance = createInstanceElement({
-      type: 'ticket_field',
-      valuesOverride: { raw_title: createName('ticket_field') },
-      fields: { default_custom_field_option: { refType: BuiltinTypes.STRING } },
-    })
-    const ticketFieldOptionType = new ObjectType({
-      elemID: new ElemID(ZENDESK, 'ticket_field__custom_field_options'),
-    })
-    const ticketFieldOption1Name = `ticketFieldOption1${testSuffix}`
-    const ticketFieldOption1Value = `v1t${testOptionValue}`
-    const ticketFieldOption1 = new InstanceElement(
-      `${ticketFieldInstance.elemID.name}__${ticketFieldOption1Value}`,
-      ticketFieldOptionType,
-      {
-        name: ticketFieldOption1Name,
-        raw_name: ticketFieldOption1Name,
-        value: ticketFieldOption1Value,
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-          ticketFieldInstance.elemID, ticketFieldInstance
-        ),
-      },
-    )
-    const ticketFieldOption2Name = `ticketFieldOption2${testSuffix}`
-    const ticketFieldOption2Value = `v2t${testOptionValue}`
-    const ticketFieldOption2 = new InstanceElement(
-      `${ticketFieldInstance.elemID.name}__${ticketFieldOption2Value}`,
-      ticketFieldOptionType,
-      {
-        name: ticketFieldOption2Name,
-        raw_name: ticketFieldOption2Name,
-        value: ticketFieldOption2Value,
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-          ticketFieldInstance.elemID, ticketFieldInstance
-        ),
-      },
-    )
-    ticketFieldInstance.value.custom_field_options = [
-      new ReferenceExpression(ticketFieldOption1.elemID, ticketFieldOption1),
-      new ReferenceExpression(ticketFieldOption2.elemID, ticketFieldOption2),
-    ]
-    ticketFieldInstance.value.default_custom_field_option = new ReferenceExpression(
-      ticketFieldOption1.elemID, ticketFieldOption1,
-    )
-    const userFieldName = createName('user_field')
-    const userFieldInstance = createInstanceElement({
-      type: 'user_field',
-      valuesOverride: { raw_title: userFieldName, key: userFieldName },
-    })
-    const userFieldOptionType = new ObjectType({
-      elemID: new ElemID(ZENDESK, 'user_field__custom_field_options'),
-    })
-    const userFieldOption1Name = `userFieldOption1${testSuffix}`
-    const userFieldOption1Value = `v1u${testOptionValue}`
-    const userFieldOption1 = new InstanceElement(
-      `${userFieldInstance.elemID.name}__${userFieldOption1Value}`,
-      userFieldOptionType,
-      {
-        name: userFieldOption1Name,
-        raw_name: userFieldOption1Name,
-        value: userFieldOption1Value,
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-          userFieldInstance.elemID, userFieldInstance
-        ),
-      },
-    )
-    const userFieldOption2Name = `userFieldOption2${testSuffix}`
-    const userFieldOption2Value = `v2u${testOptionValue}`
-    const userFieldOption2 = new InstanceElement(
-      `${userFieldInstance.elemID.name}__${userFieldOption2Value}`,
-      userFieldOptionType,
-      {
-        name: userFieldOption2Name,
-        raw_name: userFieldOption2Name,
-        value: userFieldOption2Value,
-      },
-      undefined,
-      {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
-          userFieldInstance.elemID, userFieldInstance
-        ),
-      },
-    )
-    userFieldInstance.value.custom_field_options = [
-      new ReferenceExpression(userFieldOption1.elemID, userFieldOption1),
-      new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
-    ]
-    const brandName = createName('brand')
-    const brandInstanceToAdd = createInstanceElement({
-      type: 'brand',
-      valuesOverride: {
-        name: brandName,
-        subdomain: createSubdomainName(),
-      },
-    })
-    const userSegmentInstance = createInstanceElement({
-      type: 'user_segment',
-      valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
-    })
-
-    // ***************** guide instances ******************* //
-
-    const brandInstanceE2eHelpCenter = createInstanceElement({
-      type: 'brand',
-      valuesOverride: {
-        name: 'e2eHelpCenter',
-        subdomain: 'salto100',
-        brand_url: 'https://salto100.zendesk.com',
-        id: 10378734785303,
-      },
-    })
-    const helpCenterLocaleInstanceEn = createInstanceElement({
-      type: 'guide_locale',
-      valuesOverride: {
-        id: 'en-us',
-      },
-    })
-    const helpCenterLocaleInstanceHe = createInstanceElement({
-      type: 'guide_locale',
-      valuesOverride: {
-        id: 'he',
-      },
-    })
-
-    const categoryName = createName('category')
-    const categoryInstance = replaceInstanceTypeForDeploy({
-      instance: createInstanceElement({
-        type: CATEGORY_TYPE_NAME,
-        valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        },
-        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-        name: `e2eHelpCenter_${categoryName}`,
-      }),
-      config: DEFAULT_CONFIG.apiDefinitions,
-    })
-    const categoryEnTranslationInstance = createInstanceElement({
-      type: CATEGORY_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        title: categoryName,
-        draft: false,
-        hidden: false,
-        body: 'this is a test',
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: categoryInstance,
-      name: `e2eHelpCenter_${categoryName}__en_us_b@uuuum`,
-    })
-
-    const categoryHeTranslationInstance = createInstanceElement({
-      type: CATEGORY_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
-        outdated: false,
-        title: `${categoryName} hebrew`,
-        draft: false,
-        hidden: false,
-        body: 'זאת בדיקה בעברית',
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: categoryInstance,
-      name: `e2eHelpCenter_${categoryName}__he`,
-    })
-
-    categoryInstance.value.translations = [
-      new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
-      new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
-
-    ]
-
-    const sectionName = createName('section')
-    const sectionInstance = createInstanceElement({
-      type: SECTION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        direct_parent_type: CATEGORY_TYPE_NAME,
-      },
-      fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-      name: `e2eHelpCenter_${categoryName}_${sectionName}`,
-    })
-    const sectionEnTranslationInstance = createInstanceElement({
-      type: SECTION_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        title: sectionName,
-        draft: false,
-        hidden: false,
-        body: 'this is a test',
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: sectionInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}__en_us_b@uuuuum`,
-    })
-    const sectionHeTranslationInstance = createInstanceElement({
-      type: SECTION_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
-        outdated: false,
-        title: sectionName,
-        draft: false,
-        hidden: false,
-        body: 'זאת בדיקה בעברית',
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: sectionInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}__he`,
-    })
-    sectionInstance.value.translations = [
-      new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
-      new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
-    ]
-    const section2Name = createName('sectionTwo')
-    const section2Instance = createInstanceElement({
-      type: SECTION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        direct_parent_type: CATEGORY_TYPE_NAME,
-      },
-      fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-      name: `e2eHelpCenter_${categoryName}_${section2Name}`,
-    })
-    const section2EnTranslationInstance = createInstanceElement({
-      type: SECTION_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        title: section2Name,
-        draft: false,
-        hidden: false,
-        body: 'this is a test',
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: section2Instance,
-      name: `e2eHelpCenter_${categoryName}_${section2Name}__en_us_b@uuuuum`,
-    })
-    section2Instance.value.translations = [
-      new ReferenceExpression(section2EnTranslationInstance.elemID, section2EnTranslationInstance),
-    ]
-    const section3Name = createName('sectionThree')
-    const section3Instance = createInstanceElement({
-      type: SECTION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        direct_parent_type: CATEGORY_TYPE_NAME,
-      },
-      fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-      name: `e2eHelpCenter_${categoryName}_${section3Name}`,
-    })
-    const section3EnTranslationInstance = createInstanceElement({
-      type: SECTION_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        title: section3Name,
-        draft: false,
-        hidden: false,
-        body: 'this is a test',
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: section3Instance,
-      name: `e2eHelpCenter_${categoryName}_${section3Name}__en_us_b@uuuuum`,
-    })
-    section3Instance.value.translations = [
-      new ReferenceExpression(section3EnTranslationInstance.elemID, section3EnTranslationInstance),
-    ]
-    const sectionOrder = createInstanceElement({
-      type: SECTION_ORDER_TYPE_NAME,
-      valuesOverride: {
-        sections: [
-          new ReferenceExpression(section2Instance.elemID, section2Instance),
-          new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-          new ReferenceExpression(section3Instance.elemID, section3Instance),
-        ],
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: categoryInstance,
-      name: `e2eHelpCenter_${categoryName}__`,
-    })
-
-    const insideSectionName = createName('section')
-    const insideSectionInstance = createInstanceElement({
-      type: SECTION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        parent_section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-        direct_parent_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-        direct_parent_type: SECTION_TYPE_NAME,
-      },
-      fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${insideSectionName}`,
-    })
-    const insideSectionEnTranslationInstance = createInstanceElement({
-      type: SECTION_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        title: insideSectionName,
-        draft: false,
-        hidden: false,
-        body: 'this is a test',
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: insideSectionInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${insideSectionName}__en_us_b@uuuuuum`,
-    })
-    insideSectionInstance.value.translations = [
-      new ReferenceExpression(insideSectionEnTranslationInstance.elemID, insideSectionEnTranslationInstance),
-    ]
-
-    const permissionGroup = createInstanceElement({
-      type: PERMISSION_GROUP_TYPE_NAME,
-      valuesOverride: {
-        id: 9471349831191,
-        name: 'Admins',
-        built_in: true,
-      },
-    })
-
-    const everyoneUserSegment = createInstanceElement({
-      type: USER_SEGMENT_TYPE_NAME,
-      valuesOverride: {
-        user_type: 'Everyone',
-        built_in: true,
-        name: 'Everyone',
-      },
-    })
-
-    const articleName = createName('article')
-    const articleInstance = createInstanceElement({
-      type: ARTICLE_TYPE_NAME,
-      valuesOverride: {
-        author_id: 'neta.marcus+zendesk@salto.io',
-        draft: true,
-        promoted: false,
-        section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
-      },
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}`,
-    })
-
-    const attachmentName = createName('attachment')
-    const fileName = `nacl${attachmentName}`
-    const articleAttachment = createInstanceElement({
-      type: ARTICLE_ATTACHMENT_TYPE_NAME,
-      valuesOverride: {
-        filename: fileName,
-        contentType: 'image/png',
-        content: new StaticFile({
-          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${fileName}`,
-          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
-        }),
-        inline: false,
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: articleInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}__${fileName}_false`,
-    })
-    const inlineFileName = `naclTwo${attachmentName}`
-    const articleInlineAttachment = createInstanceElement({
-      type: ARTICLE_ATTACHMENT_TYPE_NAME,
-      valuesOverride: {
-        filename: inlineFileName,
-        contentType: 'image/png',
-        content: new StaticFile({
-          filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${inlineFileName}`,
-          content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
-        }),
-        inline: true,
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: articleInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}__${inlineFileName}_true`,
-    })
-
-    articleInstance.value.attachments = [
-      new ReferenceExpression(articleAttachment.elemID, articleAttachment),
-      new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
-    ]
-
-    const articleTranslationEn = createInstanceElement({
-      type: ARTICLE_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        draft: true,
-        title: `${articleName}`,
-        body: new TemplateExpression({
-          parts: [
-            '<p>this is a test <img src="',
-            new ReferenceExpression(brandInstanceE2eHelpCenter.elemID.createNestedID('brand_url'), brandInstanceE2eHelpCenter?.value.brand_url),
-            '/hc/article_attachments/',
-            new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
-            `" alt="${inlineFileName}.png"></p><p></p>`,
-          ],
-        }),
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: articleInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}__en_us_b@uuuuuum`,
-    })
-    const articleTranslationHe = createInstanceElement({
-      type: ARTICLE_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        draft: true,
-        title: `${articleName}_he`,
-        body: 'זאת בדיקה בעברית',
-        locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
-        outdated: false,
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: articleInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${articleName}__he`,
-    })
-
-    articleInstance.value.translations = [
-      new ReferenceExpression(articleTranslationEn.elemID, articleTranslationEn),
-      new ReferenceExpression(articleTranslationHe.elemID, articleTranslationHe),
-    ]
-
-    const article2Name = createName('articleTwo')
-    const article2Instance = createInstanceElement({
-      type: ARTICLE_TYPE_NAME,
-      valuesOverride: {
-        draft: true,
-        promoted: false,
-        section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
-      },
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article2Name}`,
-    })
-
-    const article2TranslationEn = createInstanceElement({
-      type: ARTICLE_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        draft: true,
-        title: `${article2Name}`,
-        body: 'this is a test',
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: article2Instance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article2Name}__en_us_b@uuuuuum`,
-    })
-
-    article2Instance.value.translations = [
-      new ReferenceExpression(article2TranslationEn.elemID, article2TranslationEn),
-    ]
-
-    const article3Name = createName('articleThree')
-    const article3Instance = createInstanceElement({
-      type: ARTICLE_TYPE_NAME,
-      valuesOverride: {
-        author_id: 'neta.marcus+zendesk@salto.io',
-        draft: true,
-        promoted: false,
-        section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-        source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-        user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
-      },
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article3Name}`,
-    })
-
-    const article3TranslationEn = createInstanceElement({
-      type: ARTICLE_TRANSLATION_TYPE_NAME,
-      valuesOverride: {
-        draft: true,
-        title: `${article3Name}`,
-        body: 'this is a test',
-        locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-        outdated: false,
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: article3Instance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}_${article3Name}__en_us_b@uuuuuum`,
-    })
-
-    article3Instance.value.translations = [
-      new ReferenceExpression(article3TranslationEn.elemID, article3TranslationEn),
-    ]
-
-    const articleOrder = createInstanceElement({
-      type: ARTICLE_ORDER_TYPE_NAME,
-      valuesOverride: {
-        articles: [
-          new ReferenceExpression(article2Instance.elemID, article2Instance),
-          new ReferenceExpression(articleInstance.elemID, articleInstance),
-          new ReferenceExpression(article3Instance.elemID, article3Instance),
-        ],
-        brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
-      },
-      parent: sectionInstance,
-      name: `e2eHelpCenter_${categoryName}_${sectionName}__`,
-    })
-
-
-    const guideInstances = [
-      categoryInstance,
-      categoryEnTranslationInstance,
-      categoryHeTranslationInstance,
-      sectionInstance,
-      sectionEnTranslationInstance,
-      sectionHeTranslationInstance,
-      section2Instance,
-      section2EnTranslationInstance,
-      section3Instance,
-      section3EnTranslationInstance,
-      sectionOrder,
-      insideSectionInstance,
-      insideSectionEnTranslationInstance,
-      articleAttachment,
-      articleInlineAttachment,
-      articleInstance,
-      articleTranslationEn,
-      articleTranslationHe,
-      article2Instance,
-      article2TranslationEn,
-      article3Instance,
-      article3TranslationEn,
-      articleOrder,
-    ]
-    // ******************************************************** //
 
     let groupIdToInstances: Record<string, InstanceElement[]>
     /**
@@ -814,21 +226,7 @@ describe('Zendesk adapter E2E', () => {
       adapterAttr = realAdapter(
         { credentials: credLease.value,
           elementsSource: buildElementsSourceFromElements(elements) },
-        {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            ...DEFAULT_CONFIG[FETCH_CONFIG],
-            include: [
-              { type: '.*' },
-            ],
-            exclude: [],
-            enableGuide: true,
-          },
-          [API_DEFINITIONS_CONFIG]: {
-            ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
-            supportedTypes: ALL_SUPPORTED_TYPES,
-          },
-        }
+        usedConfig
       )
     }
 
@@ -887,6 +285,634 @@ describe('Zendesk adapter E2E', () => {
     }
 
     beforeAll(async () => {
+      // get e2eHelpCenter brand
+      credLease = await credsLease()
+      adapterAttr = realAdapter(
+        { credentials: credLease.value,
+          elementsSource: buildElementsSourceFromElements([]) },
+        usedConfig
+      )
+      const firstFetchResult = await adapterAttr.adapter.fetch({
+        progressReporter:
+    { reportProgress: () => null },
+      })
+      const brandInstanceE2eHelpCenter = firstFetchResult.elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.name === HELP_CENTER_BRAND_NAME)
+      expect(brandInstanceE2eHelpCenter).toBeDefined()
+      if (brandInstanceE2eHelpCenter === undefined) {
+        return
+      }
+      // ******************* create all elements for deploy *******************
+      const automationInstance = createInstanceElement({
+        type: 'automation',
+        valuesOverride: {
+          title: createName('automation'),
+          conditions: {
+            all: [
+              {
+                field: 'status',
+                operator: 'is',
+                value: 'solved',
+              },
+              {
+                field: 'SOLVED',
+                operator: 'greater_than',
+                // Two automations can't have the same conditions
+                value: Math.floor(Math.random() * 100000).toString(),
+              },
+            ],
+          },
+        },
+      })
+      const scheduleInstance = createInstanceElement({
+        type: 'business_hours_schedule',
+        valuesOverride: { name: createName('business_hours_schedule') },
+      })
+      const customRoleInstance = createInstanceElement({
+        type: 'custom_role',
+        valuesOverride: { name: createName('custom_role') },
+      })
+      const groupInstance = createInstanceElement({
+        type: 'group',
+        valuesOverride: { name: createName('group') },
+      })
+      const macroInstance = createInstanceElement({
+        type: 'macro',
+        valuesOverride: { title: createName('macro') },
+      })
+      const slaPolicyInstance = createInstanceElement({
+        type: 'sla_policy',
+        valuesOverride: { title: createName('sla_policy') },
+      })
+      const viewInstance = createInstanceElement({
+        type: 'view',
+        valuesOverride: { title: createName('view') },
+      })
+      const ticketFieldInstance = createInstanceElement({
+        type: 'ticket_field',
+        valuesOverride: { raw_title: createName('ticket_field') },
+        fields: { default_custom_field_option: { refType: BuiltinTypes.STRING } },
+      })
+      const ticketFieldOptionType = new ObjectType({
+        elemID: new ElemID(ZENDESK, 'ticket_field__custom_field_options'),
+      })
+      const ticketFieldOption1Name = `ticketFieldOption1${testSuffix}`
+      const ticketFieldOption1Value = `v1t${testOptionValue}`
+      const ticketFieldOption1 = new InstanceElement(
+        `${ticketFieldInstance.elemID.name}__${ticketFieldOption1Value}`,
+        ticketFieldOptionType,
+        {
+          name: ticketFieldOption1Name,
+          raw_name: ticketFieldOption1Name,
+          value: ticketFieldOption1Value,
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+            ticketFieldInstance.elemID, ticketFieldInstance
+          ),
+        },
+      )
+      const ticketFieldOption2Name = `ticketFieldOption2${testSuffix}`
+      const ticketFieldOption2Value = `v2t${testOptionValue}`
+      const ticketFieldOption2 = new InstanceElement(
+        `${ticketFieldInstance.elemID.name}__${ticketFieldOption2Value}`,
+        ticketFieldOptionType,
+        {
+          name: ticketFieldOption2Name,
+          raw_name: ticketFieldOption2Name,
+          value: ticketFieldOption2Value,
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+            ticketFieldInstance.elemID, ticketFieldInstance
+          ),
+        },
+      )
+      ticketFieldInstance.value.custom_field_options = [
+        new ReferenceExpression(ticketFieldOption1.elemID, ticketFieldOption1),
+        new ReferenceExpression(ticketFieldOption2.elemID, ticketFieldOption2),
+      ]
+      ticketFieldInstance.value.default_custom_field_option = new ReferenceExpression(
+        ticketFieldOption1.elemID, ticketFieldOption1,
+      )
+      const userFieldName = createName('user_field')
+      const userFieldInstance = createInstanceElement({
+        type: 'user_field',
+        valuesOverride: { raw_title: userFieldName, key: userFieldName },
+      })
+      const userFieldOptionType = new ObjectType({
+        elemID: new ElemID(ZENDESK, 'user_field__custom_field_options'),
+      })
+      const userFieldOption1Name = `userFieldOption1${testSuffix}`
+      const userFieldOption1Value = `v1u${testOptionValue}`
+      const userFieldOption1 = new InstanceElement(
+        `${userFieldInstance.elemID.name}__${userFieldOption1Value}`,
+        userFieldOptionType,
+        {
+          name: userFieldOption1Name,
+          raw_name: userFieldOption1Name,
+          value: userFieldOption1Value,
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+            userFieldInstance.elemID, userFieldInstance
+          ),
+        },
+      )
+      const userFieldOption2Name = `userFieldOption2${testSuffix}`
+      const userFieldOption2Value = `v2u${testOptionValue}`
+      const userFieldOption2 = new InstanceElement(
+        `${userFieldInstance.elemID.name}__${userFieldOption2Value}`,
+        userFieldOptionType,
+        {
+          name: userFieldOption2Name,
+          raw_name: userFieldOption2Name,
+          value: userFieldOption2Value,
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+            userFieldInstance.elemID, userFieldInstance
+          ),
+        },
+      )
+      userFieldInstance.value.custom_field_options = [
+        new ReferenceExpression(userFieldOption1.elemID, userFieldOption1),
+        new ReferenceExpression(userFieldOption2.elemID, userFieldOption2),
+      ]
+      const brandName = createName('brand')
+      const brandInstanceToAdd = createInstanceElement({
+        type: 'brand',
+        valuesOverride: {
+          name: brandName,
+          subdomain: createSubdomainName(),
+        },
+      })
+      const userSegmentInstance = createInstanceElement({
+        type: 'user_segment',
+        valuesOverride: { name: createName('user_segment'), user_type: 'signed_in_users', built_in: false },
+      })
+
+      // ***************** guide instances ******************* //
+
+      // const brandInstanceE2eHelpCenter = createInstanceElement({
+      //   type: 'brand',
+      //   valuesOverride: {
+      //     name: 'e2eHelpCenter',
+      //     subdomain: 'salto100',
+      //     brand_url: 'https://salto100.zendesk.com',
+      //     id: 10378734785303,
+      //   },
+      // })
+      const helpCenterLocaleInstanceEn = createInstanceElement({
+        type: 'guide_locale',
+        valuesOverride: {
+          id: 'en-us',
+        },
+      })
+      const helpCenterLocaleInstanceHe = createInstanceElement({
+        type: 'guide_locale',
+        valuesOverride: {
+          id: 'he',
+        },
+      })
+
+      const categoryName = createName('category')
+      const categoryInstance = replaceInstanceTypeForDeploy({
+        instance: createInstanceElement({
+          type: CATEGORY_TYPE_NAME,
+          valuesOverride: {
+            locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+            source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+            brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          },
+          fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+          name: `${HELP_CENTER_BRAND_NAME}_${categoryName}`,
+        }),
+        config: DEFAULT_CONFIG.apiDefinitions,
+      })
+      const categoryEnTranslationInstance = createInstanceElement({
+        type: CATEGORY_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          title: categoryName,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: categoryInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}__en_us_b@uuuum`,
+      })
+
+      const categoryHeTranslationInstance = createInstanceElement({
+        type: CATEGORY_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          outdated: false,
+          title: `${categoryName} hebrew`,
+          draft: false,
+          hidden: false,
+          body: 'זאת בדיקה בעברית',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: categoryInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}__he`,
+      })
+
+      categoryInstance.value.translations = [
+        new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
+        new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
+
+      ]
+
+      const sectionName = createName('section')
+      const sectionInstance = createInstanceElement({
+        type: SECTION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          direct_parent_type: CATEGORY_TYPE_NAME,
+        },
+        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}`,
+      })
+      const sectionEnTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          title: sectionName,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: sectionInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}__en_us_b@uuuuum`,
+      })
+      const sectionHeTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          outdated: false,
+          title: sectionName,
+          draft: false,
+          hidden: false,
+          body: 'זאת בדיקה בעברית',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: sectionInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}__he`,
+      })
+      sectionInstance.value.translations = [
+        new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
+        new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
+      ]
+      const section2Name = createName('sectionTwo')
+      const section2Instance = createInstanceElement({
+        type: SECTION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          direct_parent_type: CATEGORY_TYPE_NAME,
+        },
+        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section2Name}`,
+      })
+      const section2EnTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          title: section2Name,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: section2Instance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section2Name}__en_us_b@uuuuum`,
+      })
+      section2Instance.value.translations = [
+        new ReferenceExpression(section2EnTranslationInstance.elemID, section2EnTranslationInstance),
+      ]
+      const section3Name = createName('sectionThree')
+      const section3Instance = createInstanceElement({
+        type: SECTION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          direct_parent_type: CATEGORY_TYPE_NAME,
+        },
+        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section3Name}`,
+      })
+      const section3EnTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          title: section3Name,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: section3Instance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section3Name}__en_us_b@uuuuum`,
+      })
+      section3Instance.value.translations = [
+        new ReferenceExpression(section3EnTranslationInstance.elemID, section3EnTranslationInstance),
+      ]
+      const sectionOrder = createInstanceElement({
+        type: SECTION_ORDER_TYPE_NAME,
+        valuesOverride: {
+          sections: [
+            new ReferenceExpression(section2Instance.elemID, section2Instance),
+            new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+            new ReferenceExpression(section3Instance.elemID, section3Instance),
+          ],
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: categoryInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}__`,
+      })
+
+      const insideSectionName = createName('section')
+      const insideSectionInstance = createInstanceElement({
+        type: SECTION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          parent_section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+          direct_parent_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+          direct_parent_type: SECTION_TYPE_NAME,
+        },
+        fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${insideSectionName}`,
+      })
+      const insideSectionEnTranslationInstance = createInstanceElement({
+        type: SECTION_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          title: insideSectionName,
+          draft: false,
+          hidden: false,
+          body: 'this is a test',
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: insideSectionInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${insideSectionName}__en_us_b@uuuuuum`,
+      })
+      insideSectionInstance.value.translations = [
+        new ReferenceExpression(insideSectionEnTranslationInstance.elemID, insideSectionEnTranslationInstance),
+      ]
+
+      const permissionGroupName = createName('permissionGroup')
+      const permissionGroup = createInstanceElement({
+        type: PERMISSION_GROUP_TYPE_NAME,
+        valuesOverride: {
+          name: permissionGroupName,
+          built_in: false,
+        },
+      })
+
+      const everyoneUserSegment = createInstanceElement({
+        type: USER_SEGMENT_TYPE_NAME,
+        valuesOverride: {
+          user_type: 'Everyone',
+          built_in: true,
+          name: 'Everyone',
+        },
+      })
+
+      const articleName = createName('article')
+      const articleInstance = createInstanceElement({
+        type: ARTICLE_TYPE_NAME,
+        valuesOverride: {
+          author_id: 'neta.marcus+zendesk@salto.io',
+          draft: true,
+          promoted: false,
+          section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
+        },
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}`,
+      })
+
+      const attachmentName = createName('attachment')
+      const fileName = `nacl${attachmentName}`
+      const articleAttachment = createInstanceElement({
+        type: ARTICLE_ATTACHMENT_TYPE_NAME,
+        valuesOverride: {
+          filename: fileName,
+          contentType: 'image/png',
+          content: new StaticFile({
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${fileName}`,
+            content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
+          }),
+          inline: false,
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: articleInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__${fileName}_false`,
+      })
+      const inlineFileName = `naclTwo${attachmentName}`
+      const articleInlineAttachment = createInstanceElement({
+        type: ARTICLE_ATTACHMENT_TYPE_NAME,
+        valuesOverride: {
+          filename: inlineFileName,
+          contentType: 'image/png',
+          content: new StaticFile({
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${inlineFileName}`,
+            content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
+          }),
+          inline: true,
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: articleInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__${inlineFileName}_true`,
+      })
+
+      articleInstance.value.attachments = [
+        new ReferenceExpression(articleAttachment.elemID, articleAttachment),
+        new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
+      ]
+
+      const articleTranslationEn = createInstanceElement({
+        type: ARTICLE_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          draft: true,
+          title: `${articleName}`,
+          body: new TemplateExpression({
+            parts: [
+              '<p>this is a test <img src="',
+              new ReferenceExpression(brandInstanceE2eHelpCenter.elemID.createNestedID('brand_url'), brandInstanceE2eHelpCenter?.value.brand_url),
+              '/hc/article_attachments/',
+              new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
+              `" alt="${inlineFileName}.png"></p><p></p>`,
+            ],
+          }),
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: articleInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__en_us_b@uuuuuum`,
+      })
+      const articleTranslationHe = createInstanceElement({
+        type: ARTICLE_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          draft: true,
+          title: `${articleName}_he`,
+          body: 'זאת בדיקה בעברית',
+          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          outdated: false,
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: articleInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__he`,
+      })
+
+      articleInstance.value.translations = [
+        new ReferenceExpression(articleTranslationEn.elemID, articleTranslationEn),
+        new ReferenceExpression(articleTranslationHe.elemID, articleTranslationHe),
+      ]
+
+      const article2Name = createName('articleTwo')
+      const article2Instance = createInstanceElement({
+        type: ARTICLE_TYPE_NAME,
+        valuesOverride: {
+          draft: true,
+          promoted: false,
+          section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
+        },
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article2Name}`,
+      })
+
+      const article2TranslationEn = createInstanceElement({
+        type: ARTICLE_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          draft: true,
+          title: `${article2Name}`,
+          body: 'this is a test',
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: article2Instance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article2Name}__en_us_b@uuuuuum`,
+      })
+
+      article2Instance.value.translations = [
+        new ReferenceExpression(article2TranslationEn.elemID, article2TranslationEn),
+      ]
+
+      const article3Name = createName('articleThree')
+      const article3Instance = createInstanceElement({
+        type: ARTICLE_TYPE_NAME,
+        valuesOverride: {
+          author_id: 'neta.marcus+zendesk@salto.io',
+          draft: true,
+          promoted: false,
+          section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+          user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
+        },
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article3Name}`,
+      })
+
+      const article3TranslationEn = createInstanceElement({
+        type: ARTICLE_TRANSLATION_TYPE_NAME,
+        valuesOverride: {
+          draft: true,
+          title: `${article3Name}`,
+          body: 'this is a test',
+          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          outdated: false,
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: article3Instance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article3Name}__en_us_b@uuuuuum`,
+      })
+
+      article3Instance.value.translations = [
+        new ReferenceExpression(article3TranslationEn.elemID, article3TranslationEn),
+      ]
+
+      const articleOrder = createInstanceElement({
+        type: ARTICLE_ORDER_TYPE_NAME,
+        valuesOverride: {
+          articles: [
+            new ReferenceExpression(article2Instance.elemID, article2Instance),
+            new ReferenceExpression(articleInstance.elemID, articleInstance),
+            new ReferenceExpression(article3Instance.elemID, article3Instance),
+          ],
+          brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
+        },
+        parent: sectionInstance,
+        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}__`,
+      })
+
+
+      guideInstances = [
+        categoryInstance,
+        categoryEnTranslationInstance,
+        categoryHeTranslationInstance,
+        sectionInstance,
+        sectionEnTranslationInstance,
+        sectionHeTranslationInstance,
+        section2Instance,
+        section2EnTranslationInstance,
+        section3Instance,
+        section3EnTranslationInstance,
+        sectionOrder,
+        insideSectionInstance,
+        insideSectionEnTranslationInstance,
+        permissionGroup,
+        articleAttachment,
+        articleInlineAttachment,
+        articleInstance,
+        articleTranslationEn,
+        articleTranslationHe,
+        article2Instance,
+        article2TranslationEn,
+        article3Instance,
+        article3TranslationEn,
+        articleOrder,
+      ]
       credLease = await credsLease()
       adapterAttr = realAdapter(
         { credentials: credLease.value,
@@ -895,7 +921,6 @@ describe('Zendesk adapter E2E', () => {
             brandInstanceE2eHelpCenter,
             helpCenterLocaleInstanceHe,
             helpCenterLocaleInstanceEn,
-            permissionGroup,
             everyoneUserSegment,
             articleAttachment,
             articleInlineAttachment,

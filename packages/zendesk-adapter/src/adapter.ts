@@ -36,7 +36,7 @@ import {
   ZendeskConfig,
   CLIENT_CONFIG,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, ZendeskFetchConfig,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, ZendeskFetchConfig, isGuideEnabled,
 } from './config'
 import {
   ZENDESK,
@@ -292,8 +292,7 @@ const getBrandsForGuide = (
   elements: InstanceElement[],
   fetchConfig: ZendeskFetchConfig,
 ): InstanceElement[] => {
-  const brandsConfig = fetchConfig.guide?.brands
-  const brandsRegexList = brandsConfig === undefined || _.isEmpty(brandsConfig) ? ['.*'] : brandsConfig
+  const brandsRegexList = fetchConfig.guide?.brands ?? []
   return elements
     .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
     .filter(brandInstance => brandInstance.value.has_help_center)
@@ -388,7 +387,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
-    const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
+    const isGuideDisabled = !isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     const supportedTypes = isGuideDisabled
       ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))

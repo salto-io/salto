@@ -102,7 +102,9 @@ describe('adapter', () => {
                   type: '.*',
                 }],
                 exclude: [],
-                enableGuide: true,
+                guide: {
+                  brands: ['.*'],
+                },
               },
             }
           ),
@@ -618,7 +620,6 @@ describe('adapter', () => {
                 type: '.*',
               }],
               exclude: [],
-              enableGuide: true,
               guide: {
                 brands: ['.WithGuide'],
               },

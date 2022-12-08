@@ -213,7 +213,9 @@ describe('article filter', () => {
             type: '.*',
           }],
           exclude: [],
-          enableGuide: true,
+          guide: {
+            brands: ['.*'],
+          },
         },
       },
     })) as FilterType

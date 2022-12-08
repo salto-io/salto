@@ -29,6 +29,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../constants'
+import { isGuideEnabled } from '../config'
 
 const log = logger(module)
 
@@ -93,7 +94,7 @@ const createTranslationType = () :ObjectType => new ObjectType({
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (!config.fetch.enableGuide) {
+    if (!isGuideEnabled(config.fetch)) {
       return
     }
     _.remove(elements, isTranslationType)

@@ -93,6 +93,7 @@ export type ChangeValidatorName = (
   | 'flowsValidator'
   | 'fullNameChangedValidator'
   | 'invalidListViewFilterScope'
+  | 'caseAssignmentRulesValidator'
 )
 
 export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
@@ -560,6 +561,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     flowsValidator: { refType: BuiltinTypes.BOOLEAN },
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
     invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
+    caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -32,6 +32,7 @@ import recordTypeDeletionValidator from './change_validators/record_type_deletio
 import flowsValidator from './change_validators/flows'
 import fullNameChangedValidator from './change_validators/fullname_changed'
 import invalidListViewFilterScope from './change_validators/invalid_listview_filterscope'
+import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 
 import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
 
@@ -52,6 +53,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   flowsValidator: (config, isSandbox) => flowsValidator(config, isSandbox),
   fullNameChangedValidator: () => fullNameChangedValidator,
   invalidListViewFilterScope: () => invalidListViewFilterScope,
+  caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
 }
 
 const checkOnlyChangeValidators

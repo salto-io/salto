@@ -390,7 +390,7 @@ describe('Zendesk adapter E2E', () => {
         title: `${categoryName} hebrew`,
         draft: false,
         hidden: false,
-        body: 'this is a test in hebrew',
+        body: 'זאת בדיקה בעברית',
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       },
       parent: categoryInstance,
@@ -439,7 +439,7 @@ describe('Zendesk adapter E2E', () => {
         title: sectionName,
         draft: false,
         hidden: false,
-        body: 'this is a test in hebrew',
+        body: 'זאת בדיקה בעברית',
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
       },
       parent: sectionInstance,
@@ -659,7 +659,7 @@ describe('Zendesk adapter E2E', () => {
       valuesOverride: {
         draft: true,
         title: `${articleName}_he`,
-        body: 'this is a test in hebrew',
+        body: 'זאת בדיקה בעברית',
         locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
         outdated: false,
         brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -677,7 +677,6 @@ describe('Zendesk adapter E2E', () => {
     const article2Instance = createInstanceElement({
       type: ARTICLE_TYPE_NAME,
       valuesOverride: {
-        author_id: 'neta.marcus+zendesk@salto.io',
         draft: true,
         promoted: false,
         section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
@@ -853,7 +852,7 @@ describe('Zendesk adapter E2E', () => {
       _.zip(orgArray, fetchArray)
         .forEach(val => {
           if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
-            expect(val[0].elemID).toMatchObject(val[1].elemID)
+            expect(val[0].elemID.getFullName()).toEqual(val[1].elemID.getFullName())
           } else {
             expect(val[0]).toEqual(val[1])
           }
@@ -872,7 +871,8 @@ describe('Zendesk adapter E2E', () => {
       fieldsToCheck
         .forEach(field => {
           if (isReferenceExpression(orgInstanceValues[field]) && isReferenceExpression(fetchInstanceValues[field])) {
-            expect(fetchInstanceValues[field].elemID).toMatchObject(orgInstanceValues[field].elemID)
+            expect(fetchInstanceValues[field].elemID.getFullName())
+              .toEqual(orgInstanceValues[field].elemID.getFullName())
           } else if (isArray(orgInstanceValues[field]) && isArray(fetchInstanceValues[field])) {
             verifyArray(orgInstanceValues[field], fetchInstanceValues[field])
           } else if (

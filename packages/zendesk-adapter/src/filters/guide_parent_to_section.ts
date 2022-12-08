@@ -23,7 +23,14 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { addRemovalChangesId } from './guide_section_and_category'
-import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLES_FIELD, SECTIONS_FIELD } from '../constants'
+import {
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  ARTICLES_FIELD,
+  SECTIONS_FIELD,
+  TRANSLATIONS_FIELD,
+  BRAND_FIELD,
+} from '../constants'
 
 const PARENT_SECTION_ID_FIELD = 'parent_section_id'
 
@@ -61,7 +68,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       parentChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, ['translations', PARENT_SECTION_ID_FIELD, ARTICLES_FIELD, SECTIONS_FIELD, 'brand'])
+        await deployChange(
+          change,
+          client,
+          config.apiDefinitions,
+          [TRANSLATIONS_FIELD, PARENT_SECTION_ID_FIELD, ARTICLES_FIELD, SECTIONS_FIELD, BRAND_FIELD]
+        )
       }
     )
     // need to deploy separately parent_section_id if exists since zendesk API does not support

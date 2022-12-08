@@ -17,19 +17,22 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { naclCase, normalizeFilePathPart, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
+import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections, values } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement,
-  isStaticFile, ObjectType, ReferenceExpression, StaticFile,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile,
+  isTemplateExpression, ObjectType, ReferenceExpression, StaticFile, Values,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ZENDESK } from '../../constants'
+import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
+import { ZendeskApiConfig } from '../../config'
+import { prepRef } from './article_body'
 
 const log = logger(module)
-const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
+const { awu } = collections.asynciterable
+const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH, generateInstanceNameFromConfig } = elementsUtils
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
 export const ATTACHMENTS_FIELD_NAME = 'attachments'
@@ -63,35 +66,51 @@ const isAttachments = (value: unknown): value is Attachment[] => {
 }
 
 const createAttachmentInstance = ({
-  attachment, attachmentType, article, content,
+  attachment, attachmentType, article, content, apiDefinitions,
 }: {
   attachment: Attachment
   attachmentType: ObjectType
   article: InstanceElement
   content: Buffer
+  apiDefinitions: ZendeskApiConfig
 }): InstanceElement => {
-  const name = elementsUtils.ducktype.toNestedTypeName(
-    article.value.title, attachment.file_name
-  )
-  const naclName = naclCase(name)
-  const pathName = pathNaclCase(naclName)
   const resourcePathName = `${normalizeFilePathPart(article.value.title)}/${normalizeFilePathPart(attachment.file_name)}`
+  const attachmentValues = {
+    id: attachment.id,
+    filename: attachment.file_name,
+    contentType: attachment.content_type,
+    content: new StaticFile({
+      filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
+      content,
+    }),
+    inline: attachment.inline,
+    brand: article.value.brand,
+  }
+
+  const articleRef = new ReferenceExpression(article.elemID, article)
+  const configInstanceName = generateInstanceNameFromConfig(
+    attachmentValues,
+    ARTICLE_ATTACHMENT_TYPE_NAME,
+    apiDefinitions,
+  )
+  const parentConfigInstanceName = generateInstanceNameFromConfig(
+    article.value,
+    ARTICLE_TYPE_NAME,
+    apiDefinitions,
+  )
+  // Eventually the element name and path of article_attachment is changed due to it extends the parend id
+  const tempName = (parentConfigInstanceName
+    && apiDefinitions.types[ARTICLE_ATTACHMENT_TYPE_NAME].transformation?.extendsParentId)
+    ? parentConfigInstanceName.concat(`__${configInstanceName}`)
+    : configInstanceName
+  const tempNaclName = naclCase(tempName)
+  const tempPathName = pathNaclCase(tempNaclName)
   return new InstanceElement(
-    naclName,
+    tempNaclName,
     attachmentType,
-    {
-      id: attachment.id,
-      filename: attachment.file_name,
-      contentType: attachment.content_type,
-      content: new StaticFile({
-        filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
-        content,
-      }),
-      inline: attachment.inline,
-      brand: article.value.brand,
-    },
-    [ZENDESK, RECORDS_PATH, ARTICLE_ATTACHMENT_TYPE_NAME, pathName],
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(article.elemID, article)] },
+    attachmentValues,
+    [ZENDESK, RECORDS_PATH, ARTICLE_ATTACHMENT_TYPE_NAME, tempPathName],
+    { [CORE_ANNOTATIONS.PARENT]: [articleRef] },
   )
 }
 
@@ -113,12 +132,13 @@ export const createAttachmentType = (): ObjectType =>
   })
 
 const getAttachmentContent = async ({
-  client, attachment, article, attachmentType,
+  client, attachment, article, attachmentType, apiDefinitions,
 }: {
   client: ZendeskClient
   attachment: Attachment
   article: InstanceElement
   attachmentType: ObjectType
+  apiDefinitions: ZendeskApiConfig
 }): Promise<InstanceElement | undefined> => {
   const res = await client.getSinglePage({
     url: `/hc/article_attachments/${attachment.id}/${attachment.file_name}`,
@@ -131,13 +151,14 @@ const getAttachmentContent = async ({
     }. Not adding article attachments`)
     return undefined
   }
-  return createAttachmentInstance({ attachment, attachmentType, article, content })
+  return createAttachmentInstance({ attachment, attachmentType, article, content, apiDefinitions })
 }
 
-export const getArticleAttachments = async ({ client, article, attachmentType }: {
+export const getArticleAttachments = async ({ client, article, attachmentType, apiDefinitions }: {
   client: ZendeskClient
   article: InstanceElement
   attachmentType: ObjectType
+  apiDefinitions: ZendeskApiConfig
 }): Promise<InstanceElement[]> => {
   const listAttachmentsResponse = await client.getSinglePage({
     url: `/api/v2/help_center/articles/${article.value.id}/attachments`,
@@ -156,7 +177,7 @@ export const getArticleAttachments = async ({ client, article, attachmentType }:
   }
   const attachmentInstances = (await Promise.all(
     _.orderBy(attachments, ['file_name', 'content_type', 'inline']).map(async attachment =>
-      getAttachmentContent({ client, attachment, article, attachmentType }))
+      getAttachmentContent({ client, attachment, article, attachmentType, apiDefinitions }))
   )).filter(values.isDefined)
   if (attachmentInstances.length > 0) {
     article.value[ATTACHMENTS_FIELD_NAME] = attachmentInstances
@@ -198,4 +219,53 @@ export const createUnassociatedAttachment = async (
   } catch (err) {
     throw getZendeskError(attachmentInstance.elemID.getFullName(), err)
   }
+}
+
+export const deleteArticleAttachment = async (
+  client: ZendeskClient,
+  attachmentInstance: InstanceElement,
+): Promise<void> => {
+  const res = await client.delete({
+    url: `/api/v2/help_center/articles/attachments/${attachmentInstance.value.id}`,
+  })
+  if (res === undefined) {
+    log.error('Received an empty response from Zendesk API when deleting an article attachment')
+  }
+}
+
+export const updateArticleTranslationBody = async ({
+  client,
+  articleValues,
+  attachmentInstances,
+}: {
+  client: ZendeskClient
+  articleValues: Values
+  attachmentInstances: InstanceElement[]
+}): Promise<void> => {
+  const attachmentElementsNames = attachmentInstances.map(instance => instance.elemID.name)
+  const articleTranslations = articleValues?.translations
+  if (!Array.isArray(articleTranslations)) {
+    log.error(`Received an invalid translations value for attachment ${articleValues.name} - ${safeJsonStringify(articleTranslations)}`)
+    return
+  }
+  await awu(articleTranslations)
+    .filter(isReferenceExpression)
+    .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
+    .forEach(async translationInstance => {
+      replaceTemplatesWithValues(
+        { values: [translationInstance.value.value], fieldName: 'body' },
+        {},
+        (part: ReferenceExpression) => {
+          const attachmentIndex = attachmentElementsNames.findIndex(name => name === part.elemID.name)
+          if (attachmentIndex !== -1) {
+            return attachmentInstances[attachmentIndex].value.id.toString()
+          }
+          return prepRef(part)
+        }
+      )
+      await client.put({
+        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.id}`,
+        data: { translation: { body: translationInstance.value.value.body } },
+      })
+    })
 }

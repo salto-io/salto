@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, TemplateExpression, Values, Element } from '@salto-io/adapter-api'
-import { createReference } from '../utils'
-import { JIRA, PRIORITY_TYPE_NAME, PROJECT_TYPE } from '../../src/constants'
-import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
+import { createReference } from '../../utils'
+import { JIRA, PRIORITY_TYPE_NAME, PROJECT_TYPE } from '../../../src/constants'
+import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 
 export const createAutomationValues = (name: string, allElements: Element[]): Values => ({

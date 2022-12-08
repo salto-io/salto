@@ -526,8 +526,8 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    const describeResult = this.retryOnBadResponse(() => this.conn.metadata.describe())
-    return flatValues((await describeResult).metadataObjects)
+    const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
+    return flatValues((describeResult).metadataObjects)
   }
 
   /**

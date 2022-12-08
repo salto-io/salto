@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Change, Element, getChangeData,
   InstanceElement,
-  isInstanceElement, ReferenceExpression,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME } from '../../constants'
@@ -47,37 +47,23 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     elements.push(orderType)
 
     /** Sections in category */
-    const sectionsInCategoryOrderElements = categories.map(category => {
-      const sectionInCategoryOrder = createOrderInstance({
-        parent: category,
-        parentField: 'category_id',
-        orderField: SECTIONS_FIELD,
-        // Make sure these sections are not under another section
-        childrenElements: sections.filter(s => s.value.direct_parent_type === CATEGORY_TYPE_NAME),
-        orderType,
-      })
-      category.value.sections = new ReferenceExpression(
-        sectionInCategoryOrder.elemID, sectionInCategoryOrder
-      )
-      return sectionInCategoryOrder
-    })
+    const sectionsInCategoryOrderElements = categories.map(category => createOrderInstance({
+      parent: category,
+      parentField: 'category_id',
+      orderField: SECTIONS_FIELD,
+      // Make sure these sections are not under another section
+      childrenElements: sections.filter(s => s.value.direct_parent_type === CATEGORY_TYPE_NAME),
+      orderType,
+    }))
 
     /** Sections in section */
-    const sectionsInSectionOrderElements = sections.map(section => {
-      const sectionInSectionOrderElement = createOrderInstance({
-        parent: section,
-        parentField: 'parent_section_id',
-        orderField: SECTIONS_FIELD,
-        childrenElements: sections.filter(s => s.value.direct_parent_type === SECTION_TYPE_NAME),
-        orderType,
-      })
-
-      section.value[SECTIONS_FIELD] = new ReferenceExpression(
-        sectionInSectionOrderElement.elemID, sectionInSectionOrderElement
-      )
-
-      return sectionInSectionOrderElement
-    })
+    const sectionsInSectionOrderElements = sections.map(section => createOrderInstance({
+      parent: section,
+      parentField: 'parent_section_id',
+      orderField: SECTIONS_FIELD,
+      childrenElements: sections.filter(s => s.value.direct_parent_type === SECTION_TYPE_NAME),
+      orderType,
+    }))
 
     sectionsInCategoryOrderElements.forEach(element => elements.push(element))
     sectionsInSectionOrderElements.forEach(element => elements.push(element))

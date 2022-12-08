@@ -26,6 +26,8 @@ import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
+export const CASE = 'Case'
+
 type RuleEntry = { // with team
   team: string
 }
@@ -56,7 +58,7 @@ const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Deployment of case assignment rule that references a predefined case team is not supported. Please remove the ‘team’ property in order to deploy this element and then configure its team via the salesforce UI.',
-  detailedMessage: 'Deployment of case assignment rule that references a predefined case team is not supported. Please remove the ‘team’ property in order to deploy this element and then configure its team via the salesforce UI.',
+  detailedMessage: 'Deployment of case assignment rule that references a predefined case team is not supported in SF. Please  visit: https://help.salesforce.com/s/articleView?id=000387900&type=1',
 })
 
 /**
@@ -67,7 +69,7 @@ const changeValidator: ChangeValidator = async changes => awu(changes)
   .filter(isAdditionOrModificationChange)
   .map(getChangeData)
   .filter(isInstanceOfType(ASSIGNMENT_RULES_METADATA_TYPE))
-  .filter(async change => await apiName(change) === 'Case')
+  .filter(async change => await apiName(change) === CASE)
   .filter(instance => isAssignmentRulesWithTeam(instance.value))
   .map(createChangeError)
   .toArray()

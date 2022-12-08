@@ -20,34 +20,32 @@ import { createInstanceElement } from '../../src/transformers/transformer'
 
 describe('case AssignmentRules change validator', () => {
   let caseRuleChange: Change
-  describe('deploy a  case AssignmentRules', () => {
-    describe('case AssignmentRules with case teams', () => {
-      beforeEach(() => {
-        const caseRule = createInstanceElement({ fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2', team: 'team1' }] }] }, mockTypes.AssignmentRules)
-        caseRuleChange = toChange({ after: caseRule })
-      })
-
-      it('should throw an error', async () => {
-        const changeErrors = await caseChangeValidator(
-          [caseRuleChange]
-        )
-        expect(changeErrors).toHaveLength(1)
-        const [changeError] = changeErrors
-        expect(changeError.severity).toEqual('Error')
-      })
+  describe('case AssignmentRules with case teams', () => {
+    beforeEach(() => {
+      const caseRule = createInstanceElement({ fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2', team: 'team1' }] }] }, mockTypes.AssignmentRules)
+      caseRuleChange = toChange({ after: caseRule })
     })
-    describe('case AssignmentRules without case teams', () => {
-      beforeEach(() => {
-        const caseRule = createInstanceElement({ fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2' }] }] }, mockTypes.AssignmentRules)
-        caseRuleChange = toChange({ after: caseRule })
-      })
 
-      it('should not throw any error', async () => {
-        const changeErrors = await caseChangeValidator(
-          [caseRuleChange]
-        )
-        expect(changeErrors).toHaveLength(0)
-      })
+    it('should throw an error', async () => {
+      const changeErrors = await caseChangeValidator(
+        [caseRuleChange]
+      )
+      expect(changeErrors).toHaveLength(1)
+      const [changeError] = changeErrors
+      expect(changeError.severity).toEqual('Error')
+    })
+  })
+  describe('case AssignmentRules without case teams', () => {
+    beforeEach(() => {
+      const caseRule = createInstanceElement({ fullName: 'Case', assignmentRule: [{ ruleEntry: [{ assignedTo: 'user1' }, { assignedTo: 'user2' }] }] }, mockTypes.AssignmentRules)
+      caseRuleChange = toChange({ after: caseRule })
+    })
+
+    it('should not throw any error', async () => {
+      const changeErrors = await caseChangeValidator(
+        [caseRuleChange]
+      )
+      expect(changeErrors).toHaveLength(0)
     })
   })
 })

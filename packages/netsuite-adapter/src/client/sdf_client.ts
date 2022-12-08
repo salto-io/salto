@@ -62,7 +62,7 @@ const { concatObjects } = lowerdashObjects
 const { matchAll } = strings
 const log = logger(module)
 
-const FAILED_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
+const RESPONSE_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
   csvimport: 'savedcsvimport',
   plugintypeimpl: 'pluginimplementation',
 }
@@ -719,8 +719,8 @@ export default class SdfClient {
 
   private static fixTypeName(typeName: string): string {
     // For some type names, SDF might return different names in its
-    // error response, so we replace it with the original name
-    return FAILED_TYPE_NAME_TO_REAL_NAME[typeName] ?? typeName
+    // response, so we replace it with the original name
+    return RESPONSE_TYPE_NAME_TO_REAL_NAME[typeName] ?? typeName
   }
 
   async listInstances(
@@ -736,9 +736,10 @@ export default class SdfClient {
       },
       executor,
     )
-    return results.data.map(
-      ({ type, scriptId }: { type: string; scriptId: string }) => ({ type, instanceId: scriptId })
-    )
+    return results.data.map(({ type, scriptId }: { type: string; scriptId: string }) => ({
+      type: SdfClient.fixTypeName(type),
+      instanceId: scriptId,
+    }))
   }
 
   private async listFilePaths(executor: CommandActionExecutor):

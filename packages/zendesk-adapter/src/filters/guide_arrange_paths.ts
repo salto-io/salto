@@ -13,7 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import {
+  Element,
+  isInstanceElement,
+  InstanceElement,
+  isReferenceExpression,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
@@ -55,12 +61,18 @@ const TRANSLATIONS = [
   SECTION_TRANSLATION_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME]
 
-const OTHER_TYPES = [
-  ...TRANSLATIONS,
+const ORDER_TYPES = [
   SECTION_ORDER_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
+]
+
+const OTHER_TYPES = [
+  ...TRANSLATIONS,
   ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
+
+const NO_VALUE_DEFAULT = 'unknown'
+
 export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [ARTICLE_TRANSLATION_TYPE_NAME]: 'translations',
   [ARTICLE_TYPE_NAME]: 'articles',
@@ -78,6 +90,50 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
 }
 
+const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
+  : string | undefined => (isReferenceExpression(localeRef)
+  ? localeRef.value.value?.id // TODO change id to locale in SALTO-3010
+  : localeRef)
+
+const getTranslationLocale = (instance?: InstanceElement): string =>
+  getReferencedLocale(instance?.value.locale) ?? NO_VALUE_DEFAULT
+
+const getNameFromTranslation = (instance?: InstanceElement): string => {
+  if (instance === undefined) {
+    return NO_VALUE_DEFAULT
+  }
+  const sourceLocale = getReferencedLocale(instance.value.source_locale) ?? NO_VALUE_DEFAULT
+  const translation = instance.value.translations
+    ?.filter(isReferenceExpression)
+    .map((reference: ReferenceExpression) => reference.value)
+    .find((tran: InstanceElement) => (getReferencedLocale(tran.value.locale) === sourceLocale))
+  return translation?.value.title ?? NO_VALUE_DEFAULT
+}
+
+const getNameFromName = (instance?: InstanceElement): string => instance?.value.name ?? NO_VALUE_DEFAULT
+
+
+const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
+  [CATEGORY_ORDER_TYPE_NAME]: () => 'categories_order',
+  [SECTION_ORDER_TYPE_NAME]: () => 'sections_order',
+  [ARTICLE_ORDER_TYPE_NAME]: () => 'articles_order',
+  [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
+  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
+  [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
+  [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,
+  [CATEGORY_TRANSLATION_TYPE_NAME]: getTranslationLocale,
+  [ARTICLE_TYPE_NAME]: getNameFromTranslation,
+  [CATEGORY_TYPE_NAME]: getNameFromName,
+  [SECTION_TYPE_NAME]: getNameFromName,
+  [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.filename ?? NO_VALUE_DEFAULT,
+}
+
+
+const getName = (instance: InstanceElement): string =>
+  (GUIDE_ELEMENT_NAME[instance.elemID.typeName] === undefined
+    ? pathNaclCase(instance.elemID.name)
+    : pathNaclCase(GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance)))
+
 /**
  * calculates a path which is not related to a specific brand
  */
@@ -92,8 +148,12 @@ const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | unde
 /**
  * calculates a path which is related to a specific brand and does not have a parent
  */
-const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: string | undefined)
-  : readonly string[] => {
+const pathForBrandSpecificRootElements = (
+  instance: InstanceElement,
+  brandName: string | undefined,
+  needTypeDirectory: boolean
+)
+: readonly string[] => {
   if (brandName === undefined) {
     log.error('brandName was not found for instance %s.', instance.elemID.getFullName())
     return [
@@ -107,12 +167,16 @@ const pathForBrandSpecificRootElements = (instance: InstanceElement, brandName: 
     ...GUIDE_PATH,
     'brands',
     brandName,
-    GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    pathNaclCase(instance.elemID.name),
   ]
-  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
-    newPath.push(pathNaclCase(instance.elemID.name))
+  const name = getName(instance)
+
+  if (needTypeDirectory) {
+    newPath.push(GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName])
   }
+  if (instance.elemID.typeName === CATEGORY_TYPE_NAME) { // each category has a folder of its own
+    newPath.push(name)
+  }
+  newPath.push(name)
   return newPath
 }
 
@@ -139,14 +203,15 @@ const pathForOtherLevels = ({
       pathNaclCase(instance.elemID.name),
     ]
   }
+  const name = getName(instance)
   const newPath = parentPath.slice(0, parentPath.length - 1)
   if (needTypeDirectory) {
     newPath.push(GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName])
   }
   if (needOwnFolder) {
-    newPath.push(pathNaclCase(instance.elemID.name))
+    newPath.push(name)
   }
-  newPath.push(pathNaclCase(instance.elemID.name))
+  newPath.push(name)
   return newPath
 }
 
@@ -192,7 +257,11 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => instance !== undefined)
       .forEach(instance => {
         const brandElemId = instance.value.brand?.elemID.getFullName()
-        instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId])
+        const needTypeDirectory = [
+          CATEGORY_TYPE_NAME,
+          GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+        ].includes(instance.elemID.typeName)
+        instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId], needTypeDirectory)
       })
 
     // sections under category
@@ -238,7 +307,7 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    // others (translations, article attachments, order)
+    // others (translations, article attachments)
     OTHER_TYPES
       .flatMap(type => guideGrouped[type])
       .filter(instance => instance !== undefined)
@@ -247,6 +316,19 @@ const filterCreator: FilterCreator = () => ({
         instance.path = pathForOtherLevels({
           instance,
           needTypeDirectory: true,
+          needOwnFolder: false,
+          parent: parentsById[parentId],
+        })
+      })
+
+    ORDER_TYPES
+      .flatMap(type => guideGrouped[type])
+      .filter(instance => instance !== undefined)
+      .forEach(instance => {
+        const parentId = getParent(instance).value.id
+        instance.path = pathForOtherLevels({
+          instance,
+          needTypeDirectory: false,
           needOwnFolder: false,
           parent: parentsById[parentId],
         })

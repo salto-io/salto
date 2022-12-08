@@ -8,7 +8,7 @@ Supprted parameters are:
 
 ### Example
 ```
-salto service add jira --login-parameters baseUrl=https://someSubDomain.atlassian.net/ user=SomeUSer token=SomeApiToken
+salto account add jira --login-parameters baseUrl=https://someSubDomain.atlassian.net/ user=SomeUSer token=SomeApiToken
 ```
 
 

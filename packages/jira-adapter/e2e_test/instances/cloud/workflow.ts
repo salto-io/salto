@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { ElemID, Values, Element } from '@salto-io/adapter-api'
-import { createReference } from '../utils'
-import { JIRA, STATUS_TYPE_NAME } from '../../src/constants'
+import { createReference } from '../../utils'
+import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 
 export const createWorkflowValues = (name: string, allElements: Element[]): Values => ({
   name,

@@ -135,15 +135,15 @@ export const runAddSalesforceService = async (workspacePath: string,
   await runCommand({
     workspacePath,
     args: accountName
-      ? ['service', 'add', 'salesforce', '--account-name', accountName]
-      : ['service', 'add', 'salesforce'],
+      ? ['account', 'add', 'salesforce', '--account-name', accountName]
+      : ['account', 'add', 'salesforce'],
   })
 }
 
 export const runSalesforceLogin = async (workspacePath: string,
   accountName: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['service', 'login', accountName],
+    workspacePath, args: ['account', 'login', accountName],
   })
 }
 

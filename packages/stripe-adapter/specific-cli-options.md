@@ -6,5 +6,5 @@ Supprted parameters are:
 
 ### Example
 ```
-salto service add stripe --login-parameters token=SomeApiToken
+salto account add stripe --login-parameters token=SomeApiToken
 ```

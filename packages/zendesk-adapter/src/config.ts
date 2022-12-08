@@ -1887,8 +1887,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'parent_section_id', fieldType: 'number' },
         { fieldName: 'sections', fieldType: 'list<section>' },
         { fieldName: 'articles', fieldType: 'list<article>' },
+        { fieldName: 'translations', fieldType: 'list<section_translation>' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -2026,6 +2028,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'sections', fieldType: 'list<section>' },
+        { fieldName: 'translations', fieldType: 'list<category_translation>' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

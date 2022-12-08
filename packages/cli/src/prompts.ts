@@ -71,11 +71,11 @@ export default class Prompts {
     return `Could not initiate workspace: ${msg}\n`
   }
 
-  private static readonly SERVICE_ADD_HELP = 'Use `salto service add <service-name>` to add accounts to the environment'
+  private static readonly ACCOUNT_ADD_HELP = 'Use `salto account add <service-name>` to add accounts to the environment'
 
   public static initCompleted(): string {
     return `Initiated empty workspace
-${Prompts.SERVICE_ADD_HELP}
+${Prompts.ACCOUNT_ADD_HELP}
 `
   }
 
@@ -145,13 +145,13 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (accountName: string): string => `Please enter your ${accountName} credentials:`
   public static readonly GO_TO_BROWSER = (url: string): string => `Please follow the steps for authenticating in your browser. If a new tab has not opened automatically, please go to ${url}`
-  public static readonly SERVICE_HOW_ADD = (serviceName: string): string => `Use \`salto service add ${serviceName}\` to add the service to the environment`
+  public static readonly ACCOUNT_HOW_ADD = (serviceName: string): string => `Use \`salto account add ${serviceName}\` to add the service to the environment`
   public static readonly ACCOUNT_ADDED = (accountName: string): string => `${accountName} was added to the environment`
   public static readonly ACCOUNTS_LOGIN_UPDATED = 'Login information successfully updated!'
   public static readonly ACCOUNTS_LOGIN_OVERRIDE = '** This will override the current login information **'
   public static readonly ACCOUNT_LOGIN_FAILED = (accountName: string, errorMessage: string): string => `Could not login to ${accountName}: ${errorMessage}`
-  public static readonly ACCOUNT_LOGIN_FAILED_TRY_AGAIN = (accountName: string): string => `To try again run: \`salto service login ${accountName}\``
-  public static readonly SERVICE_ADD_FAILED_TRY_AGAIN = (serviceName: string): string => `To try again run: \`salto service add ${serviceName}\``
+  public static readonly ACCOUNT_LOGIN_FAILED_TRY_AGAIN = (accountName: string): string => `To try again run: \`salto account login ${accountName}\``
+  public static readonly ACCOUNT_ADD_FAILED_TRY_AGAIN = (serviceName: string): string => `To try again run: \`salto account add ${serviceName}\``
   public static readonly ACCOUNT_CONFIGURED = (accountName: string): string => `${accountName} is configured in this environment`
   public static readonly ACCOUNT_NOT_CONFIGURED = (accountName: string): string => `${accountName} is not configured in this environment`
   public static readonly CONFIGURED_ACCOUNTS_TITLE = 'The configured accounts are:'
@@ -166,7 +166,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly DELETED_ENV = (envName: string): string => `Deleted environment - ${envName}`
   public static readonly CREATED_ENV = (envName: string): string =>
     `Created environment - ${envName}.
-${Prompts.SERVICE_ADD_HELP}`
+${Prompts.ACCOUNT_ADD_HELP}`
 
   public static readonly RENAME_ENV = (currentEnvName: string, newEnvName: string): string =>
     `Renamed environment - ${currentEnvName} -> ${newEnvName}`

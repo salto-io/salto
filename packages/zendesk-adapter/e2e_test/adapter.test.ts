@@ -293,8 +293,7 @@ describe('Zendesk adapter E2E', () => {
         usedConfig
       )
       const firstFetchResult = await adapterAttr.adapter.fetch({
-        progressReporter:
-    { reportProgress: () => null },
+        progressReporter: { reportProgress: () => null },
       })
       const brandInstanceE2eHelpCenter = firstFetchResult.elements
         .filter(isInstanceElement)
@@ -903,7 +902,6 @@ describe('Zendesk adapter E2E', () => {
         article3TranslationEn,
         articleOrder,
       ]
-      credLease = await credsLease()
       adapterAttr = realAdapter(
         { credentials: credLease.value,
           elementsSource: buildElementsSourceFromElements([

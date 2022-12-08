@@ -83,7 +83,7 @@ const ALL_SUPPORTED_TYPES = {
 const HELP_CENTER_BRAND_NAME = 'e2eHelpCenter'
 
 // Set long timeout as we communicate with Zendesk APIs
-jest.setTimeout(1000000)
+jest.setTimeout(1000 * 60 * 15)
 
 const createInstanceElement = ({
   type,

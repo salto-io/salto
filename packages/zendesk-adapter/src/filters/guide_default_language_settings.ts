@@ -16,22 +16,24 @@
 import {
   Change,
   getChangeData,
-  InstanceElement, isAdditionChange, isAdditionOrModificationChange,
+  InstanceElement,
   isInstanceChange,
-  isInstanceElement, isModificationChange,
+  isInstanceElement, isModificationChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG } from '../config'
-import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
 import { getZendeskError } from '../errors'
+
+const { awu } = collections.asynciterable
 
 export const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
 
 /**
- On fetch - Add 'default' field for guide_language_settings from an url request
- On deploy - ignore the field
+ On fetch - Add 'default_locale' field for guide_settings from an url request
+ On deploy - send and api request to update the default language if it was changed
  */
 const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) => ({
   onFetch: async elements => {
@@ -40,68 +42,63 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
     }
     const instances = elements.filter(isInstanceElement)
 
+    const guideSettings = instances.filter(e => e.elemID.typeName === GUIDE_SETTINGS_TYPE_NAME)
+    const guideLanguageSettings = instances.filter(e => e.elemID.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
     const brands = instances
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
       .filter(b => b.value.has_help_center === true)
 
-    const brandToDefaultTranslation: Record<number, clientUtils.ResponseValue | clientUtils.ResponseValue[]> = {}
-
-    // Request the default locale for each brand
-    const defaultLocaleRequestPromises = brands.map(async brand => {
+    // Request the default locale for each brand and fill up the brand's language info
+    const brandToLanguageInfo = await awu(brands).map(async brand => {
       const brandId = brand.value.id
       const res = await brandIdToClient[brandId].getSinglePage({ url: DEFAULT_LOCALE_API })
-      brandToDefaultTranslation[brandId] = res.data
-    })
+      return {
+        defaultLocale: res.data.toString(),
+        settings: guideSettings.find(settings => settings.value.brand === brandId),
+        languageSettings: guideLanguageSettings.filter(settings => settings.value.brand === brandId),
+      }
+    }).toArray()
 
-    // Do all requests parallel to save time
-    await Promise.all(defaultLocaleRequestPromises)
+    brandToLanguageInfo.forEach(languageInfo => {
+      const { defaultLocale, settings, languageSettings } = languageInfo
+      const defaultLanguageSettings = languageSettings.find(setting => setting.value.locale === defaultLocale)
 
-    // If the language of the setting is the same as the default, mark it as true
-    const guideLanguageSettings = instances.filter(e => e.elemID.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
-    guideLanguageSettings.forEach(settings => {
-      settings.value.default = brandToDefaultTranslation[settings.value.brand.value.value.id] === settings.value.locale
+      // This shouldn't happen, but is needed for type casting
+      if (defaultLanguageSettings === undefined || settings === undefined) {
+        return
+      }
+
+      settings.value.default_locale = new ReferenceExpression(defaultLanguageSettings.elemID, defaultLanguageSettings)
     })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [guideLanguageSettingsChanges, leftoverChanges] = _.partition(
+    const [guideSettingsChanges, leftoverChanges] = _.partition(
       changes,
-      change => isInstanceChange(change)
-            && GUIDE_LANGUAGE_SETTINGS_TYPE_NAME.includes(getChangeData(change).elemID.typeName),
+      change => isInstanceChange(change) && getChangeData(change).elemID.typeName === GUIDE_SETTINGS_TYPE_NAME
     )
 
-    const newDefaultChange = guideLanguageSettingsChanges.filter(isAdditionOrModificationChange).find(change => {
-      if (getChangeData(change).value.default === true) {
-        // Addition change needs to be updated, modification only updates if it changed from false to true
-        if (isAdditionChange(change) || (isModificationChange(change) && change.data.before.value.default === false)) {
-          return true
+    const errors: Error[] = []
+    // Removal means nothing, addition isn't possible because we don't allow activation of Guide with Salto
+    guideSettingsChanges.filter(isModificationChange).forEach(async change => {
+      const defaultChanged = change.data.before.value.default_locale !== change.data.after.value.default_locale
+      if (defaultChanged) {
+        try {
+          await client.put({
+            url: DEFAULT_LOCALE_API,
+            data: { locale: getChangeData(change).value.default_locale },
+          })
+        } catch (err) {
+          errors.push(getZendeskError(getChangeData(change).elemID.getFullName(), err))
         }
       }
-      return false
     })
-
-    const errors = []
-    // If there was a change of the default language, send an api request to update it
-    if (newDefaultChange !== undefined) {
-      const newDataValue = newDefaultChange.data.after.value
-      try {
-        await client.put({
-          url: DEFAULT_LOCALE_API,
-          data: { locale: newDataValue.locale },
-        })
-      } catch (err) {
-        errors.push(getZendeskError(getChangeData(newDefaultChange).elemID.getFullName(), err))
-      }
-    }
-
-    // Omit the 'default' property so the instances can be deployed regularly without any custom salto field
-    guideLanguageSettingsChanges.forEach(change => delete getChangeData(change).value.default)
 
     return {
       deployResult: {
         appliedChanges: [],
         errors,
       },
-      leftoverChanges: [...leftoverChanges, ...guideLanguageSettingsChanges],
+      leftoverChanges: [...leftoverChanges, ...guideSettingsChanges],
     }
   },
 })

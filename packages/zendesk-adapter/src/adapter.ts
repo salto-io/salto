@@ -154,8 +154,6 @@ export const DEFAULT_FILTERS = [
   hardcodedChannelFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
-  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
-  // tagsFilter and guideLocalesFilter
   usersFilter,
   tagsFilter,
   macroAttachmentsFilter,
@@ -173,8 +171,10 @@ export const DEFAULT_FILTERS = [
   guideSectionCategoryFilter,
   guideTranslationFilter,
   guideGuideSettings,
+  guideDefaultLanguage, // needs to be after guideGuideSettings
   guideServiceUrl,
   guideLocalesFilter, // Needs to be after guideServiceUrl
+  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter, tagsFilter and guideLocalesFilter
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
@@ -200,7 +200,6 @@ export const DEFAULT_FILTERS = [
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
-  guideDefaultLanguage, // needs to be before deployBrandedGuideTypesFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   // defaultDeployFilter should be last!

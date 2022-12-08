@@ -1808,6 +1808,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
+      fieldTypeOverrides: [
+        { fieldName: 'default_locale', fieldType: 'string' },
+      ],
       // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {

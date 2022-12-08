@@ -170,6 +170,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'ticketFieldAlternative'
   | 'ticketFieldOption'
   | 'userFieldOption'
+  | 'locale'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -204,6 +205,11 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     serialize: customFieldOptionSerialization,
     lookup: val => val,
     lookupIndexName: 'id',
+  },
+  locale: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.locale : ref.value),
+    lookup: val => val,
+    lookupIndexName: 'locale',
   },
 }
 
@@ -640,8 +646,13 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'permission_group' },
   },
   {
+    src: { field: 'default_locale', parentTypes: ['guide_settings'] },
+    zendeskSerializationStrategy: 'locale',
+    target: { type: 'guide_language_settings' },
+  },
+  {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
-    serializationStrategy: 'locale',
+    zendeskSerializationStrategy: 'locale',
     target: { type: 'guide_language_settings' },
   },
   {
@@ -652,7 +663,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
         'section_translation', 'category_translation', 'article_translation',
       ],
     },
-    serializationStrategy: 'locale',
+    zendeskSerializationStrategy: 'locale',
     target: { type: 'guide_language_settings' },
   },
   {

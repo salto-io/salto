@@ -550,6 +550,14 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'queue', parentTypes: ['ListView'] },
+    target: { type: 'Queue' },
+  },
+  {
     src: { field: 'caseOwner', parentTypes: ['EmailToCaseRoutingAddress'] },
     target: { typeContext: 'neighborCaseOwnerTypeLookup' },
   },

@@ -548,6 +548,14 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'column', parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'] },
     target: { type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'queue', parentTypes: ['ListView'] },
+    target: { type: 'Queue' },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on

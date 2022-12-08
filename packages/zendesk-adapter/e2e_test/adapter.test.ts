@@ -459,15 +459,6 @@ describe('Zendesk adapter E2E', () => {
 
       // ***************** guide instances ******************* //
 
-      // const brandInstanceE2eHelpCenter = createInstanceElement({
-      //   type: 'brand',
-      //   valuesOverride: {
-      //     name: 'e2eHelpCenter',
-      //     subdomain: 'salto100',
-      //     brand_url: 'https://salto100.zendesk.com',
-      //     id: 10378734785303,
-      //   },
-      // })
       const helpCenterLocaleInstanceEn = createInstanceElement({
         type: 'guide_locale',
         valuesOverride: {
@@ -491,7 +482,7 @@ describe('Zendesk adapter E2E', () => {
             brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           },
           fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-          name: `${HELP_CENTER_BRAND_NAME}_${categoryName}`,
+          name: `${categoryName}_${HELP_CENTER_BRAND_NAME}`,
         }),
         config: DEFAULT_CONFIG.apiDefinitions,
       })
@@ -507,7 +498,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: categoryInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}__en_us_b@uuuum`,
+        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuum`,
       })
 
       const categoryHeTranslationInstance = createInstanceElement({
@@ -522,7 +513,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: categoryInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}__he`,
+        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__he`,
       })
 
       categoryInstance.value.translations = [
@@ -543,7 +534,7 @@ describe('Zendesk adapter E2E', () => {
           direct_parent_type: CATEGORY_TYPE_NAME,
         },
         fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
       const sectionEnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
@@ -557,7 +548,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: sectionInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}__en_us_b@uuuuum`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuum`,
       })
       const sectionHeTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
@@ -571,7 +562,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: sectionInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}__he`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__he`,
       })
       sectionInstance.value.translations = [
         new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
@@ -589,7 +580,7 @@ describe('Zendesk adapter E2E', () => {
           direct_parent_type: CATEGORY_TYPE_NAME,
         },
         fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section2Name}`,
+        name: `${section2Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
       const section2EnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
@@ -603,7 +594,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: section2Instance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section2Name}__en_us_b@uuuuum`,
+        name: `${section2Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuum`,
       })
       section2Instance.value.translations = [
         new ReferenceExpression(section2EnTranslationInstance.elemID, section2EnTranslationInstance),
@@ -620,7 +611,7 @@ describe('Zendesk adapter E2E', () => {
           direct_parent_type: CATEGORY_TYPE_NAME,
         },
         fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section3Name}`,
+        name: `${section3Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
       const section3EnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
@@ -634,7 +625,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: section3Instance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${section3Name}__en_us_b@uuuuum`,
+        name: `${section3Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuum`,
       })
       section3Instance.value.translations = [
         new ReferenceExpression(section3EnTranslationInstance.elemID, section3EnTranslationInstance),
@@ -650,7 +641,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: categoryInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}__`,
+        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__`,
       })
 
       const insideSectionName = createName('section')
@@ -666,7 +657,7 @@ describe('Zendesk adapter E2E', () => {
           direct_parent_type: SECTION_TYPE_NAME,
         },
         fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${insideSectionName}`,
+        name: `${insideSectionName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
       const insideSectionEnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
@@ -680,7 +671,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: insideSectionInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${insideSectionName}__en_us_b@uuuuuum`,
+        name: `${insideSectionName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
       })
       insideSectionInstance.value.translations = [
         new ReferenceExpression(insideSectionEnTranslationInstance.elemID, insideSectionEnTranslationInstance),
@@ -708,7 +699,6 @@ describe('Zendesk adapter E2E', () => {
       const articleInstance = createInstanceElement({
         type: ARTICLE_TYPE_NAME,
         valuesOverride: {
-          author_id: 'neta.marcus+zendesk@salto.io',
           draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
@@ -719,7 +709,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
         },
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}`,
+        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
       const attachmentName = createName('attachment')
@@ -737,7 +727,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__${fileName}_false`,
+        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${fileName}_false`,
       })
       const inlineFileName = `naclTwo${attachmentName}`
       const articleInlineAttachment = createInstanceElement({
@@ -753,7 +743,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__${inlineFileName}_true`,
+        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${inlineFileName}_true`,
       })
 
       articleInstance.value.attachments = [
@@ -780,7 +770,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__en_us_b@uuuuuum`,
+        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
       })
       const articleTranslationHe = createInstanceElement({
         type: ARTICLE_TRANSLATION_TYPE_NAME,
@@ -793,7 +783,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${articleName}__he`,
+        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__he`,
       })
 
       articleInstance.value.translations = [
@@ -815,7 +805,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
         },
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article2Name}`,
+        name: `${article2Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
       const article2TranslationEn = createInstanceElement({
@@ -829,7 +819,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: article2Instance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article2Name}__en_us_b@uuuuuum`,
+        name: `${article2Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
       })
 
       article2Instance.value.translations = [
@@ -851,7 +841,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           user_segment_id: new ReferenceExpression(everyoneUserSegment.elemID, everyoneUserSegment),
         },
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article3Name}`,
+        name: `${article3Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
       const article3TranslationEn = createInstanceElement({
@@ -865,7 +855,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: article3Instance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}_${article3Name}__en_us_b@uuuuuum`,
+        name: `${article3Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
       })
 
       article3Instance.value.translations = [
@@ -883,7 +873,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: sectionInstance,
-        name: `${HELP_CENTER_BRAND_NAME}_${categoryName}_${sectionName}__`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__`,
       })
 
 

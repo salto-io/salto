@@ -17,7 +17,7 @@ import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
 import { addAdapter, installAdapter, LoginStatus, verifyCredentials, updateCredentials, loadLocalWorkspace } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getPrivateAdaptersNames } from '../../src/formatter'
-import { serviceAddDef, addAction, listAction, loginAction, accountLoginDef } from '../../src/commands/service'
+import { accountAddDef, addAction, listAction, loginAction, accountLoginDef } from '../../src/commands/account'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
@@ -93,7 +93,8 @@ jest.mock('@salto-io/core', () => {
   }
 })
 
-describe('service command group', () => {
+// this test also covers the deprecated 'service' acronym because they both use accountAddDef etc.
+describe('account command group', () => {
   let cliArgs: mocks.MockCliArgs
   let output: mocks.MockCliOutput
   let workspace: mocks.MockWorkspace
@@ -174,8 +175,8 @@ describe('service command group', () => {
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
 
-    describe('when calling service add via the commander wrapper', () => {
-      const { action } = serviceAddDef
+    describe('when calling account add via the commander wrapper', () => {
+      const { action } = accountAddDef
       let telemetry: mocks.MockTelemetry
 
       beforeEach(() => {
@@ -477,7 +478,7 @@ describe('service command group', () => {
           })
 
           it('should print try again text', () => {
-            expect(output.stderr.content).toContain('To try again run: `salto service add newAdapter`')
+            expect(output.stderr.content).toContain('To try again run: `salto account add newAdapter`')
           })
 
           it('should not print login information updated', () => {

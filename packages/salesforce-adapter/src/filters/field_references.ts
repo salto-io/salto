@@ -94,6 +94,10 @@ const contextStrategyLookup: Record<
   neighborPicklistObjectLookup: neighborContextFunc({ contextFieldName: 'picklistObject' }),
   neighborSharedToTypeLookup: neighborContextFunc({ contextFieldName: 'sharedToType', contextValueMapper: shareToMapper }),
   neighborTableLookup: neighborContextFunc({ contextFieldName: 'table' }),
+  neighborCaseOwnerTypeLookup: neighborContextFunc({ contextFieldName: 'caseOwnerType' }),
+  neighborAssignedToTypeLookup: neighborContextFunc({ contextFieldName: 'assignedToType' }),
+  neighborRelatedEntityTypeLookup: neighborContextFunc({ contextFieldName: 'relatedEntityType' }),
+
 }
 
 

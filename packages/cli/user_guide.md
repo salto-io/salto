@@ -50,20 +50,20 @@ Update the workspace configuration elements from the state file
 * `--env, -e` :                  The name of the environment to use [string]
 * `--mode, -m <mode>` :          Choose a restore mode. Options - [default, align]
 
-### **salto service \<command>**
+### **salto account \<command>**
 
 Manage the environment services
 
 **Commands:**
-* `list`:                 List all environment service accounts
+* `list`:                 List all environment application accounts
 
-* `add <serviceType> [--account-name <account-name>]` :    Add a service account to an environment. This command will also login unless the `--no-login` is passed.
+* `add <serviceType> [--account-name <account-name>]` :    Add an application account to an environment. This command will also login unless the `--no-login` is passed.
 
-* `login <accountName>` :  Login to a service account of an environment
+* `login <accountName>` :  Login to an application account of an environment
 
 #### **Non Interactive Execution**
 
-`service add` and `service login` commands are interactive by default.
+`account add` and `account login` commands are interactive by default.
 
 Use the `--login-parameters` option in order to execute them in non interactive mode.
 
@@ -107,6 +107,6 @@ The following flags are available for all commands:
 
 * `--version -V` :  Show version number
 * `--help, -h` :    Show help
-* `--verbose, -v` : Output extra logs 
+* `--verbose, -v` : Output extra logs
 * `--config, -C` :  Override adapter configuration value. format: `<service>.<path>=<value>`<br>
   Can also be done by setting an environment variable named `SALTO_<service>_<path>=<value>`

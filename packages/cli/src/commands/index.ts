@@ -16,7 +16,7 @@
 import fetchDef from './fetch'
 import fetchDiffDef from './fetch_diff'
 import envGroupDef from './env'
-import serviceGroupDef from './service'
+import { accountGroupDef, serviceGroupDef } from './account'
 import deployDef from './deploy'
 import initDef from './init'
 import restoreDef from './restore'
@@ -27,7 +27,8 @@ import workspaceGroupDef from './workspace'
 export default [
   initDef,
   envGroupDef,
-  serviceGroupDef,
+  accountGroupDef,
+  serviceGroupDef, // Deprecated. Maintained for backward compatibility.
   fetchDef,
   fetchDiffDef,
   deployDef,

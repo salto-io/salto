@@ -113,6 +113,7 @@ export type ReferenceContextStrategyName = (
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'neighborTableLookup'
+  | 'neighborCaseOwnerTypeLookup' | 'neighborAssignedToTypeLookup' | 'neighborRelatedEntityTypeLookup'
 )
 
 type SourceDef = {
@@ -555,6 +556,43 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'queue', parentTypes: ['ListView'] },
     target: { type: 'Queue' },
+  },
+  {
+    src: { field: 'caseOwner', parentTypes: ['EmailToCaseRoutingAddress'] },
+    target: { typeContext: 'neighborCaseOwnerTypeLookup' },
+  },
+  {
+    src: { field: 'assignedTo', parentTypes: ['RuleEntry', 'EscalationAction'] },
+    target: { typeContext: 'neighborAssignedToTypeLookup' },
+  },
+  {
+    src: { field: 'assignedToTemplate', parentTypes: ['EscalationAction'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseAssignNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseCloseNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseCommentNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseCreateNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'relatedEntityType', parentTypes: ['ServiceChannel'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'secondaryRoutingPriorityField', parentTypes: ['ServiceChannel'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborRelatedEntityTypeLookup', type: CUSTOM_FIELD },
   },
 ]
 

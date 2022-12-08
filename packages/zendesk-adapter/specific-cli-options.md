@@ -8,5 +8,5 @@ Supprted parameters are:
 
 ### Example
 ```
-salto service add zendesk --login-parameters username=SomeUsername password=SomePasswd subdomain=SomeSubdomain
+salto account add zendesk --login-parameters username=SomeUsername password=SomePasswd subdomain=SomeSubdomain
 ```

@@ -67,6 +67,10 @@ type ComponentsResponse = {
   }[]
 }
 
+const separateSchemeDeployment = (change: Change, isDataCenter: boolean): boolean =>
+  isModificationChange(change)
+  || (isAdditionChange(change) && isDataCenter)
+
 const COMPONENTS_RESPONSE_SCHEME = Joi.object({
   components: Joi.array().items(Joi.object({
     id: Joi.string().required(),
@@ -175,7 +179,7 @@ const filter: FilterCreator = ({ config, client }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
       .forEach(instance => {
-        instance.value.leadAccountId = instance.value.lead?.accountId
+        instance.value.leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
         delete instance.value.lead
 
         instance.value[WORKFLOW_SCHEME_FIELD] = instance
@@ -190,6 +194,21 @@ const filter: FilterCreator = ({ config, client }) => ({
         instance.value.notificationScheme = instance.value.notificationScheme?.id?.toString()
         instance.value.permissionScheme = instance.value.permissionScheme?.id?.toString()
         instance.value.issueSecurityScheme = instance.value.issueSecurityScheme?.id?.toString()
+      })
+  },
+
+  preDeploy: async changes => {
+    if (!client.isDataCenter) {
+      return
+    }
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
+      .forEach(instance => {
+        instance.value.lead = instance.value.leadAccountId
+        delete instance.value.leadAccountId
       })
   },
 
@@ -210,7 +229,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             change,
             client,
             apiDefinitions: config.apiDefinitions,
-            fieldsToIgnore: isModificationChange(change)
+            fieldsToIgnore: separateSchemeDeployment(change, client.isDataCenter)
               ? [
                 COMPONENTS_FIELD,
                 WORKFLOW_SCHEME_FIELD,
@@ -244,7 +263,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         }
 
         const instance = await resolveValues(getChangeData(change), getLookUpName)
-        if (isModificationChange(change)) {
+        if (separateSchemeDeployment(change, client.isDataCenter)) {
           await deployProjectSchemes(instance, client)
         }
         await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
@@ -272,6 +291,18 @@ const filter: FilterCreator = ({ config, client }) => ({
       .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
       .forEach(instance => {
         instance.value.id = instance.value.id?.toString()
+      })
+    if (!client.isDataCenter) {
+      return
+    }
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
+      .forEach(instance => {
+        instance.value.leadAccountId = instance.value.lead
+        delete instance.value.lead
       })
   },
 })

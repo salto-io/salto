@@ -31,7 +31,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === PROJECT_COMPONENT_TYPE_NAME)
       .forEach(instance => {
-        const leadAccountId = instance.value.lead?.accountId
+        const leadAccountId = client.isDataCenter ? instance.value.lead?.key : instance.value.lead?.accountId
         if (leadAccountId !== undefined) {
           instance.value.leadAccountId = leadAccountId
           delete instance.value.lead
@@ -48,6 +48,10 @@ const filter: FilterCreator = ({ client, config }) => ({
         const projectKey = getParents(instance)[0]?.value?.value?.key
         if (projectKey !== undefined) {
           instance.value.project = projectKey
+        }
+        if (client.isDataCenter) {
+          instance.value.leadUserName = instance.value.leadAccountId
+          delete instance.value.leadAccountId
         }
       })
   },
@@ -97,6 +101,10 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(instance => instance.elemID.typeName === PROJECT_COMPONENT_TYPE_NAME)
       .forEach(instance => {
         delete instance.value.project
+        if (client.isDataCenter) {
+          instance.value.leadAccountId = instance.value.leadUserName
+          delete instance.value.lead
+        }
       })
   },
 })

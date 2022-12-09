@@ -75,22 +75,22 @@ export const replaceReferenceValues = async <
       ? Object.values(elemLookupMaps)[0]
       : undefined
     const findElem = (
-      value: string | number,
+      value: string,
       targetType?: string,
     ): Element | undefined => {
       const lookup = lookupIndexName !== undefined ? elemLookupMaps[lookupIndexName] : defaultIndex
 
-      if (targetType !== undefined && lookup !== undefined) {
-        if (!lookup.get(targetType, valTransformation.transform(value))) {
-          log.warn(`Can't locate referred entity for '${targetType}:${value}'`)
-        }
+      if (_.isUndefined(targetType) || _.isUndefined(lookup)) {
+        return undefined
       }
 
-      return (
-        targetType !== undefined && lookup !== undefined
-          ? lookup.get(targetType, valTransformation.transform(value))
-          : undefined
-      )
+      const referredElement = lookup.get(targetType, value)
+
+      if (_.isUndefined(referredElement)) {
+        log.warn(`Can't locate referred entity for '${targetType}:${value}'`)
+      }
+
+      return referredElement
     }
 
     const isValidContextFunc = (funcName?: string): boolean => (
@@ -115,7 +115,7 @@ export const replaceReferenceValues = async <
     const elemType = target.type ?? await typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })
-    return findElem(target.lookup(val, elemParent), elemType)
+    return findElem(target.lookup(valTransformation.transform(val), elemParent), elemType)
       ?? createMissingReference?.({
         value: val.toString(), typeName: elemType, adapter: field.elemID.adapter,
       })

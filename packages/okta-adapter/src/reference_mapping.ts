@@ -21,14 +21,7 @@ import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVID
 
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
   constructor(def: referenceUtils.FieldReferenceDefinition<never>) {
-    super({ src: def.src })
-    this.serializationStrategy = referenceUtils.ReferenceSerializationStrategyLookup[
-      def.serializationStrategy ?? def.serializationStrategy ?? 'fullValue'
-    ]
-    this.target = def.target
-      ? { ...def.target, lookup: this.serializationStrategy.lookup }
-      : undefined
-    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
+    super({ ...def, sourceTransformation: def.sourceTransformation ?? 'asString' })
   }
 }
 

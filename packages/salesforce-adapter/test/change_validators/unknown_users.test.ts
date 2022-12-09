@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, ChangeValidator, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, ChangeValidator, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'
 import changeValidator from '../../src/change_validators/unknown_users'
 import { createInstanceElement } from '../../src/transformers/transformer'
@@ -128,6 +128,14 @@ describe('unknown user change validator', () => {
       expect(changeErrors[0].message).toContain('defaultCaseUser')
       expect(changeErrors[0].message).toContain('someOtherUsername')
       expect(changeErrors[0].message).toContain('someName')
+    })
+
+    it('should pass validation if the defaultCaseOwnerType is not "User"', async () => {
+      (getChangeData(change) as InstanceElement).value.defaultCaseOwnerType = 'Other';
+      (getChangeData(change) as InstanceElement).value.defaultCaseOwner = 'BlahBlah';
+      (getChangeData(change) as InstanceElement).value.defaultCaseUser = undefined
+      const changeErrors = await validator([change])
+      expect(changeErrors).toBeEmpty()
     })
   })
   describe('when an instance references multiple usernames', () => {

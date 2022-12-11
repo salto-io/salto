@@ -107,28 +107,35 @@ const getInstancesMultipleDefaultsErrors = async (
     }
     return val
   }
+  const findMultipleDefaults = async (value: Value, fieldName: string): Promise<ChangeError[]> => {
+    const fieldType = await (await after.getType()).fields[fieldName].getType()
+    const startLevelType = (fieldNameToInnerContextField[fieldName].nested && isMapType(fieldType))
+      ? await fieldType.getInnerType() : fieldType
+    const defaultObjects = await getDefaultObjectsList(
+      value,
+      startLevelType
+    )
+    const contexts = defaultObjects
+      .filter(val => val.default)
+      .map(obj => obj[fieldNameToInnerContextField[fieldName].name])
+      .map(formatContext)
+    return contexts.length > 1
+      ? [
+        createInstanceChangeError((
+          await after.getType()).fields[fieldName],
+        contexts,
+        after),
+      ] : []
+  }
 
   const errors: ChangeError[] = await awu(Object.entries(after.value))
     .filter(([fieldName]) => Object.keys(fieldNameToInnerContextField).includes(fieldName))
     .flatMap(async ([fieldName, value]) => {
       if (isPlainObject(value) && fieldNameToInnerContextField[fieldName].nested) {
-        return Object.entries(value).flatMap(([innerName, innerValue]) => [])
+        return awu(Object.entries(value))
+          .flatMap(async ([, innerValue]) => findMultipleDefaults(innerValue, fieldName))
       }
-      const defaultObjects = await getDefaultObjectsList(
-        value,
-        await (await after.getType()).fields[fieldName].getType()
-      )
-      const contexts = defaultObjects
-        .filter(val => val.default)
-        .map(obj => obj[fieldNameToInnerContextField[fieldName].name])
-        .map(formatContext)
-      return contexts.length > 1
-        ? [
-          createInstanceChangeError((
-            await after.getType()).fields[fieldName],
-          contexts,
-          after),
-        ] : []
+      return findMultipleDefaults(value, fieldName)
     }).toArray()
 
   return errors

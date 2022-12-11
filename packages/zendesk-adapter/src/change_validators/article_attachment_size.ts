@@ -14,16 +14,25 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../constants'
 
+const { awu } = collections.asynciterable
+
 const SIZE_20_MB = 20 * 1024 * 1024
-export const articleAttachmentSizeValidator: ChangeValidator = async changes => (
-  changes
+export const articleAttachmentSizeValidator: ChangeValidator = async changes => {
+  const check = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-    .filter(attachmentInstance => attachmentInstance.value.content.internalContent.length >= SIZE_20_MB)
+    .filter(async attachmentInstance => {
+      const internalContentLength = Buffer.byteLength(await attachmentInstance.value.content.getContent())
+      return internalContentLength >= SIZE_20_MB
+    })
+    .toArray()
+
+  return check
     .flatMap(instance => (
       [{
         elemID: instance.elemID,
@@ -32,4 +41,4 @@ export const articleAttachmentSizeValidator: ChangeValidator = async changes => 
         detailedMessage: 'The file size limit of article attachments is 20 MB per attachment',
       }]
     ))
-)
+}

@@ -107,12 +107,12 @@ const ReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
   },
   customLabel: {
-    serialize: async ({ ref }) => `$Label.${ref.elemID.name}`,
+    serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
     lookup: val => {
       if (val.includes('$Label')) {
         return val.split(API_NAME_SEPARATOR)[1]
       }
-      return val
+      return undefined
     },
   },
 }

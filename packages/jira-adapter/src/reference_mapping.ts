@@ -21,7 +21,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 
@@ -258,6 +258,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'issueSecurityScheme', parentTypes: ['Project'] },
     serializationStrategy: 'id',
     target: { type: 'SecurityScheme' },
+  },
+  {
+    src: { field: 'priorityScheme', parentTypes: ['Project'] },
+    serializationStrategy: 'id',
+    target: { type: PRIORITY_SCHEME_TYPE_NAME },
   },
   {
     src: { field: 'fields', parentTypes: ['ScreenableTab'] },
@@ -542,6 +547,16 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'value', parentTypes: ['WorkflowProperty'] },
     JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { typeContext: 'workflowStatusPropertiesContext' },
+  },
+  {
+    src: { field: 'optionIds', parentTypes: ['PriorityScheme'] },
+    serializationStrategy: 'id',
+    target: { type: 'Priority' },
+  },
+  {
+    src: { field: 'defaultOptionId', parentTypes: ['PriorityScheme'] },
+    serializationStrategy: 'id',
+    target: { type: 'Priority' },
   },
 ]
 

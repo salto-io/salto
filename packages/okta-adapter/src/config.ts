@@ -122,11 +122,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       url: '/api/v1/apps',
       recurseInto: [
         {
-          type: 'api__v1__apps___appId___users@uuuuuu_00123_00125uu',
-          toField: 'appUsers',
-          context: [{ name: 'appId', fromField: 'id' }],
-        },
-        {
           type: 'api__v1__apps___appId___credentials__csrs@uuuuuu_00123_00125uuuu',
           toField: 'CSRs',
           context: [{ name: 'appId', fromField: 'id' }],

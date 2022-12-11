@@ -21,7 +21,7 @@ const { awu } = collections.asynciterable
 
 const SIZE_20_MB = 20 * 1024 * 1024
 export const articleAttachmentSizeValidator: ChangeValidator = async changes => {
-  const check = await awu(changes)
+  const invalidAttachments = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
@@ -32,7 +32,7 @@ export const articleAttachmentSizeValidator: ChangeValidator = async changes => 
     })
     .toArray()
 
-  return check
+  return invalidAttachments
     .flatMap(instance => (
       [{
         elemID: instance.elemID,

@@ -16,6 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, StaticFile, toChange } from '@salto-io/adapter-api'
 import { ARTICLE_ATTACHMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { articleAttachmentSizeValidator } from '../../src/change_validators/article_attachment_size'
+import { LazyStaticFile } from '../../../workspace/src/workspace/static_files/source'
 
 describe('articleAttachmentSizeValidator', () => {
   const shortContent = Buffer.from('x'.repeat(20 * 1024 * 1024 - 1))
@@ -45,6 +46,54 @@ describe('articleAttachmentSizeValidator', () => {
       elemID: articleAttachmentInstance.elemID,
       severity: 'Error',
       message: `Article attachment ${articleAttachmentInstance.elemID.name} size has exceeded the file size limit.`,
+      detailedMessage: 'The file size limit of article attachments is 20 MB per attachment',
+    }])
+  })
+  it('should not return an error for large article attachment when adding lazyStaticFile', async () => {
+    const articleAttachmentLazyInstance = new InstanceElement(
+      'testArticle',
+      new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) }),
+      {
+        id: 20222022,
+        filename: 'filename.png',
+        contentType: 'image/png',
+        content: new LazyStaticFile(
+          'some/path.ext', 'hash', 'some/path.ext', async () => Buffer.from('content'),
+        ),
+        inline: true,
+        brand: '1',
+      }
+    )
+    const errors = await articleAttachmentSizeValidator(
+      [toChange({ after: articleAttachmentLazyInstance })],
+    )
+    expect(errors).toEqual([])
+  })
+  it('should return an error for large article attachment when adding lazyStaticFile', async () => {
+    const articleAttachmentLazyInstance = new InstanceElement(
+      'testArticle',
+      new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) }),
+      {
+        id: 20222022,
+        filename: 'filename.png',
+        contentType: 'image/png',
+        content: new LazyStaticFile(
+          'some/path.ext',
+          'hash',
+          'some/path.ext',
+          async () => Buffer.from('x'.repeat(20 * 1024 * 1024)),
+        ),
+        inline: true,
+        brand: '1',
+      }
+    )
+    const errors = await articleAttachmentSizeValidator(
+      [toChange({ after: articleAttachmentLazyInstance })],
+    )
+    expect(errors).toEqual([{
+      elemID: articleAttachmentLazyInstance.elemID,
+      severity: 'Error',
+      message: `Article attachment ${articleAttachmentLazyInstance.elemID.name} size has exceeded the file size limit.`,
       detailedMessage: 'The file size limit of article attachments is 20 MB per attachment',
     }])
   })

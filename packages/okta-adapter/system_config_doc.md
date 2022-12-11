@@ -61,19 +61,6 @@ okta {
           url = "/api/v1/groups"
           recurseInto = [
             {
-<<<<<<< Updated upstream
-              type = "api__v1__groups___groupId___users@uuuuuu_00123_00125uu"
-              toField = "users"
-              context = [
-                {
-                  name = "groupId"
-                  fromField = "id"
-                },
-              ]
-            },
-            {
-=======
->>>>>>> Stashed changes
               type = "api__v1__groups___groupId___roles@uuuuuu_00123_00125uu"
               toField = "roles"
               context = [
@@ -183,19 +170,6 @@ okta {
           url = "/api/v1/apps"
           recurseInto = [
             {
-<<<<<<< Updated upstream
-              type = "api__v1__apps___appId___users@uuuuuu_00123_00125uu"
-              toField = "appUsers"
-              context = [
-                {
-                  name = "appId"
-                  fromField = "id"
-                },
-              ]
-            },
-            {
-=======
->>>>>>> Stashed changes
               type = "api__v1__apps___appId___credentials__csrs@uuuuuu_00123_00125uuuu"
               toField = "CSRs"
               context = [
@@ -1002,12 +976,6 @@ okta {
       Group = [
         "api__v1__groups",
       ]
-<<<<<<< Updated upstream
-      User = [
-        "api__v1__users",
-      ]
-=======
->>>>>>> Stashed changes
       GroupRule = [
         "api__v1__groups__rules",
       ]

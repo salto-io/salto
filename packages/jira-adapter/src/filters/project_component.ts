@@ -103,7 +103,7 @@ const filter: FilterCreator = ({ client, config }) => ({
         delete instance.value.project
         if (client.isDataCenter) {
           instance.value.leadAccountId = instance.value.leadUserName
-          delete instance.value.lead
+          delete instance.value.leadUserName
         }
       })
   },

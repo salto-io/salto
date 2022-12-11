@@ -58,6 +58,10 @@ export type IdLocator = {
   type: string[]
 }
 
+export type Guide = {
+  brands: string[]
+}
+
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
@@ -65,7 +69,7 @@ export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
     enableMissingReferences?: boolean
     greedyAppReferences?: boolean
     appReferenceLocators?: IdLocator[]
-    enableGuide?: boolean
+    guide?: Guide
   }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
@@ -2265,7 +2269,6 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     ],
     hideTypes: true,
     enableMissingReferences: true,
-    enableGuide: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2312,6 +2315,21 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
   },
 })
 
+const GuideType = createMatchingObjectType<Guide>({
+  elemID: new ElemID(ZENDESK, 'GuideType'),
+  fields: {
+    brands: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -2326,7 +2344,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
-          enableGuide: { refType: BuiltinTypes.BOOLEAN },
+          guide: { refType: GuideType },
         },
       ),
     },
@@ -2340,7 +2358,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       API_DEFINITIONS_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
-      `${FETCH_CONFIG}.enableGuide`,
+      `${FETCH_CONFIG}.guide`,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -2365,3 +2383,9 @@ export const validateGuideTypesConfig = (
     throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
   }
 }
+
+export const isGuideEnabled = (
+  fetchConfig: ZendeskFetchConfig
+): boolean => (
+  fetchConfig.guide?.brands !== undefined && !_.isEmpty(fetchConfig.guide.brands)
+)

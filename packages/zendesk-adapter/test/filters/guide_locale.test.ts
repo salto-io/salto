@@ -38,7 +38,9 @@ describe('guide locale filter', () => {
         ...DEFAULT_CONFIG,
         [FETCH_CONFIG]: {
           ...DEFAULT_CONFIG[FETCH_CONFIG],
-          enableGuide: true,
+          guide: {
+            brands: ['.*'],
+          },
         },
       },
     })) as FilterType
@@ -68,7 +70,7 @@ describe('guide locale filter', () => {
       expect(esLocale).toBeDefined()
       expect(esLocale?.value).toEqual({ id: 'es', default: false })
     })
-    it('should not add locales instances and type if enableGuide is false', async () => {
+    it('should not add locales instances and type if guide is disabled', async () => {
       const elements: Element[] = []
       mockGetSinglePage.mockResolvedValue({
         data: {

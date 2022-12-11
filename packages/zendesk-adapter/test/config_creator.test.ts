@@ -55,7 +55,9 @@ describe('config_creator', () => {
       resultConfig = await getConfig(options)
     })
     it('should return adapter config with guide', async () => {
-      expect(resultConfig.value?.fetch?.enableGuide).toBeTruthy()
+      expect(resultConfig.value?.fetch?.guide).toEqual({
+        brands: ['.*'],
+      })
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -68,7 +70,7 @@ describe('config_creator', () => {
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(resultConfig.value?.fetch?.enableGuide).toBeUndefined()
+      expect(resultConfig.value?.fetch?.guide).toBeUndefined()
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -81,7 +83,7 @@ describe('config_creator', () => {
     it('should create default instance from type', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(resultConfig.value?.fetch?.enableGuide).toBeUndefined()
+      expect(resultConfig.value?.fetch?.guide).toBeUndefined()
       expect(mockLogError).not.toHaveBeenCalled()
     })
   })
@@ -97,7 +99,7 @@ describe('config_creator', () => {
     it('should create default instance from type and log error', async () => {
       expect(mockCreateDefaultInstanceFromType).toHaveBeenCalledWith(ElemID.CONFIG_NAME, configType)
       expect(resultConfig).toEqual(mockDefaultInstanceFromTypeResult)
-      expect(resultConfig.value?.fetch?.enableGuide).toBeUndefined()
+      expect(resultConfig.value?.fetch?.guide).toBeUndefined()
       expect(mockLogError).toHaveBeenCalledWith(`Received an invalid instance for config options. Received instance with refType ElemId full name: ${options?.refType.elemID.getFullName()}`)
     })
   })

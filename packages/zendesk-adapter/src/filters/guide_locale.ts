@@ -24,7 +24,7 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { ZENDESK } from '../constants'
 import ZendeskClient from '../client/client'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG, isGuideEnabled } from '../config'
 
 const log = logger(module)
 
@@ -63,7 +63,7 @@ const getLocales = async (
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   onFetch: async elements => {
-    if (!config[FETCH_CONFIG].enableGuide) {
+    if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return
     }
     const localesRes = await getLocales(client)

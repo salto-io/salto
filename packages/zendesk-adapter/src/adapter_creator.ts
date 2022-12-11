@@ -85,7 +85,7 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
-  const isGuideDisabled = !config?.value.fetch.enableGuide
+  const isGuideDisabled = config?.value.fetch.guide === undefined
   DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
     ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
     : { ...DEFAULT_CONFIG.apiDefinitions.supportedTypes, ...GUIDE_SUPPORTED_TYPES }

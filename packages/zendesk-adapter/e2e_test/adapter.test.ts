@@ -178,7 +178,9 @@ const usedConfig = {
       { type: '.*' },
     ],
     exclude: [],
-    enableGuide: true,
+    guide: {
+      brands: ['.*'],
+    },
   },
   [API_DEFINITIONS_CONFIG]: {
     ...DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],

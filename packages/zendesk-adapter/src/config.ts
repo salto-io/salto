@@ -2358,6 +2358,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       API_DEFINITIONS_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
+      `${FETCH_CONFIG}.guide`,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

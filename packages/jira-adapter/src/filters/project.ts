@@ -67,7 +67,7 @@ type ComponentsResponse = {
   }[]
 }
 
-const separateSchemeDeployment = (change: Change, isDataCenter: boolean): boolean =>
+const shouldSeparateSchemeDeployment = (change: Change, isDataCenter: boolean): boolean =>
   isModificationChange(change)
   || (isAdditionChange(change) && isDataCenter)
 
@@ -229,7 +229,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             change,
             client,
             apiDefinitions: config.apiDefinitions,
-            fieldsToIgnore: separateSchemeDeployment(change, client.isDataCenter)
+            fieldsToIgnore: shouldSeparateSchemeDeployment(change, client.isDataCenter)
               ? [
                 COMPONENTS_FIELD,
                 WORKFLOW_SCHEME_FIELD,
@@ -263,7 +263,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         }
 
         const instance = await resolveValues(getChangeData(change), getLookUpName)
-        if (separateSchemeDeployment(change, client.isDataCenter)) {
+        if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
           await deployProjectSchemes(instance, client)
         }
         await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')

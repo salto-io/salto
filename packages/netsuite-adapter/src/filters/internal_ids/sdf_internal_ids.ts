@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { RECORD_ID_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../../client/client'
-import { isCustomRecordType } from '../../types'
+import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, SCRIPT_ID } from '../../constants'
 import { getCustomListValues, isCustomListInstance } from '../../elements_source_index/elements_source_index'
 
@@ -52,6 +52,14 @@ const TYPE_NAMES_TO_TABLE_NAME: Record<string, string> = {
   othercustomfield: CUSTOM_FIELD,
   sspapplication: 'webapp',
   sdfinstallationscript: 'script',
+}
+
+const hasScriptId = (element: Element): boolean => {
+  if (!getElementValueOrAnnotations(element)[SCRIPT_ID]) {
+    log.warn('element %s has no scriptid', element.elemID.getFullName())
+    return false
+  }
+  return true
 }
 
 const getTableName = (element: Element): string => {
@@ -155,7 +163,7 @@ const addInternalIdToInstances = async (
   instances: InstanceElement[]
 ): Promise<void> => {
   const recordIdMap = await createRecordIdsMap(client, _.uniq(instances.map(getTableName)))
-  instances.forEach(instance => {
+  instances.filter(hasScriptId).forEach(instance => {
     const typeRecordIdMap = recordIdMap[getTableName(instance)]
     const scriptId = instance.value[SCRIPT_ID].toLowerCase()
     if (scriptId in typeRecordIdMap) {
@@ -171,7 +179,7 @@ const addInternalIdToCustomRecordTypes = async (
   const customRecordTypes = elements.filter(isObjectType).filter(isCustomRecordType)
   if (customRecordTypes.length > 0) {
     const recordIdMap = await fetchRecordIdsForRecordType(CUSTOM_RECORD_TYPE, client)
-    customRecordTypes.forEach(type => {
+    customRecordTypes.filter(hasScriptId).forEach(type => {
       const scriptId = type.annotations[SCRIPT_ID].toLowerCase()
       if (scriptId in recordIdMap) {
         type.annotations[INTERNAL_ID] = recordIdMap[scriptId]
@@ -190,14 +198,15 @@ const addInternalIdToCustomListValues = async (
   const recordIdMap = Object.fromEntries(
     await Promise.all(
       customListInstancesWithMissingValuesInternalIds
+        .filter(hasScriptId)
         .map(instance => instance.value[SCRIPT_ID])
         .map(async (customListScriptId: string): Promise<[string, Record<string, string>]> =>
           [customListScriptId, await fetchRecordType('id', client, customListScriptId)])
     )
   )
-  customListInstancesWithMissingValuesInternalIds.forEach(instance => {
+  customListInstancesWithMissingValuesInternalIds.filter(hasScriptId).forEach(instance => {
     const customListRecordIdMap = recordIdMap[instance.value[SCRIPT_ID]]
-    getCustomListValues(instance).filter(([value]) => !value[INTERNAL_ID]).forEach(([value]) => {
+    getCustomListValues(instance).filter(([value]) => !value[INTERNAL_ID] && value[SCRIPT_ID]).forEach(([value]) => {
       const scriptId = value[SCRIPT_ID].toLowerCase()
       if (scriptId in customListRecordIdMap) {
         value[INTERNAL_ID] = customListRecordIdMap[scriptId]

@@ -31,6 +31,7 @@ describe('sdf internal ids tests', () => {
   let clientScriptType: ObjectType
   let accountInstance: InstanceElement
   let customScriptInstance: InstanceElement
+  let instanceWithoutScriptid: InstanceElement
   let savedSearchInstance: InstanceElement
   let otherCustomFieldInstance: InstanceElement
   const runSuiteQLMock = jest.fn()
@@ -56,6 +57,7 @@ describe('sdf internal ids tests', () => {
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     clientScriptType = clientscriptType().type
     customScriptInstance = new InstanceElement('customScript', clientScriptType)
+    instanceWithoutScriptid = new InstanceElement('customScript', clientScriptType)
     savedSearchInstance = new InstanceElement('savedSearch', new ObjectType({ elemID: new ElemID(NETSUITE, 'savedseach') }))
     otherCustomFieldInstance = new InstanceElement('othercustomfield', new ObjectType({ elemID: new ElemID(NETSUITE, 'othercustomfield') }))
     accountInstance.value.internalId = '1'
@@ -66,6 +68,7 @@ describe('sdf internal ids tests', () => {
     elements = [
       accountInstance,
       customScriptInstance,
+      instanceWithoutScriptid,
       savedSearchInstance,
       otherCustomFieldInstance,
       customRecordType,

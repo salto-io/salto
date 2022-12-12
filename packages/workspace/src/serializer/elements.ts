@@ -141,11 +141,11 @@ function isSerializedClass(value: any): value is SerializedClass {
     && value[SALTO_CLASS_FIELD] in NameToType
 }
 
-export const serialize = async <T = Element>(
+export const serializeStream = async <T = Element>(
   elements: T[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
   storeStaticFile?: (file: StaticFile) => Promise<void>
-): Promise<string> => {
+): Promise<AsyncIterable<string>> => {
   const promises: Promise<void>[] = []
 
   // eslint-disable-next-line @typescript-eslint/no-shadow
@@ -227,17 +227,39 @@ export const serialize = async <T = Element>(
   // Avoiding Promise.all to not reach Promise.all limit
   await awu(promises).forEach(promise => promise)
 
-  // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
-  // circles
-  // eslint-disable-next-line no-restricted-syntax
-  return JSON.stringify(clonedElements)
+  // avoid creating a single string for all elements, which may exceed the max allowed string length
+  async function *getElementStream(): AsyncIterable<string> {
+    let first = true
+    yield '['
+    for (const elem of clonedElements) {
+      if (first) {
+        first = false
+      } else {
+        yield ','
+      }
+      // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
+      // circles
+      // eslint-disable-next-line no-restricted-syntax
+      yield JSON.stringify(elem)
+    }
+    yield ']'
+  }
+  return getElementStream()
 }
+
+export const serialize = async <T = Element>(
+  elements: T[],
+  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
+  storeStaticFile?: (file: StaticFile) => Promise<void>
+): Promise<string> => (
+  (await awu(await serializeStream(elements, referenceSerializerMode, storeStaticFile)).toArray()).join('')
+)
 
 export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
-const generalDeserialize = async <T>(
-  data: string,
+const generalDeserializeParsed = async <T>(
+  parsed: unknown[],
   staticFileReviver?: StaticFileReviver
 ): Promise<T[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -509,10 +531,6 @@ const generalDeserialize = async <T>(
     return value
   }
 
-  const parsed = JSON.parse(data)
-  if (!Array.isArray(parsed)) {
-    throw new Error('got non-array JSON data')
-  }
   const elements = parsed.map(restoreClasses)
   if (staticFiles.length > 0) {
     await Promise.all(staticFiles.map(
@@ -522,6 +540,17 @@ const generalDeserialize = async <T>(
     ))
   }
   return elements
+}
+
+const generalDeserialize = async <T>(
+  data: string,
+  staticFileReviver?: StaticFileReviver
+): Promise<T[]> => {
+  const parsed = JSON.parse(data)
+  if (!Array.isArray(parsed)) {
+    throw new Error('got non-array JSON data')
+  }
+  return generalDeserializeParsed(parsed, staticFileReviver)
 }
 
 export const deserializeMergeErrors = async (data: string): Promise<MergeError[]> => {
@@ -560,4 +589,16 @@ export const deserializeSingleElement = async (
     throw new Error('Deserialization failed. should receive single element')
   }
   return elements[0]
+}
+
+export const deserializeParsed = async (
+  parsed: unknown[],
+  staticFileReviver?: StaticFileReviver,
+): Promise<Element[]> => {
+  const elements = await generalDeserializeParsed<Element>(parsed, staticFileReviver)
+
+  if (elements.some(elem => !isElement(elem))) {
+    throw new Error('Deserialization failed. At least one element did not deserialize to an Element')
+  }
+  return elements
 }

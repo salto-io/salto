@@ -16,21 +16,30 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
+import { Readable } from 'stream'
+import Chain, { chain } from 'stream-chain'
+
+import { parser } from 'stream-json/Parser'
+import { pick } from 'stream-json/filters/Pick'
+import { streamArray } from 'stream-json/streamers/StreamArray'
+import { streamValues } from 'stream-json/streamers/StreamValues'
+
+import getStream from 'get-stream'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipString } from '@salto-io/file'
-import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
+import { exists, readTextFile, mkdirp, rm, rename, replaceContents, generateGZipString, createGZipReadStreamOrPakoStream } from '@salto-io/file'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles } from '@salto-io/workspace'
-import { hash, collections, promises } from '@salto-io/lowerdash'
+import { hash, collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import origGlob from 'glob'
 import semver from 'semver'
 import { promisify } from 'util'
 
 import { version } from '../generated/version.json'
 
+const { isDefined } = lowerdashValues
 const { awu } = collections.asynciterable
-
-const { serialize, deserialize } = serialization
+const { serializeStream, deserializeParsed } = serialization
 const { toMD5 } = hash
 
 const glob = promisify(origGlob)
@@ -59,34 +68,72 @@ const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
   return [...stateFiles, ...oldStateFiles]
 }
 
-const readFromPaths = async (paths: string[]): Promise<string[][]> => {
-  const elementsData: string[] = []
-  const updateDateData: string[] = []
-  const pathIndexData: string[] = []
-  const versions: string[] = []
-  // TODO fix?
-  const readResults = await Promise.all(paths.map(async (p: string) =>
-    ((await exists(p)) ? readZipFile(p) : undefined)))
-  readResults.forEach(readResult => {
-    if (readResult) {
-      const [readElementsData, readUpdateDateData, readPathIndexData, versionInFile] = [
-        ...readResult.split(EOL), '[]', '[]', '[]', '[]']
-      elementsData.push(readElementsData)
-      updateDateData.push(readUpdateDateData)
-      pathIndexData.push(readPathIndexData)
-      if (versionInFile !== '[]') {
-        versions.push(versionInFile)
-      }
-    }
-  })
-  return [elementsData, updateDateData, pathIndexData, versions]
+type PathEntry = [string, string[][]]
+type ParsedState = {
+  elements: Element[]
+  updateDates: object[] // TODON define structure
+  pathIndices: PathEntry[]
+  versions: string[]
 }
 
-const deserializeAndFlatten = async (elementsJSON: string): Promise<Element[]> => ((
-  await deserialize(elementsJSON)
-) as Element[]).map(flattenElementStr)
+const parseFromPaths = async (
+  paths: string[],
+): Promise<ParsedState> => {
+  const res: ParsedState = {
+    elements: [],
+    updateDates: [],
+    pathIndices: [],
+    versions: [],
+  }
+  const streams = (await Promise.all(paths.map(async (p: string) =>
+    ((await exists(p)) ? createGZipReadStreamOrPakoStream(p) : undefined)))).filter(isDefined)
+  await awu(streams).forEach(async stream => {
+    const processElements = (source: Readable): Chain => chain([
+      source,
+      pick({ filter: '0' }), // 1st row
+      streamArray(),
+      async (data: { value: unknown }): Promise<void> => {
+        res.elements.push(...await deserializeParsed([data.value]))
+      },
+    ])
+    const processUpdateDate = (source: Readable): Chain => chain([
+      source,
+      pick({ filter: '1' }), // 2nd row
+      streamValues(),
+      (data: object): void => {
+        res.updateDates.push(data)
+      },
+    ])
+    const processPathIndices = (source: Readable): Chain => chain([
+      source,
+      pick({ filter: '2' }), // 3rd row
+      streamArray(),
+      async (data: { value: PathEntry }): Promise<void> => {
+        res.pathIndices.push(data.value) // TODON not sure if should flatten or not - check
+      },
+    ])
+    const processVersions = (source: Readable): Chain => chain([
+      source,
+      pick({ filter: '3' }), // 4th row
+      (data: string): void => {
+        res.versions.push(data)
+      },
+    ])
 
-type ContentsAndHash = { contents: [string, string][]; hash: string }
+    const parseChain = chain([
+      stream,
+      parser({ jsonStreaming: true }),
+    ])
+    chain([parseChain, processElements])
+    chain([parseChain, processUpdateDate])
+    chain([parseChain, processPathIndices])
+    chain([parseChain, processVersions])
+    await getStream(parseChain)
+  })
+  return res
+}
+
+type ContentsAndHash = { contents: [string, Buffer][]; hash: string }
 
 export const localState = (
   filePrefix: string,
@@ -113,26 +160,26 @@ export const localState = (
     filePaths: string[]
     newHash: string
   }): Promise<void> => {
-    const [elementsData, updateDateData, pathIndexData, versions] = await readFromPaths(filePaths)
-    const deserializedElements = awu(elementsData).flatMap(deserializeAndFlatten)
+    const res = await parseFromPaths(filePaths)
     await stateData.elements.clear()
-    await stateData.elements.setAll(awu(deserializedElements))
+    await stateData.elements.setAll(res.elements)
     await stateData.pathIndex.clear()
-    await stateData.pathIndex.setAll(
-      pathIndexData ? pathIndex.deserializedPathsIndex(pathIndexData) : []
-    )
+    await stateData.pathIndex.setAll(pathIndex.loadPathIndex(res.pathIndices))
     const updateDatesByAccount = _.mapValues(
-      updateDateData
-        .map(entry => (entry ? JSON.parse(entry) : {}))
+      res.updateDates
+        .map(entry => (entry ?? {}))
         .filter(entry => !_.isEmpty(entry))
         .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
       dateStr => new Date(dateStr)
     )
-    await getUpdateDate(stateData)?.clear()
-    await getUpdateDate(stateData)?.setAll(awu(
-      Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))
-    ))
-    const currentVersion = semver.minSatisfying(versions, '*') ?? undefined
+    const stateUpdateDate = getUpdateDate(stateData)
+    if (stateUpdateDate !== undefined) {
+      await stateUpdateDate.clear()
+      await stateUpdateDate.setAll(awu(
+        Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))
+      ))
+    }
+    const currentVersion = semver.minSatisfying(res.versions, '*') ?? undefined
     if (currentVersion) {
       await stateData.saltoMetadata.set('version', currentVersion)
     }
@@ -153,7 +200,7 @@ export const localState = (
   }
 
   const getHashFromContent = (contents: string[]): string =>
-    toMD5(safeJsonStringify(contents.map(toMD5).sort()))
+    toMD5(safeJsonStringify(contents.map(toMD5).sort())) // TODON (later) get hash with streaming?
 
   const getHash = async (filePaths: string[]): Promise<string> =>
     // TODO fix?
@@ -187,35 +234,45 @@ export const localState = (
 
   const inMemState = state.buildInMemState(loadStateData)
 
-  const createStateTextPerAccount = async (): Promise<Record<string, string>> => {
+  const createStateTextPerAccount = async (): Promise<Record<string, Readable>> => {
     const elements = await awu(await inMemState.getAll()).toArray()
     const elementsByAccount = _.groupBy(elements, element => element.elemID.adapter)
-    const accountToElementStrings = await promises.object.mapValuesAsync(
+    const accountToElementStreams = await promises.object.mapValuesAsync(
       elementsByAccount,
-      accountElements => serialize(
+      accountElements => serializeStream(
         _.sortBy(accountElements, element => element.elemID.getFullName())
       ),
     )
     const accountToDates = await inMemState.getAccountsUpdateDates()
-    const accountToPathIndex = pathIndex.serializePathIndexByAccount(
+    const accountToPathIndex = pathIndex.serializePathIndexByAccount( // TODON stream as well?
       await awu((await inMemState.getPathIndex()).entries()).toArray()
     )
-    log.debug(`finished dumping state text [#elements=${elements.length}]`)
-    return _.mapValues(accountToElementStrings, (accountElements, account) =>
-      [accountElements || '[]', safeJsonStringify({ [account]: accountToDates[account] } || {}),
-        accountToPathIndex[account] || '[]', version].join(EOL))
+    async function *getStateStream(serializedStream: AsyncIterable<string>, account: string): AsyncIterable<string> {
+      yield* serializedStream
+      yield [
+        '',
+        safeJsonStringify({ [account]: accountToDates[account] } || {}),
+        accountToPathIndex[account] || '[]',
+        version,
+      ].join(EOL)
+      log.debug(`finished dumping state text [#elements=${elements.length}]`)
+    }
+    return _.mapValues(accountToElementStreams, (serializedStream, account) => {
+      const iterable = getStateStream(serializedStream, account)
+      return Readable.from(iterable)
+    })
   }
   const getContentAndHash = async (): Promise<ContentsAndHash> => {
     if (contentsAndHash === undefined) {
       const stateTextPerAccount = await createStateTextPerAccount()
       const contents = await awu(Object.keys(stateTextPerAccount))
-        .map(async account => [
+        .map(async (account: string): Promise<[string, Buffer]> => [
           `${currentFilePrefix}.${account}${ZIPPED_STATE_EXTENSION}`,
-          await generateZipString(stateTextPerAccount[account]),
-        ] as [string, string]).toArray()
+          await generateGZipString(await getStream.buffer(stateTextPerAccount[account])), // TODON pipe?
+        ]).toArray()
       contentsAndHash = {
         contents,
-        hash: getHashFromContent(contents.map(e => e[1])),
+        hash: getHashFromContent(contents.map(e => e[1].toString())), // TODON can also do as a side-effect of a stream?
       }
     }
     return contentsAndHash

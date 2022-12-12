@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { replaceContents, exists, readZipFile, rm, rename, generateZipString } from '@salto-io/file'
+import { replaceContents, exists, readZipFile, rm, rename, generatePakoZipString } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization, pathIndex, remoteMap, staticFiles } from '@salto-io/workspace'
@@ -271,7 +271,7 @@ describe('local state', () => {
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush.salto.jsonl.zip')
     expect(onFlush).toBeDefined()
-    expect(onFlush[1]).toEqual(await generateZipString([
+    expect(onFlush[1]).toEqual(await generatePakoZipString([
       await serialize([mockElement]),
       safeJsonStringify({}),
       safeJsonStringify([]),
@@ -398,7 +398,7 @@ describe('local state', () => {
       expect(stateHash)
         .toEqual(toMD5(safeJsonStringify(
           [
-            toMD5(await generateZipString([
+            toMD5(await generatePakoZipString([
               await serialize([mockElement]),
               safeJsonStringify({}),
               safeJsonStringify([]),

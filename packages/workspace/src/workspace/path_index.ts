@@ -195,8 +195,11 @@ export const updatePathIndex = async (
   await current.setAll(awu(oldPathHintsToMaintain))
 }
 
+export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>
+  parsedEntries.flatMap(e => ({ key: e[0], value: e[1] }))
+
 export const deserializedPathsIndex = (dataEntries: string[]): RemoteMapEntry<Path[], string>[] =>
-  dataEntries.flatMap(data => JSON.parse(data)).map(e => ({ key: e[0], value: e[1] }))
+  dataEntries.flatMap(data => loadPathIndex(JSON.parse(data)))
 
 export const serializedPathIndex = (entries: RemoteMapEntry<Path[], string>[]): string => (
   safeJsonStringify(Array.from(entries.map(e => [e.key, e.value] as [string, Path[]])))
@@ -205,7 +208,7 @@ export const serializePathIndexByAccount = (entries: RemoteMapEntry<Path[], stri
 Record<string, string> =>
   _.mapValues(
     _.groupBy(Array.from(entries), entry => ElemID.fromFullName(entry.key).adapter),
-    e => serializedPathIndex(e),
+    e => serializedPathIndex(e), // TODON check if should stream as well
   )
 export const getFromPathIndex = async (
   elemID: ElemID,

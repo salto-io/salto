@@ -16,6 +16,7 @@
 import { promisify } from 'util'
 import fs from 'fs'
 import pako from 'pako'
+import { gzipSync } from 'zlib'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
 import path from 'path'
@@ -95,14 +96,17 @@ export const readZipFile = async (
 
 readTextFile.notFoundAsUndefined = notFoundAsUndefined(readTextFile)
 
-export const generateZipString = async (contents: string | Buffer):
+export const generatePakoZipString = async (contents: string | Buffer):
   Promise<string> => pako.gzip(contents, { to: 'string' })
 
-export const writeZipFile = async (
+export const generateGZipString = async (contents: string | Buffer): Promise<Buffer> =>
+  gzipSync(contents)
+
+export const writePakoZipFile = async (
   zipFilename: string,
   contents: Buffer | string,
 ): Promise<void> => {
-  const zipContent = await generateZipString(contents)
+  const zipContent = await generatePakoZipString(contents)
   await writeFile(zipFilename, zipContent)
 }
 

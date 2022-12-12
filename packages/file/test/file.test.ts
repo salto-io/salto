@@ -168,7 +168,7 @@ describe('file', () => {
       beforeEach(async () => {
         destTmp = await tmp.file()
         dest = destTmp.path
-        await file.writeZipFile(dest, content)
+        await file.writePakoZipFile(dest, content)
       })
 
       afterEach(async () => {
@@ -288,7 +288,7 @@ describe('file', () => {
     })
   })
 
-  describe('writeZipFile', () => {
+  describe('writePakoZipFile', () => {
     const source = __filename
     let destTmp: tmp.FileResult
     let dest: string
@@ -307,7 +307,7 @@ describe('file', () => {
     describe('when given a string', () => {
       describe('when the file exists', () => {
         beforeEach(async () => {
-          await file.writeZipFile(dest, expectedContents)
+          await file.writePakoZipFile(dest, expectedContents)
         })
 
         it('overwrites its contents', async () => {
@@ -320,7 +320,7 @@ describe('file', () => {
         beforeEach(async () => {
           await file.rm(dest)
           expect(await file.exists(dest)).toBeFalsy()
-          await file.writeZipFile(dest, expectedContents)
+          await file.writePakoZipFile(dest, expectedContents)
         })
 
         it('writes the contents to the file', async () => {
@@ -334,7 +334,7 @@ describe('file', () => {
       describe('when the file exists', () => {
         beforeEach(async () => {
           expect(await file.exists(dest)).toBeTruthy()
-          await file.writeZipFile(dest, Buffer.from(expectedContents, 'utf8'))
+          await file.writePakoZipFile(dest, Buffer.from(expectedContents, 'utf8'))
         })
 
         it('overwrites its contents', async () => {
@@ -346,7 +346,7 @@ describe('file', () => {
       describe('when the file does not exist', () => {
         beforeEach(async () => {
           await file.rm(dest)
-          await file.writeZipFile(dest, Buffer.from(expectedContents, 'utf8'))
+          await file.writePakoZipFile(dest, Buffer.from(expectedContents, 'utf8'))
         })
 
         it('writes the contents to the file', async () => {
@@ -420,7 +420,7 @@ describe('file', () => {
     })
   })
 
-  describe('generateZipString', () => {
+  describe('generatePakoZipString', () => {
     let destTmp: tmp.FileResult
     let dest: string
 
@@ -437,7 +437,7 @@ describe('file', () => {
     describe('when writing to file and reading as zip', () => {
       const contents = 'arbitraryText'
       beforeEach(async () => {
-        const str = await file.generateZipString(contents)
+        const str = await file.generatePakoZipString(contents)
         fs.writeFileSync(dest, str)
       })
 

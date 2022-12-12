@@ -49,11 +49,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       url: '/api/v1/groups',
       recurseInto: [
         {
-          type: 'api__v1__groups___groupId___users@uuuuuu_00123_00125uu',
-          toField: 'users',
-          context: [{ name: 'groupId', fromField: 'id' }],
-        },
-        {
           type: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu',
           toField: 'roles',
           context: [{ name: 'groupId', fromField: 'id' }],
@@ -126,11 +121,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     request: {
       url: '/api/v1/apps',
       recurseInto: [
-        {
-          type: 'api__v1__apps___appId___users@uuuuuu_00123_00125uu',
-          toField: 'appUsers',
-          context: [{ name: 'appId', fromField: 'id' }],
-        },
         {
           type: 'api__v1__apps___appId___credentials__csrs@uuuuuu_00123_00125uuuu',
           toField: 'CSRs',
@@ -709,9 +699,6 @@ export const SUPPORTED_TYPES = {
   Feature: ['api__v1__features'],
   Group: [
     'api__v1__groups',
-  ],
-  User: [
-    'api__v1__users',
   ],
   GroupRule: ['api__v1__groups__rules'],
   IdentityProvider: [

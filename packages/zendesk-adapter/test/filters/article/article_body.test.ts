@@ -151,12 +151,12 @@ describe('article body filter', () => {
     it('should only match elements that exists in the matched brand', () => {
       const brandName = emptyBrandInstance.value.name
       const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLES_FIELD, `${brandName}_124`)
-      missingArticleInstance.value.id = '124'
       const missingSectionInstance = createMissingInstance(ZENDESK, SECTIONS_FIELD, `${brandName}_123`)
-      missingSectionInstance.value.id = '123'
       const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORIES_FIELD, `${brandName}_123`)
-      missingCategoryInstance.value.id = '123'
       const missingArticleAttachmentInstance = createMissingInstance(ZENDESK, ARTICLE_ATTACHMENTS_FIELD, `${brandName}_123`)
+      missingArticleInstance.value.id = '124'
+      missingSectionInstance.value.id = '123'
+      missingCategoryInstance.value.id = '123'
       missingArticleAttachmentInstance.value.id = '123'
       const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithEmptyBrand')
       expect(fetchedTranslationWithoutReferences?.value.body)

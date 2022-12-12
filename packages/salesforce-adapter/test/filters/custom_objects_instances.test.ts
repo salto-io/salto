@@ -30,11 +30,11 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
-import { getNamespaceFromString } from '../../src/filters/utils'
+import { getNamespaceFromString, buildSelectQueries } from '../../src/filters/utils'
 import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
-import filterCreator, { buildSelectQueries } from '../../src/filters/custom_objects_instances'
+import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
   API_NAME,

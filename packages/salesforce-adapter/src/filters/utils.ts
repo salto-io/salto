@@ -35,7 +35,7 @@ import {
   MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
-import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues } from '../transformers/transformer'
+import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
@@ -259,6 +259,37 @@ export const conditionQueries = (query: string, conditionSets: Record<string,
   const selectWhereStr = `${query} WHERE `
   const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
   return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
+}
+
+
+const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
+  await isNameField(field)
+    ? Object.keys((await field.getType() as ObjectType).fields)
+    : [await apiName(field, true)]
+)
+
+/**
+ * Build a set of queries that select records.
+ *
+ * @param typeName The name of the table to query from
+ * @param fields The names of the fields to query
+ * @param conditionSets Each entry specifies field values used to match a specific record
+ * @param maxQueryLen returned queries will be split such that no single query exceeds this length
+ */
+export const buildSelectQueries = async (
+  typeName: string,
+  fields: Field[],
+  conditionSets?: Record<string, string>[],
+  maxQueryLen = MAX_QUERY_LENGTH,
+): Promise<string[]> => {
+  const fieldsNameQuery = (
+    await awu(fields).flatMap(getFieldNamesForQuery).toArray()
+  ).join(',')
+  const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
+  if (conditionSets === undefined || conditionSets.length === 0) {
+    return [selectStr]
+  }
+  return conditionQueries(selectStr, conditionSets, maxQueryLen)
 }
 
 export const queryClient = async (client: SalesforceClient,

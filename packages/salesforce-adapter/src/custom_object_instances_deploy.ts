@@ -31,7 +31,8 @@ import {
 } from './transformers/transformer'
 import SalesforceClient from './client/client'
 import { CUSTOM_OBJECT_ID_FIELD } from './constants'
-import { getIdFields, buildSelectQueries, transformRecordToValues } from './filters/custom_objects_instances'
+import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
+import { buildSelectQueries } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
@@ -57,7 +58,7 @@ const logErroredInstances = (instancesAndResults: InstanceAndResult[]): void => 
   instancesAndResults.forEach(({ instance, result }) => {
     if (result.errors !== undefined) {
       log.error(`Instance ${instance.elemID.getFullName()} had deploy errors - ${['', ...result.errors].join('\n\t')}
-         
+
 and values -
 ${safeJsonStringify(instance.value, undefined, 2,)}
 `)

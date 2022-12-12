@@ -26,11 +26,11 @@ import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, MAX_QUERY_LENGTH, UNLIMITED_INSTANCES_VALUE,
+  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
-import { getNamespace, isMasterDetailField, isLookupField, conditionQueries, queryClient } from './utils'
+import { getNamespace, isMasterDetailField, isLookupField, queryClient, buildSelectQueries } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
@@ -71,36 +71,6 @@ const isQueryableField = (field: Field): boolean => (
 const getQueryableFields = (object: ObjectType): Field[] => (
   Object.values(object.fields).filter(isQueryableField)
 )
-
-const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
-  await isNameField(field)
-    ? Object.keys((await field.getType() as ObjectType).fields)
-    : [await apiName(field, true)]
-)
-
-/**
- * Build a set of queries that select records.
- *
- * @param typeName The name of the table to query from
- * @param fields The names of the fields to query
- * @param conditionSets Each entry specifies field values used to match a specific record
- * @param maxQueryLen returned queries will be split such that no single query exceeds this length
- */
-export const buildSelectQueries = async (
-  typeName: string,
-  fields: Field[],
-  conditionSets?: Record<string, string>[],
-  maxQueryLen = MAX_QUERY_LENGTH,
-): Promise<string[]> => {
-  const fieldsNameQuery = (
-    await awu(fields).flatMap(getFieldNamesForQuery).toArray()
-  ).join(',')
-  const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
-  if (conditionSets === undefined || conditionSets.length === 0) {
-    return [selectStr]
-  }
-  return conditionQueries(selectStr, conditionSets, maxQueryLen)
-}
 
 const buildQueryStrings = async (
   typeName: string,

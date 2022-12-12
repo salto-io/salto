@@ -104,7 +104,6 @@ import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permi
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
-import filtersDcDeployFilter from './filters/data_center/filters_permissions'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
@@ -201,8 +200,6 @@ export const DEFAULT_FILTERS = [
   smartValueReferenceFilter,
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
-  // Must run before account id
-  filtersDcDeployFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

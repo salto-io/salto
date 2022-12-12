@@ -1645,9 +1645,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   articles: {
     request: {
-      url: '/api/v2/help_center/{locale}/articles',
+      // url: '/api/v2/help_center/{locale}/articles',
+      url: '/api/v2/help_center/{locale}/categories/{category_id}/articles',
       dependsOn: [
         { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
+        { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
       ],
     },
     transformation: {

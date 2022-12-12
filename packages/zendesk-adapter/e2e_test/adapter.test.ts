@@ -130,9 +130,6 @@ const deployChanges = async (
       const deployResult = await adapterAttr.adapter.deploy({
         changeGroup: { groupID: id, changes: group },
       })
-      if (deployResult.errors.length === 1) {
-        expect(deployResult.errors).toHaveLength(0)
-      }
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).not.toHaveLength(0)
       deployResult.appliedChanges // need to update reference expressions

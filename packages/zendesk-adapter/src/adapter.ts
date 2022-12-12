@@ -551,7 +551,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         }),
       ]
     )))
-
     const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
       .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
       .map(async ([subdomain, paginator]) => {

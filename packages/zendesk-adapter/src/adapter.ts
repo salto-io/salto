@@ -36,7 +36,7 @@ import {
   ZendeskConfig,
   CLIENT_CONFIG,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, ZendeskFetchConfig, isGuideEnabled,
 } from './config'
 import {
   ZENDESK,
@@ -192,7 +192,6 @@ export const DEFAULT_FILTERS = [
   dynamicContentReferencesFilter,
   referencedIdFieldsFilter,
   // need to be after referencedIdFieldsFilter as 'name' and 'title' is removed
-  fetchCategorySection,
   helpCenterFetchArticle,
   articleBodyFilter,
   guideParentSection,
@@ -203,6 +202,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
+  fetchCategorySection, // need to be after arrange paths as it uses the 'name' field
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]
@@ -287,6 +287,17 @@ const getBrandsFromElementsSource = async (
     .filter(isInstanceElement)
     .toArray()
 )
+
+const getBrandsForGuide = (
+  elements: InstanceElement[],
+  fetchConfig: ZendeskFetchConfig,
+): InstanceElement[] => {
+  const brandsRegexList = fetchConfig.guide?.brands ?? []
+  return elements
+    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+    .filter(brandInstance => brandInstance.value.has_help_center)
+    .filter(brandInstance => brandsRegexList.some(regex => new RegExp(regex).test(brandInstance.value.name)))
+}
 
 export interface ZendeskAdapterParams {
   filterCreators?: FilterCreator[]
@@ -376,7 +387,7 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
-    const isGuideDisabled = !this.userConfig[FETCH_CONFIG].enableGuide
+    const isGuideDisabled = !isGuideEnabled(this.userConfig[FETCH_CONFIG])
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
     const supportedTypes = isGuideDisabled
       ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
@@ -399,10 +410,10 @@ export default class ZendeskAdapter implements AdapterOperations {
       return defaultSubdomainElements
     }
 
-    const brandsList = defaultSubdomainElements.elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-      .filter(brandInstance => brandInstance.value.has_help_center)
+    const brandsList = getBrandsForGuide(
+      defaultSubdomainElements.elements.filter(isInstanceElement),
+      this.userConfig[FETCH_CONFIG]
+    )
 
     const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
       [

@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, TemplateExpression, Values, Element } from '@salto-io/adapter-api'
-import { createReference } from '../utils'
-import { GROUP_TYPE_NAME, JIRA, PROJECT_TYPE } from '../../src/constants'
-import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
+import { createReference } from '../../utils'
+import { JIRA, PROJECT_TYPE } from '../../../src/constants'
+import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 
 
 export const createFilterValues = (name: string, allElements: Element[]): Values => ({
@@ -29,15 +29,16 @@ export const createFilterValues = (name: string, allElements: Element[]): Values
     createReference(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'Rank__gh_lexo_rank__c@uubbuu'), allElements, ['name']),
     ' ASC',
   ] }),
-  sharePermissions: [
-    { type: 'project',
-      project: {
-        id: createReference(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'Test_Project@s'), allElements),
-      } },
-    // project should be before group- that is the fetch order
-    { type: 'group',
-      group: {
-        name: createReference(new ElemID(JIRA, GROUP_TYPE_NAME, 'instance', 'site_admins@b'), allElements, ['name']),
-      } },
-  ],
+  // TODO: add this when deploying sharePermission in DC will be supported
+  // sharePermissions: [
+  //   { type: 'project',
+  //     project: {
+  //       id: createReference(new ElemID(JIRA, PROJECT_TYPE, 'instance', 'Test_Project@s'), allElements),
+  //     } },
+  //   // project should be before group- that is the fetch order
+  //   { type: 'group',
+  //     group: {
+  //       name: createReference(new ElemID(JIRA, GROUP_TYPE_NAME, 'instance', 'site_admins@b'), allElements, ['name']),
+  //     } },
+  // ],
 })

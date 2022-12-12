@@ -20,7 +20,7 @@ import {
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG, isGuideEnabled } from '../config'
 
 const log = logger(module)
 const { RECORDS_PATH } = elementsUtils
@@ -41,7 +41,7 @@ export const createEveryoneUserSegmentInstance = (userSegmentType: ObjectType): 
  */
 const filterCreator: FilterCreator = ({ config, fetchQuery }) => ({
   onFetch: async elements => {
-    if (!config[FETCH_CONFIG].enableGuide || !fetchQuery.isTypeMatch(USER_SEGMENT_TYPE_NAME)) {
+    if (!isGuideEnabled(config[FETCH_CONFIG]) || !fetchQuery.isTypeMatch(USER_SEGMENT_TYPE_NAME)) {
       return
     }
     const userSegmentType = elements

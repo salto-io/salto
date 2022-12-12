@@ -17,54 +17,67 @@
 import {
   ChangeValidator,
   CORE_ANNOTATIONS,
-  ElemID,
+  ElemID, getChangeData,
   InstanceElement,
   ObjectType,
   ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK, ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLE_TYPE_NAME } from '../../src/constants'
+import {
+  BRAND_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME,
+  ZENDESK,
+  ARTICLES_FIELD,
+  CATEGORIES_FIELD,
+  SECTIONS_FIELD,
+  ARTICLE_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME,
+} from '../../src/constants'
 import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import {
   categoryOrderValidator,
   sectionOrderValidator,
   articleOrderValidator,
-  guideOrderDeletionValidator,
+  guideOrderValidator,
 } from '../../src/change_validators'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
 const categoryType = new ObjectType({ elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME) })
 const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, SECTION_TYPE_NAME) })
+const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) })
 
 const brandInstance = new InstanceElement('brand', brandType)
 const categoryInstance = new InstanceElement('category', categoryType)
 const sectionInstance = new InstanceElement('section', sectionType)
+const articleInstance = new InstanceElement('article', articleType)
 
 const createOrderElement = (
   parent: InstanceElement,
   orderElementType: string,
-  orderField: string
+  orderField: string,
+  childInstance: InstanceElement
 ) : InstanceElement =>
   new InstanceElement(
     `${parent.elemID.name}_${orderField}`,
     createOrderType(orderElementType),
     {
-      [orderField]: [new ReferenceExpression(sectionInstance.elemID, sectionInstance)],
+      [orderField]: [new ReferenceExpression(childInstance.elemID, childInstance)],
     }, [],
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
   )
 
 const categoryOrderInstance = createOrderElement(
-  brandInstance, CATEGORY_TYPE_NAME, CATEGORIES_FIELD
+  brandInstance, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, categoryInstance
 )
 const categorySectionsOrderInstance = createOrderElement(
-  categoryInstance, SECTION_TYPE_NAME, SECTIONS_FIELD
+  categoryInstance, SECTION_TYPE_NAME, SECTIONS_FIELD, sectionInstance
 )
 const sectionSectionsOrderInstance = createOrderElement(
-  sectionInstance, SECTION_TYPE_NAME, SECTIONS_FIELD
+  sectionInstance, SECTION_TYPE_NAME, SECTIONS_FIELD, sectionInstance
 )
 const articleOrderInstance = createOrderElement(
-  sectionInstance, ARTICLE_TYPE_NAME, ARTICLES_FIELD
+  sectionInstance, ARTICLE_TYPE_NAME, ARTICLES_FIELD, articleInstance
 )
 
 describe('GuideOrdersValidator', () => {
@@ -122,7 +135,7 @@ describe('GuideOrdersValidator', () => {
       const instanceName = orderInstance.elemID.getFullName()
       const parentName = fakeParent.elemID.getFullName()
 
-      const errors = await guideOrderDeletionValidator(changes)
+      const errors = await guideOrderValidator(changes)
       expect(errors.length).toBe(1)
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
@@ -142,6 +155,53 @@ describe('GuideOrdersValidator', () => {
     })
     it('Articles order', async () => {
       await testValidator(articleOrderInstance)
+    })
+  })
+  describe('Children elements added with and without order element', () => {
+    const orderInstances = [
+      categoryOrderInstance,
+      categorySectionsOrderInstance,
+      sectionSectionsOrderInstance,
+      articleOrderInstance,
+    ]
+    const childrenInstances = [categoryInstance, sectionInstance, articleInstance]
+    const childChanges = [
+      ...childrenInstances.map(child => toChange({ after: child })),
+      ...childrenInstances.map(child => toChange({ before: child })),
+      ...childrenInstances.map(child => toChange({ before: child, after: child })),
+    ]
+    const orderChanges = orderInstances.map(order => toChange({ after: order }))
+
+    const testValidatorWithOrderInstances = async (validator: ChangeValidator): Promise<void> => {
+      const errors = await validator([...childChanges, ...orderChanges])
+      expect(errors).toMatchObject([])
+    }
+
+    const testValidatorWithoutOrderInstances = async (
+      validator: ChangeValidator,
+      instance: InstanceElement,
+      orderTypeName: string,
+    ): Promise<void> => {
+      // Remove the order change that has the tested element
+      const otherOrderChanges = orderChanges.filter(change => getChangeData(change).elemID.typeName !== orderTypeName)
+      const errors = await validator([...childChanges, ...otherOrderChanges])
+      expect(errors).toMatchObject([{
+        elemID: instance.elemID,
+        severity: 'Warning',
+        message: `Instance element not specified in ${orderTypeName}`,
+        detailedMessage: `Instance ${instance.elemID.name} of type '${instance.elemID.typeName}' is not listed in ${orderTypeName}, and will be added to be first by default. If order is important, please include it under the ${orderTypeName}`,
+      }])
+    }
+
+    it('With order element', async () => {
+      await testValidatorWithOrderInstances(categoryOrderValidator)
+      await testValidatorWithOrderInstances(sectionOrderValidator)
+      await testValidatorWithOrderInstances(articleOrderValidator)
+    })
+    it('Without order element', async () => {
+      await testValidatorWithoutOrderInstances(categoryOrderValidator, categoryInstance, CATEGORY_ORDER_TYPE_NAME)
+      await testValidatorWithoutOrderInstances(sectionOrderValidator, sectionInstance, SECTION_ORDER_TYPE_NAME)
+      await testValidatorWithoutOrderInstances(articleOrderValidator, articleInstance, ARTICLE_ORDER_TYPE_NAME)
     })
   })
 })

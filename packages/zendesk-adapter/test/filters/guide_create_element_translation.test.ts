@@ -80,7 +80,9 @@ describe('guid create translations filter', () => {
 
 
   beforeEach(async () => {
-    config[FETCH_CONFIG].enableGuide = true
+    config[FETCH_CONFIG].guide = {
+      brands: ['.*'],
+    }
     jest.clearAllMocks()
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -187,7 +189,7 @@ describe('guid create translations filter', () => {
       ])
     })
     it('should do nothing if guide is disabled', async () => {
-      config[FETCH_CONFIG].enableGuide = false
+      config[FETCH_CONFIG].guide = undefined
       filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
       const elements: Element[] = [
         articleDefaultInstance,

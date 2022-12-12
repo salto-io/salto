@@ -27,6 +27,7 @@ import {
   DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME,
 } from '../../../src/filters/custom_field_options/creator'
 import { createFilterCreatorParams } from '../../utils'
+import { TICKET_TICKET_FIELD } from '../../../src/filters/handle_template_expressions'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -161,7 +162,7 @@ describe('ticket field filter', () => {
         name: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
           { id: 22, name: 'child1', value: 'v1', raw_name: 'aaa' },
-          { id: 33, name: 'child2', value: 'v2', raw_name: createTemplateExpression({ parts: ['aaa ', new ReferenceExpression(parent.elemID, parent)] }) },
+          { id: 33, name: 'child2', value: 'v2', raw_name: createTemplateExpression({ parts: [`aaa ${TICKET_TICKET_FIELD}_`, new ReferenceExpression(parent.elemID, parent)] }) },
         ],
         [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]: 'v2',
       },

@@ -15,7 +15,7 @@
 */
 import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { CUSTOM_SEGMENT, SCRIPT_ID } from '../constants'
-import { isCustomRecordType } from '../types'
+import { addCustomRecordTypePrefix, isCustomRecordType } from '../types'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
@@ -32,7 +32,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
     generateUrl: id => `app/common/custom/custrecord.nl?id=${id}`,
     elementToId: element => (
       isInstanceElement(element) && element.elemID.typeName === CUSTOM_SEGMENT
-        ? `customrecord_${element.value[SCRIPT_ID]}`
+        ? addCustomRecordTypePrefix(element.value[SCRIPT_ID])
         : element.annotations[SCRIPT_ID]
     ),
   })

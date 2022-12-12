@@ -65,6 +65,18 @@ describe('suiteapp_file_cabinet', () => {
     description: 'desc3',
     islink: 'T',
     url: 'someUrl',
+  },
+  // file with unknown folder id will be filtered out
+  {
+    addtimestamptourl: 'F',
+    filesize: '10',
+    folder: '123',
+    hideinbundle: 'F',
+    id: '101',
+    isinactive: 'F',
+    isonline: 'F',
+    name: 'file101',
+    description: 'desc101',
   }]
 
   const topLevelFoldersResponse = [{
@@ -91,6 +103,16 @@ describe('suiteapp_file_cabinet', () => {
     parent: '5',
     bundleable: 'T',
     description: 'desc4',
+  },
+  // folder with unknown parent id will be filtered out
+  {
+    id: '102',
+    isinactive: 'T',
+    isprivate: 'T',
+    name: 'folder102',
+    parent: '123',
+    bundleable: 'T',
+    description: 'desc102',
   }]
 
   const expectedResults = [

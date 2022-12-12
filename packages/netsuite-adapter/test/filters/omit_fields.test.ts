@@ -77,7 +77,7 @@ describe('omit fields filter', () => {
   it('should omit fields in inner type', async () => {
     await filterCreator({
       ...defaultOpts,
-      config: { fetch: { fieldsToOmit: [{ type: 'inner.*', fields: ['.*2'] }] } },
+      config: { fetch: { fieldsToOmit: [{ type: 'some.*', subtype: 'inner.*', fields: ['.*2'] }] } },
     }).onFetch?.([instance, type, innerType])
     expect(instance.value).toEqual({
       field1: true,
@@ -103,6 +103,7 @@ describe('omit fields filter', () => {
       annotationRefsOrTypes: await toAnnotationRefTypes(customrecordtype),
       annotations: {
         scriptid: 'customrecord1',
+        istoplevel: true,
         permissions: {
           permission: [
             {
@@ -129,7 +130,7 @@ describe('omit fields filter', () => {
         fetch: {
           fieldsToOmit: [
             { type: 'customrecordtype', fields: ['links'] },
-            { type: 'customrecordtype_permissions_permission', fields: ['.*level'] },
+            { type: 'customrecordtype', subtype: 'customrecordtype_permissions_permission', fields: ['.*level'] },
             { type: 'customrecordcustomfield', fields: ['is.*'] },
           ],
         },
@@ -137,6 +138,8 @@ describe('omit fields filter', () => {
     }).onFetch?.([customrecordtype, customRecordObjectType, ...Object.values(customrecordInnerTypes)])
     expect(customRecordObjectType.annotations).toEqual({
       scriptid: 'customrecord1',
+      // used to verify that a field that match 'type' but doesn't match the 'subtype' is not omitted
+      istoplevel: true,
       permissions: {
         permission: [
           {

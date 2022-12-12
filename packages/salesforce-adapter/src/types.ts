@@ -92,6 +92,8 @@ export type ChangeValidatorName = (
   | 'recordTypeDeletion'
   | 'flowsValidator'
   | 'fullNameChangedValidator'
+  | 'invalidListViewFilterScope'
+  | 'caseAssignmentRulesValidator'
 )
 
 export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
@@ -558,6 +560,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
     flowsValidator: { refType: BuiltinTypes.BOOLEAN },
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
+    invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
+    caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -614,7 +618,10 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
               { metadataType: 'SiteDotCom' },
-              { metadataType: 'EmailTemplate' },
+              {
+                metadataType: 'EmailTemplate',
+                name: '^MarketoEmailTemplates/*',
+              },
               { metadataType: 'ContentAsset' },
               { metadataType: 'CustomObjectTranslation' },
               { metadataType: 'AnalyticSnapshot' },

@@ -537,7 +537,7 @@ export const formatAccountConfigured = (accountName: string): string => [
 export const formatAccountNotConfigured = (accountName: string): string => [
   Prompts.ACCOUNT_NOT_CONFIGURED(accountName),
   emptyLine(),
-  Prompts.SERVICE_HOW_ADD(accountName),
+  Prompts.ACCOUNT_HOW_ADD(accountName),
   emptyLine(),
 ].join('\n')
 
@@ -610,7 +610,7 @@ export const formatLoginToAccountFailed = (accountName: string, errorMessage: st
 
 export const formatAddServiceFailed = (accountName: string, errorMessage: string): string => [
   formatSimpleError(Prompts.ACCOUNT_LOGIN_FAILED(accountName, errorMessage)),
-  Prompts.SERVICE_ADD_FAILED_TRY_AGAIN(accountName),
+  Prompts.ACCOUNT_ADD_FAILED_TRY_AGAIN(accountName),
   emptyLine(),
 ].join('\n')
 

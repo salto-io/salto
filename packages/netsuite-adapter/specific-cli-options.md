@@ -13,7 +13,7 @@ Optional params:
 
 ### Example
 ```
-salto service add netsuite --login-parameters accountId=SomeAccountId tokenId=SomeTokenId tokenSecret=SomeTokenSecret
+salto account add netsuite --login-parameters accountId=SomeAccountId tokenId=SomeTokenId tokenSecret=SomeTokenSecret
 ```
 
 ---

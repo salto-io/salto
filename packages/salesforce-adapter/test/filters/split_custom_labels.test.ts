@@ -22,6 +22,7 @@ import {
   isInstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import filterCreator, { CUSTOM_LABEL_INSTANCES_FILE_PATH } from '../../src/filters/split_custom_labels'
 import { defaultFilterContext } from '../utils'
 import { FilterWith } from '../../src/filter'
@@ -31,6 +32,9 @@ import {
   INSTANCE_FULL_NAME_FIELD, METADATA_TYPE,
   SALESFORCE,
 } from '../../src/constants'
+import { isInstanceOfType } from '../../src/filters/utils'
+
+const { awu } = collections.asynciterable
 
 
 describe('Test split custom labels filter', () => {
@@ -51,10 +55,6 @@ describe('Test split custom labels filter', () => {
     })
   })
   describe('fetch', () => {
-    const CUSTOM_LABEL_1 = 'CustomLabel1'
-    const CUSTOM_LABEL_2 = 'CustomLabel2'
-
-    let customLabelsInstance: InstanceElement
     const filter = (): FilterWith<'onFetch'> => filterCreator({
       config: defaultFilterContext,
     }) as FilterWith<'onFetch'>
@@ -64,46 +64,79 @@ describe('Test split custom labels filter', () => {
       return elements
     }
 
-    beforeEach(() => {
-      customLabelsInstance = new InstanceElement(
-        CUSTOM_LABEL_METADATA_TYPE,
-        customLabelsType,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABELS_METADATA_TYPE,
-          labels: [
-            { fullName: CUSTOM_LABEL_1 },
-            { fullName: CUSTOM_LABEL_2 },
-          ],
-        },
-      )
-    })
-    it('should skip if theres no CustomLabels instance', async () => {
-      const receivedElements = await runFetch(customLabelType)
-      expect(receivedElements).toEqual([customLabelType])
-    })
+    describe('when labels is array', () => {
+      const CUSTOM_LABEL_1 = 'CustomLabel1'
+      const CUSTOM_LABEL_2 = 'CustomLabel2'
 
-    it('should skip if theres no CustomLabel type', async () => {
-      const receivedElements = await runFetch(customLabelsInstance)
-      expect(receivedElements).toEqual([customLabelsInstance])
-    })
+      let customLabelsInstance: InstanceElement
 
-    it('should split CustomLabels instance into CustomLabel instances with the same path, and remove it', async () => {
-      const receivedElements = await runFetch(customLabelsInstance, customLabelType)
-      const receivedCustomLabelInstances = receivedElements
-        .filter(e => e.elemID.typeName === CUSTOM_LABEL_METADATA_TYPE)
-      expect(receivedCustomLabelInstances).toIncludeAllPartialMembers([
-        {
-          value: customLabelsInstance.value.labels[0],
+      beforeEach(() => {
+        customLabelsInstance = new InstanceElement(
+          CUSTOM_LABEL_METADATA_TYPE,
+          customLabelsType,
+          {
+            [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABELS_METADATA_TYPE,
+            labels: [
+              { fullName: CUSTOM_LABEL_1 },
+              { fullName: CUSTOM_LABEL_2 },
+            ],
+          },
+        )
+      })
+      it('should skip if theres no CustomLabels instance', async () => {
+        const receivedElements = await runFetch(customLabelType)
+        expect(receivedElements).toEqual([customLabelType])
+      })
+
+      it('should skip if theres no CustomLabel type', async () => {
+        const receivedElements = await runFetch(customLabelsInstance)
+        expect(receivedElements).toEqual([customLabelsInstance])
+      })
+
+      it('should split CustomLabels instance into CustomLabel instances with the same path, and remove it', async () => {
+        const receivedElements = await runFetch(customLabelsInstance, customLabelType)
+        const receivedCustomLabelInstances = receivedElements
+          .filter(e => e.elemID.typeName === CUSTOM_LABEL_METADATA_TYPE)
+        expect(receivedCustomLabelInstances).toIncludeAllPartialMembers([
+          {
+            value: customLabelsInstance.value.labels[0],
+            path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
+          },
+          {
+            value: customLabelsInstance.value.labels[1],
+            path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
+          },
+        ])
+        // validates the custom labels instance was removed
+        expect(receivedElements)
+          .not.toSatisfyAny(e => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
+      })
+    })
+    describe('when labels is a single value', () => {
+      const CUSTOM_LABEL = 'CustomLabel'
+
+      const isInstanceOfTypeCustomLabel = isInstanceOfType(CUSTOM_LABEL)
+      let customLabelsInstance: InstanceElement
+      beforeEach(() => {
+        customLabelsInstance = new InstanceElement(
+          CUSTOM_LABEL_METADATA_TYPE,
+          customLabelsType,
+          {
+            [INSTANCE_FULL_NAME_FIELD]: CUSTOM_LABELS_METADATA_TYPE,
+            labels: { fullName: CUSTOM_LABEL },
+          },
+        )
+      })
+      it('should create a CustomLabel instance', async () => {
+        const receivedElements = await runFetch(customLabelsInstance, customLabelType)
+        const receivedCustomLabelInstances = await awu(receivedElements)
+          .filter(isInstanceOfTypeCustomLabel)
+          .toArray()
+        expect(receivedCustomLabelInstances).toIncludeAllPartialMembers([{
+          value: customLabelsInstance.value.labels,
           path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
-        },
-        {
-          value: customLabelsInstance.value.labels[1],
-          path: CUSTOM_LABEL_INSTANCES_FILE_PATH,
-        },
-      ])
-      // validates the custom labels instance was removed
-      expect(receivedElements)
-        .not.toSatisfyAny(e => e.elemID.typeName === CUSTOM_LABELS_METADATA_TYPE)
+        }])
+      })
     })
   })
   describe('deploy', () => {

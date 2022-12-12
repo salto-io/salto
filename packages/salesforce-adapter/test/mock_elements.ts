@@ -253,6 +253,16 @@ export const mockTypes = {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
+  ListView: createMetadataObjectType({
+    annotations: {
+      metadataType: 'ListView',
+      suffix: 'listview',
+      dirName: 'listview',
+    },
+    fields: {
+      filter: { refType: BuiltinTypes.STRING },
+    },
+  }),
   // CustomMetadataRecordType with name MDType__mdt
   CustomMetadataRecordType: new ObjectType({
     elemID: new ElemID(SALESFORCE, 'MDType__mdt'),

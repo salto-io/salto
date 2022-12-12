@@ -210,7 +210,9 @@ const config = { ...DEFAULT_CONFIG }
 describe('Categories order in brand', () => {
   describe('on fetch', () => {
     it('with Guide active in Zendesk And Salto', async () => {
-      config[FETCH_CONFIG].enableGuide = true
+      config[FETCH_CONFIG].guide = {
+        brands: ['.*'],
+      }
       filter = categoryOrderFilter(
         createFilterCreatorParams({ config })
       ) as FilterType
@@ -221,7 +223,9 @@ describe('Categories order in brand', () => {
       })
     })
     it('with Guide not active in Zendesk', async () => {
-      config[FETCH_CONFIG].enableGuide = true
+      config[FETCH_CONFIG].guide = {
+        brands: ['.*'],
+      }
       filter = categoryOrderFilter(
         createFilterCreatorParams({ config })
       ) as FilterType
@@ -233,7 +237,7 @@ describe('Categories order in brand', () => {
       expect(brandWithoutGuide.value.categories).toBeUndefined()
     })
     it('with Guide not active in Salto', async () => {
-      config[FETCH_CONFIG].enableGuide = false
+      config[FETCH_CONFIG].guide = undefined
       filter = categoryOrderFilter(
         createFilterCreatorParams({})
       ) as FilterType
@@ -272,7 +276,9 @@ describe('Categories order in brand', () => {
 
 describe('Sections order in category', () => {
   beforeEach(async () => {
-    config[FETCH_CONFIG].enableGuide = true
+    config[FETCH_CONFIG].guide = {
+      brands: ['.*'],
+    }
     filter = sectionOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
@@ -307,7 +313,9 @@ describe('Sections order in category', () => {
 
 describe('Sections order in section', () => {
   beforeEach(async () => {
-    config[FETCH_CONFIG].enableGuide = true
+    config[FETCH_CONFIG].guide = {
+      brands: ['.*'],
+    }
     filter = sectionOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 
@@ -344,7 +352,9 @@ describe('Sections order in section', () => {
 
 describe('Articles order in section', () => {
   beforeEach(async () => {
-    config[FETCH_CONFIG].enableGuide = true
+    config[FETCH_CONFIG].guide = {
+      brands: ['.*'],
+    }
     filter = articleOrderFilter(createFilterCreatorParams({ client })) as FilterType
   })
 

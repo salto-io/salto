@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes,
-  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, createRefToElmWithValue } from '@salto-io/adapter-api'
+  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, createRefToElmWithValue, ReferenceExpression, isAdditionChange } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '../src/compare'
 
 describe('detailedCompare', () => {
@@ -80,6 +80,314 @@ describe('detailedCompare', () => {
       expect(
         hasChange(changes, 'remove', before.elemID.createNestedID(INSTANCE_ANNOTATIONS.HIDDEN))
       ).toBeTruthy()
+    })
+    describe('compare lists with compareListItems', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      let listID: ElemID
+
+      beforeEach(() => {
+        beforeInst = new InstanceElement('inst', instType, { list: [] })
+        afterInst = new InstanceElement('inst', instType, { list: [] })
+        listID = beforeInst.elemID.createNestedID('list')
+      })
+
+      it('should detect removals', () => {
+        beforeInst.value.list = ['a', 'b', 'c']
+        afterInst.value.list = ['a', 'c']
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('1'),
+            data: { before: 'b' },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: 'c', after: 'c' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+              after: listID.createNestedID('1'),
+            },
+          },
+        ])
+      })
+
+      it('should detect addition', () => {
+        beforeInst.value.list = ['a', 'c']
+        afterInst.value.list = ['a', 'b', 'c']
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('1'),
+            data: { after: 'b' },
+            action: 'add',
+            elemIDs: {
+              after: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: 'c', after: 'c' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('2'),
+            },
+          },
+        ])
+      })
+
+      it('should prefer value modification without reorder', () => {
+        beforeInst.value.list = ['a', 'b', 'f']
+        afterInst.value.list = ['c', 'a', 'd', 'g']
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0'),
+            data: { after: 'c' },
+            action: 'add',
+            elemIDs: {
+              after: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: { before: 'b' },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: 'a', after: 'a' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+              after: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('3'),
+            data: { before: 'f', after: 'd' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+              after: listID.createNestedID('2'),
+            },
+          },
+          {
+            id: listID.createNestedID('4'),
+            data: { after: 'g' },
+            action: 'add',
+            elemIDs: {
+              after: listID.createNestedID('3'),
+            },
+          },
+        ])
+      })
+
+      it('should detect reorder with modification', () => {
+        beforeInst.value.list = ['a', 'b', 'e', 'f']
+        afterInst.value.list = ['c', 'a', 'd', 'e', 'g']
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0'),
+            data: { after: 'c' },
+            action: 'add',
+            elemIDs: {
+              after: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: { before: 'a', after: 'a' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+              after: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: 'b', after: 'd' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('2'),
+            },
+          },
+          {
+            id: listID.createNestedID('3'),
+            data: { before: 'e', after: 'e' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+              after: listID.createNestedID('3'),
+            },
+          },
+          {
+            id: listID.createNestedID('4'),
+            data: { before: 'f', after: 'g' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('3'),
+              after: listID.createNestedID('4'),
+            },
+          },
+        ])
+      })
+
+      it('should detect addition and modification correctly', () => {
+        beforeInst.value.list = ['c', 'a', 'b', 'e']
+        afterInst.value.list = ['a', 'd', 'h']
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0'),
+            data: { before: 'c' },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: { before: 'a', after: 'a' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { after: 'd' },
+            action: 'add',
+            elemIDs: {
+              after: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('3'),
+            data: { before: 'e' },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('3'),
+            },
+          },
+          {
+            id: listID.createNestedID('4'),
+            data: { before: 'b', after: 'h' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+              after: listID.createNestedID('2'),
+            },
+          },
+        ])
+      })
+
+      it('should first try to match exact items and then items that has the same top level values', () => {
+        beforeInst.value.list = [
+          {
+            value1: 'a',
+            value2: ['a'],
+          },
+          {
+            value1: 'a',
+            value2: ['b'],
+          },
+        ]
+
+        afterInst.value.list = [
+          {
+            value1: 'a',
+            value2: ['c'],
+          },
+          {
+            value1: 'a',
+            value2: ['a'],
+          },
+        ]
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('0', 'value2', '0'),
+            data: { before: 'b', after: 'c' },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1', 'value2', '0'),
+              after: listID.createNestedID('0', 'value2', '0'),
+            },
+          },
+          {
+            id: listID.createNestedID('0'),
+            data: {
+              before: { value1: 'a', value2: ['b'] },
+              after: { value1: 'a', value2: ['c'] },
+            },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+              after: listID.createNestedID('0'),
+            },
+          },
+          {
+            id: listID.createNestedID('1'),
+            data: {
+              before: { value1: 'a', value2: ['a'] },
+              after: { value1: 'a', value2: ['a'] },
+            },
+            action: 'modify',
+            elemIDs: {
+              before: listID.createNestedID('0'),
+              after: listID.createNestedID('1'),
+            },
+          },
+        ])
+      })
+
+      it('should work with empty objects in the list', () => {
+        beforeInst.value.list = [
+          {
+            val: [],
+          },
+          {},
+          {},
+        ]
+
+        afterInst.value.list = [
+          {
+            val: [],
+          },
+        ]
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('1'),
+            data: { before: {} },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: {} },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+            },
+          },
+        ])
+      })
     })
   })
 
@@ -337,5 +645,272 @@ describe('applyDetailedChanges', () => {
   })
   it('should remove values', () => {
     expect(inst.value).not.toHaveProperty('rem')
+  })
+  describe('with changes from compareListItems', () => {
+    describe('with list removals', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      let outputInst: InstanceElement
+      beforeEach(() => {
+        const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+        beforeInst = new InstanceElement('inst', instType, { a: ['c', 'a', 'd', 'e'] })
+        afterInst = new InstanceElement('inst', instType, { a: ['a', 'b'] })
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        outputInst = beforeInst.clone()
+        applyDetailedChanges(outputInst, listChanges)
+      })
+      it('should reproduce the after element', () => {
+        expect(outputInst).toEqual(afterInst)
+      })
+    })
+    describe('with list additions', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      let outputInst: InstanceElement
+      beforeEach(() => {
+        const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+        beforeInst = new InstanceElement('inst', instType, { a: ['e', 'b', 'a'] })
+        afterInst = new InstanceElement('inst', instType, { a: ['a', 'f', 'f', 'b', 'c', 'd'] })
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        outputInst = beforeInst.clone()
+        applyDetailedChanges(outputInst, listChanges)
+      })
+      it('should reproduce the after element', () => {
+        expect(outputInst).toEqual(afterInst)
+      })
+    })
+
+    describe('with list reorder', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      let outputInst: InstanceElement
+      beforeEach(() => {
+        const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+        beforeInst = new InstanceElement('inst', instType, { a: ['a', 'b'] })
+        afterInst = new InstanceElement('inst', instType, { a: ['b', 'a'] })
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        outputInst = beforeInst.clone()
+        applyDetailedChanges(outputInst, listChanges)
+      })
+      it('should reproduce the after element', () => {
+        expect(outputInst).toEqual(afterInst)
+      })
+    })
+
+    describe('When only list addition included', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      let outputInst: InstanceElement
+      beforeEach(() => {
+        const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+        beforeInst = new InstanceElement('inst', instType, { a: ['a', 'c'] })
+        afterInst = new InstanceElement('inst', instType, { a: ['a', 'b', 'c'] })
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        outputInst = beforeInst.clone()
+        applyDetailedChanges(outputInst, listChanges.filter(isAdditionChange))
+      })
+      it('should apply the changes', () => {
+        expect(outputInst.value.a).toEqual(['a', 'b', 'c'])
+      })
+    })
+
+    describe('When list objects', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      let outputInst: InstanceElement
+      beforeEach(() => {
+        const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+        beforeInst = new InstanceElement(
+          'inst',
+          instType,
+          {
+            a: [
+              { a: 2 },
+              { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) },
+              { a: 2, b: 3 },
+            ],
+          }
+        )
+
+        afterInst = new InstanceElement(
+          'inst',
+          instType,
+          {
+            a: [
+              { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
+              { a: 2, b: 4 },
+              { a: 4 },
+            ],
+          }
+        )
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        outputInst = beforeInst.clone()
+        applyDetailedChanges(outputInst, listChanges)
+      })
+      it('should apply the changes', () => {
+        expect(outputInst.value.a).toEqual(afterInst.value.a)
+      })
+    })
+
+    describe('When inner list', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      let outputInst: InstanceElement
+      beforeEach(() => {
+        const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+        beforeInst = new InstanceElement(
+          'inst',
+          instType,
+          {
+            a: [
+              { b: [2, 3] },
+            ],
+          }
+        )
+
+        afterInst = new InstanceElement(
+          'inst',
+          instType,
+          {
+            a: [
+              { b: [2] },
+            ],
+          }
+        )
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        outputInst = beforeInst.clone()
+        applyDetailedChanges(outputInst, listChanges)
+      })
+      it('should apply the changes', () => {
+        expect(outputInst.value.a).toEqual(afterInst.value.a)
+      })
+    })
+  })
+  describe('When list objects and reorder and modification on the same item', () => {
+    let beforeInst: InstanceElement
+    let afterInst: InstanceElement
+    let outputInst: InstanceElement
+    beforeEach(() => {
+      const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+      beforeInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: [
+            { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 1) },
+            { a: 3 },
+          ],
+        }
+      )
+
+      afterInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: [
+            { a: 2, b: 5 },
+            { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
+            { a: 2, b: 4 },
+          ],
+        }
+      )
+      const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+      outputInst = beforeInst.clone()
+      applyDetailedChanges(outputInst, listChanges)
+    })
+    it('should apply the changes', () => {
+      expect(outputInst.value.a).toEqual(afterInst.value.a)
+    })
+  })
+
+  describe('Should apply changes in the correct order', () => {
+    let beforeInst: InstanceElement
+    beforeEach(() => {
+      const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+      beforeInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: _.times(11),
+        }
+      )
+
+      const listChanges: DetailedChange[] = [
+        {
+          id: beforeInst.elemID.createNestedID('a', '2'),
+          data: {
+            after: 'a',
+          },
+          action: 'add',
+          elemIDs: {
+            after: beforeInst.elemID.createNestedID('a', '2'),
+          },
+        },
+        {
+          id: beforeInst.elemID.createNestedID('a', '10'),
+          data: {
+            after: 'b',
+          },
+          action: 'add',
+          elemIDs: {
+            after: beforeInst.elemID.createNestedID('a', '10'),
+          },
+        },
+      ]
+
+      applyDetailedChanges(beforeInst, listChanges)
+    })
+    it('should apply the changes', () => {
+      expect(beforeInst.value.a).toEqual([0, 1, 'a', 2, 3, 4, 5, 6, 7, 8, 'b', 9, 10])
+    })
+  })
+  describe('when before element and after element have different IDs', () => {
+    describe('with value from a different instance', () => {
+      let beforeInst: InstanceElement
+      let afterInst: InstanceElement
+      beforeEach(() => {
+        beforeInst = new InstanceElement(
+          'name1',
+          new ObjectType({ elemID: new ElemID('test', 'type') }),
+          { val1: '1' },
+        )
+        afterInst = new InstanceElement(
+          'name2',
+          new ObjectType({ elemID: new ElemID('test', 'type') }),
+          { val1: '2' },
+        )
+      })
+      it('should apply the changes', () => {
+        const changes = detailedCompare(beforeInst, afterInst)
+        const updatedInst = beforeInst.clone()
+        applyDetailedChanges(updatedInst, changes)
+        expect(updatedInst.value.val1).toEqual(afterInst.value.val1)
+      })
+    })
+
+    describe('with annotations from a different object', () => {
+      let beforeObj: ObjectType
+      let afterObj: ObjectType
+      beforeEach(() => {
+        beforeObj = new ObjectType({
+          elemID: new ElemID('test', 'before'),
+          annotations: {
+            val1: '1',
+          },
+        })
+        afterObj = new ObjectType({
+          elemID: new ElemID('test', 'after'),
+          annotations: {
+            val1: '2',
+          },
+        })
+      })
+      it('should apply the changes', () => {
+        const changes = detailedCompare(beforeObj, afterObj)
+        const updatedObj = beforeObj.clone()
+        applyDetailedChanges(updatedObj, changes)
+        expect(updatedObj.annotations.val1).toEqual(afterObj.annotations.val1)
+      })
+    })
   })
 })

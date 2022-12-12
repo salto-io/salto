@@ -17,14 +17,14 @@ import _ from 'lodash'
 import {
   Change, Element, getChangeData,
   InstanceElement,
-  isInstanceElement, ReferenceExpression,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME } from '../../constants'
 import {
   createOrderInstance, deployOrderChanges, createOrderType,
 } from './guide_order_utils'
-import { FETCH_CONFIG } from '../../config'
+import { FETCH_CONFIG, isGuideEnabled } from '../../config'
 
 /**
  * Handle the order of categories in brand
@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Create an InstanceElement of the categories order inside the brands */
   onFetch: async (elements: Element[]) => {
     // If Guide is not enabled in Salto, we don't need to do anything
-    if (!config[FETCH_CONFIG].enableGuide) {
+    if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return
     }
 
@@ -48,19 +48,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const categoryOrderElements = brands
     // If the brand doesn't have Guide activated, do nothing
-      .filter(b => b.value.has_help_center).map(brand => {
-        const categoryOrderElement = createOrderInstance({
-          parent: brand,
-          parentField: 'brand',
-          orderField: CATEGORIES_FIELD,
-          childrenElements: categories,
-          orderType,
-        })
-        brand.value.categories = new ReferenceExpression(
-          categoryOrderElement.elemID, categoryOrderElement
-        )
-        return categoryOrderElement
-      })
+      .filter(b => b.value.has_help_center).map(brand => createOrderInstance({
+        parent: brand,
+        parentField: 'brand',
+        orderField: CATEGORIES_FIELD,
+        childrenElements: categories,
+        orderType,
+      }))
     categoryOrderElements.forEach(element => elements.push(element))
   },
   /** Change the categories positions according to their order in the brand */

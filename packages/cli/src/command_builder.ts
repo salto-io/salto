@@ -68,14 +68,14 @@ type CommandInnerDef<T> = {
   action: CommandDefAction<T>
 }
 
-type WorkspaceCommandArgs<T> = (
+export type WorkspaceCommandArgs<T> = (
   Omit<DefActionInput<T>, 'workspacePath'>
   & { workspace: Workspace }
 )
 
 export type WorkspaceCommandAction<T> = (args: WorkspaceCommandArgs<T>) => Promise<CliExitCode>
 
-type WorkspaceCommandDef<T> = {
+export type WorkspaceCommandDef<T> = {
   properties: CommandOptions<T>
   action: WorkspaceCommandAction<T>
   extraTelemetryTags?: (args: { workspace: Workspace; input: T }) => Tags

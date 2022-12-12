@@ -153,6 +153,7 @@ describe('config', () => {
           { name: 'someType', ids: ['.*'] },
         ],
         fileCabinet: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
+        customRecords: [],
       },
       fetchDefault.exclude),
     }
@@ -238,10 +239,13 @@ describe('config', () => {
     }
     const newFetch = {
       include: fetchDefault.include,
-      exclude: combineQueryParams(
-        currentConfigWithFetch.fetch.exclude,
-        fetchDefault.exclude
-      ),
+      exclude: {
+        ...combineQueryParams(
+          currentConfigWithFetch.fetch.exclude,
+          fetchDefault.exclude
+        ),
+        customRecords: [],
+      },
     }
 
     const configChange = getConfigFromConfigChanges(
@@ -309,6 +313,7 @@ describe('config', () => {
                 { name: 'testAll', ids: ['.*'] },
                 { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
               ],
+              customRecords: [],
             },
           },
           client: {

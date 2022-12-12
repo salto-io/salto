@@ -26,6 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { defaultMapper, metadataTypeToFieldToMapDef } from '../filters/convert_maps'
 import { API_NAME_SEPARATOR, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
@@ -33,6 +34,8 @@ import { isInstanceOfTypeChange } from '../filters/utils'
 import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
+
+const log = logger(module)
 
 const metadataTypesToValidate = [
   PROFILE_METADATA_TYPE,
@@ -67,7 +70,9 @@ const getMapKeyErrors = async (
           })
           return undefined
         }
-
+        if (typeof value[mapDef.key] !== 'string') {
+          log.error(`found a non string value in field ${typeName}.${fieldName}.${mapDef.key}, value: ${value[mapDef.key]}`)
+        }
         // we reached the map's inner value
         const expectedPath = defaultMapper(value[mapDef.key]).slice(0, mapDef.nested ? 2 : 1)
         const pathParts = path.getFullNameParts().filter(part => !isNum(part))

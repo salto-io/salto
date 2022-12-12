@@ -23,7 +23,7 @@ import {
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG, isGuideEnabled } from '../config'
 import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
 import { getZendeskError } from '../errors'
 
@@ -37,7 +37,7 @@ export const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
  */
 const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) => ({
   onFetch: async elements => {
-    if (!config[FETCH_CONFIG].enableGuide) {
+    if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return
     }
     const instances = elements.filter(isInstanceElement)

@@ -176,6 +176,7 @@ const filter: LocalFilterCreator = () => {
   let originalChanges: Record<string, Change<InstanceElement>>
   return {
     onFetch: async (elements: Element[]) => {
+      return
       const customObjectFieldsByApiName = await getCustomObjectFieldsByApiName(elements)
       elements
         .filter(isInstanceElement)

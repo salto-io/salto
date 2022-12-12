@@ -60,7 +60,8 @@ import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
-import cpqCustomFieldReferencesFilter from './filters/cpq/custom_field_references'
+import fieldDependencyReferences from './filters/field_dependency_references'
+import cpqFixValueSetApiNames from './filters/cpq/fix_value_set_api_names'
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
@@ -123,9 +124,10 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: standardValueSetFilter, addsNewInformation: true },
   { creator: flowFilter },
   { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
+  // cpqFixApiNames should run before the CPQ filters.
+  { creator: cpqFixValueSetApiNames },
   { creator: cpqCustomScriptFilter },
   { creator: cpqLookupFieldsFilter },
-  { creator: cpqCustomFieldReferencesFilter },
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
@@ -158,6 +160,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: referenceAnnotationsFilter },
   // foreignLeyReferences should come after referenceAnnotationsFilter
   { creator: foreignKeyReferencesFilter },
+  // fieldDependencyReferences should run before customObjectsSplitFilter
+  { creator: fieldDependencyReferences },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customObjectsSplitFilter },

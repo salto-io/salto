@@ -137,9 +137,13 @@ export const getNamespaceFromString = (name: string): string | undefined => {
 }
 
 export const getNamespace = async (
-  customElement: Field | ObjectType
-): Promise<string | undefined> =>
-  getNamespaceFromString(await apiName(customElement, true))
+  customElement: Element
+): Promise<string | undefined> => {
+  const elementApiName = await apiName(customElement, true)
+  return elementApiName !== undefined
+    ? getNamespaceFromString(elementApiName)
+    : undefined
+}
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>

@@ -153,6 +153,7 @@ export const BUSINESS_STATUS = 'businessStatus'
 export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
 export const KEY_PREFIX = 'keyPrefix'
+export const FULL_NAME = 'fullName'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
@@ -194,7 +195,7 @@ export const FIELD_ANNOTATIONS = {
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
   ROLLUP_SUMMARY_FILTER_OPERATION: 'rollupSummaryFilterOperation',
-}
+} as const
 
 export const VALUE_SET_FIELDS = {
   RESTRICTED: 'restricted',
@@ -366,6 +367,7 @@ export const RETRIEVE_SIZE_LIMIT_ERROR = 'LIMIT_EXCEEDED'
 export const KEY_PREFIX_LENGTH = 3
 
 // CPQ CustomObjects
+export const CPQ_NAMESPACE = 'SBQQ'
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
 export const CPQ_PRICE_RULE = 'SBQQ__PriceRule__c'
 export const CPQ_LOOKUP_QUERY = 'SBQQ__LookupQuery__c'

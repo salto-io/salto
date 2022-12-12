@@ -67,11 +67,7 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex, fie
     const referencedInstance = idToInstance[id]
     if (referencedInstance === undefined && enableMissingReferences) {
       // if no id was detected and enableMissingReferences we return a missing reference expression.
-      const missingInstance = createMissingInstance(
-        ZENDESK,
-        field,
-        id
-      )
+      const missingInstance = createMissingInstance(ZENDESK, field, id)
       missingInstance.value.id = id
       return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
     }

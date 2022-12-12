@@ -202,7 +202,7 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
       return {
         beforeIndex,
         afterIndex: matchedAfterIndex,
-        // The min after index is the max  after index we matched to so far
+        // The min after index is the max after index we matched to so far
         minAfterIndex: maxAfterIndexMatched,
       }
     }

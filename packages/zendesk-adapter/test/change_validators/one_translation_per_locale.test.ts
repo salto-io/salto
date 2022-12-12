@@ -23,7 +23,7 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
-import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { oneTranslationPerLocaleValidator } from '../../src/change_validators'
 
 describe('oneTranslationPerLocalValidator',
@@ -34,8 +34,8 @@ describe('oneTranslationPerLocalValidator',
     const articleTranslationType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'article_translation'),
     })
-    const guideLanguageSettingsType = new ObjectType({
-      elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
+    const brandLanguageSettingsType = new ObjectType({
+      elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME),
     })
 
     it('should not return an error when article has different translations with different locale', async () => {
@@ -59,13 +59,13 @@ describe('oneTranslationPerLocalValidator',
         'Test3',
         articleTranslationType,
         {
-          locale: new ReferenceExpression(new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, 'instance', 'es')),
+          locale: new ReferenceExpression(new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME, 'instance', 'es')),
         },
         undefined,
       )
       const esLocale = new InstanceElement(
         'es',
-        guideLanguageSettingsType,
+        brandLanguageSettingsType,
         {
           locale: 'es',
         },
@@ -104,7 +104,7 @@ describe('oneTranslationPerLocalValidator',
     it('should return an error when article has different translations with same locale', async () => {
       const enusLocale = new InstanceElement(
         'en-us',
-        guideLanguageSettingsType,
+        brandLanguageSettingsType,
         {
           locale: 'en-us',
         },

@@ -22,7 +22,7 @@ import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
   BRAND_TYPE_NAME,
-  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from '../../../src/constants'
 import * as articleUtils from '../../../src/filters/article/utils'
@@ -85,7 +85,7 @@ describe('article utility functions', () => {
   )
   const localeInstance = new InstanceElement(
     'testLocale',
-    new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }),
+    new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME) }),
     { locale: 'en-us' },
   )
   const articleTranslationInstance = new InstanceElement(

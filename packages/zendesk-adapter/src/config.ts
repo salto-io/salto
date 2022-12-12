@@ -1645,7 +1645,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/help_center/{locale}/articles',
       dependsOn: [
-        { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
+        { pathParam: 'locale', from: { type: 'brand_language_settings', field: 'locale' } },
       ],
     },
     transformation: {
@@ -1772,7 +1772,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  guide_language_settings: {
+  brand_language_settings: {
     request: {
       url: '/hc/api/internal/help_center_translations',
     },
@@ -2229,7 +2229,7 @@ export const GUIDE_BRAND_SPECIFIC_TYPES = {
   section: ['sections'],
   category: ['categories'],
   guide_settings: ['guide_settings'],
-  guide_language_settings: ['guide_language_settings'],
+  brand_language_settings: ['brand_language_settings'],
 }
 
 // Types in Zendesk Guide that whose instances are shared across all brands

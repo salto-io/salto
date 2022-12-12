@@ -21,13 +21,13 @@ import {
   BRAND_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
-  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from '../../src/constants'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
-const languageSettingsType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) })
+const languageSettingsType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME) })
 const categoryType = new ObjectType({ elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME) })
 const categoryTranslationType = new ObjectType({ elemID: new ElemID(ZENDESK, CATEGORY_TRANSLATION_TYPE_NAME) })
 

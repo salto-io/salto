@@ -43,7 +43,7 @@ const USER_SEGMENT_ID_FIELD = 'user_segment_id'
 export type TranslationType = {
   title: string
   body?: string
-  locale: { id: string }
+  locale: { locale: string }
 }
 
 const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
@@ -51,7 +51,7 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   const currentLocale = getChangeData(resolvedChange).value.source_locale
   const translation = getChangeData(resolvedChange).value.translations
     .filter(isTranslation)
-    .find((tran: TranslationType) => tran.locale?.id === currentLocale)
+    .find((tran: TranslationType) => tran.locale?.locale === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.title = translation.title
     getChangeData(change).value.body = translation.body ?? ''

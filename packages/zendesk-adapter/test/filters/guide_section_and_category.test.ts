@@ -24,7 +24,7 @@ import {
 import filterCreator from '../../src/filters/guide_section_and_category'
 
 
-import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { BRAND_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 describe('guid section and category filter', () => {
@@ -37,13 +37,13 @@ describe('guid section and category filter', () => {
   const sectionTranslationType = new ObjectType(
     { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
   )
-  const guideLanguageSettingsType = new ObjectType({
-    elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
+  const brandLanguageSettingsType = new ObjectType({
+    elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME),
   })
 
-  const guideLanguageSettingsInstance = new InstanceElement(
+  const brandLanguageSettingsInstance = new InstanceElement(
     'instance',
-    guideLanguageSettingsType,
+    brandLanguageSettingsType,
     {
       locale: 'he',
     }
@@ -53,7 +53,7 @@ describe('guid section and category filter', () => {
     'instance',
     sectionTranslationType,
     {
-      locale: new ReferenceExpression(guideLanguageSettingsInstance.elemID, guideLanguageSettingsInstance),
+      locale: new ReferenceExpression(brandLanguageSettingsInstance.elemID, brandLanguageSettingsInstance),
       title: 'name',
       body: 'description',
     }

@@ -32,7 +32,7 @@ import {
 import SalesforceClient from './client/client'
 import { CUSTOM_OBJECT_ID_FIELD } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import { buildSelectQueries } from './filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
@@ -143,9 +143,11 @@ const getRecordsBySaltoIds = async (
   const saltoIdFieldsWithIdField = (saltoIdFields
     .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
     ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
+
+  const fieldNames = await awu(saltoIdFieldsWithIdField).flatMap(getFieldNamesForQuery).toArray()
   const queries = await buildSelectQueries(
     await apiName(type),
-    saltoIdFieldsWithIdField,
+    fieldNames,
     instanceIdValues,
   )
   const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))

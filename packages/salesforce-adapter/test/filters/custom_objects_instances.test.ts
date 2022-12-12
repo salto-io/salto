@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
-import { getNamespaceFromString, buildSelectQueries } from '../../src/filters/utils'
+import { getNamespaceFromString, buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
 import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -1139,7 +1139,8 @@ describe('buildSelectQueries', () => {
   describe('without conditions', () => {
     let queries: string[]
     beforeEach(async () => {
-      queries = await buildSelectQueries('Test', Object.values(customObject.fields))
+      const fieldNames = await awu(Object.values(customObject.fields)).flatMap(getFieldNamesForQuery).toArray()
+      queries = await buildSelectQueries('Test', fieldNames)
     })
     it('should create a select query on the specified fields', () => {
       expect(queries).toHaveLength(1)
@@ -1150,9 +1151,10 @@ describe('buildSelectQueries', () => {
     describe('with short query', () => {
       let queries: string[]
       beforeEach(async () => {
+        const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
         queries = await buildSelectQueries(
           'Test',
-          [customObject.fields.Id],
+          fieldNames,
           _.range(0, 2).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
         )
       })
@@ -1164,9 +1166,10 @@ describe('buildSelectQueries', () => {
     describe('with query length limit', () => {
       let queries: string[]
       beforeEach(async () => {
+        const fieldNames = await awu([customObject.fields.Id]).flatMap(getFieldNamesForQuery).toArray()
         queries = await buildSelectQueries(
           'Test',
-          [customObject.fields.Id],
+          fieldNames,
           _.range(0, 4).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
           80,
         )

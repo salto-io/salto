@@ -30,7 +30,7 @@ import {
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
-import { getNamespace, isMasterDetailField, isLookupField, queryClient, buildSelectQueries } from './utils'
+import { getNamespace, isMasterDetailField, isLookupField, queryClient, buildSelectQueries, getFieldNamesForQuery } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
@@ -76,9 +76,10 @@ const buildQueryStrings = async (
   typeName: string,
   fields: Field[],
   ids?: string[]
-): Promise<string[]> => (
-  buildSelectQueries(typeName, fields, ids?.map(id => ({ Id: `'${id}'` })))
-)
+): Promise<string[]> => {
+  const fieldNames = await awu(fields).flatMap(getFieldNamesForQuery).toArray()
+  return buildSelectQueries(typeName, fieldNames, ids?.map(id => ({ Id: `'${id}'` })))
+}
 
 const getRecords = async (
   client: SalesforceClient,

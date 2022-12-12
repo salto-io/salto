@@ -262,7 +262,7 @@ export const conditionQueries = (query: string, conditionSets: Record<string,
 }
 
 
-const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
+export const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
   await isNameField(field)
     ? Object.keys((await field.getType() as ObjectType).fields)
     : [await apiName(field, true)]
@@ -278,13 +278,11 @@ const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
  */
 export const buildSelectQueries = async (
   typeName: string,
-  fields: Field[],
+  fields: string[],
   conditionSets?: Record<string, string>[],
   maxQueryLen = MAX_QUERY_LENGTH,
 ): Promise<string[]> => {
-  const fieldsNameQuery = (
-    await awu(fields).flatMap(getFieldNamesForQuery).toArray()
-  ).join(',')
+  const fieldsNameQuery = fields.join(',')
   const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
   if (conditionSets === undefined || conditionSets.length === 0) {
     return [selectStr]

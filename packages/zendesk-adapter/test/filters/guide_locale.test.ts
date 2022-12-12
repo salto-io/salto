@@ -46,7 +46,7 @@ const categoryTranslation2 = new InstanceElement('translation2', categoryTransla
 
 describe('onFetch', () => {
   const guideConfig = { ...DEFAULT_CONFIG }
-  guideConfig[FETCH_CONFIG].enableGuide = true
+  guideConfig[FETCH_CONFIG].guide = { brands: ['.*'] }
   const filter = guideLocaleFilter(createFilterCreatorParams({ config: guideConfig })) as filterUtils.FilterWith<'onFetch'>
   it('should replace the locale field with a referenceExpression of language_setting of the same brand', async () => {
     await filter.onFetch([

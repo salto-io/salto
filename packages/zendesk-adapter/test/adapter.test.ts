@@ -102,7 +102,9 @@ describe('adapter', () => {
                   type: '.*',
                 }],
                 exclude: [],
-                enableGuide: true,
+                guide: {
+                  brands: ['.*'],
+                },
               },
             }
           ),
@@ -597,6 +599,54 @@ describe('adapter', () => {
           brand_id: expect.any(ReferenceExpression),
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
+      })
+
+      it('should generate guide elements according to brands config', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const creds = new InstanceElement(
+          'config',
+          usernamePasswordCredentialsType,
+          { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+        )
+        const config = new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              include: [{
+                type: '.*',
+              }],
+              exclude: [],
+              guide: {
+                brands: ['.WithGuide'],
+              },
+            },
+          }
+        )
+        const { elements } = await adapter.operations({
+          credentials: creds,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(elements
+          .filter(isInstanceElement)
+          .filter(e => e.elemID.typeName === 'article')
+          .map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+        ])
+
+        config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
+        const fetchRes = await adapter.operations({
+          credentials: creds,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(fetchRes.elements
+          .filter(isInstanceElement)
+          .filter(e => e.elemID.typeName === 'article')
+          .map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+        ])
       })
     })
 

@@ -24,7 +24,7 @@ import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, CATEGORY_ORDER_T
 import {
   createOrderInstance, deployOrderChanges, createOrderType,
 } from './guide_order_utils'
-import { FETCH_CONFIG } from '../../config'
+import { FETCH_CONFIG, isGuideEnabled } from '../../config'
 
 /**
  * Handle the order of categories in brand
@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   /** Create an InstanceElement of the categories order inside the brands */
   onFetch: async (elements: Element[]) => {
     // If Guide is not enabled in Salto, we don't need to do anything
-    if (!config[FETCH_CONFIG].enableGuide) {
+    if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return
     }
 

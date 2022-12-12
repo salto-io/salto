@@ -15,6 +15,7 @@
 */
 import { InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
+import { FETCH_CONFIG, isGuideEnabled } from '../config'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME,
@@ -22,7 +23,6 @@ import {
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
 } from '../constants'
-import { FETCH_CONFIG } from '../config'
 
 const TYPES_WITH_SOURCE_LOCALE = [ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, CATEGORY_TYPE_NAME]
 const TYPES_WITH_LOCALE = [
@@ -36,7 +36,7 @@ const TYPES_WITH_LOCALE = [
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
-    if (!config[FETCH_CONFIG].enableGuide) {
+    if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return
     }
 

@@ -65,12 +65,6 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex, fie
   const { url, id } = urlPart.match(idRegex)?.groups ?? {}
   if (url !== undefined && id !== undefined) {
     const referencedInstance = idToInstance[id]
-    if (referencedInstance === undefined && enableMissingReferences) {
-      // if no id was detected and enableMissingReferences we return a missing reference expression.
-      const missingInstance = createMissingInstance(ZENDESK, field, id)
-      missingInstance.value.id = id
-      return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
-    }
     // Catch both options because the instance value might be resolved and then the 'brand' field will just be id
     const brandId = isReferenceExpression(referencedInstance?.value.brand)
       ? referencedInstance.value.brand.value.value.id
@@ -78,6 +72,12 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex, fie
     if (brandId === urlBrand.value.id) {
       // We want to keep the original url and replace just the id
       return [url, new ReferenceExpression(referencedInstance.elemID, referencedInstance)]
+    }
+    // if could not find a valid instance, create a MissingReferences.
+    if (enableMissingReferences) {
+      const missingInstance = createMissingInstance(ZENDESK, field, `${urlBrand.value.name}_${id}`)
+      missingInstance.value.id = id
+      return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
     }
   }
   return undefined

@@ -17,8 +17,17 @@ import { ElemID, InstanceElement, ObjectType,
   BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../../src/filters/article/article_body'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ZENDESK } from '../../../src/constants'
+import {
+  ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ATTACHMENTS_FIELD,
+  ARTICLE_TYPE_NAME,
+  ARTICLES_FIELD,
+  BRAND_TYPE_NAME, CATEGORIES_FIELD,
+  CATEGORY_TYPE_NAME,
+  SECTION_TYPE_NAME, SECTIONS_FIELD,
+  ZENDESK,
+} from '../../../src/constants'
 import { createFilterCreatorParams } from '../../utils'
+import { createMissingInstance } from '../../../src/filters/references/missing_references'
 
 describe('article body filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
@@ -56,13 +65,13 @@ describe('article body filter', () => {
   const brandInstance = new InstanceElement(
     'brand',
     brandType,
-    { id: 1, brand_url: 'https://brand.zendesk.com' },
+    { id: 1, brand_url: 'https://brand.zendesk.com', name: 'brand' },
   )
 
   const emptyBrandInstance = new InstanceElement(
     'brand2',
     brandType,
-    { id: 2, brand_url: 'https://brand2.zendesk.com' },
+    { id: 2, brand_url: 'https://brand2.zendesk.com', name: 'brand2' },
   )
 
   const createInstanceElement = (type: ObjectType): InstanceElement =>
@@ -140,14 +149,28 @@ describe('article body filter', () => {
       ] }))
     })
     it('should only match elements that exists in the matched brand', () => {
+      const brandName = emptyBrandInstance.value.name
+      const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLES_FIELD, `${brandName}_124`)
+      missingArticleInstance.value.id = '124'
+      const missingSectionInstance = createMissingInstance(ZENDESK, SECTIONS_FIELD, `${brandName}_123`)
+      missingSectionInstance.value.id = '123'
+      const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORIES_FIELD, `${brandName}_123`)
+      missingCategoryInstance.value.id = '123'
+      const missingArticleAttachmentInstance = createMissingInstance(ZENDESK, ARTICLE_ATTACHMENTS_FIELD, `${brandName}_123`)
+      missingArticleAttachmentInstance.value.id = '123'
       const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithEmptyBrand')
       expect(fetchedTranslationWithoutReferences?.value.body)
         .toEqual(new TemplateExpression({ parts: [
           '<p><a href="',
           new ReferenceExpression(emptyBrandInstance.elemID.createNestedID('brand_url'), emptyBrandInstance.value.brand_url),
-          '/hc/en-us/articles/124/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
+          '/hc/en-us/articles/', new ReferenceExpression(missingArticleInstance.elemID, missingArticleInstance),
+          '/sep/sections/', new ReferenceExpression(missingSectionInstance.elemID, missingSectionInstance),
+          '/sep/categories/', new ReferenceExpression(missingCategoryInstance.elemID, missingCategoryInstance),
+          '/sep/article_attachments/', new ReferenceExpression(missingArticleAttachmentInstance.elemID, missingArticleAttachmentInstance),
+          '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
           new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-          '/hc/he/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
+          '/hc/he/articles/',
+          new ReferenceExpression(articleInstance.elemID, articleInstance),
           '-extra_string"',
         ] }))
     })

@@ -20,7 +20,7 @@ import {
   InstanceElement, getChangeData,
 } from '@salto-io/adapter-api'
 import { apiName } from '../transformers/transformer'
-import { isInstanceOfType } from '../filters/utils'
+import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/utils'
 import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
@@ -79,37 +79,13 @@ const getUsersFromInstances = async (
 )
 
 const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Promise<string[]> => {
-  const userWhereClause = (userName: string): string => `Username='${userName}'`
-
-  const createQueryChunks = (): string[][] => {
-    let chunkLen = 0
-    let prevChunkIdx = 0
-    let chunkIdx = 0
-    const queryChunks: string[][] = []
-
-    while (chunkIdx < users.length) {
-      while (chunkLen < SALESFORCE_MAX_QUERY_LEN && chunkIdx < users.length) {
-        chunkLen += 'OR '.length + userWhereClause(users[chunkIdx]).length
-        chunkIdx += 1
-      }
-      queryChunks.push(users.slice(prevChunkIdx, chunkIdx))
-
-      prevChunkIdx = chunkIdx
-    }
-
-    return queryChunks
-  }
-
   if (users.length === 0) {
     return []
   }
-  const userChunks = createQueryChunks()
 
-  return awu(userChunks).map(async usersChunk => {
-    const queryStr = `SELECT Username FROM User WHERE ${usersChunk.map(userWhereClause).join('OR ')}`
-    const queryResult = await client.queryAll(queryStr)
-    return awu(queryResult).flat().map(sfRecord => sfRecord.Username)
-  }).flat().toArray()
+  const queries = await buildSelectQueries('User', ['Username'], users.map(userName => ({ Username: userName })), SALESFORCE_MAX_QUERY_LEN)
+
+  return awu(await queryClient(client, queries)).map(sfRecord => sfRecord.Username).toArray()
 }
 
 const getUnknownUsers = async (

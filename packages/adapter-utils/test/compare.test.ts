@@ -353,6 +353,41 @@ describe('detailedCompare', () => {
           },
         ])
       })
+
+      it('should work with empty objects in the list', () => {
+        beforeInst.value.list = [
+          {
+            val: [],
+          },
+          {},
+          {},
+        ]
+
+        afterInst.value.list = [
+          {
+            val: [],
+          },
+        ]
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('1'),
+            data: { before: {} },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: {} },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+            },
+          },
+        ])
+      })
     })
   })
 

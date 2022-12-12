@@ -199,10 +199,17 @@ export const getArrayIndexMapping = (before: Value[], after: Value[]): IndexMapp
     if (matchedAfterIndex !== undefined && !matchedAfterIndexes.has(matchedAfterIndex)) {
       maxAfterIndexMatched = Math.max(maxAfterIndexMatched, matchedAfterIndex, minAfterIndex)
       matchedAfterIndexes.add(matchedAfterIndex)
+      return {
+        beforeIndex,
+        afterIndex: matchedAfterIndex,
+        // The min after index is the max  after index we matched to so far
+        minAfterIndex: maxAfterIndexMatched,
+      }
     }
+
     return {
       beforeIndex,
-      afterIndex: matchedAfterIndex,
+      afterIndex: undefined,
       // The min after index is the max  after index we matched to so far
       minAfterIndex: maxAfterIndexMatched,
     }

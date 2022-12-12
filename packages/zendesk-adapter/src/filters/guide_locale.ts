@@ -45,7 +45,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
     const guideLanguageSettings = instances.filter(i => i.elemID.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
     const instancesWithLocale = instances.filter(i => TYPES_WITH_LOCALE.includes(i.elemID.typeName))
 
-    // Brand to <locale string to locale object>
+    // Brand to <locale string to locale instance>
     const brandToLocale: Record<number, Record<string, InstanceElement>> = {}
     guideLanguageSettings.forEach(settings => {
       brandToLocale[settings.value.brand] = brandToLocale[settings.value.brand] ?? {}

@@ -53,13 +53,14 @@ const filterCreator: FilterCreator = ({ config }) => ({
     })
 
     instancesWithLocale.forEach(instance => {
-      const locale = brandToLocale[instance.value.brand][instance.value.locale]
+      const brandLocales = brandToLocale[instance.value.brand] ?? {}
+      const locale = brandLocales[instance.value.locale]
       if (locale !== undefined) {
         instance.value.locale = new ReferenceExpression(locale.elemID, locale)
       }
 
       if (TYPES_WITH_SOURCE_LOCALE.includes(instance.elemID.typeName)) {
-        const sourceLocale = brandToLocale[instance.value.brand][instance.value.source_locale]
+        const sourceLocale = brandLocales[instance.value.source_locale]
         if (sourceLocale !== undefined) {
           instance.value.source_locale = new ReferenceExpression(sourceLocale.elemID, sourceLocale)
         }

@@ -48,6 +48,7 @@ describe('onFetch', () => {
   const guideConfig = { ...DEFAULT_CONFIG }
   guideConfig[FETCH_CONFIG].guide = { brands: ['.*'] }
   const filter = guideLocaleFilter(createFilterCreatorParams({ config: guideConfig })) as filterUtils.FilterWith<'onFetch'>
+
   it('should replace the locale field with a referenceExpression of language_setting of the same brand', async () => {
     await filter.onFetch([
       brand1, brand2, languageSetting1, languageSetting2,
@@ -64,5 +65,13 @@ describe('onFetch', () => {
 
     expect(categoryTranslation1.value.locale).toMatchObject(resultLanguageSetting1)
     expect(categoryTranslation2.value.locale).toMatchObject(resultLanguageSetting2)
+  })
+  // Probably is not possible, but testing is free
+  it('should not crash if there are no locales for a brand', async () => {
+    category1.value.locale = 'shouldNotChange'
+    category1.value.source_locale = 'shouldNotChange'
+    await filter.onFetch([brand1, category1])
+    expect(category1.value.locale).toBe('shouldNotChange')
+    expect(category1.value.source_locale).toBe('shouldNotChange')
   })
 })

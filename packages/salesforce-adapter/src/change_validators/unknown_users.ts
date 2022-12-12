@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { Dictionary } from 'lodash'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
@@ -30,10 +30,13 @@ const SALESFORCE_MAX_QUERY_LEN = 100000
 
 type UserGetterFunc = (instance: InstanceElement) => string | undefined
 
-type UserGetterDef = {
-  type: string
+type FieldGetterDef = {
   field: string
   getter: UserGetterFunc
+}
+
+type UserGetterDef = {
+  [type: string]: FieldGetterDef[]
 }
 
 type MissingUserInfo = {
@@ -49,27 +52,27 @@ const getCaseSettingsOwner = (instance: InstanceElement,): string | undefined =>
   return instance.value.defaultCaseOwner
 }
 
-const USER_GETTERS: UserGetterDef[] = [
-  {
-    type: 'CaseSettings',
-    field: 'defaultCaseUser',
-    getter: instance => instance.value.defaultCaseUser,
-  },
-  {
-    type: 'CaseSettings',
-    field: 'defaultCaseOwner',
-    getter: instance => getCaseSettingsOwner(instance),
-  },
-]
+const USER_GETTERS: UserGetterDef = {
+  CaseSettings: [
+    {
+      field: 'defaultCaseUser',
+      getter: instance => instance.value.defaultCaseUser,
+    },
+    {
+      field: 'defaultCaseOwner',
+      getter: instance => getCaseSettingsOwner(instance),
+    },
+  ],
+}
 
 const isValidUser = (user: string|undefined): user is string => !_.isUndefined(user)
 
-const getUsersFromInstance = (instance: InstanceElement, getterDefs: UserGetterDef[]): string[] => (
+const getUsersFromInstance = (instance: InstanceElement, getterDefs: FieldGetterDef[]): string[] => (
   getterDefs.map(getterDef => getterDef.getter(instance)).filter(isValidUser)
 )
 
 const getUsersFromInstances = async (
-  defMapping: Dictionary<UserGetterDef[]>,
+  defMapping: UserGetterDef,
   instances: InstanceElement[]): Promise<string[]> => (
   awu(instances).map(async instance => {
     const instanceType = await apiName(await instance.getType())
@@ -89,7 +92,7 @@ const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Pr
 }
 
 const getUnknownUsers = async (
-  defMapping: Dictionary<UserGetterDef[]>,
+  defMapping: UserGetterDef,
   instance: InstanceElement,
   existingUsers: string[],
 ): Promise<MissingUserInfo[]> => {
@@ -116,21 +119,18 @@ const unknownUserError = ({ instance, field, userName }: MissingUserInfo): Chang
  * between different environment, as users by definition can't exist in multiple environments.
  */
 const changeValidator = (client: SalesforceClient): ChangeValidator => async changes => {
-  const gettersMap = _.groupBy(USER_GETTERS, 'type')
-  const typesOfInterest = USER_GETTERS.map(userGetter => userGetter.type)
   const instancesOfInterest = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(isInstanceOfType(...typesOfInterest))
+    .filter(isInstanceOfType(...Object.keys(USER_GETTERS)))
     .toArray()
 
-  const userRefs = await getUsersFromInstances(gettersMap, instancesOfInterest)
+  const userRefs = await getUsersFromInstances(USER_GETTERS, instancesOfInterest)
   const existingUsers = await getSalesforceUsers(client, userRefs)
 
   return awu(instancesOfInterest)
-    .map(async elem => getUnknownUsers(gettersMap, elem, existingUsers))
-    .flat()
+    .flatMap(async elem => getUnknownUsers(USER_GETTERS, elem, existingUsers))
     .map(unknownUserError)
     .toArray()
 }

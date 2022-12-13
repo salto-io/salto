@@ -41,7 +41,7 @@ import {
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import { apiName } from '../transformers/transformer'
+import { apiName, isCustomObject } from '../transformers/transformer'
 import {
   SALESFORCE,
   METADATA_TYPE,
@@ -50,7 +50,7 @@ import {
   SUBTYPES_PATH,
   PERMISSION_SET_METADATA_TYPE,
 } from '../constants'
-import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
+import { buildElementsSourceForFetch, isInstanceOfType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -238,19 +238,41 @@ const shouldRunDeployFiltersAccordingToInstanceType = async (
     && (await instanceType.fields.fieldPermissions.getType()).elemID
       .isEqual(mapOfMapOfEnumFieldPermissions.elemID))
 
+const removeUnfethcedCustomObjects = (instance: InstanceElement, customObjects: string[]): void => {
+  const { fieldPermissions } = instance.value
+  if (fieldPermissions === undefined) {
+    log.warn('Instance of type %s does not have fieldPermissions value (as expected)', instance.elemID.typeName)
+    return
+  }
+  if (!_.isPlainObject(fieldPermissions)) {
+    log.warn('Instance of type %s does not have fieldPermissions filed as Map (as expected)', instance.elemID.typeName)
+    return
+  }
+  instance.value.fieldPermissions = _.pick(fieldPermissions, customObjects)
+}
 
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
-    if (config.enumFieldPermissions === false) {
-      return
-    }
     const relevantElements = await awu(elements)
       .filter(async element =>
         (isObjectType(element)
-          && metadataTypesWithFieldPermissions.includes(await apiName(element)))
-          || isInstanceOfType(...metadataTypesWithFieldPermissions)(element))
+                && metadataTypesWithFieldPermissions.includes(await apiName(element)))
+            || isInstanceOfType(...metadataTypesWithFieldPermissions)(element))
       .toArray()
     if (relevantElements.length === 0) {
+      return
+    }
+    const elementSource = await buildElementsSourceForFetch(elements, config).getAll()
+    const customObjects = await awu(elementSource)
+      .filter(isCustomObject)
+      .map(element => apiName(element))
+      .toArray()
+    relevantElements.forEach(element => {
+      if (isInstanceElement(element)) {
+        removeUnfethcedCustomObjects(element, customObjects)
+      }
+    })
+    if (config.enumFieldPermissions === false) {
       return
     }
     log.info('Running fieldPermissionsEnum onFetch')

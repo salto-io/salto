@@ -38,7 +38,7 @@ const filter: FilterCreator = ({ config, getIdMapFunc }) => {
   let erroneousPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
-      if (!(config.fetch.showUserDisplayNames ?? true)) {
+      if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
       const idMap = await getIdMapFunc()

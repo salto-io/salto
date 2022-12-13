@@ -49,7 +49,7 @@ export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCent
         idMap = Object.fromEntries((await usersCallPromise)
           .flat()
           .filter(user => user.key !== undefined)
-          .map(user => [[user.key, user.name], [user.name, user.key]].flat()))
+          .map(user => [user.key, user.name]))
       } else {
         idMap = Object.fromEntries((await usersCallPromise)
           .flat()

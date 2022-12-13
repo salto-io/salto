@@ -71,7 +71,7 @@ import duplicateIdsFilter from './filters/duplicate_ids'
 import unresolvedParentsFilter from './filters/unresolved_parents'
 import fieldNameFilter from './filters/fields/field_name_filter'
 import accountIdFilter from './filters/account_id/account_id_filter'
-import addDisplayNameFilter from './filters/account_id/add_display_name_filter'
+import userIdFilter from './filters/account_id/user_id_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
@@ -209,7 +209,7 @@ export const DEFAULT_FILTERS = [
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter
-  addDisplayNameFilter,
+  userIdFilter,
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,

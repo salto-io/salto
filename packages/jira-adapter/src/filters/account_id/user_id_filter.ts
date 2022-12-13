@@ -41,12 +41,22 @@ const convertKeyToId = (idMap: IdMap): WalkOnUsersCallback => (
   }
 }
 
+const convertIdToKey = (idMap: IdMap): WalkOnUsersCallback => (
+  { value, fieldName }
+): void => {
+  const reversedIdMap: IdMap = Object.fromEntries(Object.entries(idMap).map(([key, mapValue]) => [mapValue, key]))
+  if (Object.prototype.hasOwnProperty.call(reversedIdMap, value[fieldName].id)) {
+    value[fieldName].id = reversedIdMap[value[fieldName].id]
+  }
+}
+
 /*
  * A filter to add display names beside account ids. The source is a JIRA query.
+ * While using Jira DC the filter convert user id to user key
  */
 const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
   onFetch: async elements => log.time(async () => {
-    if (!(config.fetch.showUserDisplayNames ?? true)) {
+    if (!(config.fetch.convertUsersIds ?? true)) {
       return
     }
     const idMap = await getIdMapFunc()
@@ -59,9 +69,23 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
           walkOnElement({ element, func: walkOnUsers(addDisplayName(idMap)) })
         }
       })
-  }, 'add_display_name_filter fetch'),
+  }, 'user_id_filter fetch'),
   preDeploy: async changes => {
-    if (!client.isDataCenter) {
+    if (!(config.fetch.convertUsersIds ?? true)
+        || !client.isDataCenter) {
+      return
+    }
+    const idMap = await getIdMapFunc()
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .forEach(element =>
+        walkOnElement({ element, func: walkOnUsers(convertIdToKey(idMap)) }))
+  },
+  onDeploy: async changes => log.time(async () => {
+    if (!(config.fetch.convertUsersIds ?? true)
+       || !client.isDataCenter) {
       return
     }
     const idMap = await getIdMapFunc()
@@ -71,16 +95,7 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       .map(getChangeData)
       .forEach(element =>
         walkOnElement({ element, func: walkOnUsers(convertKeyToId(idMap)) }))
-  },
-  onDeploy: async changes => log.time(async () => {
-    const idMap = await getIdMapFunc()
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertKeyToId(idMap)) }))
-  }, 'filterName'),
+  }, 'user_id_filter deploy'),
 })
 
 export default filter

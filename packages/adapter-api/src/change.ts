@@ -89,6 +89,10 @@ export const isFieldChange = <T extends Change<unknown>>(change: T):
 export type DetailedChange<T = ChangeDataType | Values | Value> =
   Change<T> & {
     id: ElemID
+    elemIDs?: {
+      before?: ElemID
+      after?: ElemID
+    }
     path?: ReadonlyArray<string>
   }
 

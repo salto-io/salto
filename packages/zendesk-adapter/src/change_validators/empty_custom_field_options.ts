@@ -18,8 +18,8 @@ import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../filters/custom_field_options/creator'
 import { createEmptyFieldErrorMessage } from './utils'
+import { FIELD_TYPE_NAMES } from '../constants'
 
-const RELEVANT_TYPES = ['ticket_field', 'user_field', 'organization_field']
 const RELEVANT_FIELD_TYPES = ['dropdown', 'tagger', 'multiselect']
 
 export const emptyCustomFieldOptionsValidator: ChangeValidator = async changes => (
@@ -27,7 +27,7 @@ export const emptyCustomFieldOptionsValidator: ChangeValidator = async changes =
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
-    .filter(instance => RELEVANT_TYPES.includes(instance.elemID.typeName))
+    .filter(instance => FIELD_TYPE_NAMES.includes(instance.elemID.typeName))
     .flatMap(instance => {
       if (
         RELEVANT_FIELD_TYPES.includes(instance.value.type)

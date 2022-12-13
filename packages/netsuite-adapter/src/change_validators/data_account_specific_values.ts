@@ -25,23 +25,24 @@ import {
   ModificationChange,
   toChange,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
+import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const hasUnresolvedAccountSpecificValue = async (instance: InstanceElement): Promise<boolean> => {
+const hasUnresolvedAccountSpecificValue = (instance: InstanceElement): boolean => {
   let foundAccountSpecificValue = false
-  await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
-    strict: false,
-    transformFunc: ({ value }) => {
-      if ((value.id === '[ACCOUNT_SPECIFIC_VALUE]' && value.internalId === undefined) || value.internalId === '[ACCOUNT_SPECIFIC_VALUE]') {
+  walkOnElement({
+    element: instance,
+    func: ({ value }) => {
+      if ((value[ID_FIELD] === ACCOUNT_SPECIFIC_VALUE && value[INTERNAL_ID] === undefined)
+      || value[INTERNAL_ID] === ACCOUNT_SPECIFIC_VALUE) {
         foundAccountSpecificValue = true
+        return WALK_NEXT_STEP.EXIT
       }
-      return value
+      return WALK_NEXT_STEP.RECURSE
     },
   })
   return foundAccountSpecificValue
@@ -54,7 +55,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(async change => isDataObjectType(
       await getChangeData<InstanceElement>(change).getType()
     ))
-    .map(async change => {
+    .map(change => {
       if (isAdditionChange(change)) {
         return change
       }
@@ -62,10 +63,10 @@ const changeValidator: ChangeValidator = async changes => (
         before: change.data.before.clone(),
         after: change.data.after.clone(),
       }) as ModificationChange<InstanceElement>
-      await removeIdenticalValues(modificationChange)
+      removeIdenticalValues(modificationChange)
       return modificationChange
     })
-    .map(change => getChangeData<InstanceElement>(change))
+    .map(getChangeData)
     .filter(hasUnresolvedAccountSpecificValue)
     .map((instance): ChangeError => ({
       elemID: instance.elemID,

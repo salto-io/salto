@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -45,6 +45,7 @@ import { updateReferenceIndexes } from './reference_indexes'
 import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } from './changed_by_index'
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
+import { resolve } from '../expressions'
 
 const log = logger(module)
 
@@ -140,7 +141,7 @@ export type Workspace = {
   // Remove this when no longer used, SALTO-1661
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
-  accountConfig: (name: string, defaultValue?: InstanceElement) =>
+  accountConfig: (name: string, defaultValue?: InstanceElement, shouldResolve?: boolean) =>
     Promise<InstanceElement | undefined>
   // serviceConfig is deprecated, kept for backwards compatibility.
   // use accountConfig.
@@ -1021,7 +1022,25 @@ export const loadWorkspace = async (
     hasErrors: async (env?: string) => (await errors(env)).hasErrors(),
     accountCredentials,
     servicesCredentials: accountCredentials,
-    accountConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
+    accountConfig: async (name, defaultValue, shouldResolve) => {
+      const unresolvedAccountConfig = await adaptersConfig.getAdapter(name, defaultValue)
+      if (!unresolvedAccountConfig) {
+        log.error('Failed to get accountConfig, received undefined')
+        return undefined
+      }
+      if (!shouldResolve) {
+        return unresolvedAccountConfig
+      }
+      const resolvedAccountConfig = (await resolve(
+        [unresolvedAccountConfig],
+        adaptersConfig.getElements(),
+      ))[0]
+      if (!isInstanceElement(resolvedAccountConfig)) {
+        log.error('Failed to resolve accountConfig, expected InstanceElement')
+        return undefined
+      }
+      return resolvedAccountConfig
+    },
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
     accountConfigPaths: adaptersConfig.getElementNaclFiles,
     serviceConfigPaths: adaptersConfig.getElementNaclFiles,

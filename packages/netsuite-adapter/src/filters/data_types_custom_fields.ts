@@ -20,9 +20,10 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
-import { CUSTOM_FIELD_PREFIX, FILE, SCRIPT_ID } from '../constants'
+import { FILE, SCRIPT_ID } from '../constants'
 // eslint-disable-next-line camelcase
 import { generic_customfield_fieldtypeValue } from '../autogen/types/enums'
+import { toCustomFieldName } from '../types'
 
 const log = logger(module)
 
@@ -120,7 +121,7 @@ export const getCustomField = ({
   nameToType: Record<string, ObjectType>
   customRecordTypes?: Record<string, ObjectType>
 }): Field => {
-  const fieldName = `${CUSTOM_FIELD_PREFIX}${customField.scriptid}`
+  const fieldName = toCustomFieldName(customField.scriptid)
   const {
     fieldType,
     selectTypeIdAnnotation,

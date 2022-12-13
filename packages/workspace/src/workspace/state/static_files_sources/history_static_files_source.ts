@@ -13,15 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile } from '@salto-io/adapter-api'
+import { getStaticFileUniqueName, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { LazyStaticFile } from '../../static_files/source'
 import { StateStaticFilesSource, StateStaticFilesStore } from '../../static_files/common'
 
 const log = logger(module)
-
-const getFileName = (filepath: string, hash: string): string =>
-  `${filepath}-${hash}`
 
 /**
  * Builds a static file source that preserve the history of the static files
@@ -41,7 +38,7 @@ export const buildHistoryStateStaticFilesSource = (
 
   return {
     persistStaticFile: async (file: StaticFile): Promise<void> => {
-      const path = getFileName(file.filepath, file.hash)
+      const path = getStaticFileUniqueName(file)
       const existingFiles = await listFiles()
       if (existingFiles.has(path)) {
         return
@@ -54,19 +51,19 @@ export const buildHistoryStateStaticFilesSource = (
       }
       await dirStore.set({
         buffer: content,
-        filename: getFileName(file.filepath, file.hash),
+        filename: getStaticFileUniqueName(file),
       })
-      existingFiles.add(getFileName(file.filepath, file.hash))
+      existingFiles.add(getStaticFileUniqueName(file))
     },
-    getStaticFile: async (path, encoding, hash) => {
+    getStaticFile: async (filepath, encoding, hash) => {
       if (hash === undefined) {
-        throw new Error(`path ${path} was passed without a hash to getStaticFile`)
+        throw new Error(`path ${filepath} was passed without a hash to getStaticFile`)
       }
       return new LazyStaticFile(
-        path,
+        filepath,
         hash,
-        dirStore.getFullPath(path),
-        async () => (await dirStore.get(getFileName(path, hash)))?.buffer,
+        dirStore.getFullPath(filepath),
+        async () => (await dirStore.get(getStaticFileUniqueName({ filepath, hash })))?.buffer,
         encoding
       )
     },

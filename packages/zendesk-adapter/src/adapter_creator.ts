@@ -19,11 +19,20 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
-  configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
-  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig, validateGuideTypesConfig,
+  configType,
+  ZendeskConfig,
+  CLIENT_CONFIG,
+  FETCH_CONFIG,
+  validateFetchConfig,
+  API_DEFINITIONS_CONFIG,
+  DEFAULT_CONFIG,
+  ZendeskFetchConfig,
+  validateGuideTypesConfig,
+  GUIDE_SUPPORTED_TYPES,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
+import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
@@ -76,6 +85,10 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
+  const isGuideDisabled = config?.value.fetch.guide === undefined
+  DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
+    ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
+    : { ...DEFAULT_CONFIG.apiDefinitions.supportedTypes, ...GUIDE_SUPPORTED_TYPES }
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions
@@ -166,4 +179,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  configCreator,
 }

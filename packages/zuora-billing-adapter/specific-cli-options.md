@@ -9,5 +9,5 @@ Supprted parameters are:
 
 ### Example
 ```
-salto service add zuora_billing --login-parameters clientId=SomeClientId clientSecret=SomeClientSecret subdomain=SomeSubdomain production=false
+salto account add zuora_billing --login-parameters clientId=SomeClientId clientSecret=SomeClientSecret subdomain=SomeSubdomain production=false
 ```

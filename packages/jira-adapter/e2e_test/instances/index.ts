@@ -16,26 +16,19 @@
 import { InstanceElement, Element, ElemID, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { CUSTOM_FIELDS_SUFFIX } from '../../src/filters/fields/field_name_filter'
-import { AUTOMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, NOTIFICATION_SCHEME_TYPE_NAME, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, WEBHOOK_TYPE, WORKFLOW_TYPE_NAME, STATUS_TYPE_NAME } from '../../src/constants'
+import { ISSUE_TYPE_NAME, JIRA, WEBHOOK_TYPE, STATUS_TYPE_NAME } from '../../src/constants'
 import { createReference, findType } from '../utils'
-import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createContextValues, createFieldValues } from './field'
-import { createFieldConfigurationItemValues, createFieldConfigurationValues } from './fieldConfiguration'
 import { createFieldConfigurationSchemeValues } from './fieldConfigurationScheme'
-import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createIssueTypeScreenSchemeValues } from './issueTypeScreenScheme'
 import { createScreenValues } from './screen'
-import { createWorkflowValues } from './workflow'
 import { createWorkflowSchemeValues } from './workflowScheme'
-import { createSecurityLevelValues, createSecuritySchemeValues } from './securityScheme'
-import { createDashboardValues, createGadget1Values, createGadget2Values } from './dashboard'
-import { createNotificationSchemeValues } from './notificationScheme'
-import { createAutomationValues } from './automation'
 import { createWebhookValues } from './webhook'
 import { createStatusValues } from './status'
-import { createFilterValues } from './filter'
+import { createInstances as createDataCenterInstances } from './datacenter'
+import { createInstances as createCloudInstances } from './cloud'
 
-export const createInstances = (fetchedElements: Element[]): InstanceElement[][] => {
+export const createInstances = (fetchedElements: Element[], isDataCenter: boolean): InstanceElement[][] => {
   const randomString = `createdByOssE2e${String(Date.now()).substring(6)}`
 
   const issueType = new InstanceElement(
@@ -58,43 +51,15 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   const fieldContext = new InstanceElement(
     fieldContextName,
     findType('CustomFieldContext', fetchedElements),
-    createContextValues(randomString, fieldContextName, fetchedElements),
+    createContextValues(randomString, fetchedElements),
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(field.elemID, field)] }
-  )
-
-  const workflow = new InstanceElement(
-    randomString,
-    findType(WORKFLOW_TYPE_NAME, fetchedElements),
-    createWorkflowValues(randomString, fetchedElements),
   )
 
   const screen = new InstanceElement(
     randomString,
     findType('Screen', fetchedElements),
     createScreenValues(randomString, fetchedElements),
-  )
-
-  const dashboard = new InstanceElement(
-    randomString,
-    findType('Dashboard', fetchedElements),
-    createDashboardValues(randomString),
-  )
-
-  const dashboardGadget1 = new InstanceElement(
-    naclCase(`${randomString}__${randomString}-1_2_0`),
-    findType('DashboardGadget', fetchedElements),
-    createGadget1Values(randomString),
-    undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(dashboard.elemID, dashboard)] }
-  )
-
-  const dashboardGadget2 = new InstanceElement(
-    naclCase(`${randomString}__${randomString}-2_2_1`),
-    findType('DashboardGadget', fetchedElements),
-    createGadget2Values(randomString),
-    undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(dashboard.elemID, dashboard)] }
   )
 
   const workflowScheme = new InstanceElement(
@@ -127,24 +92,6 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     createFieldConfigurationSchemeValues(randomString, fetchedElements),
   )
 
-  const kanbanBoard = new InstanceElement(
-    `kanban${randomString}`,
-    findType('Board', fetchedElements),
-    createKanbanBoardValues(randomString, fetchedElements),
-  )
-
-  const scrumBoard = new InstanceElement(
-    `scrum${randomString}`,
-    findType('Board', fetchedElements),
-    createScrumBoardValues(randomString, fetchedElements),
-  )
-
-  const filter = new InstanceElement(
-    randomString,
-    findType('Filter', fetchedElements),
-    createFilterValues(randomString, fetchedElements),
-  )
-
   const issueLinkType = new InstanceElement(
     randomString,
     findType('IssueLinkType', fetchedElements),
@@ -153,12 +100,6 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
       inward: randomString,
       outward: randomString,
     },
-  )
-
-  const issueTypeScheme = new InstanceElement(
-    randomString,
-    findType(ISSUE_TYPE_SCHEMA_NAME, fetchedElements),
-    createIssueTypeSchemeValues(randomString, fetchedElements),
   )
 
   const projectRole = new InstanceElement(
@@ -170,51 +111,6 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
     },
   )
 
-  const fieldConfiguration = new InstanceElement(
-    randomString,
-    findType('FieldConfiguration', fetchedElements),
-    createFieldConfigurationValues(randomString),
-  )
-
-  const fieldConfigurationItem = new InstanceElement(
-    `${randomString}_Assignee__user`,
-    findType('FieldConfigurationItem', fetchedElements),
-    createFieldConfigurationItemValues(fetchedElements),
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(fieldConfiguration.elemID, fieldConfiguration),
-      ],
-    }
-  )
-
-  const securityLevel = new InstanceElement(
-    naclCase(`${randomString}__${randomString}`),
-    findType(SECURITY_LEVEL_TYPE, fetchedElements),
-    createSecurityLevelValues(randomString, fetchedElements),
-  )
-
-  const securityScheme = new InstanceElement(
-    randomString,
-    findType(SECURITY_SCHEME_TYPE, fetchedElements),
-    createSecuritySchemeValues(randomString, securityLevel),
-  )
-
-  securityLevel.annotations[CORE_ANNOTATIONS.PARENT] = [
-    new ReferenceExpression(securityScheme.elemID, securityScheme),
-  ]
-
-  const notificationScheme = new InstanceElement(
-    randomString,
-    findType(NOTIFICATION_SCHEME_TYPE_NAME, fetchedElements),
-    createNotificationSchemeValues(randomString),
-  )
-
-  const automation = new InstanceElement(
-    randomString,
-    findType(AUTOMATION_TYPE, fetchedElements),
-    createAutomationValues(randomString, fetchedElements),
-  )
   const webhook = new InstanceElement(
     randomString,
     findType(WEBHOOK_TYPE, fetchedElements),
@@ -236,29 +132,21 @@ export const createInstances = (fetchedElements: Element[]): InstanceElement[][]
   )
 
   return [
+    ...(
+      isDataCenter
+        ? createDataCenterInstances(randomString, fetchedElements)
+        : createCloudInstances(randomString, fetchedElements)
+    ),
     [issueType],
     [field],
     [fieldContext],
     [screen],
-    [workflow],
-    [dashboard],
-    [dashboardGadget1],
-    [dashboardGadget2],
     [workflowScheme],
     [screenScheme],
     [issueTypeScreenScheme],
     [fieldConfigurationScheme],
-    [kanbanBoard],
-    [scrumBoard],
-    [filter],
     [issueLinkType],
-    [issueTypeScheme],
     [projectRole],
-    [fieldConfiguration],
-    [fieldConfigurationItem],
-    [securityScheme, securityLevel],
-    [notificationScheme],
-    [automation],
     [webhook],
     [group],
     [status],

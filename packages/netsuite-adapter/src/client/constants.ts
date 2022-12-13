@@ -24,3 +24,5 @@ export const fileCabinetTopLevelFolders = [
   `${FILE_CABINET_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
   `${FILE_CABINET_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
 ]
+
+export const XSI_TYPE = 'xsi:type'

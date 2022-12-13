@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { regex } from '@salto-io/lowerdash'
-import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD } from '../constants'
+import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
@@ -28,8 +28,6 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // We have special treatment for this type
   { metadataType: 'CustomField' },
   { metadataType: SETTINGS_METADATA_TYPE },
-  // Only has the active flow version but we cant get flow versions anyway
-  { metadataType: 'FlowDefinition' },
   // readMetadata and retrieve fail on this type when fetching by name
   { metadataType: 'CustomIndex' },
   // readMetadata fails on those and pass on the parents
@@ -79,6 +77,11 @@ export const buildMetadataQuery = (
       return true
     }
     if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {
+      return true
+    }
+    // We should really do this only when config.preferActiveFlowVersions is true
+    // if you have another use-case to pass the config here also handle this please
+    if (type === FLOW_DEFINITION_METADATA_TYPE && target.includes(FLOW_METADATA_TYPE)) {
       return true
     }
     return false

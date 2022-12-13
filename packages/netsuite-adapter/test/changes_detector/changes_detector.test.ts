@@ -35,8 +35,10 @@ describe('changes_detector', () => {
   const getChangesFoldersMock = jest.spyOn(fileCabinetDetector, 'getChangedFolders').mockResolvedValue([])
 
   const runSavedSearchQueryMock = jest.fn()
+  const runSuiteQLMock = jest.fn()
   const suiteAppClient = {
     runSavedSearchQuery: runSavedSearchQueryMock,
+    runSuiteQL: runSuiteQLMock,
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
@@ -128,6 +130,53 @@ describe('changes_detector', () => {
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
+  })
+
+  it('should match custom records', async () => {
+    runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'customrecord1' }, { scriptid: 'customrecord2' }])
+    runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'VAL_123' }])
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      {
+        isTypeMatch: () => false,
+        isFileMatch: () => false,
+        isCustomRecordTypeMatch: (name: string) => name === 'customrecord1',
+      } as unknown as NetsuiteQuery,
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      serviceIdToLastFetchDate,
+    )
+    expect(changedObjectsQuery.isTypeMatch('customrecordtype')).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', instanceId: 'customrecord1' })).toBeTruthy()
+    expect(changedObjectsQuery.isCustomRecordTypeMatch('customrecord1')).toBeTruthy()
+    expect(changedObjectsQuery.isCustomRecordMatch({ type: 'customrecord1', instanceId: 'val_123' })).toBeTruthy()
+
+    expect(changedObjectsQuery.isCustomRecordTypeMatch('customrecord2')).toBeFalsy()
+
+    expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord1'))
+  })
+  it('should match custom records of custom segments', async () => {
+    runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'customrecord_cseg1' }, { scriptid: 'customrecord2' }])
+    runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'VAL_123' }])
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      {
+        isTypeMatch: () => false,
+        isFileMatch: () => false,
+        isCustomRecordTypeMatch: (name: string) => name === 'customrecord_cseg1',
+      } as unknown as NetsuiteQuery,
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      serviceIdToLastFetchDate,
+    )
+    expect(changedObjectsQuery.isTypeMatch('customsegment')).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'customsegment', instanceId: 'cseg1' })).toBeTruthy()
+    expect(changedObjectsQuery.isCustomRecordTypeMatch('customrecord_cseg1')).toBeTruthy()
+    expect(changedObjectsQuery.isCustomRecordMatch({ type: 'customrecord_cseg1', instanceId: 'val_123' })).toBeTruthy()
+
+    expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
+    expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord_cseg1'))
   })
 
   it('should return all the results of system note query failed', async () => {

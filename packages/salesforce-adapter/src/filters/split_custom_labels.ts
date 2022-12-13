@@ -26,7 +26,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import Joi from 'joi'
 import { collections } from '@salto-io/lowerdash'
-import { pathNaclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, pathNaclCase } from '@salto-io/adapter-utils'
 import { LocalFilterCreator, FilterWith } from '../filter'
 import { apiName, createInstanceElement, metadataAnnotationTypes } from '../transformers/transformer'
 import { getDataFromChanges, isInstanceOfType } from './utils'
@@ -51,6 +51,7 @@ export const CUSTOM_LABEL_INSTANCES_FILE_PATH = [
 
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 
 type CustomLabel = {
@@ -69,15 +70,13 @@ const CUSTOM_LABEL_SCHEMA = Joi.object({
   [INSTANCE_FULL_NAME_FIELD]: Joi.string().required(),
 }).unknown(true)
 
-const CUSTOM_LABELS_SCHEMA = Joi.object({
-  labels: Joi.array().items(CUSTOM_LABEL_SCHEMA).required(),
-}).unknown(true)
-
 
 const isCustomLabelsType = isInstanceOfType(CUSTOM_LABELS_METADATA_TYPE)
 
+const isCustomLabel = createSchemeGuard(CUSTOM_LABEL_SCHEMA)
+
 const isCustomLabelsInstance = async (e: InstanceElement): Promise<boolean> => (
-  await isCustomLabelsType(e) && _.isUndefined(CUSTOM_LABELS_SCHEMA.validate(e.value).error)
+  await isCustomLabelsType(e) && makeArray(e.value.labels).every(isCustomLabel)
 )
 
 const isCustomLabelType = isInstanceOfType(CUSTOM_LABEL_METADATA_TYPE)
@@ -168,7 +167,7 @@ const filterCreator: LocalFilterCreator = () : FilterWith<'onFetch'> & FilterWit
         return
       }
       const customLabelsInstance = customLabelsInstances[0]
-      const customLabelInstances = customLabelsInstance.value.labels
+      const customLabelInstances = makeArray(customLabelsInstance.value.labels)
         .map(label => new InstanceElement(
           label[INSTANCE_FULL_NAME_FIELD],
           customLabelType,

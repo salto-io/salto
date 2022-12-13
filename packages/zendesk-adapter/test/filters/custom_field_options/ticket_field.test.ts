@@ -15,9 +15,11 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, isObjectType, isInstanceElement,
-  ReferenceExpression, CORE_ANNOTATIONS, toChange,
+  ReferenceExpression, CORE_ANNOTATIONS, toChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { elementSource } from '@salto-io/workspace'
 import { ZENDESK } from '../../../src/constants'
 import filterCreator from '../../../src/filters/custom_field_options/ticket_field'
 import {
@@ -25,6 +27,7 @@ import {
   DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME,
 } from '../../../src/filters/custom_field_options/creator'
 import { createFilterCreatorParams } from '../../utils'
+import { TICKET_TICKET_FIELD } from '../../../src/filters/handle_template_expressions'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -60,21 +63,25 @@ describe('ticket field filter', () => {
   const child1 = new InstanceElement(
     'child1',
     childObjType,
-    { id: 22, name: 'child1', value: 'v1', default: false },
+    { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] },
   )
   const child2 = new InstanceElement(
     'child2',
     childObjType,
-    { id: 33, name: 'child2', value: 'v2', default: true },
+    { id: 33, name: 'child2', value: 'v2', default: true, raw_name: createTemplateExpression({ parts: ['aaa ', new ReferenceExpression(parent.elemID, parent)] }) },
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] },
   )
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    filter = filterCreator(createFilterCreatorParams({
+      elementsSource: elementSource.createInMemoryElementSource([
+        parent.clone(),
+      ]),
+    })) as FilterType
   })
 
   describe('onFetch', () => {
@@ -154,8 +161,8 @@ describe('ticket field filter', () => {
         id: 11,
         name: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { id: 22, name: 'child1', value: 'v1' },
-          { id: 33, name: 'child2', value: 'v2' },
+          { id: 22, name: 'child1', value: 'v1', raw_name: 'aaa' },
+          { id: 33, name: 'child2', value: 'v2', raw_name: createTemplateExpression({ parts: [`aaa ${TICKET_TICKET_FIELD}_`, new ReferenceExpression(parent.elemID, parent)] }) },
         ],
         [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]: 'v2',
       },
@@ -166,10 +173,10 @@ describe('ticket field filter', () => {
       await filter?.preDeploy([change])
     })
 
-    it('should add default to the options', async () => {
+    it('should add default to the options and resolve template expressions', async () => {
       expect(clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1', default: false },
-        { id: 33, name: 'child2', value: 'v2', default: true },
+        { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
+        { id: 33, name: 'child2', value: 'v2', default: true, raw_name: 'aaa ticket.ticket_field_11' },
       ])
     })
     it('should add default as false to all the options if there is no default', async () => {
@@ -177,8 +184,8 @@ describe('ticket field filter', () => {
       delete clonedParentWithNoDefault.value[DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]
       await filter?.preDeploy([toChange({ after: clonedParentWithNoDefault })])
       expect(clonedParentWithNoDefault.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1', default: false },
-        { id: 33, name: 'child2', value: 'v2', default: false },
+        { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
+        { id: 33, name: 'child2', value: 'v2', default: false, raw_name: 'aaa ticket.ticket_field_11' },
       ])
     })
   })
@@ -190,8 +197,8 @@ describe('ticket field filter', () => {
         id: 11,
         name: 'parent',
         [CUSTOM_FIELD_OPTIONS_FIELD_NAME]: [
-          { id: 22, name: 'child1', value: 'v1', default: false },
-          { id: 33, name: 'child2', value: 'v2', default: true },
+          { id: 22, name: 'child1', value: 'v1', default: false, raw_name: 'aaa' },
+          { id: 33, name: 'child2', value: 'v2', default: true, raw_name: 'aaa ticket.ticket_field_11' },
         ],
         [DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME]: 'v2',
       },
@@ -202,10 +209,14 @@ describe('ticket field filter', () => {
       await filter?.onDeploy([change])
     })
 
-    it('should remove default from all the options', async () => {
-      expect(clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME]).toEqual([
-        { id: 22, name: 'child1', value: 'v1' },
-        { id: 33, name: 'child2', value: 'v2' },
+    it('should replace objects with value field, so that restore will always convert the value back to a reference', async () => {
+      expect(clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME].map(isReferenceExpression))
+        .toEqual([true, true])
+      expect(clonedResolvedParent.value[CUSTOM_FIELD_OPTIONS_FIELD_NAME].map(
+        (ref: ReferenceExpression) => ref.elemID.getFullName()
+      )).toEqual([
+        'zendesk.ticket_field__custom_field_options.instance.child1',
+        'zendesk.ticket_field__custom_field_options.instance.child2',
       ])
     })
     it('should do nothing if there is no options field', async () => {

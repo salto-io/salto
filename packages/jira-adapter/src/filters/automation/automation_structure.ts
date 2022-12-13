@@ -63,7 +63,7 @@ const LINK_TYPE_SCHEME = Joi.object({
 }).unknown(true).required()
 
 const RAW_VALUE_SCHEME = Joi.object({
-  rawValue: Joi.string().required(),
+  rawValue: Joi.string().required().allow(''),
 }).unknown(true).required()
 
 const COMPARE_FIELD_VALUE_SCHEME = Joi.object({
@@ -341,11 +341,10 @@ const filter: FilterCreator = () => {
           change,
           originalAutomationChanges,
           getLookUpName,
-          (source, targetElement, lookUpNameFunc, allowEmpty = true) => restoreValues(
+          (source, targetElement, lookUpNameFunc) => restoreValues(
             source,
             targetElement,
             lookUpNameFunc,
-            allowEmpty,
           )
         ))
         .toArray()

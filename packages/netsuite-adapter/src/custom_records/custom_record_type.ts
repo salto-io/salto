@@ -16,15 +16,16 @@
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, TypeRefMap } from '@salto-io/adapter-api'
-import { CUSTOM_FIELD_PREFIX, CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INDEX, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID, SOURCE } from '../constants'
+import { CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INDEX, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID, SOAP, SOURCE } from '../constants'
 import { customrecordtypeType } from '../autogen/types/standard_types/customrecordtype'
+import { isCustomFieldName } from '../types'
 
 const { mapValuesAsync } = promises.object
 
 export const CUSTOM_FIELDS = 'customrecordcustomfields'
 export const CUSTOM_FIELDS_LIST = 'customrecordcustomfield'
 
-const toAnnotationRefTypes = (type: ObjectType): Promise<TypeRefMap> =>
+export const toAnnotationRefTypes = (type: ObjectType): Promise<TypeRefMap> =>
   mapValuesAsync(type.fields, async field => {
     const fieldType = await field.getType()
     if (field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]) {
@@ -61,7 +62,7 @@ export const createCustomRecordTypes = async (
     },
     annotations: {
       ...instance.value,
-      [SOURCE]: 'soap',
+      [SOURCE]: SOAP,
       [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
     },
     path: [NETSUITE, CUSTOM_RECORDS_PATH, instance.value[SCRIPT_ID]],
@@ -77,7 +78,7 @@ export const toCustomRecordTypeInstance = (
     ..._.omit(element.annotations, [SOURCE, METADATA_TYPE]),
     [CUSTOM_FIELDS]: {
       [CUSTOM_FIELDS_LIST]: _(Object.values(element.fields))
-        .filter(field => field.name.startsWith(CUSTOM_FIELD_PREFIX))
+        .filter(field => isCustomFieldName(field.name))
         .map(field => field.annotations)
         .sortBy(INDEX)
         .map(item => _.omit(item, INDEX))

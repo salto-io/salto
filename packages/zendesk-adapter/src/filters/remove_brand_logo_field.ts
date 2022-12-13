@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { InstanceElement, Change, getChangeData } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { BRAND_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, CATEGORIES_FIELD } from '../constants'
 import { LOGO_FIELD } from './brand_logo'
 
 /**
@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       brandChanges,
       async change => {
-        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD])
+        await deployChange(change, client, config.apiDefinitions, [LOGO_FIELD, CATEGORIES_FIELD])
       }
     )
     return { deployResult, leftoverChanges }

@@ -33,7 +33,7 @@ describe('unresolved_references', () => {
     const errors = await unresolvedReferencesValidator([toChange({ after: instance })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
-    expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}`)
+    expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
   })
 
   it('should find unresolved references in instance annotation', async () => {
@@ -52,7 +52,7 @@ describe('unresolved_references', () => {
     const errors = await unresolvedReferencesValidator([toChange({ after: instance })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
-    expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}`)
+    expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
   })
 
   it('should find unresolved references in type annotation', async () => {
@@ -69,7 +69,7 @@ describe('unresolved_references', () => {
     const errors = await unresolvedReferencesValidator([toChange({ after: type })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(type.elemID)
-    expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}`)
+    expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
   })
 
   it('should find unresolved references in type field annotation', async () => {
@@ -91,7 +91,7 @@ describe('unresolved_references', () => {
     const errors = await unresolvedReferencesValidator([toChange({ after: type })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(type.elemID)
-    expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}`)
+    expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
   })
 
   it('should find unresolved references in templates', async () => {
@@ -108,7 +108,7 @@ describe('unresolved_references', () => {
     const errors = await unresolvedReferencesValidator([toChange({ after: instance })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
-    expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}`)
+    expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
   })
 
   it('should not return errors if does not have unresolved references', async () => {

@@ -322,7 +322,7 @@ describe('filterInvalidChanges', () => {
     expect(depErr.severity === 'Error').toBeTruthy()
     expect(depErr.elemID.isEqual(newDependentInst.elemID))
       .toBeTruthy()
-    expect(depErr.message).toEqual(`Dropped changes to ${depErr.elemID.getFullName()} due to an error in ${objErr.elemID.getFullName()}`)
+    expect(depErr.message).toEqual('Element cannot be deployed due to an error in its dependency')
     expect(depErr.severity === 'Error').toBeTruthy()
     expect(planResult.size).toBe(1)
     const planItem = getFirstPlanItem(planResult)

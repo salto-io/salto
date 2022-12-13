@@ -16,12 +16,12 @@
 import {
   ChangeValidator,
   getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceElement,
+  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { createSchemeGuardForInstance, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { isTranslation, TranslationType } from '../filters/help_center_section_and_category'
+import { isTranslation, TranslationType } from '../filters/guide_section_and_category'
 import { lookupFunc } from '../filters/field_references'
 import { ARTICLE_TYPE_NAME } from '../constants'
 
@@ -53,7 +53,9 @@ const noTranslationForDefaultLocale = (instance: InstanceElement): boolean => {
   const sourceLocale = instance.value.source_locale
   const translation = instance.value.translations
     .filter(isTranslation)
-    .find(tran => tran.locale.value.value.id === sourceLocale)
+    .find(tran => (isReferenceExpression(tran.locale)
+      ? tran.locale.value.value.id === sourceLocale
+      : tran.locale === sourceLocale)) // locale is a string
   return (translation === undefined) // no translation for the source_locale
 }
 

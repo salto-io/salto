@@ -9,7 +9,7 @@ Supprted parameters are:
 
 ### Example
 ```
-salto service add salesforce --login-parameters username=user@company.com password=SomePasswd token=SomeApiToken sandbox=false
+salto account add salesforce --login-parameters username=user@company.com password=SomePasswd token=SomeApiToken sandbox=false
 ```
 
 ## Fetch Targets (Partial Fetch)

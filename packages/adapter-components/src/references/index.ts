@@ -27,4 +27,5 @@ export {
   ReferenceTargetDefinition,
   ExtendedReferenceTargetDefinition,
   LookupFunc,
+  basicLookUp,
 } from './reference_mapping'

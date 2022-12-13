@@ -110,7 +110,7 @@ describe('request_parameters', () => {
       ).toThrow()
     })
 
-    it('should compute dependsOn urls', () => {
+    it('should compute dependsOn urls without duplicates', () => {
       const Pet = new ObjectType({ elemID: new ElemID('bla', 'Pet') })
       const Owner = new ObjectType({ elemID: new ElemID('bla', 'Owner') })
       expect(computeGetArgs(
@@ -124,6 +124,8 @@ describe('request_parameters', () => {
           Pet: [
             new InstanceElement('dog', Pet, { id: 'dogID' }),
             new InstanceElement('cat', Pet, { id: 'catID' }),
+            new InstanceElement('cat', Pet, { id: 'catID' }),
+            new InstanceElement('dog', Pet, { id: 'dogID' }),
           ],
           Owner: [
             new InstanceElement('o1', Owner, { id: 'ghi' }),
@@ -144,7 +146,111 @@ describe('request_parameters', () => {
         },
       ])
     })
-
+    it('should create all combinations if url contains more than one id', () => {
+      const Pet = new ObjectType({ elemID: new ElemID('bla', 'Pet') })
+      const Owner = new ObjectType({ elemID: new ElemID('bla', 'Owner') })
+      const Food = new ObjectType({ elemID: new ElemID('bla', 'Food') })
+      expect(computeGetArgs(
+        {
+          url: '/a/b/{owner_id}/{pet_id}/{food_id}',
+          dependsOn: [
+            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
+            { pathParam: 'food_id', from: { type: 'Food', field: 'id' } },
+            { pathParam: 'owner_id', from: { type: 'Owner', field: 'id' } },
+          ],
+        },
+        {
+          Pet: [
+            new InstanceElement('dog', Pet, { id: 'dogID' }),
+            new InstanceElement('cat', Pet, { id: 'catID' }),
+            new InstanceElement('cat', Pet, { id: 'catID' }),
+            new InstanceElement('dog', Pet, { id: 'dogID' }),
+          ],
+          Owner: [
+            new InstanceElement('o1', Owner, { id: 'o1' }),
+            new InstanceElement('o2', Owner, { id: 'o2' }),
+            new InstanceElement('o3', Owner, { id: 'o3' }),
+          ],
+          Food: [
+            new InstanceElement('bamba', Food, { id: 'bamba' }),
+            new InstanceElement('bissli', Food, { id: 'bissli' }),
+          ],
+        },
+      )).toEqual([
+        {
+          url: '/a/b/o1/dogID/bamba',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o1/dogID/bissli',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o1/catID/bamba',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o1/catID/bissli',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o2/dogID/bamba',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o2/dogID/bissli',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o2/catID/bamba',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o2/catID/bissli',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o3/dogID/bamba',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o3/dogID/bissli',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o3/catID/bamba',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+        {
+          url: '/a/b/o3/catID/bissli',
+          paginationField: undefined,
+          queryParams: undefined,
+          recursiveQueryParams: undefined,
+        },
+      ])
+    })
     it('should fail if no context is provided', () => {
       expect(() => computeGetArgs(
         {
@@ -178,18 +284,6 @@ describe('request_parameters', () => {
         },
         {},
       )).toThrow(new Error('invalid endpoint definition /a/b/{pet_id'))
-    })
-    it('should fail if url contains too many arguments', () => {
-      expect(() => computeGetArgs(
-        {
-          url: '/a/b/{pet_id}/{another_id}',
-          dependsOn: [
-            { pathParam: 'pet_id', from: { type: 'Pet', field: 'id' } },
-            { pathParam: 'another_id', from: { type: 'Pet', field: 'id' } },
-          ],
-        },
-        {},
-      )).toThrow(new Error('too many variables in endpoint /a/b/{pet_id}/{another_id}'))
     })
     it('should fail if argument definition is not found in dependsOn', () => {
       expect(() => computeGetArgs(

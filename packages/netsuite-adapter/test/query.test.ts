@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { describe } from 'jest-circus'
-import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams, validateFieldsToOmitConfig } from '../src/query'
+import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams, validateFieldsToOmitConfig, getFixedTargetFetch } from '../src/query'
 
 describe('NetsuiteQuery', () => {
   describe('buildNetsuiteQuery', () => {
@@ -27,6 +27,10 @@ describe('NetsuiteQuery', () => {
           { name: 'account', ids: ['.*'] },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
+        customRecords: [
+          { name: 'custrecord1' },
+          { name: 'custrecord2', ids: ['record1', 'record2'] },
+        ],
       })
 
       describe('isTypeMatch', () => {
@@ -102,6 +106,9 @@ describe('NetsuiteQuery', () => {
             addressForm: ['aaa.*', 'bbb.*'],
           },
           filePaths: ['eee.*', 'fff.*'],
+          customRecords: {
+            customrecord1: ['.*'],
+          },
         }))
         it('should match the received types from (old format)', () => {
           expect(queryOldFormat.isTypeMatch('addressForm')).toBeTruthy()
@@ -112,6 +119,102 @@ describe('NetsuiteQuery', () => {
         it('should match file paths that match the received regexes (old format)', () => {
           expect(queryOldFormat.isFileMatch('eeeaaa')).toBeTruthy()
           expect(queryOldFormat.isFileMatch('ffffqqqq')).toBeTruthy()
+        })
+        it('should match the received custom record type', () => {
+          expect(queryOldFormat.isCustomRecordTypeMatch('customrecord1')).toBeTruthy()
+          expect(queryOldFormat.isCustomRecordTypeMatch('customrecord2')).toBeFalsy()
+        })
+      })
+      describe('getFixedTargetFetch', () => {
+        it('should keep query without custom records', () => {
+          expect(getFixedTargetFetch({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+            },
+            filePaths: ['eee.*', 'fff.*'],
+          })).toEqual({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+            },
+            filePaths: ['eee.*', 'fff.*'],
+          })
+        })
+        it('should add custom record types to "types"', () => {
+          expect(getFixedTargetFetch({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+              customrecordtype: ['customrecord2'],
+            },
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })).toEqual({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+              customrecordtype: ['customrecord2', 'customrecord1'],
+              customsegment: [],
+            },
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })
+        })
+        it('should generate "types" when query includes only custom records', () => {
+          expect(getFixedTargetFetch({
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })).toEqual({
+            types: {
+              customrecordtype: ['customrecord1'],
+              customsegment: [],
+            },
+            customRecords: {
+              customrecord1: ['.*'],
+            },
+          })
+        })
+        it('should include customsegment too', () => {
+          expect(getFixedTargetFetch({
+            customRecords: {
+              customrecord_cseg1: ['.*'],
+            },
+          })).toEqual({
+            types: {
+              customrecordtype: ['customrecord_cseg1'],
+              customsegment: ['cseg1'],
+            },
+            customRecords: {
+              customrecord_cseg1: ['.*'],
+            },
+          })
+        })
+      })
+      describe('isCustomRecordTypeMatch', () => {
+        it('should match the received types', () => {
+          expect(query.isCustomRecordTypeMatch('custrecord1')).toBeTruthy()
+          expect(query.isCustomRecordTypeMatch('custrecord2')).toBeTruthy()
+        })
+
+        it('should not match types the were not received', () => {
+          expect(query.isCustomRecordTypeMatch('custrecord3')).toBeFalsy()
+        })
+      })
+      describe('areAllCustomRecordsMatch', () => {
+        it('when there is .* should return true', () => {
+          expect(query.areAllCustomRecordsMatch('custrecord1')).toBeTruthy()
+          expect(query.areAllCustomRecordsMatch('custrecord2')).toBeFalsy()
+        })
+      })
+      describe('isCustomRecordMatch', () => {
+        it('should match objects that match the received regexes', () => {
+          expect(query.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord1' })).toBeTruthy()
+          expect(query.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord2' })).toBeTruthy()
+        })
+
+        it('should not match objects that do not match the received regexes', () => {
+          expect(query.isCustomRecordMatch({ instanceId: 'record3', type: 'custrecord2' })).toBeFalsy()
+          expect(query.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord3' })).toBeFalsy()
         })
       })
     })
@@ -137,6 +240,9 @@ describe('NetsuiteQuery', () => {
           { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
+        customRecords: [
+          { name: 'customrecord.*', ids: ['.*'] },
+        ],
       })).not.toThrow()
     })
 
@@ -148,6 +254,9 @@ describe('NetsuiteQuery', () => {
             { name: 'addressForm', ids: ['aa(a.*', 'bbb.*'] },
           ],
           fileCabinet: ['eee.*', 'f(ff.*'],
+          customRecords: [
+            { name: 'customrecord.*', ids: ['val_123.*', 'val_(456.*'] },
+          ],
         })
       } catch (e) {
         error = e
@@ -156,8 +265,10 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('aa(a.*')
       expect(error?.message).toContain('f(ff.*')
+      expect(error?.message).toContain('val_(456.*')
       expect(error?.message).not.toContain('bbb.*')
       expect(error?.message).not.toContain('eee.*')
+      expect(error?.message).not.toContain('val_123.*')
     })
 
     it('should throw an error when type has invalid "name" reg expression', () => {
@@ -194,6 +305,24 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. Expected type name to be a string, but found:')
     })
+    it('should throw an error when customRecords has undefined "name"', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: [
+            { name: 'aa' },
+            {},
+          ],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record name to be a string, but found:')
+    })
     it('should throw an error when fileCabinet is undefined', () => {
       let error: Error | undefined
       try {
@@ -222,6 +351,21 @@ describe('NetsuiteQuery', () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. "types" field is expected to be an array')
     })
+    it('should throw an error when customRecords is not array', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: {},
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. "customRecords" field is expected to be an array')
+    })
     it('should throw an error when types has invalid ids field', () => {
       let error: Error | undefined
       try {
@@ -238,6 +382,24 @@ describe('NetsuiteQuery', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Received invalid adapter config input. Expected type ids to be an array of strings, but found:')
+    })
+    it('should throw an error when customRecords has invalid ids field', () => {
+      let error: Error | undefined
+      try {
+        validateFetchParameters({
+          types: [],
+          fileCabinet: [],
+          customRecords: [{
+            name: 'aaa',
+            ids: ['string', 1],
+          }],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Received invalid adapter config input. Expected custom record ids to be an array of strings, but found:')
     })
     it('should throw an error with all invalid types', () => {
       let error: Error | undefined
@@ -263,6 +425,9 @@ describe('NetsuiteQuery', () => {
       expect(() => {
         validateFieldsToOmitConfig([{ type: 'a', fields: ['b'] }])
       }).not.toThrow()
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', subtype: 'c', fields: ['b'] }])
+      }).not.toThrow()
     })
     it('should throw an error when input is not an array', () => {
       expect(() => {
@@ -273,6 +438,11 @@ describe('NetsuiteQuery', () => {
       expect(() => {
         validateFieldsToOmitConfig([{ type: { name: 'a' }, fields: ['b'] }])
       }).toThrow('Expected "type" field to be a string')
+    })
+    it('should throw an error when "subtype" field is not a string', () => {
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'a', subtype: { name: 'c' }, fields: ['b'] }])
+      }).toThrow('Expected "subtype" field to be a string')
     })
     it('should throw an error when "fields" field is not an array', () => {
       expect(() => {
@@ -288,6 +458,9 @@ describe('NetsuiteQuery', () => {
       expect(() => {
         validateFieldsToOmitConfig([{ type: 'aa(a.*', fields: ['bb(b.*'] }])
       }).toThrow('The following regular expressions are invalid')
+      expect(() => {
+        validateFieldsToOmitConfig([{ type: 'aaa.*', subtype: 'cc(c.*', fields: ['bbb.*'] }])
+      }).toThrow('The following regular expressions are invalid')
     })
   })
 
@@ -299,6 +472,9 @@ describe('NetsuiteQuery', () => {
         { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['bbb.*'],
+      customRecords: [
+        { name: 'cust.*' },
+      ],
     })
     const secondQuery = buildNetsuiteQuery({
       types: [
@@ -307,6 +483,10 @@ describe('NetsuiteQuery', () => {
         { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['.*ddd'],
+      customRecords: [
+        { name: '.*record1' },
+        { name: '.*record2', ids: ['record1', 'record2'] },
+      ],
     })
     const bothQuery = andQuery(firstQuery, secondQuery)
 
@@ -342,6 +522,22 @@ describe('NetsuiteQuery', () => {
     it('should return whether both queries has some files match', () => {
       expect(bothQuery.areSomeFilesMatch()).toBeTruthy()
     })
+
+    it('should match only custom record types that match both queries', () => {
+      expect(bothQuery.isCustomRecordTypeMatch('custrecord1')).toBeTruthy()
+      expect(bothQuery.isCustomRecordTypeMatch('custrecord2')).toBeTruthy()
+      expect(bothQuery.isCustomRecordTypeMatch('custrecord3')).toBeFalsy()
+    })
+
+    it('should match all custom records if both queries match all objects', () => {
+      expect(bothQuery.areAllCustomRecordsMatch('custrecord1')).toBeTruthy()
+      expect(bothQuery.areAllCustomRecordsMatch('custrecord2')).toBeFalsy()
+    })
+
+    it('should match only custom records that match both queries', () => {
+      expect(bothQuery.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord2' })).toBeTruthy()
+      expect(bothQuery.isCustomRecordMatch({ instanceId: 'record3', type: 'custrecord2' })).toBeFalsy()
+    })
   })
 
   describe('notQuery', () => {
@@ -350,6 +546,9 @@ describe('NetsuiteQuery', () => {
         { name: 'addressForm', ids: ['aaa.*'] },
       ],
       fileCabinet: ['bbb.*'],
+      customRecords: [
+        { name: 'custrecord1', ids: ['record1'] },
+      ],
     })
     const inverseQuery = notQuery(query)
 
@@ -372,6 +571,22 @@ describe('NetsuiteQuery', () => {
       expect(inverseQuery.isObjectMatch({ instanceId: 'aaa', type: 'addressForm' })).toBeFalsy()
       expect(inverseQuery.isObjectMatch({ instanceId: 'aaa', type: 'advancedpdftemplate' })).toBeTruthy()
       expect(inverseQuery.isObjectMatch({ instanceId: 'bbb', type: 'addressForm' })).toBeTruthy()
+    })
+
+    it('should match all custom record types', () => {
+      expect(inverseQuery.isCustomRecordTypeMatch('custrecord1')).toBeTruthy()
+      expect(inverseQuery.isCustomRecordTypeMatch('custrecord2')).toBeTruthy()
+    })
+
+    it('should match all custom records if did not match any object before', () => {
+      expect(inverseQuery.areAllCustomRecordsMatch('custrecord2')).toBeTruthy()
+      expect(inverseQuery.areAllCustomRecordsMatch('custrecord1')).toBeFalsy()
+    })
+
+    it('should match only custom records that do not match the original query', () => {
+      expect(inverseQuery.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord1' })).toBeFalsy()
+      expect(inverseQuery.isCustomRecordMatch({ instanceId: 'record2', type: 'custrecord1' })).toBeTruthy()
+      expect(inverseQuery.isCustomRecordMatch({ instanceId: 'record1', type: 'custrecord2' })).toBeTruthy()
     })
   })
 })

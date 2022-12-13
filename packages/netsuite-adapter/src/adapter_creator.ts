@@ -14,29 +14,14 @@
 * limitations under the License.
 */
 import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult, AdapterOperationsContext, AdapterOperations } from '@salto-io/adapter-api'
-import { collections, regex } from '@salto-io/lowerdash'
+import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import { configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams } from './config'
-import {
-  NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, CLIENT_CONFIG,
-  FETCH_TARGET,
-  FETCH_ALL_TYPES_AT_ONCE,
-  SKIP_LIST,
-  SUITEAPP_CLIENT_CONFIG,
-  USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT,
-  FETCH,
-  INCLUDE,
-  EXCLUDE,
-  DEPLOY,
-  DEPLOY_REFERENCED_ELEMENTS,
-  INSTALLED_SUITEAPPS,
-  FIELDS_TO_OMIT,
-} from './constants'
-import { validateFetchParameters, convertToQueryParams, validateFieldsToOmitConfig } from './query'
+import { CLIENT_CONFIG, CONFIG, configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams, validateFetchConfig } from './config'
+import { NETSUITE } from './constants'
+import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
@@ -44,7 +29,6 @@ import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 
 const log = logger(module)
-const { makeArray } = collections.array
 
 const configID = new ElemID(NETSUITE)
 // Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
@@ -90,98 +74,98 @@ export const defaultCredentialsType = new ObjectType({
 })
 
 const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
-  if (!Array.isArray(installedSuiteApps)
-    || installedSuiteApps.some(suiteApp => typeof suiteApp !== 'string')) {
-    throw Error(`received an invalid ${INSTALLED_SUITEAPPS} value: ${installedSuiteApps}`)
-  }
-
+  validateArrayOfStrings(installedSuiteApps, [CONFIG.client, CLIENT_CONFIG.installedSuiteApps])
   const invalidValues = installedSuiteApps.filter(id => !SUITEAPP_ID_FORMAT_REGEX.test(id))
   if (invalidValues.length !== 0) {
-    throw Error(`${INSTALLED_SUITEAPPS} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
+    throw new Error(`${CLIENT_CONFIG.installedSuiteApps} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
   }
 }
 
-const getFilePathRegexSkipList = (config: Readonly<InstanceElement> |
-  undefined): string[] | undefined => config?.value?.[FILE_PATHS_REGEX_SKIP_LIST]
-    && makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
+const validateRegularExpressions = (regularExpressions: string[]): void => {
+  const invalidRegularExpressions = regularExpressions
+    .filter(strRegex => !regex.isValidRegex(strRegex))
+  if (!_.isEmpty(invalidRegularExpressions)) {
+    const errMessage = `received an invalid ${CONFIG.filePathRegexSkipList} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
+    throw new Error(errMessage)
+  }
+}
 
-const validateConfig = (config: Readonly<InstanceElement> | undefined):
-  void => {
-  const validateRegularExpressions = (regularExpressions: string[]): void => {
-    const invalidRegularExpressions = regularExpressions
-      .filter(strRegex => !regex.isValidRegex(strRegex))
-    if (!_.isEmpty(invalidRegularExpressions)) {
-      const errMessage = `received an invalid ${FILE_PATHS_REGEX_SKIP_LIST} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
-      throw Error(errMessage)
+function validateConfig(config: Record<string, unknown>): asserts config is NetsuiteConfig {
+  const {
+    fetch,
+    fetchTarget,
+    skipList, // support deprecated version
+    deploy,
+    client,
+    filePathRegexSkipList,
+    typesToSkip,
+  } = _.pick(config, Object.values(CONFIG))
+
+  if (filePathRegexSkipList !== undefined) {
+    validateArrayOfStrings(filePathRegexSkipList, CONFIG.filePathRegexSkipList)
+    validateRegularExpressions(filePathRegexSkipList)
+  }
+  if (typesToSkip !== undefined) {
+    validateArrayOfStrings(typesToSkip, CONFIG.typesToSkip)
+  }
+
+  if (client !== undefined) {
+    validatePlainObject(client, CONFIG.client)
+    const {
+      fetchAllTypesAtOnce,
+      installedSuiteApps,
+    } = _.pick(client, Object.values(CLIENT_CONFIG))
+
+    if (fetchAllTypesAtOnce && fetchTarget !== undefined) {
+      log.warn(`${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`)
+      client[CLIENT_CONFIG.fetchAllTypesAtOnce] = false
+    }
+    if (installedSuiteApps !== undefined) {
+      validateInstalledSuiteApps(installedSuiteApps)
     }
   }
-  const fetchParameters = config?.value?.[FETCH]
-  const fetchTargetParameters = config?.value?.[FETCH_TARGET]
-  const skipListParameters = config?.value?.[SKIP_LIST] // support deprecated version
-  const deployParams = config?.value?.[DEPLOY]
-  const filePathsRegexSkipList = getFilePathRegexSkipList(config)
-  const clientConfig = config?.value?.[CLIENT_CONFIG]
-  if (clientConfig?.[FETCH_ALL_TYPES_AT_ONCE] && fetchTargetParameters !== undefined) {
-    log.warn(`${FETCH_ALL_TYPES_AT_ONCE} is not supported with ${FETCH_TARGET}. Ignoring ${FETCH_ALL_TYPES_AT_ONCE}`)
-    clientConfig[FETCH_ALL_TYPES_AT_ONCE] = false
-  }
-  if (filePathsRegexSkipList !== undefined) {
-    validateRegularExpressions(filePathsRegexSkipList)
-  }
-  if (fetchTargetParameters !== undefined) {
-    validateFetchParameters(convertToQueryParams(fetchTargetParameters))
+
+  if (fetchTarget !== undefined) {
+    validatePlainObject(fetchTarget, CONFIG.fetchTarget)
+    validateNetsuiteQueryParameters(fetchTarget, CONFIG.fetchTarget)
+    validateFetchParameters(convertToQueryParams(fetchTarget))
   }
 
-  if (skipListParameters !== undefined) {
-    validateFetchParameters(convertToQueryParams(skipListParameters))
+  if (skipList !== undefined) {
+    validatePlainObject(skipList, CONFIG.skipList)
+    validateNetsuiteQueryParameters(skipList, CONFIG.skipList)
+    validateFetchParameters(convertToQueryParams(skipList))
   }
 
-  if (fetchParameters?.[INCLUDE] !== undefined) {
-    validateFetchParameters(fetchParameters[INCLUDE])
+  if (fetch !== undefined) {
+    validatePlainObject(fetch, CONFIG.fetch)
+    validateFetchConfig(fetch)
   }
 
-  if (fetchParameters?.[EXCLUDE] !== undefined) {
-    validateFetchParameters(fetchParameters[EXCLUDE])
-  }
-
-  if (fetchParameters?.[FIELDS_TO_OMIT] !== undefined) {
-    validateFieldsToOmitConfig(fetchParameters[FIELDS_TO_OMIT])
-  }
-
-  if (deployParams !== undefined) {
-    validateDeployParams(deployParams)
-  }
-
-  if (clientConfig?.[INSTALLED_SUITEAPPS] !== undefined) {
-    validateInstalledSuiteApps(clientConfig[INSTALLED_SUITEAPPS])
+  if (deploy !== undefined) {
+    validatePlainObject(deploy, CONFIG.deploy)
+    validateDeployParams(deploy)
   }
 }
 
-const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
-  NetsuiteConfig => {
+const netsuiteConfigFromConfig = (
+  configInstance: Readonly<InstanceElement> | undefined
+): NetsuiteConfig => {
   try {
-    validateConfig(config)
-
-    const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
-      [TYPES_TO_SKIP]: config?.value?.[TYPES_TO_SKIP] && makeArray(config?.value?.[TYPES_TO_SKIP]),
-      [DEPLOY]: config?.value?.[DEPLOY],
-      [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
-      [CONCURRENCY_LIMIT]: config?.value?.[CONCURRENCY_LIMIT],
-      [FILE_PATHS_REGEX_SKIP_LIST]: getFilePathRegexSkipList(config),
-      [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
-      [SUITEAPP_CLIENT_CONFIG]: config?.value?.[SUITEAPP_CLIENT_CONFIG],
-      [FETCH_TARGET]: config?.value?.[FETCH_TARGET],
-      [SKIP_LIST]: config?.value?.[SKIP_LIST], // support deprecated version
-      [USE_CHANGES_DETECTION]: config?.value?.[USE_CHANGES_DETECTION],
-      [FETCH]: config?.value?.[FETCH],
+    if (!configInstance) {
+      return {}
     }
-
-    Object.keys(config?.value ?? {})
-      .filter(k => !Object.keys(netsuiteConfig).includes(k))
-      .forEach(k => log.debug('Unknown config property was found: %s', k))
-    return netsuiteConfig
+    const { value: config } = configInstance
+    validateConfig(config)
+    return _.pickBy(config, (_value, key) => {
+      if (key in CONFIG) {
+        return true
+      }
+      log.debug('Unknown config property was found: %s', key)
+      return false
+    })
   } catch (e) {
-    e.message = `failed to load Netsuite config: ${e.message}`
+    e.message = `Failed to load Netsuite config: ${e.message}`
     log.error(e.message)
     throw e
   }
@@ -209,7 +193,7 @@ const netsuiteCredentialsFromCredentials = (
   const throwOnInvalidAccountId = (credentials: Credentials): void => {
     const isValidAccountIdFormat = /^[A-Za-z0-9_\\-]+$/.test(credentials.accountId)
     if (!isValidAccountIdFormat) {
-      throw Error(`received an invalid accountId value: (${credsInstance.value.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`)
+      throw new Error(`received an invalid accountId value: (${credsInstance.value.accountId}). The accountId must be composed only from alphanumeric, '_' and '-' characters`)
     }
   }
 
@@ -241,14 +225,14 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
   const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey
     ? new SuiteAppClient({
       credentials,
-      config: adapterConfig[SUITEAPP_CLIENT_CONFIG],
+      config: adapterConfig.suiteAppClient,
       globalLimiter,
     })
     : undefined
 
   const sdfClient = new SdfClient({
     credentials,
-    config: adapterConfig[CLIENT_CONFIG],
+    config: adapterConfig.client,
     globalLimiter,
   })
 

@@ -890,6 +890,10 @@ describe('isolated routing', () => {
     expect(routedChanges.envSources?.[primarySrcName]?.[0]).toEqual({
       action: 'add',
       data: { after: specificChange.data.after },
+      elemIDs: {
+        before: specificChange.id,
+        after: specificChange.id,
+      },
       id: specificChange.id,
       path: ['test', 'path'],
     })
@@ -903,6 +907,10 @@ describe('isolated routing', () => {
       action: 'add',
       data: { after: specificChange.data.before },
       id: specificChange.id,
+      elemIDs: {
+        before: specificChange.id,
+        after: specificChange.id,
+      },
       path: ['test', 'path'],
     })
   })

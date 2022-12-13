@@ -35,7 +35,7 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('projectFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy'>
   let instance: InstanceElement
   let client: JiraClient
   let type: ObjectType
@@ -252,7 +252,7 @@ describe('projectFilter', () => {
     let change: Change
 
     beforeEach(async () => {
-      deployChangeMock.mockRejectedValue({
+      deployChangeMock.mockRejectedValueOnce({
         response: {
           status: 500,
         },
@@ -353,7 +353,7 @@ describe('projectFilter', () => {
     let change: Change
 
     beforeEach(async () => {
-      deployChangeMock.mockRejectedValue({
+      deployChangeMock.mockRejectedValueOnce({
         response: {
           status: 500,
         },
@@ -455,6 +455,77 @@ describe('projectFilter', () => {
 
     it('should convert the id to string', async () => {
       expect(instance.value.id).toEqual('1')
+    })
+  })
+  describe('preDeploy', () => {
+    it('should do nothing', async () => {
+      instance.value.leadAccountId = '1'
+      await filter.preDeploy([toChange({ after: instance })])
+      expect(instance.value.leadAccountId).toEqual('1')
+    })
+  })
+  describe('on data center', () => {
+    beforeEach(async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      deployChangeMock.mockClear()
+
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+      })) as typeof filter
+    })
+    it('should set lead account id on fetch', async () => {
+      instance.value = {
+        lead: {
+          key: '1',
+        },
+      }
+      await filter.onFetch([instance])
+      expect(instance.value.leadAccountId).toEqual('1')
+    })
+    it('should set back lead on pre deploy', async () => {
+      instance.value.leadAccountId = '1'
+      await filter.preDeploy([toChange({ after: instance })])
+      expect(instance.value.lead).toEqual('1')
+      expect(instance.value.leadAccountId).toBeUndefined()
+    })
+    describe('when deploying addition change', () => {
+      let change: Change
+      beforeEach(async () => {
+        instance.value.workflowScheme = 1
+        instance.value.id = 2
+        change = toChange({ after: instance })
+        await filter.deploy([change])
+      })
+      it('should call deployChange and ignore scheme', () => {
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change,
+          client,
+          endpointDetails: getDefaultConfig({ isDataCenter: true })
+            .apiDefinitions.types.Project.deployRequests,
+          fieldsToIgnore: ['components', 'workflowScheme', 'issueTypeScreenScheme',
+            'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
+        })
+      })
+      it('should call the endpoint to set the scheme', () => {
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/salto/1.0/workflowscheme/project',
+          {
+            workflowSchemeId: 1,
+            projectId: 2,
+          },
+          undefined,
+        )
+      })
+    })
+    it('should switch to leadAccountId on onDeploy', async () => {
+      instance.value.lead = '18'
+      await filter.onDeploy([toChange({ after: instance })])
+      expect(instance.value.leadAccountId).toEqual('18')
+      expect(instance.value.lead).toBeUndefined()
     })
   })
 })

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, collections, promises, values } from '@salto-io/lowerdash'
@@ -24,9 +24,10 @@ import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableEr
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
+import { INTERNAL_ID } from './constants'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { NetsuiteQuery } from './query'
-import { isFileCabinetType, isFileInstance } from './types'
+import { DeployResult, isFileCabinetType, isFileInstance } from './types'
 
 const { awu } = collections.asynciterable
 
@@ -283,42 +284,62 @@ SuiteAppFileCabinetOperations => {
     return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
   }
 
+  const isMissingFolderParent = (folder: FolderResult, idToFolder: Record<string, FolderResult>): boolean => {
+    if (folder.parent !== undefined && idToFolder[folder.parent] === undefined) {
+      log.warn('folder parent does not exist: %o', folder)
+      return true
+    }
+    return false
+  }
+
+  const createIdToFolderMap = (folders: FolderResult[]): Record<string, FolderResult> => {
+    const idToFolder = _.keyBy(folders, folder => folder.id)
+    // omit folders with unknown .parent attribute
+    return _.omitBy(idToFolder, folder => isMissingFolderParent(folder, idToFolder))
+  }
+
   const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
       return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
     }
 
     const { foldersResults, filesResults } = await queryFileCabinet(query)
-    const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+    const idToFolder = createIdToFolderMap(foldersResults)
 
-    const foldersCustomizationInfo = foldersResults.map(folder => ({
-      path: getFullPath(folder, idToFolder),
-      typeName: 'folder',
-      values: {
-        description: folder.description ?? '',
-        bundleable: folder.bundleable ?? 'F',
-        isinactive: folder.isinactive,
-        isprivate: folder.isprivate,
-        internalId: folder.id,
-      },
-    })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
+    const foldersCustomizationInfo = foldersResults
+      .filter(folder => !isMissingFolderParent(folder, idToFolder))
+      .map(folder => ({
+        path: getFullPath(folder, idToFolder),
+        typeName: 'folder',
+        values: {
+          description: folder.description ?? '',
+          bundleable: folder.bundleable ?? 'F',
+          isinactive: folder.isinactive,
+          isprivate: folder.isprivate,
+          internalId: folder.id,
+        },
+      }))
+      .filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
 
-    const filesCustomizations = filesResults.map(file => ({
-      path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
-      typeName: 'file',
-      values: {
-        description: file.description ?? '',
-        bundleable: file.bundleable ?? 'F',
-        isinactive: file.isinactive,
-        availablewithoutlogin: file.isonline,
-        generateurltimestamp: file.addtimestamptourl,
-        hideinbundle: file.hideinbundle,
-        internalId: file.id,
-        ...file.islink === 'T' ? { link: file.url } : {},
-      },
-      id: file.id,
-      size: parseInt(file.filesize, 10),
-    })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
+    const filesCustomizations = filesResults
+      .filter(file => idToFolder[file.folder] !== undefined)
+      .map(file => ({
+        path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
+        typeName: 'file',
+        values: {
+          description: file.description ?? '',
+          bundleable: file.bundleable ?? 'F',
+          isinactive: file.isinactive,
+          availablewithoutlogin: file.isonline,
+          generateurltimestamp: file.addtimestamptourl,
+          hideinbundle: file.hideinbundle,
+          internalId: file.id,
+          ...file.islink === 'T' ? { link: file.url } : {},
+        },
+        id: file.id,
+        size: parseInt(file.filesize, 10),
+      }))
+      .filter(file => query.isFileMatch(`/${file.path.join('/')}`))
 
     const [
       filesCustomizationWithoutContent,
@@ -406,28 +427,36 @@ SuiteAppFileCabinetOperations => {
         throw new Error('missing fileCabinet results cache')
       }
       const { foldersResults, filesResults } = fileCabinetResults
-      const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+      const idToFolder = createIdToFolderMap(foldersResults)
       pathToIdResults = Object.fromEntries([
-        ...filesResults.map(file => [
-          `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
-          parseInt(file.id, 10),
-        ]),
-        ...foldersResults.map(folder => [
-          `/${getFullPath(folder, idToFolder).join('/')}`,
-          parseInt(folder.id, 10),
-        ]),
+        ...filesResults
+          .filter(file => idToFolder[file.folder] !== undefined)
+          .map(file => [
+            `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
+            parseInt(file.id, 10),
+          ]),
+        ...foldersResults
+          .filter(folder => !isMissingFolderParent(folder, idToFolder))
+          .map(folder => [
+            `/${getFullPath(folder, idToFolder).join('/')}`,
+            parseInt(folder.id, 10),
+          ]),
       ])
     }
     return pathToIdResults
   }
 
-  const convertToFileCabinetDetails = async (
-    change: Change<InstanceElement>,
+  const convertToFileCabinetDetails = async (params: {
+    change: Change<InstanceElement>
+  } & ({
+    type: 'delete' | 'update'
+  } | {
+    type: 'add'
     pathToId: Record<string, number>
-  ): Promise<FileCabinetInstanceDetails | Error> => {
-    const instance = getChangeData(change)
+  })): Promise<FileCabinetInstanceDetails | Error> => {
+    const instance = getChangeData(params.change)
     const dirname = path.dirname(instance.value.path)
-    if (dirname !== '/' && !(dirname in pathToId)) {
+    if (dirname !== '/' && params.type === 'add' && !(dirname in params.pathToId)) {
       return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
     }
 
@@ -435,7 +464,7 @@ SuiteAppFileCabinetOperations => {
       ? {
         type: 'file',
         path: instance.value.path,
-        folder: pathToId[dirname],
+        folder: params.type === 'add' ? params.pathToId[dirname] : undefined,
         bundleable: instance.value.bundleable ?? false,
         isInactive: instance.value.isinactive ?? false,
         isOnline: instance.value.availablewithoutlogin ?? false,
@@ -448,7 +477,7 @@ SuiteAppFileCabinetOperations => {
       : {
         type: 'folder',
         path: instance.value.path,
-        parent: dirname !== '/' ? pathToId[dirname] : undefined,
+        parent: dirname !== '/' && params.type === 'add' ? params.pathToId[dirname] : undefined,
         bundleable: instance.value.bundleable ?? false,
         isInactive: instance.value.isinactive ?? false,
         isPrivate: instance.value.isprivate ?? false,
@@ -458,18 +487,18 @@ SuiteAppFileCabinetOperations => {
 
   const convertToExistingFileCabinetDetails = async (
     change: Change<InstanceElement>,
-    pathToId: Record<string, number>
+    type: 'delete' | 'update'
   ): Promise<ExistingFileCabinetInstanceDetails | Error> => {
-    const details = await convertToFileCabinetDetails(change, pathToId)
+    const details = await convertToFileCabinetDetails({ change, type })
     if (details instanceof Error) {
       return details
     }
     const instance = getChangeData(change)
-    if (pathToId[instance.value.path] === undefined) {
+    if (instance.value[INTERNAL_ID] === undefined) {
       log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
       return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
     }
-    return { ...details, id: pathToId[instance.value.path] }
+    return { ...details, id: parseInt(instance.value[INTERNAL_ID], 10) }
   }
 
   const deployInstances = async (
@@ -498,7 +527,9 @@ SuiteAppFileCabinetOperations => {
 
     const instancesDetails = await awu(chunk).map(
       async change => ({
-        details: type === 'add' ? await convertToFileCabinetDetails(change, pathToId) : await convertToExistingFileCabinetDetails(change, pathToId),
+        details: type === 'add'
+          ? await convertToFileCabinetDetails({ change, type, pathToId })
+          : await convertToExistingFileCabinetDetails(change, type),
         change,
       })
     ).toArray()
@@ -554,6 +585,14 @@ SuiteAppFileCabinetOperations => {
       appliedChanges: deployChunkResults
         .flatMap(deployChunkResult => deployChunkResult.appliedChanges),
       errors: deployChunkResults.flatMap(deployChunkResult => deployChunkResult.errors),
+      ...type === 'add' ? {
+        elemIdToInternalId: _(changes)
+          .map(getChangeData)
+          .filter(change => pathToId[change.value.path] !== undefined)
+          .keyBy(change => change.elemID.getFullName())
+          .mapValues(change => pathToId[change.value.path].toString())
+          .value(),
+      } : {},
     }
   }
 
@@ -583,6 +622,9 @@ SuiteAppFileCabinetOperations => {
     return {
       appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
       errors: deployResults.flatMap(deployResult => deployResult.errors),
+      elemIdToInternalId: deployResults
+        .map(deployResult => deployResult.elemIdToInternalId)
+        .reduce((val1, val2) => ({ ...val1, ...val2 })),
     }
   }
 
@@ -591,7 +633,10 @@ SuiteAppFileCabinetOperations => {
     type: DeployType,
     elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<DeployResult> => {
-    const { pathToInternalIdsIndex } = await elementsSourceIndex.getIndexes()
+    const { pathToInternalIdsIndex = {} } = type === 'add'
+      ? await elementsSourceIndex.getIndexes()
+      : {}
+
     return type === 'update'
       ? deployChanges(changes, pathToInternalIdsIndex, 'update')
       : deployAdditionsOrDeletions(changes, pathToInternalIdsIndex, type)

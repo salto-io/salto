@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST, MAX_INSTANCES_PER_TYPE } from './types'
 import {
   METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE,
-  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE, CUSTOM_OBJECT,
+  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE, CUSTOM_OBJECT, UNLIMITED_INSTANCES_VALUE,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
@@ -35,7 +35,6 @@ const { makeArray } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
-const UNLIMITED_INSTANCES_VALUE = -1
 
 export const fetchMetadataType = async (
   client: SalesforceClient,

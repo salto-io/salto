@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import { createCustomFieldOptionsFilterCreator } from './creator'
-
-export const USER_FIELD_TYPE_NAME = 'user_field'
+import { USER_FIELD_TYPE_NAME } from '../../constants'
 
 /**
  * Deploys user field and user field options

@@ -33,4 +33,6 @@ export const createEmptyElementsSourceIndexes = (): ElementsSourceIndexes => ({
   customFieldsIndex: {},
   pathToInternalIdsIndex: {},
   elemIdToChangeByIndex: {},
+  mapKeyFieldsIndex: {},
+  elemIdToChangeAtIndex: {},
 })

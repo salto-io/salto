@@ -81,7 +81,13 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
 /**
  * Add trigger order element with all the triggers ordered
  */
-const filterCreator: FilterCreator = ({ config, client, paginator, fetchQuery }) => ({
+const filterCreator: FilterCreator = ({
+  config,
+  client,
+  paginator,
+  fetchQuery,
+  elementsSource,
+}) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const orderTypeName = createOrderTypeName(TYPE_NAME)
     const triggerObjType = elements
@@ -168,7 +174,7 @@ const filterCreator: FilterCreator = ({ config, client, paginator, fetchQuery })
     orderFieldName: 'order',
     deployFunc,
     activeFieldName: 'active',
-  })({ client, config, paginator, fetchQuery }).deploy,
+  })({ client, config, paginator, fetchQuery, elementsSource }).deploy,
 })
 
 export default filterCreator

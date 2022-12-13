@@ -57,11 +57,13 @@ const createInstance = (
 
 export const getAutomationLabels = async (
   client: JiraClient,
-  cloudId: string,
 ): Promise<LabelsResponse[]> => {
-  const response = await client.getSinglePage(
-    { url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels` }
-  )
+  const url = client.isDataCenter
+    ? '/rest/cb-automation/latest/rule-label'
+    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
+
+  const response = await client.getSinglePage({ url })
+
   if (!isLabelsGetResponse(response.data)) {
     throw new Error('Failed to get automation labels, received invalid response')
   }
@@ -84,9 +86,7 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
       return
     }
 
-    const cloudId = await getCloudId(client)
-
-    const automationLabels = await getAutomationLabels(client, cloudId)
+    const automationLabels = await getAutomationLabels(client)
 
     const automationLabelType = createAutomationLabelType()
     automationLabels.forEach(automationLabel => elements.push(

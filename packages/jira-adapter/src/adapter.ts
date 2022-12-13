@@ -42,6 +42,7 @@ import smartValueReferenceFilter from './filters/automation/smart_values/smart_v
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
+import issueTypeFilter from './filters/issue_type'
 import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
 import fieldConfigurationIrrelevantFields from './filters/field_configuration/field_configuration_irrelevant_fields'
 import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
@@ -80,10 +81,10 @@ import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
-import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
+import groupNameFilter from './filters/group_name'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import forbiddenPermissionSchemeFilter from './filters/permission_scheme/forbidden_permission_schemes'
@@ -103,7 +104,8 @@ import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permi
 import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
-import filtersDcDeployFilter from './filters/filters_dc_deploy'
+import filtersDcDeployFilter from './filters/data_center/filters_permissions'
+import deployDcIssueEventsFilter from './filters/data_center/issue_events'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
@@ -145,8 +147,10 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
+  issueTypeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
   sharePermissionFilter,
@@ -161,7 +165,6 @@ export const DEFAULT_FILTERS = [
   projectFilter,
   projectComponentFilter,
   screenFilter,
-  resolutionFilter,
   priorityFilter,
   statusDeploymentFilter,
   securitySchemeFilter,
@@ -206,6 +209,7 @@ export const DEFAULT_FILTERS = [
   addDisplayNameFilter,
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
+  deployDcIssueEventsFilter,
   // Must be last
   defaultInstancesDeployFilter,
 ]

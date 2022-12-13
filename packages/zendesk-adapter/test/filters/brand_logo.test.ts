@@ -74,7 +74,7 @@ describe('brand logo filter', () => {
       )
       mockGet = jest.spyOn(client, 'getResource')
       mockGet.mockImplementation(params => {
-        if (params.url === `/brands/${logoId}/brand1_logo.png`) {
+        if (params.url === `/system/brands/${logoId}/brand1_logo.png`) {
           return {
             status: 200,
             data: content,
@@ -131,7 +131,7 @@ describe('brand logo filter', () => {
     beforeEach(() => {
       mockGet = jest.spyOn(client, 'getResource')
       mockGet.mockImplementation(params => {
-        if (params.url === `/api/v2/brands/${logoId}/test.png`) {
+        if (params.url === `/system/brands/${logoId}/test.png`) {
           return {
             status: 200,
             data: content,

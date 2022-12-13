@@ -15,7 +15,7 @@
 */
 import os from 'os'
 import _ from 'lodash'
-import { BuiltinTypes, Element, ElemID, getChangeData, InstanceElement, isInstanceElement, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isInstanceElement, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from './constants'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES, DeployResult } from './types'
 import { NetsuiteQuery } from './query'
@@ -33,7 +33,9 @@ export const getConfigTypes = (): ObjectType[] => ([new ObjectType({
 export const toConfigElements = (
   configRecords: ConfigRecord[],
   fetchQuery: NetsuiteQuery
-): Element[] => {
+): (
+  ObjectType | InstanceElement
+)[] => {
   const elements = configRecords
     .flatMap(configRecord => {
       const typeName = SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES[configRecord.configType]

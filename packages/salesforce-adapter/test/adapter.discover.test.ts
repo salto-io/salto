@@ -21,6 +21,7 @@ import {
 import { MetadataInfo } from 'jsforce'
 import { values, collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
+import { FileProperties } from 'jsforce-types'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
@@ -32,13 +33,14 @@ import {
   MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput,
   mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveLocator,
 } from './connection'
-import { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import { fetchMetadataInstances } from '../src/fetch'
-import { MetadataQuery } from '../src/fetch_profile/metadata_query'
+import * as fetchModule from '../src/fetch'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
+  let fetchMetadataInstancesSpy: jest.SpyInstance
 
   const metadataExclude = [
     { metadataType: 'Test1' },
@@ -75,10 +77,12 @@ describe('SalesforceAdapter fetch', () => {
         },
       },
     }))
+    fetchMetadataInstancesSpy = jest.spyOn(fetchModule, 'fetchMetadataInstances')
   })
 
   afterEach(() => {
     jest.resetAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe('should fetch metadata types', () => {
@@ -381,6 +385,26 @@ describe('SalesforceAdapter fetch', () => {
           expect.any(String),
           'IgnoredNamespace__FlowInstance'
         )
+      })
+
+      it('should not fetch metadata types instances the will be fetch in filters', async () => {
+        const instances = [
+          { props: { fullName: 'MyType0' }, values: { fullName: 'MyType0' } },
+          { props: { fullName: 'MyType1' }, values: { fullName: 'MyType1' } },
+        ]
+        mockMetadataType(
+          { xmlName: 'Queue' },
+          { valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }] },
+          instances,
+        )
+        await adapter.fetch(mockFetchOpts)
+        expect(fetchMetadataInstancesSpy).not.toHaveBeenCalledWith(expect.objectContaining(
+          { metadataType: expect.objectContaining(
+            { elemID: expect.objectContaining(
+              { typeName: 'Queue' }
+            ) }
+          ) }
+        ))
       })
 
       it('should use existing elemID when fetching metadata instance', async () => {
@@ -1174,25 +1198,63 @@ public class LargeClass${index} {
       })
     })
     describe('with types with more than maxInstancesPerType instances', () => {
-      const { client: mockClient } = mockAdapter()
-      it('should not fetch the types and add them to the exclude list', async () => {
-        const filePropMock = mockFileProperties({ fullName: 'fullName', type: 'testType' })
-        const fetchResult = await fetchMetadataInstances({
-          client: mockClient,
-          metadataType: {} as unknown as ObjectType,
-          metadataQuery: {} as unknown as MetadataQuery,
-          fileProps: [filePropMock, filePropMock],
-          maxInstancesPerType: 1,
+      const metadataType = {
+        annotations: { apiName: 'test' },
+        elemID: {
+          name: 'test',
+          createNestedID: jest.fn(),
+          getFullName: jest.fn(),
+          isTopLevel: jest.fn(),
+        },
+      } as unknown as ObjectType
+      const metadataQuery = {
+        isTypeMatch: jest.fn(),
+        isInstanceMatch: jest.fn(),
+        isPartialFetch: jest.fn(),
+      }
+      const excludeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'excludeMe' })
+      const includeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'includeMe' })
+
+      const MOCK_METADATA_LENGTH = 5
+      const { client } = mockAdapter()
+
+      const fetchResult = (fileProps: FileProperties[], maxInstancesPerType: number)
+          : Promise<FetchElements<InstanceElement[]>> =>
+        fetchMetadataInstances({
+          client,
+          metadataType,
+          metadataQuery,
+          fileProps,
+          maxInstancesPerType,
         })
-        expect(fetchResult.elements.length).toBe(0)
-        expect(fetchResult.configChanges.length).toBe(1)
-        expect(fetchResult.configChanges[0]).toMatchObject({
+
+      beforeAll(() => {
+        client.readMetadata = jest.fn().mockResolvedValue({
+          result: new Array(MOCK_METADATA_LENGTH).fill(includeFilePropMock),
+        })
+        metadataType.elemID.isTopLevel = jest.fn().mockReturnValue(true)
+      })
+
+      it('should not fetch the types with many instances and add them to the exclude list', async () => {
+        const excludeFilePropMocks = new Array(3).fill(excludeFilePropMock)
+        const includeFilePropMocks = new Array(2).fill(includeFilePropMock)
+
+        const excludeFetchResult = await fetchResult(excludeFilePropMocks, 2)
+        const includeFetchResult = await fetchResult(includeFilePropMocks, 2)
+
+        expect(excludeFetchResult.elements.length).toBe(0)
+        expect(excludeFetchResult.configChanges.length).toBe(1)
+        expect(excludeFetchResult.configChanges[0]).toMatchObject({
           type: 'metadataExclude',
           value: {
-            metadataType: 'testType',
+            metadataType: 'excludeMe',
           },
-          reason: "'testType' has 2 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 1.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
+          reason: "'excludeMe' has 3 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 2.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
         })
+
+        // Make sure the api call was sent and that nothing was added to exclude
+        expect(includeFetchResult.elements.length).toBe(MOCK_METADATA_LENGTH)
+        expect(includeFetchResult.configChanges.length).toBe(0)
       })
     })
   })

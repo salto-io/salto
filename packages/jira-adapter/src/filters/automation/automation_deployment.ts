@@ -63,7 +63,10 @@ const IMPORT_RESPONSE_SCHEME = Joi.array().items(
 
 const isAutomationsResponse = createSchemeGuard<AutomationResponse>(IMPORT_RESPONSE_SCHEME, 'Received an invalid automation import response')
 
-const generateRuleScopes = (instance: InstanceElement, cloudId: string): string[] => {
+const generateRuleScopesResources = (
+  instance: InstanceElement,
+  cloudId: string
+): string[] => {
   if ((instance.value.projects ?? []).length === 0) {
     return [`ari:cloud:jira::site/${cloudId}`]
   }
@@ -77,10 +80,33 @@ const generateRuleScopes = (instance: InstanceElement, cloudId: string): string[
   })
 }
 
+const generateRuleScopes = (
+  instance: InstanceElement,
+  cloudId: string | undefined
+): {
+  ruleScope?: {
+    resources: string[]
+  }
+} => (
+  cloudId !== undefined
+    ? {
+      ruleScope: {
+        resources: generateRuleScopesResources(instance, cloudId),
+      },
+    }
+    : {}
+)
+
+const getUrlPrefix = (cloudId: string | undefined): string => (
+  cloudId === undefined
+    ? '/rest/cb-automation/latest/project/GLOBAL'
+    : `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL`
+)
+
 const importAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
-  cloudId: string,
+  cloudId: string | undefined,
 ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> => {
   const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
 
@@ -89,14 +115,12 @@ const importAutomation = async (
   const data = {
     rules: [{
       ...resolvedInstance.value,
-      ruleScope: {
-        resources: ruleScopes,
-      },
+      ...ruleScopes,
     }],
   }
 
   return client.postPrivate({
-    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule/import`,
+    url: `${getUrlPrefix(cloudId)}/rule/import`,
     data,
   })
 }
@@ -133,22 +157,33 @@ const setInstanceId = async (
 const removeAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
-  cloudId: string,
+  cloudId: string | undefined,
 ): Promise<void> => {
   await client.deletePrivate({
-    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule/${instance.value.id}`,
+    url: `${getUrlPrefix(cloudId)}/rule/${instance.value.id}`,
   })
 }
+
+const getLabelsUrl = (
+  cloudId: string | undefined,
+  instance: InstanceElement,
+  labelID: string
+): string => (
+  cloudId === undefined
+    ? `${getUrlPrefix(cloudId)}/rule/${instance.value.id}/label/${labelID}`
+    : `${getUrlPrefix(cloudId)}/rules/${instance.value.id}/labels/${labelID}`
+)
 
 const addAutomationLabels = async (
   instance: InstanceElement,
   labelsID: string[],
   client: JiraClient,
-  cloudId: string,
+  cloudId: string | undefined,
 ): Promise<void> => {
   await Promise.all(labelsID.map(async labelID => client.put({
-    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules/${instance.value.id}/labels/${labelID}`,
+    url: getLabelsUrl(cloudId, instance, labelID),
     data: null,
+    headers: { 'Content-Type': 'application/json' },
   })))
 }
 
@@ -156,17 +191,17 @@ const removeAutomationLabels = async (
   instance: InstanceElement,
   labelsID: string[],
   client: JiraClient,
-  cloudId: string,
+  cloudId: string | undefined,
 ): Promise<void> => {
   await Promise.all(labelsID.map(async labelID => client.delete({
-    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rules/${instance.value.id}/labels/${labelID}`,
+    url: getLabelsUrl(cloudId, instance, labelID),
   })))
 }
 
 const updateAutomationLabels = async (
   change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   client: JiraClient,
-  cloudId: string,
+  cloudId: string | undefined,
 ): Promise<void> => {
   const { addedIds: addedLabels, removedIds: removedLabels } = getDiffIds(
     isRemovalOrModificationChange(change) ? change.data.before.value.labels ?? [] : [],
@@ -183,23 +218,23 @@ const updateAutomationLabels = async (
 const updateAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
-  cloudId: string,
+  cloudId: string | undefined,
 ): Promise<void> => {
   const resolvedInstance = await resolveValues(instance, getLookUpName, undefined, true)
 
   const ruleScopes = generateRuleScopes(resolvedInstance, cloudId)
 
-  const data = {
-    ruleConfigBean: {
-      ...resolvedInstance.value,
-      ruleScope: {
-        resources: ruleScopes,
+  const data = !client.isDataCenter
+    ? {
+      ruleConfigBean: {
+        ...resolvedInstance.value,
+        ...ruleScopes,
       },
-    },
-  }
+    }
+    : resolvedInstance.value
 
   await client.putPrivate({
-    url: `/gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule/${instance.value.id}`,
+    url: `${getUrlPrefix(cloudId)}/rule/${instance.value.id}`,
     data,
   })
 }
@@ -207,11 +242,11 @@ const updateAutomation = async (
 const createAutomation = async (
   instance: InstanceElement,
   client: JiraClient,
-  cloudId: string,
+  cloudId: string | undefined,
   config: JiraConfig,
 ): Promise<void> => {
   await importAutomation(instance, client, cloudId)
-  const automations = await getAutomations(client, config, cloudId)
+  const automations = await getAutomations(client, config)
   await setInstanceId(instance, automations)
   if (instance.value.state === 'ENABLED') {
     // Import automation ignore the state and always create the automation as disabled
@@ -246,7 +281,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        const cloudId = await getCloudId(client)
+        const cloudId = !client.isDataCenter ? await getCloudId(client) : undefined
         if (isAdditionChange(change)) {
           await createAutomation(getChangeData(change), client, cloudId, config)
           await updateAutomationLabels(change, client, cloudId)

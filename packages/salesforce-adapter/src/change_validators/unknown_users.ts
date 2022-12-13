@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
@@ -28,15 +27,15 @@ const { awu } = collections.asynciterable
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
 const SALESFORCE_MAX_QUERY_LEN = 100000
 
-type UserGetterFunc = (instance: InstanceElement) => string | undefined
+type GetUserField = (instance: InstanceElement) => string | undefined
 
-type FieldGetterDef = {
+type UserFieldGetter = {
   field: string
-  getter: UserGetterFunc
+  getter: GetUserField
 }
 
-type UserGetterDef = {
-  [type: string]: FieldGetterDef[]
+type TypesWithUserFields = {
+  [type: string]: UserFieldGetter[]
 }
 
 type MissingUserInfo = {
@@ -45,14 +44,14 @@ type MissingUserInfo = {
   userName: string
 }
 
-const getCaseSettingsOwner = (instance: InstanceElement,): string | undefined => {
+const getCaseSettingsOwner = (instance: InstanceElement): string | undefined => {
   if (instance.value.defaultCaseOwnerType !== 'User') {
     return undefined
   }
   return instance.value.defaultCaseOwner
 }
 
-const USER_GETTERS: UserGetterDef = {
+const USER_GETTERS: TypesWithUserFields = {
   CaseSettings: [
     {
       field: 'defaultCaseUser',
@@ -65,14 +64,14 @@ const USER_GETTERS: UserGetterDef = {
   ],
 }
 
-const isValidUser = (user: string|undefined): user is string => !_.isUndefined(user)
+const isValidUser = (user: string|undefined): user is string => !!user
 
-const getUsersFromInstance = (instance: InstanceElement, getterDefs: FieldGetterDef[]): string[] => (
+const getUsersFromInstance = (instance: InstanceElement, getterDefs: UserFieldGetter[]): string[] => (
   getterDefs.map(getterDef => getterDef.getter(instance)).filter(isValidUser)
 )
 
 const getUsersFromInstances = async (
-  defMapping: UserGetterDef,
+  defMapping: TypesWithUserFields,
   instances: InstanceElement[]): Promise<string[]> => (
   awu(instances).map(async instance => {
     const instanceType = await apiName(await instance.getType())
@@ -92,7 +91,7 @@ const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Pr
 }
 
 const getUnknownUsers = async (
-  defMapping: UserGetterDef,
+  defMapping: TypesWithUserFields,
   instance: InstanceElement,
   existingUsers: string[],
 ): Promise<MissingUserInfo[]> => {

@@ -189,7 +189,17 @@ export const loggerRepo = (
   const { stream, end: endStream } = toStream(consoleStream, config)
   global.globalLogTags = mergeLogTags(global.globalLogTags || {}, config.globalTags)
 
+
   const colorize = config.colorize ?? (stream && streams.hasColors(stream as streams.MaybeTty))
+
+  if (!colorize) {
+    // eslint-disable-next-line no-console
+    console.log(`+++config.colorize: ${config.colorize}`)
+    // eslint-disable-next-line no-console
+    console.log(`+++stream: ${safeStringify(stream)}`)
+    // eslint-disable-next-line no-console
+    console.log(`+++hasColors: ${streams.hasColors(stream as streams.MaybeTty)}`)
+  }
 
   const rootPinoLogger = pino({
     timestamp: isoTime,

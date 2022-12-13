@@ -25,7 +25,7 @@ const fontFiles = require('./dist/src/fonts').fontFiles
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
 const TARGET_ARCH = 'x64'
-const TARGET_NODE_VERSION = '14.15.3'
+const TARGET_NODE_VERSION = '18.12.1'
 const TARGET_PLATFORMS = {
   win: { ext: '.exe' },
   linux: {},

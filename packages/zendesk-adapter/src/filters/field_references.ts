@@ -264,6 +264,7 @@ export class ZendeskFieldReferenceResolver extends referenceUtils.FieldReference
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
   }
 }
 
@@ -968,7 +969,6 @@ const filter: FilterCreator = ({ config }) => ({
         fieldsToGroupBy: ['id', 'name', 'key', 'value'],
         contextStrategyLookup,
         // since ids and references to ids vary inconsistently between string/number, allow both
-        isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
         fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),
       })
     }

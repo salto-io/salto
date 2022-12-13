@@ -40,7 +40,6 @@ import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
 
 const log = logger(module)
-const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 
 const logging = (message: string): void => {
@@ -627,8 +626,9 @@ describe('Netsuite adapter E2E with real account', () => {
           roleToCreateThatDependsOnCustomRecord.elemID
         ) as InstanceElement
         expect(fetchedRole.value.name).toEqual(randomString)
-        const permissions = makeArray(fetchedRole.value.permissions?.permission)
-        const customRecordTypePermission = permissions
+        const permissions = fetchedRole.value.permissions?.permission
+        expect(_.isPlainObject(permissions)).toBeTruthy()
+        const customRecordTypePermission = Object.values(permissions as Values)
           .find(permission => isReferenceExpression(permission.permkey)
           && permission.permkey.elemID
             .isEqual(customRecordTypeToCreate.elemID.createNestedID('attr', SCRIPT_ID)))

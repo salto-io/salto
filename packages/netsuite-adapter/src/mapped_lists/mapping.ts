@@ -14,13 +14,7 @@
 * limitations under the License.
 */
 
-const customrecordtypeMapping = {
-  customrecordtype_links_link: 'linkcategory',
-  customrecordtype_permissions_permission: 'permittedrole',
-}
-
 const customsegmentMapping = {
-  customsegment_permissions_permission: 'role',
   customsegment_segmentapplication_crm_applications_application: 'id',
   customsegment_segmentapplication_customrecords_applications_application: 'id',
   customsegment_segmentapplication_otherrecords_applications_application: 'id',
@@ -34,10 +28,6 @@ const savedcsvimportMapping = {
   savedcsvimport_filemappings_filemapping: 'file',
   savedcsvimport_recordmappings_recordmapping: 'record',
   savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping: 'field',
-}
-
-const customtransactiontypeMapping = {
-  customtransactiontype_permissions_permission: 'permittedrole',
 }
 
 const roleMapping = {
@@ -71,6 +61,19 @@ const roleAccessMapping = {
   othercustomfield_roleaccesses_roleaccess: 'role',
 }
 
+const permissionsMapping = {
+  customrecordtype_permissions_permission: 'permittedrole',
+  customsegment_permissions_permission: 'role',
+  customtransactiontype_permissions_permission: 'permittedrole',
+}
+
+const linksMapping = {
+  customrecordtype_links_link: 'linkcategory',
+  customtransactiontype_links_link: 'linkcategory',
+  suitelet_scriptdeployments_scriptdeployment_links_link: 'linkcategory',
+  transactionForm_linkedForms_linkedForm: 'type',
+}
+
 const translationsMapping = {
   translation: ['locale', 'language'],
   classTranslation: ['locale', 'language'],
@@ -82,12 +85,12 @@ export const dataTypesToConvert: ReadonlySet<string> = new Set(
 )
 
 export const listMappedByFieldMapping: Record<string, string | string[]> = {
-  ...customrecordtypeMapping,
   ...customsegmentMapping,
   ...savedcsvimportMapping,
-  ...customtransactiontypeMapping,
   ...roleMapping,
   ...roleAccessMapping,
+  ...permissionsMapping,
+  ...linksMapping,
   ...translationsMapping,
 
   // addressForm
@@ -107,7 +110,9 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   // entryForm
   entryForm_actionbar_buttons_button: 'id',
   entryForm_actionbar_customButtons_customButton: 'label',
+  entryForm_actionbar_customMenu_customMenuItem: 'label',
   entryForm_actionbar_menu_menuitem: 'id',
+  entryForm_buttons_standardButtons_button: 'id',
   entryForm_mainFields_fieldGroup_fields: 'position',
   entryForm_mainFields_fieldGroup_fields_field: 'id',
   entryForm_mainFields_defaultFieldGroup_fields: 'position',
@@ -119,12 +124,13 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   entryForm_tabs_tab_fieldGroups_fieldGroup_fields: 'position',
   entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field: 'id',
   entryForm_tabs_tab_subItems_subList: 'id',
+  entryForm_tabs_tab_subItems_subLists_subList: 'id',
   entryForm_tabs_tab_subItems_subTab: 'id',
+  entryForm_tabs_tab_subItems_subTab_subLists_subList: 'id',
+  entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields: 'position',
+  entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field: 'id',
   entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields: 'position',
   entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field: 'id',
-
-  // transactionbodycustomfield
-  transactionbodycustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
 
   // transactionForm
   transactionForm_mainFields_defaultFieldGroup_fields: 'position',
@@ -133,6 +139,9 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   transactionForm_mainFields_fieldGroup_fields_field: 'id',
   transactionForm_actionbar_buttons_button: 'id',
   transactionForm_actionbar_menu_menuitem: 'id',
+  transactionForm_actionbar_customButtons_customButton: 'label',
+  transactionForm_actionbar_customMenu_customMenuItem: 'label',
+  transactionForm_buttons_standardButtons_button: 'id',
   transactionForm_quickViewFields_field: 'id',
   transactionForm_roles_role: 'id',
   transactionForm_tabs_tab: 'id',
@@ -142,10 +151,15 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field: 'id',
   transactionForm_tabs_tab_subItems_subList: 'id',
   transactionForm_tabs_tab_subItems_subList_columns_column: 'id',
+  transactionForm_tabs_tab_subItems_subLists_subList: 'id',
   transactionForm_tabs_tab_subItems_subTab: 'id',
   transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields: 'position',
   transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field: 'id',
+  transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields: 'position',
+  transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field: 'id',
+  transactionForm_tabs_tab_subItems_subTab_subLists_subList: 'id',
   transactionForm_totalBox_totalBoxField: 'id',
+  transactionForm_preferences_preference: 'id',
 
   // workflow parameters
   workflow_initcondition_parameters_parameter: 'name',
@@ -177,10 +191,6 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters_parameter: 'name',
 
-  // workflow field filters
-  workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
-  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
-
   // workflow actions
   workflow_workflowstates_workflowstate_workflowactions: 'triggertype',
 
@@ -198,6 +208,31 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting: 'targetparameter',
   workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting: 'targetparameter',
+
+  // custom field filters
+  bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  crmcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  customrecordactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  entitycustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  itemcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  itemnumbercustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  itemoptioncustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  mapreducescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  massupdatescript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  othercustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  portlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  sdfinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  suitelet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  transactionbodycustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  transactioncolumncustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  usereventscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
+  workflowactionscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
 }
 
 const scriptdeploymentsTypes = [
@@ -217,11 +252,11 @@ const scriptdeploymentsTypes = [
 
 export const mapsWithoutIndex: ReadonlySet<string> = new Set(
   scriptdeploymentsTypes
-    .concat(Object.keys(customrecordtypeMapping))
     .concat(Object.keys(customsegmentMapping))
     .concat(Object.keys(savedcsvimportMapping))
-    .concat(Object.keys(customtransactiontypeMapping))
     .concat(Object.keys(roleMapping))
     .concat(Object.keys(roleAccessMapping))
+    .concat(Object.keys(permissionsMapping))
+    .concat(Object.keys(linksMapping))
     .concat(Object.keys(translationsMapping))
 )

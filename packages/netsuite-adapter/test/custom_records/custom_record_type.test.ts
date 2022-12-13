@@ -29,7 +29,7 @@ describe('custom record type transformer', () => {
           [SCRIPT_ID]: 'customrecord1',
         }
       )
-      const [customRecordType] = await createCustomRecordTypes([instance], type)
+      const [customRecordType] = createCustomRecordTypes([instance], type)
       expect(customRecordType.elemID.name).toEqual('customrecord1')
       expect(customRecordType.annotations).toEqual({
         [METADATA_TYPE]: 'customrecordtype',
@@ -38,7 +38,7 @@ describe('custom record type transformer', () => {
       })
       expect(Object.keys(customRecordType.annotationRefTypes))
         .toEqual(Object.keys(type.fields).concat('source'))
-      expect(Object.keys(customRecordType.fields)).toEqual([SCRIPT_ID, INTERNAL_ID])
+      expect(Object.keys(customRecordType.fields)).toEqual([SCRIPT_ID, INTERNAL_ID, 'translationsList'])
       expect(customRecordType.path).toEqual([NETSUITE, CUSTOM_RECORDS_PATH, 'customrecord1'])
     })
   })

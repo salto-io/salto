@@ -14,7 +14,82 @@
 * limitations under the License.
 */
 
+const customrecordtypeMapping = {
+  customrecordtype_links_link: 'linkcategory',
+  customrecordtype_permissions_permission: 'permittedrole',
+}
+
+const customsegmentMapping = {
+  customsegment_permissions_permission: 'role',
+  customsegment_segmentapplication_crm_applications_application: 'id',
+  customsegment_segmentapplication_customrecords_applications_application: 'id',
+  customsegment_segmentapplication_otherrecords_applications_application: 'id',
+  customsegment_segmentapplication_transactionbody_applications_application: 'id',
+  customsegment_segmentapplication_transactionline_applications_application: 'id',
+  customsegment_segmentapplication_entities_applications_application: 'id',
+  customsegment_segmentapplication_items_applications_application: 'id',
+}
+
+const savedcsvimportMapping = {
+  savedcsvimport_filemappings_filemapping: 'file',
+  savedcsvimport_recordmappings_recordmapping: 'record',
+  savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping: 'field',
+}
+
+const customtransactiontypeMapping = {
+  customtransactiontype_permissions_permission: 'permittedrole',
+}
+
+const roleMapping = {
+  role_permissions_permission: 'permkey',
+  role_recordrestrictions_recordrestriction: 'segment',
+}
+
+const roleAccessMapping = {
+  sdfinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess: 'role',
+  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess: 'role',
+  entitycustomfield_roleaccesses_roleaccess: 'role',
+  itemoptioncustomfield_roleaccesses_roleaccess: 'role',
+  crmcustomfield_roleaccesses_roleaccess: 'role',
+  itemcustomfield_roleaccesses_roleaccess: 'role',
+  customrecordactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  workflowactionscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  mapreducescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  usereventscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  transactionbodycustomfield_roleaccesses_roleaccess: 'role',
+  scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  itemnumbercustomfield_roleaccesses_roleaccess: 'role',
+  suitelet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  massupdatescript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  bundleinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  portlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  transactioncolumncustomfield_roleaccesses_roleaccess: 'role',
+  restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
+  customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses_roleaccess: 'role',
+  othercustomfield_roleaccesses_roleaccess: 'role',
+}
+
+const translationsMapping = {
+  translation: ['locale', 'language'],
+  classTranslation: ['locale', 'language'],
+  customRecordTranslations: ['locale', 'language'],
+}
+
+export const dataTypesToConvert: ReadonlySet<string> = new Set(
+  Object.keys(translationsMapping).map(key => `${key}List`)
+)
+
 export const listMappedByFieldMapping: Record<string, string | string[]> = {
+  ...customrecordtypeMapping,
+  ...customsegmentMapping,
+  ...savedcsvimportMapping,
+  ...customtransactiontypeMapping,
+  ...roleMapping,
+  ...roleAccessMapping,
+  ...translationsMapping,
+
   // addressForm
   addressForm_mainFields_defaultFieldGroup_fields: 'position',
   addressForm_mainFields_defaultFieldGroup_fields_field: 'id',
@@ -28,23 +103,6 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
 
   // clientscript
   clientscript_buttons_button: 'buttonlabel',
-
-  // customrecordtype
-  customrecordtype_links_link: 'linkcategory',
-  customrecordtype_permissions_permission: 'permittedrole',
-
-  // customsegment permissions
-  customsegment_permissions_permission: 'role',
-
-  // customsegment applications
-  customsegment_segmentapplication_crm_applications_application: 'id',
-  customsegment_segmentapplication_customrecords_applications_application: 'id',
-  customsegment_segmentapplication_otherrecords_applications_application: 'id',
-  customsegment_segmentapplication_transactionbody_applications_application: 'id',
-  customsegment_segmentapplication_transactionline_applications_application: 'id',
-
-  // customtransactiontype
-  customtransactiontype_permissions_permission: 'permittedrole',
 
   // entryForm
   entryForm_actionbar_buttons_button: 'id',
@@ -64,12 +122,6 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   entryForm_tabs_tab_subItems_subTab: 'id',
   entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields: 'position',
   entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field: 'id',
-
-  // entitycustomfield
-  entitycustomfield_roleaccesses_roleaccess: 'role',
-
-  // othercustomfield
-  othercustomfield_roleaccesses_roleaccess: 'role',
 
   // transactionbodycustomfield
   transactionbodycustomfield_customfieldfilters_customfieldfilter: 'fldfilter',
@@ -146,8 +198,30 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting: 'targetparameter',
   workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting: 'targetparameter',
-
-  // workflow role access
-  workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess: 'role',
-  workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess: 'role',
 }
+
+const scriptdeploymentsTypes = [
+  'bundleinstallationscript_scriptdeployments_scriptdeployment',
+  'clientscript_scriptdeployments_scriptdeployment',
+  'customrecordactionscript_scriptdeployments_scriptdeployment',
+  'mapreducescript_scriptdeployments_scriptdeployment',
+  'massupdatescript_scriptdeployments_scriptdeployment',
+  'portlet_scriptdeployments_scriptdeployment',
+  'restlet_scriptdeployments_scriptdeployment',
+  'scheduledscript_scriptdeployments_scriptdeployment',
+  'sdfinstallationscript_scriptdeployments_scriptdeployment',
+  'suitelet_scriptdeployments_scriptdeployment',
+  'usereventscript_scriptdeployments_scriptdeployment',
+  'workflowactionscript_scriptdeployments_scriptdeployment',
+]
+
+export const mapsWithoutIndex: ReadonlySet<string> = new Set(
+  scriptdeploymentsTypes
+    .concat(Object.keys(customrecordtypeMapping))
+    .concat(Object.keys(customsegmentMapping))
+    .concat(Object.keys(savedcsvimportMapping))
+    .concat(Object.keys(customtransactiontypeMapping))
+    .concat(Object.keys(roleMapping))
+    .concat(Object.keys(roleAccessMapping))
+    .concat(Object.keys(translationsMapping))
+)

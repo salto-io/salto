@@ -151,7 +151,7 @@ describe('article filter', () => {
     'testArticleTranslation',
     new ObjectType({ elemID: new ElemID(ZENDESK, 'article_translation') }),
     {
-      locale: { id: 'en-us' },
+      locale: { locale: 'en-us' },
       title: 'The title of the article',
       draft: false,
       brand: brandInstance.value.id,

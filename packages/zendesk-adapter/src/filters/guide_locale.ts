@@ -48,7 +48,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
     // Brand to <locale string to locale instance>
     const brandToLocale: Record<number, Record<string, InstanceElement>> = {}
     guideLanguageSettings.forEach(settings => {
-      brandToLocale[settings.value.brand] = brandToLocale[settings.value.brand] ?? {}
+      brandToLocale[settings.value.brand] = brandToLocale[settings.value.brand] ?? {} // Init inner dict if needed
       brandToLocale[settings.value.brand][settings.value.locale] = settings
     })
 

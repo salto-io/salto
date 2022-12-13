@@ -26,7 +26,7 @@ import {
   ElemID,
   getChangeData,
   Change,
-  toChange, isModificationChange, ModificationChange, AdditionChange,
+  toChange, isModificationChange, ModificationChange, AdditionChange, Field,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
@@ -52,7 +52,7 @@ const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
 const { isDefined } = lowerdashValues
 
-const SUPPORTED_CUSTOM_METADATA_FIELD_TYPES = [
+const SUPPORTED_FIELD_TYPE_NAMES = [
   FIELD_TYPE_NAMES.CHECKBOX, FIELD_TYPE_NAMES.METADATA_RELATIONSHIP,
   FIELD_TYPE_NAMES.DATE, FIELD_TYPE_NAMES.DATETIME,
   FIELD_TYPE_NAMES.PICKLIST, FIELD_TYPE_NAMES.TEXT,
@@ -61,9 +61,9 @@ const SUPPORTED_CUSTOM_METADATA_FIELD_TYPES = [
   FIELD_TYPE_NAMES.NUMBER, FIELD_TYPE_NAMES.PERCENT,
 ] as const
 
-type CustomMetadataFieldType = typeof SUPPORTED_CUSTOM_METADATA_FIELD_TYPES[number]
+type SupportedFieldTypeName = typeof SUPPORTED_FIELD_TYPE_NAMES[number]
 
-const FIELD_TYPE_TO_XSI_TYPE: Record<CustomMetadataFieldType, XsdType> = {
+const FIELD_TYPE_TO_XSD_TYPE: Record<SupportedFieldTypeName, XsdType> = {
   LongTextArea: 'xsd:string',
   MetadataRelationship: 'xsd:string',
   Checkbox: 'xsd:boolean',
@@ -135,15 +135,10 @@ const additionalNamespaces = Object.fromEntries([
 const getCustomMetadataType = async (
   instance: InstanceElement,
   customMetadataTypes: ObjectType[],
-): Promise<ObjectType> => {
+): Promise<ObjectType | undefined> => {
   const customMetadataTypeName = (await apiName(instance)).split('.')[0].concat(CUSTOM_METADATA_SUFFIX)
-  const correctType = await awu(customMetadataTypes)
+  return awu(customMetadataTypes)
     .find(async objectType => await apiName(objectType) === customMetadataTypeName)
-  if (correctType === undefined) {
-    log.warn('Could not fix type for CustomMetadataType Instance %s, since its CustomMetadata record type was not found', instance.elemID.getFullName())
-    return instance.getType()
-  }
-  return correctType
 }
 
 const extractValuesToFields = (
@@ -163,38 +158,32 @@ const formatMDTRecordValuesToNacl = (values: ServiceMDTRecordValue): Values => (
   'values', Object.keys(additionalNamespaces))
 )
 
-const getCustomFieldsXsiTypes = async (
-  instance: InstanceElement
-): Promise<Record<string, string>> => {
-  const objectType = await instance.getType()
-  const fieldsToXsiTypes: Record<string, string> = {}
-  await awu(Object.entries(objectType.fields))
-    .filter(([fieldName]) => fieldName.endsWith(SALESFORCE_CUSTOM_SUFFIX))
-    .forEach(async ([fieldName, field]) => {
-      const fieldTypeName = (await field.getType()).elemID.typeName
-      const fieldType = SUPPORTED_CUSTOM_METADATA_FIELD_TYPES
-        .find(v => v.valueOf() === fieldTypeName)
-      if (_.isUndefined(fieldType)) {
-        throw new Error(`Unsupported CustomMetadata field type: ${fieldTypeName}`)
-      }
-      fieldsToXsiTypes[fieldName] = FIELD_TYPE_TO_XSI_TYPE[fieldType]
-    })
-  return fieldsToXsiTypes
+const iSupportedFieldTypeName = (fieldTypeName: string): fieldTypeName is SupportedFieldTypeName => (
+  (SUPPORTED_FIELD_TYPE_NAMES as ReadonlyArray<string>).includes(fieldTypeName)
+)
+
+const getFieldXsdType = async (field: Field): Promise<XsdType | undefined> => {
+  const fieldTypeName = (await field.getType()).elemID.typeName
+  if (!iSupportedFieldTypeName(fieldTypeName)) {
+    log.warn('Unsupported field type %s on field %s', fieldTypeName, field.elemID.getFullName())
+    return undefined
+  }
+  return FIELD_TYPE_TO_XSD_TYPE[fieldTypeName]
 }
 
 const formatRecordValuesForService = async (
   instance: InstanceElement,
 ): Promise<Values> => {
   const instanceType = await instance.getType()
-  const fieldsXsiTypes = await getCustomFieldsXsiTypes(instance)
   const values = await awu(Object.entries(instanceType.fields))
     .filter(([fieldName]) => fieldName.endsWith(SALESFORCE_CUSTOM_SUFFIX))
-    .map(async ([fieldName]) => {
+    .map(async ([fieldName, field]) => {
       const fieldValue = await instance.value[fieldName]
-      if (isDefined(fieldValue)) {
+      const xsdType = await getFieldXsdType(field)
+      if (isDefined(fieldValue) && isDefined(xsdType)) {
         return {
           field: fieldName,
-          value: { '#text': fieldValue, 'attr_xsi:type': fieldsXsiTypes[fieldName] },
+          value: { '#text': fieldValue, 'attr_xsi:type': xsdType },
         }
       }
       return {
@@ -217,7 +206,10 @@ const getInstanceWithCorrectType = async (
   customMetadataRecordTypes: ObjectType[]
 ): Promise<InstanceElement | undefined> => {
   const correctType = await getCustomMetadataType(instance, customMetadataRecordTypes)
-
+  if (_.isUndefined(correctType)) {
+    log.warn('Could not fix type for CustomMetadataType Instance %s, since its CustomMetadata record type was not found', instance.elemID.getFullName())
+    return undefined
+  }
   const formattedValues = isServiceMDTRecordValues(instance.value)
     ? formatMDTRecordValuesToNacl(instance.value)
     : instance.value

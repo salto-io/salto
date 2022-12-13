@@ -21,7 +21,7 @@ import { createFilterCreatorParams } from '../utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import {
   BRAND_TYPE_NAME,
-  BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME,
   ZENDESK,
 } from '../../src/constants'
@@ -36,9 +36,9 @@ const guideSettingsType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_SET
 const settings1 = new InstanceElement('settings1', guideSettingsType, { brand: 1 })
 const settings2 = new InstanceElement('settings2', guideSettingsType, { brand: 2 })
 
-const brandLanguageSettingsType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME) })
+const guideLanguageSettingsType = new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) })
 const createSettings = (name: string, locale: string, brand: InstanceElement): InstanceElement =>
-  new InstanceElement(name, brandLanguageSettingsType, { locale, brand: brand.value.id })
+  new InstanceElement(name, guideLanguageSettingsType, { locale, brand: brand.value.id })
 
 const defaultSettings1 = createSettings('default', 'def', brand1)
 const defaultSettings2 = createSettings('default2', 'def', brand2)

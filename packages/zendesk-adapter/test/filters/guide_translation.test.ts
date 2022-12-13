@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/guide_translation'
 import { createFilterCreatorParams } from '../utils'
-import { BRAND_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { removedTranslationParentId } from '../../src/filters/guide_section_and_category'
 
 describe('guild section translation filter', () => {
@@ -36,14 +36,14 @@ describe('guild section translation filter', () => {
   const sectionTranslationType = new ObjectType(
     { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
   )
-  const brandLanguageSettingsType = new ObjectType({
-    elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME),
+  const guideLanguageSettingsType = new ObjectType({
+    elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
   })
 
 
-  const brandLanguageSettingsInstance = new InstanceElement(
+  const guideLanguageSettingsInstance = new InstanceElement(
     'instance',
-    brandLanguageSettingsType,
+    guideLanguageSettingsType,
     {
       locale: 'he',
     }
@@ -76,7 +76,7 @@ describe('guild section translation filter', () => {
       name: 'name',
       description: 'description',
       source_locale: new ReferenceExpression(
-        brandLanguageSettingsType.elemID.createNestedID('instance', 'Test1'), brandLanguageSettingsInstance
+        guideLanguageSettingsType.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
       ),
       translations: [
         heSectionTranslationInstance.value,

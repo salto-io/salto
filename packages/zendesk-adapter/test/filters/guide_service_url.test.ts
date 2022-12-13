@@ -31,7 +31,7 @@ import {
   GUIDE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   ZENDESK,
-  BRAND_TYPE_NAME, BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+  BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../../src/constants'
 
 describe('guide service_url filter', () => {
@@ -63,13 +63,13 @@ describe('guide service_url filter', () => {
   const categoryTranslationType = new ObjectType({
     elemID: new ElemID(ZENDESK, CATEGORY_TRANSLATION_TYPE_NAME),
   })
-  const brandLanguageSettingsType = new ObjectType({
-    elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME),
+  const guideLanguageSettingsType = new ObjectType({
+    elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
   })
 
-  const brandLanguageSettingsInstance = new InstanceElement(
+  const guideLanguageSettingsInstance = new InstanceElement(
     'instance',
-    brandLanguageSettingsType,
+    guideLanguageSettingsType,
     {
       brand: 123,
     }
@@ -169,7 +169,7 @@ describe('guide service_url filter', () => {
         articleTranslationInstance,
         sectionTranslationInstance,
         categoryTranslationInstance,
-        brandLanguageSettingsInstance,
+        guideLanguageSettingsInstance,
       ]
       await filter.onFetch([elements, brandInstance].flat())
       expect(elements

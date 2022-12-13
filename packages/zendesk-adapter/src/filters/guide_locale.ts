@@ -20,7 +20,7 @@ import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
-  BRAND_LANGUAGE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
 } from '../constants'
 
@@ -30,8 +30,9 @@ const TYPES_WITH_LOCALE = [
   SECTION_TRANSLATION_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME,
 ]
 
+
 /**
- * Converts locale fields to ReferenceExpression of the correct brand_language_settings by brand
+ * Converts locale fields to ReferenceExpression of the correct guide_language_settings by brand
  */
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async elements => {
@@ -41,15 +42,13 @@ const filterCreator: FilterCreator = ({ config }) => ({
 
     const instances = elements.filter(isInstanceElement)
 
+    const guideLanguageSettings = instances.filter(i => i.elemID.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
     const instancesWithLocale = instances.filter(i => TYPES_WITH_LOCALE.includes(i.elemID.typeName))
-
-
-    const brandLanguageSettings = instances.filter(i => i.elemID.typeName === BRAND_LANGUAGE_SETTINGS_TYPE_NAME)
 
     // Brand to <locale string to locale instance>
     const brandToLocale: Record<number, Record<string, InstanceElement>> = {}
-    brandLanguageSettings.forEach(settings => {
-      brandToLocale[settings.value.brand] = brandToLocale[settings.value.brand] ?? {} // Init inner dict if needed
+    guideLanguageSettings.forEach(settings => {
+      brandToLocale[settings.value.brand] = brandToLocale[settings.value.brand] ?? {}
       brandToLocale[settings.value.brand][settings.value.locale] = settings
     })
 

@@ -648,12 +648,12 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'default_locale', parentTypes: ['guide_settings'] },
     zendeskSerializationStrategy: 'locale',
-    target: { type: 'brand_language_settings' },
+    target: { type: 'guide_language_settings' },
   },
   {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
     zendeskSerializationStrategy: 'locale',
-    target: { type: 'brand_language_settings' },
+    target: { type: 'guide_language_settings' },
   },
   {
     src: {
@@ -664,7 +664,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'locale',
-    target: { type: 'brand_language_settings' },
+    target: { type: 'guide_language_settings' },
   },
   {
     src: { field: 'publish', parentTypes: ['permission_group'] },

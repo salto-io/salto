@@ -29,7 +29,7 @@ import {
   GUIDE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
   ZENDESK, CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME,
-  USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME, BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../../src/constants'
 import filterCreator, {
   GUIDE_ELEMENT_DIRECTORY,
@@ -73,7 +73,7 @@ describe('guide arrange paths', () => {
     elemID: new ElemID(ZENDESK, CATEGORY_TRANSLATION_TYPE_NAME),
   })
   const guideTranslationType = new ObjectType({
-    elemID: new ElemID(ZENDESK, BRAND_LANGUAGE_SETTINGS_TYPE_NAME),
+    elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
   })
   const sectionOrderType = new ObjectType({
     elemID: new ElemID(ZENDESK, SECTION_ORDER_TYPE_NAME),
@@ -324,7 +324,7 @@ describe('guide arrange paths', () => {
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
-          GUIDE_ELEMENT_DIRECTORY[BRAND_LANGUAGE_SETTINGS_TYPE_NAME],
+          GUIDE_ELEMENT_DIRECTORY[GUIDE_LANGUAGE_SETTINGS_TYPE_NAME],
           'en-us',
         ],
         [
@@ -432,7 +432,7 @@ describe('guide arrange paths', () => {
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
-          GUIDE_ELEMENT_DIRECTORY[BRAND_LANGUAGE_SETTINGS_TYPE_NAME],
+          GUIDE_ELEMENT_DIRECTORY[GUIDE_LANGUAGE_SETTINGS_TYPE_NAME],
           'en-us',
         ],
       ])

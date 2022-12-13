@@ -31,7 +31,7 @@ describe('translationForDefaultLocaleValidator',
   () => {
     const sectionTypeName = 'section'
     const sectionTranslationTypename = 'section_translation'
-    const brandLanguageSettingsTypeName = 'brand_language_settings'
+    const guideLanguageSettingsTypeName = 'guide_language_settings'
     const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
     const sectionTranslationType = new ObjectType(
       { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
@@ -42,22 +42,22 @@ describe('translationForDefaultLocaleValidator',
     const articleTranslationType = new ObjectType(
       { elemID: new ElemID(ZENDESK, articleTranslationTypename) }
     )
-    const brandLanguageSettingsType = new ObjectType(
-      { elemID: new ElemID(ZENDESK, brandLanguageSettingsTypeName) }
+    const guideLanguageSettingsType = new ObjectType(
+      { elemID: new ElemID(ZENDESK, guideLanguageSettingsTypeName) }
     )
 
 
-    const brandLanguageSettingsInstance = new InstanceElement(
+    const guideLanguageSettingsInstance = new InstanceElement(
       'instance',
-      brandLanguageSettingsType,
+      guideLanguageSettingsType,
       {
         locale: 'en-us',
         brand: 1,
       }
     )
-    const brandLanguageSettingsHe = new InstanceElement(
+    const guideLanguageSettingsHe = new InstanceElement(
       'instance',
-      brandLanguageSettingsType,
+      guideLanguageSettingsType,
       {
         locale: 'he',
         brand: 1,
@@ -87,7 +87,7 @@ describe('translationForDefaultLocaleValidator',
       articleTranslationType,
       {
         locale: new ReferenceExpression(
-          brandLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'), brandLanguageSettingsInstance
+          guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
         ),
         title: 'name',
         body: 'description',
@@ -114,7 +114,7 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                brandLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'), brandLanguageSettingsInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
               ),
               translations: [new ReferenceExpression(
                 heSectionTranslationInstance.elemID.createNestedID('instance', 'Test1'),
@@ -146,8 +146,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                brandLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
-                brandLanguageSettingsInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsInstance
               ),
               translations:
               [
@@ -177,8 +177,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                brandLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
-                brandLanguageSettingsInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsInstance
               ),
               translations:
           [
@@ -207,8 +207,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                brandLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
-                brandLanguageSettingsInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsInstance
               ),
               translations:
                 [
@@ -237,8 +237,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                brandLanguageSettingsHe.elemID.createNestedID('instance', 'Test1'),
-                brandLanguageSettingsHe
+                guideLanguageSettingsHe.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsHe
               ),
               translations:
                 [

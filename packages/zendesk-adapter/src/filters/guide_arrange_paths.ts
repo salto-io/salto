@@ -35,7 +35,7 @@ import {
   GUIDE_SETTINGS_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   PERMISSION_GROUP_TYPE_NAME,
-  BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   ZENDESK, GUIDE, BRAND_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
@@ -52,7 +52,7 @@ const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
 const BRAND_SECOND_LEVEL = [
   CATEGORY_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME,
-  BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
 ]
 const PARENTS = [CATEGORY_TYPE_NAME, SECTION_TYPE_NAME, ARTICLE_TYPE_NAME]
@@ -83,7 +83,7 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [GUIDE_SETTINGS_TYPE_NAME]: 'settings',
   [USER_SEGMENT_TYPE_NAME]: 'user_segments',
   [PERMISSION_GROUP_TYPE_NAME]: 'permission_groups',
-  [BRAND_LANGUAGE_SETTINGS_TYPE_NAME]: 'language_settings',
+  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: 'language_settings',
   [CATEGORY_ORDER_TYPE_NAME]: 'category_order',
   [SECTION_ORDER_TYPE_NAME]: 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
@@ -118,7 +118,7 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
   [SECTION_ORDER_TYPE_NAME]: () => 'sections_order',
   [ARTICLE_ORDER_TYPE_NAME]: () => 'articles_order',
   [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
-  [BRAND_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
+  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
   [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [CATEGORY_TRANSLATION_TYPE_NAME]: getTranslationLocale,
@@ -259,7 +259,7 @@ const filterCreator: FilterCreator = () => ({
         const brandElemId = instance.value.brand?.elemID.getFullName()
         const needTypeDirectory = [
           CATEGORY_TYPE_NAME,
-          BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+          GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
         ].includes(instance.elemID.typeName)
         instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId], needTypeDirectory)
       })

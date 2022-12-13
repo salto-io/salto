@@ -29,14 +29,14 @@ import {
   SECTION_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
-  GUIDE_SETTINGS_TYPE_NAME, BRAND_TYPE_NAME, BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_SETTINGS_TYPE_NAME, BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 } from '../constants'
 
 const PARAM_MATCH = /\{([\w_.]+)}/g
 const BRAND_SPECIFIC_BASE_URL_TYPES = [
   CATEGORY_TRANSLATION_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME,
-  BRAND_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
 ]
 const SERVICE_URL_FOR_GUIDE: Record<string, string> = {
   [SECTION_TYPE_NAME]: '/knowledge/arrange/sections/{id}?brand_id={brand}',
@@ -46,7 +46,7 @@ const SERVICE_URL_FOR_GUIDE: Record<string, string> = {
   [SECTION_TRANSLATION_TYPE_NAME]: '/knowledge/sections/{_parent.0.value.value.id}?brand_id={brand}&locale={locale}',
   [CATEGORY_TRANSLATION_TYPE_NAME]: '/hc/admin/categories/{_parent.0.value.value.id}/edit?translation_locale={locale}',
   [GUIDE_SETTINGS_TYPE_NAME]: '/hc/admin/general_settings',
-  [BRAND_LANGUAGE_SETTINGS_TYPE_NAME]: '/hc/admin/language_settings',
+  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: '/hc/admin/language_settings',
 }
 
 const replaceUrlParamsBrand = (url: string, instance: InstanceElement): string =>

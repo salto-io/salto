@@ -24,7 +24,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, isGuideEnabled } from '../config'
-import { BRAND_TYPE_NAME, BRAND_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
 import { getZendeskError } from '../errors'
 
 const { awu } = collections.asynciterable
@@ -43,7 +43,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
     const instances = elements.filter(isInstanceElement)
 
     const guideSettings = instances.filter(e => e.elemID.typeName === GUIDE_SETTINGS_TYPE_NAME)
-    const brandLanguageSettings = instances.filter(e => e.elemID.typeName === BRAND_LANGUAGE_SETTINGS_TYPE_NAME)
+    const guideLanguageSettings = instances.filter(e => e.elemID.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
     const brands = instances
       .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
       .filter(b => b.value.has_help_center === true)
@@ -55,7 +55,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       return {
         defaultLocale: res.data.toString(),
         settings: guideSettings.find(settings => settings.value.brand === brandId),
-        languageSettings: brandLanguageSettings.filter(settings => settings.value.brand === brandId),
+        languageSettings: guideLanguageSettings.filter(settings => settings.value.brand === brandId),
       }
     }).toArray()
 

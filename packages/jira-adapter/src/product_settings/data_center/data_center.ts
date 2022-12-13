@@ -64,7 +64,7 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['put'],
-    url: '/rest/api/3/filter/\\d+',
+    url: '/rest/api/3/filter/.*',
   },
   {
     httpMethods: ['post', 'put'],

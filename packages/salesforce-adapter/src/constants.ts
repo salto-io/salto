@@ -381,6 +381,7 @@ export const CPQ_QUOTE_LINE = 'SBQQ__QuoteLine__c'
 export const CPQ_PRODUCT_OPTION = 'SBQQ__ProductOption__c'
 export const CPQ_PRICE_SCHEDULE = 'SBQQ__PriceSchedule__c'
 export const CPQ_DISCOUNT_SCHEDULE = 'SBQQ__DiscountSchedule__c'
+export const CPQ_SUBSCRIPTION = 'SBQQ__Subscription__c'
 
 // CPQ Fields
 export const CPQ_LOOKUP_OBJECT_NAME = 'SBQQ__LookupObject__c'

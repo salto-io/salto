@@ -21,7 +21,7 @@ import {
   WORKFLOW_METADATA_TYPE,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   SETTINGS_METADATA_TYPE,
-  SALESFORCE, QUOTE_OBJECT_TYPE, PRODUCT2_OBJECT_TYPE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CPQ_QUOTE,
+  SALESFORCE, PRODUCT2_OBJECT_TYPE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CPQ_QUOTE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -265,25 +265,34 @@ export const mockTypes = {
       [API_NAME]: PRODUCT2_OBJECT_TYPE,
     },
   }),
-  [QUOTE_OBJECT_TYPE]: new ObjectType({
-    elemID: new ElemID(SALESFORCE, QUOTE_OBJECT_TYPE),
+  [CPQ_QUOTE]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, CPQ_QUOTE),
     fields: {
-      Status: {
+      SBQQ__Primary__c: {
         refType: BuiltinTypes.STRING,
         annotations: {
-          [API_NAME]: 'Quote.Status',
-        },
-      },
-      ProductOption: {
-        refType: BuiltinTypes.STRING,
-        annotations: {
-          [API_NAME]: 'Quote.ProductOption',
+          [API_NAME]: 'SBQQ__Primary__c',
         },
       },
     },
     annotations: {
       [METADATA_TYPE]: CUSTOM_OBJECT,
-      [API_NAME]: QUOTE_OBJECT_TYPE,
+      [API_NAME]: CPQ_QUOTE,
+    },
+  }),
+  Account: new ObjectType({
+    elemID: new ElemID(SALESFORCE, PRODUCT2_OBJECT_TYPE),
+    fields: {
+      Name: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Account.Name',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'Account',
     },
   }),
   ListView: createMetadataObjectType({

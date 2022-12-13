@@ -43,6 +43,7 @@ const resources = [
 const BASE_NEXE_CONFIG = {
   loglevel: 'verbose',
   resources,
+  build:true,
 }
 
 const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)

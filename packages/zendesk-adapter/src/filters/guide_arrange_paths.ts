@@ -103,19 +103,9 @@ const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined
 const getTranslationLocale = (instance?: InstanceElement): string =>
   getReferencedLocale(instance?.value.locale) ?? NO_VALUE_DEFAULT
 
-const getNameFromTranslation = (instance?: InstanceElement): string => {
-  if (instance === undefined) {
-    return NO_VALUE_DEFAULT
-  }
-  const sourceLocale = getReferencedLocale(instance.value.source_locale) ?? NO_VALUE_DEFAULT
-  const translation = instance.value.translations
-    ?.filter(isReferenceExpression)
-    .map((reference: ReferenceExpression) => reference.value)
-    .find((tran: InstanceElement) => (getReferencedLocale(tran.value.locale) === sourceLocale))
-  return translation?.value.title ?? NO_VALUE_DEFAULT
-}
-
 const getNameFromName = (instance?: InstanceElement): string => instance?.value.name ?? NO_VALUE_DEFAULT
+
+const getNameFromTitle = (instance?: InstanceElement): string => instance?.value.title ?? NO_VALUE_DEFAULT
 
 
 const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
@@ -127,7 +117,7 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
   [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [CATEGORY_TRANSLATION_TYPE_NAME]: getTranslationLocale,
-  [ARTICLE_TYPE_NAME]: getNameFromTranslation,
+  [ARTICLE_TYPE_NAME]: getNameFromTitle,
   [CATEGORY_TYPE_NAME]: getNameFromName,
   [SECTION_TYPE_NAME]: getNameFromName,
   [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.filename ?? NO_VALUE_DEFAULT,

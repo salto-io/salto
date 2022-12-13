@@ -92,7 +92,6 @@ import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article/article'
-import helpCenterFetchArticle from './filters/guide_fetch_article'
 import articleBodyFilter from './filters/article/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
@@ -112,8 +111,6 @@ import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegmentFilter from './filters/everyone_user_segment'
 import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
-import guideElementTranslations from './filters/guide_create_element_translations'
-
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -163,7 +160,6 @@ export const DEFAULT_FILTERS = [
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
   removeBrandLogoFilter,
-  guideElementTranslations,
   categoryOrderFilter,
   sectionOrderFilter,
   articleOrderFilter,
@@ -191,8 +187,6 @@ export const DEFAULT_FILTERS = [
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   referencedIdFieldsFilter,
-  // need to be after referencedIdFieldsFilter as 'name' and 'title' is removed
-  helpCenterFetchArticle,
   articleBodyFilter,
   guideParentSection,
   serviceUrlFilter,
@@ -202,7 +196,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
-  fetchCategorySection, // need to be after arrange paths as it uses the 'name' field
+  fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

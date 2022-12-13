@@ -140,6 +140,7 @@ describe('guide arrange paths', () => {
       brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
       section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
       source_locale: 'en-us',
+      title: 'article name',
     }
   )
   const articleTranslationInstance = new InstanceElement(

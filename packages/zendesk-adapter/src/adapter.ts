@@ -111,6 +111,7 @@ import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegmentFilter from './filters/everyone_user_segment'
 import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
+import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_article_translation'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -155,6 +156,7 @@ export const DEFAULT_FILTERS = [
   // tagsFilter and guideLocalesFilter
   usersFilter,
   tagsFilter,
+  guideAddBrandToArticleTranslation,
   guideLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,

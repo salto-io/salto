@@ -1645,12 +1645,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   articles: {
     request: {
-      url: '/api/v2/help_center/articles?include=translations',
-      // url: '/api/v2/help_center/{locale}/categories/{category_id}/articles',
-      // dependsOn: [
-      //   { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
-      //   { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
-      // ],
+      url: '/api/v2/help_center/categories/{category_id}/articles?include=translations',
+      dependsOn: [
+        { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
+      ],
     },
     transformation: {
       dataField: 'articles',
@@ -1739,6 +1737,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+        { fieldName: 'created_at', fieldType: 'string' },
+        { fieldName: 'updated_at', fieldType: 'string' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

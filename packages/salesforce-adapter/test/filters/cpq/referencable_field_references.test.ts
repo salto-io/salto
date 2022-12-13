@@ -25,6 +25,7 @@ import { defaultFilterContext } from '../../utils'
 import { FilterWith } from '../../../src/filter'
 import filterCreator from '../../../src/filters/cpq/referencable_field_references'
 import {
+  API_NAME,
   CPQ_FILTER_SOURCE_FIELD,
   CPQ_FILTER_SOURCE_OBJECT, CPQ_HIDDEN_SOURCE_FIELD,
   CPQ_HIDDEN_SOURCE_OBJECT, CPQ_QUOTE, CPQ_TARGET_FIELD, CPQ_TARGET_OBJECT, CUSTOM_OBJECT_ID_FIELD,
@@ -33,7 +34,7 @@ import {
 import { mockTypes } from '../../mock_elements'
 
 describe('cpqReferencableFieldReferences', () => {
-  const MOCK_TYPE = 'MockType'
+  const MOCK_TYPE = 'SBQQ__MockType__c'
   const INSTANCE_NAME = 'mockInstance'
 
   const filter = filterCreator({
@@ -49,6 +50,9 @@ describe('cpqReferencableFieldReferences', () => {
       [CPQ_HIDDEN_SOURCE_FIELD]: { refType: BuiltinTypes.STRING },
       [CPQ_TARGET_OBJECT]: { refType: BuiltinTypes.STRING },
       [CPQ_TARGET_FIELD]: { refType: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [API_NAME]: MOCK_TYPE,
     },
   })
 

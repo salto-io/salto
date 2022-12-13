@@ -823,6 +823,42 @@ describe('applyDetailedChanges', () => {
     })
   })
 
+  describe('When there is object with number as keys', () => {
+    let beforeInst: InstanceElement
+    let afterInst: InstanceElement
+    let outputInst: InstanceElement
+    beforeEach(() => {
+      const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+      beforeInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: {
+            1: 'a',
+            2: 'b',
+          },
+        }
+      )
+
+      afterInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: {
+            1: 'b',
+            2: 'a',
+          },
+        }
+      )
+      const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+      outputInst = beforeInst.clone()
+      applyDetailedChanges(outputInst, listChanges)
+    })
+    it('should apply the changes', () => {
+      expect(outputInst.value.a).toEqual(afterInst.value.a)
+    })
+  })
+
   describe('Should apply changes in the correct order', () => {
     let beforeInst: InstanceElement
     beforeEach(() => {

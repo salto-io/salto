@@ -22,11 +22,12 @@ import {
   isMapType,
   MapType,
   isObjectType,
-  isAdditionOrModificationChange, isInstanceChange,
+  isAdditionOrModificationChange, isInstanceChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { expressions } from '@salto-io/workspace'
 import { defaultMapper, metadataTypeToFieldToMapDef } from '../filters/convert_maps'
 import { API_NAME_SEPARATOR, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
@@ -70,8 +71,9 @@ const getMapKeyErrors = async (
           })
           return undefined
         }
-        if (typeof value[mapDef.key] !== 'string') {
-          log.error(`found a non string value in field ${typeName}.${fieldName}.${mapDef.key}, value: ${value[mapDef.key]}`)
+        if (isReferenceExpression(value[mapDef.key])
+            && value[mapDef.key].value instanceof expressions.UnresolvedReference) {
+          return undefined
         }
         // we reached the map's inner value
         const expectedPath = defaultMapper(value[mapDef.key]).slice(0, mapDef.nested ? 2 : 1)

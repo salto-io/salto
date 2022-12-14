@@ -291,7 +291,7 @@ describe('adapter', () => {
           'zendesk.guide_settings.instance.brandWithGuide',
           'zendesk.guide_settings.instance.myBrand',
           'zendesk.guide_settings__help_center',
-          'zendesk.guide_settings__help_center__feature_restrictions',
+          // 'zendesk.guide_settings__help_center__feature_restrictions',
           'zendesk.guide_settings__help_center__settings',
           'zendesk.guide_settings__help_center__settings__preferences',
           'zendesk.guide_settings__help_center__text_filter',

@@ -251,6 +251,7 @@ const removeUnfethcedCustomObjects = (instance: InstanceElement, customObjects: 
 
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
+    log.info('Running fieldPermissionsEnum onFetch - reducing fieldPermissions size')
     const relevantInstances = await awu(elements)
       .filter(isInstanceElement)
       .filter(async element => isInstanceOfType(...metadataTypesWithFieldPermissions)(element))
@@ -269,6 +270,10 @@ const filter: LocalFilterCreator = ({ config }) => ({
     if (config.enumFieldPermissions === false) {
       return
     }
+    log.info('fieldPermissionsEnum onFetch - converting fieldPermissions to enum')
+    relevantInstances.forEach(element => {
+      fieldPermissionValuesToEnum(element)
+    })
     const relevantObjectTypes = await awu(elements)
       .filter(isObjectType)
       .filter(async element => metadataTypesWithFieldPermissions.includes(await apiName(element)))
@@ -276,10 +281,6 @@ const filter: LocalFilterCreator = ({ config }) => ({
     if (relevantObjectTypes.length === 0) {
       return
     }
-    log.info('Running fieldPermissionsEnum onFetch')
-    relevantInstances.forEach(element => {
-      fieldPermissionValuesToEnum(element)
-    })
     relevantObjectTypes.forEach(async element => {
       await fieldPermissionFieldToEnum(element)
     })

@@ -41,6 +41,8 @@ const DEFAULT_ID_FIELDS = ['name']
 const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'created' },
   { fieldName: 'lastUpdated' },
+  { fieldName: 'createdBy' },
+  { fieldName: 'lastUpdatedBy' },
 ]
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
@@ -246,11 +248,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     request: {
       url: '/api/v1/idps',
       recurseInto: [
-        {
-          type: 'api__v1__idps___idpId___users@uuuuuu_00123_00125uu',
-          toField: 'users',
-          context: [{ name: 'idpId', fromField: 'id' }],
-        },
         {
           type: 'api__v1__idps___idpId___credentials__csrs@uuuuuu_00123_00125uuuu',
           toField: 'CSRs',

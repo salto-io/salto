@@ -19,10 +19,7 @@ import { FilterCreator } from '../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
 
 /**
- * This filter works as follows: onFetch it discards the 'name' and 'description' fields to avoid
- * data duplication with the default translation.It is separated from
- * guide_section_and_category as the removal needs to happen after the reference expressions
- * are created.
+ * TODO remove filter after SALTO-???
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {

@@ -92,7 +92,7 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
 
 const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
   : string | undefined => (isReferenceExpression(localeRef)
-  ? localeRef.value.value?.id // TODO change id to locale in SALTO-3010
+  ? localeRef.value.value?.locale
   : localeRef)
 
 const getTranslationLocale = (instance?: InstanceElement): string =>

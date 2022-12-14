@@ -50,7 +50,7 @@ const getFirstParentElemId = (instance: InstanceElement): ElemID | undefined => 
   return parentsElemIds.length > 0 ? parentsElemIds[0] : undefined
 }
 
-const createInstanceReferencedNameParts = (
+export const createInstanceReferencedNameParts = (
   instance: InstanceElement,
   idFields: string[],
 ): string[] => idFields.map(

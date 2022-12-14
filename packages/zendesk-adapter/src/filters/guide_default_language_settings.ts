@@ -21,13 +21,14 @@ import {
   isInstanceElement, isModificationChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, isGuideEnabled } from '../config'
 import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
 import { getZendeskError } from '../errors'
 
 const { awu } = collections.asynciterable
+const { isDefined } = lowerDashValues
 
 export const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
 
@@ -77,9 +78,8 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === GUIDE_SETTINGS_TYPE_NAME
     )
 
-    const errors: Error[] = []
     // Removal means nothing, addition isn't possible because we don't allow activation of Guide with Salto
-    guideSettingsChanges.filter(isModificationChange).forEach(async change => {
+    const errors = await awu(guideSettingsChanges).filter(isModificationChange).map(async change => {
       const defaultChanged = change.data.before.value.default_locale !== change.data.after.value.default_locale
       if (defaultChanged) {
         try {
@@ -88,10 +88,12 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
             data: { locale: getChangeData(change).value.default_locale },
           })
         } catch (err) {
-          errors.push(getZendeskError(getChangeData(change).elemID.getFullName(), err))
+          return getZendeskError(getChangeData(change).elemID.getFullName(), err)
         }
       }
-    })
+      return undefined
+    }).filter(isDefined)
+      .toArray()
 
     return {
       deployResult: {

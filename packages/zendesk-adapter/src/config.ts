@@ -1740,8 +1740,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'brand', fieldType: 'number' },
         { fieldName: 'created_by_id', fieldType: 'unknown' },
         { fieldName: 'updated_by_id', fieldType: 'unknown' },
-        { fieldName: 'created_at', fieldType: 'string' },
-        { fieldName: 'updated_at', fieldType: 'string' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

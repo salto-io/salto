@@ -1735,13 +1735,15 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'created_by_id', fieldType: 'unknown' },
-        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+        { fieldName: 'created_at', fieldType: 'unknown' },
+        { fieldName: 'updated_at', fieldType: 'unknown' },
       ),
       // serviceUrl is created in help_center_service_url filter
     },
@@ -1967,6 +1969,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+        { fieldName: 'created_at', fieldType: 'unknown' },
+        { fieldName: 'updated_at', fieldType: 'unknown' },
       ),
       // serviceUrl is created in help_center_service_url filter
     },
@@ -2082,6 +2088,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+        { fieldName: 'created_at', fieldType: 'unknown' },
+        { fieldName: 'updated_at', fieldType: 'unknown' },
       ),
       // serviceUrl is created in help_center_service_url filter
     },

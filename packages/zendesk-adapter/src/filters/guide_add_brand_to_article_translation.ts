@@ -19,7 +19,7 @@ import { FilterCreator } from '../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
 
 /**
- * TODO remove filter after SALTO-???
+ * this filter adds brand field to article translation
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {

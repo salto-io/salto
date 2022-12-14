@@ -32,6 +32,12 @@ const {
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
 } = configUtils
+const UPDATED_CREATED_FIELDS = [
+  { fieldName: 'created_by_id', fieldType: 'unknown' },
+  { fieldName: 'updated_by_id', fieldType: 'unknown' },
+  { fieldName: 'created_at', fieldType: 'unknown' },
+  { fieldName: 'updated_at', fieldType: 'unknown' },
+]
 
 export const DEFAULT_ID_FIELDS = ['name']
 export const DEFAULT_FILENAME_FIELDS = ['name']
@@ -1740,10 +1746,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
-        { fieldName: 'created_by_id', fieldType: 'unknown' },
-        { fieldName: 'updated_by_id', fieldType: 'unknown' },
-        { fieldName: 'created_at', fieldType: 'unknown' },
-        { fieldName: 'updated_at', fieldType: 'unknown' },
+        ...UPDATED_CREATED_FIELDS,
       ),
       // serviceUrl is created in help_center_service_url filter
     },
@@ -1969,10 +1972,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
-        { fieldName: 'created_by_id', fieldType: 'unknown' },
-        { fieldName: 'updated_by_id', fieldType: 'unknown' },
-        { fieldName: 'created_at', fieldType: 'unknown' },
-        { fieldName: 'updated_at', fieldType: 'unknown' },
+        ...UPDATED_CREATED_FIELDS
       ),
       // serviceUrl is created in help_center_service_url filter
     },
@@ -2088,10 +2088,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
-        { fieldName: 'created_by_id', fieldType: 'unknown' },
-        { fieldName: 'updated_by_id', fieldType: 'unknown' },
-        { fieldName: 'created_at', fieldType: 'unknown' },
-        { fieldName: 'updated_at', fieldType: 'unknown' },
+        ...UPDATED_CREATED_FIELDS
       ),
       // serviceUrl is created in help_center_service_url filter
     },

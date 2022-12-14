@@ -26,8 +26,6 @@ import {
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
-import { expressions } from '@salto-io/workspace'
 import { defaultMapper, metadataTypeToFieldToMapDef } from '../filters/convert_maps'
 import { API_NAME_SEPARATOR, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from '../constants'
 import { getLookUpName } from '../transformers/reference_mapping'
@@ -35,8 +33,6 @@ import { isInstanceOfTypeChange } from '../filters/utils'
 import { apiName } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
-
-const log = logger(module)
 
 const metadataTypesToValidate = [
   PROFILE_METADATA_TYPE,
@@ -71,8 +67,7 @@ const getMapKeyErrors = async (
           })
           return undefined
         }
-        if (isReferenceExpression(value[mapDef.key])
-            && value[mapDef.key].value instanceof expressions.UnresolvedReference) {
+        if (isReferenceExpression(value[mapDef.key])) {
           return undefined
         }
         // we reached the map's inner value

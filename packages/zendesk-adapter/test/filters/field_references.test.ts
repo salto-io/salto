@@ -183,6 +183,27 @@ describe('References by id filter', () => {
       },
     },
   })
+  const workspaceType = new ObjectType({
+    elemID: new ElemID(ZENDESK, 'workspace'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      conditions: {
+        refType: new ObjectType({
+          elemID: new ElemID(ZENDESK, 'workspace__conditions'),
+          fields: {
+            all: { refType: new ListType(new ObjectType({
+              elemID: new ElemID(ZENDESK, 'workspace__conditions__all'),
+              fields: {
+                field: { refType: BuiltinTypes.STRING },
+                operator: { refType: BuiltinTypes.STRING },
+                value: { refType: BuiltinTypes.STRING },
+              },
+            })) },
+          },
+        }),
+      },
+    },
+  })
 
   const generateElements = (
   ): Element[] => ([
@@ -191,6 +212,7 @@ describe('References by id filter', () => {
     triggerCategoryType,
     ticketFormType,
     triggerType,
+    workspaceType,
     someTypeWithValue,
     someTypeWithNestedValuesAndSubject,
     someTypeWithNestedValueList,
@@ -313,6 +335,18 @@ describe('References by id filter', () => {
         },
       }
     ),
+    new InstanceElement(
+      'workspace1',
+      workspaceType,
+      {
+        id: 7001,
+        conditions: {
+          all: [
+            { field: 'group_id', operator: 'is', value: '2003' },
+          ],
+        },
+      },
+    ),
   ])
 
   describe('on fetch', () => {
@@ -331,6 +365,13 @@ describe('References by id filter', () => {
       )[0] as InstanceElement
       expect(trigger10.value.category_id).toBeInstanceOf(ReferenceExpression)
       expect(trigger10.value.category_id.elemID.getFullName()).toEqual('zendesk.trigger_category.instance.triggerCategory5')
+
+      const workspace1 = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'workspace1'
+      )[0] as InstanceElement
+      expect(workspace1.value.conditions.all[0].value).toBeInstanceOf(ReferenceExpression)
+      expect(workspace1.value.conditions.all[0].value.elemID.getFullName())
+        .toEqual('zendesk.group.instance.group3')
 
       const inst = elements.filter(
         e => isInstanceElement(e) && e.elemID.name === 'inst1'

@@ -170,6 +170,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'ticketFieldAlternative'
   | 'ticketFieldOption'
   | 'userFieldOption'
+  | 'idString'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -202,6 +203,11 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
   },
   userFieldOption: {
     serialize: customFieldOptionSerialization,
+    lookup: val => val,
+    lookupIndexName: 'id',
+  },
+  idString: {
+    serialize: async ({ ref }) => _.toString(ref.value.value.id),
     lookup: val => val,
     lookupIndexName: 'id',
   },
@@ -764,6 +770,13 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
+  // note: this overlaps with additional strategies, but because the first strategy
+  // is chosen for serialization, it is safe
+  {
+    src: { field: 'value', parentTypes: ['workspace__conditions__all'] },
+    zendeskSerializationStrategy: 'idString',
+    target: { typeContext: 'neighborField' },
+  },
   // only one of these applies in a given instance
   {
     src: { field: 'value' },

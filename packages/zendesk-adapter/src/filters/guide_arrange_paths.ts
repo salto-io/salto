@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
@@ -136,8 +136,8 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
 
 const getName = (instance: InstanceElement): string =>
   (GUIDE_ELEMENT_NAME[instance.elemID.typeName] === undefined
-    ? pathNaclCase(instance.elemID.name)
-    : pathNaclCase(GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance)))
+    ? pathNaclCase(naclCase((instance.elemID.name)))
+    : pathNaclCase(naclCase(GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance))))
 
 /**
  * calculates a path which is not related to a specific brand
@@ -146,7 +146,7 @@ const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | unde
   [
     ...GUIDE_PATH,
     GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    pathNaclCase(instance.elemID.name),
+    pathNaclCase(naclCase(instance.elemID.name)),
   ]
 
 
@@ -165,7 +165,7 @@ const pathForBrandSpecificRootElements = (
       ...GUIDE_PATH,
       UNSORTED,
       GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-      pathNaclCase(instance.elemID.name),
+      pathNaclCase(naclCase(instance.elemID.name)),
     ]
   }
   const newPath = [
@@ -205,7 +205,7 @@ const pathForOtherLevels = ({
       ...GUIDE_PATH,
       UNSORTED,
       GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-      pathNaclCase(instance.elemID.name),
+      pathNaclCase(naclCase((instance.elemID.name))),
     ]
   }
   const name = getName(instance)

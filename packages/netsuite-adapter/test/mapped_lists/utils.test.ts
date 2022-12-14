@@ -70,6 +70,9 @@ describe('mapped lists', () => {
             {
               scriptid: '[type=workflow, scriptid=custworkflow2]',
             },
+            {
+              scriptid: 's0m@ $CR1pt!*()',
+            },
           ],
         },
         workflowstates: {
@@ -302,6 +305,10 @@ describe('mapped lists', () => {
             scriptid: '[type=workflow, scriptid=custworkflow2]',
             index: 4,
           },
+          's0m___CR1pt_____2@mszclojku': {
+            scriptid: 's0m@ $CR1pt!*()',
+            index: 5,
+          },
         },
       },
       workflowstates: {
@@ -514,6 +521,10 @@ describe('mapped lists', () => {
           custworkflow2_3: {
             scriptid: '[type=workflow, scriptid=custworkflow2]',
             index: 4,
+          },
+          's0m___CR1pt_____2@mszclojku': {
+            scriptid: 's0m@ $CR1pt!*()',
+            index: 5,
           },
         },
       },

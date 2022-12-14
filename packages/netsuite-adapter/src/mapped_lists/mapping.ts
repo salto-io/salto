@@ -14,7 +14,21 @@
 * limitations under the License.
 */
 
-const customsegmentMapping = {
+
+const translationsMapping = {
+  translation: ['locale', 'language'],
+  classTranslation: ['locale', 'language'],
+  customRecordTranslations: ['locale', 'language'],
+}
+
+export const dataTypesToConvert: ReadonlySet<string> = new Set(
+  Object.keys(translationsMapping).map(key => `${key}List`)
+)
+
+const unorderedListMappedByFieldMapping = {
+  ...translationsMapping,
+
+  // customsegment mapping
   customsegment_segmentapplication_crm_applications_application: 'id',
   customsegment_segmentapplication_customrecords_applications_application: 'id',
   customsegment_segmentapplication_otherrecords_applications_application: 'id',
@@ -22,20 +36,17 @@ const customsegmentMapping = {
   customsegment_segmentapplication_transactionline_applications_application: 'id',
   customsegment_segmentapplication_entities_applications_application: 'id',
   customsegment_segmentapplication_items_applications_application: 'id',
-}
 
-const savedcsvimportMapping = {
+  // savedcsvimport mapping
   savedcsvimport_filemappings_filemapping: 'file',
   savedcsvimport_recordmappings_recordmapping: 'record',
   savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping: 'field',
-}
 
-const roleMapping = {
+  // role mapping
   role_permissions_permission: 'permkey',
   role_recordrestrictions_recordrestriction: 'segment',
-}
 
-const roleAccessMapping = {
+  // role access mapping
   sdfinstallationscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
   workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess: 'role',
   workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess: 'role',
@@ -59,39 +70,21 @@ const roleAccessMapping = {
   restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess: 'role',
   customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses_roleaccess: 'role',
   othercustomfield_roleaccesses_roleaccess: 'role',
-}
 
-const permissionsMapping = {
+  // permissions mapping
   customrecordtype_permissions_permission: 'permittedrole',
   customsegment_permissions_permission: 'role',
   customtransactiontype_permissions_permission: 'permittedrole',
-}
 
-const linksMapping = {
+  // links mapping
   customrecordtype_links_link: 'linkcategory',
   customtransactiontype_links_link: 'linkcategory',
   suitelet_scriptdeployments_scriptdeployment_links_link: 'linkcategory',
   transactionForm_linkedForms_linkedForm: 'type',
 }
 
-const translationsMapping = {
-  translation: ['locale', 'language'],
-  classTranslation: ['locale', 'language'],
-  customRecordTranslations: ['locale', 'language'],
-}
-
-export const dataTypesToConvert: ReadonlySet<string> = new Set(
-  Object.keys(translationsMapping).map(key => `${key}List`)
-)
-
 export const listMappedByFieldMapping: Record<string, string | string[]> = {
-  ...customsegmentMapping,
-  ...savedcsvimportMapping,
-  ...roleMapping,
-  ...roleAccessMapping,
-  ...permissionsMapping,
-  ...linksMapping,
-  ...translationsMapping,
+  ...unorderedListMappedByFieldMapping,
 
   // addressForm
   addressForm_mainFields_defaultFieldGroup_fields: 'position',
@@ -251,12 +244,5 @@ const scriptdeploymentsTypes = [
 ]
 
 export const mapsWithoutIndex: ReadonlySet<string> = new Set(
-  scriptdeploymentsTypes
-    .concat(Object.keys(customsegmentMapping))
-    .concat(Object.keys(savedcsvimportMapping))
-    .concat(Object.keys(roleMapping))
-    .concat(Object.keys(roleAccessMapping))
-    .concat(Object.keys(permissionsMapping))
-    .concat(Object.keys(linksMapping))
-    .concat(Object.keys(translationsMapping))
+  scriptdeploymentsTypes.concat(Object.keys(unorderedListMappedByFieldMapping))
 )

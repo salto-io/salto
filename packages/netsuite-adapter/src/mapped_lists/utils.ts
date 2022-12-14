@@ -19,7 +19,7 @@ import {
   BuiltinTypes, Element, ChangeDataType, isInstanceElement, TypeElement,
   FieldDefinition, ListType, TypeReference,
 } from '@salto-io/adapter-api'
-import { naclCase, transformElement, transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { invertNaclCase, naclCase, transformElement, transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -84,7 +84,6 @@ export const convertFieldsTypesFromListToMap = async (
         ? SCRIPT_ID
         : undefined)
     if (listMappedByField === undefined) {
-      log.warn(`there's no field to map by in ${innerType.elemID.getFullName()}`)
       return
     }
 
@@ -105,23 +104,15 @@ export const convertFieldsTypesFromListToMap = async (
   })
 }
 
-const getItemKey = (mapFieldValue: string, path?: ElemID): string => {
+const getItemKey = (mapFieldValue: string): string => {
   const naclCaseKey = naclCase(mapFieldValue)
   if (mapFieldValue === naclCaseKey) {
     return mapFieldValue
   }
-
   const serviceIdInfoList = captureServiceIdInfo(mapFieldValue)
-  if (serviceIdInfoList.length === 0) {
-    log.debug(`fixing mapFieldValue to use it as a key: '${mapFieldValue}' -> '${naclCaseKey}' (${path?.getFullName()})`)
-    return naclCaseKey
-  }
-
-  const serviceIdKey = naclCase(
-    serviceIdInfoList.map(serviceIdInfo => serviceIdInfo.serviceId).join('_')
-  )
-  log.debug(`extracting ${SCRIPT_ID} to use it as a key: '${mapFieldValue}' -> '${serviceIdKey}' (${path?.getFullName()})`)
-  return serviceIdKey
+  return serviceIdInfoList.length === 0
+    ? naclCaseKey
+    : naclCase(serviceIdInfoList.map(serviceIdInfo => serviceIdInfo.serviceId).join('_'))
 }
 
 const addSuffixUntilUnique = (
@@ -130,7 +121,7 @@ const addSuffixUntilUnique = (
   path?: ElemID,
   suffixIndex = 2,
 ): string => {
-  const keyNameWithSuffix = `${keyName}_${suffixIndex}`
+  const keyNameWithSuffix = naclCase(`${invertNaclCase(keyName)}_${suffixIndex}`)
   if (keySet.has(keyNameWithSuffix)) {
     return addSuffixUntilUnique(keyName, keySet, path, suffixIndex + 1)
   }
@@ -151,10 +142,7 @@ const getUniqueItemKey = (
     log.warn(`item in ${path?.getFullName()} has no mapFieldName key: ${mapFieldNameList.join(',')}`)
   }
 
-  const mapFieldValue = getItemKey(
-    mapFieldName ? _.toString(item[mapFieldName]) : 'key',
-    path
-  )
+  const mapFieldValue = getItemKey(mapFieldName ? _.toString(item[mapFieldName]) : 'key')
 
   if (!keySet.has(mapFieldValue)) {
     keySet.add(mapFieldValue)

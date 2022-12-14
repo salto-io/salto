@@ -157,18 +157,25 @@ const permissionsEnumToObject = (
   }
 }
 
-const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement => {
+const isValidFieldPermissions = (instance: InstanceElement): boolean => {
   const { fieldPermissions } = instance.value
   if (fieldPermissions === undefined) {
     log.warn('Instance of type %s does not have fieldPermissions value (as expected)', instance.elemID.typeName)
-    return instance
+    return false
   }
   if (!_.isPlainObject(fieldPermissions)) {
-    log.warn('Instance of type %s does not have fieldPermissions filed as Map (as expected)', instance.elemID.typeName)
+    log.warn('Instance of type %s does not have fieldPermissions field as Map (as expected)', instance.elemID.typeName)
+    return false
+  }
+  return true
+}
+
+const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement => {
+  if (!isValidFieldPermissions(instance)) {
     return instance
   }
   instance.value.fieldPermissions = _.mapValues(
-    fieldPermissions,
+    instance.value.fieldPermissions,
     objectPermission => _.mapValues(
       objectPermission,
       fieldPermission => {
@@ -184,13 +191,11 @@ const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement
 }
 
 const fieldPermissionValuesToObject = (instance: InstanceElement): InstanceElement => {
-  const { fieldPermissions } = instance.value
-  if (fieldPermissions === undefined || !_.isPlainObject(fieldPermissions)) {
-    log.warn('Instance of type %s does not have fieldPermissions value or is not an object (as expected)', instance.elemID.typeName)
+  if (!isValidFieldPermissions(instance)) {
     return instance
   }
   instance.value.fieldPermissions = _.mapValues(
-    fieldPermissions,
+    instance.value.fieldPermissions,
     (objectPermission, objectName) => _.mapValues(
       objectPermission,
       (fieldPermissionValue, fieldName) => (
@@ -205,7 +210,7 @@ const fieldPermissionFieldToEnum = async (objectType: ObjectType): Promise<void>
   if (isTypeWithFieldPermissions(objectType)) {
     const fieldType = await objectType.fields.fieldPermissions.getType()
     if (!isMapType(fieldType)) {
-      log.warn('Type %s does not have fieldPermissions filed as Map (as expected)', objectType.elemID.typeName)
+      log.warn('Type %s does not have fieldPermissions field as Map (as expected)', objectType.elemID.typeName)
       return
     }
     objectType.fields.fieldPermissions.refType = mapOfMapOfEnumFieldPermissions
@@ -239,27 +244,18 @@ const shouldRunDeployFiltersAccordingToInstanceType = async (
       .isEqual(mapOfMapOfEnumFieldPermissions.elemID))
 
 const removeUnfethcedCustomObjects = (instance: InstanceElement, customObjects: string[]): void => {
-  const { fieldPermissions } = instance.value
-  if (fieldPermissions === undefined) {
-    log.warn('Instance of type %s does not have fieldPermissions value (as expected)', instance.elemID.typeName)
-    return
+  if (isValidFieldPermissions(instance)) {
+    instance.value.fieldPermissions = _.pick(instance.value.fieldPermissions, customObjects)
   }
-  if (!_.isPlainObject(fieldPermissions)) {
-    log.warn('Instance of type %s does not have fieldPermissions filed as Map (as expected)', instance.elemID.typeName)
-    return
-  }
-  instance.value.fieldPermissions = _.pick(fieldPermissions, customObjects)
 }
 
 const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
-    const relevantElements = await awu(elements)
-      .filter(async element =>
-        (isObjectType(element)
-                && metadataTypesWithFieldPermissions.includes(await apiName(element)))
-            || isInstanceOfType(...metadataTypesWithFieldPermissions)(element))
+    const relevantInstances = await awu(elements)
+      .filter(isInstanceElement)
+      .filter(async element => isInstanceOfType(...metadataTypesWithFieldPermissions)(element))
       .toArray()
-    if (relevantElements.length === 0) {
+    if (relevantInstances.length === 0) {
       return
     }
     const elementSource = await buildElementsSourceForFetch(elements, config).getAll()
@@ -267,21 +263,25 @@ const filter: LocalFilterCreator = ({ config }) => ({
       .filter(isCustomObject)
       .map(element => apiName(element))
       .toArray()
-    relevantElements.forEach(element => {
-      if (isInstanceElement(element)) {
-        removeUnfethcedCustomObjects(element, customObjects)
-      }
+    relevantInstances.forEach(element => {
+      removeUnfethcedCustomObjects(element, customObjects)
     })
     if (config.enumFieldPermissions === false) {
       return
     }
+    const relevantObjectTypes = await awu(elements)
+      .filter(isObjectType)
+      .filter(async element => metadataTypesWithFieldPermissions.includes(await apiName(element)))
+      .toArray()
+    if (relevantObjectTypes.length === 0) {
+      return
+    }
     log.info('Running fieldPermissionsEnum onFetch')
-    relevantElements.forEach(async element => {
-      if (isInstanceElement(element)) {
-        fieldPermissionValuesToEnum(element)
-      } else if (isObjectType(element)) {
-        await fieldPermissionFieldToEnum(element)
-      }
+    relevantInstances.forEach(element => {
+      fieldPermissionValuesToEnum(element)
+    })
+    relevantObjectTypes.forEach(async element => {
+      await fieldPermissionFieldToEnum(element)
     })
     elements.push(enumFieldPermissions)
   },

@@ -25,8 +25,8 @@ export const removeTitleAndBody = (elem: InstanceElement): void => {
 }
 
 /**
- * This filter works as follows: onFetch it discards the 'name' and 'description' fields to avoid
- * data duplication with the default translation.It is separated from
+ * This filter works as follows: onFetch it discards the 'name' and 'description' fields for section and category and
+ * the 'title and 'body fields in article to avoid data duplication with the default translation. It is separated from
  * guide_section_and_category as the removal needs to happen after the reference expressions
  * are created.
  */

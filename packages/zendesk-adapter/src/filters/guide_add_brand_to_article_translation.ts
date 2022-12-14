@@ -19,7 +19,8 @@ import { FilterCreator } from '../filter'
 import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
 
 /**
- * this filter adds brand field to article translation
+ * this filter adds brand field to article translation since it is created through the standalone mechanism and is not
+ * added in its creation.
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {

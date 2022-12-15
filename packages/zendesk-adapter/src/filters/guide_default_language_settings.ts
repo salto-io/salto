@@ -22,11 +22,13 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, isGuideEnabled } from '../config'
 import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
 import { getZendeskError } from '../errors'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
@@ -52,13 +54,18 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
     // Request the default locale for each brand and fill up the brand's language info
     const brandToLanguageInfo = await awu(brands).map(async brand => {
       const brandId = brand.value.id
-      const res = await brandIdToClient[brandId].getSinglePage({ url: DEFAULT_LOCALE_API })
-      return {
-        defaultLocale: res.data.toString(),
-        settings: guideSettings.find(settings => settings.value.brand === brandId),
-        languageSettings: guideLanguageSettings.filter(settings => settings.value.brand === brandId),
+      try {
+        const res = await brandIdToClient[brandId].getSinglePage({ url: DEFAULT_LOCALE_API })
+        return {
+          defaultLocale: res.data.toString(),
+          settings: guideSettings.find(settings => settings.value.brand === brandId),
+          languageSettings: guideLanguageSettings.filter(settings => settings.value.brand === brandId),
+        }
+      } catch (e) {
+        log.error(`Failed requesting default locale for brand '${brand.elemID.name}'`)
+        return undefined
       }
-    }).toArray()
+    }).filter(isDefined).toArray()
 
     brandToLanguageInfo.forEach(languageInfo => {
       const { defaultLocale, settings, languageSettings } = languageInfo

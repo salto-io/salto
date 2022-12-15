@@ -14,15 +14,18 @@
 * limitations under the License.
 */
 import { InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, isGuideEnabled } from '../config'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
-  ARTICLE_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME,
   CATEGORY_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
 } from '../constants'
+
+const log = logger(module)
 
 const TYPES_WITH_SOURCE_LOCALE = [ARTICLE_TYPE_NAME, SECTION_TYPE_NAME, CATEGORY_TYPE_NAME]
 const TYPES_WITH_LOCALE = [
@@ -42,6 +45,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
 
     const instances = elements.filter(isInstanceElement)
 
+    const brands = instances.filter(i => i.elemID.typeName === BRAND_TYPE_NAME)
     const guideLanguageSettings = instances.filter(i => i.elemID.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
     const instancesWithLocale = instances.filter(i => TYPES_WITH_LOCALE.includes(i.elemID.typeName))
 
@@ -55,14 +59,20 @@ const filterCreator: FilterCreator = ({ config }) => ({
     instancesWithLocale.forEach(instance => {
       const brandLocales = brandToLocale[instance.value.brand] ?? {}
       const locale = brandLocales[instance.value.locale]
+      const brandName = brands.find(b => b.value.id === instance.value.brand)?.elemID.name
+
       if (locale !== undefined) {
         instance.value.locale = new ReferenceExpression(locale.elemID, locale)
+      } else {
+        log.error(`Could not find '${instance.value.locale}' language_settings of brand ${brandName}`)
       }
 
       if (TYPES_WITH_SOURCE_LOCALE.includes(instance.elemID.typeName)) {
         const sourceLocale = brandLocales[instance.value.source_locale]
         if (sourceLocale !== undefined) {
           instance.value.source_locale = new ReferenceExpression(sourceLocale.elemID, sourceLocale)
+        } else {
+          log.error(`Could not find '${instance.value.source_locale}' language_settings of brand ${brandName}`)
         }
       }
     })

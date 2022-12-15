@@ -238,9 +238,8 @@ const zendeskGuideEntriesFunc = (
       typeName,
       typesConfig,
     })).flat()
-    // Defining Zendesk Guide element to its corresponding guide (= subdomain)
+    const responseEntryName = typesConfig[typeName].transformation?.dataField
     return brandPaginatorResponseValues.flatMap(response => {
-      const responseEntryName = typesConfig[typeName].transformation?.dataField
       if (responseEntryName === undefined) {
         return makeArray(response)
       }
@@ -298,13 +297,19 @@ const getBrandsForGuide = (
  * Fetch Guide (help_center) elements for the given brands.
  * Each help_center requires a different paginator.
 */
-const getGuideElements = async (
-  brandsList: InstanceElement[],
-  brandToPaginator: Record<string, clientUtils.Paginator>,
-  apiDefinitions: configUtils.AdapterDuckTypeApiConfig,
-  fetchQuery: elementUtils.query.ElementQuery,
+const getGuideElements = async ({
+  brandsList,
+  brandToPaginator,
+  apiDefinitions,
+  fetchQuery,
+  getElemIdFunc,
+}:{
+  brandsList: InstanceElement[]
+  brandToPaginator: Record<string, clientUtils.Paginator>
+  apiDefinitions: configUtils.AdapterDuckTypeApiConfig
+  fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-): Promise<elementUtils.ducktype.FetchElements<Element[]>> => {
+}): Promise<elementUtils.ducktype.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
 
@@ -335,14 +340,14 @@ const getGuideElements = async (
   // Create new types based on the created instances from all brands,
   // then create new instances with the corresponding type as refType
   const zendeskGuideElements = Object.entries(typeNameToGuideInstances).flatMap(([typeName, instances]) => {
-    const guideElements = elementUtils.ducktype.getNewElementsFromInstances(
-      ZENDESK,
+    const guideElements = elementUtils.ducktype.getNewElementsFromInstances({
+      adapterName: ZENDESK,
       typeName,
       instances,
       transformationConfigByType,
       transformationDefaultConfig,
-    )
-    return [...guideElements.instances, guideElements.type, ...guideElements.nestedTypes]
+    })
+    return _.concat(guideElements.instances as Element[], guideElements.nestedTypes, guideElements.type)
   })
 
   // Create instances from standalone fields that were not created in previous steps
@@ -354,9 +359,10 @@ const getGuideElements = async (
     getElemIdFunc,
   })
 
+  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.configChanges)
   return {
     elements: zendeskGuideElements,
-    configChanges: fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.configChanges),
+    configChanges: elementUtils.ducktype.getUniqueConfigSuggestions(allConfigChangeSuggestions),
   }
 }
 
@@ -486,13 +492,13 @@ export default class ZendeskAdapter implements AdapterOperations {
       ]
     )))
 
-    const zendeskGuideElements = await getGuideElements(
+    const zendeskGuideElements = await getGuideElements({
       brandsList,
       brandToPaginator,
-      this.userConfig[API_DEFINITIONS_CONFIG],
-      this.fetchQuery,
-      this.getElemIdFunc
-    )
+      apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
+      fetchQuery: this.fetchQuery,
+      getElemIdFunc: this.getElemIdFunc,
+    })
 
     // Remaining types should be added once to avoid overlaps between the generated elements,
     // so we add them once after all elements are generated

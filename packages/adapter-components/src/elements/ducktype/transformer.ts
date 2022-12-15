@@ -83,17 +83,27 @@ export const getEntriesResponseValues: EntriesRequester = async ({
   )).flat()
 )
 
+export const getUniqueConfigSuggestions = (
+  configSuggestions: ConfigChangeSuggestion[]
+): ConfigChangeSuggestion[] => (_.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude))
+
 /**
  * Creates new type based on instances values,
  * then creates new instances pointing the new type
  */
-export const getNewElementsFromInstances = (
-  adapterName: string,
-  typeName: string,
-  instances: InstanceElement[],
-  transformationConfigByType: Record<string, DuckTypeTransformationConfig>,
-  transformationDefaultConfig: DuckTypeTransformationDefaultConfig,
-): Entries => {
+export const getNewElementsFromInstances = ({
+  adapterName,
+  typeName,
+  instances,
+  transformationConfigByType,
+  transformationDefaultConfig,
+}: {
+  adapterName: string
+  typeName: string
+  instances: InstanceElement[]
+  transformationConfigByType: Record<string, DuckTypeTransformationConfig>
+  transformationDefaultConfig: DuckTypeTransformationDefaultConfig
+}): Entries => {
   const { hasDynamicFields } = getConfigWithDefault(transformationConfigByType[typeName], transformationDefaultConfig)
 
   const { type: newType, nestedTypes: newNestedTypes } = generateType({
@@ -242,13 +252,13 @@ const getEntriesForType = async (
     return { instances, type, nestedTypes }
   }
   // We generare the type again since we added more fields to the instances from the recurse into
-  const newElements = getNewElementsFromInstances(
+  const newElements = getNewElementsFromInstances({
     adapterName,
-    (nestedFieldDetails?.type ?? type).elemID.typeName,
+    typeName: (nestedFieldDetails?.type ?? type).elemID.typeName,
     instances,
     transformationConfigByType,
-    transformationDefaultConfig
-  )
+    transformationDefaultConfig,
+  })
 
   return {
     instances: newElements.instances,
@@ -406,6 +416,6 @@ export const getAllElements = async ({
   }
   return {
     elements: instancesAndTypes,
-    configChanges: _.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude),
+    configChanges: getUniqueConfigSuggestions(configSuggestions),
   }
 }

@@ -243,6 +243,7 @@ describe('guide arrange paths', () => {
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[GUIDE_SETTINGS_TYPE_NAME],
           'brand_settings',
         ],
         [
@@ -335,12 +336,14 @@ describe('guide arrange paths', () => {
           'category_name',
           GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
           'section_name',
-          'sections_order',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_ORDER_TYPE_NAME],
+          'section_order',
         ],
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
-          'categories_order',
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_ORDER_TYPE_NAME],
+          'category_order',
         ],
       ])
     })
@@ -361,6 +364,7 @@ describe('guide arrange paths', () => {
         [
           ...GUIDE_PATH,
           ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[GUIDE_SETTINGS_TYPE_NAME],
           'brand_settings',
         ],
         [

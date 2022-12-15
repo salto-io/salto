@@ -1738,6 +1738,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
+        ...UPDATED_CREATED_FIELDS,
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
@@ -1746,7 +1747,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
-        ...UPDATED_CREATED_FIELDS,
       ),
       // serviceUrl is created in help_center_service_url filter
     },
@@ -1962,6 +1962,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
+        ...UPDATED_CREATED_FIELDS,
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
@@ -1970,7 +1971,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
-        ...UPDATED_CREATED_FIELDS
       ),
       // serviceUrl is created in help_center_service_url filter
     },
@@ -2076,7 +2076,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        ...UPDATED_CREATED_FIELDS,
+      ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
       ],
@@ -2084,7 +2087,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'html_url', fieldType: 'string' },
         { fieldName: 'source_id', fieldType: 'number' },
         { fieldName: 'source_type', fieldType: 'string' },
-        ...UPDATED_CREATED_FIELDS
       ),
       // serviceUrl is created in help_center_service_url filter
     },

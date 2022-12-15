@@ -698,6 +698,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -710,6 +711,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'id', parentTypes: ['workspace__apps'] },

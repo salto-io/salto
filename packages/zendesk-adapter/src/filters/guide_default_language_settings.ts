@@ -93,7 +93,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === GUIDE_SETTINGS_TYPE_NAME
     )
 
-    // Removal means nothing, addition isn't possible because we don't allow activation of Guide with Salto (SALTO-2914)
+    // Removal and Addition isn't possible because we don't allow activation of Guide with Salto (SALTO-2914)
     const deployResults = await awu(guideSettingsChanges).filter(isModificationChange).map(async change => {
       const defaultChanged = change.data.before.value.default_locale !== change.data.after.value.default_locale
 
@@ -117,7 +117,8 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
 
       return deployChanges(
         [change],
-        async c => { await deployChange(c, client, config.apiDefinitions) }
+        // Deploying with the default_locale field does nothing, but we ignore it for future safety
+        async c => { await deployChange(c, client, config.apiDefinitions, ['default_locale']) }
       )
     }).toArray()
 

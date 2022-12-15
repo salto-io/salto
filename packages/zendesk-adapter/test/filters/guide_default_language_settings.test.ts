@@ -26,6 +26,8 @@ import {
   ZENDESK,
 } from '../../src/constants'
 
+const GUIDE_SETTINGS_API = '/hc/api/internal/general_settings'
+
 const createBrand = (name: string, id: number): InstanceElement => new InstanceElement(
   name, new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), { id, has_help_center: true }
 )
@@ -45,6 +47,8 @@ const defaultSettings2 = createSettings('default2', 'def', brand2)
 
 const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
 client.put = jest.fn()
+client.post = jest.fn()
+client.delete = jest.fn()
 client.getSinglePage = jest.fn().mockResolvedValue({ data: 'def' })
 
 describe('guideDefaultLanguage', () => {
@@ -73,21 +77,40 @@ describe('guideDefaultLanguage', () => {
   it('deploy', async () => {
     const beforeSettings = settings1.clone()
     const afterSettings = settings1.clone()
+    const afterSettingsWithChange = afterSettings.clone()
     beforeSettings.value.default_locale = 'before'
     afterSettings.value.default_locale = 'after'
 
+    afterSettingsWithChange.value.default_locale = 'after2'
+    afterSettingsWithChange.value.field = 'changed'
+
     const mockPut = jest.spyOn(client, 'put')
+    const mockPost = jest.spyOn(client, 'post')
+    const mockDelete = jest.spyOn(client, 'delete')
+
     await filter.deploy([
       toChange({ before: beforeSettings }), // Removal change - should do nothing
       toChange({ after: afterSettings }), // Addition change - Should do nothing
-      toChange({ before: beforeSettings, after: beforeSettings }), // No change - should do nothing
-      toChange({ before: beforeSettings, after: afterSettings }), // change - should send api request
+      toChange({ before: beforeSettings, after: afterSettings }), // Only default locale change
+      toChange({ before: beforeSettings, after: afterSettingsWithChange }), // Locale and regular change
     ])
 
-    expect(mockPut).toHaveBeenCalledTimes(1)
+    expect(mockPost).toHaveBeenCalledTimes(0)
+    expect(mockDelete).toHaveBeenCalledTimes(0)
+
+    expect(mockPut).toHaveBeenCalledTimes(3)
     expect(mockPut).toHaveBeenCalledWith({
       url: DEFAULT_LOCALE_API,
       data: { locale: 'after' },
+    })
+    expect(mockPut).toHaveBeenCalledWith({
+      url: DEFAULT_LOCALE_API,
+      data: { locale: 'after2' },
+    })
+    expect(mockPut).toHaveBeenCalledWith({
+      url: GUIDE_SETTINGS_API,
+      data: { brand: 1, field: 'changed' },
+      queryParams: undefined,
     })
   })
 })

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue, Field } from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { addReferences, generateLookupFunc } from '../../src/references/field_references'
@@ -396,7 +395,6 @@ describe('Field references', () => {
       ).not.toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value).toEqual('1001')
     })
-
     it('should not resolve if referenced element does not exist', () => {
       const folders = elements.filter(
         e => isInstanceElement(e) && e.refType.elemID.name === 'folder'
@@ -405,33 +403,126 @@ describe('Field references', () => {
       expect(folders[0].value.parent_id).not.toBeInstanceOf(ReferenceExpression)
       expect(folders[0].value.parent_id).toEqual('invalid')
     })
-    it('should resolve fields if isEqualValue() returns true for values', async () => {
-      const clonedElements = generateElements()
-      await addReferences({
-        elements: clonedElements,
-        defs: fieldNameToTypeMappingDefs,
-        fieldsToGroupBy: ['id', 'name'],
-        contextStrategyLookup: {
-          parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
-          parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
-          neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
-          fail: neighborContextFunc({ contextFieldName: 'fail', contextValueMapper: () => { throw new Error('fail') } }),
-        },
-        isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
-      })
-
-      const inst = clonedElements.filter(
-        e => isInstanceElement(e) && e.elemID.name === 'inst1'
-      )[0] as InstanceElement
-      expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
-    })
     it('should not create missing reference if enableMissingReference is false (or not specified)', async () => {
       const triggerWithMissingReference = elements.filter(
         e => isInstanceElement(e) && e.elemID.name === 'trigger2'
       )[0] as InstanceElement
       expect(triggerWithMissingReference.value.ticket_field_id)
         .not.toBeInstanceOf(ReferenceExpression)
+    })
+    describe('\'exact\' validation strategy', () => {
+      const referee = new InstanceElement('referee', ticketFieldType, { id: '1234' })
+      let numReferer: InstanceElement
+      let otherNumReferer: InstanceElement
+      let strReferer: InstanceElement
+      const defs : FieldReferenceDefinition<never>[] = [
+        {
+          src: { field: 'ref', instanceTypes: ['type1'] },
+          target: { type: 'ticket_field' },
+          serializationStrategy: 'id',
+          sourceTransformation: 'exact',
+        },
+        {
+          src: { field: 'ref', instanceTypes: ['type2'] },
+          target: { type: 'ticket_field' },
+          serializationStrategy: 'id',
+          sourceTransformation: 'exact',
+        },
+      ]
+      beforeAll(() => {
+        numReferer = new InstanceElement('referer_num', type2, { ref: 1234 })
+        otherNumReferer = new InstanceElement('referer_num', type2, { ref: 5678 })
+        strReferer = new InstanceElement('referer_str', type1, { ref: '1234' })
+      })
+
+      it('should pass validation if the field value is identical to the serialized referred element', async () => {
+        await addReferences({ elements: [strReferer, referee], defs })
+        expect(strReferer.value.ref?.elemID?.fullName).toEqual('myAdapter.ticket_field.instance.referee')
+      })
+      it('should fail validation if the values are the same but of different types', async () => {
+        await addReferences({ elements: [numReferer, referee], defs })
+        expect(numReferer.value.ref).toEqual(1234)
+      })
+      it('should fail validation if the values are different', async () => {
+        await addReferences({ elements: [otherNumReferer, referee], defs })
+        expect(otherNumReferer.value.ref).toEqual(5678)
+      })
+    })
+    describe('\'asString\' validation strategy', () => {
+      const referee = new InstanceElement('referee', ticketFieldType, { id: 'SomeName' })
+      const numReferee = new InstanceElement('numReferee', ticketFieldType, { id: '1234' })
+      let invalidReferer: InstanceElement
+      let differentCaseReferer: InstanceElement
+      let numReferer: InstanceElement
+      const defs : FieldReferenceDefinition<never>[] = [
+        {
+          src: { field: 'ref', instanceTypes: ['type1'] },
+          target: { type: 'ticket_field' },
+          serializationStrategy: 'id',
+          sourceTransformation: 'asString',
+        },
+        {
+          src: { field: 'ref', instanceTypes: ['type2'] },
+          target: { type: 'ticket_field' },
+          serializationStrategy: 'id',
+          sourceTransformation: 'asString',
+        },
+      ]
+      beforeAll(() => {
+        invalidReferer = new InstanceElement('invalid_ref', type1, { ref: 'Blah!' })
+        differentCaseReferer = new InstanceElement('different_case_ref', type1, { ref: 'somename' })
+        numReferer = new InstanceElement('num_ref', type2, { ref: 1234 })
+      })
+      it('should pass validation if the values are the same but of different types', async () => {
+        await addReferences({ elements: [numReferer, numReferee], defs, fieldsToGroupBy: ['id'] })
+        expect(numReferer.value.ref?.elemID?.fullName).toEqual('myAdapter.ticket_field.instance.numReferee')
+      })
+      it('should fail validation if the values are different', async () => {
+        await addReferences({ elements: [invalidReferer, referee], defs, fieldsToGroupBy: ['id'] })
+        expect(invalidReferer.value.ref).toEqual('Blah!')
+      })
+      it('should fail validation if the values are different case', async () => {
+        await addReferences({ elements: [differentCaseReferer, referee], defs, fieldsToGroupBy: ['id'] })
+        expect(differentCaseReferer.value.ref).toEqual('somename')
+      })
+    })
+    describe('\'asCaseInsensitiveString\' validation strategy', () => {
+      const referee = new InstanceElement('referee', ticketFieldType, { id: 'somename' })
+      const numReferee = new InstanceElement('numReferee', ticketFieldType, { id: '1234' })
+      let invalidReferer: InstanceElement
+      let differentCaseReferer: InstanceElement
+      let numReferer: InstanceElement
+      const defs : FieldReferenceDefinition<never>[] = [
+        {
+          src: { field: 'ref', instanceTypes: ['type1'] },
+          target: { type: 'ticket_field' },
+          serializationStrategy: 'id',
+          sourceTransformation: 'asCaseInsensitiveString',
+        },
+        {
+          src: { field: 'ref', instanceTypes: ['type2'] },
+          target: { type: 'ticket_field' },
+          serializationStrategy: 'id',
+          sourceTransformation: 'asCaseInsensitiveString',
+        },
+      ]
+      beforeAll(() => {
+        invalidReferer = new InstanceElement('invalid_ref', type1, { ref: 'Blah!' })
+        differentCaseReferer = new InstanceElement('different_case_ref', type1, { ref: 'SomeName' })
+        numReferer = new InstanceElement('num_ref', type2, { ref: 1234 })
+      })
+      it('should pass validation if the values are the same except letter case', async () => {
+        await addReferences({ elements: [differentCaseReferer, referee], defs, fieldsToGroupBy: ['id'] })
+        expect(differentCaseReferer.value.ref?.elemID?.fullName).toEqual('myAdapter.ticket_field.instance.referee')
+      })
+      it('should pass validation if the values are the same but of different types', async () => {
+        await addReferences({ elements: [numReferer, numReferee], defs, fieldsToGroupBy: ['id'] })
+        expect(numReferer.value.ref?.elemID?.fullName).toEqual('myAdapter.ticket_field.instance.numReferee')
+      })
+      it('should fail validation if the values are different', async () => {
+        await addReferences({ elements: [invalidReferer, referee], defs, fieldsToGroupBy: ['id'] })
+        expect(invalidReferer.value.ref).toEqual('Blah!')
+      })
     })
   })
 

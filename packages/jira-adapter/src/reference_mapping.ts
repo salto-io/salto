@@ -93,7 +93,7 @@ export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceRes
 ReferenceContextStrategyName
 > {
   constructor(def: JiraFieldReferenceDefinition) {
-    super({ src: def.src })
+    super({ src: def.src, sourceTransformation: def.sourceTransformation ?? 'asString' })
     this.serializationStrategy = JiraReferenceSerializationStrategyLookup[
       def.JiraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
     ]

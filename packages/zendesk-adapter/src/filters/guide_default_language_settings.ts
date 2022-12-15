@@ -23,10 +23,12 @@ import {
 import _ from 'lodash'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, isGuideEnabled } from '../config'
 import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
 import { getZendeskError } from '../errors'
+import { deployChange, deployChanges } from '../deployment'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -91,29 +93,37 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       change => isInstanceChange(change) && getChangeData(change).elemID.typeName === GUIDE_SETTINGS_TYPE_NAME
     )
 
-    // Removal means nothing, addition isn't possible because we don't allow activation of Guide with Salto
-    const errors = await awu(guideSettingsChanges).filter(isModificationChange).map(async change => {
+    // Removal means nothing, addition isn't possible because we don't allow activation of Guide with Salto (SALTO-2914)
+    const deployResults = await awu(guideSettingsChanges).filter(isModificationChange).map(async change => {
       const defaultChanged = change.data.before.value.default_locale !== change.data.after.value.default_locale
+
       if (defaultChanged) {
         try {
           await client.put({
             url: DEFAULT_LOCALE_API,
             data: { locale: getChangeData(change).value.default_locale },
           })
+
+          // If there was only default locale change, there is no reason do call deployChange
+          const detailedChanges = detailedCompare(change.data.before, change.data.after)
+          if (detailedChanges.every(c => c.id.createTopLevelParentID().path[0] === 'default_locale')) {
+            return { appliedChanges: [change] }
+          }
         } catch (err) {
-          return getZendeskError(getChangeData(change).elemID.getFullName(), err)
+          // If changing the default failed, don't continue
+          return { errors: [getZendeskError(getChangeData(change).elemID.getFullName(), err)] }
         }
       }
-      return undefined
-    }).filter(isDefined)
-      .toArray()
+
+      return deployChanges(
+        [change],
+        async c => { await deployChange(c, client, config.apiDefinitions) }
+      )
+    }).toArray()
 
     return {
-      deployResult: {
-        appliedChanges: [],
-        errors,
-      },
-      leftoverChanges: [...leftoverChanges, ...guideSettingsChanges],
+      deployResult: Object.assign({}, ...deployResults),
+      leftoverChanges,
     }
   },
 })

@@ -216,6 +216,7 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.locale : ref.value),
     lookup: val => val,
     lookupIndexName: 'locale',
+  },
   idString: {
     serialize: async ({ ref }) => _.toString(ref.value.value.id),
     lookup: val => val,

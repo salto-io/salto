@@ -110,7 +110,6 @@ import articleOrderFilter from './filters/guide_order/article_order'
 import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegmentFilter from './filters/everyone_user_segment'
 import guideArrangePaths from './filters/guide_arrange_paths'
-import guideElementTranslations from './filters/guide_create_element_translations'
 import guideDefaultLanguage from './filters/guide_default_language_settings'
 import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_article_translation'
 

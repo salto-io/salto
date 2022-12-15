@@ -1646,6 +1646,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   articles: {
     request: {
       // we are doing this for better parallelization of requests on large accounts
+      // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
       url: '/api/v2/help_center/categories/{category_id}/articles?include=translations&sort_by=updated_at',
       dependsOn: [
         { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },

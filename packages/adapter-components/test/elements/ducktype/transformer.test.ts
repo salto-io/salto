@@ -678,4 +678,58 @@ describe('ducktype_transformer', () => {
       expect(configChanges).toEqual([{ typeToExclude: 'folder' }])
     })
   })
+
+  describe('getNewElementsFromInstances', () => {
+    it('should create new types and instances from existing instances', () => {
+      const oldNestedestedType = new ObjectType({
+        elemID: new ElemID('someAdapter', 'nestedType'),
+        fields: {
+          name: { refType: BuiltinTypes.STRING },
+        },
+      })
+      const oldType = new ObjectType({
+        elemID: new ElemID('someAdapter', 'someType'),
+        fields: {
+          id: { refType: BuiltinTypes.NUMBER },
+          nested_type: { refType: oldNestedestedType },
+        },
+      })
+      const oldInstances = [
+        new InstanceElement(
+          'old1',
+          oldType,
+          {
+            id: 123,
+            nestedType: {
+              name: 'one',
+            },
+          }
+        ),
+        new InstanceElement(
+          'old1',
+          oldType,
+          {
+            id: 123,
+            nestedType: {
+              name: 'two',
+            },
+          }
+        ),
+      ]
+
+      const { instances, type, nestedTypes } = transformer.getNewElementsFromInstances({
+        adapterName: 'someAdapter',
+        typeName: 'someType',
+        instances: oldInstances,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
+      })
+      expect(type.elemID.getFullName()).toEqual('someAdapter.someType')
+      expect(instances).toHaveLength(2)
+      expect(instances[0].refType.type).toEqual(type)
+      expect(instances[1].refType.type).toEqual(type)
+      expect(nestedTypes).toHaveLength(1)
+      expect(type.fields.nestedType.refType.type).toEqual(nestedTypes[0])
+    })
+  })
 })

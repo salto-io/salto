@@ -57,7 +57,7 @@ const isCustomMetadataRecordTypeField = async (element: Element): Promise<boolea
 
 const isCustomMetadataRelatedChange = async (change: Change): Promise<boolean> => {
   const element = getChangeData(change)
-  return (isCustomMetadataRecordType(element) || isCustomMetadataRecordTypeField(element))
+  return await isCustomMetadataRecordType(element) || isCustomMetadataRecordTypeField(element)
 }
 
 const getApiNameOfRelatedChange = async (change: Change<ObjectType | Field>): Promise<string> => {

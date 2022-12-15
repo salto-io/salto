@@ -32,12 +32,6 @@ const {
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
 } = configUtils
-const UPDATED_CREATED_FIELDS = [
-  { fieldName: 'created_by_id', fieldType: 'unknown' },
-  { fieldName: 'updated_by_id', fieldType: 'unknown' },
-  { fieldName: 'created_at', fieldType: 'unknown' },
-  { fieldName: 'updated_at', fieldType: 'unknown' },
-]
 
 export const DEFAULT_ID_FIELDS = ['name']
 export const DEFAULT_FILENAME_FIELDS = ['name']
@@ -51,6 +45,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
+  { fieldName: 'created_by_id', fieldType: 'unknown' },
+  { fieldName: 'updated_by_id', fieldType: 'unknown' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -1738,7 +1734,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        ...UPDATED_CREATED_FIELDS,
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
@@ -1962,7 +1957,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        ...UPDATED_CREATED_FIELDS,
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
@@ -2078,7 +2072,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       dataField: 'translations',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        ...UPDATED_CREATED_FIELDS,
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },

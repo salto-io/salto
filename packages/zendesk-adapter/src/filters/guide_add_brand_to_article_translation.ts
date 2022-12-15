@@ -13,27 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { ARTICLE_TYPE_NAME } from '../constants'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-
-export const removeTitleAndBody = (elem: InstanceElement): void => {
-  delete elem.value.title
-  delete elem.value.body
-}
+import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
 
 /**
- * This filter works as follows: onFetch it discards the 'title' and 'body' fields to avoid
- * data duplication with the default translation. It is separated from
- * article as the removal needs to happen after the reference expressions
- * are created.
+ * this filter adds brand field to article translation since it is created through the standalone mechanism and is not
+ * added in its creation.
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)
-      .filter(obj => obj.elemID.typeName === ARTICLE_TYPE_NAME)
-      .forEach(removeTitleAndBody)
+      .filter(obj => [ARTICLE_TRANSLATION_TYPE_NAME].includes(obj.elemID.typeName))
+      .forEach(elem => {
+        elem.value.brand = getParent(elem).value.brand
+      })
   },
 })
 export default filterCreator

@@ -92,7 +92,6 @@ import handleAppInstallationsFilter from './filters/handle_app_installations'
 import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article/article'
-import helpCenterFetchArticle from './filters/guide_fetch_article'
 import articleBodyFilter from './filters/article/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
@@ -101,7 +100,7 @@ import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
 import guideTranslationFilter from './filters/guide_translation'
-import fetchCategorySection from './filters/guide_fetch_section_and_category'
+import fetchCategorySection from './filters/guide_fetch_article_section_and_category'
 import guideParentSection, { addParentFields } from './filters/guide_parent_to_section'
 import guideGuideSettings from './filters/guide_guide_settings'
 import removeBrandLogoFilter from './filters/remove_brand_logo_field'
@@ -112,8 +111,7 @@ import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegmentFilter from './filters/everyone_user_segment'
 import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
-import guideElementTranslations from './filters/guide_create_element_translations'
-
+import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_article_translation'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -158,12 +156,12 @@ export const DEFAULT_FILTERS = [
   // tagsFilter and guideLocalesFilter
   usersFilter,
   tagsFilter,
+  guideAddBrandToArticleTranslation,
   guideLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
   removeBrandLogoFilter,
-  guideElementTranslations,
   categoryOrderFilter,
   sectionOrderFilter,
   articleOrderFilter,
@@ -191,8 +189,6 @@ export const DEFAULT_FILTERS = [
   unorderedListsFilter,
   dynamicContentReferencesFilter,
   referencedIdFieldsFilter,
-  // need to be after referencedIdFieldsFilter as 'name' and 'title' is removed
-  helpCenterFetchArticle,
   articleBodyFilter,
   guideParentSection,
   serviceUrlFilter,
@@ -202,7 +198,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
-  fetchCategorySection, // need to be after arrange paths as it uses the 'name' field
+  fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   // defaultDeployFilter should be last!
   defaultDeployFilter,
 ]

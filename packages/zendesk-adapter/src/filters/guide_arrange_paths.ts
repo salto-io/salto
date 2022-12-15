@@ -119,9 +119,9 @@ const getNameFromName = (instance?: InstanceElement): string => instance?.value.
 
 
 const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
-  [CATEGORY_ORDER_TYPE_NAME]: () => 'categories_order',
-  [SECTION_ORDER_TYPE_NAME]: () => 'sections_order',
-  [ARTICLE_ORDER_TYPE_NAME]: () => 'articles_order',
+  [CATEGORY_ORDER_TYPE_NAME]: () => 'category_order',
+  [SECTION_ORDER_TYPE_NAME]: () => 'section_order',
+  [ARTICLE_ORDER_TYPE_NAME]: () => 'article_order',
   [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
   [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
   [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,

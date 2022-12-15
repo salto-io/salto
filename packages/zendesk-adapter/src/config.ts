@@ -45,8 +45,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
-  { fieldName: 'created_by_id', fieldType: 'unknown' },
-  { fieldName: 'updated_by_id', fieldType: 'unknown' },
+  { fieldName: 'created_by_id' },
+  { fieldName: 'updated_by_id' },
 ]
 
 export const CLIENT_CONFIG = 'client'

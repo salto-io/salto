@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 
-export const SALESFORCE_METADATA_TYPES = [
+import _ from 'lodash'
+
+export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'AIApplication',
   'AIApplicationConfig',
   'AccessMapping',
@@ -69,6 +71,7 @@ export const SALESFORCE_METADATA_TYPES = [
   'BriefcaseDefinition',
   'BriefcaseRule',
   'BriefcaseRuleFilter',
+  'BusinessProcess',
   'CallCenter',
   'CallCenterItem',
   'CallCenterRoutingMap',
@@ -85,6 +88,7 @@ export const SALESFORCE_METADATA_TYPES = [
   'CleanDataService',
   'CleanRule',
   'Community',
+  'CompactLayout',
   'ComponentInstance',
   'ComponentInstanceProperty',
   'ComponentInstancePropertyList',
@@ -118,11 +122,9 @@ export const SALESFORCE_METADATA_TYPES = [
   'CustomHelpMenuItem',
   'CustomHelpMenuSection',
   'CustomHttpHeader',
-  'CustomLabel',
   'CustomLabels',
   'CustomMetadataValue',
   'CustomNotificationType',
-  'CustomObject',
   'CustomObjectTranslation',
   'CustomPageWebLink',
   'CustomPermission',
@@ -162,7 +164,6 @@ export const SALESFORCE_METADATA_TYPES = [
   'EmailFolder',
   'EmailServicesAddress',
   'EmailServicesFunction',
-  'EmailTemplate',
   'EmbeddedServiceAppointmentSettings',
   'EmbeddedServiceBranding',
   'EmbeddedServiceConfig',
@@ -202,6 +203,7 @@ export const SALESFORCE_METADATA_TYPES = [
   'FieldMappingRow',
   'FieldOverride',
   'FieldRestrictionRule',
+  'FieldSet',
   'FieldSetItem',
   'FieldSetTranslation',
   'FlexiPageEvent',
@@ -296,6 +298,7 @@ export const SALESFORCE_METADATA_TYPES = [
   'IframeWhiteListUrlSettings',
   'InboundNetworkConnProperty',
   'InboundNetworkConnection',
+  'Index',
   'IndexField',
   'InstalledPackage',
   'ItemInstance',
@@ -323,6 +326,7 @@ export const SALESFORCE_METADATA_TYPES = [
   'LightningPageRegion',
   'LightningPageTemplateInstance',
   'ListPlacement',
+  'ListView',
   'ListViewFilter',
   'LiveAgentConfig',
   'LiveChatSensitiveDataRule',
@@ -445,6 +449,7 @@ export const SALESFORCE_METADATA_TYPES = [
   'RecordActionDeploymentContext',
   'RecordActionRecommendation',
   'RecordActionSelectableItem',
+  'RecordType',
   'RecordTypePicklistValue',
   'RecordTypeTranslation',
   'RedirectWhitelistUrl',
@@ -494,6 +499,7 @@ export const SALESFORCE_METADATA_TYPES = [
   'SharingCriteriaRule',
   'SharingGuestRule',
   'SharingOwnerRule',
+  'SharingReason',
   'SharingReasonTranslation',
   'SharingRecalculation',
   'SharingRules',
@@ -542,11 +548,13 @@ export const SALESFORCE_METADATA_TYPES = [
   'UserProfileSearchScope',
   'UserProvisioningConfig',
   'Users',
+  'ValidationRule',
   'ValidationRuleTranslation',
   'ValueSet',
   'ValueSetValuesDefinition',
   'ValueTranslation',
   'VendorCallCenterStatusMap',
+  'WebLink',
   'WebLinkTranslation',
   'WorkflowActionReference',
   'WorkflowAlert',
@@ -562,3 +570,87 @@ export const SALESFORCE_METADATA_TYPES = [
   'WorkflowTimeTrigger',
   'WorkspaceMapping',
 ] as const
+
+export const METADATA_TYPES_WITH_DEPENDENCIES = [
+  'CustomMetadata',
+  'CustomObject',
+  'Workflow',
+] as const
+
+export const EXCLUDED_METADATA_TYPES = [
+  'AssignmentRule', // Fetched through parent type
+  'CustomField', // Has a specific handling in Salto
+  'CustomIndex', // Cannot retrieve by Record name
+  'CustomLabel', // Fetched through parent type
+  'EmailTemplate', // Fetched with specific names
+  'EscalationRule', // Fetched through parent type
+  'FlowDefinition', // Not recommended since API version 44.0
+  'Settings', // Has a specific handling in Salto
+] as const
+
+
+export const SUPPORTED_METADATA_TYPES = [
+  ...METADATA_TYPES_WITHOUT_DEPENDENCIES,
+  ...METADATA_TYPES_WITH_DEPENDENCIES,
+] as const
+
+export const CUSTOM_OBJECT_DEPENDENCIES = [
+  'WebLink',
+  'ValidationRule',
+  'BusinessProcess',
+  'RecordType',
+  'ListView',
+  'FieldSet',
+  'CompactLayout',
+  'SharingReason',
+  'Index',
+] as const
+
+export const WORKFLOW_DEPENDENCIES = [
+  'WorkflowAlert',
+  'WorkflowFieldUpdate',
+  'WorkflowFlowAction',
+  'WorkflowOutboundMessage',
+  'WorkflowKnowledgePublish',
+  'WorkflowTask',
+  'WorkflowRule',
+] as const
+
+export type MetadataTypeWithoutDependencies = typeof METADATA_TYPES_WITHOUT_DEPENDENCIES[number]
+export type MetadataTypeWithDependencies = typeof METADATA_TYPES_WITH_DEPENDENCIES[number]
+export type ExcludedMetadataType = typeof EXCLUDED_METADATA_TYPES[number]
+export type SupportedMetadataType = typeof SUPPORTED_METADATA_TYPES[number]
+export type SalesforceMetadataType = SupportedMetadataType | ExcludedMetadataType
+
+export type CustomObjectDependency = typeof CUSTOM_OBJECT_DEPENDENCIES[number]
+export type WorkflowDependency = typeof WORKFLOW_DEPENDENCIES[number]
+
+export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SupportedMetadataType[]> = {
+  CustomMetadata: ['CustomObject'],
+  CustomObject: CUSTOM_OBJECT_DEPENDENCIES as ReadonlyArray<string> as SupportedMetadataType[],
+  Workflow: WORKFLOW_DEPENDENCIES as ReadonlyArray<string> as SupportedMetadataType[],
+}
+
+export const isMetadataTypeWithDependency = (
+  metadataType: SupportedMetadataType
+): metadataType is MetadataTypeWithDependencies => (
+  (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
+)
+
+export const getFetchTargets = (target: SupportedMetadataType[]): SupportedMetadataType[] => {
+  const allTypes = [...target]
+  const handledTypesWithDependencies: MetadataTypeWithDependencies[] = []
+  let typesWithDependencies = allTypes.filter(isMetadataTypeWithDependency)
+  while (!_.isEmpty(typesWithDependencies)) {
+    _(METADATA_TYPE_TO_DEPENDENCIES)
+      .pick(typesWithDependencies)
+      .values()
+      .flatten()
+      .forEach(metadataType => allTypes.push(metadataType))
+    typesWithDependencies.forEach(metadataType => handledTypesWithDependencies.push(metadataType))
+    typesWithDependencies = allTypes
+      .filter(isMetadataTypeWithDependency)
+      .filter(typeWithDependency => !handledTypesWithDependencies.includes(typeWithDependency))
+  }
+  return _.uniq(allTypes)
+}

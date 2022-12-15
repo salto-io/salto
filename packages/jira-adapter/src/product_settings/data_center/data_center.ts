@@ -59,6 +59,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     url: '/rest/api/3/filter/search',
   },
   {
+    httpMethods: ['post'],
+    url: '/rest/api/3/filter',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/filter/.*',
+  },
+  {
     httpMethods: ['post', 'put'],
     url: '/rest/api/3/statuses',
   },
@@ -294,6 +302,18 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['put'],
     url: '/rest/api/3/issuetypescheme/project',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescheme/.+/issuetype',
+  },
+  {
+    httpMethods: ['delete'],
+    url: '/rest/api/3/issuetypescheme/.+/issuetype/.+',
+  },
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/issuetypescheme/.+/issuetype/move',
   },
 ]
 

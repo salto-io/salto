@@ -41,6 +41,8 @@ const DEFAULT_ID_FIELDS = ['name']
 const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'created' },
   { fieldName: 'lastUpdated' },
+  { fieldName: 'createdBy' },
+  { fieldName: 'lastUpdatedBy' },
 ]
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
@@ -48,11 +50,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     request: {
       url: '/api/v1/groups',
       recurseInto: [
-        {
-          type: 'api__v1__groups___groupId___users@uuuuuu_00123_00125uu',
-          toField: 'users',
-          context: [{ name: 'groupId', fromField: 'id' }],
-        },
         {
           type: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu',
           toField: 'roles',
@@ -126,11 +123,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     request: {
       url: '/api/v1/apps',
       recurseInto: [
-        {
-          type: 'api__v1__apps___appId___users@uuuuuu_00123_00125uu',
-          toField: 'appUsers',
-          context: [{ name: 'appId', fromField: 'id' }],
-        },
         {
           type: 'api__v1__apps___appId___credentials__csrs@uuuuuu_00123_00125uuuu',
           toField: 'CSRs',
@@ -256,11 +248,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     request: {
       url: '/api/v1/idps',
       recurseInto: [
-        {
-          type: 'api__v1__idps___idpId___users@uuuuuu_00123_00125uu',
-          toField: 'users',
-          context: [{ name: 'idpId', fromField: 'id' }],
-        },
         {
           type: 'api__v1__idps___idpId___credentials__csrs@uuuuuu_00123_00125uuuu',
           toField: 'CSRs',
@@ -709,9 +696,6 @@ export const SUPPORTED_TYPES = {
   Feature: ['api__v1__features'],
   Group: [
     'api__v1__groups',
-  ],
-  User: [
-    'api__v1__users',
   ],
   GroupRule: ['api__v1__groups__rules'],
   IdentityProvider: [

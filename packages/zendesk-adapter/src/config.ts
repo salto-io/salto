@@ -45,6 +45,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
+  { fieldName: 'created_by_id', fieldType: 'unknown' },
+  { fieldName: 'updated_by_id', fieldType: 'unknown' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -1643,9 +1645,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   articles: {
     request: {
-      url: '/api/v2/help_center/{locale}/articles',
+      // we are doing this for better parallelization of requests on large accounts
+      // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
+      url: '/api/v2/help_center/categories/{category_id}/articles?include=translations&sort_by=updated_at',
       dependsOn: [
-        { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
+        { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
       ],
     },
     transformation: {
@@ -1735,8 +1739,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'created_by_id', fieldType: 'unknown' },
-        { fieldName: 'updated_by_id', fieldType: 'unknown' },
+        { fieldName: 'brand', fieldType: 'number' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1963,8 +1966,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'created_by_id', fieldType: 'unknown' },
-        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -2068,11 +2069,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'created_by_id', fieldType: 'unknown' },
-        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

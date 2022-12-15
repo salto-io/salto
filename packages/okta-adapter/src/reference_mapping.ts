@@ -19,6 +19,12 @@ import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, POLICY_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, APP_USER_TYPE_NAME, ROLE_TYPE_NAME } from './constants'
 
 
+export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
+  constructor(def: referenceUtils.FieldReferenceDefinition<never>) {
+    super({ ...def, sourceTransformation: def.sourceTransformation ?? 'asString' })
+  }
+}
+
 export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
     src: { field: 'assignedGroups', parentTypes: [APPLICATION_TYPE_NAME] },

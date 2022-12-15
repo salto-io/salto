@@ -48,4 +48,16 @@ describe('JiraFieldReferenceResolver', () => {
     )
     expect(res.serializationStrategy).toBeDefined()
   })
+  it('should use the correct sourceTransformation ', () => {
+    const res = new JiraFieldReferenceResolver(
+      {
+        src: { field: 'value', parentTypes: ['WorkflowProperty'] },
+        sourceTransformation: 'asCaseInsensitiveString',
+        target: { typeContext: 'workflowStatusPropertiesContext' },
+      }
+    )
+    expect(res.sourceTransformation).toBeDefined()
+    expect(res.sourceTransformation.transform('AAA')).toEqual('aaa')
+    expect(res.sourceTransformation.validate('blah', 'BLAH')).toBeTrue()
+  })
 })

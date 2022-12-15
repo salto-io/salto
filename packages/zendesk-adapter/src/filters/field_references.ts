@@ -44,6 +44,8 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   set_schedule: 'business_hours_schedule',
   ticket_form_id: 'ticket_form',
   locale_id: 'locale',
+  via_id: 'channel',
+  current_via_id: 'channel',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -80,6 +82,9 @@ const getValueLookupType: referenceUtils.ContextValueMapperFunc = val => {
 
 const getLowerCaseSingularLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const lowercaseVal = val.toLowerCase()
+  if (['user', 'users'].includes(lowercaseVal)) {
+    return undefined
+  }
   // for now this simple conversion to singular form seems good enough, but
   // we may need to improve it later on
   if (lowercaseVal.endsWith('s')) {
@@ -171,6 +176,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'ticketFieldOption'
   | 'userFieldOption'
   | 'locale'
+  | 'idString'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -210,6 +216,10 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.locale : ref.value),
     lookup: val => val,
     lookupIndexName: 'locale',
+  idString: {
+    serialize: async ({ ref }) => _.toString(ref.value.value.id),
+    lookup: val => val,
+    lookupIndexName: 'id',
   },
 }
 
@@ -270,6 +280,7 @@ export class ZendeskFieldReferenceResolver extends referenceUtils.FieldReference
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
   }
 }
 
@@ -708,6 +719,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -720,6 +732,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'id', parentTypes: ['workspace__apps'] },
@@ -774,6 +787,13 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
+  // note: this overlaps with additional strategies, but because the first strategy
+  // is chosen for serialization, it is safe
+  {
+    src: { field: 'value', parentTypes: ['workspace__conditions__all'] },
+    zendeskSerializationStrategy: 'idString',
+    target: { typeContext: 'neighborField' },
+  },
   // only one of these applies in a given instance
   {
     src: { field: 'value' },
@@ -979,7 +999,6 @@ const filter: FilterCreator = ({ config }) => ({
         fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
         contextStrategyLookup,
         // since ids and references to ids vary inconsistently between string/number, allow both
-        isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
         fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),
       })
     }

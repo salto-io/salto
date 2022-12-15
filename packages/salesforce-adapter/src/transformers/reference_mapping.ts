@@ -130,6 +130,7 @@ type SourceDef = {
 export type FieldReferenceDefinition = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
+  sourceTransformation?: referenceUtils.ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
@@ -594,6 +595,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborRelatedEntityTypeLookup', type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
+    target: { type: 'EntitlementProcess' },
+    sourceTransformation: 'asCaseInsensitiveString',
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on
@@ -641,6 +647,7 @@ const matchInstanceType = async (
 export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
+  sourceTransformation: referenceUtils.ReferenceSourceTransformation
   target?: referenceUtils.ExtendedReferenceTargetDefinition<ReferenceContextStrategyName>
 
   constructor(def: FieldReferenceDefinition) {
@@ -648,6 +655,7 @@ export class FieldReferenceResolver {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'absoluteApiName'
     ]
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined

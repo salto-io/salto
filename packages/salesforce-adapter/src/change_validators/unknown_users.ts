@@ -38,7 +38,7 @@ type TypesWithUserFields = {
   [type: string]: UserFieldGetter[]
 }
 
-type MissingUserInfo = {
+type MissingUser = {
   instance: InstanceElement
   field: string
   userName: string
@@ -94,17 +94,17 @@ const getUnknownUsers = async (
   defMapping: TypesWithUserFields,
   instance: InstanceElement,
   existingUsers: string[],
-): Promise<MissingUserInfo[]> => {
+): Promise<MissingUser[]> => {
   const instanceType = await apiName(await instance.getType())
   const getterDefs = defMapping[instanceType]
 
   return (getterDefs
     .map(getterDef => ({ instance, field: getterDef.field, userName: getterDef.getter(instance) }))
-    .filter(missingUserInfo => isValidUser(missingUserInfo.userName)) as MissingUserInfo[])
+    .filter(missingUserInfo => isValidUser(missingUserInfo.userName)) as MissingUser[])
     .filter(missingUserInfo => !existingUsers.includes(missingUserInfo.userName))
 }
 
-const unknownUserError = ({ instance, field, userName }: MissingUserInfo): ChangeError => (
+const unknownUserError = ({ instance, field, userName }: MissingUser): ChangeError => (
   {
     elemID: instance.elemID,
     severity: 'Error',

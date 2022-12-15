@@ -44,6 +44,8 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   set_schedule: 'business_hours_schedule',
   ticket_form_id: 'ticket_form',
   locale_id: 'locale',
+  via_id: 'channel',
+  current_via_id: 'channel',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -80,6 +82,9 @@ const getValueLookupType: referenceUtils.ContextValueMapperFunc = val => {
 
 const getLowerCaseSingularLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const lowercaseVal = val.toLowerCase()
+  if (['user', 'users'].includes(lowercaseVal)) {
+    return undefined
+  }
   // for now this simple conversion to singular form seems good enough, but
   // we may need to improve it later on
   if (lowercaseVal.endsWith('s')) {
@@ -704,6 +709,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -716,6 +722,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'id', parentTypes: ['workspace__apps'] },

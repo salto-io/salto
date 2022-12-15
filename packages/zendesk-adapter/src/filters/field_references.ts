@@ -45,6 +45,7 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   ticket_form_id: 'ticket_form',
   locale_id: 'locale',
   via_id: 'channel',
+  current_via_id: 'channel',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {

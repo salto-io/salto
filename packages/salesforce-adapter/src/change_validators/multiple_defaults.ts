@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import _, { isPlainObject } from 'lodash'
+import _ from 'lodash'
 import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
 
@@ -32,7 +32,7 @@ type FieldDef = {
   nested?: boolean
 }
 
-const fieldNameToInnerContextField: Record<string, FieldDef> = {
+const FIELD_NAME_TO_INNER_CONTEXT_FIELD: Record<string, FieldDef> = {
   applicationVisibilities: { name: 'application' },
   recordTypeVisibilities: { name: 'recordType', nested: true },
   standardValue: { name: 'label' },
@@ -71,7 +71,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
     elemID: instance.elemID,
     severity: 'Warning',
     message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.`,
-    detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
+    detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}. The following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
   }
 }
 
@@ -80,7 +80,7 @@ const createFieldChangeError = (field: Field, contexts: string[]):
   elemID: field.elemID,
   severity: 'Warning',
   message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in type ${field.parent.elemID.name}.`,
-  detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
+  detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}. The following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name]?.name ?? LABEL}s are set to default: ${contexts}`,
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
@@ -107,35 +107,45 @@ const getInstancesMultipleDefaultsErrors = async (
     }
     return val
   }
-  const findMultipleDefaults = async (value: Value, fieldName: string): Promise<ChangeError[]> => {
-    const fieldType = await (await after.getType()).fields[fieldName].getType()
-    const startLevelType = (fieldNameToInnerContextField[fieldName].nested && isMapType(fieldType))
-      ? await fieldType.getInnerType() : fieldType
+
+  const findMultipleDefaults = async (value: Value, fieldType:TypeElement, valueName: string):
+      Promise<string[] | undefined> => {
     const defaultObjects = await getDefaultObjectsList(
       value,
-      startLevelType
+      fieldType
     )
     const contexts = defaultObjects
       .filter(val => val.default)
-      .map(obj => obj[fieldNameToInnerContextField[fieldName].name])
+      .map(obj => obj[valueName])
       .map(formatContext)
-    return contexts.length > 1
-      ? [
-        createInstanceChangeError((
-          await after.getType()).fields[fieldName],
-        contexts,
-        after),
-      ] : []
+    return contexts.length > 1 ? contexts : undefined
+  }
+
+  const createChangeErrorFromContext = (field: Field, context: string[] | undefined, instance: InstanceElement):
+      ChangeError[] => {
+    if (context !== undefined) {
+      return [createInstanceChangeError(field, context, instance)]
+    }
+    return []
   }
 
   const errors: ChangeError[] = await awu(Object.entries(after.value))
-    .filter(([fieldName]) => Object.keys(fieldNameToInnerContextField).includes(fieldName))
+    .filter(([fieldName]) => Object.keys(FIELD_NAME_TO_INNER_CONTEXT_FIELD).includes(fieldName))
     .flatMap(async ([fieldName, value]) => {
-      if (isPlainObject(value) && fieldNameToInnerContextField[fieldName].nested) {
+      const field = (await after.getType()).fields[fieldName]
+      const fieldType = await field.getType()
+      const valueName = FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldName].name
+      if (_.isPlainObject(value) && FIELD_NAME_TO_INNER_CONTEXT_FIELD[fieldName].nested) {
         return awu(Object.entries(value))
-          .flatMap(async ([, innerValue]) => findMultipleDefaults(innerValue, fieldName))
+          .flatMap(async ([_key, innerValue]) => {
+            const startLevelType = isMapType(fieldType)
+              ? await fieldType.getInnerType() : fieldType
+            const defaultsContexts = await findMultipleDefaults(innerValue, startLevelType, valueName)
+            return createChangeErrorFromContext(field, defaultsContexts, after)
+          })
       }
-      return findMultipleDefaults(value, fieldName)
+      const defaultsContexts = await findMultipleDefaults(value, fieldType, valueName)
+      return createChangeErrorFromContext(field, defaultsContexts, after)
     }).toArray()
 
   return errors

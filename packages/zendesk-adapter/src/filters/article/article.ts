@@ -263,7 +263,10 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           (getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
           && !isRemovalChange(change),
       )
-      addRemovalChangesId(articleChanges)
+      addRemovalChangesId(
+        nonArticleChanges // non article changes contains removal changes of article!
+          .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+      )
       setUserSegmentIdForAdditionChanges(articleChanges)
       const articleDeployResult = await deployChanges(
         articleChanges,

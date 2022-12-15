@@ -133,7 +133,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'CustomSite',
   'CustomTab',
   'CustomValue',
-  'Dashboard',
   'DashboardComponent',
   'DashboardComponentColumn',
   'DashboardComponentGroupingSort',
@@ -458,7 +457,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'RelatedList',
   'RelatedListItem',
   'RemoteSiteSetting',
-  'Report',
   'ReportAggregate',
   'ReportAggregateReference',
   'ReportBlockInfo',
@@ -586,6 +584,8 @@ export const EXCLUDED_METADATA_TYPES = [
   'EscalationRule', // Fetched through parent type
   'FlowDefinition', // Not recommended since API version 44.0
   'Settings', // Has a specific handling in Salto
+  'Report', // Fetched with specific names
+  'Dashboard', // Fetched with specific names
 ] as const
 
 

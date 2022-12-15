@@ -112,7 +112,7 @@ const ReferenceSerializationStrategyLookup: Record<
       if (val.includes('$Label')) {
         return val.split(API_NAME_SEPARATOR)[1]
       }
-      return undefined
+      return val
     },
   },
 }

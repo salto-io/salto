@@ -52,11 +52,12 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       .filter(b => b.value.has_help_center === true)
 
     // Request the default locale for each brand and fill up the brand's language info
-    const brandToLanguageInfo = await awu(brands).map(async brand => {
+    const brandsLanguageInfo = await awu(brands).map(async brand => {
       const brandId = brand.value.id
       try {
         const res = await brandIdToClient[brandId].getSinglePage({ url: DEFAULT_LOCALE_API })
         return {
+          brandName: brand.elemID.name,
           defaultLocale: res.data.toString(),
           settings: guideSettings.find(settings => settings.value.brand === brandId),
           languageSettings: guideLanguageSettings.filter(settings => settings.value.brand === brandId),
@@ -67,12 +68,17 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       }
     }).filter(isDefined).toArray()
 
-    brandToLanguageInfo.forEach(languageInfo => {
-      const { defaultLocale, settings, languageSettings } = languageInfo
+    brandsLanguageInfo.forEach(brandLanguageInfo => {
+      const { brandName, defaultLocale, settings, languageSettings } = brandLanguageInfo
       const defaultLanguageSettings = languageSettings.find(setting => setting.value.locale === defaultLocale)
 
-      // This shouldn't happen, but is needed for type casting
-      if (defaultLanguageSettings === undefined || settings === undefined) {
+      // These shouldn't happen, but is needed for type casting
+      if (settings === undefined) {
+        log.error(`Missing ${GUIDE_SETTINGS_TYPE_NAME} for brand ${brandName}`)
+        return
+      }
+      if (defaultLanguageSettings === undefined) {
+        log.error(`Missing ${GUIDE_LANGUAGE_SETTINGS_TYPE_NAME} of locale ${defaultLocale} for brand ${brandName}`)
         return
       }
 

@@ -64,7 +64,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       if (locale !== undefined) {
         instance.value.locale = new ReferenceExpression(locale.elemID, locale)
       } else {
-        log.error(`Could not find '${instance.value.locale}' language_settings of brand ${brandName}`)
+        log.error(`Could not find '${instance.value.locale}' ${GUIDE_LANGUAGE_SETTINGS_TYPE_NAME} of brand ${brandName}`)
       }
 
       if (TYPES_WITH_SOURCE_LOCALE.includes(instance.elemID.typeName)) {
@@ -72,7 +72,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         if (sourceLocale !== undefined) {
           instance.value.source_locale = new ReferenceExpression(sourceLocale.elemID, sourceLocale)
         } else {
-          log.error(`Could not find '${instance.value.source_locale}' language_settings of brand ${brandName}`)
+          log.error(`Could not find '${instance.value.source_locale}' ${GUIDE_LANGUAGE_SETTINGS_TYPE_NAME} of brand ${brandName}`)
         }
       }
     })

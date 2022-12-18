@@ -47,9 +47,17 @@ describe('Zendesk utils', () => {
           has_help_center: true,
         },
       ),
+      new InstanceElement(
+        'TestforGuide',
+        brandType,
+        {
+          name: 'NoHelpCenterBrand',
+          has_help_center: false,
+        },
+      )
     ]
 
-    it('should return all brands', async () => {
+    it('should return all brands with help center', async () => {
       const fetchConfig = {
         include: [{ type: '.*' }],
         exclude: [],

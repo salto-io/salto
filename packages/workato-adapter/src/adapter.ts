@@ -118,11 +118,11 @@ export default class WorkatoAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch workato account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
-    const { elements } = await this.getElements()
+    const { elements, errors } = await this.getElements()
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await this.createFiltersRunner().onFetch(elements)
-    return { elements }
+    return { elements, errors }
   }
 
   @logDuration('updating cross-service references')

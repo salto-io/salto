@@ -21,7 +21,7 @@ import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
 import { CLIENT_CONFIG, CONFIG, configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams, validateFetchConfig } from './config'
 import { NETSUITE } from './constants'
-import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject } from './query'
+import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject, FETCH_PARAMS } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
@@ -157,6 +157,10 @@ const netsuiteConfigFromConfig = (
     }
     const { value: config } = configInstance
     validateConfig(config)
+    log.debug('using netsuite adapter config: %o', {
+      ...config,
+      fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
+    })
     return _.pickBy(config, (_value, key) => {
       if (key in CONFIG) {
         return true

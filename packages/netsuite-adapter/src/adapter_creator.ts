@@ -157,7 +157,7 @@ const netsuiteConfigFromConfig = (
     }
     const { value: config } = configInstance
     validateConfig(config)
-    log.debug('using netsuite config: %o', {
+    log.debug('using netsuite adapter config: %o', {
       ...config,
       fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
     })

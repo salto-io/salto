@@ -23,9 +23,8 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
-import { ZENDESK } from '../../src/constants'
+import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { oneTranslationPerLocaleValidator } from '../../src/change_validators'
-import { LOCALE_TYPE_NAME } from '../../src/filters/guide_locale'
 
 describe('oneTranslationPerLocalValidator',
   () => {
@@ -35,8 +34,8 @@ describe('oneTranslationPerLocalValidator',
     const articleTranslationType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'article_translation'),
     })
-    const guideLocaleType = new ObjectType({
-      elemID: new ElemID(ZENDESK, LOCALE_TYPE_NAME),
+    const guideLanguageSettingsType = new ObjectType({
+      elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
     })
 
     it('should not return an error when article has different translations with different locale', async () => {
@@ -60,15 +59,15 @@ describe('oneTranslationPerLocalValidator',
         'Test3',
         articleTranslationType,
         {
-          locale: new ReferenceExpression(new ElemID(ZENDESK, LOCALE_TYPE_NAME, 'instance', 'es')),
+          locale: new ReferenceExpression(new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, 'instance', 'es')),
         },
         undefined,
       )
       const esLocale = new InstanceElement(
         'es',
-        guideLocaleType,
+        guideLanguageSettingsType,
         {
-          id: 'es',
+          locale: 'es',
         },
       )
       const article = new InstanceElement(
@@ -103,6 +102,13 @@ describe('oneTranslationPerLocalValidator',
     })
 
     it('should return an error when article has different translations with same locale', async () => {
+      const enusLocale = new InstanceElement(
+        'en-us',
+        guideLanguageSettingsType,
+        {
+          locale: 'en-us',
+        },
+      )
       const enTranslation = new InstanceElement(
         'Test2',
         articleTranslationType,
@@ -115,7 +121,8 @@ describe('oneTranslationPerLocalValidator',
         'Test2',
         articleTranslationType,
         {
-          locale: 'en-us',
+          // Check that the validator can catch both a string and a reference expression
+          locale: new ReferenceExpression(enusLocale.elemID, enusLocale),
         },
         undefined,
       )
@@ -142,7 +149,7 @@ describe('oneTranslationPerLocalValidator',
 
       const errors = await oneTranslationPerLocaleValidator(
         [toChange({ after: enTranslation }), toChange({ after: enTranslation2 })],
-        elementSource.createInMemoryElementSource([]),
+        elementSource.createInMemoryElementSource([enusLocale]),
       )
       expect(errors).toEqual([{
         elemID: article.elemID,

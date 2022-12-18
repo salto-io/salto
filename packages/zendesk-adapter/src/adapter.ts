@@ -109,8 +109,8 @@ import sectionOrderFilter from './filters/guide_order/section_order'
 import articleOrderFilter from './filters/guide_order/article_order'
 import guideServiceUrl from './filters/guide_service_url'
 import everyoneUserSegmentFilter from './filters/everyone_user_segment'
-import guideLanguageSettings from './filters/guide_language_translations'
 import guideArrangePaths from './filters/guide_arrange_paths'
+import guideDefaultLanguage from './filters/guide_default_language_settings'
 import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_article_translation'
 
 const { makeArray } = collections.array
@@ -152,12 +152,9 @@ export const DEFAULT_FILTERS = [
   hardcodedChannelFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
-  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter,
-  // tagsFilter and guideLocalesFilter
   usersFilter,
   tagsFilter,
   guideAddBrandToArticleTranslation,
-  guideLocalesFilter,
   macroAttachmentsFilter,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
@@ -171,9 +168,11 @@ export const DEFAULT_FILTERS = [
   articleFilter,
   guideSectionCategoryFilter,
   guideTranslationFilter,
-  guideLanguageSettings,
   guideGuideSettings,
+  guideDefaultLanguage, // needs to be after guideGuideSettings
   guideServiceUrl,
+  guideLocalesFilter, // Needs to be after guideServiceUrl
+  // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter, tagsFilter and guideLocalesFilter
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,

@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/guide_translation'
 import { createFilterCreatorParams } from '../utils'
-import { ZENDESK } from '../../src/constants'
+import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { removedTranslationParentId } from '../../src/filters/guide_section_and_category'
 
 describe('guild section translation filter', () => {
@@ -32,21 +32,20 @@ describe('guild section translation filter', () => {
 
   const sectionTypeName = 'section'
   const sectionTranslationTypename = 'section_translation'
-  const guideLocaleTypename = 'guide_locale'
   const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
   const sectionTranslationType = new ObjectType(
     { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
   )
-  const helpCenterLocaleType = new ObjectType(
-    { elemID: new ElemID(ZENDESK, guideLocaleTypename) }
-  )
+  const guideLanguageSettingsType = new ObjectType({
+    elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
+  })
 
 
-  const helpCenterLocaleInstance = new InstanceElement(
+  const guideLanguageSettingsInstance = new InstanceElement(
     'instance',
-    helpCenterLocaleType,
+    guideLanguageSettingsType,
     {
-      id: 'he',
+      locale: 'he',
     }
   )
 
@@ -77,7 +76,7 @@ describe('guild section translation filter', () => {
       name: 'name',
       description: 'description',
       source_locale: new ReferenceExpression(
-        helpCenterLocaleType.elemID.createNestedID('instance', 'Test1'), helpCenterLocaleInstance
+        guideLanguageSettingsType.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
       ),
       translations: [
         heSectionTranslationInstance.value,

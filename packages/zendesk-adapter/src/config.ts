@@ -1815,6 +1815,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
+      fieldTypeOverrides: [
+        { fieldName: 'default_locale', fieldType: 'string' },
+      ],
       // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {
@@ -1996,13 +1999,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           translation_id: 'id',
         },
       },
-    },
-  },
-  // needed until SALTO-2867 is solved
-  guide_locale: {
-    transformation: {
-      idFields: ['id'],
-      fileNameFields: ['id'],
     },
   },
   categories: {

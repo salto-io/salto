@@ -40,7 +40,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, GUIDE_LOCALE,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
 } from '../constants'
 
 const { RECORDS_PATH } = elementsUtils
@@ -48,11 +48,7 @@ const log = logger(module)
 
 export const UNSORTED = 'unsorted'
 export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
-const FIRST_LEVEL_TYPES = [
-  USER_SEGMENT_TYPE_NAME,
-  PERMISSION_GROUP_TYPE_NAME,
-  GUIDE_LOCALE,
-] // TODO remove guide locale in SALTO-3010
+const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
 const BRAND_SECOND_LEVEL = [
   CATEGORY_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME,
@@ -92,12 +88,11 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [SECTION_ORDER_TYPE_NAME]: 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
-  [GUIDE_LOCALE]: 'locale',
 }
 
 const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
   : string | undefined => (isReferenceExpression(localeRef)
-  ? localeRef.value.value?.id // TODO change id to locale in SALTO-3010
+  ? localeRef.value.value?.locale
   : localeRef)
 
 const getTranslationLocale = (instance?: InstanceElement): string =>

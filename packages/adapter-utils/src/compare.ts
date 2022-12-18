@@ -19,8 +19,9 @@ import {
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
   isElement,
   CompareOptions,
-  isIndexPathPart,
+  isIndexPathPart, Change, getChangeData,
 } from '@salto-io/adapter-api'
+import objectHash from 'object-hash'
 import { logger } from '@salto-io/logging'
 import { resolvePath, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
@@ -369,3 +370,6 @@ export const applyDetailedChanges = (
     applyListChanges(element, changes)
   })
 }
+
+export const calculateChangesHash = (changes: ReadonlyArray<Change>): string =>
+  objectHash(_.keyBy(changes, change => getChangeData(change).elemID.getFullName()))

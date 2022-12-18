@@ -30,8 +30,16 @@ export interface FetchResult {
   isPartial?: boolean
 }
 
+export type Group = {
+  id?: string
+  requestId?: string
+  hash?: string
+  url?: string
+}
+
 export type DeployExtraProperties = {
   deploymentUrls?: string[]
+  groups?: Group[]
 }
 
 export type DeployResult = {

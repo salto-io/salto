@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify, calculateChangesHash } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
   DeployResult,
@@ -36,6 +36,7 @@ import { fullApiName } from './filters/utils'
 import { INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
+import { QuickDeployParams } from './types'
 
 const { awu } = collections.asynciterable
 
@@ -283,9 +284,13 @@ const getDeployStatusUrl = async (
   return `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
 }
 
+const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
+  deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
+
 export const deployMetadata = async (
   changes: ReadonlyArray<Change>,
   client: SalesforceClient,
+  groupId: string,
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
@@ -305,12 +310,12 @@ export const deployMetadata = async (
 
   const pkgData = await pkg.getZip()
 
-  const deployRes = await client.deploy(pkgData, { checkOnly })
+  const sfDeployRes = await client.deploy(pkgData, { checkOnly })
 
-  log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
+  log.debug('deploy result: %s', safeJsonStringify(sfDeployRes, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
-    deployRes, pkg.getDeletionsPackageName(), checkOnly ?? false
+    sfDeployRes, pkg.getDeletionsPackageName(), checkOnly ?? false
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
@@ -321,12 +326,47 @@ export const deployMetadata = async (
       successfulId => changeDeployedIds[successfulId.type]?.has(successfulId.fullName)
     )
   }
-  const deploymentUrl = await getDeployStatusUrl(deployRes, client)
+
+  const deploymentUrl = await getDeployStatusUrl(sfDeployRes, client)
   return {
     appliedChanges: validChanges.filter(isSuccessfulChange),
     errors: [...validationErrors, ...errors],
     extraProperties: {
       deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
+      groups: isQuickDeployable(sfDeployRes)
+        ? [{ id: groupId, requestId: sfDeployRes.id, hash: calculateChangesHash(validChanges), url: deploymentUrl }]
+        : [{ id: groupId, url: deploymentUrl }],
+    },
+  }
+}
+
+export const quickDeploy = async (
+  changes: ReadonlyArray<Change>,
+  client: SalesforceClient,
+  groupId: string,
+  quickDeployParams: QuickDeployParams,
+): Promise<DeployResult> => {
+  const { validChanges, errors: validationErrors } = await validateChanges(changes)
+  if (validChanges.length === 0) {
+    // Skip deploy if there are no valid changes
+    return { appliedChanges: [], errors: validationErrors }
+  }
+  if (quickDeployParams.hash !== calculateChangesHash(validChanges)) {
+    return {
+      appliedChanges: [],
+      errors: [new Error('Quick deploy option is not available because the current deploy plan is different than the validated one')],
+    }
+  }
+  const deployRes = await client.quickDeploy(quickDeployParams.requestId)
+  log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
+
+  const deploymentUrl = await getDeployStatusUrl(deployRes, client)
+  return {
+    appliedChanges: validChanges,
+    errors: [...validationErrors],
+    extraProperties: {
+      deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
+      groups: [{ id: groupId, url: deploymentUrl }],
     },
   }
 }

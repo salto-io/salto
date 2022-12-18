@@ -21,13 +21,13 @@ import {
   Element, isInstanceElement, Values, Change, Value, getChangeData, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
-  isStaticFile,
+  isStaticFile, Group,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import Prompts from './prompts'
+import Prompts, { deployOrValidate } from './prompts'
 
 const { awu } = collections.asynciterable
 
@@ -766,3 +766,29 @@ export const formatStateRecencies = (stateRecencies: StateRecency[]): string => 
 export const formatAdapterProgress = (adapterName: string, progressMessage: string): string => (
   subHeader(indent(Prompts.FETCH_PROGRESSING_MESSAGES(adapterName, progressMessage), 4))
 )
+
+type QuickDeployableGroup = Group & {
+  requestID: string
+  hash: string
+}
+
+const isQuickDeployableGroup = (group: Group): group is QuickDeployableGroup => (
+  group.requestId !== undefined && group.hash !== undefined
+)
+
+export const formatGroups = (groups: Group[], checkOnly: boolean): string => {
+  const quickDeployableGroups = groups.filter(isQuickDeployableGroup)
+  const deploymentUrls = groups.filter(group => group.url !== undefined)
+    .map(group => group.url)
+  const res: string[] = []
+  if (!_.isEmpty(quickDeployableGroups)) {
+    res.push('Validation parameters: ')
+    quickDeployableGroups.forEach(group =>
+      res.push(`requestId = ${group.requestId}, hash = ${group.hash}\n`))
+  }
+
+  if (!_.isEmpty(deploymentUrls)) {
+    res.push(`You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`)
+  }
+  return res.join('\n')
+}

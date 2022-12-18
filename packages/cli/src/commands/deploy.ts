@@ -23,8 +23,22 @@ import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_build
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
-import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies, formatDeployActions } from '../formatter'
-import Prompts, { deployOrValidate } from '../prompts'
+import {
+  header,
+  formatExecutionPlan,
+  deployPhaseHeader,
+  cancelDeployOutput,
+  formatItemDone,
+  formatItemError,
+  formatCancelAction,
+  formatActionInProgress,
+  formatActionStart,
+  deployPhaseEpilogue,
+  formatStateRecencies,
+  formatDeployActions,
+  formatGroups,
+} from '../formatter'
+import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
 import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
@@ -235,9 +249,8 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     }
   )
   outputLine(postDeployActionsOutput.join('\n'), output)
-  const deploymentUrls = result.extraProperties?.deploymentUrls ?? []
-  if (!_.isEmpty(deploymentUrls)) {
-    outputLine(`You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`, output)
+  if (result.extraProperties?.groups !== undefined) {
+    outputLine(formatGroups(result.extraProperties?.groups, checkOnly), output)
   }
   return cliExitCode
 }

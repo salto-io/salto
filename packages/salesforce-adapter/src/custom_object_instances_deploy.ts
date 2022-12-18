@@ -306,7 +306,8 @@ const cloneWithoutNulls = (val: Values): Values =>
 const deployAddInstances = async (
   instances: InstanceElement[],
   idFields: Field[],
-  client: SalesforceClient
+  client: SalesforceClient,
+  groupId: string
 ): Promise<DeployResult> => {
   const type = await instances[0].getType()
   const typeName = await apiName(type)
@@ -358,6 +359,9 @@ const deployAddInstances = async (
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
     errors: [...insertErrorMessages, ...updateErrorMessages].map(error => new Error(error)),
+    extraProperties: {
+      groups: [{ id: groupId }],
+    },
   }
 }
 
@@ -426,6 +430,7 @@ const isModificationChangeList = <T>(
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
+  groupId: string,
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
   try {
@@ -447,7 +452,7 @@ export const deployCustomObjectInstancesGroup = async (
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }
-      return await deployAddInstances(instances, idFields, client)
+      return await deployAddInstances(instances, idFields, client, groupId)
     }
     if (changes.every(isRemovalChange)) {
       return await deployRemoveInstances(instances, client)

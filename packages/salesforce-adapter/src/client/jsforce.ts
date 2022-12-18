@@ -44,6 +44,9 @@ export interface Metadata {
   deploy(
     zipInput: Buffer | string | NodeJS.ReadableStream, options: DeployOptions
   ): DeployResultLocator<DeployResult>
+  deployRecentValidation(
+      validationId: string
+  ): DeployResultLocator<DeployResult>
 }
 
 export interface Soap {

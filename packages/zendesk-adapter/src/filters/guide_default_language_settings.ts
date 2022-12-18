@@ -35,6 +35,7 @@ const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
 export const DEFAULT_LOCALE_API = '/hc/api/internal/default_locale'
+const DEFAULT_LOCALE = 'default_locale'
 
 /**
  On fetch - Add 'default_locale' field for guide_settings from an url request
@@ -84,7 +85,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
         return
       }
 
-      settings.value.default_locale = new ReferenceExpression(defaultLanguageSettings.elemID, defaultLanguageSettings)
+      settings.value[DEFAULT_LOCALE] = new ReferenceExpression(defaultLanguageSettings.elemID, defaultLanguageSettings)
     })
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -95,18 +96,18 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
 
     // Removal and Addition isn't possible because we don't allow activation of Guide with Salto (SALTO-2914)
     const deployResults = await awu(guideSettingsChanges).filter(isModificationChange).map(async change => {
-      const defaultChanged = change.data.before.value.default_locale !== change.data.after.value.default_locale
+      const defaultChanged = change.data.before.value[DEFAULT_LOCALE] !== change.data.after.value[DEFAULT_LOCALE]
 
       if (defaultChanged) {
         try {
           await client.put({
             url: DEFAULT_LOCALE_API,
-            data: { locale: getChangeData(change).value.default_locale },
+            data: { locale: getChangeData(change).value[DEFAULT_LOCALE] },
           })
 
           // If there was only default locale change, there is no reason do call deployChange
           const detailedChanges = detailedCompare(change.data.before, change.data.after)
-          if (detailedChanges.every(c => c.id.createTopLevelParentID().path[0] === 'default_locale')) {
+          if (detailedChanges.every(c => c.id.name === DEFAULT_LOCALE)) {
             return { appliedChanges: [change] }
           }
         } catch (err) {
@@ -118,7 +119,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
       return deployChanges(
         [change],
         // Deploying with the default_locale field does nothing, but we ignore it for safety
-        async c => { await deployChange(c, client, config.apiDefinitions, ['default_locale']) }
+        async c => { await deployChange(c, client, config.apiDefinitions, [DEFAULT_LOCALE]) }
       )
     }).toArray()
 

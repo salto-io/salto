@@ -959,6 +959,15 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     target: { type: 'group' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
+  {
+    src: {
+      field: 'custom_statuses',
+      parentTypes: ['ticket_form__agent_conditions__child_fields__required_on_statuses'],
+    },
+    serializationStrategy: 'id',
+    target: { type: 'custom_status' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
 ]
 
 export const fieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [

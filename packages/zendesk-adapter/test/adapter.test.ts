@@ -677,9 +677,9 @@ describe('adapter', () => {
         }).fetch({ progressReporter: { reportProgress: () => null } })
         expect(errors).toEqual([
           {
-            message: "Cannot find brands matching the following patterns specified in zendesk.nacl: BestBrand.",
-            severity: "Warning",
-          }
+            message: 'Cannot find brands matching the following patterns specified in zendesk.nacl: BestBrand.',
+            severity: 'Warning',
+          },
         ])
       })
     })

@@ -474,13 +474,14 @@ export default class ZendeskAdapter implements AdapterOperations {
     )
 
     if (_.isEmpty(brandsList)) {
-      log.warn(`Cannot find brands matching the following patterns specified in guide brands config: ${brandsList.toString()}`)
+      const specifiedBrands = Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')
+      log.warn(`Cannot find brands matching the following patterns specified in guide brands config: ${specifiedBrands}`)
       return {
         configChanges: defaultSubdomainElements.configChanges,
         elements: defaultSubdomainElements.elements,
         errors: (defaultSubdomainElements.errors ?? []).concat([
           {
-            message: `Cannot find brands matching the following patterns specified in zendesk.nacl: ${Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')}.`,
+            message: `Cannot find brands matching the following patterns specified in zendesk.nacl: ${specifiedBrands}.`,
             severity: 'Warning',
           },
         ]),

@@ -54,7 +54,7 @@ describe('Zendesk utils', () => {
           name: 'NoHelpCenterBrand',
           has_help_center: false,
         },
-      )
+      ),
     ]
 
     it('should return all brands with help center', async () => {

@@ -29,6 +29,7 @@ import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, crea
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
+import { isInFolderMetadataType } from './fetch_profile/fetch_targets'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -228,6 +229,23 @@ export const retrieveMetadataInstances = async ({
     })
   )
 
+  const handleNestedFolders = async (res: FileProperties[], type: MetadataObjectType): Promise<void> => {
+    const typeName = await apiName(type)
+    if (isInFolderMetadataType(typeName)) {
+      const folderPathByName = _.keyBy(
+        metadataQuery.getFolders(typeName),
+        path => _.last(path.split('/')) ?? path
+      )
+      res.forEach(fileProps => {
+        const parentDir = fileProps.fullName.split('/')[0]
+        const matchingPath = folderPathByName[parentDir]
+        if (isDefined(matchingPath)) {
+          fileProps.fileName = fileProps.fileName.replace(parentDir, matchingPath)
+        }
+      })
+    }
+  }
+
   const getFolders = async (type: MetadataObjectType): Promise<(FileProperties | undefined)[]> => {
     const { folderType } = type.annotations
     if (folderType === undefined) {
@@ -236,6 +254,7 @@ export const retrieveMetadataInstances = async ({
     const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
       client, folderType, []
     )
+    await handleNestedFolders(res, type)
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .filter(notInSkipList)
@@ -253,6 +272,7 @@ export const retrieveMetadataInstances = async ({
     const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
       client, await apiName(type), folderNames.filter(isDefined)
     )
+    await handleNestedFolders(res, type)
     configChanges.push(...listObjectsConfigChanges)
     return [
       ...folders.filter(isDefined),

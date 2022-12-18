@@ -562,3 +562,20 @@ export const SALESFORCE_METADATA_TYPES = [
   'WorkflowTimeTrigger',
   'WorkspaceMapping',
 ] as const
+
+export const IN_FOLDERS_METADATA_TYPES = [
+  'Report',
+  'ReportFolder',
+  'Document',
+  'DocumentFolder',
+  'Dashboard',
+  'DashboardFolder',
+  'EmailTemplate',
+  'EmailFolder',
+] as const
+
+export type InFolderMetadataType = typeof IN_FOLDERS_METADATA_TYPES[number]
+
+export const isInFolderMetadataType = (metadataType: string): metadataType is InFolderMetadataType => (
+  (IN_FOLDERS_METADATA_TYPES as ReadonlyArray<string>).includes(metadataType)
+)

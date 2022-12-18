@@ -257,16 +257,19 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
     },
 
     deploy: async (changes: Change<InstanceElement>[]) => {
-      const [articleChanges, nonArticleChanges] = _.partition(
+      const [articleAdditionAndModificationChanges, otherChanges] = _.partition(
         changes,
         change =>
           (getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
           && !isRemovalChange(change),
       )
-      addRemovalChangesId(articleChanges)
-      setUserSegmentIdForAdditionChanges(articleChanges)
+      // otherChanges contains removal changes of article!
+      const articleRemovalChanges = otherChanges
+        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+      addRemovalChangesId(articleRemovalChanges)
+      setUserSegmentIdForAdditionChanges(articleAdditionAndModificationChanges)
       const articleDeployResult = await deployChanges(
-        articleChanges,
+        articleAdditionAndModificationChanges,
         async change => {
           await deployChange(
             change, client, config.apiDefinitions, ['translations', 'attachments'],
@@ -282,7 +285,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         },
       )
       const [attachmentAdditions, leftoverChanges] = _.partition(
-        nonArticleChanges,
+        otherChanges,
         change => (
           isAdditionOrModificationChange(change)
           && getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME

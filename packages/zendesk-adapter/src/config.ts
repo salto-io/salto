@@ -1740,6 +1740,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1966,6 +1968,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -2074,6 +2078,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },

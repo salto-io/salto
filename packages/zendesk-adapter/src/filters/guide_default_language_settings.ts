@@ -117,7 +117,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
 
       return deployChanges(
         [change],
-        // Deploying with the default_locale field does nothing, but we ignore it for future safety
+        // Deploying with the default_locale field does nothing, but we ignore it for safety
         async c => { await deployChange(c, client, config.apiDefinitions, ['default_locale']) }
       )
     }).toArray()

@@ -2012,13 +2012,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   categories: {
     request: {
       url: '/api/v2/help_center/categories',
-      recurseInto: [
-        {
-          type: 'category_translation',
-          toField: 'translations',
-          context: [{ name: 'categoryId', fromField: 'id' }],
-        },
-      ],
+      queryParams: {
+        include: 'translations',
+      },
     },
     transformation: {
       dataField: 'categories',
@@ -2068,9 +2064,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   category_translation: {
-    request: {
-      url: '/api/v2/help_center/categories/{categoryId}/translations',
-    },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,

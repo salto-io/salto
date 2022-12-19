@@ -72,7 +72,8 @@ export const validateOrderElementAdded = (
 
   return relevantChildInstances
     .filter(child => relevantOrderInstances.every(
-      order => !order.value[orderField].map((childRef: InstanceElement) => childRef.value.elemID).includes(child.elemID)
+      order => order.value[orderField] !== undefined // fields with a value of empty list are sometimes removed
+          && !order.value[orderField].map((childRef: InstanceElement) => childRef.value.elemID).includes(child.elemID)
     ))
     .map(child => createNoOrderInstanceWarning(child, orderTypeName))
 }

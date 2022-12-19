@@ -193,6 +193,19 @@ describe('GuideOrdersValidator', () => {
       }])
     }
 
+    const testValidatorWithUndefinedOrderField = async (
+      validator: ChangeValidator,
+      orderField: string,
+    ): Promise<void> => {
+      const emptyOrderChanges = orderChanges.map(change => {
+        const emptyOrderInstance = getChangeData(change).clone()
+        delete emptyOrderInstance.value[orderField]
+        return toChange({ after: emptyOrderInstance })
+      })
+      const errors = await validator([...childChanges, ...emptyOrderChanges])
+      expect(errors).toMatchObject([])
+    }
+
     it('With order element', async () => {
       await testValidatorWithOrderInstances(categoryOrderValidator)
       await testValidatorWithOrderInstances(sectionOrderValidator)
@@ -202,6 +215,11 @@ describe('GuideOrdersValidator', () => {
       await testValidatorWithoutOrderInstances(categoryOrderValidator, categoryInstance, CATEGORY_ORDER_TYPE_NAME)
       await testValidatorWithoutOrderInstances(sectionOrderValidator, sectionInstance, SECTION_ORDER_TYPE_NAME)
       await testValidatorWithoutOrderInstances(articleOrderValidator, articleInstance, ARTICLE_ORDER_TYPE_NAME)
+    })
+    it('with order element with undefined order field', async () => {
+      await testValidatorWithUndefinedOrderField(categoryOrderValidator, CATEGORIES_FIELD)
+      await testValidatorWithUndefinedOrderField(sectionOrderValidator, SECTIONS_FIELD)
+      await testValidatorWithUndefinedOrderField(articleOrderValidator, ARTICLES_FIELD)
     })
   })
 })

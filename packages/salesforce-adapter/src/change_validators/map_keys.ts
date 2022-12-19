@@ -67,6 +67,7 @@ const getMapKeyErrors = async (
           })
           return undefined
         }
+        // this validation intend to catch unresolved reference, and should be removed after the general fix
         if (typeof value[mapDef.key] !== 'string') {
           return undefined
         }

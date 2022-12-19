@@ -36,7 +36,7 @@ import {
   ZendeskConfig,
   CLIENT_CONFIG,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, ZendeskFetchConfig, isGuideEnabled,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, isGuideEnabled,
 } from './config'
 import {
   ZENDESK,
@@ -44,6 +44,7 @@ import {
   BRAND_TYPE_NAME,
   ARTICLE_ATTACHMENT_TYPE_NAME,
 } from './constants'
+import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -280,17 +281,6 @@ const getBrandsFromElementsSource = async (
     .filter(isInstanceElement)
     .toArray()
 )
-
-const getBrandsForGuide = (
-  elements: InstanceElement[],
-  fetchConfig: ZendeskFetchConfig,
-): InstanceElement[] => {
-  const brandsRegexList = fetchConfig.guide?.brands ?? []
-  return elements
-    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-    .filter(brandInstance => brandInstance.value.has_help_center)
-    .filter(brandInstance => brandsRegexList.some(regex => new RegExp(regex).test(brandInstance.value.name)))
-}
 
 /**
  * Fetch Guide (help_center) elements for the given brands.

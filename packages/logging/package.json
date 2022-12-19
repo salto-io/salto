@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/logging",
-  "version": "0.3.27",
+  "version": "0.3.28",
   "license": "Apache-2.0",
   "description": "Salto Logging library",
   "repository": {
@@ -29,7 +29,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/lowerdash": "0.3.27",
+    "@salto-io/lowerdash": "0.3.28",
     "chalk": "^2.4.2",
     "fast-safe-stringify": "^2.0.7",
     "lodash": "^4.17.21",

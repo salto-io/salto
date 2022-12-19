@@ -24,13 +24,13 @@ import changeValidator from './change_validators'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
 import { paginate } from './client/pagination'
 import { FilterCreator, Filter, filtersRunner } from './filter'
+import commonFilters from './filters/common'
 import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
-import referencedIdFields from './filters/referenced_id_fields'
 import appStructureFilter from './filters/app_structure'
 import standardRolesFilter from './filters/standard_roles'
 import { OKTA } from './constants'
@@ -57,7 +57,7 @@ export const DEFAULT_FILTERS = [
   groupDeploymentFilter,
   appDeploymentFilter,
   // should run after fieldReferences
-  referencedIdFields,
+  ...Object.values(commonFilters),
   // should run last
   defaultDeployFilter,
 ]

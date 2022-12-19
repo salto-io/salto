@@ -52,6 +52,7 @@ type FetchEntry<T extends Record<string, unknown> | undefined> = {
 export type UserFetchConfig<T extends Record<string, unknown> | undefined = undefined> = {
   include: FetchEntry<T>[]
   exclude: FetchEntry<T>[]
+  hideTypes?: boolean
 }
 
 export const createAdapterApiConfigType = ({
@@ -150,6 +151,7 @@ export const createUserFetchConfigType = (
     fields: {
       include: { refType: new ListType(fetchEntryType) },
       exclude: { refType: new ListType(fetchEntryType) },
+      hideTypes: { refType: BuiltinTypes.BOOLEAN },
       ...additionalFields,
     },
     annotations: {

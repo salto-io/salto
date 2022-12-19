@@ -87,10 +87,9 @@ import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
-import ducktypeCommonFilters from './filters/ducktype_common'
+import commonFilters from './filters/common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
-import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
@@ -188,14 +187,13 @@ export const DEFAULT_FILTERS = [
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
-  referencedIdFieldsFilter,
   articleBodyFilter,
   guideParentSection,
   serviceUrlFilter,
-  ...ducktypeCommonFilters,
+  ...Object.values(commonFilters),
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
-  collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
+  collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
@@ -388,7 +386,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   }) => Promise<Required<Filter>>
 
   public constructor({
-    filterCreators = DEFAULT_FILTERS,
+    filterCreators = DEFAULT_FILTERS as FilterCreator[],
     client,
     credentials,
     getElemIdFunc,

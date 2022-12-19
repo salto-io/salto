@@ -782,7 +782,10 @@ export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
 }
 
 export const DEFAULT_CONFIG: ZuoraConfig = {
-  [FETCH_CONFIG]: elements.query.INCLUDE_ALL_CONFIG,
+  [FETCH_CONFIG]: {
+    ...elements.query.INCLUDE_ALL_CONFIG,
+    hideTypes: true,
+  },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }
 
@@ -822,7 +825,7 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

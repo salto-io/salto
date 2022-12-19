@@ -14,16 +14,14 @@
 * limitations under the License.
 */
 import { filters } from '@salto-io/adapter-components'
-import { FilterContext } from '../config'
 import { FilterCreator } from '../filter'
-import WorkatoClient from '../client/client'
 
 /**
- *  Resolves references in elements name using referenced idFields
- *
+ * Filter creators of all the common filters
  */
-const filter: FilterCreator = params =>
-  filters.referencedInstanceNamesFilterCreator<WorkatoClient, FilterContext>(
-  )(params)
+const filterCreators: Record<string, FilterCreator> = {
+  hideTypes: filters.hideTypesFilterCreator(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
+}
 
-export default filter
+export default filterCreators

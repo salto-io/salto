@@ -55,10 +55,14 @@ const adapterConfigFromConfig = (
   config: Readonly<InstanceElement> | undefined,
   defaultConfig: JiraConfig
 ): JiraConfig => {
-  const fullConfig = configUtils.mergeWithDefaultConfig(
+  const configWithoutFetch = configUtils.mergeWithDefaultConfig(
     _.omit(defaultConfig, 'fetch'),
-    config?.value
+    _.omit(config?.value ?? {}, 'fetch'),
   )
+  const fetch = _.defaults(
+    {}, config?.value.fetch, defaultConfig.fetch,
+  )
+  const fullConfig = { ...configWithoutFetch, fetch }
 
   validateConfig(fullConfig)
 

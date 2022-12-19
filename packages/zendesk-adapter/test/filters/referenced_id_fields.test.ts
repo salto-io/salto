@@ -18,8 +18,10 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
 
-import filterCreator from '../../src/filters/referenced_id_fields'
 import { createFilterCreatorParams } from '../utils'
+import commonCreators from '../../src/filters/common'
+
+const filterCreator = commonCreators.referencedInstanceNames
 
 describe('referenced id fields filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>

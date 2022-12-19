@@ -66,7 +66,7 @@ export type Guide = {
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
+export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {
     enableMissingReferences?: boolean
     greedyAppReferences?: boolean
@@ -2398,7 +2398,6 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: createUserFetchConfigType(
         ZENDESK,
         {
-          hideTypes: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },

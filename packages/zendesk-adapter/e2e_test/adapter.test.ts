@@ -250,6 +250,7 @@ describe('Zendesk adapter E2E', () => {
 
     const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
       _.zip(orgArray, fetchArray)
+        .sort()
         .forEach(val => {
           if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
             expect(val[0].elemID.getFullName()).toEqual(val[1].elemID.getFullName())
@@ -522,8 +523,8 @@ describe('Zendesk adapter E2E', () => {
       })
 
       categoryInstance.value.translations = [
-        new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
         new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
+        new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
 
       ]
 
@@ -570,8 +571,8 @@ describe('Zendesk adapter E2E', () => {
         name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
       })
       sectionInstance.value.translations = [
-        new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
         new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
+        new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
       ]
       const section2Name = createName('sectionTwo')
       const section2Instance = createInstanceElement({

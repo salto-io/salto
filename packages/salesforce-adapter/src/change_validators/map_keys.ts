@@ -22,7 +22,7 @@ import {
   isMapType,
   MapType,
   isObjectType,
-  isAdditionOrModificationChange, isInstanceChange, isReferenceExpression,
+  isAdditionOrModificationChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -67,7 +67,7 @@ const getMapKeyErrors = async (
           })
           return undefined
         }
-        if (isReferenceExpression(value[mapDef.key])) {
+        if (typeof value[mapDef.key] !== 'string') {
           return undefined
         }
         // we reached the map's inner value

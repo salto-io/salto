@@ -1654,7 +1654,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       queryParams: {
         include: 'translations',
         sort_by: 'updated_at',
+        'page[size]': '100',
       },
+      paginationField: 'links.next',
     },
     transformation: {
       dataField: 'articles',

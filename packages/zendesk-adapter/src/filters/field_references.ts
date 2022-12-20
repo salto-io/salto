@@ -44,6 +44,8 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   set_schedule: 'business_hours_schedule',
   ticket_form_id: 'ticket_form',
   locale_id: 'locale',
+  via_id: 'channel',
+  current_via_id: 'channel',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -80,6 +82,9 @@ const getValueLookupType: referenceUtils.ContextValueMapperFunc = val => {
 
 const getLowerCaseSingularLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const lowercaseVal = val.toLowerCase()
+  if (['user', 'users'].includes(lowercaseVal)) {
+    return undefined
+  }
   // for now this simple conversion to singular form seems good enough, but
   // we may need to improve it later on
   if (lowercaseVal.endsWith('s')) {
@@ -170,6 +175,7 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'ticketFieldAlternative'
   | 'ticketFieldOption'
   | 'userFieldOption'
+  | 'locale'
   | 'idString'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
@@ -205,6 +211,11 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     serialize: customFieldOptionSerialization,
     lookup: val => val,
     lookupIndexName: 'id',
+  },
+  locale: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.locale : ref.value),
+    lookup: val => val,
+    lookupIndexName: 'locale',
   },
   idString: {
     serialize: async ({ ref }) => _.toString(ref.value.value.id),
@@ -647,9 +658,14 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'permission_group' },
   },
   {
+    src: { field: 'default_locale', parentTypes: ['guide_settings'] },
+    zendeskSerializationStrategy: 'locale',
+    target: { type: 'guide_language_settings' },
+  },
+  {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
-    serializationStrategy: 'id',
-    target: { type: 'guide_locale' },
+    zendeskSerializationStrategy: 'locale',
+    target: { type: 'guide_language_settings' },
   },
   {
     src: {
@@ -659,8 +675,8 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
         'section_translation', 'category_translation', 'article_translation',
       ],
     },
-    serializationStrategy: 'id',
-    target: { type: 'guide_locale' },
+    zendeskSerializationStrategy: 'locale',
+    target: { type: 'guide_language_settings' },
   },
   {
     src: { field: 'publish', parentTypes: ['permission_group'] },
@@ -704,6 +720,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -716,6 +733,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'id', parentTypes: ['workspace__apps'] },
@@ -952,6 +970,15 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     target: { type: 'group' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
+  {
+    src: {
+      field: 'custom_statuses',
+      parentTypes: ['ticket_form__agent_conditions__child_fields__required_on_statuses'],
+    },
+    serializationStrategy: 'id',
+    target: { type: 'custom_status' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
 ]
 
 export const fieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
@@ -979,7 +1006,7 @@ const filter: FilterCreator = ({ config }) => ({
       await referenceUtils.addReferences({
         elements,
         defs: fixedDefs,
-        fieldsToGroupBy: ['id', 'name', 'key', 'value'],
+        fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
         contextStrategyLookup,
         // since ids and references to ids vary inconsistently between string/number, allow both
         fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),

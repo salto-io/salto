@@ -18,7 +18,6 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { datasetType } from '../../src/autogen/types/standard_types/dataset'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
-import { savedcsvimportType } from '../../src/autogen/types/standard_types/savedcsvimport'
 import filterCreator from '../../src/filters/convert_lists'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 
@@ -51,36 +50,6 @@ describe('convert_lists filter', () => {
     instance.value.dependencies.dependency = ['b', 'a', 'c']
     await filterCreator().onFetch([instance])
     expect(instance.value.dependencies.dependency).toEqual(['a', 'b', 'c'])
-  })
-
-  it('should sort object list values if in unorderedListFields', async () => {
-    const savedCsvImportInstance = new InstanceElement('instance',
-      savedcsvimportType().type,
-      {
-        filemappings: {
-          filemapping: [
-            {
-              file: 'VENDORBILL:EXPENSE',
-              foreignkey: 'External ID',
-            },
-            {
-              file: 'VENDORBILL',
-              primarykey: 'External ID',
-            },
-          ],
-        },
-      })
-    await filterCreator().onFetch([savedCsvImportInstance])
-    expect(savedCsvImportInstance.value.filemappings.filemapping).toEqual([
-      {
-        file: 'VENDORBILL',
-        primarykey: 'External ID',
-      },
-      {
-        file: 'VENDORBILL:EXPENSE',
-        foreignkey: 'External ID',
-      },
-    ])
   })
 
   it('should not sort list if in unorderedListFields', async () => {

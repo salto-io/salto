@@ -18,39 +18,41 @@ import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import mappedListsIndexesValidator from '../../src/change_validators/mapped_lists_indexes'
 import { SCRIPT_ID } from '../../src/constants'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
+import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/utils'
 
 const { awu } = collections.asynciterable
 
 describe('mapped lists indexes validator', () => {
   const workflow = workflowType()
-  const origInstance = new InstanceElement(
-    'instance',
-    workflow.type,
-    {
-      isinactive: false,
-      [SCRIPT_ID]: 'customworkflow1',
-      name: 'WokrflowName',
-      workflowcustomfields: {
-        workflowcustomfield: {
-          custworkflow1: {
-            scriptid: 'custworkflow1',
-            index: 0,
-          },
-          custworkflow2: {
-            scriptid: 'custworkflow2',
-            index: 1,
-          },
-        },
-      },
-    }
-  )
+  const customsegment = customsegmentType()
   let instance: InstanceElement
   beforeAll(async () => {
     await awu(Object.values(workflow.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
+    await awu(Object.values(customsegment.innerTypes)).forEach(t => convertFieldsTypesFromListToMap(t))
   })
   beforeEach(() => {
-    instance = origInstance.clone()
+    instance = new InstanceElement(
+      'instance',
+      workflow.type,
+      {
+        isinactive: false,
+        [SCRIPT_ID]: 'customworkflow1',
+        name: 'WokrflowName',
+        workflowcustomfields: {
+          workflowcustomfield: {
+            custworkflow1: {
+              scriptid: 'custworkflow1',
+              index: 0,
+            },
+            custworkflow2: {
+              scriptid: 'custworkflow2',
+              index: 1,
+            },
+          },
+        },
+      }
+    )
   })
 
   it('should not have ChangeError when deploying an instance without mapped lists', async () => {
@@ -60,6 +62,20 @@ describe('mapped lists indexes validator', () => {
       [toChange({ before: instance, after })]
     )
     expect(changeErrors).toHaveLength(0)
+  })
+  it('should not have ChangeError when deploying an instance with unordered list', async () => {
+    const customSegmentInstance = new InstanceElement('cseg1', customsegment.type, {
+      scriptid: 'cseg1',
+      permissions: {
+        permission: {
+          ADMINISTRATOR: {
+            role: 'ADMINISTRATOR',
+            valuemgmtaccesslevel: 'ALL',
+          },
+        },
+      },
+    })
+    await expect(mappedListsIndexesValidator([toChange({ after: customSegmentInstance })])).resolves.toHaveLength(0)
   })
 
   it('should not have ChangeError when deploying an instance with correct indexes', async () => {

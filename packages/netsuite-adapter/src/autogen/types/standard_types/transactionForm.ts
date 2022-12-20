@@ -689,12 +689,12 @@ export const transactionFormType = (): TypeAndInnerTypes => {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
         },
-      }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
+      }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the SuiteCloud project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid SuiteCloud project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
       emailTemplate: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
         annotations: {
         },
-      }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
+      }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the SuiteCloud project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid SuiteCloud project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
   })
@@ -1582,7 +1582,7 @@ export const transactionFormType = (): TypeAndInnerTypes => {
         },
       },
       subLists: {
-        refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_subLists)),
+        refType: createRefToElmWithValue(transactionForm_tabs_tab_subItems_subTab_subLists),
         annotations: {
         },
       },
@@ -1605,7 +1605,7 @@ export const transactionFormType = (): TypeAndInnerTypes => {
         },
       },
       subLists: {
-        refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subLists)),
+        refType: createRefToElmWithValue(transactionForm_tabs_tab_subItems_subLists),
         annotations: {
         },
       },

@@ -34,7 +34,7 @@ import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATIN
 import { DeployResult, getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
-import { createConvertElementMapsToLists } from '../mapped_lists/utils'
+import { createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError } from '../errors'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
@@ -182,7 +182,7 @@ export default class NetsuiteClient {
       .uniqBy(parent => parent.elemID.name)
       .value()
 
-    const convertElementMapsToLists = await createConvertElementMapsToLists(elementsSourceIndex)
+    const convertElementMapsToLists = await createConvertStandardElementMapsToLists(elementsSourceIndex)
     return awu(await getReferencedElements(
       elements.concat(fieldsParents),
       deployReferencedElements

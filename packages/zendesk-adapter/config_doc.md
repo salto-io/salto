@@ -23,6 +23,9 @@ zendesk {
         type = "organization"
       },
     ]
+    guide = {
+      brands = [".*"]
+    }
   }
 }
 ```
@@ -60,8 +63,9 @@ zendesk {
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
-| [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
-| [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
+| [include](#fetch-entry-options)             | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
+| [guide](#fetch-entry-options)               | { brands = [] }                   | Configuration for defining which brands will be included in Zendesk Guide fetch
 
 ## Fetch entry options
 

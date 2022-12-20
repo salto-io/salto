@@ -23,7 +23,7 @@ import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
 import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
-import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
+import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig, DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
@@ -82,6 +82,46 @@ export const getEntriesResponseValues: EntriesRequester = async ({
     paginator(args, page => makeArray(page) as ResponseValue[])
   )).flat()
 )
+
+export const getUniqueConfigSuggestions = (
+  configSuggestions: ConfigChangeSuggestion[]
+): ConfigChangeSuggestion[] => (_.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude))
+
+/**
+ * Creates new type based on instances values,
+ * then creates new instances pointing the new type
+ */
+export const getNewElementsFromInstances = ({
+  adapterName,
+  typeName,
+  instances,
+  transformationConfigByType,
+  transformationDefaultConfig,
+}: {
+  adapterName: string
+  typeName: string
+  instances: InstanceElement[]
+  transformationConfigByType: Record<string, DuckTypeTransformationConfig>
+  transformationDefaultConfig: DuckTypeTransformationDefaultConfig
+}): Entries => {
+  const { hasDynamicFields } = getConfigWithDefault(transformationConfigByType[typeName], transformationDefaultConfig)
+
+  const { type: newType, nestedTypes: newNestedTypes } = generateType({
+    adapterName,
+    name: typeName,
+    entries: instances.map(inst => inst.value),
+    hasDynamicFields: hasDynamicFields === true,
+    transformationConfigByType,
+    transformationDefaultConfig,
+  })
+  return {
+    instances: instances.map(inst => new InstanceElement(
+      inst.elemID.name, newType, inst.value, inst.path, inst.annotations
+    )),
+    type: newType,
+    nestedTypes: newNestedTypes,
+  }
+}
 
 const getEntriesForType = async (
   params: GetEntriesParams
@@ -212,20 +252,18 @@ const getEntriesForType = async (
     return { instances, type, nestedTypes }
   }
   // We generare the type again since we added more fields to the instances from the recurse into
-  const { type: newType, nestedTypes: newNestedTypes } = generateType({
+  const newElements = getNewElementsFromInstances({
     adapterName,
-    name: (nestedFieldDetails?.type ?? type).elemID.typeName,
-    entries: instances.map(inst => inst.value),
-    hasDynamicFields: hasDynamicFields === true,
+    typeName: (nestedFieldDetails?.type ?? type).elemID.typeName,
+    instances,
     transformationConfigByType,
     transformationDefaultConfig,
   })
+
   return {
-    instances: instances.map(inst => new InstanceElement(
-      inst.elemID.name, newType, inst.value, inst.path, inst.annotations,
-    )),
-    type: newType,
-    nestedTypes: newNestedTypes.concat(nestedFieldDetails ? type : []),
+    instances: newElements.instances,
+    type: newElements.type,
+    nestedTypes: newElements.nestedTypes.concat(nestedFieldDetails ? type : []),
   }
 }
 
@@ -378,6 +416,6 @@ export const getAllElements = async ({
   }
   return {
     elements: instancesAndTypes,
-    configChanges: _.uniqBy(configSuggestions, suggestion => suggestion.typeToExclude),
+    configChanges: getUniqueConfigSuggestions(configSuggestions),
   }
 }

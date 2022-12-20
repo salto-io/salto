@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/adapter-components",
-  "version": "0.3.27",
+  "version": "0.3.28",
   "license": "Apache-2.0",
   "description": "Salto Adapter Components",
   "repository": {
@@ -31,11 +31,11 @@
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.0.3",
-    "@salto-io/adapter-api": "0.3.27",
-    "@salto-io/adapter-utils": "0.3.27",
-    "@salto-io/dag": "0.3.27",
-    "@salto-io/logging": "0.3.27",
-    "@salto-io/lowerdash": "0.3.27",
+    "@salto-io/adapter-api": "0.3.28",
+    "@salto-io/adapter-utils": "0.3.28",
+    "@salto-io/dag": "0.3.28",
+    "@salto-io/logging": "0.3.28",
+    "@salto-io/lowerdash": "0.3.28",
     "axios": "^0.21.3",
     "axios-retry": "^3.1.9",
     "bottleneck": "^2.19.5",
@@ -46,7 +46,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.27",
+    "@salto-io/test-utils": "0.3.28",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",

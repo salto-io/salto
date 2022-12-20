@@ -20,7 +20,7 @@ import { JIRA, PRIORITY_TYPE_NAME } from '../../../src/constants'
 
 export const createPrioritySchemeValues = (name: string, allElements: Element[]): Values => ({
   name,
-  description: name,
+  description: `desc-${name}`,
   optionIds: [
     createReference(new ElemID(JIRA, PRIORITY_TYPE_NAME, 'instance', 'Highest'), allElements),
     createReference(new ElemID(JIRA, PRIORITY_TYPE_NAME, 'instance', 'High'), allElements),

@@ -137,7 +137,7 @@ describe('projectFilter', () => {
       })
     })
 
-    it('should not add the deployment annotations to priority scheme if cloud', async () => {
+    it('should add the deployment annotations to priority scheme if DC', async () => {
       const { client: cli, paginator, connection: conn } = mockClient(true)
       client = cli
       connection = conn
@@ -218,7 +218,7 @@ describe('projectFilter', () => {
       const afterInstance = instance.clone()
       afterInstance.value.workflowScheme = 1
       afterInstance.value.id = 2
-      afterInstance.value.priorityScheme = 9
+      afterInstance.value.priorityScheme = 10
 
       change = toChange({ before: instance, after: afterInstance })
     })
@@ -263,7 +263,7 @@ describe('projectFilter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/2/project/2/priorityscheme',
         {
-          id: 9,
+          id: 10,
         },
         undefined,
       )
@@ -275,7 +275,7 @@ describe('projectFilter', () => {
       expect(connection.put).not.toHaveBeenCalledWith(
         '/rest/api/2/project/2/priorityscheme',
         {
-          id: 9,
+          id: 10,
         },
         undefined,
       )
@@ -287,7 +287,7 @@ describe('projectFilter', () => {
 
     beforeEach(async () => {
       instance.value.id = 3
-      instance.value.priorityScheme = 9
+      instance.value.priorityScheme = 11
       change = toChange({ after: instance })
 
       connection.get.mockResolvedValue({
@@ -356,7 +356,7 @@ describe('projectFilter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/2/project/3/priorityscheme',
         {
-          id: 9,
+          id: 11,
         },
         undefined,
       )
@@ -368,7 +368,7 @@ describe('projectFilter', () => {
       expect(connection.put).not.toHaveBeenCalledWith(
         '/rest/api/2/project/3/priorityscheme',
         {
-          id: 9,
+          id: 11,
         },
         undefined,
       )
@@ -635,7 +635,7 @@ describe('projectFilter', () => {
           endpointDetails: getDefaultConfig({ isDataCenter: true })
             .apiDefinitions.types.Project.deployRequests,
           fieldsToIgnore: ['components', 'workflowScheme', 'issueTypeScreenScheme',
-            'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
+            'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
         })
       })
       it('should call the endpoint to set the scheme', () => {

@@ -75,6 +75,7 @@ const deployProjectSchemes = async (
   await deployScheme(instance, client, WORKFLOW_SCHEME_FIELD, 'workflowSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCREEN_SCHEME_FIELD, 'issueTypeScreenSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCHEME, 'issueTypeSchemeId')
+  await deployPriorityScheme(instance, client)
 }
 
 type ComponentsResponse = {
@@ -290,9 +291,6 @@ const filter: FilterCreator = ({ config, client }) => ({
         }
 
         await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
-        if (client.isDataCenter) {
-          await deployPriorityScheme(instance, client)
-        }
 
         if (isAdditionChange(change)) {
           // In some projects, some components are created as a side effect

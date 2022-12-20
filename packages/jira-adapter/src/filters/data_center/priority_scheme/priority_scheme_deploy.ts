@@ -47,7 +47,7 @@ const createScheme = async (change: AdditionChange<InstanceElement>, client: Jir
   })
 
   if (!isPrioritySchemeResponse(response.data)) {
-    throw new Error('Received an invalid create priority scheme response')
+    throw new Error('Received an invalid create priority scheme response.')
   }
 
   instance.value.id = response.data.id

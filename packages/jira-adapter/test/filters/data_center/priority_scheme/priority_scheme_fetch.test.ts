@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Value, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { Element, Value, InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../../utils'
@@ -57,6 +57,7 @@ describe('prioritySchemeFetchFilter', () => {
               '2',
             ],
             defaultOptionId: '2',
+            defaultScheme: false,
           },
         ],
       },
@@ -67,14 +68,25 @@ describe('prioritySchemeFetchFilter', () => {
 
   describe('onFetch', () => {
     it('should fetch priority schemes from the service', async () => {
+      prioritySchemeResponse.data.schemes.push({
+        id: '2',
+        name: 'name2',
+        description: 'desc2',
+        optionIds: [
+          '1',
+          '2',
+        ],
+        defaultOptionId: '2',
+        defaultScheme: false,
+      })
       const elements: Element[] = []
       await filter.onFetch(elements)
 
-      expect(elements).toHaveLength(2)
+      expect(elements).toHaveLength(3)
 
-      const [instance, type] = elements
+      const [instance1, instance2, type] = elements
 
-      expect((instance as InstanceElement).value).toEqual({
+      expect((instance1 as InstanceElement).value).toEqual({
         id: '1',
         name: 'name',
         description: 'desc',
@@ -82,8 +94,22 @@ describe('prioritySchemeFetchFilter', () => {
         defaultOptionId: '2',
       })
 
-      expect(instance.elemID.getFullName()).toEqual('jira.PriorityScheme.instance.name')
+      expect((instance2 as InstanceElement).value).toEqual({
+        id: '2',
+        name: 'name2',
+        description: 'desc2',
+        optionIds: ['1', '2'],
+        defaultOptionId: '2',
+      })
+
+      expect(instance1.elemID.getFullName()).toEqual('jira.PriorityScheme.instance.name')
+      expect(instance2.elemID.getFullName()).toEqual('jira.PriorityScheme.instance.name2')
       expect(type.elemID.getFullName()).toEqual('jira.PriorityScheme')
+      expect((type as ObjectType).fields.id).toBeDefined()
+      expect((type as ObjectType).fields.name).toBeDefined()
+      expect((type as ObjectType).fields.description).toBeDefined()
+      expect((type as ObjectType).fields.optionIds).toBeDefined()
+      expect((type as ObjectType).fields.defaultOptionId).toBeDefined()
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/2/priorityschemes',

@@ -24,12 +24,9 @@ const getProjectPriorityScheme = async (instance: InstanceElement, client: JiraC
     url: `/rest/api/2/project/${instance.value.id}/priorityscheme`,
   })
 
-  if (!isPrioritySchemeResponse(response.data)) {
-    // No need to log, it will be logged inside isPrioritySchemeResponse
-    return undefined
-  }
-
-  return response.data.id
+  return isPrioritySchemeResponse(response.data)
+    ? response.data.id
+    : undefined
 }
 
 const filter: FilterCreator = ({ client }) => ({

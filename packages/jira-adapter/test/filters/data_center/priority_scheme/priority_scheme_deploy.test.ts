@@ -54,6 +54,7 @@ describe('prioritySchemeDeployFilter', () => {
       {
         name: 'someName',
         description: 'desc',
+        optionIds: [1, 2],
       }
     )
   })
@@ -91,9 +92,16 @@ describe('prioritySchemeDeployFilter', () => {
     })
 
     it('should not add deployment annotations if type not found', async () => {
-      await filter.onFetch([])
-      expect(type.annotations).toEqual({})
-      expect(type.fields.name.annotations).toEqual({})
+      const otherType = new ObjectType({
+        elemID: new ElemID(JIRA, 'other'),
+        fields: {
+          name: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+      await filter.onFetch([otherType])
+      expect(otherType.annotations).toEqual({})
     })
   })
 
@@ -117,6 +125,7 @@ describe('prioritySchemeDeployFilter', () => {
         {
           name: 'someName',
           description: 'desc',
+          optionIds: [1, 2],
         },
         undefined,
       )
@@ -151,6 +160,7 @@ describe('prioritySchemeDeployFilter', () => {
           id: 2,
           name: 'someName',
           description: 'desc',
+          optionIds: [1, 2],
         },
         undefined,
       )

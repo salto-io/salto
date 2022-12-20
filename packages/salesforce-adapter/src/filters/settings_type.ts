@@ -70,7 +70,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const {
       elements: settingsList, configChanges: listObjectsConfigChanges,
     } = await listMetadataObjects(
-      client, SETTINGS_METADATA_TYPE, [], () => true
+      client, SETTINGS_METADATA_TYPE, () => true
     )
 
     const settingsTypeInfos = settingsList.filter(

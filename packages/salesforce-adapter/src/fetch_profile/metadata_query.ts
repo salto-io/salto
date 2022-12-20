@@ -14,10 +14,14 @@
 * limitations under the License.
 */
 import { regex, values } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
-import { InFolderMetadataType, isInFolderMetadataType } from './fetch_targets'
+import {
+  InFolderMetadataType,
+  isFolderMetadataType, isInFolderMetadataType, METADATA_TYPE_TO_FOLDER_TYPE,
+} from './fetch_targets'
 
 const { isDefined } = values
 
@@ -26,7 +30,7 @@ export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
   isPartialFetch: () => boolean
-  getFolders: (metadataType: InFolderMetadataType) => string[]
+  getFoldersByName: (metadataType: InFolderMetadataType) => Record<string, string>
 }
 
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
@@ -59,30 +63,6 @@ const getAllowedStringsFromRegex = (regexString: string): string[] => (
     .split('|')
 )
 
-const getFoldersFromNameRegex = (name: string): string[] => {
-  const allowedStrings = getAllowedStringsFromRegex(name)
-  return allowedStrings
-    .filter(allowedString => allowedString.includes('/'))
-    .map(instanceName => instanceName.substring(0, instanceName.lastIndexOf('/')))
-}
-
-const isInstanceMatchFolderName = (
-  instanceName: string,
-  nameRegex: string
-): boolean => (
-  getAllowedStringsFromRegex(nameRegex)
-    .some(allowedString =>
-      allowedString.endsWith(instanceName)
-      || regex.isFullRegexMatch(instanceName, allowedString))
-)
-
-
-const isInstanceMatchName = (metadataType: string, instanceName: string, nameRegex: string): boolean => (
-  isInFolderMetadataType(metadataType)
-    ? isInstanceMatchFolderName(instanceName, nameRegex)
-    : regex.isFullRegexMatch(instanceName, nameRegex)
-)
-
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
   target?: string[],
@@ -100,9 +80,12 @@ export const buildMetadataQuery = (
     const realNamespace = namespace === ''
       ? getDefaultNamespace(instance.metadataType)
       : namespace
+    const instanceName = isInFolderMetadataType(metadataType) || isFolderMetadataType(metadataType)
+      ? instance.fileName.substr(instance.fileName.indexOf('/') + 1) // omit dirName (e.g. reports, dashboards) since the user does not provide that in the name Regex.
+      : instance.name
     return regex.isFullRegexMatch(instance.metadataType, metadataType)
     && regex.isFullRegexMatch(instance.namespace, realNamespace)
-    && isInstanceMatchName(metadataType, instance.name, name)
+    && regex.isFullRegexMatch(instanceName, name)
   }
 
   const isIncludedInPartialFetch = (type: string): boolean => {
@@ -142,13 +125,16 @@ export const buildMetadataQuery = (
 
     isPartialFetch: () => target !== undefined,
 
-    getFolders: (type: InFolderMetadataType) => {
-      const includeParams = include.find(params => params.metadataType === type)
-      if (isDefined(includeParams) && isDefined(includeParams.name)) {
-        const { name } = includeParams
-        return getFoldersFromNameRegex(name)
-      }
-      return []
+    getFoldersByName: (type: InFolderMetadataType) => {
+      const folderPaths = include
+        .filter(params => params.metadataType === METADATA_TYPE_TO_FOLDER_TYPE[type])
+        .flatMap(params => {
+          const { name: nameRegex } = params
+          return isDefined(nameRegex)
+            ? getAllowedStringsFromRegex(nameRegex)
+            : []
+        })
+      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
     },
   }
 }

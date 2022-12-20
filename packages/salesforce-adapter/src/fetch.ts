@@ -29,7 +29,7 @@ import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, crea
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
-import { isInFolderMetadataType } from './fetch_profile/fetch_targets'
+import { InFolderMetadataType, isInFolderMetadataType, METADATA_TYPE_TO_FOLDER_TYPE } from './fetch_profile/fetch_targets'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -78,21 +78,53 @@ export const fetchMetadataType = async (
   return [...mainTypes, ...folderTypes]
 }
 
+const withFullPath = (props: FileProperties, folderPathByName: Record<string, string>): FileProperties => {
+  // the split is required since the fullName for a record within folder is FolderName/RecordName
+  const folderName = props.fullName.split('/')[0]
+  const fullPath = folderPathByName[folderName]
+  return isDefined(fullPath)
+    ? {
+      ...props,
+      fileName: props.fileName.replace(folderName, fullPath),
+    }
+    : props
+}
+
 export const listMetadataObjects = async (
   client: SalesforceClient,
   metadataTypeName: string,
-  folders: string[],
   isUnhandledError?: ErrorFilter,
 ): Promise<FetchElements<FileProperties[]>> => {
   const { result, errors } = await client.listMetadataObjects(
-    _.isEmpty(folders)
-      ? { type: metadataTypeName }
-      : folders.map(folder => ({ type: metadataTypeName, folder })),
-    isUnhandledError
+    { type: metadataTypeName },
+    isUnhandledError,
   )
   return {
     elements: result,
     configChanges: (errors ?? []).map(createListMetadataObjectsConfigChange),
+  }
+}
+
+const listMetadataObjectsWithinFolders = async (
+  client: SalesforceClient,
+  metadataTypeName: InFolderMetadataType,
+  folderPathByName: Record<string, string>,
+  isUnhandledError?: ErrorFilter,
+): Promise<FetchElements<FileProperties[]>> => {
+  const { result, errors } = await client.listMetadataObjects(
+    Object.keys(folderPathByName).map(folderName => ({ type: metadataTypeName, folder: folderName })),
+    isUnhandledError,
+  )
+  const folders = await listMetadataObjects(client, METADATA_TYPE_TO_FOLDER_TYPE[metadataTypeName])
+  return {
+    elements: [
+      ...result.map(props => withFullPath(props, folderPathByName)),
+      ...folders.elements.map(props => withFullPath(props, folderPathByName)),
+    ],
+    configChanges: [
+      ...(errors ?? []).map(createListMetadataObjectsConfigChange),
+      ...folders.configChanges,
+    ],
   }
 }
 
@@ -166,12 +198,14 @@ export const fetchMetadataInstances = async ({
       prop => ({
         name: getFullName(prop),
         namespace: getNamespace(prop),
+        fileName: prop.fileName,
       })
     ).filter(
-      ({ name, namespace }) => metadataQuery.isInstanceMatch({
+      ({ name, namespace, fileName }) => metadataQuery.isInstanceMatch({
         namespace,
         metadataType: metadataTypeName,
         name,
+        fileName,
       })
     ).map(({ name }) => name),
   )
@@ -226,58 +260,21 @@ export const retrieveMetadataInstances = async ({
       namespace: getNamespace(file),
       metadataType: file.type,
       name: file.fullName,
+      fileName: file.fileName,
     })
   )
-
-  const handleNestedFolders = async (res: FileProperties[], type: MetadataObjectType): Promise<void> => {
-    const typeName = await apiName(type)
-    if (isInFolderMetadataType(typeName)) {
-      const folderPathByName = _.keyBy(
-        metadataQuery.getFolders(typeName),
-        path => _.last(path.split('/')) ?? path
-      )
-      res.forEach(fileProps => {
-        const parentDir = fileProps.fullName.split('/')[0]
-        const matchingPath = folderPathByName[parentDir]
-        if (isDefined(matchingPath)) {
-          fileProps.fileName = fileProps.fileName.replace(parentDir, matchingPath)
-        }
-      })
-    }
-  }
-
-  const getFolders = async (type: MetadataObjectType): Promise<(FileProperties | undefined)[]> => {
-    const { folderType } = type.annotations
-    if (folderType === undefined) {
-      return [undefined]
-    }
-    const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
-      client, folderType, []
-    )
-    await handleNestedFolders(res, type)
-    configChanges.push(...listObjectsConfigChanges)
-    return _(res)
-      .filter(notInSkipList)
-      .uniqBy(file => file.fullName)
-      .value()
-  }
 
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
     if (type.annotations.folderContentType !== undefined) {
       // We get folders as part of getting the records inside them
       return []
     }
-    const folders = await getFolders(type)
-    const folderNames = folders.map(folder => (folder === undefined ? folder : folder.fullName))
-    const { elements: res, configChanges: listObjectsConfigChanges } = await listMetadataObjects(
-      client, await apiName(type), folderNames.filter(isDefined)
-    )
-    await handleNestedFolders(res, type)
+    const typeName = await apiName(type)
+    const { elements: res, configChanges: listObjectsConfigChanges } = isInFolderMetadataType(typeName)
+      ? await listMetadataObjectsWithinFolders(client, typeName, metadataQuery.getFoldersByName(typeName))
+      : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
-    return [
-      ...folders.filter(isDefined),
-      ..._.uniqBy(res, file => file.fullName),
-    ]
+    return _.uniqBy(res, file => file.fullName)
   }
 
   const typesByName = await keyByAsync(types, t => apiName(t))

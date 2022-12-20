@@ -553,7 +553,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = await apiName(type)
     const { elements: fileProps, configChanges } = await listMetadataObjects(
-      this.client, typeName, [],
+      this.client, typeName
     )
 
     const instances = await fetchMetadataInstances({

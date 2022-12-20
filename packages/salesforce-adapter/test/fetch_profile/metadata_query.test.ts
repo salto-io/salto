@@ -91,9 +91,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ namespace: 'aaaa', metadataType: '', name: '' })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '' })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'cccc', metadataType: '', name: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaaa', metadataType: '', name: '', fileName: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', fileName: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'cccc', metadataType: '', name: '', fileName: '' })).toBeFalsy()
     })
 
     it('filter with metadataType', () => {
@@ -106,9 +106,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ metadataType: 'aaaa', namespace: '', name: '' })).toBeTruthy()
-      expect(query.isInstanceMatch({ metadataType: 'aaabbb', namespace: '', name: '' })).toBeFalsy()
-      expect(query.isInstanceMatch({ metadataType: 'cccc', namespace: '', name: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ metadataType: 'aaaa', namespace: '', name: '', fileName: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ metadataType: 'aaabbb', namespace: '', name: '', fileName: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ metadataType: 'cccc', namespace: '', name: '', fileName: '' })).toBeFalsy()
     })
 
     it('filter with name', () => {
@@ -121,9 +121,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ name: 'aaaa', namespace: '', metadataType: '' })).toBeTruthy()
-      expect(query.isInstanceMatch({ name: 'aaabbb', namespace: '', metadataType: '' })).toBeFalsy()
-      expect(query.isInstanceMatch({ name: 'cccc', namespace: '', metadataType: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ name: 'aaaa', namespace: '', metadataType: '', fileName: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ name: 'aaabbb', namespace: '', metadataType: '', fileName: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ name: 'cccc', namespace: '', metadataType: '', fileName: '' })).toBeFalsy()
     })
 
     it('filter with multiple fields', () => {
@@ -136,9 +136,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: 'bbbccc', name: 'cccddd' })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc' })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: 'bbbccc', name: 'cccddd', fileName: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc', fileName: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', fileName: '' })).toBeFalsy()
     })
 
     it('filter with multiple queries', () => {
@@ -153,11 +153,11 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ namespace: 'aaaccc', metadataType: '', name: '' })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'bbbccc', metadataType: '', name: '' })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc' })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '' })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'bbb', metadataType: '', name: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaaccc', metadataType: '', name: '', fileName: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'bbbccc', metadataType: '', name: '', fileName: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc', fileName: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', fileName: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'bbb', metadataType: '', name: '', fileName: '' })).toBeFalsy()
     })
 
     it('empty namespace should be tread as "standard"', () => {
@@ -166,8 +166,8 @@ describe('buildMetadataQuery', () => {
           { namespace: '' },
         ],
       })
-      expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '' })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '', fileName: '' })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '', fileName: '' })).toBeFalsy()
     })
 
     it('should return InstalledPackage with namespace if \'\' namespace is provided', () => {
@@ -176,7 +176,7 @@ describe('buildMetadataQuery', () => {
           { namespace: '' },
         ],
       })
-      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala' })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', fileName: '' })).toBeTruthy()
     })
 
     it('should not return InstalledPackage with a different namespace then one specifically provided', () => {
@@ -185,7 +185,7 @@ describe('buildMetadataQuery', () => {
           { namespace: 'SBAA' },
         ],
       })
-      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala' })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', fileName: '' })).toBeFalsy()
     })
   })
 

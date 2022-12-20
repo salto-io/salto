@@ -563,19 +563,35 @@ export const SALESFORCE_METADATA_TYPES = [
   'WorkspaceMapping',
 ] as const
 
-export const IN_FOLDERS_METADATA_TYPES = [
+export const IN_FOLDER_METADATA_TYPES = [
   'Report',
-  'ReportFolder',
   'Document',
-  'DocumentFolder',
   'Dashboard',
-  'DashboardFolder',
   'EmailTemplate',
+] as const
+
+export const FOLDER_METADATA_TYPES = [
+  'ReportFolder',
+  'DocumentFolder',
+  'DashboardFolder',
   'EmailFolder',
 ] as const
 
-export type InFolderMetadataType = typeof IN_FOLDERS_METADATA_TYPES[number]
+
+export type InFolderMetadataType = typeof IN_FOLDER_METADATA_TYPES[number]
+export type FolderMetadataType = typeof FOLDER_METADATA_TYPES[number]
+
+export const METADATA_TYPE_TO_FOLDER_TYPE: Record<InFolderMetadataType, FolderMetadataType> = {
+  Report: 'ReportFolder',
+  Document: 'DocumentFolder',
+  Dashboard: 'DashboardFolder',
+  EmailTemplate: 'EmailFolder',
+}
 
 export const isInFolderMetadataType = (metadataType: string): metadataType is InFolderMetadataType => (
-  (IN_FOLDERS_METADATA_TYPES as ReadonlyArray<string>).includes(metadataType)
+  (IN_FOLDER_METADATA_TYPES as ReadonlyArray<string>).includes(metadataType)
+)
+
+export const isFolderMetadataType = (metadataType: string): metadataType is FolderMetadataType => (
+  (FOLDER_METADATA_TYPES as ReadonlyArray<string>).includes(metadataType)
 )

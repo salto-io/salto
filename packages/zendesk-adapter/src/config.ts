@@ -2124,6 +2124,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   permission_groups: {
     request: {
       url: '/api/v2/guide/permission_groups',
+      queryParams: {
+        'page[size]': '100',
+      },
+      paginationField: 'links.next',
     },
     transformation: {
       dataField: 'permission_groups',

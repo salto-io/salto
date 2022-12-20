@@ -1309,7 +1309,7 @@ export const entryFormType = (): TypeAndInnerTypes => {
         },
       },
       subLists: {
-        refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subTab_subLists)),
+        refType: createRefToElmWithValue(entryForm_tabs_tab_subItems_subTab_subLists),
         annotations: {
         },
       },
@@ -1332,7 +1332,7 @@ export const entryFormType = (): TypeAndInnerTypes => {
         },
       },
       subLists: {
-        refType: createRefToElmWithValue(new ListType(entryForm_tabs_tab_subItems_subLists)),
+        refType: createRefToElmWithValue(entryForm_tabs_tab_subItems_subLists),
         annotations: {
         },
       },

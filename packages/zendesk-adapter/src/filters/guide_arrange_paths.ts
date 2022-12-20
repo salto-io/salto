@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { getParent, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
@@ -40,7 +40,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, GUIDE_LOCALE,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
 } from '../constants'
 
 const { RECORDS_PATH } = elementsUtils
@@ -48,11 +48,7 @@ const log = logger(module)
 
 export const UNSORTED = 'unsorted'
 export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
-const FIRST_LEVEL_TYPES = [
-  USER_SEGMENT_TYPE_NAME,
-  PERMISSION_GROUP_TYPE_NAME,
-  GUIDE_LOCALE,
-] // TODO remove guide locale in SALTO-3010
+const FIRST_LEVEL_TYPES = [USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME]
 const BRAND_SECOND_LEVEL = [
   CATEGORY_TYPE_NAME,
   GUIDE_SETTINGS_TYPE_NAME,
@@ -92,42 +88,31 @@ export const GUIDE_ELEMENT_DIRECTORY: Record<string, string> = {
   [SECTION_ORDER_TYPE_NAME]: 'section_order',
   [ARTICLE_ORDER_TYPE_NAME]: 'article_order',
   [ARTICLE_ATTACHMENT_TYPE_NAME]: 'article_attachment',
-  [GUIDE_LOCALE]: 'locale',
 }
 
 const getReferencedLocale = (localeRef: ReferenceExpression | string | undefined)
   : string | undefined => (isReferenceExpression(localeRef)
-  ? localeRef.value.value?.id // TODO change id to locale in SALTO-3010
+  ? localeRef.value.value?.locale
   : localeRef)
 
 const getTranslationLocale = (instance?: InstanceElement): string =>
   getReferencedLocale(instance?.value.locale) ?? NO_VALUE_DEFAULT
 
-const getNameFromTranslation = (instance?: InstanceElement): string => {
-  if (instance === undefined) {
-    return NO_VALUE_DEFAULT
-  }
-  const sourceLocale = getReferencedLocale(instance.value.source_locale) ?? NO_VALUE_DEFAULT
-  const translation = instance.value.translations
-    ?.filter(isReferenceExpression)
-    .map((reference: ReferenceExpression) => reference.value)
-    .find((tran: InstanceElement) => (getReferencedLocale(tran.value.locale) === sourceLocale))
-  return translation?.value.title ?? NO_VALUE_DEFAULT
-}
-
 const getNameFromName = (instance?: InstanceElement): string => instance?.value.name ?? NO_VALUE_DEFAULT
+
+const getNameFromTitle = (instance?: InstanceElement): string => instance?.value.title ?? NO_VALUE_DEFAULT
 
 
 const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string> = {
-  [CATEGORY_ORDER_TYPE_NAME]: () => 'categories_order',
-  [SECTION_ORDER_TYPE_NAME]: () => 'sections_order',
-  [ARTICLE_ORDER_TYPE_NAME]: () => 'articles_order',
+  [CATEGORY_ORDER_TYPE_NAME]: () => 'category_order',
+  [SECTION_ORDER_TYPE_NAME]: () => 'section_order',
+  [ARTICLE_ORDER_TYPE_NAME]: () => 'article_order',
   [GUIDE_SETTINGS_TYPE_NAME]: () => 'brand_settings',
   [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.locale ?? NO_VALUE_DEFAULT,
   [ARTICLE_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [SECTION_TRANSLATION_TYPE_NAME]: getTranslationLocale,
   [CATEGORY_TRANSLATION_TYPE_NAME]: getTranslationLocale,
-  [ARTICLE_TYPE_NAME]: getNameFromTranslation,
+  [ARTICLE_TYPE_NAME]: getNameFromTitle,
   [CATEGORY_TYPE_NAME]: getNameFromName,
   [SECTION_TYPE_NAME]: getNameFromName,
   [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.filename ?? NO_VALUE_DEFAULT,
@@ -136,8 +121,8 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
 
 const getName = (instance: InstanceElement): string =>
   (GUIDE_ELEMENT_NAME[instance.elemID.typeName] === undefined
-    ? pathNaclCase(instance.elemID.name)
-    : pathNaclCase(GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance)))
+    ? pathNaclCase(naclCase((instance.elemID.name)))
+    : pathNaclCase(naclCase(GUIDE_ELEMENT_NAME[instance.elemID.typeName](instance))))
 
 /**
  * calculates a path which is not related to a specific brand
@@ -146,7 +131,7 @@ const pathForGlobalTypes = (instance: InstanceElement): readonly string[] | unde
   [
     ...GUIDE_PATH,
     GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-    pathNaclCase(instance.elemID.name),
+    pathNaclCase(naclCase(instance.elemID.name)),
   ]
 
 
@@ -165,7 +150,7 @@ const pathForBrandSpecificRootElements = (
       ...GUIDE_PATH,
       UNSORTED,
       GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-      pathNaclCase(instance.elemID.name),
+      pathNaclCase(naclCase(instance.elemID.name)),
     ]
   }
   const newPath = [
@@ -205,7 +190,7 @@ const pathForOtherLevels = ({
       ...GUIDE_PATH,
       UNSORTED,
       GUIDE_ELEMENT_DIRECTORY[instance.elemID.typeName],
-      pathNaclCase(instance.elemID.name),
+      pathNaclCase(naclCase((instance.elemID.name))),
     ]
   }
   const name = getName(instance)
@@ -265,6 +250,8 @@ const filterCreator: FilterCreator = () => ({
         const needTypeDirectory = [
           CATEGORY_TYPE_NAME,
           GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+          CATEGORY_ORDER_TYPE_NAME,
+          GUIDE_SETTINGS_TYPE_NAME,
         ].includes(instance.elemID.typeName)
         instance.path = pathForBrandSpecificRootElements(instance, fullNameByNameBrand[brandElemId], needTypeDirectory)
       })
@@ -333,7 +320,7 @@ const filterCreator: FilterCreator = () => ({
         const parentId = getParent(instance).value.id
         instance.path = pathForOtherLevels({
           instance,
-          needTypeDirectory: false,
+          needTypeDirectory: true,
           needOwnFolder: false,
           parent: parentsById[parentId],
         })

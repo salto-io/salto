@@ -100,7 +100,7 @@ describe('omit fields filter', () => {
           },
         },
       },
-      annotationRefsOrTypes: await toAnnotationRefTypes(customrecordtype),
+      annotationRefsOrTypes: toAnnotationRefTypes(customrecordtype),
       annotations: {
         scriptid: 'customrecord1',
         istoplevel: true,

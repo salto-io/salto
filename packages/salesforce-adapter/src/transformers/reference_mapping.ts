@@ -130,6 +130,7 @@ type SourceDef = {
 export type FieldReferenceDefinition = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
+  sourceTransformation?: referenceUtils.ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
@@ -550,6 +551,14 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'queue', parentTypes: ['ListView'] },
+    target: { type: 'Queue' },
+  },
+  {
     src: { field: 'caseOwner', parentTypes: ['EmailToCaseRoutingAddress'] },
     target: { typeContext: 'neighborCaseOwnerTypeLookup' },
   },
@@ -585,6 +594,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'secondaryRoutingPriorityField', parentTypes: ['ServiceChannel'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborRelatedEntityTypeLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
+    target: { type: 'EntitlementProcess' },
+    sourceTransformation: 'asCaseInsensitiveString',
   },
 ]
 
@@ -633,6 +647,7 @@ const matchInstanceType = async (
 export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
+  sourceTransformation: referenceUtils.ReferenceSourceTransformation
   target?: referenceUtils.ExtendedReferenceTargetDefinition<ReferenceContextStrategyName>
 
   constructor(def: FieldReferenceDefinition) {
@@ -640,6 +655,7 @@ export class FieldReferenceResolver {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'absoluteApiName'
     ]
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined

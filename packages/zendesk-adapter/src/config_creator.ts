@@ -51,7 +51,7 @@ export const getConfig = async (
   }
   if (options.value.enableGuide === true) {
     const configWithGuide = defaultConf.clone()
-    configWithGuide.value.fetch = { ...configWithGuide.value.fetch, enableGuide: true }
+    configWithGuide.value.fetch = { ...configWithGuide.value.fetch, guide: { brands: ['.*'] } }
     return configWithGuide
   }
   return defaultConf

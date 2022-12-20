@@ -30,8 +30,10 @@ import {
   ARTICLE_TYPE_NAME, ARTICLES_FIELD,
   BRAND_TYPE_NAME, CATEGORIES_FIELD,
   CATEGORY_TYPE_NAME,
-  SECTION_TYPE_NAME, SECTIONS_FIELD,
+  SECTION_TYPE_NAME, SECTIONS_FIELD, ZENDESK,
 } from '../../constants'
+import { createMissingInstance } from '../references/missing_references'
+import { FETCH_CONFIG } from '../../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -52,11 +54,13 @@ const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
 const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
 // Attempt to match the regex to an element and create a reference to that element
-const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex }: {
+const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex, field, enableMissingReferences }: {
   urlPart: string
   urlBrand: InstanceElement
   idToInstance: Record<string, InstanceElement>
   idRegex: RegExp
+  field: string
+  enableMissingReferences?: boolean
 }): TemplatePart[] | undefined => {
   const { url, id } = urlPart.match(idRegex)?.groups ?? {}
   if (url !== undefined && id !== undefined) {
@@ -69,14 +73,21 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex }: {
       // We want to keep the original url and replace just the id
       return [url, new ReferenceExpression(referencedInstance.elemID, referencedInstance)]
     }
+    // if could not find a valid instance, create a MissingReferences.
+    if (enableMissingReferences) {
+      const missingInstance = createMissingInstance(ZENDESK, field, `${urlBrand.value.name}_${id}`)
+      missingInstance.value.id = id
+      return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
+    }
   }
   return undefined
 }
 
-const referenceUrls = ({ urlPart, urlBrand, additionalInstances }: {
+const referenceUrls = ({ urlPart, urlBrand, additionalInstances, enableMissingReferences }: {
   urlPart: string
   urlBrand: InstanceElement
   additionalInstances: Record<string, Record<string, InstanceElement>>
+  enableMissingReferences?: boolean
 }): TemplatePart[] => {
   const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
   // We already made sure that the brand exists, so we can just return it
@@ -86,7 +97,14 @@ const referenceUrls = ({ urlPart, urlBrand, additionalInstances }: {
 
   // Attempt to match other instances, stop on the first result
   const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field }) =>
-    createInstanceReference({ urlPart, urlBrand, idToInstance: additionalInstances[field], idRegex })).find(isDefined)
+    createInstanceReference({
+      urlPart,
+      urlBrand,
+      idToInstance: additionalInstances[field],
+      idRegex,
+      field,
+      enableMissingReferences,
+    })).find(isDefined)
 
   // If nothing matched, return the original url
   return result ?? [urlPart]
@@ -103,7 +121,8 @@ const matchBrand = (url: string, brands: Record<string, InstanceElement>): Insta
 
 const updateArticleBody = (
   articleInstance: InstanceElement,
-  additionalInstances: Record<string, Record<string, InstanceElement>>
+  additionalInstances: Record<string, Record<string, InstanceElement>>,
+  enableMissingReferences?: boolean
 ): void => {
   const originalArticleBody = articleInstance.value[BODY_FIELD]
   if (!_.isString(originalArticleBody)) {
@@ -124,7 +143,12 @@ const updateArticleBody = (
       const urlParts = extractTemplate(
         url,
         [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)],
-        urlPart => referenceUrls({ urlPart, urlBrand, additionalInstances })
+        urlPart => referenceUrls({
+          urlPart,
+          urlBrand,
+          additionalInstances,
+          enableMissingReferences,
+        })
       )
       return _.isString(urlParts) ? urlParts : urlParts.parts
     }
@@ -149,7 +173,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
 /**
  * Process body value in article instances to reference other objects
  */
-const filterCreator: FilterCreator = () => {
+const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
     onFetch: async (elements: Element[]) => log.time(async () => {
@@ -174,7 +198,7 @@ const filterCreator: FilterCreator = () => {
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .forEach(articleInstance => (
-          updateArticleBody(articleInstance, additionalInstances)))
+          updateArticleBody(articleInstance, additionalInstances, config[FETCH_CONFIG].enableMissingReferences)))
     }, 'articleBodyFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)

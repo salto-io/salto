@@ -296,7 +296,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       instance => instance.elemID.typeName === CUSTOM_RECORD_TYPE
     )
 
-    const customRecordTypes = await createCustomRecordTypes(
+    const customRecordTypes = createCustomRecordTypes(
       customRecordTypeInstances,
       standardTypes.customrecordtype.type
     )

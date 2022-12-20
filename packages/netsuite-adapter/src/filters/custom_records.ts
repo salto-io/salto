@@ -13,20 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, Field, FieldDefinition, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, Field, FieldDefinition, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { NETSUITE, PARENT, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
+import { PARENT, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
 import { FilterWith } from '../filter'
 import { isCustomRecordType } from '../types'
 
 const { awu } = collections.asynciterable
-const { makeArray } = collections.array
 
 const REC_TYPE = 'recType'
 const FIELDS_TO_DELETE = [REC_TYPE, 'owner', 'customForm', 'created', 'lastModified']
-const TRANSLATION_LIST = 'translationsList'
-const TRANSLATIONS = 'customRecordTranslations'
-const CUSTOM_RECORD_TRANSLATION_LIST = 'customRecordTranslationsList'
 
 const addFieldsToType = (type: ObjectType): void => {
   const fieldNameToDef: Record<string, FieldDefinition> = {
@@ -37,18 +33,6 @@ const addFieldsToType = (type: ObjectType): void => {
     [REC_TYPE]: {
       refType: type,
       annotations: { isReference: true },
-    },
-    [TRANSLATION_LIST]: {
-      refType: new ObjectType({
-        elemID: new ElemID(NETSUITE, CUSTOM_RECORD_TRANSLATION_LIST),
-        fields: {
-          [TRANSLATIONS]: {
-            refType: new ListType(
-              new ObjectType({ elemID: new ElemID(NETSUITE, TRANSLATIONS) })
-            ),
-          },
-        },
-      }),
     },
   }
 
@@ -67,11 +51,6 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
         FIELDS_TO_DELETE.forEach(fieldName => {
           delete instance.value[fieldName]
         })
-        if (instance.value[TRANSLATION_LIST]?.[TRANSLATIONS]) {
-          instance.value[TRANSLATION_LIST][TRANSLATIONS] = makeArray(
-            instance.value[TRANSLATION_LIST][TRANSLATIONS]
-          )
-        }
       })
   },
   preDeploy: async changes => {

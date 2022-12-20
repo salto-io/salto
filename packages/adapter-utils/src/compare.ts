@@ -22,7 +22,7 @@ import {
   isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { setPath } from './utils'
+import { resolvePath, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
 
 const log = logger(module)
@@ -344,10 +344,20 @@ export const applyDetailedChanges = (
   detailedChanges: DetailedChange[],
 ): void => {
   const changesToApply = filterChangesForApply(detailedChanges)
-  const [listItemChanges, otherChanges] = _.partition(changesToApply, change =>
+  const [potentialListItemChanges, otherChanges] = _.partition(changesToApply, change =>
     isIndexPathPart(change.id.name))
 
-  otherChanges.forEach(detailedChange => {
+  const potentialListItemGroups = _.groupBy(
+    potentialListItemChanges,
+    change => change.id.createParentID().getFullName()
+  )
+
+  const [realListItemGroup, otherGroups] = _.partition(
+    Object.values(potentialListItemGroups),
+    group => Array.isArray(resolvePath(element, group[0].id.createParentID()))
+  )
+
+  _(otherChanges).concat(otherGroups.flat()).forEach(detailedChange => {
     const id = isRemovalChange(detailedChange)
       ? detailedChange.elemIDs?.before ?? detailedChange.id
       : detailedChange.elemIDs?.after ?? detailedChange.id
@@ -355,9 +365,7 @@ export const applyDetailedChanges = (
     setPath(element, id.replaceParentId(element.elemID), data)
   })
 
-  _(listItemChanges)
-    .groupBy(change => change.id.createParentID().getFullName())
-    .forEach(changes => {
-      applyListChanges(element, changes)
-    })
+  realListItemGroup.forEach(changes => {
+    applyListChanges(element, changes)
+  })
 }

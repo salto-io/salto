@@ -45,6 +45,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
+  { fieldName: 'created_by_id' },
+  { fieldName: 'updated_by_id' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -58,6 +60,10 @@ export type IdLocator = {
   type: string[]
 }
 
+export type Guide = {
+  brands: string[]
+}
+
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
@@ -65,7 +71,7 @@ export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
     enableMissingReferences?: boolean
     greedyAppReferences?: boolean
     appReferenceLocators?: IdLocator[]
-    enableGuide?: boolean
+    guide?: Guide
   }
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
@@ -1639,10 +1645,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   },
   articles: {
     request: {
-      url: '/api/v2/help_center/{locale}/articles',
+      // we are doing this for better parallelization of requests on large accounts
+      // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
+      url: '/api/v2/help_center/categories/{category_id}/articles',
       dependsOn: [
-        { pathParam: 'locale', from: { type: 'guide_language_settings', field: 'locale' } },
+        { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
       ],
+      queryParams: {
+        include: 'translations',
+        sort_by: 'updated_at',
+      },
     },
     transformation: {
       dataField: 'articles',
@@ -1731,6 +1743,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
         { fieldName: 'created_by_id', fieldType: 'unknown' },
         { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
@@ -1808,6 +1821,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
+      fieldTypeOverrides: [
+        { fieldName: 'default_locale', fieldType: 'string' },
+      ],
       // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {
@@ -1860,13 +1876,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   sections: {
     request: {
       url: '/api/v2/help_center/sections',
-      recurseInto: [
-        {
-          type: 'section_translation',
-          toField: 'translations',
-          context: [{ name: 'sectionId', fromField: 'id' }],
-        },
-      ],
+      queryParams: {
+        include: 'translations',
+      },
     },
     transformation: {
       dataField: 'sections',
@@ -1942,9 +1954,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   section_translation: {
-    request: {
-      url: '/api/v2/help_center/sections/{sectionId}/translations',
-    },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,
@@ -1956,6 +1965,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
         { fieldName: 'created_by_id', fieldType: 'unknown' },
         { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
@@ -1993,23 +2003,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  // needed until SALTO-2867 is solved
-  guide_locale: {
-    transformation: {
-      idFields: ['id'],
-      fileNameFields: ['id'],
-    },
-  },
   categories: {
     request: {
       url: '/api/v2/help_center/categories',
-      recurseInto: [
-        {
-          type: 'category_translation',
-          toField: 'translations',
-          context: [{ name: 'categoryId', fromField: 'id' }],
-        },
-      ],
+      queryParams: {
+        include: 'translations',
+      },
     },
     transformation: {
       dataField: 'categories',
@@ -2059,18 +2058,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   category_translation: {
-    request: {
-      url: '/api/v2/help_center/categories/{categoryId}/translations',
-    },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,
       fileNameFields: ['&locale'],
       sourceTypeName: 'category__translations',
       dataField: 'translations',
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+      ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
         { fieldName: 'created_by_id', fieldType: 'unknown' },
         { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
@@ -2265,7 +2264,6 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     ],
     hideTypes: true,
     enableMissingReferences: true,
-    enableGuide: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2312,6 +2310,21 @@ const IdLocatorType = createMatchingObjectType<IdLocator>({
   },
 })
 
+const GuideType = createMatchingObjectType<Guide>({
+  elemID: new ElemID(ZENDESK, 'GuideType'),
+  fields: {
+    brands: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -2326,7 +2339,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
-          enableGuide: { refType: BuiltinTypes.BOOLEAN },
+          guide: { refType: GuideType },
         },
       ),
     },
@@ -2340,7 +2353,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       API_DEFINITIONS_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
-      `${FETCH_CONFIG}.enableGuide`,
+      `${FETCH_CONFIG}.guide`,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
@@ -2365,3 +2378,9 @@ export const validateGuideTypesConfig = (
     throw Error(`Invalid Zendesk Guide type(s) ${zendeskGuideTypesWithoutDataField} does not have dataField attribute in the type definition.`)
   }
 }
+
+export const isGuideEnabled = (
+  fetchConfig: ZendeskFetchConfig
+): boolean => (
+  fetchConfig.guide?.brands !== undefined && !_.isEmpty(fetchConfig.guide.brands)
+)

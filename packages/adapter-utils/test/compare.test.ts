@@ -353,6 +353,41 @@ describe('detailedCompare', () => {
           },
         ])
       })
+
+      it('should work with empty objects in the list', () => {
+        beforeInst.value.list = [
+          {
+            val: [],
+          },
+          {},
+          {},
+        ]
+
+        afterInst.value.list = [
+          {
+            val: [],
+          },
+        ]
+        const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+        expect(listChanges).toEqual([
+          {
+            id: listID.createNestedID('1'),
+            data: { before: {} },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('1'),
+            },
+          },
+          {
+            id: listID.createNestedID('2'),
+            data: { before: {} },
+            action: 'remove',
+            elemIDs: {
+              before: listID.createNestedID('2'),
+            },
+          },
+        ])
+      })
     })
   })
 
@@ -777,6 +812,42 @@ describe('applyDetailedChanges', () => {
             { ref: new ReferenceExpression(new ElemID('test', 'type', 'instance', 'other', 'a'), 2) },
             { a: 2, b: 4 },
           ],
+        }
+      )
+      const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })
+      outputInst = beforeInst.clone()
+      applyDetailedChanges(outputInst, listChanges)
+    })
+    it('should apply the changes', () => {
+      expect(outputInst.value.a).toEqual(afterInst.value.a)
+    })
+  })
+
+  describe('When there is object with number as keys', () => {
+    let beforeInst: InstanceElement
+    let afterInst: InstanceElement
+    let outputInst: InstanceElement
+    beforeEach(() => {
+      const instType = new ObjectType({ elemID: new ElemID('test', 'type') })
+      beforeInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: {
+            1: 'a',
+            2: 'b',
+          },
+        }
+      )
+
+      afterInst = new InstanceElement(
+        'inst',
+        instType,
+        {
+          a: {
+            1: 'b',
+            2: 'a',
+          },
         }
       )
       const listChanges = detailedCompare(beforeInst, afterInst, { compareListItems: true })

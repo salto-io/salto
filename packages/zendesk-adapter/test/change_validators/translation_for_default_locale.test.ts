@@ -31,7 +31,7 @@ describe('translationForDefaultLocaleValidator',
   () => {
     const sectionTypeName = 'section'
     const sectionTranslationTypename = 'section_translation'
-    const guideLocaleTypename = 'guide_locale'
+    const guideLanguageSettingsTypeName = 'guide_language_settings'
     const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
     const sectionTranslationType = new ObjectType(
       { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
@@ -42,23 +42,25 @@ describe('translationForDefaultLocaleValidator',
     const articleTranslationType = new ObjectType(
       { elemID: new ElemID(ZENDESK, articleTranslationTypename) }
     )
-    const helpCenterLocaleType = new ObjectType(
-      { elemID: new ElemID(ZENDESK, guideLocaleTypename) }
+    const guideLanguageSettingsType = new ObjectType(
+      { elemID: new ElemID(ZENDESK, guideLanguageSettingsTypeName) }
     )
 
 
-    const helpCenterLocaleInstance = new InstanceElement(
+    const guideLanguageSettingsInstance = new InstanceElement(
       'instance',
-      helpCenterLocaleType,
+      guideLanguageSettingsType,
       {
-        id: 'en-us',
+        locale: 'en-us',
+        brand: 1,
       }
     )
-    const helpCenterLocaleInstanceHe = new InstanceElement(
+    const guideLanguageSettingsHe = new InstanceElement(
       'instance',
-      helpCenterLocaleType,
+      guideLanguageSettingsType,
       {
-        id: 'he',
+        locale: 'he',
+        brand: 1,
       }
     )
 
@@ -85,7 +87,7 @@ describe('translationForDefaultLocaleValidator',
       articleTranslationType,
       {
         locale: new ReferenceExpression(
-          helpCenterLocaleInstance.elemID.createNestedID('instance', 'Test1'), helpCenterLocaleInstance
+          guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
         ),
         title: 'name',
         body: 'description',
@@ -112,7 +114,7 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                helpCenterLocaleInstance.elemID.createNestedID('instance', 'Test1'), helpCenterLocaleInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
               ),
               translations: [new ReferenceExpression(
                 heSectionTranslationInstance.elemID.createNestedID('instance', 'Test1'),
@@ -129,7 +131,7 @@ describe('translationForDefaultLocaleValidator',
           elemID: invalidSectionInstance.elemID,
           severity: 'Error',
           message: `${invalidSectionInstance.elemID.typeName} instance does not have a translation for the source locale`,
-          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.id}`,
+          detailedMessage: `${invalidSectionInstance.elemID.typeName} instance "${invalidSectionInstance.elemID.name}" must have a translation for the source locale ${invalidSectionInstance.value.source_locale.value.value.locale}`,
         }])
       })
 
@@ -144,8 +146,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                helpCenterLocaleInstance.elemID.createNestedID('instance', 'Test1'),
-                helpCenterLocaleInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsInstance
               ),
               translations:
               [
@@ -175,8 +177,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                helpCenterLocaleInstance.elemID.createNestedID('instance', 'Test1'),
-                helpCenterLocaleInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsInstance
               ),
               translations:
           [
@@ -205,8 +207,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                helpCenterLocaleInstance.elemID.createNestedID('instance', 'Test1'),
-                helpCenterLocaleInstance
+                guideLanguageSettingsInstance.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsInstance
               ),
               translations:
                 [
@@ -235,8 +237,8 @@ describe('translationForDefaultLocaleValidator',
               name: 'name',
               description: 'description',
               source_locale: new ReferenceExpression(
-                helpCenterLocaleInstanceHe.elemID.createNestedID('instance', 'Test1'),
-                helpCenterLocaleInstanceHe
+                guideLanguageSettingsHe.elemID.createNestedID('instance', 'Test1'),
+                guideLanguageSettingsHe
               ),
               translations:
                 [
@@ -256,7 +258,7 @@ describe('translationForDefaultLocaleValidator',
           elemID: invalidArticleInstance.elemID,
           severity: 'Error',
           message: `${invalidArticleInstance.elemID.typeName} instance does not have a translation for the source locale`,
-          detailedMessage: `${invalidArticleInstance.elemID.typeName} instance "${invalidArticleInstance.elemID.name}" must have a translation for the source locale ${invalidArticleInstance.value.source_locale.value.value.id}`,
+          detailedMessage: `${invalidArticleInstance.elemID.typeName} instance "${invalidArticleInstance.elemID.name}" must have a translation for the source locale ${invalidArticleInstance.value.source_locale.value.value.locale}`,
         }])
       })
   })

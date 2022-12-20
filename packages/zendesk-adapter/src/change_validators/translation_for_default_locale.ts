@@ -54,7 +54,7 @@ const noTranslationForDefaultLocale = (instance: InstanceElement): boolean => {
   const translation = instance.value.translations
     .filter(isTranslation)
     .find(tran => (isReferenceExpression(tran.locale)
-      ? tran.locale.value.value.id === sourceLocale
+      ? tran.locale.value.value.locale === sourceLocale
       : tran.locale === sourceLocale)) // locale is a string
   return (translation === undefined) // no translation for the source_locale
 }

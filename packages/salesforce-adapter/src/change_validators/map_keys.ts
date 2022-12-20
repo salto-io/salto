@@ -67,7 +67,10 @@ const getMapKeyErrors = async (
           })
           return undefined
         }
-
+        // this validation intend to catch unresolved reference, and should be removed after the general fix
+        if (typeof value[mapDef.key] !== 'string') {
+          return undefined
+        }
         // we reached the map's inner value
         const expectedPath = defaultMapper(value[mapDef.key]).slice(0, mapDef.nested ? 2 : 1)
         const pathParts = path.getFullNameParts().filter(part => !isNum(part))

@@ -60,7 +60,7 @@ const adapterConfigFromConfig = (
     _.omit(config?.value ?? {}, 'fetch'),
   )
   const fetch = _.defaults(
-    {}, config?.value.fetch, defaultConfig.fetch,
+    {}, config?.value.fetch, _.pick(defaultConfig.fetch, 'hideTypes'),
   )
   const fullConfig = { ...configWithoutFetch, fetch }
 

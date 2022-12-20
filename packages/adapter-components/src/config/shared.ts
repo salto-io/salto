@@ -132,10 +132,13 @@ export const createUserFetchConfigType = (
   additionalFields?: Record<string, FieldDefinition>,
   fetchCriteriaType?: ObjectType,
 ): ObjectType => {
-  const fetchEntryType = new ObjectType({
+  const fetchEntryType = createMatchingObjectType<Omit<FetchEntry<undefined>, 'criteria'>>({
     elemID: new ElemID(adapter, 'FetchEntry'),
     fields: {
-      type: { refType: BuiltinTypes.STRING },
+      type: {
+        refType: BuiltinTypes.STRING,
+        annotations: { _required: true },
+      },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -146,11 +149,17 @@ export const createUserFetchConfigType = (
     fetchEntryType.fields.criteria = new Field(fetchEntryType, 'criteria', fetchCriteriaType)
   }
 
-  return new ObjectType({
+  return createMatchingObjectType<UserFetchConfig>({
     elemID: new ElemID(adapter, 'userFetchConfig'),
     fields: {
-      include: { refType: new ListType(fetchEntryType) },
-      exclude: { refType: new ListType(fetchEntryType) },
+      include: {
+        refType: new ListType(fetchEntryType),
+        annotations: { _required: true },
+      },
+      exclude: {
+        refType: new ListType(fetchEntryType),
+        annotations: { _required: true },
+      },
       hideTypes: { refType: BuiltinTypes.BOOLEAN },
       ...additionalFields,
     },

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
@@ -24,6 +24,7 @@ import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/ut
 import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
 const log = logger(module)
 
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
@@ -124,22 +125,34 @@ const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Pr
 
 const getUnknownUsers = async (
   defMapping: TypesWithUserFields,
-  instance: InstanceElement,
+  instanceElement: InstanceElement,
   knownUsers: string[],
 ): Promise<MissingUser[]> => {
-  const getterDefs = await userFieldGettersForInstance(defMapping, instance)
+  const extractUserInfo = (instance: InstanceElement, userFieldGetter: UserFieldGetter): MissingUser | undefined => {
+    const userName = userFieldGetter.getter(instance, userFieldGetter.field)
+    if (!isValidUser(userName)) {
+      return undefined
+    }
+    return {
+      instance,
+      field: userFieldGetter.field,
+      userName,
+    }
+  }
+
+  const getterDefs = await userFieldGettersForInstance(defMapping, instanceElement)
 
   return (getterDefs
-    .map(getterDef => ({ instance, field: getterDef.field, userName: getterDef.getter(instance, getterDef.field) }))
-    .filter(missingUserInfo => isValidUser(missingUserInfo.userName)) as MissingUser[])
-    .filter(missingUserInfo => !knownUsers.includes(missingUserInfo.userName))
+    .map(getterDef => extractUserInfo(instanceElement, getterDef))
+    .filter(isDefined)
+    .filter(missingUserInfo => !knownUsers.includes(missingUserInfo.userName)))
 }
 
 const unknownUserError = ({ instance, field, userName }: MissingUser): ChangeError => (
   {
     elemID: instance.elemID,
     severity: 'Error',
-    message: `The field ${field} in '${instance.elemID.getFullName()}' refers to the user '${userName}' which does not exist in this Salesforce environment`,
+    message: 'Invalid user reference',
     detailedMessage: `The field ${field} in '${instance.elemID.getFullName()}' refers to the user '${userName}' which does not exist in this Salesforce environment`,
   }
 )

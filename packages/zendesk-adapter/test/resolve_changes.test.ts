@@ -305,4 +305,50 @@ describe('resolveChanges', () => {
       ],
     })
   })
+  it('should resolve to string when using idString serialization', async () => {
+    const workspaceType = new ObjectType({
+      elemID: new ElemID(ZENDESK, 'workspace'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        conditions: {
+          refType: new ObjectType({
+            elemID: new ElemID(ZENDESK, 'workspace__conditions'),
+            fields: {
+              all: { refType: new ListType(new ObjectType({
+                elemID: new ElemID(ZENDESK, 'workspace__conditions__all'),
+                fields: {
+                  field: { refType: BuiltinTypes.STRING },
+                  operator: { refType: BuiltinTypes.STRING },
+                  value: { refType: BuiltinTypes.STRING },
+                },
+              })) },
+            },
+          }),
+        },
+      },
+    })
+    const groupType = new ObjectType({
+      elemID: new ElemID(ZENDESK, 'group'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+    const group = new InstanceElement('group3', groupType, { id: 2003 })
+    const workspace = new InstanceElement(
+      'workspace1',
+      workspaceType,
+      {
+        id: 7001,
+        conditions: {
+          all: [
+            { field: 'group_id', operator: 'is', value: new ReferenceExpression(group.elemID, group) },
+          ],
+        },
+      },
+    )
+    expect(
+      getChangeData(await resolveChangeElement(toChange({ after: workspace }), lookupFunc))
+        .value.conditions.all[0].value
+    ).toEqual('2003')
+  })
 })

@@ -20,11 +20,12 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { BRAND_TYPE_NAME, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME } from '../../constants'
+import { CATEGORY_TYPE_NAME, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME } from '../../constants'
 import {
   createOrderInstance, deployOrderChanges, createOrderType,
 } from './guide_order_utils'
 import { FETCH_CONFIG, isGuideEnabled } from '../../config'
+import { getBrandsForGuide } from '../utils'
 
 /**
  * Handle the order of categories in brand
@@ -36,19 +37,16 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return
     }
-
-    const categories = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
-    const brands = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
+    const instances = elements.filter(isInstanceElement)
+    const categories = instances.filter(e => e.elemID.typeName === CATEGORY_TYPE_NAME)
+    const brands = getBrandsForGuide(instances, config[FETCH_CONFIG])
 
     const orderType = createOrderType(CATEGORY_TYPE_NAME)
     _.remove(elements, e => e.elemID.getFullName() === orderType.elemID.getFullName())
     elements.push(orderType)
 
     const categoryOrderElements = brands
-    // If the brand doesn't have Guide activated, do nothing
-      .filter(b => b.value.has_help_center).map(brand => createOrderInstance({
+      .map(brand => createOrderInstance({
         parent: brand,
         parentField: 'brand',
         orderField: CATEGORIES_FIELD,

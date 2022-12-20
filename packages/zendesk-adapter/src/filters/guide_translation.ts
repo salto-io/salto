@@ -35,7 +35,7 @@ const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean 
   const data = getChangeData(change)
   const currentLocale = data.value.locale
   const parents = getParents(data) // the parent is not a reference expression
-  return parents.find(parent => parent.source_locale?.value.value.id === currentLocale) ?? false
+  return parents.some(parent => parent.source_locale?.value.value.locale === currentLocale)
 }
 
 const parentRemoved = (change: Change<InstanceElement>): boolean => {

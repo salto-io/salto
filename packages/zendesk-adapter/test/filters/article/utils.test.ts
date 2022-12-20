@@ -16,9 +16,15 @@
 import {
   ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, StaticFile, TemplateExpression,
 } from '@salto-io/adapter-api'
-import { LOCALE_TYPE_NAME } from '../../../src/filters/guide_locale'
 import ZendeskClient from '../../../src/client/client'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../../../src/constants'
+import {
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  ZENDESK,
+} from '../../../src/constants'
 import * as articleUtils from '../../../src/filters/article/utils'
 
 jest.useFakeTimers()
@@ -79,8 +85,8 @@ describe('article utility functions', () => {
   )
   const localeInstance = new InstanceElement(
     'testLocale',
-    new ObjectType({ elemID: new ElemID(ZENDESK, LOCALE_TYPE_NAME) }),
-    { id: 'en-us' },
+    new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }),
+    { locale: 'en-us' },
   )
   const articleTranslationInstance = new InstanceElement(
     'testTranslation',

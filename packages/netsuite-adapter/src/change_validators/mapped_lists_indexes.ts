@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  ChangeError, ChangeValidator, getChangeData, isInstanceChange,
+  ChangeError, ChangeValidator, getChangeData, isInstanceChange, isMapType, isObjectType,
 } from '@salto-io/adapter-api'
 import { INDEX } from '../constants'
 import { getMappedLists, MappedList } from '../mapped_lists/utils'
@@ -25,9 +25,15 @@ const { isDefined } = values
 
 const { awu } = collections.asynciterable
 
-const toChangeErrors = (
-  { path, value }: MappedList
-): ChangeError[] => {
+const toChangeErrors = async (
+  { field, path, value }: MappedList
+): Promise<ChangeError[]> => {
+  const fieldType = await field.getType()
+  const innerFieldType = isMapType(fieldType) && await fieldType.getInnerType()
+  if (isObjectType(innerFieldType) && innerFieldType.fields[INDEX] === undefined) {
+    return []
+  }
+
   const items = Object.entries(value)
   const indexes = new Set(_.range(items.length))
 

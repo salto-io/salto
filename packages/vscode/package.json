@@ -2,7 +2,7 @@
     "name": "salto-vscode",
     "displayName": "Salto",
     "description": "Configure Salto patches in vscode.",
-    "version": "0.3.27",
+    "version": "0.3.28",
     "publishConfig": {
         "access": "public"
     },
@@ -125,11 +125,11 @@
         "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"
     },
     "dependencies": {
-        "@salto-io/core": "0.3.27",
-        "@salto-io/file": "0.3.27",
-        "@salto-io/lang-server": "0.3.27",
-        "@salto-io/lowerdash": "0.3.27",
-        "@salto-io/workspace": "0.3.27",
+        "@salto-io/core": "0.3.28",
+        "@salto-io/file": "0.3.28",
+        "@salto-io/lang-server": "0.3.28",
+        "@salto-io/lowerdash": "0.3.28",
+        "@salto-io/workspace": "0.3.28",
         "clipboardy": "^2.3.0",
         "lodash": "^4.17.21",
         "open": "^7.2.0",

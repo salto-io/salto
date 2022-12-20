@@ -14,36 +14,64 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { promises } from '@salto-io/lowerdash'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, TypeRefMap } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, TypeRefMap } from '@salto-io/adapter-api'
 import { CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INDEX, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID, SOAP, SOURCE } from '../constants'
 import { customrecordtypeType } from '../autogen/types/standard_types/customrecordtype'
 import { isCustomFieldName } from '../types'
 
-const { mapValuesAsync } = promises.object
-
 export const CUSTOM_FIELDS = 'customrecordcustomfields'
 export const CUSTOM_FIELDS_LIST = 'customrecordcustomfield'
 
-export const toAnnotationRefTypes = (type: ObjectType): Promise<TypeRefMap> =>
-  mapValuesAsync(type.fields, async field => {
-    const fieldType = await field.getType()
+const TRANSLATION_LIST = 'translationsList'
+const TRANSLATIONS = 'customRecordTranslations'
+const CUSTOM_RECORD_TRANSLATION_LIST = 'customRecordTranslationsList'
+
+export const toAnnotationRefTypes = (type: ObjectType): TypeRefMap =>
+  _.mapValues(type.fields, field => {
     if (field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]) {
-      if (fieldType.elemID.isEqual(BuiltinTypes.BOOLEAN.elemID)) {
+      if (field.refType.elemID.isEqual(BuiltinTypes.BOOLEAN.elemID)) {
         return BuiltinTypes.HIDDEN_BOOLEAN
       }
-      if (fieldType.elemID.isEqual(BuiltinTypes.STRING.elemID)) {
+      if (field.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)) {
         return BuiltinTypes.HIDDEN_STRING
       }
     }
-    return fieldType
+    return field.refType
   })
 
-export const createCustomRecordTypes = async (
+export const createCustomRecordTypes = (
   customRecordTypeInstances: InstanceElement[],
   customRecordType: ObjectType
-): Promise<ObjectType[]> => {
-  const annotationRefsOrTypes = await toAnnotationRefTypes(customRecordType)
+): ObjectType[] => {
+  const translation = new ObjectType({
+    elemID: new ElemID(NETSUITE, TRANSLATIONS),
+    fields: {
+      locale: { refType: BuiltinTypes.STRING },
+      language: { refType: BuiltinTypes.STRING },
+      label: { refType: BuiltinTypes.STRING },
+    },
+    annotationRefsOrTypes: {
+      source: BuiltinTypes.HIDDEN_STRING,
+    },
+    annotations: {
+      [SOURCE]: SOAP,
+    },
+  })
+  const translationsList = new ObjectType({
+    elemID: new ElemID(NETSUITE, CUSTOM_RECORD_TRANSLATION_LIST),
+    fields: {
+      [TRANSLATIONS]: {
+        refType: new ListType(translation),
+      },
+    },
+    annotationRefsOrTypes: {
+      source: BuiltinTypes.HIDDEN_STRING,
+    },
+    annotations: {
+      [SOURCE]: SOAP,
+    },
+  })
+  const annotationRefsOrTypes = toAnnotationRefTypes(customRecordType)
   return customRecordTypeInstances.map(instance => new ObjectType({
     elemID: new ElemID(NETSUITE, instance.value[SCRIPT_ID]),
     fields: {
@@ -54,6 +82,9 @@ export const createCustomRecordTypes = async (
       [INTERNAL_ID]: {
         refType: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
+      [TRANSLATION_LIST]: {
+        refType: translationsList,
       },
     },
     annotationRefsOrTypes: {
@@ -66,7 +97,7 @@ export const createCustomRecordTypes = async (
       [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
     },
     path: [NETSUITE, CUSTOM_RECORDS_PATH, instance.value[SCRIPT_ID]],
-  }))
+  })).concat(translation, translationsList)
 }
 
 export const toCustomRecordTypeInstance = (

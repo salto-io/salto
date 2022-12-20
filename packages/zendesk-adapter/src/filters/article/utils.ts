@@ -264,7 +264,7 @@ export const updateArticleTranslationBody = async ({
         }
       )
       await client.put({
-        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.id}`,
+        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.locale}`,
         data: { translation: { body: translationInstance.value.value.body } },
       })
     })

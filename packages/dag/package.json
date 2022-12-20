@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/dag",
-  "version": "0.3.27",
+  "version": "0.3.28",
   "license": "Apache-2.0",
   "description": "directed acyclic graph implementation including - dag diff and node grouping",
   "repository": {
@@ -30,8 +30,8 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/logging": "0.3.27",
-    "@salto-io/lowerdash": "0.3.27",
+    "@salto-io/logging": "0.3.28",
+    "@salto-io/lowerdash": "0.3.28",
     "lodash": "^4.17.21",
     "wu": "^2.1.0"
   },

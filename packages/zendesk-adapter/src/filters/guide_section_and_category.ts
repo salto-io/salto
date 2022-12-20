@@ -79,7 +79,7 @@ const addTranslationValues = (change: Change<InstanceElement>): void => {
   const translation = getChangeData(change).value.translations
     .filter(isTranslation) // the translation is not a reference it is already the value
     .find((tran: TranslationType) => (isReferenceExpression(tran.locale)
-      ? tran.locale.value.value.id === currentLocale
+      ? tran.locale.value.value.locale === currentLocale
       : tran.locale === currentLocale))
   if (translation !== undefined) {
     getChangeData(change).value.name = translation.title

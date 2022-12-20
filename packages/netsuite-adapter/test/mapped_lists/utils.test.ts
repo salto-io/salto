@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { convertFieldsTypesFromListToMap, createConvertElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping, convertAnnotationListsToMaps } from '../../src/mapped_lists/utils'
+import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, isObjectType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
+import { convertFieldsTypesFromListToMap, createConvertStandardElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping, convertAnnotationListsToMaps, convertDataInstanceMapsToLists } from '../../src/mapped_lists/utils'
 import { getStandardTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
@@ -28,12 +28,25 @@ describe('mapped lists', () => {
   const standardTypes = getStandardTypes()
   const { workflow, kpiscorecard, customrecordtype } = standardTypes
 
+  const classTranslationType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'classTranslation'),
+    fields: {
+      locale: { refType: BuiltinTypes.STRING },
+      language: { refType: BuiltinTypes.STRING },
+      name: { refType: BuiltinTypes.STRING },
+    },
+  })
+
   let instance: InstanceElement
   let transformedInstance: InstanceElement
   let transformedBackInstance: InstanceElement
   let customRecordType: ObjectType
   let transformedCustomRecordType: ObjectType
   let transformedBackCustomRecordType: ObjectType
+  let classTranslationListType: ObjectType
+  let dataInstance: InstanceElement
+  let transformedDataInstance: InstanceElement
+  let transformedBackDataInstance: InstanceElement
   beforeAll(async () => {
     instance = new InstanceElement(
       'instanceName',
@@ -56,6 +69,9 @@ describe('mapped lists', () => {
             },
             {
               scriptid: '[type=workflow, scriptid=custworkflow2]',
+            },
+            {
+              scriptid: 's0m@ $CR1pt!*()',
             },
           ],
         },
@@ -123,22 +139,57 @@ describe('mapped lists', () => {
         },
         metadataType: 'customrecordtype',
       },
-      annotationRefsOrTypes: await toAnnotationRefTypes(customrecordtype.type),
+      annotationRefsOrTypes: toAnnotationRefTypes(customrecordtype.type),
+    })
+
+    classTranslationListType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'classTranslationList'),
+      fields: {
+        classTranslation: { refType: new ListType(classTranslationType) },
+        replaceAll: { refType: BuiltinTypes.BOOLEAN },
+      },
+    })
+    const dataType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'subsidiary'),
+      fields: {
+        identifier: { refType: BuiltinTypes.SERVICE_ID },
+        internalId: { refType: BuiltinTypes.STRING },
+        classTranslationList: { refType: classTranslationListType },
+      },
+    })
+    dataInstance = new InstanceElement('subsidiary1', dataType, {
+      identifier: 'subsidiary1',
+      internalId: '1',
+      classTranslationList: {
+        classTranslation: [{
+          language: 'Czech',
+          name: 'a',
+        }, {
+          language: 'Danish',
+          name: 'b',
+        }, {
+          language: 'German',
+          name: 'c',
+        }],
+      },
     })
 
     await awu([
       ...Object.values(workflow.innerTypes),
       ...Object.values(kpiscorecard.innerTypes),
       ...Object.values(customrecordtype.innerTypes),
+      classTranslationListType,
     ])
       .forEach(t => convertFieldsTypesFromListToMap(t))
 
     transformedInstance = instance.clone()
-    transformedInstance.value = await convertInstanceListsToMaps(instance) ?? instance.value
+    transformedInstance.value = await convertInstanceListsToMaps(instance) ?? {}
     transformedCustomRecordType = customRecordType.clone()
     transformedCustomRecordType.annotations = await convertAnnotationListsToMaps(customRecordType)
+    transformedDataInstance = dataInstance.clone()
+    transformedDataInstance.value = await convertInstanceListsToMaps(dataInstance) ?? {}
 
-    const convertElementMapsToLists = await createConvertElementMapsToLists({ getIndexes: () => ({
+    const convertElementMapsToLists = await createConvertStandardElementMapsToLists({ getIndexes: () => ({
       mapKeyFieldsIndex: {
         'netsuite.workflow_workflowcustomfields.field.workflowcustomfield': 'scriptid',
         'netsuite.workflow_workflowstates.field.workflowstate': 'scriptid',
@@ -149,17 +200,34 @@ describe('mapped lists', () => {
     }) } as unknown as LazyElementsSourceIndexes)
     transformedBackInstance = await convertElementMapsToLists(transformedInstance) as InstanceElement
     transformedBackCustomRecordType = await convertElementMapsToLists(transformedCustomRecordType) as ObjectType
+    transformedBackDataInstance = await convertDataInstanceMapsToLists(transformedDataInstance)
   })
-
   describe('validateTypesFieldMapping', () => {
-    const standardTypesAndInnerTypes = [
+    const types = [
       ...getTopLevelStandardTypes(standardTypes),
       ...getInnerStandardTypes(standardTypes),
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'translation'),
+        fields: {
+          locale: { refType: BuiltinTypes.STRING },
+          language: { refType: BuiltinTypes.STRING },
+        },
+      }),
+      classTranslationType,
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customRecordTranslations'),
+        fields: {
+          locale: { refType: BuiltinTypes.STRING },
+          language: { refType: BuiltinTypes.STRING },
+        },
+      }),
     ]
+    it('should not throw', () => {
+      expect(() => validateTypesFieldMapping(types)).not.toThrow()
+    })
     it('should throw when missing some types with field mapping', async () => {
-      const missingTypes = standardTypesAndInnerTypes
-        .filter(element => element.elemID.name !== 'addressForm_mainFields_defaultFieldGroup_fields')
-      await expect(async () => validateTypesFieldMapping(missingTypes)).rejects.toThrow('missing some types with field mapping')
+      const missingTypes = types.filter(element => element.elemID.name !== 'addressForm_mainFields_defaultFieldGroup_fields')
+      expect(() => validateTypesFieldMapping(missingTypes)).toThrow()
 
       const typeWithMissingField = new ObjectType({
         elemID: new ElemID(NETSUITE, 'addressForm_mainFields_defaultFieldGroup_fields'),
@@ -169,11 +237,9 @@ describe('mapped lists', () => {
           },
         },
       })
-      await expect(async () => validateTypesFieldMapping([...missingTypes, typeWithMissingField]))
-        .rejects.toThrow('missing some types with field mapping')
+      expect(() => validateTypesFieldMapping([...missingTypes, typeWithMissingField])).toThrow()
     })
   })
-
   it('should modify ObjectTypes fields', async () => {
     const workflowcustomfields = workflow.innerTypes.workflow_workflowcustomfields
     expect(workflowcustomfields).toBeDefined()
@@ -195,8 +261,18 @@ describe('mapped lists', () => {
     expect(isMapType(await workflowactions.getType())).toBeTruthy()
     expect(workflowactions.annotations)
       .toEqual({ [LIST_MAPPED_BY_FIELD]: 'triggertype' })
-  })
 
+    expect(isMapType(await classTranslationListType.fields.classTranslation.getType())).toBeTruthy()
+    expect(classTranslationListType.fields.classTranslation.annotations)
+      .toEqual({ [LIST_MAPPED_BY_FIELD]: ['locale', 'language'] })
+  })
+  it('should add index field', () => {
+    expect(workflow.innerTypes.workflow_workflowstates_workflowstate_workflowactions.fields.index).toBeDefined()
+  })
+  it('should not add index field to unordered lists', async () => {
+    expect(customrecordtype.innerTypes.customrecordtype_permissions_permission.fields.index).toBeUndefined()
+    expect(classTranslationType.fields.index).toBeUndefined()
+  })
   it('should not modify ObjectTypes fields when types has no field to map by', async () => {
     const highlightings = kpiscorecard.innerTypes.kpiscorecard_highlightings
     expect(highlightings).toBeDefined()
@@ -204,8 +280,7 @@ describe('mapped lists', () => {
     expect(isListType(await highlighting.getType())).toBeTruthy()
     expect(highlighting.annotations[LIST_MAPPED_BY_FIELD]).toBeUndefined()
   })
-
-  it('should modify instance values', () => {
+  it('should modify standard instance values', () => {
     expect(transformedInstance.value).toEqual({
       scriptid: 'customworkflow_changed_id',
       workflowcustomfields: {
@@ -229,6 +304,10 @@ describe('mapped lists', () => {
           custworkflow2_3: {
             scriptid: '[type=workflow, scriptid=custworkflow2]',
             index: 4,
+          },
+          's0m___CR1pt_____2@mszclojku': {
+            scriptid: 's0m@ $CR1pt!*()',
+            index: 5,
           },
         },
       },
@@ -272,7 +351,28 @@ describe('mapped lists', () => {
       },
     })
   })
-
+  it('should modify data instance values', () => {
+    expect(transformedDataInstance.value).toEqual({
+      identifier: 'subsidiary1',
+      internalId: '1',
+      classTranslationList: {
+        classTranslation: {
+          Czech: {
+            language: 'Czech',
+            name: 'a',
+          },
+          Danish: {
+            language: 'Danish',
+            name: 'b',
+          },
+          German: {
+            language: 'German',
+            name: 'c',
+          },
+        },
+      },
+    })
+  })
   it('should modify custom record type annotations', () => {
     expect(transformedCustomRecordType.annotations).toEqual({
       scriptid: 'customrecord1',
@@ -281,14 +381,12 @@ describe('mapped lists', () => {
           customrole1: {
             permittedlevel: 'EDIT',
             permittedrole: '[scriptid=customrole1]',
-            index: 0,
           },
         },
       },
       metadataType: 'customrecordtype',
     })
   })
-
   it('should not convert list if the inner type is not an ObjectType', async () => {
     const elemID = new ElemID(NETSUITE, 'newType')
     const type = new ObjectType({
@@ -304,7 +402,6 @@ describe('mapped lists', () => {
     expect(isListType(await primitiveList.getType())).toBeTruthy()
     expect(primitiveList.annotations).toEqual({})
   })
-
   it('should use \'key\' as item key if item has no \'LIST_MAPPED_BY_FIELD\' field', async () => {
     const inst = new InstanceElement(
       'instance',
@@ -339,7 +436,6 @@ describe('mapped lists', () => {
       },
     })
   })
-
   describe('isMappedList', () => {
     const elemID = new ElemID(NETSUITE, 'newType')
     const elemIDinner = new ElemID(NETSUITE, 'inner')
@@ -402,7 +498,9 @@ describe('mapped lists', () => {
   })
   it('should return mapped lists', async () => {
     expect(await getMappedLists(transformedInstance)).toEqual([
-      { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowcustomfields', 'workflowcustomfield'),
+      {
+        field: workflow.innerTypes.workflow_workflowcustomfields.fields.workflowcustomfield,
+        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowcustomfields', 'workflowcustomfield'),
         value: {
           custworkflow1: {
             scriptid: 'custworkflow1',
@@ -424,8 +522,15 @@ describe('mapped lists', () => {
             scriptid: '[type=workflow, scriptid=custworkflow2]',
             index: 4,
           },
-        } },
-      { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate'),
+          's0m___CR1pt_____2@mszclojku': {
+            scriptid: 's0m@ $CR1pt!*()',
+            index: 5,
+          },
+        },
+      },
+      {
+        field: workflow.innerTypes.workflow_workflowstates.fields.workflowstate,
+        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate'),
         value: {
           workflowstate1: {
             index: 0,
@@ -461,8 +566,11 @@ describe('mapped lists', () => {
               },
             },
           },
-        } },
-      { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions'),
+        },
+      },
+      {
+        field: workflow.innerTypes.workflow_workflowstates_workflowstate.fields.workflowactions,
+        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions'),
         value: {
           BEFORELOAD: {
             index: 1,
@@ -492,8 +600,11 @@ describe('mapped lists', () => {
             },
             triggertype: 'ONENTRY',
           },
-        } },
-      { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions', 'ONENTRY', 'setfieldvalueaction'),
+        },
+      },
+      {
+        field: workflow.innerTypes.workflow_workflowstates_workflowstate_workflowactions.fields.setfieldvalueaction,
+        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions', 'ONENTRY', 'setfieldvalueaction'),
         value: {
           workflowaction1: {
             index: 0,
@@ -503,8 +614,11 @@ describe('mapped lists', () => {
             index: 1,
             scriptid: 'workflowaction2',
           },
-        } },
-      { path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions', 'BEFORELOAD', 'setfieldvalueaction'),
+        },
+      },
+      {
+        field: workflow.innerTypes.workflow_workflowstates_workflowstate_workflowactions.fields.setfieldvalueaction,
+        path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions', 'BEFORELOAD', 'setfieldvalueaction'),
         value: {
           workflowaction3: {
             index: 0,
@@ -514,11 +628,21 @@ describe('mapped lists', () => {
             index: 1,
             scriptid: 'workflowaction4',
           },
-        } },
+        },
+      },
     ])
   })
-  it('should convert map back to a list in instance', () => {
+  it('should convert map back to a list in standard instance', () => {
     expect(transformedBackInstance.value).toEqual(instance.value)
+  })
+  it('should convert map back to a list in data instance', async () => {
+    expect(transformedBackDataInstance.value).toEqual(dataInstance.value)
+    expect(
+      isObjectType(transformedBackDataInstance.refType.type)
+      && isObjectType(transformedBackDataInstance.refType.type.fields.classTranslationList.refType.type)
+      && isListType(transformedBackDataInstance.refType.type.fields.classTranslationList.refType.type
+        .fields.classTranslation.refType.type)
+    ).toBeTruthy()
   })
   it('should convert map back to a list in type', () => {
     expect(transformedBackCustomRecordType.isEqual(customRecordType)).toBeTruthy()

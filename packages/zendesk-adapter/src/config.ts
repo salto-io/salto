@@ -1786,6 +1786,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   guide_language_settings: {
     request: {
       url: '/hc/api/internal/help_center_translations',
+      queryParams: {
+        'page[size]': '100',
+      },
+      paginationField: 'links.next',
     },
     transformation: {
       idFields: ['&brand', 'locale'],
@@ -1818,6 +1822,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   guide_settings: {
     request: {
       url: '/hc/api/internal/general_settings',
+      queryParams: {
+        'page[size]': '100',
+      },
+      paginationField: 'links.next',
     },
     transformation: {
       idFields: ['&brand'],

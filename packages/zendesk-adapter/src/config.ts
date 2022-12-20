@@ -48,6 +48,10 @@ export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_by_id' },
   { fieldName: 'updated_by_id' },
 ]
+export const DEFAULT_QUERY_PARAMS = {
+  'page[size]': '100',
+}
+export const NEW_PAGINATION_FIELD = 'links.next'
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
@@ -1652,11 +1656,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
       ],
       queryParams: {
+        ...DEFAULT_QUERY_PARAMS,
         include: 'translations',
         sort_by: 'updated_at',
-        'page[size]': '100',
       },
-      paginationField: 'links.next',
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'articles',
@@ -1786,10 +1790,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   guide_language_settings: {
     request: {
       url: '/hc/api/internal/help_center_translations',
-      queryParams: {
-        'page[size]': '100',
-      },
-      paginationField: 'links.next',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       idFields: ['&brand', 'locale'],
@@ -1822,10 +1824,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   guide_settings: {
     request: {
       url: '/hc/api/internal/general_settings',
-      queryParams: {
-        'page[size]': '100',
-      },
-      paginationField: 'links.next',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       idFields: ['&brand'],
@@ -1887,10 +1887,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/help_center/sections',
       queryParams: {
+        ...DEFAULT_QUERY_PARAMS,
         include: 'translations',
-        'page[size]': '100',
       },
-      paginationField: 'links.next',
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'sections',
@@ -2019,10 +2019,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/help_center/categories',
       queryParams: {
+        ...DEFAULT_QUERY_PARAMS,
         include: 'translations',
         'page[size]': '100',
       },
-      paginationField: 'links.next',
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'categories',
@@ -2124,10 +2125,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   permission_groups: {
     request: {
       url: '/api/v2/guide/permission_groups',
-      queryParams: {
-        'page[size]': '100',
-      },
-      paginationField: 'links.next',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'permission_groups',
@@ -2166,6 +2165,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: 'links.next',
     },
     transformation: {
       dataField: 'user_segments',

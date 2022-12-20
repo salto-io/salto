@@ -30,7 +30,7 @@ import { createEveryoneUserSegmentInstance } from '../src/filters/everyone_user_
 
 type MockReply = {
   url: string
-  params: Record<string, string>
+  params: Record<string, string | undefined>
   response: unknown
 }
 

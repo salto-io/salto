@@ -1878,7 +1878,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       url: '/api/v2/help_center/sections',
       queryParams: {
         include: 'translations',
+        'page[size]': '100',
       },
+      paginationField: 'links.next',
     },
     transformation: {
       dataField: 'sections',

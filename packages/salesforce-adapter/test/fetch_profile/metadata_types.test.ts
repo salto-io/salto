@@ -56,12 +56,12 @@ describe('Salesforce MetadataTypes', () => {
   // })
 
   it.each([
-    ['METADATA_TYPES_WITHOUT_DEPENDENCIES', METADATA_TYPES_WITHOUT_DEPENDENCIES as ReadonlyArray<string>],
-    ['METADATA_TYPES_WITH_DEPENDENCIES', METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>],
-    ['EXCLUDED_METADATA_TYPES', EXCLUDED_METADATA_TYPES as ReadonlyArray<string>],
-    ['CUSTOM_OBJECT_DEPENDENCIES', CUSTOM_OBJECT_DEPENDENCIES as ReadonlyArray<string>],
-    ['WORKFLOW_DEPENDENCIES', WORKFLOW_DEPENDENCIES as ReadonlyArray<string>],
-  ])('%p should not contain duplicates', (__, array) => {
+    ['METADATA_TYPES_WITHOUT_DEPENDENCIES', METADATA_TYPES_WITHOUT_DEPENDENCIES],
+    ['METADATA_TYPES_WITH_DEPENDENCIES', METADATA_TYPES_WITH_DEPENDENCIES],
+    ['EXCLUDED_METADATA_TYPES', EXCLUDED_METADATA_TYPES],
+    ['CUSTOM_OBJECT_DEPENDENCIES', CUSTOM_OBJECT_DEPENDENCIES],
+    ['WORKFLOW_DEPENDENCIES', WORKFLOW_DEPENDENCIES],
+  ] as [string, ReadonlyArray<string>][])('%p should not contain duplicates', (__, array) => {
     expect(getDuplicates(array)).toBeEmpty()
   })
   it.each([

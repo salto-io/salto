@@ -152,7 +152,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'DataCategoryGroup',
   'DefaultShortcut',
   'DelegateGroup',
-  'Document',
   'DocumentFolder',
   'DuplicateRule',
   'DuplicateRuleFilter',
@@ -580,12 +579,13 @@ export const EXCLUDED_METADATA_TYPES = [
   'CustomField', // Has a specific handling in Salto
   'CustomIndex', // Cannot retrieve by Record name
   'CustomLabel', // Fetched through parent type
-  'EmailTemplate', // Fetched with specific names
   'EscalationRule', // Fetched through parent type
   'FlowDefinition', // Not recommended since API version 44.0
   'Settings', // Has a specific handling in Salto
-  'Report', // Fetched with specific names
-  'Dashboard', // Fetched with specific names
+  'Report', // Within folders
+  'Dashboard', // Within folders
+  'Document', // Within folders
+  'EmailTemplate', // Within folders
 ] as const
 
 

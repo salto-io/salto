@@ -146,7 +146,6 @@ const createNewInstance = async (
     element: currentInstance,
     transformFunc: createReferencesTransformFunc(currentInstance.elemID, newElemId),
     strict: false,
-    allowEmpty: true,
   })
   return new InstanceElement(
     newElemId.name,

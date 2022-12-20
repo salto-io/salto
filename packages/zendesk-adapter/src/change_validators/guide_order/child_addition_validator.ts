@@ -13,15 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { validateOrderElementAdded, validateReferences } from './guide_order_validators_utils'
-import { SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME, SECTION_TYPE_NAME } from '../../constants'
+import { ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME, ARTICLES_FIELD } from '../../constants'
 
 /**
- * Validates that all the elements in the sections order list are references
- * */
-export const sectionOrderValidator: ChangeValidator = async changes =>
+ * Validates that all the elements in the articles order list are references
+ */
+export const childAdditionValidator: ChangeValidator = async changes =>
   [
-    ...validateReferences(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME),
-    ...validateOrderElementAdded(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME, SECTION_TYPE_NAME),
+    ...validateReferences(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME),
+    ...validateOrderElementAdded(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME),
   ]

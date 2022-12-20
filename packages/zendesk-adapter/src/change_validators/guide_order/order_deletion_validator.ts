@@ -20,7 +20,7 @@ import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_order_utils'
 /**
  * Validates that if an order element was removed, its parent was also removed
  * */
-export const guideOrderValidator: ChangeValidator = async changes => {
+export const guideOrderDeletionValidator: ChangeValidator = async changes => {
   const removalChanges = changes.filter(isRemovalChange).map(getChangeData)
   const orderRemovals = removalChanges.filter(
     instance => GUIDE_ORDER_TYPES.includes(instance.elemID.typeName)

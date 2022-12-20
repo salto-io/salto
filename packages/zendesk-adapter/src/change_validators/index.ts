@@ -45,5 +45,5 @@ export { helpCenterCreationOrRemovalValidator } from './guide_creation_or_remova
 export { categoryOrderValidator } from './guide_order/category_order_validator'
 export { sectionOrderValidator } from './guide_order/section_order_validator'
 export { articleOrderValidator } from './guide_order/article_order_validator'
-export { guideOrderValidator } from './guide_order/order_deletion_validator'
+export { guideOrderDeletionValidator } from './guide_order/order_deletion_validator'
 export { articleAttachmentSizeValidator } from './article_attachment_size'

@@ -39,7 +39,7 @@ import {
   categoryOrderValidator,
   sectionOrderValidator,
   articleOrderValidator,
-  guideOrderValidator,
+  guideOrderDeletionValidator,
 } from '../../src/change_validators'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
@@ -135,7 +135,7 @@ describe('GuideOrdersValidator', () => {
       const instanceName = orderInstance.elemID.getFullName()
       const parentName = fakeParent.elemID.getFullName()
 
-      const errors = await guideOrderValidator(changes)
+      const errors = await guideOrderDeletionValidator(changes)
       expect(errors.length).toBe(1)
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,

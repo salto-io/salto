@@ -1876,13 +1876,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   sections: {
     request: {
       url: '/api/v2/help_center/sections',
-      recurseInto: [
-        {
-          type: 'section_translation',
-          toField: 'translations',
-          context: [{ name: 'sectionId', fromField: 'id' }],
-        },
-      ],
+      queryParams: {
+        include: 'translations',
+      },
     },
     transformation: {
       dataField: 'sections',
@@ -1958,9 +1954,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   section_translation: {
-    request: {
-      url: '/api/v2/help_center/sections/{sectionId}/translations',
-    },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,
@@ -1972,6 +1965,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
         { fieldName: 'created_by_id', fieldType: 'unknown' },
         { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
@@ -2012,13 +2006,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   categories: {
     request: {
       url: '/api/v2/help_center/categories',
-      recurseInto: [
-        {
-          type: 'category_translation',
-          toField: 'translations',
-          context: [{ name: 'categoryId', fromField: 'id' }],
-        },
-      ],
+      queryParams: {
+        include: 'translations',
+      },
     },
     transformation: {
       dataField: 'categories',
@@ -2068,9 +2058,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   category_translation: {
-    request: {
-      url: '/api/v2/help_center/categories/{categoryId}/translations',
-    },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,
@@ -2082,6 +2069,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
         { fieldName: 'created_by_id', fieldType: 'unknown' },
         { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],

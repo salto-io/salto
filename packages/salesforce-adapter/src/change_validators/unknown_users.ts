@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
   InstanceElement, getChangeData,
@@ -23,11 +24,12 @@ import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/ut
 import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
 const SALESFORCE_MAX_QUERY_LEN = 100000
 
-type GetUserField = (instance: InstanceElement) => string | undefined
+type GetUserField = (instance: InstanceElement, fieldName: string) => string | undefined
 
 type UserFieldGetter = {
   field: string
@@ -49,23 +51,37 @@ type MissingUser = {
   userName: string
 }
 
-const getCaseSettingsOwner = (instance: InstanceElement): string | undefined => {
+const getCaseSettingsOwner = (instance: InstanceElement, fieldName: string): string | undefined => {
+  if (fieldName !== 'defaultCaseOwner') {
+    log.error(`Unexpected field name: ${fieldName}.`)
+    return undefined
+  }
   if (instance.value.defaultCaseOwnerType !== 'User') {
+    log.debug('defaultCaseOwnerType is not User. Skipping.')
     return undefined
   }
   return instance.value.defaultCaseOwner
 }
 
+const userFieldValue = (expectedFieldName: string): GetUserField => (
+  (instance, fieldName) => {
+    if (fieldName !== expectedFieldName) {
+      log.error(`Unexpected field name: ${fieldName} !== ${expectedFieldName}`)
+      return undefined
+    }
+    return instance.value[fieldName]
+  }
+)
 
 const USER_GETTERS: TypesWithUserFields = {
   CaseSettings: [
     {
       field: 'defaultCaseUser',
-      getter: instance => instance.value.defaultCaseUser,
+      getter: userFieldValue('defaultCaseUser'),
     },
     {
       field: 'defaultCaseOwner',
-      getter: instance => getCaseSettingsOwner(instance),
+      getter: (instance, fieldName) => getCaseSettingsOwner(instance, fieldName),
     },
   ],
 }
@@ -84,7 +100,7 @@ const userFieldGettersForInstance = async (defMapping: TypesWithUserFields, inst
 const isValidUser = (user: string|undefined): user is string => !!user
 
 const getUsersFromInstance = (instance: InstanceElement, getterDefs: UserFieldGetter[]): string[] => (
-  getterDefs.map(getterDef => getterDef.getter(instance)).filter(isValidUser)
+  getterDefs.map(getterDef => getterDef.getter(instance, getterDef.field)).filter(isValidUser)
 )
 
 const getUsersFromInstances = async (
@@ -114,7 +130,7 @@ const getUnknownUsers = async (
   const getterDefs = await userFieldGettersForInstance(defMapping, instance)
 
   return (getterDefs
-    .map(getterDef => ({ instance, field: getterDef.field, userName: getterDef.getter(instance) }))
+    .map(getterDef => ({ instance, field: getterDef.field, userName: getterDef.getter(instance, getterDef.field) }))
     .filter(missingUserInfo => isValidUser(missingUserInfo.userName)) as MissingUser[])
     .filter(missingUserInfo => !knownUsers.includes(missingUserInfo.userName))
 }

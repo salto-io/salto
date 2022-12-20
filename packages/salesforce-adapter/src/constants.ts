@@ -153,7 +153,6 @@ export const BUSINESS_STATUS = 'businessStatus'
 export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
 export const KEY_PREFIX = 'keyPrefix'
-export const FULL_NAME = 'fullName'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
@@ -350,10 +349,6 @@ export const GROUP_METADATA_TYPE = 'Group'
 export const FLOW_METADATA_TYPE = 'Flow'
 export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
-
-// Standard Object Types
-export const PRODUCT2_OBJECT_TYPE = 'Product2'
-export const QUOTE_OBJECT_TYPE = 'Quote'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

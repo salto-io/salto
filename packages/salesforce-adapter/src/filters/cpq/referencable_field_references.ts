@@ -37,7 +37,7 @@ import {
   CPQ_TARGET_FIELD,
   CPQ_TARGET_OBJECT,
 } from '../../constants'
-import { apiName, isCustomObject } from '../../transformers/transformer'
+import { apiName, isCustomObject, relativeApiName } from '../../transformers/transformer'
 import { getNamespace } from '../utils'
 
 
@@ -91,19 +91,19 @@ const setReferences = async (
   customObjectsByApiName: Record<string, ObjectType>
 ): Promise<void> => {
   const controllingFieldName = REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD[referencableFieldName]
-  if (_.isUndefined(value[referencableFieldName]) || _.isUndefined(value[controllingFieldName])) {
+  if (value[referencableFieldName] === undefined || value[controllingFieldName] === undefined) {
     return
   }
   const objectApiName = getCPQObjectApiName(value[controllingFieldName])
   const fieldApiName = value[referencableFieldName]
   const referencedObject = customObjectsByApiName[objectApiName]
-  if (_.isUndefined(referencedObject)) {
+  if (referencedObject === undefined) {
     log.warn('Could not find CustomObject with apiName: %s.', objectApiName)
     return
   }
   value[controllingFieldName] = new ReferenceExpression(referencedObject.elemID)
   const referencedField = referencedObject.fields[fieldApiName]
-  if (_.isUndefined(referencedField)) {
+  if (referencedField === undefined) {
     log.warn('Could not find field %s on type %s.', fieldApiName, objectApiName)
     return
   }
@@ -125,14 +125,8 @@ const isRelatedChange = (change: Change<InstanceElement>): boolean => {
     .some(fieldName => (REFERENCABLE_FIELD_NAMES as ReadonlyArray<string>).includes(fieldName))
 }
 
-// If a reference was created, we get the fullName of the referenced field here e.g.SBQQ__Quote__c.SBQQ__Primary__c
-// In that case we only want the last segment of the fullName SBQQ__Primary__c
-const getServiceApiName = (cpqApiName: string): string => (
-  _.last(cpqApiName.split('.')) ?? cpqApiName
-)
-
 const getServiceObjectApiName = (cpqApiName: string): string => {
-  const actualCPQApiName = getServiceApiName(cpqApiName)
+  const actualCPQApiName = relativeApiName(cpqApiName)
   return (CPQ_TO_SERVICE_API_NAME as Record<string, string>)[actualCPQApiName] ?? actualCPQApiName
 }
 
@@ -141,7 +135,7 @@ const createDeployableChange = (change: Change<InstanceElement>): Change<Instanc
   const { value } = deployableInstance
   REFERENCABLE_FIELD_NAMES.forEach(referencableFieldName => {
     const controllingFieldName = REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD[referencableFieldName]
-    if (_.isUndefined(value[referencableFieldName]) || _.isUndefined(value[controllingFieldName])) {
+    if (value[referencableFieldName] === undefined || value[controllingFieldName] === undefined) {
       return
     }
     value[controllingFieldName] = getServiceObjectApiName(value[controllingFieldName])
@@ -186,7 +180,7 @@ const filter: LocalFilterCreator = () => {
       Object.entries(originalChangesByFullName)
         .forEach(([changeApiName, originalChange]) => {
           const appliedChange = appliedChangesByFullName[changeApiName]
-          if (_.isUndefined(appliedChange)) {
+          if (appliedChange === undefined) {
             return
           }
           const appliedInstanceValue = getChangeData(appliedChange).value

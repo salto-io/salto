@@ -21,7 +21,7 @@ import {
   WORKFLOW_METADATA_TYPE,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   SETTINGS_METADATA_TYPE,
-  SALESFORCE, PRODUCT2_OBJECT_TYPE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CPQ_QUOTE,
+  SALESFORCE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CPQ_QUOTE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -250,8 +250,8 @@ export const mockTypes = {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
-  [PRODUCT2_OBJECT_TYPE]: new ObjectType({
-    elemID: new ElemID(SALESFORCE, PRODUCT2_OBJECT_TYPE),
+  Product2: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Product2'),
     fields: {
       ProductCode: {
         refType: BuiltinTypes.STRING,
@@ -262,7 +262,7 @@ export const mockTypes = {
     },
     annotations: {
       [METADATA_TYPE]: CUSTOM_OBJECT,
-      [API_NAME]: PRODUCT2_OBJECT_TYPE,
+      [API_NAME]: 'Product2',
     },
   }),
   [CPQ_QUOTE]: new ObjectType({
@@ -281,7 +281,7 @@ export const mockTypes = {
     },
   }),
   Account: new ObjectType({
-    elemID: new ElemID(SALESFORCE, PRODUCT2_OBJECT_TYPE),
+    elemID: new ElemID(SALESFORCE, 'Account'),
     fields: {
       Name: {
         refType: BuiltinTypes.STRING,

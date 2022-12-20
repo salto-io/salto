@@ -16,7 +16,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=loggin
 SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../src/autogen/')
 TYPES_DIR = os.path.join(SRC_DIR, 'types/')
-CUSTOM_TYPES_DIR = os.path.join(TYPES_DIR, 'custom_types/')
+CUSTOM_TYPES_DIR = os.path.join(TYPES_DIR, 'standard_types/')
 
 enums_link_template = 'https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=SDFxml_2405618192.html'
 script_ids_prefix_link_template = 'https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1537555588.html&whence='
@@ -152,7 +152,7 @@ field_template = '''      {field_name}: {{
 field_annotation_template = '''
           {annotation_name}: {annotation_value},'''
 
-import_type_statement_template = '''import {{ {type_name}Type }} from './types/custom_types/{type_name}'
+import_type_statement_template = '''import {{ {type_name}Type }} from './types/standard_types/{type_name}'
 '''
 
 custom_types_init_template = '''  const {type_name} = {type_name}Type()
@@ -382,8 +382,8 @@ def login(username, password, secret_key_2fa):
 
     # generate 2FA token and submit
     token2fa = pyotp.TOTP(secret_key_2fa).now()
-    webpage.find_element(By.XPATH, '//*[@id="n-id-component-34"]').send_keys(token2fa)
-    webpage.find_element(By.XPATH, '//*[@id="n-id-component-60"]').click()
+    webpage.find_element(By.XPATH, '//*[@id="uif42"]').send_keys(token2fa)
+    webpage.find_element(By.XPATH, '//*[@id="uif111"]').click()
     time.sleep(1)
 
 
@@ -416,11 +416,15 @@ def insert_in_order(type_name, order):
 def add_types_defs(type_name_to_types_defs):
     for type_name, fields in fields_to_create.items():
         top_level_type_name = type_name.split('_')[0]
+        if top_level_type_name not in type_name_to_types_defs:
+            continue
         type_name_to_types_defs[top_level_type_name][INNER_TYPE_NAME_TO_DEF][type_name][FIELDS].extend(fields)
 
     for type_def in types_to_create:
         type_name = type_def[NAME]
         top_level_type_name = type_name.split('_')[0]
+        if top_level_type_name not in type_name_to_types_defs:
+            continue
         if type_name in type_name_to_types_defs[top_level_type_name][INNER_TYPE_NAME_TO_DEF]:
             logging.warning('type %s already exists in %s. overriding it.' % (type_name, top_level_type_name))
         else:
@@ -429,8 +433,12 @@ def add_types_defs(type_name_to_types_defs):
 
     for source, target in types_to_copy:
         source_top_level = source.split('_')[0]
+        if source_top_level not in type_name_to_types_defs:
+            continue
         type_def = type_name_to_types_defs[source_top_level][INNER_TYPE_NAME_TO_DEF][source]
         target_top_level = target.split('_')[0]
+        if target_top_level not in type_name_to_types_defs:
+            continue
         if target in type_name_to_types_defs[target_top_level][INNER_TYPE_NAME_TO_DEF]:
             logging.warning('type %s already exists in %s. overriding it.' % (target, target_top_level))
         else:
@@ -537,6 +545,8 @@ def order_types_fields(type_name_to_types_defs):
 
     for type_name, fields_order in type_name_to_fields_order.items():
         top_level_type_name = type_name.split('_')[0]
+        if top_level_type_name not in type_name_to_types_defs:
+            continue
         type_defs = type_name_to_types_defs[top_level_type_name]
         type_def = type_defs[INNER_TYPE_NAME_TO_DEF][type_name] if top_level_type_name != type_name else type_defs[TYPE_DEF]
         type_def_fields = type_def[FIELDS]
@@ -608,6 +618,8 @@ should_not_be_required = {
 should_not_be_list = {
     'transactionForm_printingType_advanced',
     'transactionForm_printingType_basic',
+    'transactionForm_tabs_tab_subItems_subLists',
+    'entryForm_tabs_tab_subItems_subLists',
 }
 
 should_be_list = {
@@ -712,13 +724,13 @@ fields_to_create = {
         NAME: 'subLists',
         TYPE: 'entryForm_tabs_tab_subItems_subTab_subLists',
         ANNOTATIONS: {},
-        IS_LIST: True,
+        IS_LIST: False,
     }],
     'transactionForm_tabs_tab_subItems_subTab': [{
         NAME: 'subLists',
         TYPE: 'transactionForm_tabs_tab_subItems_subTab_subLists',
         ANNOTATIONS: {},
-        IS_LIST: True,
+        IS_LIST: False,
     }],
     'customlist_customvalues_customvalue': [{
         NAME: 'internalId',

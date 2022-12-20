@@ -15,47 +15,55 @@
 */
 import {
   Values, InstanceElement, isMapType, ObjectType, isField, isListType, Field,
-  MapType, isObjectType, createRefToElmWithValue, isContainerType, ElemID, Value,
-  BuiltinTypes, Element, ChangeDataType, isInstanceElement, TypeRefMap,
+  MapType, isObjectType, isContainerType, ElemID, Value,
+  BuiltinTypes, Element, ChangeDataType, isInstanceElement, TypeElement,
+  FieldDefinition, ListType, TypeReference,
 } from '@salto-io/adapter-api'
-import { naclCase, transformElement, transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { invertNaclCase, naclCase, transformElement, transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { INDEX, LIST_MAPPED_BY_FIELD, SCRIPT_ID } from '../constants'
-import { listMappedByFieldMapping } from './mapping'
+import { dataTypesToConvert, listMappedByFieldMapping, mapsWithoutIndex } from './mapping'
 import { captureServiceIdInfo } from '../service_id_info'
 import { getStandardTypes, isStandardTypeName } from '../autogen/types'
 import { isCustomRecordType } from '../types'
 import { toAnnotationRefTypes } from '../custom_records/custom_record_type'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
+const { mapValuesAsync } = promises.object
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 const log = logger(module)
 
 export type MappedList = {
+  field: Field
   path: ElemID
   value: Values
 }
 
 export const validateTypesFieldMapping = (elements: ObjectType[]): void => {
   const typesMap = _.keyBy(elements, element => element.elemID.name)
-  Object.entries(listMappedByFieldMapping).forEach(([typeName, fieldNameList]) => {
+  const validateType = (typeName: string): void => {
     const type = typesMap[typeName]
     if (type === undefined) {
-      log.error(`type '${typeName}' should have mapping field but '${typeName}' is not in elements`)
-      throw new Error('missing some types with field mapping')
+      throw new Error(`type '${typeName}' should have mapping field but '${typeName}' is not in elements`)
     }
+  }
+  Object.entries(listMappedByFieldMapping).forEach(([typeName, fieldNameList]) => {
+    validateType(typeName)
     makeArray(fieldNameList).forEach(fieldName => {
-      if (type.fields[fieldName] === undefined) {
-        log.error(`type '${typeName}' should have mapping field '${fieldName}' but '${typeName}' has no '${fieldName}' field`)
-        throw new Error('missing some types with field mapping')
+      if (typesMap[typeName].fields[fieldName] === undefined) {
+        throw new Error(`type '${typeName}' should have mapping field '${fieldName}' but '${typeName}' has no '${fieldName}' field`)
       }
     })
   })
+  mapsWithoutIndex.forEach(validateType)
 }
+
+const shouldAddIndex = (type: TypeElement | TypeReference): boolean =>
+  !mapsWithoutIndex.has(type.elemID.name)
 
 export const convertFieldsTypesFromListToMap = async (
   element: ObjectType,
@@ -76,42 +84,35 @@ export const convertFieldsTypesFromListToMap = async (
         ? SCRIPT_ID
         : undefined)
     if (listMappedByField === undefined) {
-      log.warn(`there's no field to map by in ${innerType.elemID.getFullName()}`)
       return
     }
 
     const newField = new Field(
       field.parent,
       field.name,
-      createRefToElmWithValue(new MapType(innerType)),
+      new MapType(innerType),
       { ...field.annotations, [LIST_MAPPED_BY_FIELD]: listMappedByField }
     )
     element.fields[fieldName] = newField
-    innerType.fields[INDEX] = new Field(
-      innerType,
-      INDEX,
-      createRefToElmWithValue(BuiltinTypes.NUMBER)
-    )
+    if (shouldAddIndex(innerType)) {
+      innerType.fields[INDEX] = new Field(
+        innerType,
+        INDEX,
+        BuiltinTypes.NUMBER
+      )
+    }
   })
 }
 
-const getItemKey = (mapFieldValue: string, path?: ElemID): string => {
+const getItemKey = (mapFieldValue: string): string => {
   const naclCaseKey = naclCase(mapFieldValue)
   if (mapFieldValue === naclCaseKey) {
     return mapFieldValue
   }
-
   const serviceIdInfoList = captureServiceIdInfo(mapFieldValue)
-  if (serviceIdInfoList.length === 0) {
-    log.debug(`fixing mapFieldValue to use it as a key: '${mapFieldValue}' -> '${naclCaseKey}' (${path?.getFullName()})`)
-    return naclCaseKey
-  }
-
-  const serviceIdKey = naclCase(
-    serviceIdInfoList.map(serviceIdInfo => serviceIdInfo.serviceId).join('_')
-  )
-  log.debug(`extracting ${SCRIPT_ID} to use it as a key: '${mapFieldValue}' -> '${serviceIdKey}' (${path?.getFullName()})`)
-  return serviceIdKey
+  return serviceIdInfoList.length === 0
+    ? naclCaseKey
+    : naclCase(serviceIdInfoList.map(serviceIdInfo => serviceIdInfo.serviceId).join('_'))
 }
 
 const addSuffixUntilUnique = (
@@ -120,7 +121,7 @@ const addSuffixUntilUnique = (
   path?: ElemID,
   suffixIndex = 2,
 ): string => {
-  const keyNameWithSuffix = `${keyName}_${suffixIndex}`
+  const keyNameWithSuffix = naclCase(`${invertNaclCase(keyName)}_${suffixIndex}`)
   if (keySet.has(keyNameWithSuffix)) {
     return addSuffixUntilUnique(keyName, keySet, path, suffixIndex + 1)
   }
@@ -141,10 +142,7 @@ const getUniqueItemKey = (
     log.warn(`item in ${path?.getFullName()} has no mapFieldName key: ${mapFieldNameList.join(',')}`)
   }
 
-  const mapFieldValue = getItemKey(
-    mapFieldName ? _.toString(item[mapFieldName]) : 'key',
-    path
-  )
+  const mapFieldValue = getItemKey(mapFieldName ? _.toString(item[mapFieldName]) : 'key')
 
   if (!keySet.has(mapFieldValue)) {
     keySet.add(mapFieldValue)
@@ -158,13 +156,14 @@ const getUniqueItemKey = (
 
 const transformMappedLists: TransformFunc = async ({ value, field, path }) => {
   const mapFieldNameList = makeArray(field?.annotations[LIST_MAPPED_BY_FIELD])
-  if (!_.isArray(value) || _.isEmpty(mapFieldNameList) || !isMapType(await field?.getType())) {
+  const fieldType = await field?.getType()
+  if (!_.isArray(value) || _.isEmpty(mapFieldNameList) || !isMapType(fieldType)) {
     return value
   }
-
+  const withIndex = shouldAddIndex(fieldType.refInnerType)
   const keySet: Set<string> = new Set()
   return _(value)
-    .map((item, index) => ({ ...item, [INDEX]: index }))
+    .map((item, index) => ({ ...item, ...withIndex ? { [INDEX]: index } : {} }))
     .keyBy(item => getUniqueItemKey(item, mapFieldNameList, keySet, path))
     .value()
 }
@@ -206,7 +205,7 @@ export const getMappedLists = async (
   const mappedLists: MappedList[] = []
   const lookForMappedLists: TransformFunc = async ({ value, field, path }) => {
     if (path && field && await isMappedList(value, field)) {
-      mappedLists.push({ path, value })
+      mappedLists.push({ field, path, value })
     }
     return value
   }
@@ -223,35 +222,74 @@ export const getMappedLists = async (
   return mappedLists
 }
 
-export const createConvertElementMapsToLists = async (
+export const convertDataInstanceMapsToLists = async (instance: InstanceElement): Promise<InstanceElement> => {
+  const typeWithFields = (type: ObjectType, fields: Record<string, FieldDefinition>): ObjectType =>
+    new ObjectType({
+      elemID: type.elemID,
+      annotationRefsOrTypes: type.annotationRefTypes,
+      annotations: type.annotations,
+      fields,
+    })
+
+  const convertDataTypeFieldsToLists = async (type: ObjectType): Promise<ObjectType> =>
+    typeWithFields(type, await mapValuesAsync(type.fields, async field => {
+      const fieldType = await field.getType()
+      return {
+        annotations: field.annotations,
+        refType: isMapType(fieldType) && field.annotations[LIST_MAPPED_BY_FIELD]
+          ? new ListType(fieldType.refInnerType)
+          : fieldType,
+      }
+    }))
+
+  const convertDataType = async (type: ObjectType): Promise<ObjectType> =>
+    typeWithFields(type, await mapValuesAsync(type.fields, async field => {
+      const fieldType = await field.getType()
+      return {
+        annotations: field.annotations,
+        refType: isObjectType(fieldType) && dataTypesToConvert.has(fieldType.elemID.name)
+          ? await convertDataTypeFieldsToLists(fieldType)
+          : field.refType,
+      }
+    }))
+
+  return transformElement({
+    element: new InstanceElement(
+      instance.elemID.name,
+      await convertDataType(await instance.getType()),
+      instance.value,
+      undefined,
+      instance.annotations,
+    ),
+    transformFunc: async ({ value, field }) => (
+      field !== undefined && await isMappedList(value, field)
+        ? Object.values(value)
+        : value
+    ),
+    strict: false,
+  })
+}
+
+export const createConvertStandardElementMapsToLists = async (
   elementsSourceIndexes: LazyElementsSourceIndexes
 ): Promise<(
   element: ChangeDataType
 ) => Promise<ChangeDataType>> => {
   // using hardcoded types so the transformed elements will have fields with List<> ref types.
   const standardTypes = getStandardTypes()
+  const customRecordTypeAnnotationRefTypes = toAnnotationRefTypes(standardTypes.customrecordtype.type)
   const { mapKeyFieldsIndex } = await elementsSourceIndexes.getIndexes()
-
-  let cachedCustomRecordTypeAnnotationRefTypes: TypeRefMap
-  const customRecordTypeAnnotationRefTypes = async (): Promise<TypeRefMap> => {
-    if (cachedCustomRecordTypeAnnotationRefTypes === undefined) {
-      cachedCustomRecordTypeAnnotationRefTypes = await toAnnotationRefTypes(standardTypes.customrecordtype.type)
-    }
-    return cachedCustomRecordTypeAnnotationRefTypes
-  }
 
   const convertToList: TransformFunc = async ({ value, field }) => (
     field !== undefined && await isMappedList(value, field, mapKeyFieldsIndex)
       ? _.sortBy(
         Object.values(value),
         [INDEX, mapKeyFieldsIndex[field.elemID.getFullName()]].flat()
-      ).filter(_.isObject).map(item => _.omit(item, INDEX))
+      ).map(item => (_.isObject(item) ? _.omit(item, INDEX) : item))
       : value
   )
 
-  return async (
-    element: ChangeDataType
-  ): Promise<ChangeDataType> => {
+  return element => {
     if (isInstanceElement(element) && isStandardTypeName(element.refType.elemID.name)) {
       return transformElement({
         element: new InstanceElement(
@@ -271,13 +309,13 @@ export const createConvertElementMapsToLists = async (
             element.fields,
             ({ refType, annotations }) => ({ refType, annotations })
           ),
-          annotationRefsOrTypes: await customRecordTypeAnnotationRefTypes(),
+          annotationRefsOrTypes: customRecordTypeAnnotationRefTypes,
           annotations: element.annotations,
         }),
         transformFunc: convertToList,
         strict: false,
       })
     }
-    return element
+    return Promise.resolve(element)
   }
 }

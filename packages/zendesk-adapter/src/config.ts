@@ -1177,6 +1177,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   groups: {
     request: {
       url: '/api/v2/groups',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'groups',

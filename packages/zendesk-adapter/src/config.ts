@@ -549,6 +549,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   business_hours_schedules: {
     request: {
       url: '/api/v2/business_hours/schedules',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
       recurseInto: [
         {
           type: 'business_hours_schedule_holiday',
@@ -2021,7 +2023,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       queryParams: {
         ...DEFAULT_QUERY_PARAMS,
         include: 'translations',
-        'page[size]': '100',
       },
       paginationField: NEW_PAGINATION_FIELD,
     },
@@ -2125,8 +2126,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   permission_groups: {
     request: {
       url: '/api/v2/guide/permission_groups',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      queryParams: { per_page: '100' },
+      paginationField: 'next_page',
     },
     transformation: {
       dataField: 'permission_groups',
@@ -2165,8 +2166,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: 'links.next',
+      queryParams: { per_page: '100' },
+      paginationField: 'next_page',
     },
     transformation: {
       dataField: 'user_segments',

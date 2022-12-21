@@ -1196,6 +1196,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   organizations: {
     request: {
       url: '/api/v2/organizations',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'organizations',
@@ -1204,6 +1206,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   views: {
     request: {
       url: '/api/v2/views',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'views',

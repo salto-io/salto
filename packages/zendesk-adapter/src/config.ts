@@ -21,7 +21,7 @@ import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -2160,7 +2160,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'added_user_ids', fieldType: 'unknown' },
-        { fieldName: 'user_type', fieldType: 'string', restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', 'Everyone'] } },
+        // everyone user type is added as a type we created for user_segment
+        { fieldName: 'user_type', fieldType: 'string', restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', EVERYONE_USER_TYPE] } },
 
       ],
       serviceUrl: '/knowledge/user_segments/edit/{id}',

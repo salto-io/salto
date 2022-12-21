@@ -16,6 +16,7 @@
 import { Element, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, getChangeData, isInstanceChange, isAdditionChange } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { PRIORITY_SCHEME_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 
 const log = logger(module)
@@ -63,45 +64,50 @@ const boardInformation: ServiceUrlSupplier = {
   supplier: createBoardServiceUrl,
 }
 
-const ProjectComponentInformation: ServiceUrlSupplier = {
+const projectComponentInformation: ServiceUrlSupplier = {
   typeName: 'ProjectComponent',
   supplier: createProjectComponentServiceUrl,
 }
 
-const CustomFieldContextInformation: ServiceUrlSupplier = {
+const customFieldContextInformation: ServiceUrlSupplier = {
   typeName: 'CustomFieldContext',
   supplier: createCustomFieldContextServiceUrl,
 }
 
-const FieldInformation: ServiceUrlSupplier = {
+const fieldInformation: ServiceUrlSupplier = {
   typeName: 'Field',
   supplier: createFieldServiceUrl,
 }
 
-const DashboardGadgetInformation: ServiceUrlSupplier = {
+const dashboardGadgetInformation: ServiceUrlSupplier = {
   typeName: 'DashboardGadget',
   supplier: createDashboardGadgetServiceUrl,
 }
 
-const WebhookInformation: ServiceUrlSupplier = {
+const webhookInformation: ServiceUrlSupplier = {
   typeName: 'Webhook',
   supplier: (_: InstanceElement) => '/plugins/servlet/webhooks#',
 }
 
-const SecurityLevelInformation: ServiceUrlSupplier = {
+const securityLevelInformation: ServiceUrlSupplier = {
   typeName: 'SecurityLevel',
   supplier: createSecurityLevelServiceUrl,
+}
 
+const prioritySchemeInformation: ServiceUrlSupplier = {
+  typeName: PRIORITY_SCHEME_TYPE_NAME,
+  supplier: instance => `/secure/admin/EditPriorityScheme!default.jspa?schemeId=${instance.value.id}`,
 }
 
 const serviceUrlInformation: ServiceUrlSupplier[] = [
   boardInformation,
-  ProjectComponentInformation,
-  CustomFieldContextInformation,
-  FieldInformation,
-  DashboardGadgetInformation,
-  WebhookInformation,
-  SecurityLevelInformation,
+  projectComponentInformation,
+  customFieldContextInformation,
+  fieldInformation,
+  dashboardGadgetInformation,
+  webhookInformation,
+  securityLevelInformation,
+  prioritySchemeInformation,
 ]
 
 const supplyServiceUrl = (

@@ -243,7 +243,10 @@ const buildTypesQuery = (types: FetchTypeQueryParams[]): TypesQuery => {
 
 const buildFileCabinetQuery = (fileMatchers: string[]): FileCabinetQuery => {
   const parentFolderMatchers = fileMatchers.flatMap(
-    matcher => _.range(matcher.length).map(i => new RegExp(`^${matcher.slice(0, i + 1)}$`))
+    matcher => _.range(matcher.length)
+      .map(i => matcher.slice(0, i + 1))
+      .filter(regex.isValidRegex)
+      .map(reg => new RegExp(`^${reg}$`))
   )
   return {
     isFileMatch: filePath =>

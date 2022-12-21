@@ -19,20 +19,19 @@ import {
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
+import { EVERYONE_USER_TYPE, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
 import { FETCH_CONFIG, isGuideEnabled } from '../config'
 
 const log = logger(module)
 const { RECORDS_PATH } = elementsUtils
 
-export const EVERYONE = 'Everyone'
 
 export const createEveryoneUserSegmentInstance = (userSegmentType: ObjectType): InstanceElement => (
   new InstanceElement(
-    EVERYONE,
+    EVERYONE_USER_TYPE,
     userSegmentType,
-    { user_type: EVERYONE, built_in: true, name: EVERYONE },
-    [ZENDESK, RECORDS_PATH, USER_SEGMENT_TYPE_NAME, EVERYONE],
+    { user_type: EVERYONE_USER_TYPE, built_in: true, name: EVERYONE_USER_TYPE },
+    [ZENDESK, RECORDS_PATH, USER_SEGMENT_TYPE_NAME, EVERYONE_USER_TYPE],
   )
 )
 

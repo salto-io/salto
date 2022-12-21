@@ -144,7 +144,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'DashboardFilterColumn',
   'DashboardFilterOption',
   'DashboardFlexTableComponentProperties',
-  'DashboardFolder',
   'DashboardGridComponent',
   'DashboardGridLayout',
   'DashboardTableColumn',
@@ -152,14 +151,12 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'DataCategoryGroup',
   'DefaultShortcut',
   'DelegateGroup',
-  'DocumentFolder',
   'DuplicateRule',
   'DuplicateRuleFilter',
   'DuplicateRuleFilterItem',
   'DuplicateRuleMatchRule',
   'EclairGeoData',
   'EclairMap',
-  'EmailFolder',
   'EmailServicesAddress',
   'EmailServicesFunction',
   'EmbeddedServiceAppointmentSettings',
@@ -471,7 +468,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'ReportDataCategoryFilter',
   'ReportFilter',
   'ReportFilterItem',
-  'ReportFolder',
   'ReportFormattingRule',
   'ReportFormattingRuleValue',
   'ReportGrouping',
@@ -586,6 +582,11 @@ export const EXCLUDED_METADATA_TYPES = [
   'Dashboard', // Within folders
   'Document', // Within folders
   'EmailTemplate', // Within folders
+  // Folder instances are only fetched with their contained instances
+  'ReportFolder',
+  'DashboardFolder',
+  'DocumentFolder',
+  'EmailFolder',
 ] as const
 
 

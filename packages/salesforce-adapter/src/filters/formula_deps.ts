@@ -14,85 +14,53 @@
 * limitations under the License.
 */
 
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { CORE_ANNOTATIONS, ElemID, Field, isObjectType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, ElemIDType, Field, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { FORMULA, SALESFORCE } from '../constants'
+import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
 
-/* eslint-disable-next-line @typescript-eslint/no-var-requires */
-const forcemula = require('forcemula')
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const formulon = require('formulon')
 
-const parse = forcemula
 const { extract } = formulon
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
+const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType => (
+  ({
+    [IdentifierType.STANDARD_OBJECT.name]: 'type',
+    [IdentifierType.CUSTOM_METADATA_TYPE.name]: 'type',
+    [IdentifierType.CUSTOM_OBJECT.name]: 'type',
+    [IdentifierType.CUSTOM_SETTING.name]: 'type', // TODO is this right?
+    [IdentifierType.STANDARD_FIELD.name]: 'field',
+    [IdentifierType.CUSTOM_FIELD.name]: 'field',
+    [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'instance',
+  } as const)[identifierType.name]
+)
 
-const getFormulaDependenciesUsingForcemula = async (formulaText: string, parentType: ObjectType): Promise<string[]> => {
-  // const parentTypeName = await apiName(parentType)
-  // if (!parentTypeName) {
-  //   log.warn(`Unable to get type name for ${parentType.elemID.getFullName()}`)
-  //   return []
-  // }
-
-  const { standardFields,
-    standardObjects,
-    customMetadataTypeRecords,
-    customMetadataTypes,
-    customFields,
-    customObjects,
-    customSettings } = parse({ formula: formulaText, object: parentType.elemID.typeName })
-
-  const types = [
-    ...(standardObjects ?? []),
-    ...(customMetadataTypes ?? []),
-    ...(customObjects ?? []),
-    ...(customSettings ?? []), // TODO is this right?
-  ].map(typeName => new ElemID(SALESFORCE, typeName, 'type'))
-    .map(elemId => elemId.getFullName())
-  const fields = [
-    ...(standardFields ?? []),
-    ...(customFields ?? []),
-  ].map(fieldName => new ElemID(SALESFORCE, fieldName.split('.')[0], 'field', ...fieldName.split('.').slice(1)))
-    .map(elemId => elemId.getFullName())
-  const instances = [
-    ...(customMetadataTypeRecords ?? []),
-  ].map(fieldName => new ElemID(SALESFORCE, fieldName.split('.')[0], 'instance', ...fieldName.split('.').slice(1)))
-    .map(elemId => elemId.getFullName())
-
-  return [
-    ...types,
-    ...fields,
-    ...instances,
-  ]
-}
-
-const getFormulaDependenciesUsingFormulon = (formulaText: string, _parentType: ObjectType): string[] => (
-  extract(formulaText)
+const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> => (
+  typeInfos.map(({ type, instance }) => (
+    new ElemID(SALESFORCE,
+      instance.split('.')[0],
+      identifierTypeToElemIdType(type),
+      ...instance.split('.').slice(1))
+  ))
 )
 
 const addDependenciesAnnotation = async (field: Field): Promise<void> => {
-  const initialDeps = field.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] ?? []
-  field.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = initialDeps
+  const formulaVariables: string[] = extract(field.annotations[FORMULA])
 
-  const formulonResults = getFormulaDependenciesUsingFormulon(field.annotations[FORMULA], field.parent)
-  log.info(`FormulonResults: ${formulonResults}`)
-  const forcemulaResult = await getFormulaDependenciesUsingForcemula(field.annotations[FORMULA], field.parent)
-  log.info(`ForcemulaResults: ${forcemulaResult}`)
-  const translatedForumulonResults = await awu(formulonResults)
-    .map(x => getFormulaDependenciesUsingForcemula(x, field.parent)).toArray()
-  log.info(`translatedForumulonResults: ${translatedForumulonResults}`)
+  const IdentifiersInfo = await awu(formulaVariables)
+    .flatMap(x => parseFormulaIdentifier(x, field.parent.elemID.typeName))
+    .toArray()
 
-  const depsAsRefExpr = forcemulaResult
-    .map(dep => new ReferenceExpression(ElemID.fromFullName(dep)))
-    .map(ref => ({ reference: ref }))
-  // field.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = initialDeps.concat(depsAsRefExpr)
+  const references = await referencesFromIdentifiers(IdentifiersInfo)
+
+  const depsAsRefExpr = references.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
+
   extendGeneratedDependencies(field, depsAsRefExpr)
 }
 

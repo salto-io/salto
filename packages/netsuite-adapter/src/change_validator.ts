@@ -21,9 +21,7 @@ import removeStandardTypesValidator from './change_validators/remove_standard_ty
 import removeFileCabinetValidator from './change_validators/remove_file_cabinet'
 import removeListItemValidator from './change_validators/remove_list_item'
 import instanceChangesValidator from './change_validators/instance_changes'
-import saveSearchMoveEnvironment from './change_validators/saved_search_move_environment'
-import reportDefinitionMoveEnvironment from './change_validators/report_definition_move_environment'
-import financialLayoutMoveEnvironment from './change_validators/financial_layout_move_enironment'
+import reportTypesMoveEnvironment from './change_validators/report_types_move_environment'
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
@@ -53,9 +51,7 @@ const changeValidators: ChangeValidator[] = [
   dataAccountSpecificValuesValidator,
   removeStandardTypesValidator,
   instanceChangesValidator,
-  saveSearchMoveEnvironment,
-  reportDefinitionMoveEnvironment,
-  financialLayoutMoveEnvironment,
+  reportTypesMoveEnvironment,
   immutableChangesValidator,
   removeListItemValidator,
   fileValidator,

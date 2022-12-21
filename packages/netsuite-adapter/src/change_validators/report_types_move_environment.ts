@@ -17,30 +17,43 @@ import { collections } from '@salto-io/lowerdash'
 import { ChangeValidator, getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { SAVED_SEARCH } from '../constants'
-import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
+import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
+import { parseDefinition as parseSavedSearchDefinition } from '../saved_search_parsing/saved_search_parser'
+import { parseDefinition as parseReportDefintionDefinition } from '../report_definition_parsing/report_definition_parser'
+import { parseDefinition as parseFinancialLayoutDefinition } from '../financial_layout_parsing/financial_layout_parser'
+import { typeToParameters } from '../report_types_parser_utils'
 
 const { awu } = collections.asynciterable
 
+// TODO - create type for each parser and update here
+export const typeNameToParser: Record<string, (definition: string) => Promise<any>> = {
+  [FINANCIAL_LAYOUT]: parseFinancialLayoutDefinition,
+  [REPORT_DEFINITION]: parseReportDefintionDefinition,
+  [SAVED_SEARCH]: parseSavedSearchDefinition,
+}
 const wasModified = async (instance:InstanceElement): Promise<boolean> => {
-  const parsedDefinition = await parseDefinition(instance.value.definition)
+  const definitionOrLayout = instance.elemID.typeName === FINANCIAL_LAYOUT
+    ? instance.value.layout : instance.value.definition
+  const parserFunction = typeNameToParser[instance.elemID.typeName]
+  const parsedDefinition = await parserFunction(definitionOrLayout)
   return Object.keys(parsedDefinition)
     .some(key => !_.isEqual(parsedDefinition[key], instance.value[key]))
 }
 
 const getChangeError = async (instance: InstanceElement): Promise<ChangeError> => {
+  const instanceName = typeToParameters[instance.elemID.typeName].name
   if (await wasModified(instance)) {
     return ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Modified saved searches cannot be deployed.',
+      message: `Modified ${instanceName} cannot be deployed.`,
       detailedMessage: `Changing (${instance.elemID.getFullName()}) is not supported`,
     } as ChangeError)
   }
   return ({
     elemID: instance.elemID,
     severity: 'Warning',
-    message: 'Beware that saved searches might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.',
+    message: `Beware that ${instanceName} might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.`,
     detailedMessage: `Instance (${instance.elemID.getFullName()}) should be reviewed in NetSuite UI to make sure internal ids did not mix between environments`,
   } as ChangeError)
 }
@@ -51,7 +64,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
+    .filter(instance => [SAVED_SEARCH, FINANCIAL_LAYOUT, REPORT_DEFINITION].includes(instance.elemID.typeName))
     .map(getChangeError)
     .toArray()
 )

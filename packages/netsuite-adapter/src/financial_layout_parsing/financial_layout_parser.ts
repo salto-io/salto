@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementCompact } from 'xml-js'
 import {
-  getSearchDependency,
+  getElementDependency,
   getJson,
   ElementParts,
   getFlags,
@@ -27,20 +27,28 @@ import {
   RecordObject,
   getObjectFromValues,
   AttributeObject,
-} from '../saved_search_parsing/saved_search_parser'
+} from '../report_types_parser_utils'
 
 const ROWS = 'rows'
 
-type RowObject = { descriptor: { values: { Value: AttributeObject[] }}
-details?: { values: { Record: RecordObject | RecordObject[] } }}
+type RowObject = {
+  descriptor: {
+     values: { Value: AttributeObject[] }
+  }
+  details?: {
+    values: { Record: RecordObject | RecordObject[] }
+  }
+}
 
 const getLayoutDefinition = (search: ElementCompact): ElementCompact =>
   search['nssoc:SerializedObjectContainer']['nssoc:definition'].FinancialLayout
 
 const getLayoutParts = async (definition: string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
-  return { definition: getLayoutDefinition(parsedXml),
-    dependency: getSearchDependency(parsedXml) }
+  return {
+    definition: getLayoutDefinition(parsedXml),
+    dependency: getElementDependency(parsedXml),
+  }
 }
 
 const getRowRecords = (row: RowObject): Values[] =>

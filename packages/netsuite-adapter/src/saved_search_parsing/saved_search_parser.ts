@@ -17,43 +17,21 @@
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ungzip } from 'node-gzip'
-import { xml2js, ElementCompact } from 'xml-js'
+import { ElementCompact } from 'xml-js'
+import { ElementParts,
+  AttributeObject,
+  RecordObject,
+  getJson, getElementDependency,
+  getObjectFromValues,
+  getFlags,
+  extractRecordsValues,
+  safeAssignKeyValue } from '../report_types_parser_utils'
 
-export type ElementParts = { definition: ElementCompact; dependency: ElementCompact[] }
-export type AttributeValue = string | boolean | number
-export type AttributeObject = { _attributes: { clazz:string; field:string }; _text:string }
-export type RecordValueObject = AttributeObject[] | AttributeObject
-export type RecordObject = { values: { Value:RecordValueObject}}
 type FilterObject = { descriptor: { values: { Value: AttributeObject[] }}
  values: { values: {Record: RecordObject | RecordObject[]} }}
 
-export const getJson = async (definition: string): Promise<ElementCompact> => {
-  const gzip = Buffer.from(definition.split('@').slice(-1)[0], 'base64')
-  const xmlValue = await ungzip(gzip)
-  return xml2js(xmlValue.toString(), { compact: true })
-}
-
 const getSearchDefinition = (search: ElementCompact): ElementCompact =>
   search['nssoc:SerializedObjectContainer']['nssoc:definition'].SearchDefinition
-
-export const getSearchDependency = (search: ElementCompact): ElementCompact[] =>
-  search['nssoc:SerializedObjectContainer']['nssoc:dependencies']['nssoc:dependency']
-
-export const getAttributeValue = (attribute: AttributeObject): AttributeValue => {
-  if (attribute._attributes.clazz === 'boolean') {
-    return attribute._text === 'true'
-  }
-  if (['int', 'double'].includes(attribute._attributes.clazz)) {
-    return Number(attribute._text)
-  }
-  return attribute._text
-}
-
-export const getObjectFromValues = (values: RecordValueObject): Values =>
-  Object.fromEntries(collections.array.makeArray(values)
-    .filter(i => i._text !== undefined)
-    .map(i => [i._attributes.field, getAttributeValue(i)]))
 
 const getFilterRecords = (filter: FilterObject): Values[] =>
   collections.array.makeArray(filter.values.values?.Record)
@@ -71,13 +49,6 @@ const getFilter = (filter: FilterObject): Values => {
 const extractSearchDefinitionValues = (search: ElementCompact): Values[] =>
   collections.array.makeArray(search.values?.SearchFilter).map(getFilter)
 
-export const getFlags = (search: ElementCompact): Values =>
-  getObjectFromValues(search.descriptor.values.Value)
-
-export const extractSearchRecordsValues = (search: ElementCompact): Values[] =>
-  collections.array.makeArray(search.values?.Record)
-    .map(record => getObjectFromValues(record.values.Value))
-
 const getAudience = (search: ElementCompact[]): Values => {
   const record = collections.array.makeArray(search).filter(i => Object.keys(i).includes('Record'))[0]
   return record === undefined ? [] : getObjectFromValues(record.Record.values.Value)
@@ -92,17 +63,10 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
     .map((record:RecordObject) => getObjectFromValues(record.values.Value))
 }
 
-export const safeAssignKeyValue = (instance:Values, key: string, value: Values): void => {
-  if (Array.isArray(value) && _.isEmpty(value)) {
-    return
-  }
-  Object.assign(instance, { [key]: value })
-}
-
-export const getSearchPartsFromDefinition = async (definition:string): Promise<ElementParts> => {
+const getSearchPartsFromDefinition = async (definition:string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
   return { definition: getSearchDefinition(parsedXml),
-    dependency: getSearchDependency(parsedXml) }
+    dependency: getElementDependency(parsedXml) }
 }
 
 export const parseDefinition = async (definition:string): Promise<Values> => {
@@ -110,10 +74,10 @@ export const parseDefinition = async (definition:string): Promise<Values> => {
   const returnInstance = {}
   safeAssignKeyValue(returnInstance, 'search_filter', extractSearchDefinitionValues(searchParts.definition.filters))
   safeAssignKeyValue(returnInstance, 'search_summary_filters', extractSearchDefinitionValues(searchParts.definition.summaryFilters))
-  safeAssignKeyValue(returnInstance, 'available_filters', extractSearchRecordsValues(searchParts.definition.availableFilterFields))
-  safeAssignKeyValue(returnInstance, 'return_fields', extractSearchRecordsValues(searchParts.definition.returnFields))
-  safeAssignKeyValue(returnInstance, 'detail_fields', extractSearchRecordsValues(searchParts.definition.detailFields))
-  safeAssignKeyValue(returnInstance, 'sort_columns', extractSearchRecordsValues(searchParts.definition.sortColumns))
+  safeAssignKeyValue(returnInstance, 'available_filters', extractRecordsValues(searchParts.definition.availableFilterFields))
+  safeAssignKeyValue(returnInstance, 'return_fields', extractRecordsValues(searchParts.definition.returnFields))
+  safeAssignKeyValue(returnInstance, 'detail_fields', extractRecordsValues(searchParts.definition.detailFields))
+  safeAssignKeyValue(returnInstance, 'sort_columns', extractRecordsValues(searchParts.definition.sortColumns))
   safeAssignKeyValue(returnInstance, 'audience', getAudience(searchParts.dependency))
   safeAssignKeyValue(returnInstance, 'alert_recipients', getAlertRecipients(searchParts.definition))
   Object.assign(returnInstance, getFlags(searchParts.definition))

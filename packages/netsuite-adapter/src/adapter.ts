@@ -30,7 +30,7 @@ import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from 
 import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
-import parseSavedSearch from './filters/parse_saved_searchs'
+import parseReportTypes from './filters/parse_report_types'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
@@ -61,8 +61,8 @@ import currencyExchangeRate from './filters/currency_exchange_rate'
 import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
-import parseReportDefinition from './filters/parse_report_definition'
-import parseFinancialLayout from './filters/parse_financial_layout'
+// import parseReportDefinition from './filters/parse_report_definition'
+// import parseFinancialLayout from './filters/parse_financial_layout'
 import { createFilterCreatorsWithLogs, Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
@@ -137,9 +137,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
-      parseSavedSearch,
-      parseReportDefinition,
-      parseFinancialLayout,
+      parseSavedSearch: parseReportTypes,
       convertLists,
       consistentValues,
       // convertListsToMaps must run after convertLists and consistentValues

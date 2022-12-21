@@ -18,16 +18,15 @@ import { Value, Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ElementCompact } from 'xml-js'
 import {
-  getSearchDependency,
+  getElementDependency,
   getJson,
   ElementParts,
   getFlags,
-  extractSearchRecordsValues,
-  safeAssignKeyValue,
+  extractRecordsValues,
   RecordObject,
   getObjectFromValues,
   AttributeObject,
-} from '../saved_search_parsing/saved_search_parser'
+} from '../report_types_parser_utils'
 
 const LAYOUTS = 'layouts'
 const PARAMETERS = 'parameters'
@@ -38,8 +37,7 @@ const FIELDS = 'fields'
 const CRITERIA = 'criteria'
 
 
-type InnerParamObject =
-{
+type InnerParamObject = {
   _attributes:{
     class?: string
     clazz?: string
@@ -51,8 +49,7 @@ type InnerParamObject =
   _text: string
 }
 type ReportCriterionParent = { _attributs: { class:string; reference: string }}
-type ReportCriterionDescriptor =
-{
+type ReportCriterionDescriptor = {
  components: InnerParamObject
  field:
  {
@@ -68,19 +65,25 @@ type ReportCriterionObject = {
  parent: ReportCriterionParent
  values: ReportCriterionValues
 }
-type ReportCriteria =
-{
+type ReportCriteria = {
   type: InnerParamObject
-  values:
-  {
+  values: {
     ReportCriterion: ReportCriterionObject[]
   }
 }
-type ParameterObject =
-{
+type ParameterObject = {
   key: InnerParamObject
   parent: { class: string; reference: string}
   value: InnerParamObject
+}
+type ReportDefinition = {
+  layouts: Values[]
+  parameters: Values
+  components: Values
+  sorts: Values[]
+  fields: Values[]
+  uiPreferences: Values
+  criteria: Values
 }
 
 const getReportDefinition = (search: ElementCompact): ElementCompact =>
@@ -88,8 +91,10 @@ const getReportDefinition = (search: ElementCompact): ElementCompact =>
 
 const getReportPartsFromDefinition = async (definition: string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
-  return { definition: getReportDefinition(parsedXml),
-    dependency: getSearchDependency(parsedXml) }
+  return {
+    definition: getReportDefinition(parsedXml),
+    dependency: getElementDependency(parsedXml),
+  }
 }
 
 const getReportParameters = (reportParameter: { Map: ParameterObject[] }): Values => {
@@ -101,7 +106,7 @@ const getReportParameters = (reportParameter: { Map: ParameterObject[] }): Value
 const getReportCriteria = (criteria: ReportCriteria): Values =>
   collections.array.makeArray(criteria.values?.ReportCriterion)
     .map(criterion => {
-      const values = extractSearchRecordsValues(criterion)
+      const values = extractRecordsValues(criterion)
       const descriptor = getObjectFromValues(criterion.descriptor.field.values.Value)
       return { descriptor, values }
     })
@@ -109,16 +114,24 @@ const getReportCriteria = (criteria: ReportCriteria): Values =>
 const getUiPreferences = (uiPref: ElementCompact): Values =>
   getObjectFromValues(uiPref.values.Value)
 
-export const parseDefinition = async (definition: string): Promise<Value> => {
+export const parseDefinition = async (definition: string): Promise<ReportDefinition> => {
   const reportParts = await getReportPartsFromDefinition(definition)
-  const returnInstance = {}
-  safeAssignKeyValue(returnInstance, LAYOUTS, extractSearchRecordsValues(reportParts.definition.layouts))
-  safeAssignKeyValue(returnInstance, COMPONENTS, extractSearchRecordsValues(reportParts.definition.components))
-  safeAssignKeyValue(returnInstance, PARAMETERS, getReportParameters(reportParts.definition.parameters.values))
-  safeAssignKeyValue(returnInstance, SORTS, extractSearchRecordsValues(reportParts.definition.sorts))
-  safeAssignKeyValue(returnInstance, FIELDS, extractSearchRecordsValues(reportParts.definition.fields))
-  safeAssignKeyValue(returnInstance, UI_PREFERENCES, getUiPreferences(reportParts.definition.uiPreferences))
-  safeAssignKeyValue(returnInstance, CRITERIA, getReportCriteria(reportParts.definition.criteria))
+  const returnInstance: ReportDefinition = {
+    layouts: extractRecordsValues(reportParts.definition.layouts),
+    components: extractRecordsValues(reportParts.definition.components),
+    parameters: getReportParameters(reportParts.definition.parameters.values),
+    sorts: extractRecordsValues(reportParts.definition.sorts),
+    fields: extractRecordsValues(reportParts.definition.fields),
+    uiPreferences: getUiPreferences(reportParts.definition.uiPreferences),
+    criteria: getReportCriteria(reportParts.definition.criteria),
+  }
+  // safeAssignKeyValue(returnInstance, LAYOUTS, extractRecordsValues(reportParts.definition.layouts))
+  // safeAssignKeyValue(returnInstance, COMPONENTS, extractRecordsValues(reportParts.definition.components))
+  // safeAssignKeyValue(returnInstance, PARAMETERS, getReportParameters(reportParts.definition.parameters.values))
+  // safeAssignKeyValue(returnInstance, SORTS, extractRecordsValues(reportParts.definition.sorts))
+  // safeAssignKeyValue(returnInstance, FIELDS, extractRecordsValues(reportParts.definition.fields))
+  // safeAssignKeyValue(returnInstance, UI_PREFERENCES, getUiPreferences(reportParts.definition.uiPreferences))
+  // safeAssignKeyValue(returnInstance, CRITERIA, getReportCriteria(reportParts.definition.criteria))
   Object.assign(returnInstance, getFlags(reportParts.definition))
   return returnInstance
 }

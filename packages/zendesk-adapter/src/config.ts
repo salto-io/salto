@@ -549,8 +549,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   business_hours_schedules: {
     request: {
       url: '/api/v2/business_hours/schedules',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      // queryParams: { ...DEFAULT_QUERY_PARAMS },
+      // paginationField: NEW_PAGINATION_FIELD,
       recurseInto: [
         {
           type: 'business_hours_schedule_holiday',

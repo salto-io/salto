@@ -253,6 +253,39 @@ SuiteAppFileCabinetOperations => {
     return results.flat()
   })
 
+  const removeResultsWithoutParentFolder = (
+    { foldersResults, filesResults }: FileCabinetResults
+  ): FileCabinetResults => {
+    const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
+
+    const removeFoldersWithoutParentFolder = (folders: FolderResult[]): FolderResult[] => {
+      const filteredFolders = folders.filter(folder => {
+        if (folder.parent !== undefined && !folderIdsSet.has(folder.parent)) {
+          log.warn('folder\'s parent does not exist: %o', folder)
+          folderIdsSet.delete(folder.id)
+          return false
+        }
+        return true
+      })
+      if (folders.length === filteredFolders.length) {
+        return folders
+      }
+      return removeFoldersWithoutParentFolder(filteredFolders)
+    }
+
+    const filteredFoldersResults = removeFoldersWithoutParentFolder(foldersResults)
+    return {
+      foldersResults: filteredFoldersResults,
+      filesResults: filesResults.filter(file => {
+        if (!folderIdsSet.has(file.folder)) {
+          log.warn('file\'s folder does not exist: %o', file)
+          return false
+        }
+        return true
+      }),
+    }
+  }
+
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
       const topLevelFoldersResults = (await queryTopLevelFolders())
@@ -272,23 +305,7 @@ SuiteAppFileCabinetOperations => {
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
       const filesResults = await queryFiles(foldersResults)
 
-      const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
-      fileCabinetResults = {
-        foldersResults: foldersResults.filter(folder => {
-          if (folder.parent !== undefined && !folderIdsSet.has(folder.parent)) {
-            log.warn('folder\'s parent does not exist: %o', folder)
-            return false
-          }
-          return true
-        }),
-        filesResults: filesResults.filter(file => {
-          if (!folderIdsSet.has(file.folder)) {
-            log.warn('file\'s folder does not exist: %o', file)
-            return false
-          }
-          return true
-        }),
-      }
+      fileCabinetResults = removeResultsWithoutParentFolder({ foldersResults, filesResults })
     }
     return fileCabinetResults
   }

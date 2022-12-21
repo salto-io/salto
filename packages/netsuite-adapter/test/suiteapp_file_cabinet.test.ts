@@ -113,6 +113,16 @@ describe('suiteapp_file_cabinet', () => {
     parent: '123',
     bundleable: 'T',
     description: 'desc102',
+  },
+  // inner folder with unknown parent id will be filtered out
+  {
+    id: '1102',
+    isinactive: 'T',
+    isprivate: 'T',
+    name: 'innerFolder102',
+    parent: '102',
+    bundleable: 'T',
+    description: 'descInner102',
   }]
 
   const expectedResults = [

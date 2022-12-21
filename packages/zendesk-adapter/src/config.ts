@@ -1217,8 +1217,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   triggers: {
     request: {
       url: '/api/v2/triggers',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      // queryParams: { ...DEFAULT_QUERY_PARAMS },
+      // paginationField: NEW_PAGINATION_FIELD,
     },
   },
   trigger_definitions: {
@@ -1327,6 +1327,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   brands: {
     request: {
       url: '/api/v2/brands',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'brands',
@@ -1459,6 +1461,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   support_addresses: {
     request: {
       url: '/api/v2/recipient_addresses',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       sourceTypeName: 'recipient_addresses',

@@ -53,24 +53,22 @@ export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
   }
 
   public async getSinglePage(
-      args: clientUtils.ClientBaseParams,
+    args: clientUtils.ClientBaseParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-      try {
-          return await super.getSinglePage(args)
-      } catch (e) {
-          const status = e.response?.status
-          // Workato returns 400 when asking to get pages from non-Dev Workato-Eviroments (Production/test)
-          if (
-              (status === 400 && [
-                  '/roles',
-              ].includes(args.url))
-          ) {
-              log.warn('Suppressing %d error %o', status, e)
-              return { data: [], status }
-          }
-          throw e
+    try {
+      return await super.getSinglePage(args)
+    } catch (e) {
+      const status = e.response?.status
+      // Workato returns 400 when asking to get pages from non-Dev Workato-Eviroments (Production/test)
+      if (
+        (status === 400 && [
+          '/roles',
+        ].includes(args.url))
+      ) {
+        log.warn('Suppressing %d error %o', status, e)
+        return { data: [], status }
       }
+      throw e
+    }
   }
-
 }
-

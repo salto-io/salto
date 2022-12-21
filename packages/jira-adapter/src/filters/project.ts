@@ -32,6 +32,7 @@ const COMPONENTS_FIELD = 'components'
 const ISSUE_TYPE_SCREEN_SCHEME_FIELD = 'issueTypeScreenScheme'
 const FIELD_CONFIG_SCHEME_FIELD = 'fieldConfigurationScheme'
 const ISSUE_TYPE_SCHEME = 'issueTypeScheme'
+const PRIORITY_SCHEME = 'priorityScheme'
 
 const log = logger(module)
 
@@ -52,6 +53,21 @@ const deployScheme = async (
   }
 }
 
+const deployPriorityScheme = async (
+  instance: InstanceElement,
+  client: JiraClient,
+): Promise<void> => {
+  if (!client.isDataCenter) {
+    return
+  }
+  await client.put({
+    url: `/rest/api/2/project/${instance.value.id}/priorityscheme`,
+    data: {
+      id: instance.value[PRIORITY_SCHEME],
+    },
+  })
+}
+
 const deployProjectSchemes = async (
   instance: InstanceElement,
   client: JiraClient,
@@ -59,6 +75,7 @@ const deployProjectSchemes = async (
   await deployScheme(instance, client, WORKFLOW_SCHEME_FIELD, 'workflowSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCREEN_SCHEME_FIELD, 'issueTypeScreenSchemeId')
   await deployScheme(instance, client, ISSUE_TYPE_SCHEME, 'issueTypeSchemeId')
+  await deployPriorityScheme(instance, client)
 }
 
 type ComponentsResponse = {
@@ -173,6 +190,10 @@ const filter: FilterCreator = ({ config, client }) => ({
       setFieldDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
       setFieldDeploymentAnnotations(projectType, COMPONENTS_FIELD)
       setFieldDeploymentAnnotations(projectType, PROJECT_CONTEXTS_FIELD)
+
+      if (client.isDataCenter) {
+        setFieldDeploymentAnnotations(projectType, PRIORITY_SCHEME)
+      }
     }
 
     elements
@@ -237,11 +258,13 @@ const filter: FilterCreator = ({ config, client }) => ({
                 FIELD_CONFIG_SCHEME_FIELD,
                 ISSUE_TYPE_SCHEME,
                 PROJECT_CONTEXTS_FIELD,
+                PRIORITY_SCHEME,
               ]
               : [
                 COMPONENTS_FIELD,
                 FIELD_CONFIG_SCHEME_FIELD,
                 PROJECT_CONTEXTS_FIELD,
+                PRIORITY_SCHEME,
               ],
           })
         } catch (error) {
@@ -266,6 +289,7 @@ const filter: FilterCreator = ({ config, client }) => ({
         if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
           await deployProjectSchemes(instance, client)
         }
+
         await deployScheme(instance, client, FIELD_CONFIG_SCHEME_FIELD, 'fieldConfigurationSchemeId')
 
         if (isAdditionChange(change)) {

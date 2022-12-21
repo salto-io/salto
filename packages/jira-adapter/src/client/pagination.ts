@@ -19,6 +19,11 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 
 const { makeArray } = collections.array
 
+const ITEM_INDEX_PAGINATION_URLS = [
+  '/rest/api/3/users/search',
+  '/rest/api/2/priorityschemes',
+]
+
 const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(
   response: T | T[],
 ): T | T[] => {
@@ -43,7 +48,7 @@ export const removeScopedObjects: clientUtils.PageEntriesExtractor = (
 )
 
 export const paginate: clientUtils.PaginationFuncCreator = args => {
-  if (args.getParams?.url === '/rest/api/3/users/search') {
+  if (ITEM_INDEX_PAGINATION_URLS.includes(args.getParams?.url)) {
     // special handling for endpoints that use pagination without meta-data
     // if more cases encountered should be moved to an object with url and items per page
     return clientUtils.getWithItemIndexPagination({ firstIndex: 0, itemsPerPage: 50 })

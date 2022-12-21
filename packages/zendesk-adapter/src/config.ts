@@ -1249,6 +1249,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   automations: {
     request: {
       url: '/api/v2/automations',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'automations',
@@ -1277,6 +1279,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   macros: {
     request: {
       url: '/api/v2/macros',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'macros',

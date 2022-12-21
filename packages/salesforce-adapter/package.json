@@ -69,6 +69,8 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
+    "forcemula": "^0.1.0",
+    "formulon": "^6.24.0",
     "jest": "^27.4.5",
     "jest-circus": "^27.4.5",
     "jest-extended": "^1.2.0",

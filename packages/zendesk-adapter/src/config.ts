@@ -1217,6 +1217,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   triggers: {
     request: {
       url: '/api/v2/triggers',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
   },
   trigger_definitions: {
@@ -1237,7 +1239,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   trigger_categories: {
     request: {
       url: '/api/v2/trigger_categories',
-      paginationField: 'links.next',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'trigger_categories',

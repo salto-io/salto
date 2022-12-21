@@ -1491,6 +1491,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   ticket_fields: {
     request: {
       url: '/api/v2/ticket_fields',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'ticket_fields',
@@ -1502,12 +1504,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_fields: {
     request: {
       url: '/api/v2/user_fields',
+      // queryParams: { ...DEFAULT_QUERY_PARAMS },
+      // paginationField: NEW_PAGINATION_FIELD,
     },
   },
   // eslint-disable-next-line camelcase
   organization_fields: {
     request: {
       url: '/api/v2/organization_fields',
+      // queryParams: { ...DEFAULT_QUERY_PARAMS },
+      // paginationField: NEW_PAGINATION_FIELD,
     },
   },
   routing_attribute_value: {
@@ -1581,12 +1587,16 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   app_installations: {
     request: {
       url: '/api/v2/apps/installations',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
   },
   // eslint-disable-next-line camelcase
   apps_owned: {
     request: {
       url: '/api/v2/apps/owned',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
   },
   // eslint-disable-next-line camelcase

@@ -117,7 +117,14 @@ const filter: FilterCreator = ({ client }) => ({
         && getChangeData(change).elemID.typeName === PRIORITY_SCHEME_TYPE_NAME
     )
 
+    if (relevantChanges.length !== 0 && !client.isDataCenter) {
+      // We should never get here since there is a change validator that will stop us before
+      throw new Error('Deploying priority schemes is not supported on Jira Cloud')
+    }
+
     const deployResult = await deployChanges(
+      // relevantChanges already contains only instances at this point,
+      // but the TS compiler is not aware of that
       relevantChanges.filter(isInstanceChange),
       async change => {
         if (isAdditionChange(change)) {

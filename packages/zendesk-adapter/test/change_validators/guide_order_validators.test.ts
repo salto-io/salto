@@ -37,10 +37,9 @@ import {
 } from '../../src/constants'
 import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import {
-  childInOrderValidator,
+  childInOrderValidator, childrenReferencesValidator,
   guideOrderDeletionValidator, orderChildrenParentValidator,
 } from '../../src/change_validators'
-import { childrenReferencesValidator } from '../../src/change_validators/guide_order/children_references_validator'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
 const categoryType = new ObjectType({ elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME) })
@@ -215,9 +214,9 @@ describe('GuideOrdersValidator', () => {
 
     const createError = (orderInstance: InstanceElement, badChildren: InstanceElement[]): ChangeError => ({
       elemID: orderInstance.elemID,
-      severity: 'Warning',
-      message: `${orderInstance.elemID.typeName} instance contains instances that are not TODO`,
-      detailedMessage: `${badChildren.length} TODO`,
+      severity: 'Error',
+      message: `${orderInstance.elemID.typeName} contains instances that are not of the same parent`,
+      detailedMessage: `${badChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.getFullName()}`,
     })
 
     it('children with same parent as order', async () => {
@@ -235,12 +234,12 @@ describe('GuideOrdersValidator', () => {
       expect(errors.length).toBe(8)
       expect(errors[0]).toMatchObject(createError(articleOrderInstance, [articleInstance]))
       expect(errors[1]).toMatchObject(createError(articleOrderInstance, [articleInstance]))
-      expect(errors[2]).toMatchObject(createError(sectionSectionsOrderInstance, [sectionSectionsOrderInstance]))
-      expect(errors[4]).toMatchObject(createError(sectionSectionsOrderInstance, [sectionSectionsOrderInstance]))
-      expect(errors[3]).toMatchObject(createError(categorySectionsOrderInstance, [categorySectionsOrderInstance]))
-      expect(errors[5]).toMatchObject(createError(categorySectionsOrderInstance, [categorySectionsOrderInstance]))
-      expect(errors[6]).toMatchObject(createError(categoryOrderInstance, [categoryOrderInstance]))
-      expect(errors[7]).toMatchObject(createError(categoryOrderInstance, [categoryOrderInstance]))
+      expect(errors[2]).toMatchObject(createError(sectionSectionsOrderInstance, [sectionInstance]))
+      expect(errors[4]).toMatchObject(createError(sectionSectionsOrderInstance, [sectionInstance]))
+      expect(errors[3]).toMatchObject(createError(categorySectionsOrderInstance, [sectionInstance]))
+      expect(errors[5]).toMatchObject(createError(categorySectionsOrderInstance, [sectionInstance]))
+      expect(errors[6]).toMatchObject(createError(categoryOrderInstance, [categoryInstance]))
+      expect(errors[7]).toMatchObject(createError(categoryOrderInstance, [categoryInstance]))
     })
   })
 })

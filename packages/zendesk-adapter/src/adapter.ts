@@ -464,7 +464,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
     })
 
-    if (isGuideDisabled) {
+    if (isGuideDisabled || _.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)) {
       return defaultSubdomainElements
     }
 

@@ -2382,5 +2382,5 @@ export const validateGuideTypesConfig = (
 export const isGuideEnabled = (
   fetchConfig: ZendeskFetchConfig
 ): boolean => (
-  fetchConfig.guide?.brands !== undefined && !_.isEmpty(fetchConfig.guide.brands)
+  fetchConfig.guide?.brands !== undefined
 )

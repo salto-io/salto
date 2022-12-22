@@ -14,8 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
+import { TypeElement, BuiltinTypes, ListType, ObjectType, ElemID } from '@salto-io/adapter-api'
+import {
+  INSTANCE_FULL_NAME_FIELD,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  WORKFLOW_METADATA_TYPE,
+  LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
+  SETTINGS_METADATA_TYPE,
+  SALESFORCE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CPQ_QUOTE,
+} from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
@@ -243,6 +250,51 @@ export const mockTypes = {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
+  Product2: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Product2'),
+    fields: {
+      ProductCode: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Product2.ProductCode',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'Product2',
+    },
+  }),
+  [CPQ_QUOTE]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, CPQ_QUOTE),
+    fields: {
+      SBQQ__Primary__c: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'SBQQ__Primary__c',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: CPQ_QUOTE,
+    },
+  }),
+  Account: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Account'),
+    fields: {
+      Name: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Account.Name',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'Account',
+    },
+  }),
   ListView: createMetadataObjectType({
     annotations: {
       metadataType: 'ListView',
@@ -251,6 +303,27 @@ export const mockTypes = {
     },
     fields: {
       filter: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  [CPQ_QUOTE]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, CPQ_QUOTE),
+    fields: {
+      Status: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Quote.Status',
+        },
+      },
+      ProductOption: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Quote.ProductOption',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: CPQ_QUOTE,
     },
   }),
 }

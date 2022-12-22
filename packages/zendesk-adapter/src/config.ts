@@ -1618,6 +1618,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   oauth_global_clients: {
     request: {
       url: '/api/v2/oauth/global_clients',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'global_clients',
     },
   },
   // eslint-disable-next-line camelcase
@@ -1633,6 +1638,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   resource_collections: {
     request: {
       url: '/api/v2/resource_collections',
+      paginationField: 'next_page',
     },
   },
   // eslint-disable-next-line camelcase
@@ -1644,7 +1650,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   webhooks: {
     request: {
       url: '/api/v2/webhooks',
-      paginationField: 'links.next',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'webhooks',

@@ -16,17 +16,25 @@
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { ARTICLE_TRANSLATION_TYPE_NAME } from '../constants'
+import {
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  CATEGORY_TRANSLATION_TYPE_NAME,
+  SECTION_TRANSLATION_TYPE_NAME,
+} from '../constants'
 
 /**
- * this filter adds brand field to article translation since it is created through the standalone mechanism and is not
+ * this filter adds brand field to translations since it is created through the standalone mechanism and is not
  * added in its creation.
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)
-      .filter(obj => [ARTICLE_TRANSLATION_TYPE_NAME].includes(obj.elemID.typeName))
+      .filter(obj => [
+        ARTICLE_TRANSLATION_TYPE_NAME,
+        CATEGORY_TRANSLATION_TYPE_NAME,
+        SECTION_TRANSLATION_TYPE_NAME,
+      ].includes(obj.elemID.typeName))
       .forEach(elem => {
         elem.value.brand = getParent(elem).value.brand
       })

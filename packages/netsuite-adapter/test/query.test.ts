@@ -230,6 +230,18 @@ describe('NetsuiteQuery', () => {
       expect(query.isTypeMatch('subsidiary')).toBeTruthy()
       expect(query.isObjectMatch({ type: 'subsidiary', instanceId: 'aaa' })).toBeTruthy()
     })
+
+    it('support complex file cabinet regexes', () => {
+      const query = andQuery(buildNetsuiteQuery({
+        types: [],
+        fileCabinet: ['^/SuiteScripts.*'],
+      }), notQuery(buildNetsuiteQuery({
+        types: [],
+        fileCabinet: ['^/SuiteScripts/[^/]+\\.xml'],
+      })))
+      expect(query.isFileMatch('/SuiteScripts/inner/test.xml')).toBeTruthy()
+      expect(query.isFileMatch('/SuiteScripts/test.xml')).toBeFalsy()
+    })
   })
 
   describe('validateParameters', () => {

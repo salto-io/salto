@@ -21,7 +21,7 @@ import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE
 import {
   InFolderMetadataType,
   isFolderMetadataType, isInFolderMetadataType, METADATA_TYPE_TO_FOLDER_TYPE,
-} from './fetch_targets'
+} from './metadata_types'
 
 const { isDefined } = values
 

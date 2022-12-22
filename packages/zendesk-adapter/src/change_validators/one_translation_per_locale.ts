@@ -74,7 +74,7 @@ const findDuplicateTranslations = async (
     .filter(isTranslation)
     .map(translation => translation.value.locale)
     .map(async locale => (isReferenceExpression(locale) && locale.elemID.idType === 'instance'
-      ? (await elementSource.get(locale.elemID)).value.id ?? ''
+      ? (await elementSource.get(locale.elemID)).value.locale ?? ''
       : locale))
     .toArray()
   return findDuplicates(locales)

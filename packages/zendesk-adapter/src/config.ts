@@ -21,7 +21,7 @@ import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -45,8 +45,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
-  { fieldName: 'created_by_id', fieldType: 'unknown' },
-  { fieldName: 'updated_by_id', fieldType: 'unknown' },
+  { fieldName: 'created_by_id' },
+  { fieldName: 'updated_by_id' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -1647,10 +1647,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       // we are doing this for better parallelization of requests on large accounts
       // sort_by is added since articles for which the order is alphabetically fail (to avoid future bugs)
-      url: '/api/v2/help_center/categories/{category_id}/articles?include=translations&sort_by=updated_at',
+      url: '/api/v2/help_center/categories/{category_id}/articles',
       dependsOn: [
         { pathParam: 'category_id', from: { type: 'categories', field: 'id' } },
       ],
+      queryParams: {
+        include: 'translations',
+        sort_by: 'updated_at',
+      },
     },
     transformation: {
       dataField: 'articles',
@@ -1740,6 +1744,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1815,6 +1821,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&brand'],
       fileNameFields: ['&brand'],
       dataField: '.',
+      fieldTypeOverrides: [
+        { fieldName: 'default_locale', fieldType: 'string' },
+      ],
       // serviceUrl is created in the help_center_service_url filter
     },
     deployRequests: {
@@ -1867,13 +1876,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   sections: {
     request: {
       url: '/api/v2/help_center/sections',
-      recurseInto: [
-        {
-          type: 'section_translation',
-          toField: 'translations',
-          context: [{ name: 'sectionId', fromField: 'id' }],
-        },
-      ],
+      queryParams: {
+        include: 'translations',
+      },
     },
     transformation: {
       dataField: 'sections',
@@ -1949,9 +1954,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   section_translation: {
-    request: {
-      url: '/api/v2/help_center/sections/{sectionId}/translations',
-    },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,
@@ -1963,6 +1965,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -1998,23 +2003,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  // needed until SALTO-2867 is solved
-  guide_locale: {
-    transformation: {
-      idFields: ['id'],
-      fileNameFields: ['id'],
-    },
-  },
   categories: {
     request: {
       url: '/api/v2/help_center/categories',
-      recurseInto: [
-        {
-          type: 'category_translation',
-          toField: 'translations',
-          context: [{ name: 'categoryId', fromField: 'id' }],
-        },
-      ],
+      queryParams: {
+        include: 'translations',
+      },
     },
     transformation: {
       dataField: 'categories',
@@ -2064,9 +2058,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   category_translation: {
-    request: {
-      url: '/api/v2/help_center/categories/{categoryId}/translations',
-    },
     transformation: {
       idFields: ['&locale'],
       extendsParentId: true,
@@ -2078,6 +2069,9 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'brand', fieldType: 'number' },
+        { fieldName: 'created_by_id', fieldType: 'unknown' },
+        { fieldName: 'updated_by_id', fieldType: 'unknown' },
       ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'html_url', fieldType: 'string' },
@@ -2163,7 +2157,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'user_segments__user_segments',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'added_user_ids', fieldType: 'unknown' },
+        // everyone user type is added as a type we created for user_segment
+        { fieldName: 'user_type', fieldType: 'string', restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', EVERYONE_USER_TYPE] } },
+
+      ],
       serviceUrl: '/knowledge/user_segments/edit/{id}',
     },
     deployRequests: {

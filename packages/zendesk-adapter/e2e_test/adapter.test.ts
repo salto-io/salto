@@ -250,6 +250,7 @@ describe('Zendesk adapter E2E', () => {
 
     const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
       _.zip(orgArray, fetchArray)
+        .sort()
         .forEach(val => {
           if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
             expect(val[0].elemID.getFullName()).toEqual(val[1].elemID.getFullName())
@@ -460,17 +461,21 @@ describe('Zendesk adapter E2E', () => {
 
       // ***************** guide instances ******************* //
 
-      const helpCenterLocaleInstanceEn = createInstanceElement({
-        type: 'guide_locale',
+      const guideLanguageSettingsEn = createInstanceElement({
+        type: 'guide_language_settings',
         valuesOverride: {
-          id: 'en-us',
+          locale: 'en-us',
+          name: 'english',
         },
+        name: `${HELP_CENTER_BRAND_NAME}_en_us@ub`,
       })
-      const helpCenterLocaleInstanceHe = createInstanceElement({
-        type: 'guide_locale',
+      const guideLanguageSettingsHe = createInstanceElement({
+        type: 'guide_language_settings',
         valuesOverride: {
-          id: 'he',
+          locale: 'he',
+          name: 'hebrew',
         },
+        name: `${HELP_CENTER_BRAND_NAME}_he`,
       })
 
       const categoryName = createName('category')
@@ -478,8 +483,8 @@ describe('Zendesk adapter E2E', () => {
         instance: createInstanceElement({
           type: CATEGORY_TYPE_NAME,
           valuesOverride: {
-            locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-            source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+            locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+            source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
             brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           },
           fields: { translations: { refType: new ListType(BuiltinTypes.UNKNOWN) } },
@@ -490,7 +495,7 @@ describe('Zendesk adapter E2E', () => {
       const categoryEnTranslationInstance = createInstanceElement({
         type: CATEGORY_TRANSLATION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           title: categoryName,
           draft: false,
@@ -499,13 +504,13 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: categoryInstance,
-        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuum`,
+        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuum`,
       })
 
       const categoryHeTranslationInstance = createInstanceElement({
         type: CATEGORY_TRANSLATION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          locale: new ReferenceExpression(guideLanguageSettingsHe.elemID, guideLanguageSettingsHe),
           outdated: false,
           title: `${categoryName} hebrew`,
           draft: false,
@@ -514,12 +519,12 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: categoryInstance,
-        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__he`,
+        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
       })
 
       categoryInstance.value.translations = [
-        new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
         new ReferenceExpression(categoryEnTranslationInstance.elemID, categoryEnTranslationInstance),
+        new ReferenceExpression(categoryHeTranslationInstance.elemID, categoryHeTranslationInstance),
 
       ]
 
@@ -527,8 +532,8 @@ describe('Zendesk adapter E2E', () => {
       const sectionInstance = createInstanceElement({
         type: SECTION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+          source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
           direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
@@ -540,7 +545,7 @@ describe('Zendesk adapter E2E', () => {
       const sectionEnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           title: sectionName,
           draft: false,
@@ -549,12 +554,12 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: sectionInstance,
-        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuum`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuum`,
       })
       const sectionHeTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          locale: new ReferenceExpression(guideLanguageSettingsHe.elemID, guideLanguageSettingsHe),
           outdated: false,
           title: sectionName,
           draft: false,
@@ -563,18 +568,18 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: sectionInstance,
-        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__he`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
       })
       sectionInstance.value.translations = [
-        new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
         new ReferenceExpression(sectionEnTranslationInstance.elemID, sectionEnTranslationInstance),
+        new ReferenceExpression(sectionHeTranslationInstance.elemID, sectionHeTranslationInstance),
       ]
       const section2Name = createName('sectionTwo')
       const section2Instance = createInstanceElement({
         type: SECTION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+          source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
           direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
@@ -586,7 +591,7 @@ describe('Zendesk adapter E2E', () => {
       const section2EnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           title: section2Name,
           draft: false,
@@ -595,7 +600,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: section2Instance,
-        name: `${section2Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuum`,
+        name: `${section2Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuum`,
       })
       section2Instance.value.translations = [
         new ReferenceExpression(section2EnTranslationInstance.elemID, section2EnTranslationInstance),
@@ -604,8 +609,8 @@ describe('Zendesk adapter E2E', () => {
       const section3Instance = createInstanceElement({
         type: SECTION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+          source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
           direct_parent_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
@@ -617,7 +622,7 @@ describe('Zendesk adapter E2E', () => {
       const section3EnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           title: section3Name,
           draft: false,
@@ -626,7 +631,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: section3Instance,
-        name: `${section3Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuum`,
+        name: `${section3Name}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuum`,
       })
       section3Instance.value.translations = [
         new ReferenceExpression(section3EnTranslationInstance.elemID, section3EnTranslationInstance),
@@ -649,8 +654,8 @@ describe('Zendesk adapter E2E', () => {
       const insideSectionInstance = createInstanceElement({
         type: SECTION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+          source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
           category_id: new ReferenceExpression(categoryInstance.elemID, categoryInstance),
           parent_section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
@@ -663,7 +668,7 @@ describe('Zendesk adapter E2E', () => {
       const insideSectionEnTranslationInstance = createInstanceElement({
         type: SECTION_TRANSLATION_TYPE_NAME,
         valuesOverride: {
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           title: insideSectionName,
           draft: false,
@@ -672,7 +677,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: insideSectionInstance,
-        name: `${insideSectionName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
+        name: `${insideSectionName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
       })
       insideSectionInstance.value.translations = [
         new ReferenceExpression(insideSectionEnTranslationInstance.elemID, insideSectionEnTranslationInstance),
@@ -703,8 +708,8 @@ describe('Zendesk adapter E2E', () => {
           draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -766,12 +771,12 @@ describe('Zendesk adapter E2E', () => {
               `" alt="${inlineFileName}.png"></p><p></p>`,
             ],
           }),
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
-        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
+        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
       })
       const articleTranslationHe = createInstanceElement({
         type: ARTICLE_TRANSLATION_TYPE_NAME,
@@ -779,12 +784,12 @@ describe('Zendesk adapter E2E', () => {
           draft: true,
           title: `${articleName}_he`,
           body: 'זאת בדיקה בעברית',
-          locale: new ReferenceExpression(helpCenterLocaleInstanceHe.elemID, helpCenterLocaleInstanceHe),
+          locale: new ReferenceExpression(guideLanguageSettingsHe.elemID, guideLanguageSettingsHe),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: articleInstance,
-        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__he`,
+        name: `${articleName}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_he`,
       })
 
       articleInstance.value.translations = [
@@ -799,8 +804,8 @@ describe('Zendesk adapter E2E', () => {
           draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -815,12 +820,12 @@ describe('Zendesk adapter E2E', () => {
           draft: true,
           title: `${article2Name}`,
           body: 'this is a test',
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: article2Instance,
-        name: `${article2Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
+        name: `${article2Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
       })
 
       article2Instance.value.translations = [
@@ -835,8 +840,8 @@ describe('Zendesk adapter E2E', () => {
           draft: true,
           promoted: false,
           section_id: new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-          source_locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          source_locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           permission_group_id: new ReferenceExpression(permissionGroup.elemID, permissionGroup),
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
@@ -851,12 +856,12 @@ describe('Zendesk adapter E2E', () => {
           draft: true,
           title: `${article3Name}`,
           body: 'this is a test',
-          locale: new ReferenceExpression(helpCenterLocaleInstanceEn.elemID, helpCenterLocaleInstanceEn),
+          locale: new ReferenceExpression(guideLanguageSettingsEn.elemID, guideLanguageSettingsEn),
           outdated: false,
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: article3Instance,
-        name: `${article3Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__en_us_b@uuuuuum`,
+        name: `${article3Name}_${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__${HELP_CENTER_BRAND_NAME}_en_us_ub@uuuuuuum`,
       })
 
       article3Instance.value.translations = [
@@ -909,8 +914,8 @@ describe('Zendesk adapter E2E', () => {
           elementsSource: buildElementsSourceFromElements([
             // brand and locale are added since other types depend on them
             brandInstanceE2eHelpCenter,
-            helpCenterLocaleInstanceHe,
-            helpCenterLocaleInstanceEn,
+            guideLanguageSettingsHe,
+            guideLanguageSettingsEn,
             everyoneUserSegment,
             articleAttachment,
             articleInlineAttachment,

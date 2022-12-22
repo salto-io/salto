@@ -105,6 +105,9 @@ import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
+import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
+import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
+import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 
 const {
@@ -152,6 +155,9 @@ export const DEFAULT_FILTERS = [
   issueTypeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
+  prioritySchemeFetchFilter,
+  prioritySchemeDeployFilter,
+  prioritySchemeProjectAssociationFilter,
   sharePermissionFilter,
   boardFilter,
   boardColumnsFilter,

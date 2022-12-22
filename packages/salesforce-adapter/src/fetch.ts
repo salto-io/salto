@@ -29,7 +29,7 @@ import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, crea
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
-import { InFolderMetadataType, isInFolderMetadataType, METADATA_TYPE_TO_FOLDER_TYPE } from './fetch_profile/fetch_targets'
+import { InFolderMetadataType, isInFolderMetadataType, METADATA_TYPE_TO_FOLDER_TYPE } from './fetch_profile/metadata_types'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array

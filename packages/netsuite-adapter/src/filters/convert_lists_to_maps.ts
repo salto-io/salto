@@ -13,18 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  isInstanceElement, isObjectType,
-} from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
-import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, validateTypesFieldMapping } from '../mapped_lists/utils'
+import { InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { collections, promises } from '@salto-io/lowerdash'
+import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, convertDataInstanceMapsToLists } from '../mapped_lists/utils'
 import { FilterWith } from '../filter'
 import { isStandardType, getInnerStandardTypes, isCustomRecordType } from '../types'
 import { getStandardTypes } from '../autogen/types'
+import { dataTypesToConvert } from '../mapped_lists/mapping'
+
+const { mapValuesAsync } = promises.object
 
 const { awu } = collections.asynciterable
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const shouldTransformDataInstance = async (instance: InstanceElement): Promise<boolean> =>
+  Object.values((await instance.getType()).fields)
+    .some(field => dataTypesToConvert.has(field.refType.elemID.name))
+
+const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   /**
    * Upon fetch, do the following:
    * - convert ListType fields to MapType
@@ -34,11 +39,9 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    *   by the mapping key mentioned above
    *
    * NOTICE: This filter works on:
-   * - StandardType types
-   * - StandardType instances
-   * - CustomRecordType types
-   *
-   * The reverse conversion happens in sdfDeploy
+   * - standard & data types
+   * - standard & data instances
+   * - custom record types
    *
    * @param elements the already fetched elements
    */
@@ -48,18 +51,17 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         .map(element => element.elemID.name)
     )
 
-    const standardTypes = elements.filter(isObjectType).filter(
-      type => isStandardType(type) || innerStandardTypesNames.has(type.elemID.name)
-    )
-
-    validateTypesFieldMapping(standardTypes)
-
-    await awu(standardTypes)
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(type =>
+        isStandardType(type)
+        || innerStandardTypesNames.has(type.elemID.name)
+        || dataTypesToConvert.has(type.elemID.name))
       .forEach(convertFieldsTypesFromListToMap)
 
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(inst => isStandardType(inst.refType))
+      .filter(inst => isStandardType(inst.refType) || shouldTransformDataInstance(inst))
       .forEach(
         async inst => {
           inst.value = await convertInstanceListsToMaps(inst) ?? inst.value
@@ -74,6 +76,23 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
           type.annotations = await convertAnnotationListsToMaps(type)
         }
       )
+  },
+  /**
+   * Transform maps back to lists before deploy - in data instances.
+   * Mapped lists' field types are transformed too (MapType -> ListType).
+   *
+   * The reverse conversion of standard instances & custom record types happens in sdfDeploy
+   */
+  preDeploy: async changes => {
+    await awu(changes)
+      .forEach(async change => {
+        const transformedData = await mapValuesAsync(change.data, async changeData => (
+          isInstanceElement(changeData) && await shouldTransformDataInstance(changeData)
+            ? convertDataInstanceMapsToLists(changeData)
+            : changeData
+        ))
+        Object.assign(change.data, transformedData)
+      })
   },
 })
 

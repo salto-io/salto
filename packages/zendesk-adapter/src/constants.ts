@@ -33,6 +33,7 @@ export const TICKET_FIELD_TYPE_NAME = 'ticket_field'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'
 export const USER_FIELD_TYPE_NAME = 'user_field'
 export const FIELD_TYPE_NAMES = [TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME]
+export const EVERYONE_USER_TYPE = 'Everyone'
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'
@@ -44,4 +45,3 @@ export const BRAND_FIELD = 'brand'
 export const TRANSLATIONS_FIELD = 'translations'
 export const ARTICLE_ATTACHMENTS_FIELD = 'article_attachments'
 export const ARTICLE_ATTACHMENT_TYPE_NAME = 'article_attachment'
-export const GUIDE_LOCALE = 'guide_locale'

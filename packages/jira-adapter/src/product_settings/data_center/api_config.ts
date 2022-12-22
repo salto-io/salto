@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { PRIORITY_SCHEME_TYPE_NAME } from '../../constants'
 import { JiraApiConfig } from '../../config/api_config'
 
 export const DC_ADDITIONAL_TYPE_NAME_OVERRIDES = [
@@ -139,5 +140,8 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         dataField: '.',
       },
     },
+  },
+  supportedTypes: {
+    [PRIORITY_SCHEME_TYPE_NAME]: [],
   },
 }

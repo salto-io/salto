@@ -58,13 +58,6 @@ describe('fix custom record objects filter', () => {
         'custom_field',
       ])
     })
-    it('should transform values', () => {
-      expect(instance.value).toEqual({
-        translationsList: {
-          customRecordTranslations: [{ lang: 'english' }],
-        },
-      })
-    })
   })
   describe('preDeploy', () => {
     beforeEach(async () => {
@@ -85,7 +78,6 @@ describe('fix custom record objects filter', () => {
       expect(Object.keys(type.fields)).toEqual([
         'parent',
         'recType',
-        'translationsList',
       ])
     })
     it('should add recordType to instance', () => {

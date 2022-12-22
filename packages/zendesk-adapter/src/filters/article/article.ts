@@ -25,12 +25,17 @@ import {
 import { getParents, replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
-import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../constants'
+import {
+  ARTICLE_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
+  ZENDESK,
+  EVERYONE_USER_TYPE,
+} from '../../constants'
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
 import { removeTitleAndBody } from '../guide_fetch_article_section_and_category'
 import { prepRef } from './article_body'
-import { EVERYONE } from '../everyone_user_segment'
 import ZendeskClient from '../../client/client'
 import { createAttachmentType, createUnassociatedAttachment, deleteArticleAttachment, getArticleAttachments, updateArticleTranslationBody } from './utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
@@ -43,7 +48,7 @@ const USER_SEGMENT_ID_FIELD = 'user_segment_id'
 export type TranslationType = {
   title: string
   body?: string
-  locale: { id: string }
+  locale: { locale: string }
 }
 
 const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
@@ -51,7 +56,7 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
   const currentLocale = getChangeData(resolvedChange).value.source_locale
   const translation = getChangeData(resolvedChange).value.translations
     .filter(isTranslation)
-    .find((tran: TranslationType) => tran.locale?.id === currentLocale)
+    .find((tran: TranslationType) => tran.locale?.locale === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.title = translation.title
     getChangeData(change).value.body = translation.body ?? ''
@@ -64,7 +69,7 @@ const setupArticleUserSegmentId = (
 ): void => {
   const everyoneUserSegmentInstance = elements
     .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
-    .find(instance => instance.elemID.name === EVERYONE)
+    .find(instance => instance.elemID.name === EVERYONE_USER_TYPE)
   if (everyoneUserSegmentInstance === undefined) {
     log.info("Couldn't find Everyone user_segment instance.")
     return
@@ -154,7 +159,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
       // Keeping article-attachment relation for deploy stage
       const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
       if (instanceBeforeResolve === undefined) {
-        log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} instance.`)
+        log.error(`Couldn't find attachment ${attachmentInstance.elemID.name} instance.`)
         // Deleting the newly created udpated-id attachment instance
         await deleteArticleAttachment(client, attachmentInstance)
         return
@@ -257,16 +262,19 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
     },
 
     deploy: async (changes: Change<InstanceElement>[]) => {
-      const [articleChanges, nonArticleChanges] = _.partition(
+      const [articleAdditionAndModificationChanges, otherChanges] = _.partition(
         changes,
         change =>
           (getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
           && !isRemovalChange(change),
       )
-      addRemovalChangesId(articleChanges)
-      setUserSegmentIdForAdditionChanges(articleChanges)
+      // otherChanges contains removal changes of article!
+      const articleRemovalChanges = otherChanges
+        .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
+      addRemovalChangesId(articleRemovalChanges)
+      setUserSegmentIdForAdditionChanges(articleAdditionAndModificationChanges)
       const articleDeployResult = await deployChanges(
-        articleChanges,
+        articleAdditionAndModificationChanges,
         async change => {
           await deployChange(
             change, client, config.apiDefinitions, ['translations', 'attachments'],
@@ -282,7 +290,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         },
       )
       const [attachmentAdditions, leftoverChanges] = _.partition(
-        nonArticleChanges,
+        otherChanges,
         change => (
           isAdditionOrModificationChange(change)
           && getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
@@ -296,7 +304,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
     },
 
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE)
+      const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE_USER_TYPE)
       const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID)
       changes
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)

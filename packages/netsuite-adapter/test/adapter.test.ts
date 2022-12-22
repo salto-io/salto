@@ -40,6 +40,7 @@ import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
 import { getStandardTypesNames } from '../src/autogen/types'
+import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   additionalDependencies: {
@@ -132,6 +133,7 @@ describe('Adapter', () => {
 
   const { standardTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
   const metadataTypes = metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes })
+    .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
 
   beforeEach(() => {
     jest.clearAllMocks()

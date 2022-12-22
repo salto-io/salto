@@ -21,6 +21,12 @@ export type RequiredMember<T, M extends keyof T> = {
 
 export type HasMember<T, M extends keyof T> = T & RequiredMember<T, M>
 
+export type ReverseRecord<T extends Record<keyof T, keyof never>> = {
+  [P in T[keyof T]]: {
+    [K in keyof T]: T[K] extends P ? K : never
+  }[keyof T]
+}
+
 export const hasMember = <T, M extends keyof T>(
   m: M,
   o: T,

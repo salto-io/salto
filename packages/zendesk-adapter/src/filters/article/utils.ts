@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile,
@@ -59,7 +59,7 @@ const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
 const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value)}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
     return false
   }
   return true
@@ -245,7 +245,7 @@ export const updateArticleTranslationBody = async ({
   const attachmentElementsNames = attachmentInstances.map(instance => instance.elemID.name)
   const articleTranslations = articleValues?.translations
   if (!Array.isArray(articleTranslations)) {
-    log.error(`Received an invalid translations value for attachment ${articleValues.name} - ${safeJsonStringify(articleTranslations)}`)
+    log.error(`Received an invalid translations value for attachment ${articleValues.name} - ${safeJsonStringify(articleTranslations, elementExpressionStringifyReplacer)}`)
     return
   }
   await awu(articleTranslations)
@@ -264,7 +264,7 @@ export const updateArticleTranslationBody = async ({
         }
       )
       await client.put({
-        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.id}`,
+        url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.locale}`,
         data: { translation: { body: translationInstance.value.value.body } },
       })
     })

@@ -1217,8 +1217,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   triggers: {
     request: {
       url: '/api/v2/triggers',
-      // queryParams: { ...DEFAULT_QUERY_PARAMS },
-      // paginationField: NEW_PAGINATION_FIELD,
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'triggers',
     },
   },
   trigger_definitions: {
@@ -1504,16 +1507,22 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_fields: {
     request: {
       url: '/api/v2/user_fields',
-      // queryParams: { ...DEFAULT_QUERY_PARAMS },
-      // paginationField: NEW_PAGINATION_FIELD,
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'user_fields',
     },
   },
   // eslint-disable-next-line camelcase
   organization_fields: {
     request: {
       url: '/api/v2/organization_fields',
-      // queryParams: { ...DEFAULT_QUERY_PARAMS },
-      // paginationField: NEW_PAGINATION_FIELD,
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
+    },
+    transformation: {
+      dataField: 'organization_fields',
     },
   },
   routing_attribute_value: {

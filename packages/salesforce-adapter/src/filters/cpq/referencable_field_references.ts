@@ -18,14 +18,15 @@ import {
   Element,
   getChangeData,
   InstanceElement, isAdditionOrModificationChange, isInstanceChange,
-  isInstanceElement, isModificationChange,
+  isInstanceElement,
   isObjectType,
   ObjectType,
-  ReferenceExpression, toChange,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections, types } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../../filter'
 import {
   CPQ_FILTER_SOURCE_FIELD,
@@ -130,8 +131,8 @@ const getServiceObjectApiName = (cpqApiName: string): string => {
   return (CPQ_TO_SERVICE_API_NAME as Record<string, string>)[actualCPQApiName] ?? actualCPQApiName
 }
 
-const createDeployableChange = (change: Change<InstanceElement>): Change<InstanceElement> => {
-  const deployableInstance = getChangeData(change).clone()
+const createDeployableInstance = (instance: InstanceElement): InstanceElement => {
+  const deployableInstance = instance.clone()
   const { value } = deployableInstance
   REFERENCABLE_FIELD_NAMES.forEach(referencableFieldName => {
     const controllingFieldName = REFERENCABLE_FIELD_NAME_TO_CONTROLLING_FIELD[referencableFieldName]
@@ -141,9 +142,7 @@ const createDeployableChange = (change: Change<InstanceElement>): Change<Instanc
     value[controllingFieldName] = getServiceObjectApiName(value[controllingFieldName])
     value[referencableFieldName] = getServiceObjectApiName(value[referencableFieldName])
   })
-  return isModificationChange(change)
-    ? toChange({ before: change.data.before, after: deployableInstance })
-    : toChange({ after: deployableInstance })
+  return deployableInstance
 }
 
 const filter: LocalFilterCreator = () => {
@@ -164,9 +163,11 @@ const filter: LocalFilterCreator = () => {
       const relatedChanges = changes
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
-        .filter(isRelatedChange)
+        .filter(isRelatedChange) as Change<InstanceElement>[]
       originalChangesByFullName = _.keyBy(relatedChanges, c => getChangeData(c).elemID.getFullName())
-      const deployableChanges = relatedChanges.map(createDeployableChange)
+      const deployableChanges = await awu(relatedChanges)
+        .map(change => applyFunctionToChangeData(change, createDeployableInstance))
+        .toArray()
       _.pullAll(changes, relatedChanges)
       deployableChanges.forEach(deployableChange => changes.push(deployableChange))
     },

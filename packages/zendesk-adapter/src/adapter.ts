@@ -349,9 +349,11 @@ const getGuideElements = async ({
   })
 
   const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.configChanges)
+  const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
     elements: zendeskGuideElements,
     configChanges: elementUtils.ducktype.getUniqueConfigSuggestions(allConfigChangeSuggestions),
+    errors: guideErrors,
   }
 }
 
@@ -462,7 +464,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
     })
 
-    if (isGuideDisabled) {
+    if (isGuideDisabled || _.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)) {
       return defaultSubdomainElements
     }
 
@@ -470,6 +472,22 @@ export default class ZendeskAdapter implements AdapterOperations {
       defaultSubdomainElements.elements.filter(isInstanceElement),
       this.userConfig[FETCH_CONFIG]
     )
+
+    if (_.isEmpty(brandsList)) {
+      const brandPatterns = Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')
+      const message = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
+      log.warn(message)
+      return {
+        configChanges: defaultSubdomainElements.configChanges,
+        elements: defaultSubdomainElements.elements,
+        errors: (defaultSubdomainElements.errors ?? []).concat([
+          {
+            message,
+            severity: 'Warning',
+          },
+        ]),
+      }
+    }
 
     const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
       [
@@ -504,6 +522,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       configChanges: defaultSubdomainElements.configChanges
         .concat(zendeskGuideElements.configChanges),
       elements: zendeskElements,
+      errors: (defaultSubdomainElements.errors ?? [])
+        .concat(zendeskGuideElements.errors ?? []),
     }
   }
 
@@ -515,7 +535,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
-    const { elements, configChanges } = await this.getElements()
+    const { elements, configChanges, errors } = await this.getElements()
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -535,7 +555,9 @@ export default class ZendeskAdapter implements AdapterOperations {
     const updatedConfig = this.configInstance
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
-    return { elements, errors: result ? result.errors : [], updatedConfig }
+
+    const fetchErrors = (errors ?? []).concat(result.errors ?? [])
+    return { elements, errors: fetchErrors, updatedConfig }
   }
 
   /**

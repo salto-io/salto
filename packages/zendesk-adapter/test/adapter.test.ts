@@ -647,6 +647,41 @@ describe('adapter', () => {
           'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
         ])
       })
+
+      it('should return fetch error when no brand matches brands config ', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const creds = new InstanceElement(
+          'config',
+          usernamePasswordCredentialsType,
+          { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+        )
+        const config = new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              include: [{
+                type: '.*',
+              }],
+              exclude: [],
+              guide: {
+                brands: ['BestBrand'],
+              },
+            },
+          }
+        )
+        const { errors } = await adapter.operations({
+          credentials: creds,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(errors).toEqual([
+          {
+            message: 'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
+            severity: 'Warning',
+          },
+        ])
+      })
     })
 
     describe('type overrides', () => {

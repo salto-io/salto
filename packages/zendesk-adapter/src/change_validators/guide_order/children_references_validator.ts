@@ -60,9 +60,11 @@ const validateReferences = (
 /**
  * Validates that all the elements in the order list are references
  */
-export const childrenReferencesValidator: ChangeValidator = async changes =>
-  [
-    ...validateReferences(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME),
-    ...validateReferences(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME),
-    ...validateReferences(changes, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME),
-  ]
+export const childrenReferencesValidator: ChangeValidator = async changes => {
+  const errors: ChangeError[] = []
+  return errors.concat(
+    validateReferences(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME),
+    validateReferences(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME),
+    validateReferences(changes, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME)
+  )
+}

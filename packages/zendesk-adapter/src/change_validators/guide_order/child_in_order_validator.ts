@@ -22,11 +22,11 @@ import {
   isInstanceChange,
 } from '@salto-io/adapter-api'
 import {
-  ARTICLE_ORDER_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME,
   ARTICLES_FIELD,
   CATEGORIES_FIELD,
   CATEGORY_ORDER_TYPE_NAME,
-  CATEGORY_TYPE_NAME, SECTION_TYPE_NAME,
+  CATEGORY_TYPE_NAME, SECTION_ORDER_TYPE_NAME, SECTION_TYPE_NAME,
   SECTIONS_FIELD,
 } from '../../constants'
 
@@ -61,9 +61,11 @@ const validateOrderElementAdded = (
 /**
  * Warns the user if he is adding a child instance and not its order instance
  * */
-export const childInOrderValidator: ChangeValidator = async changes =>
-  [
-    ...validateOrderElementAdded(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME),
-    ...validateOrderElementAdded(changes, SECTIONS_FIELD, CATEGORY_ORDER_TYPE_NAME, SECTION_TYPE_NAME),
-    ...validateOrderElementAdded(changes, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME),
-  ]
+export const childInOrderValidator: ChangeValidator = async changes => {
+  const errors: ChangeError[] = []
+  return errors.concat(
+    validateOrderElementAdded(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME),
+    validateOrderElementAdded(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME, SECTION_TYPE_NAME),
+    validateOrderElementAdded(changes, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME),
+  )
+}

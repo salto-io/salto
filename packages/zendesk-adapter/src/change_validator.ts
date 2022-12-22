@@ -45,10 +45,12 @@ import {
   helpCenterActivationValidator,
   helpCenterCreationOrRemovalValidator,
   everyoneUserSegmentModificationValidator,
-  guideOrderDeletionValidator, childInOrderValidator, orderChildrenParentValidator,
+  guideOrderDeletionValidator,
+  childrenReferencesValidator,
+  childInOrderValidator,
+  orderChildrenParentValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { childrenReferencesValidator } from './change_validators/guide_order/children_references_validator'
 
 const {
   deployTypesNotSupportedValidator,

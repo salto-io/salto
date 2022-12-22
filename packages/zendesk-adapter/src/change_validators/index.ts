@@ -43,6 +43,7 @@ export { translationForDefaultLocaleValidator } from './translation_for_default_
 export { helpCenterActivationValidator } from './guide_activation'
 export { helpCenterCreationOrRemovalValidator } from './guide_creation_or_removal'
 export { orderChildrenParentValidator } from './guide_order/order_children_parent_validator'
+export { childrenReferencesValidator } from './guide_order/children_references_validator'
 export { childInOrderValidator } from './guide_order/child_in_order_validator'
 export { guideOrderDeletionValidator } from './guide_order/order_deletion_validator'
 export { articleAttachmentSizeValidator } from './article_attachment_size'

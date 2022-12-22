@@ -18,18 +18,29 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression,
+  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  ARTICLE_ORDER_TYPE_NAME,
-  ARTICLES_FIELD, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME,
+  ARTICLES_FIELD, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
   SECTIONS_FIELD,
 } from '../../constants'
 
 const { isDefined } = lowerDashValues
+
+const getChildParent = (child: InstanceElement): ReferenceExpression => {
+  switch (child.elemID.typeName) {
+    case ARTICLE_TYPE_NAME:
+      return child.value.section_id
+    case CATEGORY_TYPE_NAME:
+      return child.value.brand
+    default:
+      return child.value.parent_section_id ?? child.value.category_id
+  }
+}
 
 const createNotSameParentError = ([order, badChildren]: [InstanceElement, InstanceElement[]]): ChangeError => ({
   elemID: order.elemID,
@@ -43,7 +54,9 @@ const orderChildrenDifferentParent = (
   children: InstanceElement[],
 ): [InstanceElement, InstanceElement[]] | undefined => {
   const orderParent = getParent(orderInstance).elemID.getFullName()
-  const wrongParentChildren = children.filter(child => orderParent !== getParent(child).elemID.getFullName())
+  const wrongParentChildren = children
+    .filter(isInstanceElement)
+    .filter(child => orderParent !== getChildParent(child)?.value.elemID.getFullName())
   return wrongParentChildren.length > 0 ? [orderInstance, wrongParentChildren] : undefined
 }
 

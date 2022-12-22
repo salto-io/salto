@@ -197,6 +197,14 @@ describe('GuideOrdersValidator', () => {
     })
   })
   describe('Order and children parent tests', () => {
+    const changeChildrenParent = (parent: ReferenceExpression): void =>
+      childrenInstances.forEach(child => {
+        child.value.section_id = parent
+        child.value.brand = parent
+        child.value.parent_section_id = parent
+        child.value.category_id = parent
+      })
+
     const changes = [
       toChange({ before: articleOrderInstance }),
       toChange({ before: sectionSectionsOrderInstance }),
@@ -222,14 +230,12 @@ describe('GuideOrdersValidator', () => {
     it('children with same parent as order', async () => {
       const brandRef = new ReferenceExpression(brandInstance.elemID, brandInstance)
       orderInstances.forEach(order => { order.annotations[CORE_ANNOTATIONS.PARENT] = brandRef })
-      childrenInstances.forEach(child => { child.annotations[CORE_ANNOTATIONS.PARENT] = brandRef })
+      changeChildrenParent(brandRef)
       const errors = await orderChildrenParentValidator(changes)
       expect(errors.length).toBe(0)
     })
     it('children with different parent from order', async () => {
-      childrenInstances.forEach(child => {
-        child.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(articleInstance.elemID, articleInstance)
-      })
+      changeChildrenParent(new ReferenceExpression(articleInstance.elemID, articleInstance))
       const errors = await orderChildrenParentValidator(changes)
       expect(errors.length).toBe(8)
       expect(errors[0]).toMatchObject(createError(articleOrderInstance, [articleInstance]))

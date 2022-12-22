@@ -30,8 +30,7 @@ import {
   SECTIONS_FIELD,
 } from '../../constants'
 
-
-const createNoOrderInstanceWarning = (instance: InstanceElement, orderTypeName: string): ChangeError => ({
+const createNotInOrderInstanceWarning = (instance: InstanceElement, orderTypeName: string): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Warning',
   message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
@@ -55,11 +54,11 @@ const validateOrderElementAdded = (
     .map(child => child.elemID?.getFullName()))
 
   return relevantChildInstances.filter(child => !childrenInOrderInstances.has(child.elemID.getFullName()))
-    .map(child => createNoOrderInstanceWarning(child, orderTypeName))
+    .map(child => createNotInOrderInstanceWarning(child, orderTypeName))
 }
 
 /**
- * Warns the user if he is adding a child instance and not its order instance
+ * Warns the user if he is adding a child instance without adding it to an order instance
  * */
 export const childInOrderValidator: ChangeValidator = async changes => {
   const errors: ChangeError[] = []

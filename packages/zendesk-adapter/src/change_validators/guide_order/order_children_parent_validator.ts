@@ -33,9 +33,9 @@ const { isDefined } = lowerDashValues
 
 const createNotSameParentError = ([order, badChildren]: [InstanceElement, InstanceElement[]]): ChangeError => ({
   elemID: order.elemID,
-  severity: 'Warning',
-  message: `${order.elemID.typeName} instance contains instances that are not TODO`,
-  detailedMessage: `${badChildren.length} TODO`,
+  severity: 'Error',
+  message: `${order.elemID.typeName} contains instances that are not of the same parent`,
+  detailedMessage: `${badChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(order).elemID.typeName} as ${order.elemID.getFullName()}`,
 })
 
 const orderChildrenDifferentParent = (
@@ -59,7 +59,7 @@ const validateOrdersChildrenSameParent = (
 
 
 /**
- * Validates that all the elements in the articles order list are references
+ * Validates that all children in an order instance have the same parent as the order
  */
 export const orderChildrenParentValidator: ChangeValidator = async changes => {
   const errors: ChangeError[] = []

@@ -19,6 +19,7 @@ import { createDefaultInstanceFromType, createMatchingObjectType } from '@salto-
 import { logger } from '@salto-io/logging'
 import { configType } from './types'
 import * as constants from './constants'
+import { CPQ_NAMESPACE } from './constants'
 
 const log = logger(module)
 
@@ -36,7 +37,7 @@ export const configWithCPQ = new InstanceElement(
           },
           {
             metadataType: '.*',
-            namespace: 'SBQQ',
+            namespace: CPQ_NAMESPACE,
             name: '.*',
           },
           {

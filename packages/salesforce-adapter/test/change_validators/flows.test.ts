@@ -94,7 +94,7 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
-          expect(changeError.message).toEqual('Deploying these changes will create a new active version of this flow') // add string
+          expect(changeError.deployActions?.postAction?.title).toEqual('Flows test coverage')
         })
         it('should have info message regarding the new flow version', async () => {
           const changeErrors = await changeValidator(
@@ -103,7 +103,7 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
-          expect(changeError.message).toEqual('Your salesforce org is configured to disallow modifications to active flows') // add string
+          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying as inactive')
         })
       })
       describe('activating a flow', () => {
@@ -142,14 +142,15 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
+          expect(changeError.deployActions?.postAction?.title).toEqual('Flows test coverage')
         })
-        it('should have error message regarding the new flow version', async () => {
+        it('should have info message regarding the new flow version', async () => {
           const changeErrors = await changeValidator(
             [flowChanges]
           ) // enableActiveDeploy setting is false
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
-          expect(changeError.severity).toEqual('Error')
+          expect(changeError.severity).toEqual('Info')
         })
       })
     })

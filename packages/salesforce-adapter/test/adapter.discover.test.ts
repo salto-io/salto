@@ -1117,13 +1117,9 @@ public class LargeClass${index} {
             if (type === 'MetadataTest2') {
               throw new SFError('sf:UNKNOWN_EXCEPTION')
             }
-            if (_.isEqual(query, { type: 'Report', folder: 'testFolder' })) {
-              throw new SFError('sf:UNKNOWN_EXCEPTION')
-            }
             const fullNames: Record<string, string> = {
               MetadataTest1: 'instance1',
               InstalledPackage: 'instance2',
-              ReportFolder: 'testFolder',
             }
             const fullName = fullNames[type]
             return fullName === undefined ? [] : [mockFileProperties({ fullName, type })]
@@ -1153,7 +1149,6 @@ public class LargeClass${index} {
               metadata: {
                 exclude: [
                   ...metadataExclude,
-                  { metadataType: 'Report', name: 'testFolder' },
                   { metadataType: 'InstalledPackage', name: 'Test2' },
                   { metadataType: 'MetadataTest1', name: 'instance1' },
                   { metadataType: 'MetadataTest2' },
@@ -1186,7 +1181,6 @@ public class LargeClass${index} {
             fetch: {
               metadata: {
                 exclude: [
-                  { metadataType: 'Report', name: 'testFolder' },
                   { metadataType: 'InstalledPackage', name: 'Test2' },
                   { metadataType: 'MetadataTest1', name: 'instance1' },
                   { metadataType: 'MetadataTest2' },

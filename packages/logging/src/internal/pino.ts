@@ -191,6 +191,13 @@ export const loggerRepo = (
 
   const colorize = config.colorize ?? (stream && streams.hasColors(stream as streams.MaybeTty))
 
+  // eslint-disable-next-line no-console
+  console.log(`+++config.colorize: ${config.colorize}`)
+  // eslint-disable-next-line no-console
+  console.log(`+++stream: ${safeStringify(stream)}`)
+  // eslint-disable-next-line no-console
+  console.log(`+++hasColors: ${streams.hasColors(stream as streams.MaybeTty)}`)
+
   const rootPinoLogger = pino({
     timestamp: isoTime,
     level: toPinoLogLevel(config.minLevel),

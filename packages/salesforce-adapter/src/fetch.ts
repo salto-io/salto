@@ -111,11 +111,15 @@ const listMetadataObjectsWithinFolders = async (
   folderPathByName: Record<string, string>,
   isUnhandledError?: ErrorFilter,
 ): Promise<FetchElements<FileProperties[]>> => {
+  const folders = await listMetadataObjects(client, METADATA_TYPE_TO_FOLDER_TYPE[metadataTypeName])
+  const folderNames = [
+    ...folders.elements.map(props => props.fullName),
+    ...Object.keys(folderPathByName),
+  ]
   const { result, errors } = await client.listMetadataObjects(
-    Object.keys(folderPathByName).map(folderName => ({ type: metadataTypeName, folder: folderName })),
+    folderNames.map(folderName => ({ type: metadataTypeName, folder: folderName })),
     isUnhandledError,
   )
-  const folders = await listMetadataObjects(client, METADATA_TYPE_TO_FOLDER_TYPE[metadataTypeName])
   return {
     elements: [
       ...result.map(props => withFullPath(props, folderPathByName)),

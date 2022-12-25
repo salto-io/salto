@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable no-underscore-dangle */
-import { Value, Values } from '@salto-io/adapter-api'
+import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementCompact } from 'xml-js'
@@ -23,13 +23,11 @@ import {
   getJson,
   ElementParts,
   getFlags,
-  safeAssignKeyValue,
-  RecordObject,
   getObjectFromValues,
   AttributeObject,
+  RecordObject,
 } from '../report_types_parser_utils'
-
-const ROWS = 'rows'
+import { FinancialLayoutType } from './parsed_financial_layout'
 
 type RowObject = {
   descriptor: {
@@ -56,7 +54,7 @@ const getRowRecords = (row: RowObject): Values[] =>
     .map(record => getObjectFromValues(record.values.Value))
 
 
-const getLayoutRows = (rows: RowObject[]): Values =>
+const getLayoutRows = (rows: RowObject[]): Values[] =>
   collections.array.makeArray(rows).map(row => {
     const parsedRow = getObjectFromValues(row.descriptor.values.Value)
     const records = getRowRecords(row)
@@ -67,10 +65,11 @@ const getLayoutRows = (rows: RowObject[]): Values =>
   })
 
 
-export const parseDefinition = async (definition: string): Promise<Value> => {
+export const parseDefinition = async (definition: string): Promise<FinancialLayoutType> => {
   const layoutParts = await getLayoutParts(definition)
-  const returnInstance = {}
-  safeAssignKeyValue(returnInstance, ROWS, getLayoutRows(layoutParts.definition.rows.values.FinancialRowElement))
-  Object.assign(returnInstance, getFlags(layoutParts.definition))
+  const returnInstance = {
+    rows: getLayoutRows(layoutParts.definition.rows.values.FinancialRowElement),
+    innerFields: getFlags(layoutParts.definition),
+  }
   return returnInstance
 }

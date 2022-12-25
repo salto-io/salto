@@ -58,7 +58,7 @@ describe('move environment saved search change validator', () => {
         toChange({ after: savedSearchInstance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
-      expect(changeErrors[0].message).toEqual('Beware that saved searche might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.')
+      expect(changeErrors[0].message).toEqual('Beware that saved search might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.')
       expect(changeErrors[0].elemID).toEqual(savedSearchInstance.elemID)
     })
 

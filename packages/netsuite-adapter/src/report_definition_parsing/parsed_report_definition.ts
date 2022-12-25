@@ -16,10 +16,146 @@
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, createRefToElmWithValue, ListType, MapType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, MapType, Values,
 } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { TypeAndInnerTypes } from '../types/object_types'
 import * as constants from '../constants'
+
+type ReportLayout = {
+  FIELD_STANDARD_LAYOUT?: boolean
+  KEY_SCRIPT_ID?: string
+}
+
+type ReportComponent = {
+  KEY_COMPONENT?: number
+  FLAG_SECONDERY_DIM?: boolean
+  FIELD_CLASS?: string
+}
+
+type ReportSortType = {
+  KEY_COMPONENT?: string
+  FIELD_TABLE?: string
+  FIELD_ALIAS?: string
+  FIELD_TARGET_TABLE?: string
+  FIELD_FOREIGN_KEY?: string
+  SEQ_NUMBER?: number
+  FLAG_DESCENDING?: boolean
+  FLAG_SUBTOTAL?: boolean
+}
+
+type ReportDependencies = {
+  dependencies?: string[]
+}
+
+export type ReportUiPrefType = {
+  PARAMETER_CASH_BASIS?: boolean
+  PARAMETER_TAXCASH_BASIS?: string
+  PARAMETER_SHOW_ZEROS?: boolean
+  PARAMETER_SHOW_SINGLEROWLINES?: boolean
+  PARAMETER_DISPLAY_TYPE?: string
+  PARAMETER_INC_VS_EXP?: boolean
+  PARAMETER_GRAPH_TOP?: number
+  PARAMETER_WEB_STORE?: boolean
+  PARAMETER_ACTIVITY_ONLY?: boolean
+  PARAMETER_ALLOW_WEBQUERY?: boolean
+  PARAMETER_GRAPH_3D?: boolean
+  PARAMETERL_SHOW_CURRENCY_SYMBOL?: boolean
+  PARAMETER_EXPAND_LEVEL?: number
+}
+
+type ReportFieldsType = {
+  KEY_COMPONENT?: number
+  FIELD_TABLE?: string
+  FIELD_ALIAS?: string
+  FIELD_TARGET_TABLE?: string
+  FIELD_FOREIGN_KEY?: string
+  KEY_CUSTOM_FIELD?: string
+  FLAG_DIMENSION?: boolean
+  FIELD_UNIT_TYPE?: number
+  FLAG_ROLLUP?: boolean
+  FIELD_DATE_FILTER_INDEX?: number
+  FIELD_COMPARISON_TYPE?: string
+  FLAG_APPLY_FORWARDING?: boolean
+  FIELD_ALT_DATE_SEGMENT?: string
+  FLAG_MEASURE?: boolean
+  SEQ_NUMBER?: number
+  FIELD_LABEL?: string
+  FIELD_NEG_LABLE?: string
+  FIELD_URL?: string
+  FIELD_URL_TYPE?: string
+  FLAG_DUAL_COLUMN?: boolean
+  FLAG_PRECENT_TOTAL?: boolean
+  FLAG_PERCENT_EXPENSE?: boolean
+  FLAG_RUNNING_BAL?: boolean
+  FLAG_SHOW_OPENING_BAL?: boolean
+  FLAG_SHOW_ABS_DIFF?: boolean
+  FLAG_SHOW_PCT_DIFF?: boolean
+  FLAG_SUB_TOTAL?: boolean
+  FLAG_DISPLY?: boolean
+  FIELD_SUMMARY?: string
+  FLAG_DROP_DECIMAL?: boolean
+  FLAG_DIV_BY_THOUSAND?: boolean
+  FLAG_NEG_IN_RED?: boolean
+  FIELD_NEG_VAL_FORMAT?: string
+  FIELD_GROUP?: string
+  FIELD_PARENT_GROUP?: string
+  FIELD_COLUMN_FILTER_GROUP?: string
+  FIELD_FORMAT?: string
+  FIELD_FORMULA?: string
+  FIELD_FORMULA_BY_SEQ?: string
+  FLAG_TOTAL_FORMULA?: boolean
+}
+
+type ReportDefinitionInnerFields = {
+  KEY_REPORT_ID?: number
+  KEY_SCRIPT_ID?: string
+  KEY_PACKAGE?: string
+  FIELD_KEY?: number
+  FIELD_CODE?: string
+  FIELD_DESCRIPTION?: string
+  FIELD_NAME?: string
+  FIELD_ORIGINAL_TITLE?: string
+  FIELD_PERM_TYPE?: string
+  KEY_FEATURE?: string
+  FLAG_PERIODS_ALLOWD?: boolean
+  FLAG_DISPLAY_TYPE?: string
+  FLAG_ONE_DATE?: boolean
+  FLAG_PRIMARY_OUTER_JOIN?: boolean
+  FLAG_CUSTOM_MODE?: boolean
+  FLAG_CASH_BASIS?: boolean
+  FLAG_SHOW_ZEROS?: boolean
+  FLAG_INACTIVE?: boolean
+  FIELD_VERSION?: number
+  FLAG_PERIODS_ON?: boolean
+  FLAG_USE_FISCAL_YEAR_RANGE?: boolean
+  FLAG_USE_TAX_PERIODS?: boolean
+  KEY_ENTITY?: string
+  FLAG_SHOW_LINK?: boolean
+  FLAG_SUPPORTS_CONSOL_SUBSIDIARY?: boolean
+  KEY_DEF_TOGGLE?: number
+  FIELD_TOGGLE_TYPE?: string
+  FIELD_TOGGLE_URL?: string
+  FLAG_AFFECTED_BY_COGS?: boolean
+  FIELD_DEPRECATION_REASON?: string
+  FLAG_ACTIVITY_ONLY?: boolean
+  KEY_AUDIENCE?: number
+  KEY_ACCESS_AUDIENCE?: string
+}
+
+export type ReportDefinitionType = {
+  scriptid?: string
+  definition?: string
+  dependencies?: ReportDependencies
+  layouts?: ReportLayout[]
+  parameters?: Values
+  components?: ReportComponent[]
+  sorts?: ReportSortType[]
+  fields?: ReportFieldsType[]
+  uiPreferences?: ReportUiPrefType
+  criteria?: Values[]
+  innerFields?: ReportDefinitionInnerFields
+}
 
 export const reportdefinitionType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
@@ -33,8 +169,9 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   const reportDefinitionUiPrefElemID = new ElemID(constants.NETSUITE, 'reportdefinition_uipreferences')
   const reportDefinitionLayoutsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_layouts')
   const reportDefinitionParamsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_parameters')
+  const reportDefinitionInnerFieldsElemID = new ElemID(constants.NETSUITE, 'reportdefintion_inner_fields')
 
-  const reportDefinitionComponents = new ObjectType({
+  const reportDefinitionComponents = createMatchingObjectType<ReportComponent>({
     elemID: reportDefinitionComponentsElemID,
     annotations: {
     },
@@ -58,13 +195,13 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportDefinitionDependencies = new ObjectType({
+  const reportDefinitionDependencies = createMatchingObjectType<ReportDependencies>({
     elemID: reportDefinitionDependenciesElemID,
     annotations: {
     },
     fields: {
       dependencies: {
-        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        refType: new ListType(BuiltinTypes.STRING),
         annotations: {
         },
       },
@@ -72,7 +209,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportDefinitionSorts = new ObjectType({
+  const reportDefinitionSorts = createMatchingObjectType<ReportSortType>({
     elemID: reportDefinitionSortsElemID,
     annotations: {
     },
@@ -89,7 +226,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportDefinitionFields = new ObjectType({
+  const reportDefinitionFields = createMatchingObjectType<ReportFieldsType>({
     elemID: reportDefinitionFieldsElemID,
     annotations: {
     },
@@ -138,7 +275,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportDefinitionUiPref = new ObjectType({
+  const reportDefinitionUiPref = createMatchingObjectType<ReportUiPrefType>({
     elemID: reportDefinitionUiPrefElemID,
     annotations: {
     },
@@ -160,7 +297,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportDefinitionLayouts = new ObjectType({
+  const reportDefinitionLayouts = createMatchingObjectType<ReportLayout>({
     elemID: reportDefinitionLayoutsElemID,
     annotations: {
     },
@@ -181,18 +318,8 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  innerTypes.reportDefinitionDependencies = reportDefinitionDependencies
-  innerTypes.reportDefinitionCriteria = reportDefinitionCriteria
-  innerTypes.reportDefinitionComponents = reportDefinitionComponents
-  innerTypes.reportDefinitionSorts = reportDefinitionSorts
-  innerTypes.reportDefinitionFields = reportDefinitionFields
-  innerTypes.reportDefinitionUiPref = reportDefinitionUiPref
-  innerTypes.reportDefinitionLayouts = reportDefinitionLayouts
-  innerTypes.reportDefinitionParameters = reportDefinitionParameters
-
-
-  const reportdefinition = new ObjectType({
-    elemID: reportDefinitionElemID,
+  const reportDefinitionInnerFields = createMatchingObjectType<ReportDefinitionInnerFields>({
+    elemID: reportDefinitionInnerFieldsElemID,
     annotations: {
     },
     fields: {
@@ -229,33 +356,35 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       FLAG_ACTIVITY_ONLY: { refType: BuiltinTypes.BOOLEAN },
       KEY_AUDIENCE: { refType: BuiltinTypes.NUMBER },
       KEY_ACCESS_AUDIENCE: { refType: BuiltinTypes.STRING },
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
+  })
+
+  innerTypes.reportDefinitionDependencies = reportDefinitionDependencies
+  innerTypes.reportDefinitionCriteria = reportDefinitionCriteria
+  innerTypes.reportDefinitionComponents = reportDefinitionComponents
+  innerTypes.reportDefinitionSorts = reportDefinitionSorts
+  innerTypes.reportDefinitionFields = reportDefinitionFields
+  innerTypes.reportDefinitionUiPref = reportDefinitionUiPref
+  innerTypes.reportDefinitionLayouts = reportDefinitionLayouts
+  innerTypes.reportDefinitionParameters = reportDefinitionParameters
+  innerTypes.reportDefinitionInnerFields = reportDefinitionInnerFields
+
+  const reportdefinition = createMatchingObjectType<ReportDefinitionType>({
+    elemID: reportDefinitionElemID,
+    fields: {
       scriptid: {
         refType: BuiltinTypes.SERVICE_ID,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customreport[0-9a-z_]+' }),
         },
       },
       definition: {
         refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
       },
       dependencies: {
         refType: reportDefinitionDependencies,
-        annotations: {
-        },
-      },
-      components: {
-        refType: new ListType(reportDefinitionComponents),
-      },
-      criteria: {
-        refType: new ListType(reportDefinitionCriteria),
-      },
-      fields: {
-        refType: new ListType(reportDefinitionFields),
       },
       layouts: {
         refType: new ListType(reportDefinitionLayouts),
@@ -263,12 +392,26 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       parameters: {
         refType: new MapType(reportDefinitionParameters),
       },
+      components: {
+        refType: new ListType(reportDefinitionComponents),
+      },
+      criteria: {
+        refType: new ListType(new MapType(reportDefinitionCriteria)),
+      },
+      fields: {
+        refType: new ListType(reportDefinitionFields),
+      },
       sorts: {
         refType: new ListType(reportDefinitionSorts),
       },
       uiPreferences: {
-        refType: new ListType(reportDefinitionUiPref),
+        refType: reportDefinitionUiPref,
       },
+      innerFields: {
+        refType: reportDefinitionInnerFields,
+      },
+    },
+    annotations: {
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })

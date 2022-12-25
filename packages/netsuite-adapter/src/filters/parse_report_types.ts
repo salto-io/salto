@@ -26,6 +26,7 @@ import { parseDefinition as parseSavedSearchDefinition } from '../saved_search_p
 import { parseDefinition as parseReportDefintionDefinition } from '../report_definition_parsing/report_definition_parser'
 import { parseDefinition as parseFinancialLayoutDefinition } from '../financial_layout_parsing/financial_layout_parser'
 import { typeToParameters } from '../report_types_parser_utils'
+import { ReportTypes } from '../change_validators/report_types_move_environment'
 
 const { awu } = collections.asynciterable
 
@@ -35,7 +36,7 @@ const mapTypeToLayoutOrDefinition: Record<string, string> = {
   [SAVED_SEARCH]: 'definition',
 }
 
-const typeNameToParser: Record<string, (definition: string) => Promise<any>> = {
+const typeNameToParser: Record<string, (definition: string) => Promise<ReportTypes>> = {
   [FINANCIAL_LAYOUT]: parseFinancialLayoutDefinition,
   [REPORT_DEFINITION]: parseReportDefintionDefinition,
   [SAVED_SEARCH]: parseSavedSearchDefinition,

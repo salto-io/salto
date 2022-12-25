@@ -18,15 +18,19 @@ import { ChangeValidator, getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
-import { parseDefinition as parseSavedSearchDefinition } from '../saved_search_parsing/saved_search_parser'
+import { parseDefinition as parseSavedSearchDefinition, SavedSearchType } from '../saved_search_parsing/saved_search_parser'
 import { parseDefinition as parseReportDefintionDefinition } from '../report_definition_parsing/report_definition_parser'
 import { parseDefinition as parseFinancialLayoutDefinition } from '../financial_layout_parsing/financial_layout_parser'
 import { typeToParameters } from '../report_types_parser_utils'
+import { ReportDefinitionType } from '../report_definition_parsing/parsed_report_definition'
+import { FinancialLayoutType } from '../financial_layout_parsing/parsed_financial_layout'
 
 const { awu } = collections.asynciterable
 
-// TODO - create type for each parser and update here
-export const typeNameToParser: Record<string, (definition: string) => Promise<any>> = {
+export type ReportTypes = SavedSearchType | ReportDefinitionType | FinancialLayoutType
+
+export const typeNameToParser:
+Record<string, (definition: string) => Promise<ReportTypes>> = {
   [FINANCIAL_LAYOUT]: parseFinancialLayoutDefinition,
   [REPORT_DEFINITION]: parseReportDefintionDefinition,
   [SAVED_SEARCH]: parseSavedSearchDefinition,
@@ -37,7 +41,7 @@ const wasModified = async (instance:InstanceElement): Promise<boolean> => {
   const parserFunction = typeNameToParser[instance.elemID.typeName]
   const parsedDefinition = await parserFunction(definitionOrLayout)
   return Object.keys(parsedDefinition)
-    .some(key => !_.isEqual(parsedDefinition[key], instance.value[key]))
+    .some(key => !_.isEqual(parsedDefinition[key as keyof ReportTypes], instance.value[key]))
 }
 
 const getChangeError = async (instance: InstanceElement): Promise<ChangeError> => {

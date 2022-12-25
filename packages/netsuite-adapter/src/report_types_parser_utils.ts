@@ -81,7 +81,7 @@ export const getFlags = (element: ElementCompact): Values =>
   getObjectFromValues(element.descriptor.values.Value)
 
 export const extractRecordsValues = (element: ElementCompact): Values[] =>
-  collections.array.makeArray(element.values?.Record)
+  collections.array.makeArray(element?.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
 
 export const safeAssignKeyValue = (instance:Values, key: string, value: Values): void => {

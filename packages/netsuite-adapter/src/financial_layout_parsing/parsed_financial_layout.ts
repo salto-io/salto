@@ -16,10 +16,68 @@
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, createRefToElmWithValue, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { TypeAndInnerTypes } from '../types/object_types'
 import * as constants from '../constants'
+
+type InnerFields = {
+  FIELD_KEY?: number
+  KEY_SCRIPT_ID?: string
+  KEY_PACKAGE?: string
+  FIELD_NAME?: string
+  FIELD_FINANCIAL_TYPE?: string
+  FIELD_EXPAND_LEVEL?: string
+  FIELD_OVERALL_INDENT?: string
+  KEY_DEFAULT_HEADER_STYLE?: number
+  KEY_DEFAULT_SECTION_STYLE?: number
+  KEY_DEFAULT_FORMULA_STYLE?: number
+  KEY_DEFAULT_TEXT_STYLE?: number
+}
+
+type LayoutDependencies = {
+  dependencies?: string[]
+}
+
+type RowRecordType = {
+  FIELD_GROUP_BY?: string
+  FIELD_GROUP_BY_FULL?: boolean
+  FIELD_ORDER_GROUP?: number
+  FIELD_ORDER_TYPE?: string
+  FLAG_ORDER_DESC?: boolean
+}
+
+type LayoutRowType = {
+  FIELD_KEY?: number
+  FIELD_NAME?: string
+  KEY_SCRIPT_ID?: string
+  FIELD_TYPE?: string
+  FIELD_PRIORITY?: number
+  SEQ_NUMBER?: number
+  KEY_PARENT?: number
+  FIELD_DEFAULT_TOTAL_NAME?: string
+  FLAG_SHOW_NAME?: boolean
+  FLAG_SHOW_TOTAL_NAME?: boolean
+  FIELD_COLLAPSED_SECTION?: string
+  FIELD_FINANCIAL_MARKER?: string
+  KEY_STYLE?: number
+  FLAG_SECTION_USE_EXPRESSIONS?: boolean
+  KEY_SECTION?: number
+  KEY_SECTION_COMP_ID?: string
+  KEY_TOTAL_STYLE?: number
+  KEY_BODY_STYLE?: number
+  FLAG_TOP_ROW?: boolean
+  RECORDS?: RowRecordType[]
+}
+
+export type FinancialLayoutType = {
+  scriptid?: string
+  layout?: string
+  dependencies?: LayoutDependencies
+  rows?: LayoutRowType[]
+  innerFields?: InnerFields
+}
 
 export const financiallayoutType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
@@ -28,10 +86,13 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
   const financialLayoutDependenciesElemID = new ElemID(constants.NETSUITE, 'financiallayout_dependencies')
   const financialLayoutRowsElemID = new ElemID(constants.NETSUITE, 'financiallayout_rows')
   const financialLayoutRowsRecordElemID = new ElemID(constants.NETSUITE, 'financiallayout_rowRecord')
+  const financialLayoutInnerFieldsElemID = new ElemID(constants.NETSUITE, 'financiallayout_inner_fields')
 
 
-  const financialLayoutRowsRecord = new ObjectType({
+  const financialLayoutRowsRecord = createMatchingObjectType<RowRecordType>({
     elemID: financialLayoutRowsRecordElemID,
+    annotations: {
+    },
     fields: {
       FIELD_GROUP_BY: { refType: BuiltinTypes.STRING },
       FIELD_GROUP_BY_FULL: { refType: BuiltinTypes.BOOLEAN },
@@ -42,8 +103,10 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
   })
 
-  const financialLayoutRows = new ObjectType({
+  const financialLayoutRows = createMatchingObjectType<LayoutRowType>({
     elemID: financialLayoutRowsElemID,
+    annotations: {
+    },
     fields: {
       FIELD_KEY: { refType: BuiltinTypes.NUMBER },
       FIELD_NAME: { refType: BuiltinTypes.STRING },
@@ -69,23 +132,22 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
   })
 
-  const financialLayoutDependencies = new ObjectType({
+  const financialLayoutDependencies = createMatchingObjectType<LayoutDependencies>({
     elemID: financialLayoutDependenciesElemID,
+    annotations: {
+    },
     fields: {
       dependencies: {
-        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        refType: new ListType(BuiltinTypes.STRING),
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
   })
 
-  const financiallayout = new ObjectType({
-    elemID: financialLayoutElemID,
-    annotations: {
-    },
+  const financialLayoutInnerFields = createMatchingObjectType<InnerFields>({
+    elemID: financialLayoutInnerFieldsElemID,
     fields: {
       FIELD_KEY: { refType: BuiltinTypes.NUMBER },
       KEY_SCRIPT_ID: { refType: BuiltinTypes.STRING },
@@ -98,6 +160,15 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       KEY_DEFAULT_SECTION_STYLE: { refType: BuiltinTypes.NUMBER },
       KEY_DEFAULT_FORMULA_STYLE: { refType: BuiltinTypes.NUMBER },
       KEY_DEFAULT_TEXT_STYLE: { refType: BuiltinTypes.NUMBER },
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
+  })
+
+  const financiallayout = createMatchingObjectType<FinancialLayoutType>({
+    elemID: financialLayoutElemID,
+    annotations: {
+    },
+    fields: {
       scriptid: {
         refType: BuiltinTypes.SERVICE_ID,
         annotations: {
@@ -119,8 +190,9 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       },
       rows: {
         refType: new ListType(financialLayoutRows),
-        annotations: {
-        },
+      },
+      innerFields: {
+        refType: financialLayoutInnerFields,
       },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],

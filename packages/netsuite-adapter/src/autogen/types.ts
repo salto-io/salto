@@ -73,6 +73,7 @@ import { workbookType } from './types/standard_types/workbook'
 import { workbookbuilderpluginType } from './types/standard_types/workbookbuilderplugin'
 import { workflowType } from './types/standard_types/workflow'
 import { workflowactionscriptType } from './types/standard_types/workflowactionscript'
+import { customrecordactionscriptType } from './types/standard_types/customrecordactionscript'
 
 
 const standardTypesNamesList = [
@@ -163,6 +164,7 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
   const crmcustomfield = crmcustomfieldType()
   const customglplugin = customglpluginType()
   const customlist = customlistType()
+  const customrecordactionscript = customrecordactionscriptType()
   const customrecordtype = customrecordtypeType()
   const customsegment = customsegmentType()
   const customtransactiontype = customtransactiontypeType()

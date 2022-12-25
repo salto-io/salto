@@ -30,6 +30,17 @@ import { ElementParts,
 type FilterObject = { descriptor: { values: { Value: AttributeObject[] }}
  values: { values: {Record: RecordObject | RecordObject[]} }}
 
+export type SavedSearchType = {
+  searchFilter?: Values[]
+  searchSummaryFilters?: Values[]
+  availableFilters?: Values[]
+  returnFields?: Values[]
+  detailFields?: Values[]
+  sortColumns?: Values[]
+  audience?: Values
+  alertRecipients?: Values[]
+}
+
 const getSearchDefinition = (search: ElementCompact): ElementCompact =>
   search['nssoc:SerializedObjectContainer']['nssoc:definition'].SearchDefinition
 
@@ -69,7 +80,7 @@ const getSearchPartsFromDefinition = async (definition:string): Promise<ElementP
     dependency: getElementDependency(parsedXml) }
 }
 
-export const parseDefinition = async (definition:string): Promise<Values> => {
+export const parseDefinition = async (definition:string): Promise<SavedSearchType> => {
   const searchParts = await getSearchPartsFromDefinition(definition)
   const returnInstance = {}
   safeAssignKeyValue(returnInstance, 'search_filter', extractSearchDefinitionValues(searchParts.definition.filters))

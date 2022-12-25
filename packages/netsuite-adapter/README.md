@@ -5,22 +5,16 @@ Netsuite adapter for salto.io
 ### Prerequisites
 ###### taken from https://github.com/oracle/netsuite-suitecloud-sdk/tree/master/packages/node-cli
 
-Install Java 11 (OpenJDK / JDK)
+Install Java 17 (OpenJDK / JDK)
 ```
-OpenJDK - http://jdk.java.net/archive/ (explanation at https://dzone.com/articles/installing-openjdk-11-on-macos)
-JDK - https://www.oracle.com/java/technologies/javase-jdk11-downloads.html
+OpenJDK
+    (using macOS)
+    brew install openjdk@17
+    sudo ln -sfn /usr/local/opt/openjdk\@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+    export JAVA_HOME=`/usr/libexec/java_home -v 17`
+JDK - https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html
 ```
 
-#### M1 Macs
-If you have an M1 mac, you'll need to use homebrew to install the JDK,
-```shell
-$ brew install openjdk@11
-```
-After installing, make sure you create the symlink as homebrew suggests:
-```
-sudo ln -sfn /opt/homebrew/opt/openjdk@11/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-11.jdk
-```
-and then follow [the instructions](https://dzone.com/articles/installing-openjdk-11-on-macos) on how to set the current java version using `java_home`.
 ### Build instructions
 ```
 yarn

@@ -315,6 +315,22 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['put'],
     url: '/rest/api/3/issuetypescheme/.+/issuetype/move',
   },
+  {
+    httpMethods: ['post', 'put'],
+    url: '/rest/api/3/issuesecurityschemes',
+  },
+  {
+    httpMethods: ['delete'],
+    url: '/rest/api/3/issuesecurityschemes/\\d+',
+  },
+  {
+    httpMethods: ['post', 'put'],
+    url: '/rest/api/3/securitylevel/.+',
+  },
+  {
+    httpMethods: ['delete'],
+    url: '/rest/api/3/securitylevel/\\d+',
+  },
 ]
 
 const replaceRestVersion = (url: string): string => url.replace(

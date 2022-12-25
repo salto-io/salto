@@ -520,6 +520,22 @@ describe('securitySchemeFilter', () => {
 
       await expect(filter.deploy?.([toChange({ after: securitySchemeInstance })])).rejects.toThrow()
     })
+    it('should not deploy on data center', async () => {
+      const { client: cli, paginator } = mockClient(true)
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
+      filter = securitySchemeFilter(getFilterParams({
+        client: cli,
+        paginator,
+        config,
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+      const { deployResult } = await filter.deploy([
+        toChange({ after: securitySchemeInstance }),
+        toChange({ after: securityLevelInstance }),
+      ])
+
+      expect(deployResult.errors).toHaveLength(0)
+      expect(deployResult.appliedChanges).toHaveLength(0)
+    })
   })
 
   describe('pre deploy', () => {

@@ -90,6 +90,7 @@ const standardTypesNamesList = [
   'crmcustomfield',
   'customglplugin',
   'customlist',
+  'customrecordactionscript',
   'customrecordtype',
   'customsegment',
   'customtransactiontype',
@@ -264,6 +265,10 @@ export const getStandardTypes = (): TypesMap<StandardType> => {
     customlist: {
       type: customlist.type,
       innerTypes: customlist.innerTypes,
+    },
+    customrecordactionscript: {
+      type: customrecordactionscript.type,
+      innerTypes: customrecordactionscript.innerTypes,
     },
     customrecordtype: {
       type: customrecordtype.type,

@@ -25,7 +25,6 @@ import mockSdfClient from '../../client/sdf_client'
 import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/constants'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 
-
 describe('netsuite system note author information', () => {
   let filterOpts: FilterOpts
   let elements: Element[]
@@ -141,11 +140,11 @@ describe('netsuite system note author information', () => {
 
   it('should add dates to elements', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2022-01-01T00:00:00.000Z')
-    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00.000Z').toBeTruthy()
+    expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2022-01-01T00:00:00Z')
+    expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
     expect(Object.values(missingInstance.annotations)).toHaveLength(0)
-    expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00.000Z').toBeTruthy()
-    expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00.000Z').toBeTruthy()
+    expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
+    expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
   })
 
   it('elements will stay the same if there is no author information', async () => {

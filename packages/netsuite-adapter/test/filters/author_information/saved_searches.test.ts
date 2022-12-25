@@ -23,6 +23,7 @@ import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
+import 'moment-timezone'
 
 describe('netsuite saved searches author information tests', () => {
   let filterOpts: FilterOpts
@@ -40,7 +41,6 @@ describe('netsuite saved searches author information tests', () => {
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
-  const resultDate = (new Date('1995-01-28T06:17Z')).toISOString()
   beforeEach(async () => {
     runSavedSearchQueryMock.mockReset()
     runSavedSearchQueryMock.mockResolvedValue([
@@ -60,6 +60,12 @@ describe('netsuite saved searches author information tests', () => {
       fields: {
         DATEFORMAT: {
           text: 'MM/DD/YYYY',
+        },
+        TIMEZONE: {
+          value: 'America/Toronto',
+        },
+        TIMEFORMAT: {
+          value: 'H:mm',
         },
       },
     } }
@@ -97,7 +103,7 @@ describe('netsuite saved searches author information tests', () => {
 
   it('should add last modified date to elements', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(resultDate)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1995-01-28T11:17:00Z')
   })
 
   it('should add last modified date for different formats', async () => {
@@ -106,16 +112,17 @@ describe('netsuite saved searches author information tests', () => {
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28/1/1995 6:17 am' },
     ])
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(resultDate)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1995-01-28T11:17:00Z')
   })
 
   it('should add last modified date for different format', async () => {
     userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT.text = 'D Month, YYYY'
+    userPreferenceInstance.value.configRecord.data.fields.TIMEZONE.value = 'Asia/Jerusalem'
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 1995 6:17 am' },
     ])
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(resultDate)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1995-01-28T04:17:00Z')
   })
 
   it('should not add last modified date when the account date format isnt avaible', async () => {
@@ -131,11 +138,17 @@ describe('netsuite saved searches author information tests', () => {
         text: 'MM/DD/YYYY',
         value: 'MM/DD/YYYY',
       },
+      TIMEZONE: {
+        value: 'America/Toronto',
+      },
+      TIMEFORMAT: {
+        value: 'H:mm',
+      },
     }
     filterOpts.elementsSource = buildElementsSourceFromElements(elements)
     elements = [savedSearch, missingSavedSearch]
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(resultDate)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1995-01-28T11:17:00Z')
   })
 
 

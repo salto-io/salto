@@ -13,23 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ElemID } from '@salto-io/adapter-api'
+import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ElemID, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import { values } from '@salto-io/lowerdash'
-import _, { isUndefined } from 'lodash'
+import _ from 'lodash'
+import moment from 'moment-timezone'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
 import { NETSUITE, SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
 import { SavedSearchesResult,
   SAVED_SEARCH_RESULT_SCHEMA,
-  ModificationInformation,
-  DateKeys } from './constants'
+  ModificationInformation } from './constants'
 
 const log = logger(module)
 const { isDefined } = values
-const DELIMITER = '*'
+
+type TimeZoneAndFormat = {
+  timeZone: string
+  timeFormat: string
+  dateFormat: string
+}
 
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SAVED_SEARCH
@@ -63,36 +68,10 @@ const getSavedSearchesMap = async (
   ]))
 }
 
-const getDateFormatKey = (key: string): DateKeys => {
-  if (key.includes('Y')) {
-    return 'YYYY'
-  }
-  if (key.includes('M')) {
-    return 'M'
-  }
-  return 'D'
-}
-
-const getFullTime = (timeArray: string[]): string | undefined => {
-  if (isUndefined(timeArray)) {
-    return undefined
-  }
-  return timeArray[1] === 'am' ? '0'.concat(timeArray[0]) : timeArray[0]
-}
-
-export const changeDateFormat = (date: string, dateFormat: string): string => {
-  const re = /(-|\.| |\/|,)+/g
-  const dateAsArray = date.replace(re, DELIMITER).split(DELIMITER)
-  const dateFormatKeysArray = dateFormat
-    .replace(re, DELIMITER).split(DELIMITER).map(getDateFormatKey)
-  const dateAsMap: Record<DateKeys, string> = { YYYY: '', M: '', D: '' }
-  dateFormatKeysArray.forEach((key, i) => {
-    dateAsMap[key] = dateAsArray[i]
-  })
-  const time = dateAsArray.length === 5 ? getFullTime(dateAsArray.slice(3)) : undefined
-  const formatedDate = [dateAsMap.M, dateAsMap.D, dateAsMap.YYYY].join('/')
-  const returnDate = time ? [formatedDate, time].join(' ') : formatedDate
-  return new Date(returnDate.concat('Z')).toISOString()
+export const changeDateFormat = (date: string, dateFormat: string, timeZone: string, timeFormat: string): string => {
+  const utcDate = moment.tz(date, [dateFormat.replace('Month', 'MMMM'), timeFormat].join(' '), timeZone)
+  const returnTemp = utcDate.utc().format()
+  return returnTemp
 }
 
 const isUserPreference = (instance: InstanceElement): boolean =>
@@ -104,6 +83,40 @@ const getDateFormatFromElemSource = async (
   const elemIdToGet = new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES, 'instance')
   const sourcedElement = await elementsSource.get(elemIdToGet)
   return sourcedElement?.value?.DATEFORMAT?.text
+}
+
+const getTimeZoneFromElemSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<string> => {
+  const elemIdToGet = new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES, 'instance')
+  const sourcedElement = await elementsSource.get(elemIdToGet)
+  return sourcedElement?.value?.TIMEZONE?.value
+}
+
+const getTimeFormatFromElemSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<string> => {
+  const elemIdToGet = new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES, 'instance')
+  const sourcedElement = await elementsSource.get(elemIdToGet)
+  return sourcedElement?.value?.TIMEFORMAT?.value
+}
+
+export const getZoneAndFormat = async (
+  elements: Element[],
+  elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean
+): Promise<TimeZoneAndFormat> => {
+  const userPreferencesInstance = elements.filter(isInstanceElement).find(isUserPreference)
+  const timeZone = userPreferencesInstance?.value.configRecord.data.fields?.TIMEZONE?.value ?? (
+    isPartial ? await getTimeZoneFromElemSource(elementsSource) : undefined
+  )
+  const timeFormat = userPreferencesInstance?.value.configRecord.data.fields?.TIMEFORMAT?.value ?? (
+    isPartial ? await getTimeFormatFromElemSource(elementsSource) : undefined
+  )
+  const dateFormat = userPreferencesInstance?.value.configRecord.data.fields?.DATEFORMAT?.text ?? (
+    isPartial ? await getDateFormatFromElemSource(elementsSource) : undefined
+  )
+  return { timeZone, timeFormat, dateFormat }
 }
 
 const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial }): FilterWith<'onFetch'> => ({
@@ -129,11 +142,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
       return
     }
 
-    const dateFormat = elements
-      .filter(isInstanceElement)
-      .find(isUserPreference)?.value.configRecord.data.fields?.DATEFORMAT?.text ?? (
-        isPartial ? await getDateFormatFromElemSource(elementsSource) : undefined
-      )
+    const { timeZone, timeFormat, dateFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
 
     savedSearchesInstances.forEach(search => {
       if (isDefined(savedSearchesMap[search.value.scriptid])) {
@@ -144,7 +153,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
           )
         }
         if (isDefined(date) && isDefined(dateFormat)) {
-          const annotationDate = changeDateFormat(date, dateFormat)
+          const annotationDate = changeDateFormat(date, dateFormat, timeZone, timeFormat)
           search.annotate(
             { [CORE_ANNOTATIONS.CHANGED_AT]: annotationDate }
           )

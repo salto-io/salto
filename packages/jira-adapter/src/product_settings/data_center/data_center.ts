@@ -321,7 +321,7 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['delete'],
-    url: '/rest/api/3/issuesecurityschemes/\\d+',
+    url: '/rest/api/3/issuesecurityschemes/.+',
   },
   {
     httpMethods: ['post', 'put'],
@@ -329,7 +329,7 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['delete'],
-    url: '/rest/api/3/securitylevel/\\d+',
+    url: '/rest/api/3/securitylevel/.+',
   },
 ]
 

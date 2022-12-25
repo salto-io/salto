@@ -56,10 +56,6 @@ const filter: FilterCreator = ({ client, config }) => ({
             change,
             client,
             apiDefinitions: config.apiDefinitions,
-            // fieldsToIgnore: [
-            //   'defaultLevel',
-            //   'levels',
-            // ],
           })
         }
       )

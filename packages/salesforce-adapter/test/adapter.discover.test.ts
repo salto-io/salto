@@ -36,6 +36,16 @@ import {
 import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 import { fetchMetadataInstances } from '../src/fetch'
 import * as fetchModule from '../src/fetch'
+import * as xmlTransformerModule from '../src/transformers/xml_transformer'
+import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
+
+const { makeArray } = collections.array
+
+// const mockedMetadataQueryModule = jest.mocked(metadataQueryModule)
+// jest.mock('../src/fetch_profile/metadata_query', () => ({
+//   ...jest.requireActual('../src/fetch_profile/metadata_query'),
+// }))
+
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
@@ -118,6 +128,33 @@ describe('SalesforceAdapter fetch', () => {
             })),
           )
         }
+      }
+    }
+
+    const mockMetadataTypes = (
+      typeDefs: MockDescribeResultInput[],
+      valueDef: MockDescribeValueResultInput,
+      instancesByType: Record<string, MockInstanceParams[]>,
+      chunkSize = testMaxItemsInRetrieveRequest,
+    ): void => {
+      connection.metadata.describe.mockResolvedValue(
+        mockDescribeResult(...typeDefs)
+      )
+      connection.metadata.describeValueType.mockResolvedValue(
+        mockDescribeValueResult(valueDef)
+      )
+      connection.metadata.list.mockImplementation(async queries => {
+        const { type } = makeArray(queries)[0]
+        return instancesByType[type]?.map(inst => mockFileProperties({ type, ...inst.props }))
+      })
+      connection.metadata.read.mockImplementation(async type => instancesByType[type].map(inst => inst.values))
+      const zipFiles = _.flatten(Object.values(instancesByType)).map(inst => inst.zipFiles).filter(values.isDefined)
+      if (!_.isEmpty(zipFiles)) {
+        _.chunk(zipFiles, chunkSize).forEach(
+          chunkFiles => connection.metadata.retrieve.mockReturnValueOnce(mockRetrieveLocator({
+            zipFiles: _.flatten(chunkFiles),
+          })),
+        )
       }
     }
 
@@ -1205,8 +1242,7 @@ public class LargeClass${index} {
         isTypeMatch: jest.fn(),
         isInstanceMatch: jest.fn(),
         isPartialFetch: jest.fn(),
-        getFoldersByName: jest.fn(),
-        getFolderNames: jest.fn(),
+        getFolderPathsByName: jest.fn(),
       }
       const excludeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'excludeMe' })
       const includeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'includeMe' })
@@ -1251,6 +1287,92 @@ public class LargeClass${index} {
         // Make sure the api call was sent and that nothing was added to exclude
         expect(includeFetchResult.elements.length).toBe(MOCK_METADATA_LENGTH)
         expect(includeFetchResult.configChanges.length).toBe(0)
+      })
+    })
+
+    describe('with InFolderMetadataType instance', () => {
+      let toRetrieveRequestSpy: jest.SpyInstance
+
+      beforeEach(async () => {
+        toRetrieveRequestSpy = jest.spyOn(xmlTransformerModule, 'toRetrieveRequest')
+        const actualMetadataQuery = jest.requireActual('../src/fetch_profile/metadata_query')
+        jest.spyOn(metadataQueryModule, 'buildMetadataQuery').mockReturnValue({
+          ...actualMetadataQuery,
+          buildMetadataQuery: jest.fn().mockImplementation(args => ({
+            ...actualMetadataQuery.buildMetadataQuery(args),
+            getFolderPathsByName: jest.fn().mockReturnValue({
+              ReportsFolder: 'ReportsFolder',
+              NestedFolder: 'ReportsFolder/NestedFolder',
+            }),
+          })),
+        })
+
+        mockMetadataTypes(
+          [
+            { xmlName: 'Report', directoryName: 'reports' },
+            { xmlName: 'ReportFolder', directoryName: 'reports' },
+          ],
+
+          {
+            valueTypeFields: [
+              {
+                name: 'fullName',
+                soapType: 'string',
+              },
+            ],
+          },
+          {
+            Report: [
+              {
+                props: {
+                  fullName: 'TestReport',
+                  fileName: 'reports/ReportsFolder/TestReport.report',
+                },
+                values: {
+                  fullName: 'ReportsFolder/TestReport',
+                },
+              },
+              {
+                props: {
+                  fullName: 'TestNestedReport',
+                  fileName: 'reports/ReportsFolder/NestedFolder/TestNestedReport.report',
+                },
+                values: {
+                  fullName: 'NestedFolder/TestNestedReport',
+                },
+              },
+            ],
+            ReportFolder: [
+              {
+                props: {
+                  fullName: 'ReportsFolder',
+                  fileName: 'reports/ReportsFolder',
+                },
+                values: {
+                  fullName: 'ReportsFolder',
+                },
+              },
+              {
+                props: {
+                  fullName: 'NestedFolder',
+                  fileName: 'reports/ReportsFolder/NestedFolder',
+                },
+                values: {
+                  fullName: 'NestedFolder',
+                },
+              },
+            ],
+          },
+        )
+        await adapter.fetch(mockFetchOpts)
+      })
+      it('should fetch instances of both the FolderMetadataType and InFolderMetadataType', () => {
+        expect(toRetrieveRequestSpy).toHaveBeenCalledWith(expect.arrayContaining([
+          expect.objectContaining({ fileName: 'reports/ReportsFolder/TestReport.report', fullName: 'TestReport', type: 'Report' }),
+          expect.objectContaining({ fileName: 'reports/ReportsFolder/NestedFolder/TestNestedReport.report', fullName: 'TestNestedReport', type: 'Report' }),
+          expect.objectContaining({ fileName: 'reports/ReportsFolder', fullName: 'ReportsFolder', type: 'ReportFolder' }),
+          expect.objectContaining({ fileName: 'reports/ReportsFolder/NestedFolder', fullName: 'NestedFolder', type: 'ReportFolder' }),
+        ]))
       })
     })
   })

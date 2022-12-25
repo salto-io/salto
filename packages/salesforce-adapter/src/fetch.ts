@@ -29,7 +29,12 @@ import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, crea
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
-import { InFolderMetadataType, isInFolderMetadataType, METADATA_TYPE_TO_FOLDER_TYPE } from './fetch_profile/metadata_types'
+import {
+  InFolderMetadataType,
+  isFolderMetadataType,
+  isInFolderMetadataType,
+  METADATA_TYPE_TO_FOLDER_TYPE,
+} from './fetch_profile/metadata_types'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -114,7 +119,6 @@ const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties): bool
     namespace: getNamespace(file),
     metadataType: file.type,
     name: file.fullName,
-    fileName: file.fileName,
   })
 )
 
@@ -141,7 +145,7 @@ const listMetadataObjectsWithinFolders = async (
   metadataTypeName: InFolderMetadataType,
   isUnhandledError?: ErrorFilter,
 ): Promise<FetchElements<FileProperties[]>> => {
-  const folderPathByName = metadataQuery.getFoldersByName(metadataTypeName)
+  const folderPathByName = metadataQuery.getFolderPathsByName(metadataTypeName)
   const folders = await getFolders(client, metadataQuery, metadataTypeName)
   const folderNames = [
     ...folders.elements.map(props => props.fullName),
@@ -232,11 +236,10 @@ export const fetchMetadataInstances = async ({
         fileName: prop.fileName,
       })
     ).filter(
-      ({ name, namespace, fileName }) => metadataQuery.isInstanceMatch({
+      ({ name, namespace }) => metadataQuery.isInstanceMatch({
         namespace,
         metadataType: metadataTypeName,
         name,
-        fileName,
       })
     ).map(({ name }) => name),
   )
@@ -287,11 +290,11 @@ export const retrieveMetadataInstances = async ({
   const configChanges: ConfigChangeSuggestion[] = []
 
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
-    if (type.annotations.folderContentType !== undefined) {
+    const typeName = await apiName(type)
+    if (isFolderMetadataType(typeName)) {
       // We get folders as part of getting the records inside them
       return []
     }
-    const typeName = await apiName(type)
     const { elements: res, configChanges: listObjectsConfigChanges } = isInFolderMetadataType(typeName)
       ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName)
       : await listMetadataObjects(client, typeName)

@@ -58,7 +58,6 @@ export type MetadataInstance = {
   metadataType: string
   namespace: string
   name: string
-  fileName: string
 }
 
 export type MetadataQueryParams = Partial<MetadataInstance>

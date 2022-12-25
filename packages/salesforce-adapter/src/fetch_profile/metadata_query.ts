@@ -20,17 +20,20 @@ import { validateRegularExpressions, ConfigValidationError } from '../config_val
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 import {
   InFolderMetadataType,
-  isFolderMetadataType, isInFolderMetadataType, METADATA_TYPE_TO_FOLDER_TYPE,
+  isFolderMetadataType,
+  METADATA_TYPE_TO_FOLDER_TYPE,
 } from './metadata_types'
 
 const { isDefined } = values
+
+const SPECIAL_CHARS = /[`!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/
 
 
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
   isPartialFetch: () => boolean
-  getFoldersByName: (metadataType: InFolderMetadataType) => Record<string, string>
+  getFolderPathsByName: (metadataType: InFolderMetadataType) => Record<string, string>
 }
 
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
@@ -57,18 +60,17 @@ const getDefaultNamespace = (metadataType: string): string =>
     ? '.*'
     : DEFAULT_NAMESPACE)
 
-const getAllowedStringsFromRegex = (regexString: string): string[] => (
+const getAllowedStrings = (regexString: string): string[] => (
   regexString
     .replace(/[()^$]/g, '')
     .split('|')
 )
 
-// omit dirName (e.g. reports, dashboards) and possible suffix (e.g, report)
-// since the user does not provide that in the name Regex.
-const getInstanceNameFromFileName = (fileName: string): string => {
-  const file = _.last(fileName.split('/')) ?? fileName
-  return file.split('.')[0]
-}
+// Since fullPaths are provided for nested Folder names, a special handling is required
+const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance, name: string): boolean => (
+  getAllowedStrings(name).some(allowedString => allowedString.endsWith(instanceName))
+  || regex.isFullRegexMatch(instanceName, name)
+)
 
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
@@ -87,12 +89,13 @@ export const buildMetadataQuery = (
     const realNamespace = namespace === ''
       ? getDefaultNamespace(instance.metadataType)
       : namespace
-    const instanceName = isInFolderMetadataType(metadataType) || isFolderMetadataType(metadataType)
-      ? getInstanceNameFromFileName(instance.fileName)
-      : instance.name
-    return regex.isFullRegexMatch(instance.metadataType, metadataType)
-    && regex.isFullRegexMatch(instance.namespace, realNamespace)
-    && regex.isFullRegexMatch(instanceName, name)
+    if (!regex.isFullRegexMatch(instance.metadataType, metadataType)
+      || !regex.isFullRegexMatch(instance.namespace, realNamespace)) {
+      return false
+    }
+    return isFolderMetadataType(instance.metadataType)
+      ? isFolderMetadataTypeNameMatch(instance, name)
+      : regex.isFullRegexMatch(instance.name, name)
   }
 
   const isIncludedInPartialFetch = (type: string): boolean => {
@@ -132,16 +135,21 @@ export const buildMetadataQuery = (
 
     isPartialFetch: () => target !== undefined,
 
-    getFoldersByName: (type: InFolderMetadataType) => {
+    getFolderPathsByName: (type: InFolderMetadataType) => {
       const folderPaths = include
         .filter(params => params.metadataType === METADATA_TYPE_TO_FOLDER_TYPE[type])
         .flatMap(params => {
           const { name: nameRegex } = params
           return isDefined(nameRegex)
-            ? getAllowedStringsFromRegex(nameRegex)
+            ? getAllowedStrings(nameRegex)
             : []
         })
-      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
+      const folderPathsByName = _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
+      return _.omitBy(
+        folderPathsByName,
+        // We omit any regex paths from the mapping e.g. .*, FolderName1? etc...
+        (_path, folderName) => SPECIAL_CHARS.test(folderName)
+      )
     },
   }
 }

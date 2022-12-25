@@ -105,13 +105,44 @@ export const listMetadataObjects = async (
   }
 }
 
+const getNamespace = (obj: FileProperties): string => (
+  obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
+)
+
+const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties): boolean => (
+  metadataQuery.isInstanceMatch({
+    namespace: getNamespace(file),
+    metadataType: file.type,
+    name: file.fullName,
+    fileName: file.fileName,
+  })
+)
+
+const getFolders = async (
+  client: SalesforceClient,
+  metadataQuery: MetadataQuery,
+  type: InFolderMetadataType,
+): Promise<FetchElements<FileProperties[]>> => {
+  const { elements, configChanges } = await listMetadataObjects(
+    client, METADATA_TYPE_TO_FOLDER_TYPE[type]
+  )
+  return {
+    elements: _(elements)
+      .filter(props => notInSkipList(metadataQuery, props))
+      .uniqBy(file => file.fullName)
+      .value(),
+    configChanges,
+  }
+}
+
 const listMetadataObjectsWithinFolders = async (
   client: SalesforceClient,
+  metadataQuery: MetadataQuery,
   metadataTypeName: InFolderMetadataType,
-  folderPathByName: Record<string, string>,
   isUnhandledError?: ErrorFilter,
 ): Promise<FetchElements<FileProperties[]>> => {
-  const folders = await listMetadataObjects(client, METADATA_TYPE_TO_FOLDER_TYPE[metadataTypeName])
+  const folderPathByName = metadataQuery.getFoldersByName(metadataTypeName)
+  const folders = await getFolders(client, metadataQuery, metadataTypeName)
   const folderNames = [
     ...folders.elements.map(props => props.fullName),
     ...Object.keys(folderPathByName),
@@ -140,10 +171,10 @@ const getFullName = (obj: FileProperties): string => {
   // in the fullName even when they should have it
   const fullNameWithCorrectedObjectName = obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
   if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE && obj.namespacePrefix) {
-  // Ensure layout name starts with the namespace prefix if there is one.
-  // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
-  // <namespace>__<objectName>-<layoutName> where it should be
-  // <namespace>__<objectName>-<namespace>__<layoutName>
+    // Ensure layout name starts with the namespace prefix if there is one.
+    // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
+    // <namespace>__<objectName>-<layoutName> where it should be
+    // <namespace>__<objectName>-<namespace>__<layoutName>
     const [objectName, ...layoutName] = fullNameWithCorrectedObjectName.split('-')
     if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
       return `${objectName}-${namePrefix}${layoutName.join('-')}`
@@ -151,10 +182,6 @@ const getFullName = (obj: FileProperties): string => {
   }
   return fullNameWithCorrectedObjectName
 }
-
-const getNamespace = (obj: FileProperties): string => (
-  obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
-)
 
 const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
   filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
@@ -259,15 +286,6 @@ export const retrieveMetadataInstances = async ({
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
-  const notInSkipList = (file: FileProperties): boolean => (
-    metadataQuery.isInstanceMatch({
-      namespace: getNamespace(file),
-      metadataType: file.type,
-      name: file.fullName,
-      fileName: file.fileName,
-    })
-  )
-
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
     if (type.annotations.folderContentType !== undefined) {
       // We get folders as part of getting the records inside them
@@ -275,7 +293,7 @@ export const retrieveMetadataInstances = async ({
     }
     const typeName = await apiName(type)
     const { elements: res, configChanges: listObjectsConfigChanges } = isInFolderMetadataType(typeName)
-      ? await listMetadataObjectsWithinFolders(client, typeName, metadataQuery.getFoldersByName(typeName))
+      ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
     return _.uniqBy(res, file => file.fullName)
@@ -339,7 +357,7 @@ export const retrieveMetadataInstances = async ({
   }
 
   const filesToRetrieve = _.flatten(await Promise.all(types.map(listFilesOfType)))
-    .filter(notInSkipList)
+    .filter(props => notInSkipList(metadataQuery, props))
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

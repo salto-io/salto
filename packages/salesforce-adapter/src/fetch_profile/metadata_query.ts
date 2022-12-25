@@ -63,6 +63,13 @@ const getAllowedStringsFromRegex = (regexString: string): string[] => (
     .split('|')
 )
 
+// omit dirName (e.g. reports, dashboards) and possible suffix (e.g, report)
+// since the user does not provide that in the name Regex.
+const getInstanceNameFromFileName = (fileName: string): string => {
+  const file = _.last(fileName.split('/')) ?? fileName
+  return file.split('.')[0]
+}
+
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
   target?: string[],
@@ -81,7 +88,7 @@ export const buildMetadataQuery = (
       ? getDefaultNamespace(instance.metadataType)
       : namespace
     const instanceName = isInFolderMetadataType(metadataType) || isFolderMetadataType(metadataType)
-      ? instance.fileName.substr(instance.fileName.indexOf('/') + 1) // omit dirName (e.g. reports, dashboards) since the user does not provide that in the name Regex.
+      ? getInstanceNameFromFileName(instance.fileName)
       : instance.name
     return regex.isFullRegexMatch(instance.metadataType, metadataType)
     && regex.isFullRegexMatch(instance.namespace, realNamespace)

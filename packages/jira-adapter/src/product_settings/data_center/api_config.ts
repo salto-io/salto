@@ -140,6 +140,42 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         dataField: '.',
       },
     },
+    SecurityLevel: {
+      deployRequests: {
+        add: {
+          url: '/rest/api/3/securitylevel/?securitySchemeId={schemeId}',
+          method: 'post',
+          fieldsToIgnore: ['schemeId'],
+        },
+        modify: {
+          url: '/rest/api/3/securitylevel/?securitySchemeId={schemeId}',
+          method: 'put',
+          fieldsToIgnore: ['schemeId', 'levelId'],
+        },
+        remove: {
+          url: '/rest/api/3/securitylevel/{levelId}',
+          method: 'delete',
+        },
+      },
+    },
+    SecurityScheme: {
+      deployRequests: {
+        add: {
+          url: '/rest/api/3/issuesecurityschemes',
+          method: 'post',
+          fieldsToIgnore: ['defaultLevel', 'levels'],
+        },
+        modify: {
+          url: '/rest/api/3/issuesecurityschemes',
+          method: 'put',
+          fieldsToIgnore: ['levels'],
+        },
+        remove: {
+          url: '/rest/api/3/issuesecurityschemes/{id}',
+          method: 'delete',
+        },
+      },
+    },
   },
   supportedTypes: {
     [PRIORITY_SCHEME_TYPE_NAME]: [],

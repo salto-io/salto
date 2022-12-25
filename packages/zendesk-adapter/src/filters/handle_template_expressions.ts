@@ -51,9 +51,9 @@ BRACKETS.forEach(([opener, closer]) => {
   // dynamic content references look different, but can still be part of template
   typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
 })
-const potentialReferenceTypeRegex = new RegExp(`((?:${POTENTIAL_REFERENCE_TYPES.join('|')})_[\\d]+)`, 'g')
+const potentialReferenceTypeRegex = new RegExp(`((?:${POTENTIAL_REFERENCE_TYPES.join('|')})_\u200B?[\\d]+)`, 'g')
 const potentialMacroFields = [
-  'comment_value', 'comment_value_html', 'side_conversation', 'side_conversation_ticket',
+  'comment_value', 'comment_value_html', 'side_conversation', 'side_conversation_ticket', 'subject', 'side_conversation_slack',
 ]
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
@@ -145,7 +145,7 @@ const formulaToTemplate = (
 ): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
-    const splitReference = reference.split(/_([\d]+)/).filter(v => !_.isEmpty(v))
+    const splitReference = reference.split(/_\u200B?([\d]+)/).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, so should contain exactly two parts
     if (splitReference.length !== 2) {
       return [expression]

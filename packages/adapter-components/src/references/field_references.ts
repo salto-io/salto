@@ -157,7 +157,7 @@ export const replaceReferenceValues = async <
             element: instance,
           })
           : resolvePath(element, referenceId)
-        // this validation is necessary to a reference from '$Label.check' and not 'check'
+        // this validation is necessary to create a reference from '$Label.check' and not 'check'
         if (!sourceTransformation.validate(val, serializedRefExpression)) {
           log.warn(`Invalid reference ${val} => [${serializedRefExpression} (element '${element.elemID.getFullName()}')]`)
           return undefined

@@ -261,9 +261,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
-    // insert isDataCenter
     this.getIdMapFunc = getIdMapFuncCreator(paginator, client.isDataCenter)
-    // this.getIdMapFunc = getIdMapFuncCreator(paginator)
 
     const filterContext = {}
     this.createFiltersRunner = () => (

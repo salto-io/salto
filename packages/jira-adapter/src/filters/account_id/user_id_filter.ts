@@ -33,20 +33,11 @@ const addDisplayName = (idMap: IdMap): WalkOnUsersCallback => (
   }
 }
 
-const convertKeyToId = (idMap: IdMap): WalkOnUsersCallback => (
+const convertId = (idMap: IdMap): WalkOnUsersCallback => (
   { value, fieldName }
 ): void => {
   if (Object.prototype.hasOwnProperty.call(idMap, value[fieldName].id)) {
     value[fieldName].id = idMap[value[fieldName].id]
-  }
-}
-
-const convertIdToKey = (idMap: IdMap): WalkOnUsersCallback => (
-  { value, fieldName }
-): void => {
-  const reversedIdMap: IdMap = Object.fromEntries(Object.entries(idMap).map(([key, mapValue]) => [mapValue, key]))
-  if (Object.prototype.hasOwnProperty.call(reversedIdMap, value[fieldName].id)) {
-    value[fieldName].id = reversedIdMap[value[fieldName].id]
   }
 }
 
@@ -64,7 +55,7 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       .filter(isInstanceElement)
       .forEach(async element => {
         if (client.isDataCenter) {
-          walkOnElement({ element, func: walkOnUsers(convertKeyToId(idMap)) })
+          walkOnElement({ element, func: walkOnUsers(convertId(idMap)) })
         } else {
           walkOnElement({ element, func: walkOnUsers(addDisplayName(idMap)) })
         }
@@ -76,12 +67,13 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       return
     }
     const idMap = await getIdMapFunc()
+    const reversedIdMap: IdMap = Object.fromEntries(Object.entries(idMap).map(([key, mapValue]) => [mapValue, key]))
     changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertIdToKey(idMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertId(reversedIdMap)) }))
   },
   onDeploy: async changes => log.time(async () => {
     if (!(config.fetch.convertUsersIds ?? true)
@@ -94,7 +86,7 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertKeyToId(idMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertId(idMap)) }))
   }, 'user_id_filter deploy'),
 })
 

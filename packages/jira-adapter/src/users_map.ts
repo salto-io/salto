@@ -29,17 +29,14 @@ export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCent
   return async (): Promise<IdMap> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
-        let paginationArgs
-        if (isDataCenter) {
-          paginationArgs = {
+        const paginationArgs = isDataCenter
+          ? {
             url: '/rest/api/2/user/search?username=.',
           }
-        } else {
-          paginationArgs = {
+          : {
             url: '/rest/api/3/users/search',
             paginationField: 'startAt',
           }
-        }
         usersCallPromise = toArrayAsync(paginator(
           paginationArgs,
           page => makeArray(page) as clientUtils.ResponseValue[]

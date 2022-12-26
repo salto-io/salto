@@ -111,7 +111,7 @@ const createInstanceNameAndFilePath = (
   const { typeName, adapter } = instance.elemID
   const { fileNameFields, serviceIdField } = configByType[typeName]
 
-  const newNaclName = getInstanceNaclName({
+  const newNaclName = idFields.length > 0 ? getInstanceNaclName({
     entry: instance.value,
     name: newName,
     parentName,
@@ -120,7 +120,8 @@ const createInstanceNameAndFilePath = (
     serviceIdField,
     typeElemId: instance.refType.elemID,
     nameMapping,
-  })
+    // If there are no idFields - use the parent's name (if it doesn't exist, keep the original name)
+  }) : parentName ?? instance.elemID.name
 
   const filePath = getInstanceFilePath({
     fileNameFields,

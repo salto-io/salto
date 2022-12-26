@@ -1706,6 +1706,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         sort_by: 'updated_at',
       },
       paginationField: NEW_PAGINATION_FIELD,
+      recurseInto: [
+        {
+          type: ARTICLE_ATTACHMENT_TYPE_NAME,
+          toField: 'attachments',
+          context: [{ name: 'article_id', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       dataField: 'articles',
@@ -1721,7 +1728,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat(
-        { fieldName: 'id', fieldType: 'number' },
+        // { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'position', fieldType: 'number' },
       ),
       fieldTypeOverrides: [
@@ -1766,11 +1773,27 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   [ARTICLE_ATTACHMENT_TYPE_NAME]: {
+    request: {
+      url: '/api/v2/help_center/articles/{article_id}/attachments',
+    },
     transformation: {
-      idFields: ['filename', 'inline'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      idFields: ['file_name', 'inline'],
+      sourceTypeName: 'article__attachments',
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'relative_path', fieldType: 'string' },
+        { fieldName: 'size', fieldType: 'number' },
+      ),
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'article_attachments', fieldType: 'List<article_attachment>' }],
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
+        { fieldName: 'article_id', fieldType: 'number' },
+        { fieldName: 'display_file_name', fieldType: 'string' },
+        { fieldName: 'content_url', fieldType: 'string' },
+      ),
       extendsParentId: true,
+      dataField: 'article_attachments',
     },
     deployRequests: {
       remove: {

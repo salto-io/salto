@@ -43,14 +43,8 @@ import { lookupFunc } from '../field_references'
 import { removeTitleAndBody } from '../guide_fetch_article_section_and_category'
 import { prepRef } from './article_body'
 import ZendeskClient from '../../client/client'
-import {
-  createAttachmentType,
-  createUnassociatedAttachment,
-  deleteArticleAttachment,
-  getArticleAttachments,
-  updateArticleTranslationBody,
-} from './utils'
-import { API_DEFINITIONS_CONFIG } from '../../config'
+import { createUnassociatedAttachment, deleteArticleAttachment, updateArticleTranslationBody } from './utils'
+
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -238,7 +232,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
-const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdToClient = {} }) => {
+const filterCreator: FilterCreator = ({ config, client, elementsSource }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
     onFetch: async (elements: Element[]) => log.time(async () => {
@@ -246,18 +240,22 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
       setupArticleUserSegmentId(elements, articleInstances)
-      const attachmentType = createAttachmentType()
-      const articleAttachments = (await Promise.all(articleInstances
-        .map(async article => getArticleAttachments({
-          client: brandIdToClient[article.value.brand],
-          attachmentType,
-          article,
-          apiDefinitions: config[API_DEFINITIONS_CONFIG],
-        })))).flat()
+      // const attachmentType = elements.filter(isObjectType).find(obj => obj.elemID.typeName === ARTICLE_TYPE_NAME)
+      // if (attachmentType === undefined) {
+      //     return
+      // }
+      // const articleAttachments = (await Promise.all(articleInstances
+      //   .map(async article => getArticleAttachments({
+      //     client: brandIdToClient[article.value.brand],
+      //     attachmentType,
+      //     article,
+      //     apiDefinitions: config[API_DEFINITIONS_CONFIG],
+      //   })))).flat()
 
       // Verify article_attachment type added only once
-      _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
-      elements.push(attachmentType, ...articleAttachments)
+      // _.remove(elements, element => isObjectType(element) && element.elemID.isEqual(attachmentType.elemID))
+      // elements.push(attachmentType)
+      // elements.push(attachmentType, ...articleAttachments)
     }, 'articlesFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       const addedArticleAttachments = await handleArticleAttachmentsPreDeploy(

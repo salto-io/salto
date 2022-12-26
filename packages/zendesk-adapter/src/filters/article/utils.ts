@@ -168,13 +168,13 @@ export const createUnassociatedAttachment = async (
   attachmentInstance: InstanceElement,
 ): Promise<void> => {
   try {
-    log.info(`Creating unassociated article attachment: ${attachmentInstance.value.filename}`)
+    log.info(`Creating unassociated article attachment: ${attachmentInstance.value.file_name}`)
     const fileContent = isStaticFile(attachmentInstance.value.content)
       ? await attachmentInstance.value.content.getContent()
       : attachmentInstance.value.content
     const form = new FormData()
     form.append('inline', attachmentInstance.value.inline.toString())
-    form.append('file', fileContent, attachmentInstance.value.filename)
+    form.append('file', fileContent, attachmentInstance.value.file_name)
     const res = await client.post({
       url: '/api/v2/help_center/articles/attachments',
       data: form,

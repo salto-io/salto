@@ -96,7 +96,8 @@ jobs:
 
       - persist_to_workspace:
           root: .
-          paths: '*'
+          paths:
+            - '*'
 
   save_project_cache:
     docker:
@@ -158,7 +159,7 @@ jobs:
 
   e2e_test:
     docker:
-      - image: saltolabs/salto-e2e
+      - image: cimg/node:14.15
 
     resource_class: large
     working_directory: /mnt/ramdisk/project
@@ -167,6 +168,9 @@ jobs:
       - attach_workspace:
           at: .
 
+      - run:
+          name: Install java
+          command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
           name: Run E2E tests
           command: yarn test --reporters=default --reporters=jest-junit --coverage=false

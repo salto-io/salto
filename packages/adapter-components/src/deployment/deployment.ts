@@ -131,7 +131,7 @@ export const deployChange = async ({
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
-  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${safeJsonStringify({ url, data, queryParams }, elementExpressionStringifyReplacer)}`)
+  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${safeJsonStringify({ method: endpoint.method, url, data, queryParams }, elementExpressionStringifyReplacer)}`)
   const response = await client[endpoint.method]({ url, data, queryParams })
   return response.data
 }

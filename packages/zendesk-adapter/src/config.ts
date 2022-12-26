@@ -1781,16 +1781,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'article__attachments',
       fieldsToHide: FIELDS_TO_HIDE.concat(
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'relative_path', fieldType: 'string' },
+        { fieldName: 'content_url', fieldType: 'string' },
         { fieldName: 'size', fieldType: 'number' },
       ),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'article_attachments', fieldType: 'List<article_attachment>' }],
+        { fieldName: 'article_attachments', fieldType: 'List<article_attachment>' },
+        { fieldName: 'content', fieldType: 'string' },
+      ],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'article_id', fieldType: 'number' },
         { fieldName: 'display_file_name', fieldType: 'string' },
-        { fieldName: 'content_url', fieldType: 'string' },
+        { fieldName: 'relative_path', fieldType: 'string' },
       ),
       extendsParentId: true,
       dataField: 'article_attachments',

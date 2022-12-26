@@ -381,7 +381,6 @@ const retryOnBadResponse = async <T extends object>(
     try {
       res = await request()
     } catch (e) {
-      log.warn('salesforce request failed with the following: "%o"', e)
       log.warn(`caught exception: ${e.message}. ${attempts} retry attempts left from ${retryAttempts} in total`)
       if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
         log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)

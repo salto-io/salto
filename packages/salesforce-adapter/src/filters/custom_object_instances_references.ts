@@ -84,6 +84,7 @@ const createWarnings = async (
     getTypeName: async instance => apiName(await instance.getType(), true),
     idFieldsName: 'saltoIDSettings',
     getInstanceName: instance => apiName(instance),
+    docsUrl: 'https://docs.salto.io/docs/salesforce-cpq',
   })
 
   const typeToInstanceIdToMissingRefs = _.mapValues(

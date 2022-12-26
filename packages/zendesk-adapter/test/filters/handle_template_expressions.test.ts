@@ -121,13 +121,42 @@ describe('handle templates filter', () => {
     testType,
     {
       id: 1020,
-      actions: [{ value: [
-        'Improved needs for {{ticket.ticket_field_option_title_1454}}',
-        '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
-        'hello',
-        'text/html',
+      actions: [
+        {
+          value:
+            [
+              'Improved needs for {{ticket.ticket_field_option_title_1454}}',
+              '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
+              'hello',
+              'text/html',
+            ],
+          field: 'side_conversation_ticket',
+        },
+        {
+          value:
+            [
+              'Improved needs for {{ticket.ticket_field_option_title_1454}}',
+              '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
+              'hello',
+              'text/html',
+            ],
+          field: 'side_conversation_slack',
+        },
+        {
+          value:
+            [
+              'Improved needs for {{ticket.ticket_field_1452}}',
+              '<p>Improved needs for {{ticket.ticket_field_1452}} due to something</p>',
+              'hello',
+              'text/html',
+            ],
+          field: 'side_conversation',
+        },
+        {
+          value: 'Improved needs for {{ticket.ticket_field_1452}} - {{ticket.ticket_field_1452}}',
+          field: 'subject',
+        },
       ],
-      field: 'side_conversation_ticket' }],
     },
   )
 
@@ -285,6 +314,27 @@ describe('handle templates filter', () => {
         'hello',
         'text/html',
       ])
+      expect(macroWithSideConv.value.actions[1].value).toEqual([
+        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
+        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
+        'hello',
+        'text/html',
+      ])
+      expect(macroWithSideConv.value.actions[2].value).toEqual([
+        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_TICKET_FIELD}_`, new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }),
+        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_TICKET_FIELD}_`, new ReferenceExpression(placeholder1.elemID, placeholder1), '}} due to something</p>'] }),
+        'hello',
+        'text/html',
+      ])
+      expect(macroWithSideConv.value.actions[3].value).toEqual(
+        new TemplateExpression({ parts: [
+          `Improved needs for {{${TICKET_TICKET_FIELD}_`,
+          new ReferenceExpression(placeholder1.elemID, placeholder1),
+          `}} - {{${TICKET_TICKET_FIELD}_`,
+          new ReferenceExpression(placeholder1.elemID, placeholder1),
+          '}}',
+        ] }),
+      )
     })
   })
   describe('preDeploy', () => {

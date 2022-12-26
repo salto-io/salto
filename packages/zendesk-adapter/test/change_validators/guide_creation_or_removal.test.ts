@@ -25,7 +25,7 @@ describe('helpCenterCreationOrRemovalValidator', () => {
     credentials: {
       username: 'a',
       password: 'b',
-      subdomain: 'ignore',
+      baseUrl: 'https://ignore.zendesk.com',
     },
   })
   const config = _.cloneDeep(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])

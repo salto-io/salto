@@ -20,7 +20,7 @@ import { ZENDESK } from '../src/constants'
 import ZendeskClient from '../src/client/client'
 
 describe('change validator creator', () => {
-  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' } })
   describe('deployNotSupportedValidator', () => {
     it('should not fail if there are no deploy changes', async () => {
       expect(await createChangeValidator({

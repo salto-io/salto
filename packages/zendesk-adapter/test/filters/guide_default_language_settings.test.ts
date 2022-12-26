@@ -45,7 +45,7 @@ const createSettings = (name: string, locale: string, brand: InstanceElement): I
 const defaultSettings1 = createSettings('default', 'def', brand1)
 const defaultSettings2 = createSettings('default2', 'def', brand2)
 
-const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' } })
 client.put = jest.fn()
 client.post = jest.fn()
 client.delete = jest.fn()

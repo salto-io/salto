@@ -18,7 +18,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { createConnection, createResourceConnection, instanceUrl } from './connection'
+import { createConnection, createResourceConnection } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
 
@@ -71,7 +71,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   }
 
   public getUrl(): URL {
-    return new URL(instanceUrl(this.credentials.subdomain))
+    return new URL(this.credentials.baseUrl)
   }
 
   public async getSinglePage(

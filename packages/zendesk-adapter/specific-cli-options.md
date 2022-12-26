@@ -4,9 +4,9 @@
 Supprted parameters are:
 * `username`
 * `password`
-* `subdomain`
+* `baseUrl` - e.g. https://\<mysubdomain\>.zendesk.com/
 
 ### Example
 ```
-salto account add zendesk --login-parameters username=SomeUsername password=SomePasswd subdomain=SomeSubdomain
+salto account add zendesk --login-parameters username=SomeUsername password=SomePasswd baseUrl=https://someSubDomain.zendesk.com/
 ```

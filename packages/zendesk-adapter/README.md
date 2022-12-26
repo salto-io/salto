@@ -15,7 +15,7 @@ Salto supports authenticating with Zendesk using either a combination of user-na
   - Client ID of the OAuth Client
   - The generated Client Secret
   - The Port you provided in the redirect URL
-  - Your Zendesk account subdomain.
+  - Your Zendesk account base URL
 
 ## Known limitations
 * Sunshine APIs (including custom objects) are not yet supported. Please reach out if interested.

@@ -21,7 +21,7 @@ import ZendeskClient from '../../src/client/client'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 
 describe('targetAuthDataValidator', () => {
-  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' } })
   const config = _.cloneDeep(DEFAULT_CONFIG[API_DEFINITIONS_CONFIG])
   const changeValidator = targetAuthDataValidator(client, config)
 

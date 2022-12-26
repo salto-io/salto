@@ -36,7 +36,7 @@ describe('everyoneUserSegment filter', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
+      credentials: { username: 'a', password: 'b', baseUrl: 'https://brandWithHC.zendesk.com' },
     })
     filter = filterCreator(createFilterCreatorParams({
       client,

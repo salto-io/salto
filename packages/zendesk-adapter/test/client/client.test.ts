@@ -23,7 +23,7 @@ describe('client', () => {
     let client: ZendeskClient
     beforeEach(() => {
       mockAxios = new MockAdapter(axios)
-      client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+      client = new ZendeskClient({ credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' } })
     })
 
     afterEach(() => {

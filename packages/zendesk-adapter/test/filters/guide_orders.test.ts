@@ -27,7 +27,7 @@ import ZendeskClient from '../../src/client/client'
 const { createUrl } = elementsUtils
 
 const client = new ZendeskClient({
-  credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+  credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' },
 })
 client.put = jest.fn()
 

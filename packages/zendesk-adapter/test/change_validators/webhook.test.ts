@@ -20,7 +20,7 @@ import { WEBHOOK_TYPE_NAME } from '../../src/filters/webhook'
 import ZendeskClient from '../../src/client/client'
 
 describe('webhookAuthDataValidator', () => {
-  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' } })
   const changeValidator = webhookAuthDataValidator(client)
 
   const webhookType = new ObjectType({

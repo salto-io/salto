@@ -48,12 +48,12 @@ describe('adapter creator', () => {
       (adapter.authenticationMethods.oauth as OAuthMethod).credentialsType.fields
     )).toEqual(Object.keys(oauthAccessTokenCredentialsType.fields))
   })
-  it('should return oauth params - only accessToken and subdomain', () => {
+  it('should return oauth params - only accessToken and baseUrl', () => {
     expect((adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
       {
         clientId: 'client',
         port: 8080,
-        subdomain: 'abc',
+        baseUrl: 'https://abc.zendesk.com',
       },
       {
         fields: {
@@ -61,7 +61,7 @@ describe('adapter creator', () => {
         },
       }
     )).toEqual({
-      subdomain: 'abc',
+      baseUrl: 'https://abc.zendesk.com',
       accessToken: 'token',
     })
   })
@@ -96,7 +96,7 @@ describe('adapter creator', () => {
         {
           authType: 'oauth',
           accessToken: 'token',
-          subdomain: 'abc',
+          baseUrl: 'https://abc.zendesk.com',
         }
       ),
       config: new InstanceElement(
@@ -182,6 +182,12 @@ describe('adapter creator', () => {
       port: 8080,
       clientId: 'client',
     })).toEqual('https://abc.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
+
+    expect(createUrlFromUserInput({
+      baseUrl: 'https://abc.zendesk.com',
+      port: 8080,
+      clientId: 'client',
+    })).toEqual('https://abc.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
   })
 
   it('should validate credentials using createConnection', async () => {
@@ -195,29 +201,40 @@ describe('adapter creator', () => {
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       usernamePasswordCredentialsType,
-      { username: 'user123', password: 'pwd456', subdomain: 'abc' },
-    ))).toEqual('abc')
+      { username: 'user123', password: 'pwd456', baseUrl: 'https://abc.zendesk.com' },
+    ))).toEqual('https://abc.zendesk.com')
 
     // OAuth auth method
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
-      { authType: 'oauth', accessToken: 'token', subdomain: 'abc' },
-    ))).toEqual('abc')
+      { authType: 'oauth', accessToken: 'token', baseUrl: 'https://abc.zendesk.com' },
+    ))).toEqual('https://abc.zendesk.com')
 
     expect(connection.createConnection).toHaveBeenCalledTimes(2)
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        credentials: { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+        credentials: { username: 'user123', password: 'pwd456', baseUrl: 'https://abc.zendesk.com' },
       })
     )
 
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        credentials: { accessToken: 'token', subdomain: 'abc' },
+        credentials: { accessToken: 'token', baseUrl: 'https://abc.zendesk.com' },
       })
     )
+  })
+
+  it('should be able get subdomain instead of baseUrl', async () => {
+    mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
+      settings: {},
+    })
+    expect(await adapter.validateCredentials(new InstanceElement(
+      'config',
+      usernamePasswordCredentialsType,
+      { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+    ))).toEqual('https://abc.zendesk.com')
   })
 })

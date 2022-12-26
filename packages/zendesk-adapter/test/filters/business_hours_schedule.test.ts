@@ -53,7 +53,7 @@ describe('business hours schedule filter', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+      credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' },
     })
     filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })

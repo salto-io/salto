@@ -122,7 +122,7 @@ describe('article utility functions', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+      credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' },
     })
   })
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isString } from 'lodash'
+import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
   DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
@@ -375,7 +375,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private configInstance?: InstanceElement
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
-  private createClientBySubdomain: (subdomain: string) => ZendeskClient
+  private createClientBySubdomain: (baseUrl: string) => ZendeskClient
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -405,9 +405,9 @@ export default class ZendeskAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
 
-    this.createClientBySubdomain = (subdomain: string): ZendeskClient => (
+    this.createClientBySubdomain = (baseUrl: string): ZendeskClient => (
       new ZendeskClient({
-        credentials: { ...credentials, subdomain },
+        credentials: { ...credentials, baseUrl },
         config: this.userConfig[CLIENT_CONFIG],
       })
     )
@@ -492,7 +492,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       [
         brandInstance.elemID.name,
         createPaginator({
-          client: this.createClientBySubdomain(brandInstance.value.subdomain),
+          client: this.createClientBySubdomain(brandInstance.value.brand_url),
           paginationFuncCreator: paginate,
         }),
       ]
@@ -545,7 +545,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const brandIdToClient = Object.fromEntries(brandsWithHelpCenter.map(
       brandInstance => [
         brandInstance.value.id,
-        this.createClientBySubdomain(brandInstance.value.subdomain),
+        this.createClientBySubdomain(brandInstance.value.brand_url),
       ]
     ))
     // This exposes different subdomain clients for Guide related types filters
@@ -611,24 +611,21 @@ export default class ZendeskAdapter implements AdapterOperations {
         return resolvedBrandIdToSubdomain[isReferenceExpression(brand) ? brand.value.value.id : brand]
       }
     )
-    const subdomainsList = brandsList
-      .map(brandInstance => brandInstance.value.subdomain)
-      .filter(isString)
-    const subdomainToPaginator = Object.fromEntries(subdomainsList.map(subdomain => (
+    const subdomainToClient: Record<string, ZendeskClient> = Object.fromEntries(brandsList.map(brandInstance => (
       [
-        subdomain,
-        createPaginator({
-          client: this.createClientBySubdomain(subdomain),
-          paginationFuncCreator: paginate,
-        }),
+        brandInstance.value.subdomain,
+        this.createClientBySubdomain(brandInstance.value.brand_url),
       ]
     )))
-    const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
+    const guideDeployResults = await awu(Object.entries(subdomainToClient))
       .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(async ([subdomain, paginator]) => {
+      .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({
-          filterRunnerClient: this.createClientBySubdomain(subdomain),
-          paginator,
+          filterRunnerClient: client,
+          paginator: createPaginator({
+            client,
+            paginationFuncCreator: paginate,
+          }),
         })
         await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
         const { deployResult: brandDeployResults } = await brandRunner.deploy(

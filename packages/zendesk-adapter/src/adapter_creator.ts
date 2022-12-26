@@ -59,23 +59,28 @@ see https://support.zendesk.com/hc/en-us/articles/4408845965210 for more informa
 
 */
 
+const getBaseUrlFromConfigValue = (configValue: Values): string => (
+  configValue.baseUrl ?? `https://${configValue.subdomain}.zendesk.com`
+)
+
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
+  const baseUrl = getBaseUrlFromConfigValue(config.value)
   if (config.value.authType === 'oauth') {
     return {
       accessToken: config.value.accessToken,
-      subdomain: config.value.subdomain,
+      baseUrl,
     }
   }
   return {
     username: config.value.username,
     password: config.value.password,
-    subdomain: config.value.subdomain,
+    baseUrl,
   }
 }
 
 export const createUrlFromUserInput = (value: Values): string => {
-  const { subdomain, port, clientId } = value
-  return `https://${subdomain}.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:${port}&client_id=${clientId}&scope=read%20write`
+  const { port, clientId } = value
+  return `${getBaseUrlFromConfigValue(value)}/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:${port}&client_id=${clientId}&scope=read%20write`
 }
 
 const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => ({
@@ -169,10 +174,10 @@ export const adapter: Adapter = {
       credentialsType: oauthAccessTokenCredentialsType,
       oauthRequestParameters: oauthRequestParametersType,
       createFromOauthResponse: (inputConfig: Values, response: OauthAccessTokenResponse) => {
-        const { subdomain } = inputConfig
+        const baseUrl = getBaseUrlFromConfigValue(inputConfig)
         const { accessToken } = response.fields
         return {
-          subdomain,
+          baseUrl,
           accessToken,
         }
       },

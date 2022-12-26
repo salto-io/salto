@@ -215,7 +215,7 @@ describe('guide arrange paths', () => {
 
   beforeEach(async () => {
     client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'brandWithHC' },
+      credentials: { username: 'a', password: 'b', baseUrl: 'https://brandWithHC.zendesk.com' },
     })
     filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })

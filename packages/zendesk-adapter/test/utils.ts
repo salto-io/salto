@@ -33,7 +33,7 @@ type FilterCreatorParams = {
 
 export const createFilterCreatorParams = ({
   client = new ZendeskClient({
-    credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+    credentials: { username: 'a', password: 'b', baseUrl: 'https://ignore.zendesk.com' },
   }),
   paginator = clientUtils.createPaginator({
     client,

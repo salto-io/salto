@@ -43,7 +43,7 @@ const adapter: Adapter<Args, Credentials> = {
   credentials: async args => ({
     username: args.username,
     password: args.password,
-    subdomain: args.subdomain,
+    baseUrl: args.subdomain,
   }),
   validateCredentials: async credentials => {
     await clientUtils.validateCredentials(credentials, { createConnection })

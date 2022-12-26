@@ -22,10 +22,8 @@ import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials
 
 const log = logger(module)
 
-export const instanceUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com`
-const baseUrl = instanceUrl
 // A URL for resource files
-const resourceUrl = (subdomain: string): string => (new URL('/', instanceUrl(subdomain))).href
+const resourceUrl = (baseUrl: string): string => (new URL('/', baseUrl)).href
 
 const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
@@ -48,7 +46,7 @@ export const validateCredentials = async ({ credentials, connection }: {
     throw new clientUtils.UnauthorizedError(e)
   }
 
-  return credentials.subdomain
+  return credentials.baseUrl
 }
 
 const usernamePasswordAuthParamsFunc = (
@@ -80,7 +78,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
         ? accessTokenAuthParamsFunc(creds)
         : usernamePasswordAuthParamsFunc(creds)
     ),
-    baseURLFunc: ({ subdomain }) => baseUrl(subdomain),
+    baseURLFunc: ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,
   })
 )
@@ -91,13 +89,13 @@ export const createResourceConnection:
       creds: Credentials,
     ): Promise<clientUtils.AuthenticatedAPIConnection> => {
       const httpClient = axios.create({
-        baseURL: resourceUrl(creds.subdomain),
+        baseURL: resourceUrl(creds.baseUrl),
         headers: APP_MARKETPLACE_HEADERS,
       })
       axiosRetry(httpClient, retryOptions)
       return {
         ...httpClient,
-        accountId: creds.subdomain,
+        accountId: creds.baseUrl,
       }
     }
     return {

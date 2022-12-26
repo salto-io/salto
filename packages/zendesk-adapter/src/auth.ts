@@ -20,18 +20,18 @@ import * as constants from './constants'
 export type UsernamePasswordCredentials = {
   username: string
   password: string
-  subdomain: string
+  baseUrl: string
 }
 
 export type OauthAccessTokenCredentials = {
   accessToken: string
-  subdomain: string
+  baseUrl: string
 }
 
 export type OauthRequestParameters = {
   clientId: string
   port: number
-  subdomain: string
+  baseUrl: string
 }
 
 export const usernamePasswordCredentialsType = createMatchingObjectType<
@@ -47,11 +47,11 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
-    subdomain: {
+    baseUrl: {
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
-        message: 'subdomain (https://<your subdomain>.zendesk.com)',
+        message: 'Base URL (https://<your-subdomain>.zendesk.com/)',
       },
     },
   },
@@ -66,11 +66,11 @@ export const oauthAccessTokenCredentialsType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
-    subdomain: {
+    baseUrl: {
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
-        message: 'subdomain (https://<your subdomain>.zendesk.com)',
+        message: 'Base URL (https://<your-subdomain>.zendesk.com/)',
       },
     },
   },
@@ -95,11 +95,11 @@ export const oauthRequestParametersType = createMatchingObjectType<
         _required: true,
       },
     },
-    subdomain: {
+    baseUrl: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message: 'subdomain',
         _required: true,
+        message: 'Base URL (https://<your-subdomain>.zendesk.com/)',
       },
     },
   },

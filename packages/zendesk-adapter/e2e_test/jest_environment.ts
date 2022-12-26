@@ -36,7 +36,7 @@ CredsSpec<Required<UsernamePasswordCredentials>> => {
       return {
         username: envUtils.required(userNameEnvVarName),
         password: envUtils.required(passwordEnvVarName),
-        subdomain: envUtils.required(subdomainEnvVarName),
+        baseUrl: envUtils.required(subdomainEnvVarName),
       }
     },
     validate: async (_creds: UsernamePasswordCredentials): Promise<void> => {

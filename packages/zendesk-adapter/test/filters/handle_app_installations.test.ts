@@ -30,7 +30,7 @@ describe('handle app installations filter', () => {
 
   beforeAll(() => {
     client = new ZendeskClient({
-      credentials: { username: 'a', password: 'b', subdomain: 'c' },
+      credentials: { username: 'a', password: 'b', baseUrl: 'https://c.zendesk.com' },
     })
   })
 

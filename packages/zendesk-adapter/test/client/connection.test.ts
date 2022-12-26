@@ -33,7 +33,7 @@ describe('client connection', () => {
       mockAxiosAdapter
         .onGet('/api/v2/account/settings').reply(200, { settings: {} })
         .onGet('/api/v2/a/b').reply(200, { something: 'bla' })
-      const apiConn = await conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })
+      const apiConn = await conn.login({ username: 'user123', password: 'pwd456', baseUrl: 'abc' })
       expect(apiConn.accountId).toEqual('abc')
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
@@ -53,7 +53,7 @@ describe('client connection', () => {
       const conn = createConnection({ retries: 3 })
       mockAxiosAdapter
         .onGet('/api/v2/account/settings').reply(403)
-      await expect(() => conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })).rejects.toThrow('Unauthorized - update credentials and try again')
+      await expect(() => conn.login({ username: 'user123', password: 'pwd456', baseUrl: 'abc' })).rejects.toThrow('Unauthorized - update credentials and try again')
     })
   })
 })

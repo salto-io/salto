@@ -14,16 +14,14 @@
 * limitations under the License.
 */
 import { filters } from '@salto-io/adapter-components'
-import { FilterContext } from '../config'
 import { FilterCreator } from '../filter'
-import ZendeskClient from '../client/client'
 
 /**
- * Filter creators of all the common ducktype filters
+ * Filter creators of all the common filters
  */
-const filterCreators: FilterCreator[] = filters.ducktype
-  .DUCKTYPE_MANDATORY_FILTER_CREATORS
-  .map(filterCreator => params =>
-    filterCreator<ZendeskClient, FilterContext>()(params))
+const filterCreators: Record<string, FilterCreator> = {
+  hideTypes: filters.hideTypesFilterCreator(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
+}
 
 export default filterCreators

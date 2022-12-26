@@ -152,7 +152,7 @@ describe('referenced id fields filter', () => {
       'workato.folder.instance.folder22_folder11_Root',
       'workato.folder.instance.folder33_Root',
       'workato.recipe.instance.recipe123_folder11_Root',
-      'workato.recipe__code.instance.recipe123_folder11_Root__',
+      'workato.recipe__code.instance.recipe123_folder11_Root',
     ])
   })
   it('should not add referenced id fields configuration is not as expected', async () => {

@@ -152,6 +152,7 @@ export const getInstanceNaclName = ({
   serviceIdField,
   typeElemId,
   nameMapping,
+  oldName,
 }:{
   entry: Values
   name: string
@@ -161,10 +162,14 @@ export const getInstanceNaclName = ({
   serviceIdField?: string
   typeElemId: ElemID
   nameMapping?: NameMappingOptions
+  oldName?: string
 }): string => {
-  const naclName = naclCase(
-    parentName ? `${parentName}${ID_SEPARATOR}${name}` : String(name)
-  )
+  // eslint-disable-next-line no-nested-ternary
+  const elementName = name === ''
+    ? parentName ?? oldName
+    : parentName ? `${parentName}${ID_SEPARATOR}${name}` : String(name)
+  const naclName = naclCase(elementName)
+
   const desiredName = nameMapping
     ? getNameMapping(naclName, nameMapping)
     : naclName

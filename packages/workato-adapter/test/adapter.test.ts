@@ -114,16 +114,16 @@ describe('adapter', () => {
           'workato.recipe.instance.pubsub_recipe_412_basedir1_Root@ssuu',
           'workato.recipe.instance.test_recipe_321_f1_nested2_basedir1_Root_vuu@ssuuuum',
           'workato.recipe__code',
-          'workato.recipe__code.instance.Copy_of_New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_sssssssssssssuuuum__@uuuuuuuuuuuuuuuuuumuu',
-          'workato.recipe__code.instance.Copy_of_New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum_ssssss_00010sssssssssss_00010sssssuuuuuuum__@uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuumuuuu',
-          'workato.recipe__code.instance.Copy_of_New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_ssdssssssssssssssuuuum__@uuuuuuuuuuuuuuuuuuuuuumuu',
-          'workato.recipe__code.instance.Copy_of_pubsub_recipe_412_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum_ssssuuuuuuum__@uuuuuuuuuuuumuu',
-          'workato.recipe__code.instance.Copy_of_test_recipe_321_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum_ssssuuuuuuum__@uuuuuuuuuuuumuu',
-          'workato.recipe__code.instance.New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_sssssssssssuuuum__@uuuuuuuuuuuuuuuumuu',
-          'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_dssssssssssssssuuuum__@uuuuuuuuuuuuuuuuuuuumuu',
-          'workato.recipe__code.instance.__________New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_f1_nested2_basedir1_Root_vuu_ssssssssssssss_00010sssssssssss_00010sssssuuuum__@uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuumuuuu',
-          'workato.recipe__code.instance.pubsub_recipe_412_basedir1_Root_ssuu__@uuuumuu',
-          'workato.recipe__code.instance.test_recipe_321_f1_nested2_basedir1_Root_vuu_ssuuuum__@uuuuuuumuu',
+          'workato.recipe__code.instance.Copy_of_New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_sssssssssssssuuuum@uuuuuuuuuuuuuuuuuum',
+          'workato.recipe__code.instance.Copy_of_New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum_ssssss_00010sssssssssss_00010sssssuuuuuuum@uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuumuu',
+          'workato.recipe__code.instance.Copy_of_New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_ssdssssssssssssssuuuum@uuuuuuuuuuuuuuuuuuuuuum',
+          'workato.recipe__code.instance.Copy_of_pubsub_recipe_412_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum_ssssuuuuuuum@uuuuuuuuuuuum',
+          'workato.recipe__code.instance.Copy_of_test_recipe_321_f1n2_leaf1_f1_nested2_basedir1_Root_vuu_suuuum_ssssuuuuuuum@uuuuuuuuuuuum',
+          'workato.recipe__code.instance.New_email_in_Gmail_will_add_a_new_row_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_sssssssssssuuuum@uuuuuuuuuuuuuuuum',
+          'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_dssssssssssssssuuuum@uuuuuuuuuuuuuuuuuuuum',
+          'workato.recipe__code.instance.__________New_or_updated_standard_record___________in_NetSuite__will_create_record_in_Salesforce_f1_nested2_basedir1_Root_vuu_ssssssssssssss_00010sssssssssss_00010sssssuuuum@uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuumuu',
+          'workato.recipe__code.instance.pubsub_recipe_412_basedir1_Root_ssuu@uuuum',
+          'workato.recipe__code.instance.test_recipe_321_f1_nested2_basedir1_Root_vuu_ssuuuum@uuuuuuum',
           'workato.recipe__code__block',
           'workato.recipe__code__block__block',
           'workato.recipe__code__block__block__dynamicPickListSelection',
@@ -217,8 +217,8 @@ describe('adapter', () => {
         expect(recipe?.value.folder_id.elemID.getFullName()).toEqual('workato.folder.instance.f1_nested2_basedir1_Root@vuu')
         const recipeCodeReference = recipe?.value.code
         expect(recipeCodeReference).toBeInstanceOf(ReferenceExpression)
-        expect((recipeCodeReference as ReferenceExpression).elemID.getFullName()).toEqual('workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_dssssssssssssssuuuum__@uuuuuuuuuuuuuuuuuuuumuu')
-        const recipeCode = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_dssssssssssssssuuuum__@uuuuuuuuuuuuuuuuuuuumuu')
+        expect((recipeCodeReference as ReferenceExpression).elemID.getFullName()).toEqual('workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_dssssssssssssssuuuum@uuuuuuuuuuuuuuuuuuuum')
+        const recipeCode = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_f1_nested2_basedir1_Root_vuu_dssssssssssssssuuuum@uuuuuuuuuuuuuuuuuuuum')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.value).toEqual({
           number: 0,

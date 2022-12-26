@@ -183,9 +183,9 @@ describe('referenced instances', () => {
         fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
       }
     )
-    const noIdFieldsParent = new InstanceElement('noIdFieldsParent', noIdFieldsType)
+    const noIdFieldsParent = new InstanceElement('no-idFieldsParent', noIdFieldsType)
     const noIdFieldsWithParent = new InstanceElement(
-      'noIdFieldsWithParent',
+      'no-idFieldsWithParent',
       noIdFieldsType,
       {}, [],
       {
@@ -193,7 +193,7 @@ describe('referenced instances', () => {
       }
     )
     const noIdFieldsWithoutParent = new InstanceElement(
-      'noIdFieldsWithoutParent',
+      'no-idFieldsWithoutParent',
       noIdFieldsType,
       {}
     )
@@ -274,8 +274,8 @@ describe('referenced instances', () => {
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
-          'myAdapter.noIdFields.instance.noIdFieldsParent',
-          'myAdapter.noIdFields.instance.noIdFieldsWithoutParent',
+          'myAdapter.noIdFields.instance.no_idFieldsParent@b',
+          'myAdapter.noIdFields.instance.no_idFieldsWithoutParent@b',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -313,8 +313,8 @@ describe('referenced instances', () => {
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
-          'myAdapter.noIdFields.instance.noIdFieldsWithParent',
-          'myAdapter.noIdFields.instance.noIdFieldsWithoutParent',
+          'myAdapter.noIdFields.instance.no-idFieldsWithParent',
+          'myAdapter.noIdFields.instance.no-idFieldsWithoutParent',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -336,8 +336,8 @@ describe('referenced instances', () => {
           'myAdapter.folder',
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
-          'myAdapter.noIdFields.instance.noIdFieldsWithParent',
-          'myAdapter.noIdFields.instance.noIdFieldsWithoutParent',
+          'myAdapter.noIdFields.instance.no-idFieldsWithParent',
+          'myAdapter.noIdFields.instance.no-idFieldsWithoutParent',
           'myAdapter.recipe',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',

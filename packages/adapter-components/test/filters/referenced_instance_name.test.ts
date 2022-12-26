@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, TemplateExpression, isReferenceExpression, TemplatePart } from '@salto-io/adapter-api'
 import { addReferencesToInstanceNames, referencedInstanceNamesFilterCreator,
   createReferenceIndex } from '../../src/filters/referenced_instance_names'
 import { FilterWith } from '../../src/filter_utils'
@@ -52,6 +52,7 @@ describe('referenced instances', () => {
       fields: {
         name: { refType: BuiltinTypes.STRING },
         fav_recipe: { refType: BuiltinTypes.NUMBER },
+        template_with_refs: { refType: BuiltinTypes.STRING },
       },
     })
     const rootBook = new InstanceElement(
@@ -168,6 +169,15 @@ describe('referenced instances', () => {
       {
         name: 'StAtUs',
         fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
+        template_with_refs: new TemplateExpression({ parts: [
+          'aaa',
+          new ReferenceExpression(recipes[0].elemID, recipes[0]),
+          new ReferenceExpression(recipes[1].elemID, recipes[1]),
+          'bbb',
+          new ReferenceExpression(recipes[0].elemID, recipes[0]),
+          new ReferenceExpression(anotherBook.elemID, anotherBook),
+          'ccc',
+        ] }),
       }
     )
     return [recipeType, bookType, ...recipes, anotherBook, rootBook,
@@ -283,6 +293,28 @@ describe('referenced instances', () => {
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
         ])
     })
+    it('should change references correctly inside template expressions', async () => {
+      elements = generateElements()
+      const result = await addReferencesToInstanceNames(
+        elements,
+        transformationConfigByType,
+        transformationDefaultConfig
+      )
+      const updatedStatus = result.filter(isInstanceElement).find(inst => inst.elemID.typeName === 'status')
+      expect(updatedStatus).toBeInstanceOf(InstanceElement)
+      expect(updatedStatus?.value.template_with_refs).toBeInstanceOf(TemplateExpression)
+      expect((updatedStatus?.value.template_with_refs.parts ?? []).map(
+        (val: TemplatePart) => (isReferenceExpression(val) ? val.elemID.getFullName() : val)
+      )).toEqual([
+        'aaa',
+        'myAdapter.recipe.instance.recipe123_123_ROOT',
+        'myAdapter.recipe.instance.recipe456_456_123_ROOT',
+        'bbb',
+        'myAdapter.recipe.instance.recipe123_123_ROOT',
+        'myAdapter.book.instance.456_123_ROOT',
+        'ccc',
+      ])
+    })
     it('should not change name for duplicate elemIDs', async () => {
       elements = generateElements().filter(e => e.elemID.typeName !== 'status')
       const result = await addReferencesToInstanceNames(
@@ -319,9 +351,10 @@ describe('referenced instances', () => {
         'myAdapter.book.instance.book',
         'myAdapter.recipe.instance.recipe123',
         'myAdapter.recipe.instance.last',
+        'myAdapter.recipe.instance.recipe456',
       ])
       expect(Object.values(res).map(n => n.length))
-        .toEqual([4, 2, 4, 2])
+        .toEqual([4, 3, 6, 2, 1])
     })
   })
 })

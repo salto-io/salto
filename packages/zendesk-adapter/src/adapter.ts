@@ -187,11 +187,10 @@ export const DEFAULT_FILTERS = [
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
+  articleBodyFilter,
   guideParentSection,
   serviceUrlFilter,
   ...Object.values(commonFilters),
-  // articleBodyFilter should run after referencedInstanceNames (which is part of the common filters)
-  articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)

@@ -106,7 +106,7 @@ export const deployChange = async ({
   elementsSource?: ReadOnlyElementsSource
 }): Promise<ResponseResult> => {
   const instance = getChangeData(change)
-  log.trace(`Deploying instance ${instance.elemID.getFullName()}, ${safeJsonStringify({ action: change.action })}`)
+  log.debug(`Starting deploying instance ${instance.elemID.getFullName()} with action '${change.action}'`)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
@@ -131,7 +131,7 @@ export const deployChange = async ({
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
-  log.trace(`Deploying instance ${instance.elemID.getFullName()}, ${safeJsonStringify({ url, data, queryParams }, elementExpressionStringifyReplacer)}`)
+  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${safeJsonStringify({ url, data, queryParams }, elementExpressionStringifyReplacer)}`)
   const response = await client[endpoint.method]({ url, data, queryParams })
   return response.data
 }

@@ -1111,13 +1111,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       serviceUrl: '/secure/admin/EditIssueSecurityScheme!default.jspa?=&schemeId={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddIssueSecurityScheme.jspa',
-      modify: '/secure/admin/EditIssueSecurityScheme.jspa',
-      remove: '/secure/admin/DeleteIssueSecurityScheme.jspa',
-      query: '/rest/api/3/issuesecurityschemes',
-      dataField: 'issueSecuritySchemes',
-    },
   },
 
   ProjectSecurityScheme: {
@@ -1157,12 +1150,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueSecurityLevelId' },
       ],
     },
-    jspRequests: {
-      add: '/secure/admin/AddIssueSecurity.jspa',
-      remove: '/secure/admin/DeleteIssueSecurity.jspa',
-      query: '/rest/api/3/issuesecurityschemes/{schemeId}/members',
-      dataField: 'values',
-    },
   },
 
   SecurityLevel: {
@@ -1194,13 +1181,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'self',
         },
       ],
-    },
-    jspRequests: {
-      add: '/secure/admin/EditIssueSecurities!addLevel.jspa',
-      modify: '/secure/admin/EditSecurityLevel.jspa',
-      remove: '/secure/admin/DeleteIssueSecurityLevel.jspa',
-      query: '/rest/api/3/issuesecurityschemes/{schemeId}',
-      dataField: 'levels',
     },
   },
 

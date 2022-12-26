@@ -237,7 +237,7 @@ Go to ${url} to see valid users and account IDs.`,
   })
   it('should not raise errors when the flag is off', async () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    configOff.fetch.showUserDisplayNames = false
+    configOff.fetch.convertUsersIds = false
     const validatorOff = accountIdValidator(
       client,
       configOff,

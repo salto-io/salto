@@ -71,7 +71,7 @@ import duplicateIdsFilter from './filters/duplicate_ids'
 import unresolvedParentsFilter from './filters/unresolved_parents'
 import fieldNameFilter from './filters/fields/field_name_filter'
 import accountIdFilter from './filters/account_id/account_id_filter'
-import addDisplayNameFilter from './filters/account_id/add_display_name_filter'
+import userIdFilter from './filters/account_id/user_id_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
@@ -105,6 +105,7 @@ import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
+import deployDcSecuritySchemeFilter from './filters/data_center/security_scheme'
 import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
@@ -205,11 +206,12 @@ export const DEFAULT_FILTERS = [
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
+  deployDcSecuritySchemeFilter,
   allowedPermissionsSchemeFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter
-  addDisplayNameFilter,
+  userIdFilter,
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
@@ -261,7 +263,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
-    this.getIdMapFunc = getIdMapFuncCreator(paginator)
+    this.getIdMapFunc = getIdMapFuncCreator(paginator, client.isDataCenter)
 
     const filterContext = {}
     this.createFiltersRunner = () => (

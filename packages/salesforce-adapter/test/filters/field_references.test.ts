@@ -21,9 +21,10 @@ import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
 import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
-import { metadataType, apiName } from '../../src/transformers/transformer'
+import { metadataType, apiName, createInstanceElement } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
 import { defaultFilterContext } from '../utils'
+import { mockTypes } from '../mock_elements'
 
 const { awu } = collections.asynciterable
 
@@ -131,6 +132,32 @@ describe('FieldReferences filter', () => {
         someFilterField: { refType: filterItemType },
       },
     })
+    const FlowElementReferenceOrValueType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'FlowElementReferenceOrValue'),
+      annotations: { [METADATA_TYPE]: 'FlowElementReferenceOrValue' },
+      fields: {
+        elementReference: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const FlowType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'Flow'),
+      annotations: { [METADATA_TYPE]: 'Flow' },
+      fields: {
+        // note: does not exactly match the real type
+        inputAssignments: { refType: new ListType(FlowElementReferenceOrValueType) },
+      },
+    })
+    const flowInstance = new InstanceElement(
+      'flow1',
+      FlowType,
+      {
+        inputAssignments: [
+          { elementReference: 'check' },
+          { elementReference: '$Label.check' },
+        ],
+      }
+    )
+    const checkLabel = createInstanceElement({ fullName: 'check' }, mockTypes.CustomLabel)
     return [
       customObjectType,
       // sharingRules555 should point to Account.name (rule contains instanceTypes constraint)
@@ -151,6 +178,10 @@ describe('FieldReferences filter', () => {
           ],
         },
       ),
+      FlowElementReferenceOrValueType,
+      FlowType,
+      flowInstance,
+      checkLabel,
       ...generateObjectAndInstance({
         type: 'Account',
         fieldName: 'name',
@@ -388,6 +419,16 @@ describe('FieldReferences filter', () => {
       expect(inst.value[CPQ_CONSTRAINT_FIELD]).toBeDefined()
       expect(inst.value[CPQ_CONSTRAINT_FIELD]).toBeInstanceOf(ReferenceExpression)
       expect(inst.value[CPQ_CONSTRAINT_FIELD]?.elemID.getFullName()).toEqual('salesforce.SBQQ__Quote__c.field.SBQQ__Account__c')
+    })
+
+    it('should resolve field with CustomLabel strategy', async () => {
+      const inst = await awu(elements).find(
+        async e => isInstanceElement(e)
+              && await apiName(await e.getType()) === 'Flow'
+      ) as InstanceElement
+      expect(inst.value.inputAssignments[0].elementReference).toEqual('check')
+      expect(inst.value.inputAssignments[1].elementReference).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.inputAssignments[1].elementReference.elemID.getFullName()).toEqual('salesforce.CustomLabel.instance.check')
     })
 
     it('should resolve field with neighbor context using app menu item mapping when context is a string', async () => {

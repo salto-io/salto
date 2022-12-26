@@ -110,6 +110,7 @@ import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/pri
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
+import commonFilters from './filters/common'
 
 const {
   generateTypes,
@@ -217,6 +218,7 @@ export const DEFAULT_FILTERS = [
   deployDcIssueEventsFilter,
   // Must be last
   defaultInstancesDeployFilter,
+  ...Object.values(commonFilters),
 ]
 
 export interface JiraAdapterParams {

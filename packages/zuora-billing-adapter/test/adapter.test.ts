@@ -25,6 +25,8 @@ import {
   MapType,
   ObjectType,
   Values,
+  isObjectType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -313,10 +315,12 @@ describe('adapter', () => {
           'WorkflowExport',
         ])
         expect(elements.filter(isInstanceElement)).toHaveLength(145)
-        expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(2)
+        const objectDefs = (await awu(elements).filter(isObjectDef).toArray()).filter(isObjectType)
+        expect(objectDefs).toHaveLength(2)
         expect([...new Set(
-          await awu(elements).filter(isObjectDef).map(e => e.elemID.name).toArray()
+          objectDefs.map(e => e.elemID.name)
         )].sort()).toEqual(['account', 'accountingcode'])
+        expect(objectDefs.find(obj => obj.annotations[CORE_ANNOTATIONS.HIDDEN])).toBeUndefined()
         // ensure pagination is working
         expect(elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'WorkflowExport')).toHaveLength(6)
       })

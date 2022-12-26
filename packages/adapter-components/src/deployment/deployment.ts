@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
-import { transformElement } from '@salto-io/adapter-utils'
+import { elementExpressionStringifyReplacer, safeJsonStringify, transformElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
@@ -106,7 +106,7 @@ export const deployChange = async ({
   elementsSource?: ReadOnlyElementsSource
 }): Promise<ResponseResult> => {
   const instance = getChangeData(change)
-  log.debug(`Deploying instance ${instance.elemID.getFullName()}`, { action: change.action })
+  log.trace(`Deploying instance ${instance.elemID.getFullName()}, ${safeJsonStringify({ action: change.action })}`)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
@@ -131,8 +131,7 @@ export const deployChange = async ({
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
-
-  log.debug(`Deploying instance ${instance.elemID.getFullName()}`, { url, data, queryParams })
+  log.trace(`Deploying instance ${instance.elemID.getFullName()}, ${safeJsonStringify({ url, data, queryParams }, elementExpressionStringifyReplacer)}`)
   const response = await client[endpoint.method]({ url, data, queryParams })
   return response.data
 }

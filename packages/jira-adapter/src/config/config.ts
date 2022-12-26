@@ -57,7 +57,7 @@ type JiraFetchFilters = {
 type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
   addTypeToFieldName?: boolean
-  showUserDisplayNames?: boolean
+  convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
 }
 

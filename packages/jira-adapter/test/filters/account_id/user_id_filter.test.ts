@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ElemIdGetter, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, ElemIdGetter, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import addDisplayNameFilter from '../../../src/filters/account_id/add_display_name_filter'
+import addDisplayNameFilter from '../../../src/filters/account_id/user_id_filter'
 import * as common from './account_id_common'
 import { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
 
@@ -101,7 +101,7 @@ describe('add_display_name_filter', () => {
 
     beforeEach(() => {
       configFFOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-      configFFOff.fetch.showUserDisplayNames = false
+      configFFOff.fetch.convertUsersIds = false
       const { client, paginator, connection } = mockClient()
       connectionFFOff = connection
       filterFFOff = addDisplayNameFilter(getFilterParams({
@@ -161,5 +161,156 @@ describe('add_display_name_filter', () => {
     expect(instance.value.holder.parameter.displayName).toBeUndefined()
     expect(instance.value.list[0].accountId.displayName).toBeUndefined()
     expect(instance.value.list[1].accountId.displayName).toBeUndefined()
+  })
+})
+
+describe('convert userId to key in Jira DC', () => {
+  let mockConnection: MockInterface<clientUtils.APIConnection>
+  let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  let elemIdGetter: jest.MockedFunction<ElemIdGetter>
+  let config: JiraConfig
+
+  let objectType: ObjectType
+  let instances: InstanceElement[] = []
+  const EMPTY_STRING = ''
+  const NAME_PREFIX = 'name'
+
+  beforeEach(() => {
+    elemIdGetter = mockFunction<ElemIdGetter>()
+      .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
+
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
+    const { client, paginator, connection, getIdMapFunc } = mockClient(true)
+    mockConnection = connection
+    filter = addDisplayNameFilter(getFilterParams({
+      client,
+      paginator,
+      config,
+      getIdMapFunc,
+      getElemIdFunc: elemIdGetter,
+    })) as typeof filter
+
+
+    objectType = common.createObjectedType('SecurityLevel')
+
+
+    instances = []
+    for (let i = 0; i < 3; i += 1) {
+      instances[i] = common.createObjectedInstance(i.toString(), objectType)
+    }
+
+    mockConnection.get.mockResolvedValue({
+      status: 200,
+      data: [{
+        key: '2',
+        name: `${NAME_PREFIX}2`,
+      }, {
+        key: '2l',
+        name: `${NAME_PREFIX}2l`,
+      }, {
+        key: '2n',
+        name: `${NAME_PREFIX}2n`,
+      }, {
+        key: '2an',
+        name: `${NAME_PREFIX}2an`,
+      }, {
+        key: '22n',
+        name: `${NAME_PREFIX}22n`,
+      }, {
+        key: '22',
+        name: `${NAME_PREFIX}22`,
+      }, {
+        key: '2h',
+        name: `${NAME_PREFIX}2h`,
+      }, {
+        key: '2list1',
+        name: `${NAME_PREFIX}2list1`,
+      }, {
+        key: '2list2',
+        name: `${NAME_PREFIX}2list2`,
+      }, {
+        key: '0',
+        name: `${NAME_PREFIX}0`,
+      }, {
+        key: '0l',
+        name: `${NAME_PREFIX}0l`,
+      }, {
+        key: '0n',
+        name: `${NAME_PREFIX}0n`,
+      }, {
+        key: '0an',
+        name: `${NAME_PREFIX}0an`,
+      }, {
+        key: '00n',
+        name: `${NAME_PREFIX}00n`,
+      }, {
+        key: '00',
+        name: `${NAME_PREFIX}00`,
+      }, {
+        key: '0h',
+        name: `${NAME_PREFIX}0h`,
+      }, {
+        key: '0list1',
+        name: `${NAME_PREFIX}0list1`,
+      }, {
+        key: '0list2',
+        name: `${NAME_PREFIX}0list2`,
+      }],
+    })
+  })
+  describe('fetch', () => {
+    it('should convert userId to key and backwards for all 5 types', async () => {
+      await filter.onFetch([instances[2]])
+      expect(mockConnection.get).toHaveBeenCalledOnce()
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/api/2/user/search?username=.',
+        undefined
+      )
+      common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
+      await filter.preDeploy([
+        toChange({ after: instances[0] }),
+        toChange({ before: instances[1], after: instances[2] }),
+      ])
+      expect(mockConnection.get).toHaveBeenCalledOnce()
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/api/2/user/search?username=.',
+        undefined
+      )
+      common.checkInstanceUserIds(instances[2], '2', EMPTY_STRING)
+      common.checkInstanceUserIds(instances[0], '0', EMPTY_STRING)
+      await filter.onDeploy([
+        toChange({ after: instances[0] }),
+        toChange({ before: instances[1], after: instances[2] }),
+      ])
+      expect(mockConnection.get).toHaveBeenCalledOnce()
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/api/2/user/search?username=.',
+        undefined
+      )
+      common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
+      common.checkInstanceUserIds(instances[0], '0', NAME_PREFIX)
+    })
+    it('should convert userId to key and backwards in all defined types', async () => {
+      await awu(ACCOUNT_ID_TYPES).forEach(async typeName => {
+        const type = common.createType(typeName)
+        const instance = common.createObjectedInstance('2', type)
+        await filter.onFetch([instance])
+        common.checkInstanceUserIds(instance, '2', NAME_PREFIX, PARAMETER_STYLE_TYPES.includes(typeName))
+        await filter.preDeploy([toChange({ after: instance })])
+        common.checkInstanceUserIds(instance, '2', EMPTY_STRING, PARAMETER_STYLE_TYPES.includes(typeName))
+        await filter.onDeploy([toChange({ after: instance })])
+        common.checkInstanceUserIds(instance, '2', NAME_PREFIX, PARAMETER_STYLE_TYPES.includes(typeName))
+      })
+    })
+    it('should not convert userId to key or backwards for undefined types', async () => {
+      const type = common.createType('Other')
+      const instance = common.createObjectedInstance('2', type)
+      await filter.onFetch([instance])
+      common.checkInstanceUserIds(instances[2], '2', EMPTY_STRING)
+      await filter.preDeploy([toChange({ after: instance })])
+      common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
+      await filter.onDeploy([toChange({ after: instance })])
+      common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
+    })
   })
 })

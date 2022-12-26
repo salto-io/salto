@@ -257,6 +257,24 @@ export const checkDisplayNames = (
     expect(instance.value.holder.parameter.displayName).toEqual(`disp${id}h`)
   }
 }
+export const checkInstanceUserIds = (
+  instance: InstanceElement,
+  id: string,
+  prefix: string,
+  holderType = true
+) : void => {
+  expect(instance.value.accountId.id).toEqual(`${prefix}${id}`)
+  expect(instance.value.leadAccountId.id).toEqual(`${prefix}${id}l`)
+  expect(instance.value.nested.accountId.id).toEqual(`${prefix}${id}n`)
+  expect(instance.value.nested.authorAccountId.id).toEqual(`${prefix}${id}an`)
+  expect(instance.value.nested.actor2.value.id).toEqual(`${prefix}${id}${id}n`)
+  expect(instance.value.actor.value.id).toEqual(`${prefix}${id}${id}`)
+  expect(instance.value.list[0].accountId.id).toEqual(`${prefix}${id}list1`)
+  expect(instance.value.list[1].accountId.id).toEqual(`${prefix}${id}list2`)
+  if (holderType) {
+    expect(instance.value.holder.parameter.id).toEqual(`${prefix}${id}h`)
+  }
+}
 
 export const createInstanceElementArrayWithDisplayNames = (
   size: number,

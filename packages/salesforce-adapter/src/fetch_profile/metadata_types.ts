@@ -655,36 +655,3 @@ export const getFetchTargets = (target: SupportedMetadataType[]): SupportedMetad
   }
   return _.uniq(allTypes)
 }
-
-export const IN_FOLDER_METADATA_TYPES = [
-  'Report',
-  'Document',
-  'Dashboard',
-  'EmailTemplate',
-] as const
-
-export const FOLDER_METADATA_TYPES = [
-  'ReportFolder',
-  'DocumentFolder',
-  'DashboardFolder',
-  'EmailFolder',
-] as const
-
-
-export type InFolderMetadataType = typeof IN_FOLDER_METADATA_TYPES[number]
-export type FolderMetadataType = typeof FOLDER_METADATA_TYPES[number]
-
-export const METADATA_TYPE_TO_FOLDER_TYPE: Record<InFolderMetadataType, FolderMetadataType> = {
-  Report: 'ReportFolder',
-  Document: 'DocumentFolder',
-  Dashboard: 'DashboardFolder',
-  EmailTemplate: 'EmailFolder',
-}
-
-export const isInFolderMetadataType = (metadataType: string): metadataType is InFolderMetadataType => (
-  (IN_FOLDER_METADATA_TYPES as ReadonlyArray<string>).includes(metadataType)
-)
-
-export const isFolderMetadataType = (metadataType: string): metadataType is FolderMetadataType => (
-  (FOLDER_METADATA_TYPES as ReadonlyArray<string>).includes(metadataType)
-)

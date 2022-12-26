@@ -41,12 +41,6 @@ import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
 
 const { makeArray } = collections.array
 
-// const mockedMetadataQueryModule = jest.mocked(metadataQueryModule)
-// jest.mock('../src/fetch_profile/metadata_query', () => ({
-//   ...jest.requireActual('../src/fetch_profile/metadata_query'),
-// }))
-
-
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter

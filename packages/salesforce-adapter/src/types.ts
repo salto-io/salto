@@ -58,9 +58,10 @@ export type MetadataInstance = {
   metadataType: string
   namespace: string
   name: string
+  isFolderType: boolean
 }
 
-export type MetadataQueryParams = Partial<MetadataInstance>
+export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
 
 export type MetadataParams = {
   include?: MetadataQueryParams[]

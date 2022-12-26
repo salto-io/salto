@@ -21,20 +21,21 @@ import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion, MAX_ITEMS_IN_RETRIEVE_REQUEST, MAX_INSTANCES_PER_TYPE } from './types'
 import {
-  METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE,
-  RETRIEVE_SIZE_LIMIT_ERROR, LAYOUT_TYPE_ID_METADATA_TYPE, CUSTOM_OBJECT, UNLIMITED_INSTANCES_VALUE,
+  METADATA_CONTENT_FIELD,
+  NAMESPACE_SEPARATOR,
+  INTERNAL_ID_FIELD,
+  DEFAULT_NAMESPACE,
+  RETRIEVE_SIZE_LIMIT_ERROR,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  UNLIMITED_INSTANCES_VALUE,
+  FOLDER_CONTENT_TYPE,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
-import {
-  InFolderMetadataType,
-  isFolderMetadataType,
-  isInFolderMetadataType,
-  METADATA_TYPE_TO_FOLDER_TYPE,
-} from './fetch_profile/metadata_types'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -114,25 +115,26 @@ const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
 
-const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties): boolean => (
+const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
   metadataQuery.isInstanceMatch({
     namespace: getNamespace(file),
     metadataType: file.type,
     name: file.fullName,
+    isFolderType,
   })
 )
 
 const getFolders = async (
   client: SalesforceClient,
   metadataQuery: MetadataQuery,
-  type: InFolderMetadataType,
+  folderType: string,
 ): Promise<FetchElements<FileProperties[]>> => {
   const { elements, configChanges } = await listMetadataObjects(
-    client, METADATA_TYPE_TO_FOLDER_TYPE[type]
+    client, folderType
   )
   return {
     elements: _(elements)
-      .filter(props => notInSkipList(metadataQuery, props))
+      .filter(props => notInSkipList(metadataQuery, props, true))
       .uniqBy(file => file.fullName)
       .value(),
     configChanges,
@@ -142,17 +144,18 @@ const getFolders = async (
 const listMetadataObjectsWithinFolders = async (
   client: SalesforceClient,
   metadataQuery: MetadataQuery,
-  metadataTypeName: InFolderMetadataType,
+  type: string,
+  folderType: string,
   isUnhandledError?: ErrorFilter,
 ): Promise<FetchElements<FileProperties[]>> => {
-  const folderPathByName = metadataQuery.getFolderPathsByName(metadataTypeName)
-  const folders = await getFolders(client, metadataQuery, metadataTypeName)
+  const folderPathByName = metadataQuery.getFolderPathsByName(folderType)
+  const folders = await getFolders(client, metadataQuery, folderType)
   const folderNames = [
     ...folders.elements.map(props => props.fullName),
     ...Object.keys(folderPathByName),
   ]
   const { result, errors } = await client.listMetadataObjects(
-    folderNames.map(folderName => ({ type: metadataTypeName, folder: folderName })),
+    folderNames.map(folderName => ({ type, folder: folderName })),
     isUnhandledError,
   )
   return {
@@ -240,6 +243,7 @@ export const fetchMetadataInstances = async ({
         namespace,
         metadataType: metadataTypeName,
         name,
+        isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
       })
     ).map(({ name }) => name),
   )
@@ -291,12 +295,9 @@ export const retrieveMetadataInstances = async ({
 
   const listFilesOfType = async (type: MetadataObjectType): Promise<FileProperties[]> => {
     const typeName = await apiName(type)
-    if (isFolderMetadataType(typeName)) {
-      // We get folders as part of getting the records inside them
-      return []
-    }
-    const { elements: res, configChanges: listObjectsConfigChanges } = isInFolderMetadataType(typeName)
-      ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName)
+    const { folderType } = type.annotations
+    const { elements: res, configChanges: listObjectsConfigChanges } = isDefined(folderType)
+      ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
     return _.uniqBy(res, file => file.fullName)
@@ -358,9 +359,13 @@ export const retrieveMetadataInstances = async ({
         getAuthorAnnotations(file))
     ))
   }
-
-  const filesToRetrieve = _.flatten(await Promise.all(types.map(listFilesOfType)))
-    .filter(props => notInSkipList(metadataQuery, props))
+  const filesToRetrieve = _.flatten(await Promise.all(
+    types
+      // We get folders as part of getting the records inside them
+      .filter(type => type.annotations.folderContentType === undefined)
+      .map(listFilesOfType)
+  ))
+    .filter(props => notInSkipList(metadataQuery, props, false))
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

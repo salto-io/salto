@@ -14,7 +14,16 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  Element,
+  BuiltinTypes,
+  isInstanceElement,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { addReferencesToInstanceNames, referencedInstanceNamesFilterCreator,
   createReferenceIndex } from '../../src/filters/referenced_instance_names'
 import { FilterWith } from '../../src/filter_utils'
@@ -53,6 +62,10 @@ describe('referenced instances', () => {
         name: { refType: BuiltinTypes.STRING },
         fav_recipe: { refType: BuiltinTypes.NUMBER },
       },
+    })
+    const noIdFieldsType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'noIdFields'),
+      fields: {},
     })
     const rootBook = new InstanceElement(
       'rootBook',
@@ -170,9 +183,23 @@ describe('referenced instances', () => {
         fav_recipe: new ReferenceExpression(recipes[0].elemID, recipes[0]),
       }
     )
+    const noIdFieldsParent = new InstanceElement('noIdFieldsParent', noIdFieldsType)
+    const noIdFieldsWithParent = new InstanceElement(
+      'noIdFieldsWithParent',
+      noIdFieldsType,
+      {}, [],
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(noIdFieldsParent.elemID, noIdFieldsParent),
+      }
+    )
+    const noIdFieldsWithoutParent = new InstanceElement(
+      'noIdFieldsWithoutParent',
+      noIdFieldsType,
+      {}
+    )
     return [recipeType, bookType, ...recipes, anotherBook, rootBook,
       sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups,
-      folderType, folderOne, folderTwo, statusType, status]
+      folderType, folderOne, folderTwo, statusType, status, noIdFieldsWithParent, noIdFieldsWithoutParent]
   }
   const lowercaseName : NameMappingOptions = 'lowercase'
   const config = {
@@ -203,6 +230,12 @@ describe('referenced instances', () => {
           transformation: {
             idFields: ['name', '&fav_recipe'],
             nameMapping: lowercaseName,
+          },
+        },
+        noIdFields: {
+          transformation: {
+            idFields: [],
+            extendsParentId: true,
           },
         },
       },
@@ -241,6 +274,8 @@ describe('referenced instances', () => {
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
+          'myAdapter.noIdFields.instance.noIdFieldsParent',
+          'myAdapter.noIdFields.instance.noIdFieldsWithoutParent',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -270,7 +305,7 @@ describe('referenced instances', () => {
       const sortedResult = result
         .filter(isInstanceElement)
         .map(i => i.elemID.getFullName()).sort()
-      expect(result.length).toEqual(13)
+      expect(result.length).toEqual(15)
       expect(sortedResult)
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
@@ -278,6 +313,8 @@ describe('referenced instances', () => {
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
+          'myAdapter.noIdFields.instance.noIdFieldsWithParent',
+          'myAdapter.noIdFields.instance.noIdFieldsWithoutParent',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
@@ -290,7 +327,7 @@ describe('referenced instances', () => {
         transformationConfigByType,
         transformationDefaultConfig
       )
-      expect(result.length).toEqual(12)
+      expect(result.length).toEqual(14)
       expect(result
         .map(e => e.elemID.getFullName()).sort())
         .toEqual(['myAdapter.book',
@@ -299,6 +336,8 @@ describe('referenced instances', () => {
           'myAdapter.folder',
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
           'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+          'myAdapter.noIdFields.instance.noIdFieldsWithParent',
+          'myAdapter.noIdFields.instance.noIdFieldsWithoutParent',
           'myAdapter.recipe',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',

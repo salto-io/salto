@@ -27,7 +27,7 @@ const log = logger(module)
  */
 export const hideTypesFilterCreator: <
  TClient,
- TContext extends { fetch: Pick<UserFetchConfig, 'hideTypes'> & { [x: string]: unknown } },
+ TContext extends { fetch: Pick<UserFetchConfig, 'hideTypes'> },
  TResult extends void | filter.FilterResult = void,
 > () => FilterCreator<TClient, TContext, TResult> = (
 ) => ({ config }) => ({

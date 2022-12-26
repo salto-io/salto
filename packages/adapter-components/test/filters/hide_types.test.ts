@@ -36,11 +36,6 @@ describe('hide types filter', () => {
     config: {
       fetch: {
         hideTypes,
-        include: [
-          { type: 't1' },
-          { type: 't2' },
-        ],
-        exclude: [],
       },
     },
   }) as FilterType

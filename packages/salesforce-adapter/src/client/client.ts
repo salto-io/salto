@@ -518,6 +518,44 @@ export default class SalesforceClient {
     }
   }
 
+  isSandbox(): boolean {
+    return this.credentials.isSandbox
+  }
+
+  private retryOnBadResponse<T extends object>(request: () => Promise<T>): Promise<T> {
+    const retryAttempts = this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts
+    const requestWithRetry = async (attempts: number): Promise<T> => {
+      let res: T
+      try {
+        res = await request()
+      } catch (e) {
+        log.warn(`caught exception: ${e.message}. ${attempts} retry attempts left from ${retryAttempts} in total`)
+        if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
+          log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
+          return requestWithRetry(attempts - 1)
+        }
+        throw e
+      }
+
+      if (typeof res === 'string') {
+        log.warn('Received string when expected object, attempting the json parse the received string')
+
+        try {
+          return JSON.parse(res)
+        } catch (e) {
+          log.warn('Received string that is not json parsable when expected object. Retries left %d', attempts - 1)
+          if (attempts > 1) {
+            return requestWithRetry(attempts - 1)
+          }
+          throw e
+        }
+      }
+
+      return res
+    }
+    return requestWithRetry(retryAttempts)
+  }
+
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()

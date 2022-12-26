@@ -151,6 +151,7 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
+          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying as inactive')
         })
       })
     })

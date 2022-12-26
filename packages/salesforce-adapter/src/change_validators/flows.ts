@@ -37,7 +37,7 @@ const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 const isFlowChange = (change: Change<InstanceElement>):
     Promise<boolean> => isInstanceOfType(FLOW_METADATA_TYPE)(getChangeData(change))
 
-const isActiveFlowChange = (change: ModificationChange<InstanceElement>):
+export const isActiveFlowChange = (change: ModificationChange<InstanceElement>):
     boolean => (
   change.data.before.value.status === ACTIVE && change.data.after.value.status === ACTIVE
 )
@@ -47,7 +47,7 @@ const isDeactivateChange = (change: ModificationChange<InstanceElement>):
   change.data.before.value.status === ACTIVE && change.data.after.value.status !== ACTIVE
 )
 
-const isActivatingChange = (change: ModificationChange<InstanceElement>):
+export const isActivatingChange = (change: ModificationChange<InstanceElement>):
     boolean => (
   change.data.before.value.status !== ACTIVE && change.data.after.value.status === ACTIVE
 )
@@ -63,7 +63,7 @@ const isDeactivationChangeOnly = (change: ModificationChange<InstanceElement>):
   return isEmpty(diffWithoutStatus)
 }
 
-const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>):
+export const isActivatingChangeOnly = (change: ModificationChange<InstanceElement>):
     boolean => {
   const beforeClone = change.data.before.clone()
   beforeClone.value.status = ACTIVE
@@ -172,7 +172,10 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
       deployActions: testCoveragePostDeploy(instance),
     }
   }
-  return newVersionInfo(instance, false)
+  return {
+    ...newVersionInfo(instance, false),
+    deployActions: deployAsInactivePostDeploy(instance),
+  }
 }
 
 /**

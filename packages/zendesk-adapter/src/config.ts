@@ -2190,6 +2190,63 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
+
+  // SALTO-2177 token-related types that can optionally be supported - but are not included under supportedTypes yet
+  api_tokens: {
+    request: {
+      url: '/api/v2/api_tokens',
+    },
+    transformation: {
+      dataField: 'api_tokens',
+    },
+  },
+  api_token: {
+    transformation: {
+      sourceTypeName: 'api_tokens__api_tokens',
+      idFields: ['description'],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+      serviceUrl: '/admin/apps-integrations/apis/zendesk-api/settings/tokens/',
+      fieldTypeOverrides: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+    },
+  },
+  oauth_tokens: {
+    request: {
+      url: '/api/v2/oauth/tokens',
+    },
+    transformation: {
+      dataField: 'tokens',
+    },
+  },
+  oauth_token: {
+    transformation: {
+      sourceTypeName: 'oauth_tokens__tokens',
+      // note: requires oauth_global_client to be included in the config
+      idFields: ['&client_id', 'token'],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+      serviceUrl: '/admin/apps-integrations/apis/zendesk-api/oauth_clients',
+      fieldTypeOverrides: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {

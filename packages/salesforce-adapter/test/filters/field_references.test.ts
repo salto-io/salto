@@ -147,6 +147,16 @@ describe('FieldReferences filter', () => {
         inputAssignments: { refType: new ListType(FlowElementReferenceOrValueType) },
       },
     })
+    const flowInstance = new InstanceElement(
+      'flow1',
+      FlowType,
+      {
+        inputAssignments: [
+          { elementReference: 'check' },
+          { elementReference: '$Label.check' },
+        ],
+      }
+    )
     const checkLabel = createInstanceElement({ fullName: 'check' }, mockTypes.CustomLabel)
     return [
       customObjectType,
@@ -170,16 +180,7 @@ describe('FieldReferences filter', () => {
       ),
       FlowElementReferenceOrValueType,
       FlowType,
-      new InstanceElement(
-        'flow1',
-        FlowType,
-        {
-          inputAssignments: [
-            { elementReference: 'check' },
-            { elementReference: '$Label.check' },
-          ],
-        }
-      ),
+      flowInstance,
       checkLabel,
       ...generateObjectAndInstance({
         type: 'Account',

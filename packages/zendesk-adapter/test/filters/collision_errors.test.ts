@@ -52,7 +52,9 @@ To resolve these collisions please take one of the following actions and fetch a
 \t1. Change obj's idFields to include all fields that uniquely identify the type's instances.
 \t2. Delete duplicate instances from your zendesk account.
 
-Alternatively, you can exclude obj from the service configuration in zendesk.nacl`,
+Alternatively, you can exclude obj from the service configuration in zendesk.nacl
+
+Learn more at: https://docs.salto.io/docs/zendesk#zendesk-duplicate-names`,
       })
     })
     it('should return no errors if there were no collisions', async () => {

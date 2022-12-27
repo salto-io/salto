@@ -59,7 +59,7 @@ export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
       return await super.getSinglePage(args)
     } catch (e) {
       const status = e.response?.status
-      // Workato returns 400 when asking to get pages from non-Dev Workato-Eviroments (Production/test)
+      // Workato returns 400 when asking to get pages from non-Dev Workato-Environments (Production/test)
       if (
         (status === 400 && [
           '/roles',

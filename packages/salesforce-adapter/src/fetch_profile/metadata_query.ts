@@ -42,6 +42,8 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // (AssignmentRules and EscalationRules)
   { metadataType: 'AssignmentRule' },
   { metadataType: 'EscalationRule' },
+  // May conflict with the MetadataType ForecastingCategoryMapping
+  { metadataType: 'CustomObject', name: 'ForecastingCategoryMapping' },
 ]
 
 // Instances of these types will match all namespaces

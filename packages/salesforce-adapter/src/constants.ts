@@ -138,6 +138,7 @@ export const FOREIGN_KEY_DOMAIN = 'foreignKeyDomain'
 export const CUSTOM_SETTINGS_TYPE = 'customSettingsType'
 export const LIST_CUSTOM_SETTINGS_TYPE = 'List'
 export const IS_ATTRIBUTE = 'isAttribute'
+export const FOLDER_CONTENT_TYPE = 'folderContentType'
 // must have the same name as INTERNAL_ID_FIELD
 export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
 

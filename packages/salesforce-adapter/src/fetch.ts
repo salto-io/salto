@@ -136,22 +136,19 @@ const listMetadataObjectsWithinFolders = async (
   const includedFolderElements = folders.elements
     .map(props => withFullPath(props, folderPathByName))
     .filter(props => notInSkipList(metadataQuery, props, true))
-  const folderNames = [
-    ...includedFolderElements.map(props => props.fullName),
-    ...Object.keys(folderPathByName),
-  ]
-  const { result: elements, errors } = await client.listMetadataObjects(
+  const folderNames = Object.keys(folderPathByName)
+    .concat(includedFolderElements.map(props => props.fullName))
+
+  const { result, errors } = await client.listMetadataObjects(
     folderNames.map(folderName => ({ type, folder: folderName })),
     isUnhandledError,
   )
-
-  const includedElements = elements
+  const elements = result
     .map(props => withFullPath(props, folderPathByName))
     .filter(props => notInSkipList(metadataQuery, props, false))
-  const configChanges = errors?.map(createListMetadataObjectsConfigChange) ?? []
-
-  includedFolderElements.forEach(props => includedElements.push(props))
-  folders.configChanges.forEach(configChange => configChanges.push(configChange))
+    .concat(includedFolderElements)
+  const configChanges = (errors?.map(createListMetadataObjectsConfigChange) ?? [])
+    .concat(folders.configChanges)
   return { elements, configChanges }
 }
 
@@ -230,7 +227,7 @@ export const fetchMetadataInstances = async ({
         name,
         isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
       })
-    ).map(({ name }) => name),
+    ).map(({ name }) => name)
   )
 
   const filePropertiesMap = _.keyBy(fileProps, getFullName)

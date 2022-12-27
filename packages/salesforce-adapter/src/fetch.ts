@@ -124,23 +124,6 @@ const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFol
   })
 )
 
-const getFolders = async (
-  client: SalesforceClient,
-  metadataQuery: MetadataQuery,
-  folderType: string,
-): Promise<FetchElements<FileProperties[]>> => {
-  const { elements, configChanges } = await listMetadataObjects(
-    client, folderType
-  )
-  return {
-    elements: _(elements)
-      .filter(props => notInSkipList(metadataQuery, props, true))
-      .uniqBy(file => file.fullName)
-      .value(),
-    configChanges,
-  }
-}
-
 const listMetadataObjectsWithinFolders = async (
   client: SalesforceClient,
   metadataQuery: MetadataQuery,
@@ -149,25 +132,27 @@ const listMetadataObjectsWithinFolders = async (
   isUnhandledError?: ErrorFilter,
 ): Promise<FetchElements<FileProperties[]>> => {
   const folderPathByName = metadataQuery.getFolderPathsByName(folderType)
-  const folders = await getFolders(client, metadataQuery, folderType)
+  const folders = await listMetadataObjects(client, folderType)
+  const includedFolderElements = folders.elements
+    .map(props => withFullPath(props, folderPathByName))
+    .filter(props => notInSkipList(metadataQuery, props, true))
   const folderNames = [
-    ...folders.elements.map(props => props.fullName),
+    ...includedFolderElements.map(props => props.fullName),
     ...Object.keys(folderPathByName),
   ]
-  const { result, errors } = await client.listMetadataObjects(
+  const { result: elements, errors } = await client.listMetadataObjects(
     folderNames.map(folderName => ({ type, folder: folderName })),
     isUnhandledError,
   )
-  return {
-    elements: [
-      ...result.map(props => withFullPath(props, folderPathByName)),
-      ...folders.elements.map(props => withFullPath(props, folderPathByName)),
-    ],
-    configChanges: [
-      ...(errors ?? []).map(createListMetadataObjectsConfigChange),
-      ...folders.configChanges,
-    ],
-  }
+
+  const includedElements = elements
+    .map(props => withFullPath(props, folderPathByName))
+    .filter(props => notInSkipList(metadataQuery, props, false))
+  const configChanges = errors?.map(createListMetadataObjectsConfigChange) ?? []
+
+  includedFolderElements.forEach(props => includedElements.push(props))
+  folders.configChanges.forEach(configChange => configChanges.push(configChange))
+  return { elements, configChanges }
 }
 
 const getFullName = (obj: FileProperties): string => {
@@ -365,7 +350,6 @@ export const retrieveMetadataInstances = async ({
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
   ))
-    .filter(props => notInSkipList(metadataQuery, props, false))
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

@@ -17,9 +17,7 @@ import _ from 'lodash'
 import {
   getFetchTargets,
   SUPPORTED_METADATA_TYPES,
-  METADATA_TYPES_WITHOUT_DEPENDENCIES,
   METADATA_TYPES_WITH_DEPENDENCIES,
-  EXCLUDED_METADATA_TYPES,
   CUSTOM_OBJECT_FIELDS,
   WORKFLOW_FIELDS,
   SALESFORCE_METADATA_TYPES,
@@ -45,20 +43,10 @@ describe('Salesforce MetadataTypes', () => {
     expect(getDuplicates(SALESFORCE_METADATA_TYPES)).toBeEmpty()
   })
   it.each([
-    ['CUSTOM_OBJECT_DEPENDENCIES', CUSTOM_OBJECT_FIELDS as ReadonlyArray<string>],
-    ['WORKFLOW_DEPENDENCIES', WORKFLOW_FIELDS as ReadonlyArray<string>],
+    ['CUSTOM_OBJECT_FIELDS', CUSTOM_OBJECT_FIELDS as ReadonlyArray<string>],
+    ['WORKFLOW_FIELDS', WORKFLOW_FIELDS as ReadonlyArray<string>],
   ])('%p should contain only supported types', (__, array) => {
     expect(array.filter(isUnsupportedMetadataType)).toBeEmpty()
-  })
-  it('excluded types should not be in supported types', () => {
-    expect(EXCLUDED_METADATA_TYPES.filter(isSupportedMetadataType)).toBeEmpty()
-  })
-  it('types with dependencies should not overlap with types without dependencies', () => {
-    const overlappingTypes = getDuplicates([
-      ..._.uniq(METADATA_TYPES_WITH_DEPENDENCIES),
-      ..._.uniq(METADATA_TYPES_WITHOUT_DEPENDENCIES),
-    ])
-    expect(overlappingTypes).toBeEmpty()
   })
   describe('getFetchTargets', () => {
     describe('when fetch targets dont include any types with dependencies', () => {

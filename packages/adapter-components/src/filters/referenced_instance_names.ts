@@ -202,13 +202,11 @@ const updateAllReferences = ({
   instanceOriginalName,
   nameToInstance,
   newElemId,
-  oldElemId,
 }:{
   referenceIndex: Record<string, { path: ElemID; value: ReferenceExpression }[]>
   instanceOriginalName: string
   nameToInstance: Record<string, Element>
   newElemId: ElemID
-  oldElemId: ElemID
 }): void => {
   const referencesToChange = referenceIndex[instanceOriginalName]
   if (referencesToChange === undefined || referencesToChange.length === 0) {
@@ -236,7 +234,7 @@ const updateAllReferences = ({
           // update only the relevant parts
           const updatedTemplate = createTemplateExpression({
             parts: oldValue.parts
-              .map(part => ((isReferenceExpression(part) && part.elemID.isEqual(oldElemId))
+              .map(part => ((isReferenceExpression(part) && part.elemID.getFullName() === instanceOriginalName)
                 ? updatedReference
                 : part
               ))
@@ -369,7 +367,6 @@ export const addReferencesToInstanceNames = async (
           instanceOriginalName: originalFullName,
           nameToInstance,
           newElemId: newInstance.elemID,
-          oldElemId: instance.elemID,
         })
 
         if (nameToInstance[originalFullName] !== undefined) {

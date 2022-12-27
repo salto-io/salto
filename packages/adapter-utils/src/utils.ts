@@ -1086,7 +1086,7 @@ export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage?: strin
     const { error } = scheme.validate(value)
     if (error !== undefined) {
       if (errorMessage !== undefined) {
-        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(value)}`)
+        log.error(`${errorMessage}: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
       }
       return false
     }

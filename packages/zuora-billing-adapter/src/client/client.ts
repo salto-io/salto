@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
 import { ZUORA_BILLING } from '../constants'
 import { Credentials } from '../auth'
+
+const log = logger(module)
 
 const {
   DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -50,5 +53,21 @@ export default class ZuoraClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
+  }
+
+  public async getSinglePage(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    try {
+      return await super.getSinglePage(args)
+    } catch (e) {
+      const status = e.response?.status
+      // Zuora sometimes returns 404 on speicic instances (e.g. workflow export)
+      if (status === 404) {
+        log.warn('Suppressing %d error %o', status, e)
+        return { data: [], status }
+      }
+      throw e
+    }
   }
 }

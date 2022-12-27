@@ -144,6 +144,8 @@ describe('adapter', () => {
           'zendesk.account_setting__user',
           'zendesk.account_setting__voice',
           'zendesk.account_settings',
+          'zendesk.api_token',
+          'zendesk.api_tokens',
           'zendesk.app_installation',
           'zendesk.app_installation.instance.Salesforce_10',
           'zendesk.app_installation.instance.Slack_156097',
@@ -330,6 +332,8 @@ describe('adapter', () => {
           'zendesk.oauth_global_client.instance.myBrand',
           'zendesk.oauth_global_client.instance.myBrand_staging@s',
           'zendesk.oauth_global_clients',
+          'zendesk.oauth_token',
+          'zendesk.oauth_tokens',
           'zendesk.organization',
           'zendesk.organization.instance.myBrand',
           'zendesk.organization.instance.test_org_123@s',
@@ -645,6 +649,41 @@ describe('adapter', () => {
           .filter(e => e.elemID.typeName === 'article')
           .map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+        ])
+      })
+
+      it('should return fetch error when no brand matches brands config ', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const creds = new InstanceElement(
+          'config',
+          usernamePasswordCredentialsType,
+          { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+        )
+        const config = new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              include: [{
+                type: '.*',
+              }],
+              exclude: [],
+              guide: {
+                brands: ['BestBrand'],
+              },
+            },
+          }
+        )
+        const { errors } = await adapter.operations({
+          credentials: creds,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(errors).toEqual([
+          {
+            message: 'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
+            severity: 'Warning',
+          },
         ])
       })
     })

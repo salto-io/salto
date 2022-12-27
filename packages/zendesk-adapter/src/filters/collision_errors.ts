@@ -42,6 +42,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       idFieldsName: 'idFields',
       // Needed because 'safeJsonStringify' is really slow, which causes problems with articles stress test (SALTO-3059)
       skipLogCollisionStringify: isGuideEnabled(config[FETCH_CONFIG]),
+      docsUrl: 'https://docs.salto.io/docs/zendesk#zendesk-duplicate-names',
     })
     return { errors: collistionWarnings }
   }, 'collisionErrorsFilter'),

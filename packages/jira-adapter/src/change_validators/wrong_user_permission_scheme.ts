@@ -47,7 +47,7 @@ export const wrongUserPermissionSchemeValidator: (
   config: JiraConfig,
   getIdMapFunc: GetIdMapFunc
   ) => ChangeValidator = (client, config, getIdMapFunc) => async changes => {
-    if (!(config.fetch.showUserDisplayNames ?? true)) {
+    if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
     const { baseUrl } = client

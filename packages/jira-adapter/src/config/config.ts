@@ -57,7 +57,7 @@ type JiraFetchFilters = {
 type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   fallbackToInternalId?: boolean
   addTypeToFieldName?: boolean
-  showUserDisplayNames?: boolean
+  convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
 }
 
@@ -134,7 +134,10 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     usePrivateAPI: true,
     boardColumnRetry: 5,
   },
-  fetch: elements.query.INCLUDE_ALL_CONFIG,
+  fetch: {
+    ...elements.query.INCLUDE_ALL_CONFIG,
+    hideTypes: true,
+  },
   deploy: {
     forceDelete: false,
   },
@@ -221,7 +224,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     masking: { refType: maskingConfigType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, ['client', 'masking']),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, ['client', 'masking', 'fetch.hideTypes']),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

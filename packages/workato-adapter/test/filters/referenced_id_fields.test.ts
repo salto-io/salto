@@ -20,7 +20,9 @@ import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES, DEFAULT_ID_FIELDS } from
 import WorkatoClient from '../../src/client/client'
 import { WORKATO } from '../../src/constants'
 import { paginate } from '../../src/client/pagination'
-import filterCreator from '../../src/filters/referenced_id_fields'
+import commonCreators from '../../src/filters/common'
+
+const filterCreator = commonCreators.referencedInstanceNames
 
 describe('referenced id fields filter', () => {
   let client: WorkatoClient

@@ -26,9 +26,10 @@ import { logger } from '@salto-io/logging'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, isGuideEnabled } from '../config'
-import { BRAND_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
+import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME } from '../constants'
 import { getZendeskError } from '../errors'
 import { deployChange, deployChanges } from '../deployment'
+import { getBrandsForGuide } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -50,9 +51,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
 
     const guideSettings = instances.filter(e => e.elemID.typeName === GUIDE_SETTINGS_TYPE_NAME)
     const guideLanguageSettings = instances.filter(e => e.elemID.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
-    const brands = instances
-      .filter(e => e.elemID.typeName === BRAND_TYPE_NAME)
-      .filter(b => b.value.has_help_center === true)
+    const brands = getBrandsForGuide(instances, config[FETCH_CONFIG])
 
     // Request the default locale for each brand and fill up the brand's language info
     const brandsLanguageInfo = await awu(brands).map(async brand => {

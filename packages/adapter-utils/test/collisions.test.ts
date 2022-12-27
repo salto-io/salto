@@ -41,6 +41,20 @@ describe('collisions', () => {
     })
   })
   describe('getAndLogCollisionWarnings', () => {
+    const baseExpectedWarningMessage = `Omitted 2 instances of obj due to Salto ID collisions.
+Current Salto ID configuration for obj is defined as [title].
+
+Breakdown per colliding Salto ID:
+- test:
+\t* Instance with Id - test
+\t* Instance with Id - test
+
+To resolve these collisions please take one of the following actions and fetch again:
+\t1. Change obj's unique fields to include all fields that uniquely identify the type's instances.
+\t2. Delete duplicate instances from your salto account.
+
+Alternatively, you can exclude obj from the default configuration in salto.nacl`
+
     it('should return the correct warning messages', async () => {
       const errors = await getAndLogCollisionWarnings({
         instances: [instance, instance.clone()],
@@ -54,22 +68,30 @@ describe('collisions', () => {
       expect(errors).toHaveLength(1)
       expect(errors[0]).toEqual({
         severity: 'Warning',
-        message: `Omitted 2 instances of obj due to Salto ID collisions.
-Current Salto ID configuration for obj is defined as [title].
-
-Breakdown per colliding Salto ID:
-- test:
-\t* Instance with Id - test
-\t* Instance with Id - test
-
-To resolve these collisions please take one of the following actions and fetch again:
-\t1. Change obj's unique fields to include all fields that uniquely identify the type's instances.
-\t2. Delete duplicate instances from your salto account.
-
-Alternatively, you can exclude obj from the default configuration in salto.nacl`,
+        message: baseExpectedWarningMessage,
       })
     })
-    it('should return no errors when there are no collided instnaces', async () => {
+
+    it('should return the correct warning messages when docsUrl is provided', async () => {
+      const docsUrl = 'https://docs.salto.io/docs/salesforce-cpq'
+      const errors = await getAndLogCollisionWarnings({
+        instances: [instance, instance.clone()],
+        adapterName: 'salto',
+        configurationName: 'default',
+        getInstanceName: async inst => inst.elemID.name,
+        getTypeName: async inst => inst.elemID.typeName,
+        getIdFieldsByType: () => ['title'],
+        idFieldsName: 'unique fields',
+        docsUrl,
+      })
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toEqual({
+        severity: 'Warning',
+        message: `${baseExpectedWarningMessage}\n\nLearn more at: ${docsUrl}`,
+      })
+    })
+
+    it('should return no errors when there are no collided instances', async () => {
       const errors = await getAndLogCollisionWarnings({
         instances: [],
         adapterName: 'salto',

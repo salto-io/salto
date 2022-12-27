@@ -70,7 +70,7 @@ const createActiveVersionProps = async (
   fileProps: FileProperties[]
 ): Promise<FileProperties[]> => {
   const { elements: definitionFileProps } = await listMetadataObjects(
-    client, FLOW_DEFINITION_METADATA_TYPE, [],
+    client, FLOW_DEFINITION_METADATA_TYPE
   )
   const flowDefinitionInstances = await fetchMetadataInstances({
     client,
@@ -89,7 +89,7 @@ const getFlowInstances = async (
   flowDefinitionType: ObjectType | undefined,
 ): Promise<FetchElements<InstanceElement[]>> => {
   const { elements: fileProps } = await listMetadataObjects(
-    client, FLOW_METADATA_TYPE, [],
+    client, FLOW_METADATA_TYPE
   )
   if (fetchProfile.preferActiveFlowVersions && isUndefined(flowDefinitionType)) {
     log.error('Failed to fetch flows active version due to a problem with flowDefinition type')

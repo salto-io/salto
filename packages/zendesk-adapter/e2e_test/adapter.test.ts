@@ -647,7 +647,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: categoryInstance,
-        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__`,
+        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
       const insideSectionName = createName('section')
@@ -879,7 +879,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: sectionInstance,
-        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
 

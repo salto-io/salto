@@ -20,17 +20,20 @@ import * as constants from './constants'
 export type UsernamePasswordCredentials = {
   username: string
   password: string
+  subdomain?: string
   baseUrl: string
 }
 
 export type OauthAccessTokenCredentials = {
   accessToken: string
+  subdomain?: string
   baseUrl: string
 }
 
 export type OauthRequestParameters = {
   clientId: string
   port: number
+  subdomain?: string
   baseUrl: string
 }
 
@@ -47,11 +50,18 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+        message: 'subdomain (https://<your-subdomain>.zendesk.com)',
+      },
+    },
     baseUrl: {
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
-        message: 'Base URL (https://<your-subdomain>.zendesk.com/)',
+        message: 'Base URL (https://<your-subdomain>.zendesk.com)',
       },
     },
   },
@@ -66,11 +76,18 @@ export const oauthAccessTokenCredentialsType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },
     },
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+        message: 'subdomain (https://<your-subdomain>.zendesk.com)',
+      },
+    },
     baseUrl: {
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
-        message: 'Base URL (https://<your-subdomain>.zendesk.com/)',
+        message: 'Base URL (https://<your-subdomain>.zendesk.com)',
       },
     },
   },
@@ -93,6 +110,13 @@ export const oauthRequestParametersType = createMatchingObjectType<
       annotations: {
         message: 'Port',
         _required: true,
+      },
+    },
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+        message: 'subdomain (https://<your-subdomain>.zendesk.com)',
       },
     },
     baseUrl: {

@@ -22,6 +22,7 @@ type Args = {
   username: string
   password: string
   subdomain: string
+  baseUrl: string
 }
 
 const adapter: Adapter<Args, Credentials> = {
@@ -37,13 +38,17 @@ const adapter: Adapter<Args, Credentials> = {
     },
     subdomain: {
       type: 'string',
-      demand: true,
+      demand: false,
+    },
+    baseUrl: {
+      type: 'string',
+      demand: false,
     },
   },
   credentials: async args => ({
     username: args.username,
     password: args.password,
-    baseUrl: args.subdomain,
+    baseUrl: args.baseUrl ?? `https://${args.subdomain}.zendesk.com`,
   }),
   validateCredentials: async credentials => {
     await clientUtils.validateCredentials(credentials, { createConnection })

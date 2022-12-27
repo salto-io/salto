@@ -29,6 +29,7 @@ CredsSpec<Required<UsernamePasswordCredentials>> => {
   const userNameEnvVarName = addEnvName('ZENDESK_USERNAME')
   const passwordEnvVarName = addEnvName('ZENDESK_PASSWORD')
   const subdomainEnvVarName = addEnvName('ZENDESK_SUBDOMAIN')
+  const baseUrlEnvVarName = addEnvName('ZENDESK_URL')
   return {
     envHasCreds: env => userNameEnvVarName in env,
     fromEnv: env => {
@@ -36,7 +37,8 @@ CredsSpec<Required<UsernamePasswordCredentials>> => {
       return {
         username: envUtils.required(userNameEnvVarName),
         password: envUtils.required(passwordEnvVarName),
-        baseUrl: envUtils.required(subdomainEnvVarName),
+        subdomain: envUtils.required(subdomainEnvVarName),
+        baseUrl: envUtils.required(baseUrlEnvVarName),
       }
     },
     validate: async (_creds: UsernamePasswordCredentials): Promise<void> => {

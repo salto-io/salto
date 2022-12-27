@@ -20,9 +20,11 @@ import {
   METADATA_TYPES_WITHOUT_DEPENDENCIES,
   METADATA_TYPES_WITH_DEPENDENCIES,
   EXCLUDED_METADATA_TYPES,
-  CUSTOM_OBJECT_DEPENDENCIES,
-  WORKFLOW_DEPENDENCIES,
-  SupportedMetadataType,
+  CUSTOM_OBJECT_FIELDS,
+  WORKFLOW_FIELDS,
+  SALESFORCE_METADATA_TYPES,
+  MetadataTypeWithoutDependencies,
+  METADATA_TYPE_TO_FOLDER_TYPE,
 } from '../../src/fetch_profile/metadata_types'
 
 jest.mock('../../src/fetch_profile/metadata_types', () => ({
@@ -51,22 +53,12 @@ describe('Salesforce MetadataTypes', () => {
     !isSupportedMetadataType(typeName)
   )
 
-  // afterAll(() => {
-  //   jest.resetAllMocks()
-  // })
-
-  it.each([
-    ['METADATA_TYPES_WITHOUT_DEPENDENCIES', METADATA_TYPES_WITHOUT_DEPENDENCIES],
-    ['METADATA_TYPES_WITH_DEPENDENCIES', METADATA_TYPES_WITH_DEPENDENCIES],
-    ['EXCLUDED_METADATA_TYPES', EXCLUDED_METADATA_TYPES],
-    ['CUSTOM_OBJECT_DEPENDENCIES', CUSTOM_OBJECT_DEPENDENCIES],
-    ['WORKFLOW_DEPENDENCIES', WORKFLOW_DEPENDENCIES],
-  ] as [string, ReadonlyArray<string>][])('%p should not contain duplicates', (__, array) => {
-    expect(getDuplicates(array)).toBeEmpty()
+  it('should not contain duplicates', () => {
+    expect(getDuplicates(SALESFORCE_METADATA_TYPES)).toBeEmpty()
   })
   it.each([
-    ['CUSTOM_OBJECT_DEPENDENCIES', CUSTOM_OBJECT_DEPENDENCIES as ReadonlyArray<string>],
-    ['WORKFLOW_DEPENDENCIES', WORKFLOW_DEPENDENCIES as ReadonlyArray<string>],
+    ['CUSTOM_OBJECT_DEPENDENCIES', CUSTOM_OBJECT_FIELDS as ReadonlyArray<string>],
+    ['WORKFLOW_DEPENDENCIES', WORKFLOW_FIELDS as ReadonlyArray<string>],
   ])('%p should contain only supported types', (__, array) => {
     expect(array.filter(isUnsupportedMetadataType)).toBeEmpty()
   })
@@ -83,7 +75,7 @@ describe('Salesforce MetadataTypes', () => {
   describe('getFetchTargets', () => {
     describe('when fetch targets dont include any types with dependencies', () => {
       it('should return the same list', () => {
-        const target: SupportedMetadataType[] = ['CustomLabels', 'WorkflowFieldUpdate', 'WorkflowAlert']
+        const target: MetadataTypeWithoutDependencies[] = ['CustomLabels', 'Capabilities', 'ChannelLayout']
         expect(getFetchTargets([...target])).toEqual(target)
       })
     })
@@ -93,22 +85,7 @@ describe('Salesforce MetadataTypes', () => {
           'CustomMetadata',
           'CustomObject',
           'Workflow',
-          'WebLink',
-          'ValidationRule',
-          'BusinessProcess',
-          'RecordType',
-          'ListView',
-          'FieldSet',
-          'CompactLayout',
-          'SharingReason',
-          'Index',
-          'WorkflowAlert',
-          'WorkflowFieldUpdate',
-          'WorkflowFlowAction',
-          'WorkflowOutboundMessage',
-          'WorkflowKnowledgePublish',
-          'WorkflowTask',
-          'WorkflowRule',
+          ...Object.entries(METADATA_TYPE_TO_FOLDER_TYPE).flat(),
         ])
       })
     })

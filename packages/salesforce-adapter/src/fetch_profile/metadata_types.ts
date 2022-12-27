@@ -71,7 +71,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'BriefcaseDefinition',
   'BriefcaseRule',
   'BriefcaseRuleFilter',
-  'BusinessProcess',
   'CallCenter',
   'CallCenterItem',
   'CallCenterRoutingMap',
@@ -88,7 +87,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'CleanDataService',
   'CleanRule',
   'Community',
-  'CompactLayout',
   'ComponentInstance',
   'ComponentInstanceProperty',
   'ComponentInstancePropertyList',
@@ -125,6 +123,7 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'CustomLabels',
   'CustomMetadataValue',
   'CustomNotificationType',
+  'CustomObject',
   'CustomObjectTranslation',
   'CustomPageWebLink',
   'CustomPermission',
@@ -198,7 +197,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'FieldMappingRow',
   'FieldOverride',
   'FieldRestrictionRule',
-  'FieldSet',
   'FieldSetItem',
   'FieldSetTranslation',
   'FlexiPageEvent',
@@ -293,7 +291,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'IframeWhiteListUrlSettings',
   'InboundNetworkConnProperty',
   'InboundNetworkConnection',
-  'Index',
   'IndexField',
   'InstalledPackage',
   'ItemInstance',
@@ -321,7 +318,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'LightningPageRegion',
   'LightningPageTemplateInstance',
   'ListPlacement',
-  'ListView',
   'ListViewFilter',
   'LiveAgentConfig',
   'LiveChatSensitiveDataRule',
@@ -444,7 +440,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'RecordActionDeploymentContext',
   'RecordActionRecommendation',
   'RecordActionSelectableItem',
-  'RecordType',
   'RecordTypePicklistValue',
   'RecordTypeTranslation',
   'RedirectWhitelistUrl',
@@ -492,7 +487,6 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'SharingCriteriaRule',
   'SharingGuestRule',
   'SharingOwnerRule',
-  'SharingReason',
   'SharingReasonTranslation',
   'SharingRecalculation',
   'SharingRules',
@@ -541,61 +535,22 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'UserProfileSearchScope',
   'UserProvisioningConfig',
   'Users',
-  'ValidationRule',
   'ValidationRuleTranslation',
   'ValueSet',
   'ValueSetValuesDefinition',
   'ValueTranslation',
   'VendorCallCenterStatusMap',
-  'WebLink',
   'WebLinkTranslation',
+  'Workflow',
   'WorkflowActionReference',
-  'WorkflowAlert',
   'WorkflowEmailRecipient',
-  'WorkflowFieldUpdate',
-  'WorkflowFlowAction',
   'WorkflowFlowActionParameter',
-  'WorkflowKnowledgePublish',
-  'WorkflowOutboundMessage',
-  'WorkflowRule',
-  'WorkflowTask',
   'WorkflowTaskTranslation',
   'WorkflowTimeTrigger',
   'WorkspaceMapping',
 ] as const
 
-export const METADATA_TYPES_WITH_DEPENDENCIES = [
-  'CustomMetadata',
-  'CustomObject',
-  'Workflow',
-] as const
-
-export const EXCLUDED_METADATA_TYPES = [
-  'AssignmentRule', // Fetched through parent type
-  'CustomField', // Has a specific handling in Salto
-  'CustomIndex', // Cannot retrieve by Record name
-  'CustomLabel', // Fetched through parent type
-  'EscalationRule', // Fetched through parent type
-  'FlowDefinition', // Not recommended since API version 44.0
-  'Settings', // Has a specific handling in Salto
-  'Report', // Within folders
-  'Dashboard', // Within folders
-  'Document', // Within folders
-  'EmailTemplate', // Within folders
-  // Folder instances are only fetched with their contained instances
-  'ReportFolder',
-  'DashboardFolder',
-  'DocumentFolder',
-  'EmailFolder',
-] as const
-
-
-export const SUPPORTED_METADATA_TYPES = [
-  ...METADATA_TYPES_WITHOUT_DEPENDENCIES,
-  ...METADATA_TYPES_WITH_DEPENDENCIES,
-] as const
-
-export const CUSTOM_OBJECT_DEPENDENCIES = [
+export const CUSTOM_OBJECT_FIELDS = [
   'WebLink',
   'ValidationRule',
   'BusinessProcess',
@@ -607,7 +562,7 @@ export const CUSTOM_OBJECT_DEPENDENCIES = [
   'Index',
 ] as const
 
-export const WORKFLOW_DEPENDENCIES = [
+export const WORKFLOW_FIELDS = [
   'WorkflowAlert',
   'WorkflowFieldUpdate',
   'WorkflowFlowAction',
@@ -617,31 +572,109 @@ export const WORKFLOW_DEPENDENCIES = [
   'WorkflowRule',
 ] as const
 
+export const IN_FOLDER_METADATA_TYPES = [
+  'Report',
+  'Dashboard',
+  'Document',
+  'EmailTemplate',
+] as const
+
+export const FOLDER_METADATA_TYPES = [
+  'ReportFolder',
+  'DashboardFolder',
+  'DocumentFolder',
+  'EmailFolder',
+] as const
+
+export const METADATA_TYPES_WITH_DEPENDENCIES = [
+  'CustomMetadata',
+  ...CUSTOM_OBJECT_FIELDS,
+  ...WORKFLOW_FIELDS,
+  ...IN_FOLDER_METADATA_TYPES,
+] as const
+
+export const EXCLUDED_METADATA_TYPES = [
+  'AssignmentRule', // Fetched through parent type
+  'CustomField', // Has a specific handling in Salto
+  'CustomIndex', // Cannot retrieve by Record name
+  'CustomLabel', // Fetched through parent type
+  'EscalationRule', // Fetched through parent type
+  'FlowDefinition', // Not recommended since API version 44.0
+  'Settings', // Has a specific handling in Salto
+  // Folder instances are only fetched with their contained instances
+  ...FOLDER_METADATA_TYPES,
+] as const
+
+
+export const SUPPORTED_METADATA_TYPES = [
+  ...METADATA_TYPES_WITHOUT_DEPENDENCIES,
+  ...METADATA_TYPES_WITH_DEPENDENCIES,
+] as const
+
+export const SALESFORCE_METADATA_TYPES = [
+  ...SUPPORTED_METADATA_TYPES,
+  ...EXCLUDED_METADATA_TYPES,
+] as const
+
 export type MetadataTypeWithoutDependencies = typeof METADATA_TYPES_WITHOUT_DEPENDENCIES[number]
 export type MetadataTypeWithDependencies = typeof METADATA_TYPES_WITH_DEPENDENCIES[number]
 export type ExcludedMetadataType = typeof EXCLUDED_METADATA_TYPES[number]
 export type SupportedMetadataType = typeof SUPPORTED_METADATA_TYPES[number]
-export type SalesforceMetadataType = SupportedMetadataType | ExcludedMetadataType
+export type SalesforceMetadataType = typeof SALESFORCE_METADATA_TYPES[number]
 
-export type CustomObjectDependency = typeof CUSTOM_OBJECT_DEPENDENCIES[number]
-export type WorkflowDependency = typeof WORKFLOW_DEPENDENCIES[number]
+export type CustomObjectField = typeof CUSTOM_OBJECT_FIELDS[number]
+export type WorkflowField = typeof WORKFLOW_FIELDS[number]
 
-export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SupportedMetadataType[]> = {
-  CustomMetadata: ['CustomObject'],
-  CustomObject: CUSTOM_OBJECT_DEPENDENCIES as ReadonlyArray<string> as SupportedMetadataType[],
-  Workflow: WORKFLOW_DEPENDENCIES as ReadonlyArray<string> as SupportedMetadataType[],
+export type InFolderMetadataType = typeof IN_FOLDER_METADATA_TYPES[number]
+export type FolderMetadataType = typeof FOLDER_METADATA_TYPES[number]
+
+export const METADATA_TYPE_TO_FOLDER_TYPE: Record<InFolderMetadataType, FolderMetadataType> = {
+  Report: 'ReportFolder',
+  Dashboard: 'DashboardFolder',
+  Document: 'DocumentFolder',
+  EmailTemplate: 'EmailFolder',
 }
 
+export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SalesforceMetadataType[]> = {
+  CustomMetadata: ['CustomMetadata', 'CustomObject'],
+  BusinessProcess: ['CustomObject'],
+  CompactLayout: ['CustomObject'],
+  FieldSet: ['CustomObject'],
+  Index: ['CustomObject'],
+  ListView: ['CustomObject'],
+  RecordType: ['CustomObject'],
+  SharingReason: ['CustomObject'],
+  ValidationRule: ['CustomObject'],
+  WebLink: ['CustomObject'],
+  WorkflowAlert: ['Workflow'],
+  WorkflowFieldUpdate: ['Workflow'],
+  WorkflowFlowAction: ['Workflow'],
+  WorkflowKnowledgePublish: ['Workflow'],
+  WorkflowOutboundMessage: ['Workflow'],
+  WorkflowRule: ['Workflow'],
+  WorkflowTask: ['Workflow'],
+  Report: ['Report', METADATA_TYPE_TO_FOLDER_TYPE.Report],
+  Dashboard: ['Dashboard', METADATA_TYPE_TO_FOLDER_TYPE.Dashboard],
+  Document: ['Document', METADATA_TYPE_TO_FOLDER_TYPE.Document],
+  EmailTemplate: ['EmailTemplate', METADATA_TYPE_TO_FOLDER_TYPE.EmailTemplate],
+}
+
+export const isMetadataTypeWithoutDependencies = (
+  metadataType: SalesforceMetadataType
+): metadataType is MetadataTypeWithoutDependencies => (
+  (METADATA_TYPES_WITHOUT_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
+)
+
 export const isMetadataTypeWithDependency = (
-  metadataType: SupportedMetadataType
+  metadataType: SalesforceMetadataType
 ): metadataType is MetadataTypeWithDependencies => (
   (METADATA_TYPES_WITH_DEPENDENCIES as ReadonlyArray<string>).includes(metadataType)
 )
 
-export const getFetchTargets = (target: SupportedMetadataType[]): SupportedMetadataType[] => {
-  const allTypes = [...target]
+export const getFetchTargets = (target: SupportedMetadataType[]): SalesforceMetadataType[] => {
+  const allTypes: SalesforceMetadataType[] = [...target.filter(isMetadataTypeWithoutDependencies)]
   const handledTypesWithDependencies: MetadataTypeWithDependencies[] = []
-  let typesWithDependencies = allTypes.filter(isMetadataTypeWithDependency)
+  let typesWithDependencies = target.filter(isMetadataTypeWithDependency)
   while (!_.isEmpty(typesWithDependencies)) {
     _(METADATA_TYPE_TO_DEPENDENCIES)
       .pick(typesWithDependencies)
@@ -653,5 +686,7 @@ export const getFetchTargets = (target: SupportedMetadataType[]): SupportedMetad
       .filter(isMetadataTypeWithDependency)
       .filter(typeWithDependency => !handledTypesWithDependencies.includes(typeWithDependency))
   }
-  return _.uniq(allTypes)
+  return _(allTypes)
+    .uniq()
+    .value()
 }

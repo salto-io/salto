@@ -223,6 +223,15 @@ const filter: FilterCreator = ({ client, config }) => ({
   },
 
   deploy: async changes => {
+    if (client.isDataCenter) {
+      return {
+        leftoverChanges: changes,
+        deployResult: {
+          appliedChanges: [],
+          errors: [],
+        },
+      }
+    }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)

@@ -31,7 +31,7 @@ import {
   CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
   CPQ_QUOTE_LINE_FIELDS, DEFAULT_OBJECT_TO_API_MAPPING, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING,
   TEST_OBJECT_TO_API_MAPPING, CPQ_TESTED_OBJECT, CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE,
-  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD,
+  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD, CUSTOM_LABEL_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -57,7 +57,7 @@ const safeApiName = ({ ref, path, relative }: {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
- | 'mapKey'
+ | 'mapKey' | 'customLabel'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -105,6 +105,15 @@ const ReferenceSerializationStrategyLookup: Record<
   mapKey: {
     serialize: async ({ ref }) => ref.elemID.name,
     lookup: val => val,
+  },
+  customLabel: {
+    serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
+    lookup: val => {
+      if (val.includes('$Label')) {
+        return val.split(API_NAME_SEPARATOR)[1]
+      }
+      return val
+    },
   },
 }
 
@@ -599,6 +608,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
     target: { type: 'EntitlementProcess' },
     sourceTransformation: 'asCaseInsensitiveString',
+  },
+  {
+    src: { field: 'elementReference', parentTypes: ['FlowElementReferenceOrValue'] },
+    serializationStrategy: 'customLabel',
+    target: { type: CUSTOM_LABEL_METADATA_TYPE },
   },
 ]
 

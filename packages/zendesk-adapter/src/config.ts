@@ -21,7 +21,7 @@ import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -66,7 +66,7 @@ export type Guide = {
 
 export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type ZendeskFetchConfig = configUtils.DuckTypeUserFetchConfig
+export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {
     enableMissingReferences?: boolean
     greedyAppReferences?: boolean
@@ -2157,7 +2157,13 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'user_segments__user_segments',
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }, { fieldName: 'added_user_ids', fieldType: 'unknown' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'added_user_ids', fieldType: 'unknown' },
+        // everyone user type is added as a type we created for user_segment
+        { fieldName: 'user_type', fieldType: 'string', restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', EVERYONE_USER_TYPE] } },
+
+      ],
       serviceUrl: '/knowledge/user_segments/edit/{id}',
     },
     deployRequests: {
@@ -2184,6 +2190,63 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     },
   },
   // not included yet: satisfaction_reason (returns 403), sunshine apis
+
+  // SALTO-2177 token-related types that can optionally be supported - but are not included under supportedTypes yet
+  api_tokens: {
+    request: {
+      url: '/api/v2/api_tokens',
+    },
+    transformation: {
+      dataField: 'api_tokens',
+    },
+  },
+  api_token: {
+    transformation: {
+      sourceTypeName: 'api_tokens__api_tokens',
+      idFields: ['description'],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+      serviceUrl: '/admin/apps-integrations/apis/zendesk-api/settings/tokens/',
+      fieldTypeOverrides: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+    },
+  },
+  oauth_tokens: {
+    request: {
+      url: '/api/v2/oauth/tokens',
+    },
+    transformation: {
+      dataField: 'tokens',
+    },
+  },
+  oauth_token: {
+    transformation: {
+      sourceTypeName: 'oauth_tokens__tokens',
+      // note: requires oauth_global_client to be included in the config
+      idFields: ['&client_id', 'token'],
+      fieldsToHide: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+      serviceUrl: '/admin/apps-integrations/apis/zendesk-api/oauth_clients',
+      fieldTypeOverrides: [
+        {
+          fieldName: 'id',
+          fieldType: 'number',
+        },
+      ],
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {
@@ -2335,7 +2398,6 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       refType: createUserFetchConfigType(
         ZENDESK,
         {
-          hideTypes: { refType: BuiltinTypes.BOOLEAN },
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
@@ -2382,5 +2444,5 @@ export const validateGuideTypesConfig = (
 export const isGuideEnabled = (
   fetchConfig: ZendeskFetchConfig
 ): boolean => (
-  fetchConfig.guide?.brands !== undefined && !_.isEmpty(fetchConfig.guide.brands)
+  fetchConfig.guide?.brands !== undefined
 )

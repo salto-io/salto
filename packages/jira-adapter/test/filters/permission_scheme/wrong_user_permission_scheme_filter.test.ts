@@ -108,7 +108,7 @@ describe('wrongUsersPermissionSchemeFilter', () => {
   })
   it('flag off', async () => {
     const configFFOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    configFFOff.fetch.showUserDisplayNames = false
+    configFFOff.fetch.convertUsersIds = false
     const { paginator: paginFFOff, connection: connectionFFOff } = mockClient()
     const filterFFOff = wrongUserPermissionSchemeFilter(getFilterParams({
       paginator: paginFFOff,

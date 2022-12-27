@@ -22,6 +22,35 @@ import { addTypeNameOverrides } from './utils'
 
 const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
   types: {
+    IssueSecurityLevelMember: {
+      request: undefined,
+      jspRequests: {
+        add: '/secure/admin/AddIssueSecurity.jspa',
+        remove: '/secure/admin/DeleteIssueSecurity.jspa',
+        query: '/rest/api/3/issuesecurityschemes/{schemeId}/members',
+        dataField: 'values',
+      },
+    },
+    SecurityLevel: {
+      request: undefined,
+      jspRequests: {
+        add: '/secure/admin/EditIssueSecurities!addLevel.jspa',
+        modify: '/secure/admin/EditSecurityLevel.jspa',
+        remove: '/secure/admin/DeleteIssueSecurityLevel.jspa',
+        query: '/rest/api/3/issuesecurityschemes/{schemeId}',
+        dataField: 'levels',
+      },
+    },
+    SecurityScheme: {
+      request: undefined,
+      jspRequests: {
+        add: '/secure/admin/AddIssueSecurityScheme.jspa',
+        modify: '/secure/admin/EditIssueSecurityScheme.jspa',
+        remove: '/secure/admin/DeleteIssueSecurityScheme.jspa',
+        query: '/rest/api/3/issuesecurityschemes',
+        dataField: 'issueSecuritySchemes',
+      },
+    },
     Priorities: {
       request: {
         url: '/rest/api/3/priority/search',
@@ -88,6 +117,7 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
     },
   },
 }
+
 const CLOUD_ADDITIONAL_TYPE_NAME_OVERRIDES = [
   {
     originalName: 'PageBeanPriority',

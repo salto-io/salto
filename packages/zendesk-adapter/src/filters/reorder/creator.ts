@@ -19,7 +19,7 @@ import {
   BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ZENDESK } from '../../constants'
 import { deployChange } from '../../deployment'
@@ -176,7 +176,7 @@ export const deployFuncCreator = (fieldName: string): DeployFuncType =>
     const instance = getChangeData(clonedChange)
     const { ids } = instance.value
     if (!idsAreNumbers(ids)) {
-      throw new Error(`Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeJsonStringify(ids)}`)
+      throw new Error(`Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeJsonStringify(ids, elementExpressionStringifyReplacer)}`)
     }
     const idsWithPositions = ids.map((id, position) => ({ id, position: position + 1 }))
     instance.value[fieldName] = idsWithPositions

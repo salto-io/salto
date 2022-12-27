@@ -253,6 +253,39 @@ SuiteAppFileCabinetOperations => {
     return results.flat()
   })
 
+  const removeResultsWithoutParentFolder = (
+    { foldersResults, filesResults }: FileCabinetResults
+  ): FileCabinetResults => {
+    const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
+
+    const removeFoldersWithoutParentFolder = (folders: FolderResult[]): FolderResult[] => {
+      const filteredFolders = folders.filter(folder => {
+        if (folder.parent !== undefined && !folderIdsSet.has(folder.parent)) {
+          log.warn('folder\'s parent does not exist: %o', folder)
+          folderIdsSet.delete(folder.id)
+          return false
+        }
+        return true
+      })
+      if (folders.length === filteredFolders.length) {
+        return folders
+      }
+      return removeFoldersWithoutParentFolder(filteredFolders)
+    }
+
+    const filteredFoldersResults = removeFoldersWithoutParentFolder(foldersResults)
+    return {
+      foldersResults: filteredFoldersResults,
+      filesResults: filesResults.filter(file => {
+        if (!folderIdsSet.has(file.folder)) {
+          log.warn('file\'s folder does not exist: %o', file)
+          return false
+        }
+        return true
+      }),
+    }
+  }
+
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
       const topLevelFoldersResults = (await queryTopLevelFolders())
@@ -271,7 +304,8 @@ SuiteAppFileCabinetOperations => {
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
       const filesResults = await queryFiles(foldersResults)
-      fileCabinetResults = { foldersResults, filesResults }
+
+      fileCabinetResults = removeResultsWithoutParentFolder({ foldersResults, filesResults })
     }
     return fileCabinetResults
   }
@@ -281,21 +315,11 @@ SuiteAppFileCabinetOperations => {
     if (folder.parent === undefined) {
       return [folder.name]
     }
-    return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
-  }
-
-  const isMissingFolderParent = (folder: FolderResult, idToFolder: Record<string, FolderResult>): boolean => {
-    if (folder.parent !== undefined && idToFolder[folder.parent] === undefined) {
-      log.warn('folder parent does not exist: %o', folder)
-      return true
+    if (idToFolder[folder.parent] === undefined) {
+      log.error('folder\'s parent is unknown\nfolder: %o\nidToFolder: %o', folder, idToFolder)
+      throw new Error(`Failed to get absolute folder path of ${folder.name}`)
     }
-    return false
-  }
-
-  const createIdToFolderMap = (folders: FolderResult[]): Record<string, FolderResult> => {
-    const idToFolder = _.keyBy(folders, folder => folder.id)
-    // omit folders with unknown .parent attribute
-    return _.omitBy(idToFolder, folder => isMissingFolderParent(folder, idToFolder))
+    return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
   }
 
   const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
@@ -304,42 +328,36 @@ SuiteAppFileCabinetOperations => {
     }
 
     const { foldersResults, filesResults } = await queryFileCabinet(query)
-    const idToFolder = createIdToFolderMap(foldersResults)
+    const idToFolder = _.keyBy(foldersResults, folder => folder.id)
 
-    const foldersCustomizationInfo = foldersResults
-      .filter(folder => !isMissingFolderParent(folder, idToFolder))
-      .map(folder => ({
-        path: getFullPath(folder, idToFolder),
-        typeName: 'folder',
-        values: {
-          description: folder.description ?? '',
-          bundleable: folder.bundleable ?? 'F',
-          isinactive: folder.isinactive,
-          isprivate: folder.isprivate,
-          internalId: folder.id,
-        },
-      }))
-      .filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
+    const foldersCustomizationInfo = foldersResults.map(folder => ({
+      path: getFullPath(folder, idToFolder),
+      typeName: 'folder',
+      values: {
+        description: folder.description ?? '',
+        bundleable: folder.bundleable ?? 'F',
+        isinactive: folder.isinactive,
+        isprivate: folder.isprivate,
+        internalId: folder.id,
+      },
+    })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
 
-    const filesCustomizations = filesResults
-      .filter(file => idToFolder[file.folder] !== undefined)
-      .map(file => ({
-        path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
-        typeName: 'file',
-        values: {
-          description: file.description ?? '',
-          bundleable: file.bundleable ?? 'F',
-          isinactive: file.isinactive,
-          availablewithoutlogin: file.isonline,
-          generateurltimestamp: file.addtimestamptourl,
-          hideinbundle: file.hideinbundle,
-          internalId: file.id,
-          ...file.islink === 'T' ? { link: file.url } : {},
-        },
-        id: file.id,
-        size: parseInt(file.filesize, 10),
-      }))
-      .filter(file => query.isFileMatch(`/${file.path.join('/')}`))
+    const filesCustomizations = filesResults.map(file => ({
+      path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
+      typeName: 'file',
+      values: {
+        description: file.description ?? '',
+        bundleable: file.bundleable ?? 'F',
+        isinactive: file.isinactive,
+        availablewithoutlogin: file.isonline,
+        generateurltimestamp: file.addtimestamptourl,
+        hideinbundle: file.hideinbundle,
+        internalId: file.id,
+        ...file.islink === 'T' ? { link: file.url } : {},
+      },
+      id: file.id,
+      size: parseInt(file.filesize, 10),
+    })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
 
     const [
       filesCustomizationWithoutContent,
@@ -427,20 +445,16 @@ SuiteAppFileCabinetOperations => {
         throw new Error('missing fileCabinet results cache')
       }
       const { foldersResults, filesResults } = fileCabinetResults
-      const idToFolder = createIdToFolderMap(foldersResults)
+      const idToFolder = _.keyBy(foldersResults, folder => folder.id)
       pathToIdResults = Object.fromEntries([
-        ...filesResults
-          .filter(file => idToFolder[file.folder] !== undefined)
-          .map(file => [
-            `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
-            parseInt(file.id, 10),
-          ]),
-        ...foldersResults
-          .filter(folder => !isMissingFolderParent(folder, idToFolder))
-          .map(folder => [
-            `/${getFullPath(folder, idToFolder).join('/')}`,
-            parseInt(folder.id, 10),
-          ]),
+        ...filesResults.map(file => [
+          `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
+          parseInt(file.id, 10),
+        ]),
+        ...foldersResults.map(folder => [
+          `/${getFullPath(folder, idToFolder).join('/')}`,
+          parseInt(folder.id, 10),
+        ]),
       ])
     }
     return pathToIdResults

@@ -18,6 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { getNamespace } from '../filters/utils'
 import { hasNamespace } from './package'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
+import { CPQ_NAMESPACE } from '../constants'
 
 
 const { awu } = collections.asynciterable
@@ -58,7 +59,7 @@ const changeValidator: ChangeValidator = async changes => {
       getChangeData(change) as InstanceElement) // already checked that this is an instance element
     .find(async instance => {
       const type = await instance.getType()
-      return await hasNamespace(type) && (await getNamespace(type)) === 'SBQQ'
+      return await hasNamespace(type) && (await getNamespace(type)) === CPQ_NAMESPACE
     })
 
   return cpqInstance !== undefined ? [getCpqError(cpqInstance.elemID)] : []

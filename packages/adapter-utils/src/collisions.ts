@@ -100,6 +100,7 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownDetailsElements = MAX_BREAKDOWN_DETAILS_ELEMENTS,
   baseUrl,
   skipLogCollisionStringify,
+  docsUrl,
 }: {
   instances: InstanceElement[]
   getTypeName: (instance: InstanceElement) => Promise<string>
@@ -112,6 +113,7 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownDetailsElements?: number
   baseUrl?: string
   skipLogCollisionStringify?: boolean
+  docsUrl?: string
 }): Promise<SaltoError[]> => {
   const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instances, getTypeName)
   await logInstancesWithCollidingElemID(typeToElemIDtoInstances, skipLogCollisionStringify)
@@ -134,6 +136,7 @@ ${getInstancesDetailsMsg(await Promise.all(collisionInstances.map(getInstanceNam
 Alternatively, you can exclude ${type} from the ${configurationName} configuration in ${adapterName}.nacl`
       const elemIDCount = Object.keys(elemIDtoInstances).length
       const overflowMsg = elemIDCount > maxBreakdownElements ? ['', `And ${elemIDCount - maxBreakdownElements} more colliding Salto IDs`] : []
+      const linkToDocsMsg = docsUrl ? ['', `Learn more at: ${docsUrl}`] : []
       return createWarningFromMsg([
         header,
         '',
@@ -142,6 +145,7 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
         ...overflowMsg,
         '',
         epilogue,
+        ...linkToDocsMsg,
       ].join('\n'))
     }))
 }

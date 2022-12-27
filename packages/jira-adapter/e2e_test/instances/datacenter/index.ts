@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import { InstanceElement, Element, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { AUTOMATION_TYPE, WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { AUTOMATION_TYPE, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { findType } from '../../utils'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
 import { createFieldConfigurationItemValues, createFieldConfigurationValues } from './fieldConfiguration'
 import { createFilterValues } from './filter'
+import { createPrioritySchemeValues } from './priorityScheme'
 import { createWorkflowValues } from './workflow'
 
 export const createInstances = (randomString: string, fetchedElements: Element[]): InstanceElement[][] => {
@@ -71,6 +72,12 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     createFilterValues(randomString, fetchedElements),
   )
 
+  const priorityScheme = new InstanceElement(
+    randomString,
+    findType(PRIORITY_SCHEME_TYPE_NAME, fetchedElements),
+    createPrioritySchemeValues(randomString, fetchedElements),
+  )
+
   return [
     [fieldConfiguration],
     [fieldConfigurationItem],
@@ -79,5 +86,6 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [kanbanBoard],
     [scrumBoard],
     [filter],
+    [priorityScheme],
   ]
 }

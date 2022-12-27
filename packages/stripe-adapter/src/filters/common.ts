@@ -13,10 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { hideTypesFilterCreator } from './hide_types'
+import { filters } from '@salto-io/adapter-components'
+import { FilterCreator } from '../filter'
 
-export { hideTypesFilterCreator } from './hide_types'
+/**
+ * Filter creators of all the common filters
+ */
+const filterCreators: Record<string, FilterCreator> = {
+  hideTypes: filters.hideTypesFilterCreator(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
+}
 
-export const DUCKTYPE_MANDATORY_FILTER_CREATORS = [
-  hideTypesFilterCreator,
-]
+export default filterCreators

@@ -107,7 +107,7 @@ Check ${url} to see valid users and account IDs.`,
   })
   it('should not return a warning when the flag is off', async () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    configOff.fetch.showUserDisplayNames = false
+    configOff.fetch.convertUsersIds = false
     const validatorOff = wrongUserPermissionSchemeValidator(client, configOff, getIdMapFunc)
     expect(await validatorOff(
       changes

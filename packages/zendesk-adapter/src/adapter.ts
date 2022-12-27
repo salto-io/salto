@@ -87,10 +87,9 @@ import guideLocalesFilter from './filters/guide_locale'
 import webhookFilter from './filters/webhook'
 import targetFilter from './filters/target'
 import defaultDeployFilter from './filters/default_deploy'
-import ducktypeCommonFilters from './filters/ducktype_common'
+import commonFilters from './filters/common'
 import handleTemplateExpressionFilter from './filters/handle_template_expressions'
 import handleAppInstallationsFilter from './filters/handle_app_installations'
-import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import brandLogoFilter from './filters/brand_logo'
 import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
@@ -188,14 +187,14 @@ export const DEFAULT_FILTERS = [
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
   dynamicContentReferencesFilter,
-  referencedIdFieldsFilter,
-  articleBodyFilter,
   guideParentSection,
   serviceUrlFilter,
-  ...ducktypeCommonFilters,
+  ...Object.values(commonFilters),
+  // articleBodyFilter should run after referencedInstanceNames (which is part of the common filters)
+  articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
-  collisionErrorsFilter, // needs to be after referencedIdFieldsFilter
+  collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
@@ -349,9 +348,11 @@ const getGuideElements = async ({
   })
 
   const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.configChanges)
+  const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
     elements: zendeskGuideElements,
     configChanges: elementUtils.ducktype.getUniqueConfigSuggestions(allConfigChangeSuggestions),
+    errors: guideErrors,
   }
 }
 
@@ -386,7 +387,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   }) => Promise<Required<Filter>>
 
   public constructor({
-    filterCreators = DEFAULT_FILTERS,
+    filterCreators = DEFAULT_FILTERS as FilterCreator[],
     client,
     credentials,
     getElemIdFunc,
@@ -462,7 +463,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
     })
 
-    if (isGuideDisabled) {
+    if (isGuideDisabled || _.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)) {
       return defaultSubdomainElements
     }
 
@@ -470,6 +471,22 @@ export default class ZendeskAdapter implements AdapterOperations {
       defaultSubdomainElements.elements.filter(isInstanceElement),
       this.userConfig[FETCH_CONFIG]
     )
+
+    if (_.isEmpty(brandsList)) {
+      const brandPatterns = Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')
+      const message = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
+      log.warn(message)
+      return {
+        configChanges: defaultSubdomainElements.configChanges,
+        elements: defaultSubdomainElements.elements,
+        errors: (defaultSubdomainElements.errors ?? []).concat([
+          {
+            message,
+            severity: 'Warning',
+          },
+        ]),
+      }
+    }
 
     const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
       [
@@ -504,6 +521,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       configChanges: defaultSubdomainElements.configChanges
         .concat(zendeskGuideElements.configChanges),
       elements: zendeskElements,
+      errors: (defaultSubdomainElements.errors ?? [])
+        .concat(zendeskGuideElements.errors ?? []),
     }
   }
 
@@ -515,7 +534,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
-    const { elements, configChanges } = await this.getElements()
+    const { elements, configChanges, errors } = await this.getElements()
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -535,7 +554,9 @@ export default class ZendeskAdapter implements AdapterOperations {
     const updatedConfig = this.configInstance
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
-    return { elements, errors: result ? result.errors : [], updatedConfig }
+
+    const fetchErrors = (errors ?? []).concat(result.errors ?? [])
+    return { elements, errors: fetchErrors, updatedConfig }
   }
 
   /**

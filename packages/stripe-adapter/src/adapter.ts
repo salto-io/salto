@@ -26,6 +26,7 @@ import { StripeConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { STRIPE } from './constants'
 import changeValidator from './change_validator'
+import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
 
 const { createPaginator, getWithCursorPagination } = clientUtils
@@ -36,6 +37,7 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
+  ...Object.values(commonFilters),
 ]
 
 export interface StripeAdapterParams {

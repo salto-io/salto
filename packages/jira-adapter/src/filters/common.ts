@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { filters } from '@salto-io/adapter-components'
-import { FilterContext } from '../config'
-import { FilterCreator, FilterResult } from '../filter'
-import OktaClient from '../client/client'
+import { FilterCreator } from '../filter'
 
 /**
- *  Resolves references in elements name using referenced idFields
+ * Filter creators of all the common filters
  */
-const filter: FilterCreator = params =>
-  filters.referencedInstanceNamesFilterCreator<OktaClient, FilterContext, FilterResult>(
-  )(params)
+const filterCreators: Record<string, FilterCreator> = {
+  hideTypes: filters.hideTypesFilterCreator(),
+  referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
+}
 
-export default filter
+export default filterCreators

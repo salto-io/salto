@@ -22,7 +22,7 @@ export const createAutomationValues = (name: string): Values => ({
   canOtherRuleTrigger: false,
   notifyOnError: 'FIRSTERROR',
   authorAccountId: {
-    id: 'JIRAUSER10000',
+    id: 'salto',
   },
   actorAccountId: 'JIRAUSER10000',
   trigger: {

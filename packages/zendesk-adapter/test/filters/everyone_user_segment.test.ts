@@ -19,8 +19,8 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator, { createEveryoneUserSegmentInstance, EVERYONE } from '../../src/filters/everyone_user_segment'
+import { EVERYONE_USER_TYPE, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../src/constants'
+import filterCreator, { createEveryoneUserSegmentInstance } from '../../src/filters/everyone_user_segment'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 describe('everyoneUserSegment filter', () => {
@@ -67,7 +67,7 @@ describe('everyoneUserSegment filter', () => {
       await filter.onFetch(elements)
       const fetchedEveryoneUserSegment = elements
         .filter(isInstanceElement)
-        .find(i => i.elemID.name === EVERYONE)
+        .find(i => i.elemID.name === EVERYONE_USER_TYPE)
       expect(elements).toHaveLength(2)
       expect(fetchedEveryoneUserSegment?.value).toEqual(everyoneUserSegmentInstance.value)
     })

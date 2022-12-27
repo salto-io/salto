@@ -167,6 +167,7 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
     replaceRestriction,
   ]),
   workspace: workspaceReplacer,
+  oauth_token: fieldReplacer(['user_id']),
   user_segment: fieldReplacer(['added_user_ids']),
   article: fieldReplacer(['author_id']),
   section_translation: fieldReplacer(['created_by_id', 'updated_by_id']),

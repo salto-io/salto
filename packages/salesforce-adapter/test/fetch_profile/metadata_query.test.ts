@@ -250,6 +250,11 @@ describe('buildMetadataQuery', () => {
             metadataType: folderType,
             name: '^(TopFolder|TopFolder/NestedFolder|TopFolder/NestedFolder/NestedNestedFolder)$',
           },
+          // Folder names with underscores and numbers
+          {
+            metadataType: folderType,
+            name: '^(UnderscoreFolder_cx|TopFolder/NestedUnderscoreFolder_12)$',
+          },
           // The names .* and NestedFolder1? Should not be in the result
           {
             metadataType: folderType,
@@ -264,6 +269,8 @@ describe('buildMetadataQuery', () => {
           TopFolder: 'TopFolder',
           NestedFolder: 'TopFolder/NestedFolder',
           NestedNestedFolder: 'TopFolder/NestedFolder/NestedNestedFolder',
+          UnderscoreFolder_cx: 'UnderscoreFolder_cx',
+          NestedUnderscoreFolder_12: 'TopFolder/NestedUnderscoreFolder_12',
         })
       })
     })

@@ -23,7 +23,7 @@ const { isDefined } = values
 
 
 // According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
-const VALID_FOLDER_PATH_RE = /^[a-zA-Z_/]+$/
+const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean

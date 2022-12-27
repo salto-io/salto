@@ -120,8 +120,7 @@ const createInstanceNameAndFilePath = (
     serviceIdField,
     typeElemId: instance.refType.elemID,
     nameMapping,
-    oldName: instance.elemID.name,
-    // If there are no idFields - use the parent's name (if it doesn't exist, keep the original name)
+    originalName: instance.elemID.name,
   })
 
   const filePath = getInstanceFilePath({

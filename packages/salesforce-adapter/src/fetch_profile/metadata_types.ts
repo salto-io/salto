@@ -16,6 +16,35 @@
 
 import _ from 'lodash'
 
+export const FOLDER_METADATA_TYPES = [
+  'ReportFolder',
+  'DashboardFolder',
+  'DocumentFolder',
+  'EmailFolder',
+] as const
+
+export const CUSTOM_OBJECT_FIELDS = [
+  'WebLink',
+  'ValidationRule',
+  'BusinessProcess',
+  'RecordType',
+  'ListView',
+  'FieldSet',
+  'CompactLayout',
+  'SharingReason',
+  'Index',
+] as const
+
+export const WORKFLOW_FIELDS = [
+  'WorkflowAlert',
+  'WorkflowFieldUpdate',
+  'WorkflowFlowAction',
+  'WorkflowOutboundMessage',
+  'WorkflowKnowledgePublish',
+  'WorkflowTask',
+  'WorkflowRule',
+] as const
+
 export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'AIApplication',
   'AIApplicationConfig',
@@ -132,6 +161,7 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'CustomSite',
   'CustomTab',
   'CustomValue',
+  'Dashboard',
   'DashboardComponent',
   'DashboardComponentColumn',
   'DashboardComponentGroupingSort',
@@ -150,12 +180,14 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'DataCategoryGroup',
   'DefaultShortcut',
   'DelegateGroup',
+  'Document',
   'DuplicateRule',
   'DuplicateRuleFilter',
   'DuplicateRuleFilterItem',
   'DuplicateRuleMatchRule',
   'EclairGeoData',
   'EclairMap',
+  'EmailTemplate',
   'EmailServicesAddress',
   'EmailServicesFunction',
   'EmbeddedServiceAppointmentSettings',
@@ -448,6 +480,7 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'RelatedList',
   'RelatedListItem',
   'RemoteSiteSetting',
+  'Report',
   'ReportAggregate',
   'ReportAggregateReference',
   'ReportBlockInfo',
@@ -550,47 +583,10 @@ export const METADATA_TYPES_WITHOUT_DEPENDENCIES = [
   'WorkspaceMapping',
 ] as const
 
-export const CUSTOM_OBJECT_FIELDS = [
-  'WebLink',
-  'ValidationRule',
-  'BusinessProcess',
-  'RecordType',
-  'ListView',
-  'FieldSet',
-  'CompactLayout',
-  'SharingReason',
-  'Index',
-] as const
-
-export const WORKFLOW_FIELDS = [
-  'WorkflowAlert',
-  'WorkflowFieldUpdate',
-  'WorkflowFlowAction',
-  'WorkflowOutboundMessage',
-  'WorkflowKnowledgePublish',
-  'WorkflowTask',
-  'WorkflowRule',
-] as const
-
-export const IN_FOLDER_METADATA_TYPES = [
-  'Report',
-  'Dashboard',
-  'Document',
-  'EmailTemplate',
-] as const
-
-export const FOLDER_METADATA_TYPES = [
-  'ReportFolder',
-  'DashboardFolder',
-  'DocumentFolder',
-  'EmailFolder',
-] as const
-
 export const METADATA_TYPES_WITH_DEPENDENCIES = [
   'CustomMetadata',
   ...CUSTOM_OBJECT_FIELDS,
   ...WORKFLOW_FIELDS,
-  ...IN_FOLDER_METADATA_TYPES,
 ] as const
 
 export const EXCLUDED_METADATA_TYPES = [
@@ -625,16 +621,6 @@ export type SalesforceMetadataType = typeof SALESFORCE_METADATA_TYPES[number]
 export type CustomObjectField = typeof CUSTOM_OBJECT_FIELDS[number]
 export type WorkflowField = typeof WORKFLOW_FIELDS[number]
 
-export type InFolderMetadataType = typeof IN_FOLDER_METADATA_TYPES[number]
-export type FolderMetadataType = typeof FOLDER_METADATA_TYPES[number]
-
-export const METADATA_TYPE_TO_FOLDER_TYPE: Record<InFolderMetadataType, FolderMetadataType> = {
-  Report: 'ReportFolder',
-  Dashboard: 'DashboardFolder',
-  Document: 'DocumentFolder',
-  EmailTemplate: 'EmailFolder',
-}
-
 export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies, SalesforceMetadataType[]> = {
   CustomMetadata: ['CustomMetadata', 'CustomObject'],
   BusinessProcess: ['CustomObject'],
@@ -653,10 +639,6 @@ export const METADATA_TYPE_TO_DEPENDENCIES: Record<MetadataTypeWithDependencies,
   WorkflowOutboundMessage: ['Workflow'],
   WorkflowRule: ['Workflow'],
   WorkflowTask: ['Workflow'],
-  Report: ['Report', METADATA_TYPE_TO_FOLDER_TYPE.Report],
-  Dashboard: ['Dashboard', METADATA_TYPE_TO_FOLDER_TYPE.Dashboard],
-  Document: ['Document', METADATA_TYPE_TO_FOLDER_TYPE.Document],
-  EmailTemplate: ['EmailTemplate', METADATA_TYPE_TO_FOLDER_TYPE.EmailTemplate],
 }
 
 export const isMetadataTypeWithoutDependencies = (

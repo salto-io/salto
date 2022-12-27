@@ -24,19 +24,7 @@ import {
   WORKFLOW_FIELDS,
   SALESFORCE_METADATA_TYPES,
   MetadataTypeWithoutDependencies,
-  METADATA_TYPE_TO_FOLDER_TYPE,
 } from '../../src/fetch_profile/metadata_types'
-
-jest.mock('../../src/fetch_profile/metadata_types', () => ({
-  ...jest.requireActual('../../src/fetch_profile/metadata_types'),
-  get METADATA_TYPE_TO_DEPENDENCIES() {
-    return {
-      CustomMetadata: ['CustomObject', 'Workflow'],
-      CustomObject: ['CustomLabels', 'CustomIndex', 'CustomMetadata'],
-      Workflow: ['CustomObject', 'WorkflowAlert'],
-    }
-  },
-}))
 
 describe('Salesforce MetadataTypes', () => {
   const getDuplicates = (array: ReadonlyArray<string>): ReadonlyArray<string> => (
@@ -85,7 +73,6 @@ describe('Salesforce MetadataTypes', () => {
           'CustomMetadata',
           'CustomObject',
           'Workflow',
-          ...Object.entries(METADATA_TYPE_TO_FOLDER_TYPE).flat(),
         ])
       })
     })

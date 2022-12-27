@@ -103,10 +103,12 @@ export default ({
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,
     helpCenterCreationOrRemovalValidator(client, apiConfig),
+    // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,
     orderChildrenParentValidator,
     guideOrderDeletionValidator,
+    // ******************************
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

@@ -44,11 +44,11 @@ const isEverythingReferences = (orderInstance: ChangeDataType, orderField: strin
         || orderInstance.value[orderField].every(isReferenceExpression))
 
 
-const validateReferences = (
-  changes: readonly Change[],
-  orderField: string,
+const validateReferences = ({ changes, orderField, orderTypeName }: {
+  changes: readonly Change[]
+  orderField: string
   orderTypeName: string
-): ChangeError[] =>
+}): ChangeError[] =>
   changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
@@ -60,11 +60,8 @@ const validateReferences = (
 /**
  * Validates that all the elements in the order list are references
  */
-export const childrenReferencesValidator: ChangeValidator = async changes => {
-  const errors: ChangeError[] = []
-  return errors.concat(
-    validateReferences(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME),
-    validateReferences(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME),
-    validateReferences(changes, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME)
-  )
-}
+export const childrenReferencesValidator: ChangeValidator = async changes => [
+  validateReferences({ changes, orderField: ARTICLES_FIELD, orderTypeName: ARTICLE_ORDER_TYPE_NAME }),
+  validateReferences({ changes, orderField: SECTIONS_FIELD, orderTypeName: SECTION_ORDER_TYPE_NAME }),
+  validateReferences({ changes, orderField: CATEGORIES_FIELD, orderTypeName: CATEGORY_ORDER_TYPE_NAME }),
+].flat()

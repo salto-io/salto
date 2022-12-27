@@ -19,7 +19,7 @@ import {
   ChangeValidator, getChangeData,
   InstanceElement,
   isAdditionChange, isAdditionOrModificationChange,
-  isInstanceChange,
+  isInstanceChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME,
@@ -34,15 +34,15 @@ const createNotInOrderInstanceWarning = (instance: InstanceElement, orderTypeNam
   elemID: instance.elemID,
   severity: 'Warning',
   message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
-  detailedMessage: `The ${instance.elemID.typeName} instance '${instance.elemID.name}' is not listed in ${orderTypeName}, and will be added to be first by default. If order is important, please include it under the ${orderTypeName}`,
+  detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${orderTypeName} sort order, and will be added to be first by default. If order is important, please include it in ${orderTypeName}`,
 })
 
-const validateOrderElementAdded = (
-  changes: readonly Change[],
-  orderField: string,
-  orderTypeName: string,
-  childTypeName: string,
-): ChangeError[] => {
+const validateOrderElementAdded = ({ changes, orderField, orderTypeName, childTypeName }: {
+   changes: readonly Change[]
+   orderField: string
+   orderTypeName: string
+   childTypeName: string
+}): ChangeError[] => {
   const relevantChildInstances = changes.filter(isInstanceChange).filter(isAdditionChange)
     .map(getChangeData).filter(child => child.elemID.typeName === childTypeName)
 
@@ -50,8 +50,8 @@ const validateOrderElementAdded = (
     .map(getChangeData).filter(order => order.elemID.typeName === orderTypeName)
 
   const childrenInOrderInstances = new Set(relevantOrderInstances
-    .flatMap(order => order.value[orderField] ?? [])
-    .map(child => child.elemID?.getFullName()))
+    .flatMap(order => order.value[orderField] ?? []).filter(isReferenceExpression)
+    .map(child => child.elemID.getFullName()))
 
   return relevantChildInstances.filter(child => !childrenInOrderInstances.has(child.elemID.getFullName()))
     .map(child => createNotInOrderInstanceWarning(child, orderTypeName))
@@ -60,11 +60,22 @@ const validateOrderElementAdded = (
 /**
  * Warns the user if he is adding a child instance without adding it to an order instance
  * */
-export const childInOrderValidator: ChangeValidator = async changes => {
-  const errors: ChangeError[] = []
-  return errors.concat(
-    validateOrderElementAdded(changes, ARTICLES_FIELD, ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME),
-    validateOrderElementAdded(changes, SECTIONS_FIELD, SECTION_ORDER_TYPE_NAME, SECTION_TYPE_NAME),
-    validateOrderElementAdded(changes, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME),
-  )
-}
+export const childInOrderValidator: ChangeValidator = async changes => [
+  validateOrderElementAdded({
+    changes,
+    orderField: ARTICLES_FIELD,
+    orderTypeName: ARTICLE_ORDER_TYPE_NAME,
+    childTypeName: ARTICLE_TYPE_NAME,
+  }),
+  validateOrderElementAdded({
+    changes,
+    orderField: SECTIONS_FIELD,
+    orderTypeName: SECTION_ORDER_TYPE_NAME,
+    childTypeName: SECTION_TYPE_NAME,
+  }),
+  validateOrderElementAdded({
+    changes,
+    orderField: CATEGORIES_FIELD,
+    orderTypeName: CATEGORY_ORDER_TYPE_NAME,
+    childTypeName: CATEGORY_TYPE_NAME,
+  })].flat()

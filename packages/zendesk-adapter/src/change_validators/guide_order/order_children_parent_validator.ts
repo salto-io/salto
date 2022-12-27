@@ -60,12 +60,12 @@ const orderChildrenDifferentParent = (
   return wrongParentChildren.length > 0 ? [orderInstance, wrongParentChildren] : undefined
 }
 
-const validateOrdersChildrenSameParent = (
-  changes: readonly Change[],
-  orderType: string,
+const validateOrdersChildrenSameParent = ({ changes, orderField, orderTypeName }: {
+  changes: readonly Change[]
   orderField: string
-): ChangeError[] => changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
-  .filter(change => change.elemID.typeName === orderType)
+  orderTypeName: string
+}): ChangeError[] => changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
+  .filter(change => change.elemID.typeName === orderTypeName)
   .map(order => orderChildrenDifferentParent(order, order.value[orderField].map((c: ReferenceExpression) => c.value)))
   .filter(isDefined)
   .map(createNotSameParentError)
@@ -74,11 +74,8 @@ const validateOrdersChildrenSameParent = (
 /**
  * Validates that all children in an order instance have the same parent as the order
  */
-export const orderChildrenParentValidator: ChangeValidator = async changes => {
-  const errors: ChangeError[] = []
-  return errors.concat(
-    validateOrdersChildrenSameParent(changes, ARTICLE_ORDER_TYPE_NAME, ARTICLES_FIELD),
-    validateOrdersChildrenSameParent(changes, SECTION_ORDER_TYPE_NAME, SECTIONS_FIELD),
-    validateOrdersChildrenSameParent(changes, CATEGORY_ORDER_TYPE_NAME, CATEGORIES_FIELD),
-  )
-}
+export const orderChildrenParentValidator: ChangeValidator = async changes => [
+  validateOrdersChildrenSameParent({ changes, orderField: ARTICLES_FIELD, orderTypeName: ARTICLE_ORDER_TYPE_NAME }),
+  validateOrdersChildrenSameParent({ changes, orderField: SECTIONS_FIELD, orderTypeName: SECTION_ORDER_TYPE_NAME }),
+  validateOrdersChildrenSameParent({ changes, orderField: CATEGORIES_FIELD, orderTypeName: CATEGORY_ORDER_TYPE_NAME }),
+].flat()

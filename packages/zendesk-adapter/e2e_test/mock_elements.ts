@@ -89,12 +89,11 @@ export const mockDefaultValues: Record<string, Values> = {
       view_access: 'full',
       user_view_access: 'full',
       voice_dashboard_access: true,
-      // must be false - see SALTO-3257
-      manage_contextual_workspaces: false,
-      manage_organization_fields: false,
-      manage_ticket_fields: false,
-      manage_ticket_forms: false,
-      manage_user_fields: false,
+      manage_contextual_workspaces: true,
+      manage_organization_fields: true,
+      manage_ticket_fields: true,
+      manage_ticket_forms: true,
+      manage_user_fields: true,
     },
   },
   group: {

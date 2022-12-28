@@ -1728,7 +1728,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
       sourceTypeName: 'articles__articles',
       fieldsToHide: FIELDS_TO_HIDE.concat(
-        // { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'position', fieldType: 'number' },
       ),
       fieldTypeOverrides: [
@@ -1775,6 +1775,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   [ARTICLE_ATTACHMENT_TYPE_NAME]: {
     request: {
       url: '/api/v2/help_center/articles/{article_id}/attachments',
+      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      paginationField: NEW_PAGINATION_FIELD,
     },
     transformation: {
       idFields: ['file_name', 'inline'],

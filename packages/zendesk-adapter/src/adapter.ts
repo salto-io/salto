@@ -190,7 +190,6 @@ export const DEFAULT_FILTERS = [
   guideParentSection,
   serviceUrlFilter,
   ...Object.values(commonFilters),
-  // articleBodyFilter should run after referencedInstanceNames (which is part of the common filters)
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,

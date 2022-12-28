@@ -16,6 +16,8 @@
 import { PromiseTimedOutError, withTimeout, sleep } from '../../src/promises/timeout'
 
 describe('withTimeout', () => {
+  jest.setTimeout(10 * 1000)
+
   const wait = (
     timeout: number,
   ): Promise<void> => new Promise(resolve => setTimeout(resolve, timeout))

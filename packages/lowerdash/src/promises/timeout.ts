@@ -35,3 +35,5 @@ export const withTimeout = <T>(
     timeoutPromise,
   ]) as Promise<T>
 }
+
+export const sleep = (delayMs: number): Promise<void> => new Promise(r => setTimeout(r, delayMs))

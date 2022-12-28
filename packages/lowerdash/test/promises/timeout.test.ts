@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PromiseTimedOutError, withTimeout } from '../../src/promises/timeout'
+import { PromiseTimedOutError, withTimeout, sleep } from '../../src/promises/timeout'
 
 describe('withTimeout', () => {
   const wait = (
@@ -112,5 +112,15 @@ describe('withTimeout', () => {
       expect(await p).toBeInstanceOf(PromiseTimedOutError)
       expect(await p).toMatchObject({ message: 'Promise timed out after 1 ms' })
     })
+  })
+})
+
+describe('sleep', () => {
+  it('should wait at least the specified time and not much more than it', async () => {
+    const before = Date.now()
+    await sleep(1000)
+    const delay = Date.now() - before
+    expect(delay).toBeGreaterThan(1000)
+    expect(delay).toBeLessThan(5000)
   })
 })

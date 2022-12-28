@@ -15,7 +15,10 @@
 */
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { logger } from '@salto-io/logging'
+import { promises } from '@salto-io/lowerdash'
 import { OpenAPI } from 'openapi-types'
+
+const { sleep } = promises.timeout
 
 const DEFAULT_NUMBER_OF_RETRIES = 5
 
@@ -38,10 +41,11 @@ export const loadSwagger = async (
       parser,
     }
   } catch (err) {
-    log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}. Retries left: ${numberOfRetries}`)
+    log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}. Retries left: ${numberOfRetries} (retrying in 5s)`)
     if (numberOfRetries <= 0) {
       throw err
     }
+    await sleep(5000)
     return loadSwagger(swaggerPath, numberOfRetries - 1)
   }
 }

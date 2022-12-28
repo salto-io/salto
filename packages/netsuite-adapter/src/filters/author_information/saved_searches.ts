@@ -74,6 +74,7 @@ const getSavedSearchesMap = async (
 
 export const changeDateFormat = (date: string, timeAndFormat: TimeZoneAndFormat): string => {
   const { timeZone, timeFormat, dateFormat } = timeAndFormat
+  // replace 'Month' with 'MMMM' since moment.tz doesnt support the 'D Month, YYYY' netsuite date format
   const utcDate = moment.tz(date, [dateFormat.replace('Month', 'MMMM'), timeFormat].join(' '), timeZone)
   return utcDate.utc().format()
 }

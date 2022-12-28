@@ -63,7 +63,7 @@ const deactivatedTicketFieldInActions = async (macro: InstanceElement, elementSo
         log.error(` could not find ticket_field ${ticketRef.elemID.name} in element source`)
         return false // as it is not what the change validator tries to catch.
       }
-      return !ticket?.value.active // if it is not active return true
+      return !ticket.value.active // if it is not active return true
     })
     .map((ticketRef: ReferenceExpression) => ticketRef.elemID.name)
     .toArray()

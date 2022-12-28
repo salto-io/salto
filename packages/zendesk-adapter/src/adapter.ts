@@ -614,21 +614,18 @@ export default class ZendeskAdapter implements AdapterOperations {
     const subdomainsList = brandsList
       .map(brandInstance => brandInstance.value.subdomain)
       .filter(isString)
-    const subdomainToPaginator = Object.fromEntries(subdomainsList.map(subdomain => (
-      [
-        subdomain,
-        createPaginator({
-          client: this.createClientBySubdomain(subdomain),
-          paginationFuncCreator: paginate,
-        }),
-      ]
+    const subdomainToClient = Object.fromEntries(subdomainsList.map(subdomain => (
+      [subdomain, this.createClientBySubdomain(subdomain)]
     )))
-    const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
+    const guideDeployResults = await awu(Object.entries(subdomainToClient))
       .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(async ([subdomain, paginator]) => {
+      .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({
-          filterRunnerClient: this.createClientBySubdomain(subdomain),
-          paginator,
+          filterRunnerClient: client,
+          paginator: createPaginator({
+            client,
+            paginationFuncCreator: paginate,
+          }),
         })
         await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
         const { deployResult: brandDeployResults } = await brandRunner.deploy(

@@ -97,7 +97,7 @@ export const macroActionsTicketFieldDeactivationValidator: ChangeValidator = asy
     .flatMap(({ elemID, deactivatedTicketFields }) => [{
       elemID,
       severity: 'Error',
-      message: `One or more of the actions in macro ${elemID.name}, has a deactivated ticket_field as a field `,
-      detailedMessage: `One or more of the actions in macro ${elemID.name}, has a deactivated ticket_field as a field. The deactivated fields are: ${deactivatedTicketFields}`,
+      message: `One or more of the actions in macro ${elemID.name} has a deactivated ticket_field as a field`,
+      detailedMessage: `One or more of the actions in macro ${elemID.name} has a deactivated ticket_field as a field. The deactivated fields are: ${deactivatedTicketFields}`,
     }])
 }

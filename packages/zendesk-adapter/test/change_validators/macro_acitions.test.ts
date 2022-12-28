@@ -93,8 +93,8 @@ describe('macro action ticket field test', () => {
     expect(errors).toEqual([{
       elemID: macro.elemID,
       severity: 'Error',
-      message: `One or more of the actions in macro ${macro.elemID.name}, has a deactivated ticket_field as a field `,
-      detailedMessage: `One or more of the actions in macro ${macro.elemID.name}, has a deactivated ticket_field as a field. The deactivated fields are: ${[deactivatedTicketFieldInstance1.elemID.name, deactivatedTicketFieldInstance2.elemID.name]}`,
+      message: `One or more of the actions in macro ${macro.elemID.name} has a deactivated ticket_field as a field`,
+      detailedMessage: `One or more of the actions in macro ${macro.elemID.name} has a deactivated ticket_field as a field. The deactivated fields are: ${[deactivatedTicketFieldInstance1.elemID.name, deactivatedTicketFieldInstance2.elemID.name]}`,
     }])
   })
   it('should not return an error when there are only activated ticket_fields', async () => {

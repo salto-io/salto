@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { ElemID, ElemIDType, Field, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
@@ -27,7 +27,7 @@ const formulon = require('formulon')
 
 const { extract } = formulon
 
-const { awu } = collections.asynciterable
+const log = logger(module)
 
 const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType => (
   ({
@@ -51,27 +51,44 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
 )
 
 const addDependenciesAnnotation = async (field: Field): Promise<void> => {
-  const formulaVariables: string[] = extract(field.annotations[FORMULA])
+  const formula = field.annotations[FORMULA]
+  try {
+    const formulaVariables: string[] = log.time(
+      () => (extract(formula)),
+      `Parse formula '${formula.slice(0, 15)}'`
+    )
 
-  const IdentifiersInfo = await awu(formulaVariables)
-    .flatMap(x => parseFormulaIdentifier(x, field.parent.elemID.typeName))
-    .toArray()
+    const identifiersInfo = await log.time(
+      () => Promise.all(
+        formulaVariables.map(async x => parseFormulaIdentifier(x, field.parent.elemID.typeName))
+      ),
+      'Convert formula identifiers to references'
+    )
 
-  const references = await referencesFromIdentifiers(IdentifiersInfo)
+    const references = await referencesFromIdentifiers(identifiersInfo.flat())
 
-  const depsAsRefExpr = references.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
+    if (references.length < identifiersInfo.length) {
+      log.warn(`Some formula identifiers were not converted to references.
+      Formula: ${formula}
+      Identifiers: ${identifiersInfo.flat().map(info => info.instance).join(', ')}
+      References: ${references.map(ref => ref.getFullName()).join(', ')}`)
+    }
 
-  extendGeneratedDependencies(field, depsAsRefExpr)
+    const depsAsRefExpr = references.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
+
+    extendGeneratedDependencies(field, depsAsRefExpr)
+  } catch (e) {
+    log.warn(`Failed to extract references from formula ${formula}: ${e}`)
+  }
 }
 
 const filter: LocalFilterCreator = () => ({
   name: 'formula_deps',
   onFetch: async elements => {
-    await awu(elements)
-      .filter(isObjectType)
-      .forEach(type => awu(Object.values(type.fields))
-        .filter(isFormulaField)
-        .forEach(field => addDependenciesAnnotation(field)))
+    const formulaFields = await Promise.all(
+      elements.filter(isObjectType).map(async t => Object.values(t.fields).filter(isFormulaField))
+    )
+    await Promise.all(formulaFields.flat().map(field => addDependenciesAnnotation(field)))
   },
 })
 

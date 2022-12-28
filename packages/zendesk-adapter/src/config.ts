@@ -48,10 +48,11 @@ export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_by_id' },
   { fieldName: 'updated_by_id' },
 ]
+export const PAGE_SIZE = '100'
 export const DEFAULT_QUERY_PARAMS = {
-  'page[size]': '100',
+  'page[size]': PAGE_SIZE,
 }
-export const NEW_PAGINATION_FIELD = 'links.next'
+export const CURSOR_BASED_PAGINATION_FIELD = 'links.next'
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
@@ -549,8 +550,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   business_hours_schedules: {
     request: {
       url: '/api/v2/business_hours/schedules',
-      // queryParams: { ...DEFAULT_QUERY_PARAMS },
-      // paginationField: NEW_PAGINATION_FIELD,
       recurseInto: [
         {
           type: 'business_hours_schedule_holiday',
@@ -1178,7 +1177,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/groups',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'groups',
@@ -1197,7 +1196,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/organizations',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'organizations',
@@ -1207,7 +1206,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/views',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'views',
@@ -1218,7 +1217,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/triggers',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'triggers',
@@ -1243,7 +1242,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/trigger_categories',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'trigger_categories',
@@ -1253,7 +1252,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/automations',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'automations',
@@ -1283,7 +1282,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/macros',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'macros',
@@ -1331,7 +1330,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/brands',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'brands',
@@ -1465,7 +1464,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/recipient_addresses',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       sourceTypeName: 'recipient_addresses',
@@ -1495,7 +1494,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/ticket_fields',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'ticket_fields',
@@ -1508,7 +1507,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/user_fields',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'user_fields',
@@ -1519,7 +1518,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/organization_fields',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'organization_fields',
@@ -1597,7 +1596,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/apps/installations',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
   },
   // eslint-disable-next-line camelcase
@@ -1605,7 +1604,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/apps/owned',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
   },
   // eslint-disable-next-line camelcase
@@ -1619,7 +1618,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/oauth/global_clients',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'global_clients',
@@ -1651,7 +1650,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/webhooks',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'webhooks',
@@ -1705,7 +1704,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         include: 'translations',
         sort_by: 'updated_at',
       },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
       recurseInto: [
         {
           type: ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -1776,7 +1775,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/api/v2/help_center/articles/{article_id}/attachments',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       idFields: ['file_name', 'inline'],
@@ -1863,7 +1862,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/hc/api/internal/help_center_translations',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       idFields: ['&brand', 'locale'],
@@ -1897,7 +1896,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     request: {
       url: '/hc/api/internal/general_settings',
       queryParams: { ...DEFAULT_QUERY_PARAMS },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       idFields: ['&brand'],
@@ -1962,7 +1961,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         ...DEFAULT_QUERY_PARAMS,
         include: 'translations',
       },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'sections',
@@ -2094,7 +2093,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         ...DEFAULT_QUERY_PARAMS,
         include: 'translations',
       },
-      paginationField: NEW_PAGINATION_FIELD,
+      paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
       dataField: 'categories',
@@ -2196,7 +2195,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   permission_groups: {
     request: {
       url: '/api/v2/guide/permission_groups',
-      queryParams: { per_page: '100' },
+      queryParams: { per_page: PAGE_SIZE },
       paginationField: 'next_page',
     },
     transformation: {
@@ -2236,7 +2235,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
-      queryParams: { per_page: '100' },
+      queryParams: { per_page: PAGE_SIZE },
       paginationField: 'next_page',
     },
     transformation: {

@@ -21,6 +21,7 @@ import { values } from '@salto-io/lowerdash'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
+import { PAGE_SIZE } from '../config'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   throttle, logDecorator, requiresLogin } = clientUtils
@@ -34,7 +35,7 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
-  get: 20,
+  get: Number(PAGE_SIZE),
 }
 
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<

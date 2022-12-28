@@ -236,6 +236,7 @@ const METADATA_TO_RETRIEVE = [
   'Territory2Model', // All Territory2 types do not support CRUD
   'Territory2Rule', // All Territory2 types do not support CRUD
   'Territory2Type', // All Territory2 types do not support CRUD
+  'Layout', // retrieve returns more information about relatedLists
 ]
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm

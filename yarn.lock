@@ -6913,10 +6913,10 @@ formidable@^1.2.2:
   resolved "https://registry.yarnpkg.com/formidable/-/formidable-1.2.2.tgz#bf69aea2972982675f00865342b982986f6b8dd9"
   integrity sha512-V8gLm+41I/8kguQ4/o1D3RIHRmhYFG4pnNyonvua+40rqcEmT4+V71yaZ3B457xbbgCsCfjSPi65u/W6vK1U5Q==
 
-formulon@^6.24.0:
-  version "6.24.0"
-  resolved "https://registry.yarnpkg.com/formulon/-/formulon-6.24.0.tgz#ae5c989809b551b160a09f8b85df7cdc636ff6e5"
-  integrity sha512-WRHtpSxKx8bWCwDhyK6148sWtxcdth2Vn3vBmTB5uiiaopmxR4TMjEMLWlkLQ+WSrfA9cp0AIp9e5zVaLUfzlQ==
+formulon@^6.24.1:
+  version "6.24.2"
+  resolved "https://registry.yarnpkg.com/formulon/-/formulon-6.24.2.tgz#024cad2a4314c273b3ee9dba10b8a65a98d566c5"
+  integrity sha512-uEOO6dMGc9UfTzK+87n/rrGs6HepMBnsFwLChozp+pTGj/PzP1HDzdEdSFVw6d7K2xeh2x7GvC5BFe1PAGMv+g==
   dependencies:
     decimal.js "^10.3.1"
 

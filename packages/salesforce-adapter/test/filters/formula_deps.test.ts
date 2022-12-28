@@ -99,6 +99,13 @@ describe('Formula dependencies', () => {
       'salesforce.Trigger_Context_Status__mdt.instance.by_handler', 'salesforce.User',
       'salesforce.User.field.CompanyName', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
       'salesforce.User.field.ProfileId']
+    const processBuilderFormulaExpectedRefs = ['salesforce.Account', 'salesforce.Account.field.AccountNumber',
+      'salesforce.Account.field.OwnerId', 'salesforce.Account.field.original_lead__c', 'salesforce.Contact',
+      'salesforce.Contact.field.AccountId', 'salesforce.Trigger_Context_Status__mdt',
+      'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Delete__c',
+      'salesforce.Trigger_Context_Status__mdt.instance.by_class', 'salesforce.User', 'salesforce.User.field.ContactId',
+      'salesforce.User.field.ManagerId', 'salesforce.original_lead__r',
+      'salesforce.original_lead__r.field.ConvertedAccountId']
     it('Should extract the correct references from a complex standard formula', async () => {
       const elements = [typeWithFormula.clone()]
       elements[0].fields.someFormulaField__c.annotations[FORMULA] = standardFormula
@@ -106,23 +113,19 @@ describe('Formula dependencies', () => {
       // eslint-disable-next-line no-underscore-dangle
       const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
-      expect(deps).toHaveLength(36)
       expect(deps.map((refExpr: {reference: ReferenceExpression}) => refExpr.reference.elemID.getFullName()))
         .toEqual(standardFormulaExpectedRefs)
     })
 
-    // Formulon doesn't support Process Builder formulas. See https://github.com/leifg/formulon/issues/935
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('Should extract the correct references from a Process Builder formula', async () => {
+    it('Should extract the correct references from a Process Builder formula', async () => {
       const elements = [typeWithFormula.clone()]
       elements[0].fields.someFormulaField__c.annotations[FORMULA] = processBuilderFormula
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
       const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
-      expect(deps).toHaveLength(8)
       expect(deps.map((refExpr: {reference: ReferenceExpression}) => refExpr.reference.elemID.getFullName()))
-        .toEqual(standardFormulaExpectedRefs)
+        .toEqual(processBuilderFormulaExpectedRefs)
     })
   })
   describe('CPQ formulas', () => {

@@ -196,16 +196,23 @@ describe('adapter creator', () => {
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc' },
-    ))).toEqual('abc')
+    ))).toEqual('https://abc.zendesk.com')
 
     // OAuth auth method
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc' },
-    ))).toEqual('abc')
+    ))).toEqual('https://abc.zendesk.com')
 
-    expect(connection.createConnection).toHaveBeenCalledTimes(2)
+    // with domain provided
+    expect(await adapter.validateCredentials(new InstanceElement(
+      'config',
+      usernamePasswordCredentialsType,
+      { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1' },
+    ))).toEqual('https://abc.zendesk1.com')
+
+    expect(connection.createConnection).toHaveBeenCalledTimes(3)
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({

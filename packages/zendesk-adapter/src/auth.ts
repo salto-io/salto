@@ -21,17 +21,20 @@ export type UsernamePasswordCredentials = {
   username: string
   password: string
   subdomain: string
+  domain?: string
 }
 
 export type OauthAccessTokenCredentials = {
   accessToken: string
   subdomain: string
+  domain?: string
 }
 
 export type OauthRequestParameters = {
   clientId: string
   port: number
   subdomain: string
+  domain?: string
 }
 
 export const usernamePasswordCredentialsType = createMatchingObjectType<
@@ -54,6 +57,13 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<
         message: 'subdomain (https://<your subdomain>.zendesk.com)',
       },
     },
+    domain: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+        message: 'domain (optional) (https://<subdomain>.<your zendesk domain>.com)',
+      },
+    },
   },
 })
 
@@ -71,6 +81,13 @@ export const oauthAccessTokenCredentialsType = createMatchingObjectType<
       annotations: {
         _required: true,
         message: 'subdomain (https://<your subdomain>.zendesk.com)',
+      },
+    },
+    domain: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+        message: 'domain (optional) (https://<subdomain>.<your zendesk domain>.com)',
       },
     },
   },
@@ -100,6 +117,13 @@ export const oauthRequestParametersType = createMatchingObjectType<
       annotations: {
         message: 'subdomain',
         _required: true,
+      },
+    },
+    domain: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        _required: false,
+        message: 'domain (optional) (https://<subdomain>.<your zendesk domain>.com)',
       },
     },
   },

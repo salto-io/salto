@@ -19,12 +19,12 @@ import * as testConsts from './report_definitions_consts'
 
 describe('report definition parser test', () => {
   it('should parse a simple report definition', async () => {
-    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.simpleReportDefinition)
+    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.simpleReportDefinition, 'test_script')
     expect(parsedReport).toEqual(testConsts.simpleReportDefinitionResult)
   })
 
   it('should parse a full report definition', async () => {
-    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.fullReportDefinition)
+    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.fullReportDefinition, 'test_script')
     expect(parsedReport).toEqual(testConsts.fullReportDefinitionResult)
   })
 })

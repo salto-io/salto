@@ -18,19 +18,19 @@ import * as testConsts from './saved_search_definition'
 
 describe('saved search parser tests', () => {
   it('test parse empty definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.emptyDefinition)
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.emptyDefinition, 'testId')
     expect(parsedDefinition).toEqual(testConsts.emptyDefinitionOutcome)
   })
   it('test parse listed definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.listedDefinition)
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.listedDefinition, 'testId')
     expect(parsedDefinition).toEqual(testConsts.listedDefinitionOutcome)
   })
   it('test parse singles definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.singlesDefinition)
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.singlesDefinition, 'testId')
     expect(parsedDefinition).toEqual(testConsts.singlesDefinitionOutcome)
   })
   it('test parse edge case definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.edgeCaseDefinition)
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.edgeCaseDefinition, 'testId')
     expect(parsedDefinition).toEqual(testConsts.edgeCaseDefinitionOutcome)
   })
 })

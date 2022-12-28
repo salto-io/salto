@@ -13,8 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable max-len */
-/* eslint-disable camelcase */
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
@@ -37,10 +35,11 @@ type InnerFields = {
 }
 
 type LayoutDependencies = {
-  dependencies?: string[]
+  dependency: string[]
 }
 
-type RowRecordType = {
+
+export type RowRecordType = {
   FIELD_GROUP_BY?: string
   FIELD_GROUP_BY_FULL?: boolean
   FIELD_ORDER_GROUP?: number
@@ -48,7 +47,7 @@ type RowRecordType = {
   FLAG_ORDER_DESC?: boolean
 }
 
-type LayoutRowType = {
+export type LayoutRowType = {
   FIELD_KEY?: number
   FIELD_NAME?: string
   KEY_SCRIPT_ID?: string
@@ -72,11 +71,12 @@ type LayoutRowType = {
 }
 
 export type FinancialLayoutType = {
-  scriptid?: string
-  layout?: string
+  scriptid: string
+  layout: string
+  name?: string
   dependencies?: LayoutDependencies
   rows?: LayoutRowType[]
-  innerFields?: InnerFields
+  flags?: InnerFields
 }
 
 export const financiallayoutType = (): TypeAndInnerTypes => {
@@ -137,9 +137,10 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-      dependencies: {
+      dependency: {
         refType: new ListType(BuiltinTypes.STRING),
         annotations: {
+          _required: true,
         },
       },
     },
@@ -164,6 +165,9 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, financialLayoutElemID.name],
   })
 
+  innerTypes.financialLayoutRows = financialLayoutRows
+  innerTypes.dependency = financialLayoutDependencies
+
   const financiallayout = createMatchingObjectType<FinancialLayoutType>({
     elemID: financialLayoutElemID,
     annotations: {
@@ -172,7 +176,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       scriptid: {
         refType: BuiltinTypes.SERVICE_ID,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
+          _required: true,
           [constants.IS_ATTRIBUTE]: true,
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customlayout[0-9a-z_]+' }),
         },
@@ -180,8 +184,11 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       layout: {
         refType: BuiltinTypes.STRING,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
+          _required: true,
         },
+      },
+      name: {
+        refType: BuiltinTypes.STRING,
       },
       dependencies: {
         refType: financialLayoutDependencies,
@@ -191,7 +198,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       rows: {
         refType: new ListType(financialLayoutRows),
       },
-      innerFields: {
+      flags: {
         refType: financialLayoutInnerFields,
       },
     },

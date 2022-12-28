@@ -18,6 +18,7 @@ import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementCompact } from 'xml-js'
+import { SAVED_SEARCH } from '../constants'
 import { ElementParts,
   AttributeObject,
   RecordObject,
@@ -25,24 +26,11 @@ import { ElementParts,
   getObjectFromValues,
   getFlags,
   extractRecordsValues,
-  safeAssignKeyValue } from '../report_types_parser_utils'
+  getDefinitionOrLayout } from '../report_types_parser_utils'
+import { SavedSearchType } from './parsed_saved_search'
 
 type FilterObject = { descriptor: { values: { Value: AttributeObject[] }}
  values: { values: {Record: RecordObject | RecordObject[]} }}
-
-export type SavedSearchType = {
-  searchFilter?: Values[]
-  searchSummaryFilters?: Values[]
-  availableFilters?: Values[]
-  returnFields?: Values[]
-  detailFields?: Values[]
-  sortColumns?: Values[]
-  audience?: Values
-  alertRecipients?: Values[]
-}
-
-const getSearchDefinition = (search: ElementCompact): ElementCompact =>
-  search['nssoc:SerializedObjectContainer']['nssoc:definition'].SearchDefinition
 
 const getFilterRecords = (filter: FilterObject): Values[] =>
   collections.array.makeArray(filter.values.values?.Record)
@@ -76,21 +64,22 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
 
 const getSearchPartsFromDefinition = async (definition:string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
-  return { definition: getSearchDefinition(parsedXml),
+  return { definition: getDefinitionOrLayout(parsedXml, SAVED_SEARCH),
     dependency: getElementDependency(parsedXml) }
 }
 
-export const parseDefinition = async (definition:string): Promise<SavedSearchType> => {
+export const parseDefinition = async (definition:string, scriptid:string): Promise<SavedSearchType> => {
   const searchParts = await getSearchPartsFromDefinition(definition)
-  const returnInstance = {}
-  safeAssignKeyValue(returnInstance, 'search_filter', extractSearchDefinitionValues(searchParts.definition.filters))
-  safeAssignKeyValue(returnInstance, 'search_summary_filters', extractSearchDefinitionValues(searchParts.definition.summaryFilters))
-  safeAssignKeyValue(returnInstance, 'available_filters', extractRecordsValues(searchParts.definition.availableFilterFields))
-  safeAssignKeyValue(returnInstance, 'return_fields', extractRecordsValues(searchParts.definition.returnFields))
-  safeAssignKeyValue(returnInstance, 'detail_fields', extractRecordsValues(searchParts.definition.detailFields))
-  safeAssignKeyValue(returnInstance, 'sort_columns', extractRecordsValues(searchParts.definition.sortColumns))
-  safeAssignKeyValue(returnInstance, 'audience', getAudience(searchParts.dependency))
-  safeAssignKeyValue(returnInstance, 'alert_recipients', getAlertRecipients(searchParts.definition))
-  Object.assign(returnInstance, getFlags(searchParts.definition))
-  return returnInstance
+  const returnInstance = {
+    search_filter: extractSearchDefinitionValues(searchParts.definition.filters),
+    search_summary_filters: extractSearchDefinitionValues(searchParts.definition.summaryFilters),
+    available_filters: extractRecordsValues(searchParts.definition.availableFilterFields),
+    return_fields: extractRecordsValues(searchParts.definition.returnFields),
+    detail_fields: extractRecordsValues(searchParts.definition.detailFields),
+    sort_columns: extractRecordsValues(searchParts.definition.sortColumns),
+    audience: getAudience(searchParts.dependency),
+    alert_recipients: getAlertRecipients(searchParts.definition),
+    flags: getFlags(searchParts.definition),
+  }
+  return { scriptid, definition, ..._.omitBy(returnInstance, _.isEmpty) }
 }

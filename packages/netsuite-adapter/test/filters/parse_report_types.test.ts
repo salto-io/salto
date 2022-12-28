@@ -23,6 +23,7 @@ import NetsuiteClient from '../../src/client/client'
 import { NETSUITE, SAVED_SEARCH } from '../../src/constants'
 import { FilterOpts } from '../../src/filter'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
+import { savedsearchType as newSavedSearchType } from '../../src/saved_search_parsing/parsed_saved_search'
 
 jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
   parseDefinition: jest.fn().mockResolvedValue({
@@ -43,7 +44,7 @@ jest.mock('../../src/financial_layout_parsing/financial_layout_parser', () => ({
 }))
 
 
-describe('parse_saved_searches filter', () => {
+describe('parse_report_types filter', () => {
   let savedSearchInstance: InstanceElement
   let sourceSavedSearchInstance: InstanceElement
   let fetchOpts: FilterOpts
@@ -102,13 +103,16 @@ describe('parse_saved_searches filter', () => {
     sourceFinancialLayoutInstance.value.layout = 'testLayout'
     sourceReportDefinitionInstance.value.definition = 'testReport'
   })
-  it('test onFetch removes old object type', async () => {
-    const savedSearchObject = new ObjectType({ elemID: new ElemID('netsuite', SAVED_SEARCH), fields: {} })
+  it('test onFetch removes old object type and adds new type', async () => {
+    const savedSearchObject = new ObjectType({ elemID: new ElemID('netsuite', SAVED_SEARCH) })
     const elements = [savedSearchObject]
     await filterCreator(fetchOpts).onFetch?.(elements)
     expect(elements.filter(isObjectType)
-      .filter(e => e.elemID.typeName === SAVED_SEARCH))
+      .filter(e => e.elemID.typeName === SAVED_SEARCH)[0])
       .not.toEqual(savedSearchObject)
+    expect(elements.filter(isObjectType)
+      .filter(e => e.elemID.typeName === SAVED_SEARCH)[0])
+      .toEqual(newSavedSearchType().type)
   })
   it('test onFetch removes doubled dependency object type', async () => {
     const dependencyObjectType = new ObjectType({ elemID: new ElemID(NETSUITE, 'savedsearch_dependencies'),
@@ -116,7 +120,7 @@ describe('parse_saved_searches filter', () => {
     const elements = [dependencyObjectType]
     await filterCreator(fetchOpts).onFetch?.(elements)
     expect(elements.filter(isObjectType)
-      .filter(e => e.elemID.typeName === SAVED_SEARCH))
+      .filter(e => e.elemID.typeName === SAVED_SEARCH)[0])
       .not.toEqual(dependencyObjectType)
   })
   it('test onFetch adds definition values', async () => {

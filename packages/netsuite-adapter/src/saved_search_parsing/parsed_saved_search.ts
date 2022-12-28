@@ -16,10 +16,25 @@
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, createRefToElmWithValue,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, createRefToElmWithValue, Values,
 } from '@salto-io/adapter-api'
 import { TypeAndInnerTypes } from '../types/object_types'
 import * as constants from '../constants'
+
+export type SavedSearchType = {
+  scriptid: string
+  definition: string
+  dependency?: string[]
+  search_filter?: Values[]
+  search_summary_filters?: Values[]
+  available_filters?: Values[]
+  return_fields?: Values[]
+  detail_fields?: Values[]
+  sort_columns?: Values[]
+  audience?: Values
+  alert_recipients?: Values[]
+  flags?: Values
+}
 
 export const savedsearchType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}

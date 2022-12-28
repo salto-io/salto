@@ -19,7 +19,7 @@ import * as financialLayoutParser from '../src/financial_layout_parsing/financia
 
 describe('financial layout parser tests', () => {
   it('should parse financial layout', async () => {
-    const parsedLayout = await financialLayoutParser.parseDefinition(testConsts.layoutDefinition)
+    const parsedLayout = await financialLayoutParser.parseDefinition(testConsts.layoutDefinition, 'test_scriptid')
     expect(parsedLayout).toEqual(testConsts.layoutDefinitionResult)
   })
 })

@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable no-underscore-dangle */
-import { Value, Values } from '@salto-io/adapter-api'
+import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementCompact } from 'xml-js'
+import { REPORT_DEFINITION } from '../constants'
 import {
   getElementDependency,
   getJson,
@@ -27,67 +27,67 @@ import {
   RecordObject,
   getObjectFromValues,
   AttributeObject,
+  getDefinitionOrLayout,
 } from '../report_types_parser_utils'
-import { ReportDefinitionType, ReportUiPrefType } from './parsed_report_definition'
+import { ReportDefinitionType, ReportUiPrefType, ReportCriteriaType } from './parsed_report_definition'
 
-type InnerParamObject = {
-  _attributes:{
-    class?: string
-    clazz?: string
-    escapeStringIfQuoting?: string
-    field?: string
-    fieldType?: string
-    quoteByNamingConvention?: string
-}
-  _text: string
-}
-type ReportCriterionParent = { _attributs: { class:string; reference: string }}
-type ReportCriterionDescriptor = {
- components: InnerParamObject
- field:
- {
-   parent: ReportCriterionParent
-   recordType: InnerParamObject
-   values: { Value: AttributeObject[] }
+type ReportCriterionParent = {
+  _attributs: {
+    class: string
+    reference: string
   }
- parent: ReportCriterionParent
 }
-type ReportCriterionValues = { _attributs: { class: string }; Record: RecordObject }
+type ReportCriterionDescriptor = {
+  components: Values
+  field: {
+    parent: ReportCriterionParent
+    recordType: Values
+    values: {
+      Value: AttributeObject[]
+    }
+  }
+  parent: ReportCriterionParent
+}
+type ReportCriterionValues = {
+  _attributs: {
+    class: string
+  }
+  Record: RecordObject
+}
 type ReportCriterionObject = {
- descriptor: ReportCriterionDescriptor
- parent: ReportCriterionParent
- values: ReportCriterionValues
+  descriptor: ReportCriterionDescriptor
+  parent: ReportCriterionParent
+  values: ReportCriterionValues
 }
 type ReportCriteria = {
-  type: InnerParamObject
+  type: Values
   values: {
     ReportCriterion: ReportCriterionObject[]
   }
 }
 type ParameterObject = {
-  key: InnerParamObject
-  parent: { class: string; reference: string}
-  value: InnerParamObject
+  key: Values
+  parent: {
+    class: string
+    reference: string
+  }
+  value: Values
 }
-
-const getReportDefinition = (search: ElementCompact): ElementCompact =>
-  search['nssoc:SerializedObjectContainer']['nssoc:definition'].ReportDefinition
 
 const getReportPartsFromDefinition = async (definition: string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
   return {
-    definition: getReportDefinition(parsedXml),
+    definition: getDefinitionOrLayout(parsedXml, REPORT_DEFINITION),
     dependency: getElementDependency(parsedXml),
   }
 }
 
-const getReportParameters = (reportParameter: { Map: ParameterObject[] }): Values => {
-  const paramObject: Record<string, Value> = {}
-  paramObject.Map = Object.fromEntries(reportParameter.Map.map(i => [i.key._text, i.value._text]))
-  return paramObject
-}
+const getReportParameters = (reportParameter: { Map: ParameterObject[] }): { Map: Record<string, string> } => ({
+  // eslint-disable-next-line no-underscore-dangle
+  Map: Object.fromEntries(reportParameter.Map.map(i => [i.key._text, i.value._text])),
+})
 
-const getReportCriteria = (criteria: ReportCriteria): Values[] =>
+const getReportCriteria = (criteria: ReportCriteria): ReportCriteriaType[] =>
   collections.array.makeArray(criteria.values?.ReportCriterion)
     .map(criterion => {
       const values = extractRecordsValues(criterion)
@@ -98,9 +98,9 @@ const getReportCriteria = (criteria: ReportCriteria): Values[] =>
 const getUiPreferences = (uiPref: ElementCompact): ReportUiPrefType =>
   getObjectFromValues(uiPref.values.Value)
 
-export const parseDefinition = async (definition: string): Promise<ReportDefinitionType> => {
+export const parseDefinition = async (definition: string, scriptid: string): Promise<ReportDefinitionType> => {
   const reportParts = await getReportPartsFromDefinition(definition)
-  const returnInstance: ReportDefinitionType = {
+  const returnInstance = {
     layouts: extractRecordsValues(reportParts.definition.layouts),
     components: extractRecordsValues(reportParts.definition.components),
     parameters: getReportParameters(reportParts.definition.parameters.values),
@@ -108,12 +108,7 @@ export const parseDefinition = async (definition: string): Promise<ReportDefinit
     fields: extractRecordsValues(reportParts.definition.fields),
     uiPreferences: getUiPreferences(reportParts.definition.uiPreferences),
     criteria: getReportCriteria(reportParts.definition.criteria),
-    innerFields: getFlags(reportParts.definition),
+    flags: getFlags(reportParts.definition),
   }
-  Object.keys(returnInstance).forEach(key => {
-    if (_.isEmpty(returnInstance[key as keyof ReportDefinitionType])) {
-      delete returnInstance[key as keyof ReportDefinitionType]
-    }
-  })
-  return returnInstance
+  return { scriptid, definition, ..._.omitBy(returnInstance, _.isEmpty) }
 }

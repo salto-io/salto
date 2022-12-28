@@ -18,34 +18,46 @@ import { ChangeValidator, getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
-import { parseDefinition as parseSavedSearchDefinition, SavedSearchType } from '../saved_search_parsing/saved_search_parser'
+import { parseDefinition as parseSavedSearchDefinition } from '../saved_search_parsing/saved_search_parser'
 import { parseDefinition as parseReportDefintionDefinition } from '../report_definition_parsing/report_definition_parser'
 import { parseDefinition as parseFinancialLayoutDefinition } from '../financial_layout_parsing/financial_layout_parser'
-import { typeToParameters } from '../report_types_parser_utils'
 import { ReportDefinitionType } from '../report_definition_parsing/parsed_report_definition'
 import { FinancialLayoutType } from '../financial_layout_parsing/parsed_financial_layout'
+import { SavedSearchType } from '../saved_search_parsing/parsed_saved_search'
 
 const { awu } = collections.asynciterable
 
 export type ReportTypes = SavedSearchType | ReportDefinitionType | FinancialLayoutType
 
+export const mapTypeToLayoutOrDefinition: Record<string, string> = {
+  [FINANCIAL_LAYOUT]: 'layout',
+  [REPORT_DEFINITION]: 'definition',
+  [SAVED_SEARCH]: 'definition',
+}
+
 export const typeNameToParser:
-Record<string, (definition: string) => Promise<ReportTypes>> = {
+Record<string, (definition: string, scriptid: string) => Promise<Partial<ReportTypes>>> = {
   [FINANCIAL_LAYOUT]: parseFinancialLayoutDefinition,
   [REPORT_DEFINITION]: parseReportDefintionDefinition,
   [SAVED_SEARCH]: parseSavedSearchDefinition,
 }
-const wasModified = async (instance:InstanceElement): Promise<boolean> => {
-  const definitionOrLayout = instance.elemID.typeName === FINANCIAL_LAYOUT
-    ? instance.value.layout : instance.value.definition
+
+const typeNameToName: Record<string, string> = {
+  [FINANCIAL_LAYOUT]: 'financial layout',
+  [REPORT_DEFINITION]: 'report definition',
+  [SAVED_SEARCH]: 'saved search',
+}
+const wasModified = async (instance: InstanceElement): Promise<boolean> => {
+  const definitionOrLayout = instance.value[mapTypeToLayoutOrDefinition[instance.elemID.typeName]]
   const parserFunction = typeNameToParser[instance.elemID.typeName]
-  const parsedDefinition = await parserFunction(definitionOrLayout)
-  return Object.keys(parsedDefinition)
-    .some(key => !_.isEqual(parsedDefinition[key as keyof ReportTypes], instance.value[key]))
+  const parsedDefinition = await parserFunction(definitionOrLayout, instance.value.scriptid)
+  const temp1 = _.pick(instance.value, Object.keys(parsedDefinition))
+  const temp2 = _.isEqual(parsedDefinition, temp1)
+  return !temp2
 }
 
 const getChangeError = async (instance: InstanceElement): Promise<ChangeError> => {
-  const instanceName = typeToParameters[instance.elemID.typeName].name
+  const instanceName = typeNameToName[instance.elemID.typeName]
   if (await wasModified(instance)) {
     return ({
       elemID: instance.elemID,

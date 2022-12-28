@@ -14,41 +14,29 @@
 * limitations under the License.
 */
 
-import { ElemID, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { FINANCIAL_LAYOUT, NETSUITE, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
+import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
 import { savedsearchType } from '../saved_search_parsing/parsed_saved_search'
 import { financiallayoutType } from '../financial_layout_parsing/parsed_financial_layout'
 import { reportdefinitionType } from '../report_definition_parsing/parsed_report_definition'
-import { parseDefinition as parseSavedSearchDefinition } from '../saved_search_parsing/saved_search_parser'
-import { parseDefinition as parseReportDefintionDefinition } from '../report_definition_parsing/report_definition_parser'
-import { parseDefinition as parseFinancialLayoutDefinition } from '../financial_layout_parsing/financial_layout_parser'
-import { typeToParameters } from '../report_types_parser_utils'
-import { ReportTypes } from '../change_validators/report_types_move_environment'
+import { mapTypeToLayoutOrDefinition, typeNameToParser } from '../change_validators/report_types_move_environment'
+import { savedsearchType as oldSavedSearch } from '../autogen/types/standard_types/savedsearch'
+import { financiallayoutType as oldFinancialLayout } from '../autogen/types/standard_types/financiallayout'
+import { reportdefinitionType as oldReportDefinition } from '../autogen/types/standard_types/reportdefinition'
 
 const { awu } = collections.asynciterable
 
-const mapTypeToLayoutOrDefinition: Record<string, string> = {
-  [FINANCIAL_LAYOUT]: 'layout',
-  [REPORT_DEFINITION]: 'definition',
-  [SAVED_SEARCH]: 'definition',
-}
-
-const typeNameToParser: Record<string, (definition: string) => Promise<ReportTypes>> = {
-  [FINANCIAL_LAYOUT]: parseFinancialLayoutDefinition,
-  [REPORT_DEFINITION]: parseReportDefintionDefinition,
-  [SAVED_SEARCH]: parseSavedSearchDefinition,
+const typeNameToOldType: Record<string, ObjectType> = {
+  [SAVED_SEARCH]: oldSavedSearch().type,
+  [REPORT_DEFINITION]: oldReportDefinition().type,
+  [FINANCIAL_LAYOUT]: oldFinancialLayout().type,
 }
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
   onFetch: async elements => {
-    const savedSearchParams = { typeName: SAVED_SEARCH, ...savedsearchType() }
-    const reportDefinitionParams = { typeName: REPORT_DEFINITION, ...reportdefinitionType() }
-    const financialLayoutParams = { typeName: FINANCIAL_LAYOUT, ...financiallayoutType() }
-
-
     const cloneReportInstance = (instance: InstanceElement, type: ObjectType): InstanceElement =>
     // We create another element not using element.clone because
     // we need the new element to have a parsed save search type.
@@ -61,22 +49,23 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
     ): Promise<void> => {
       const layoutOrDefinition = mapTypeToLayoutOrDefinition[instance.elemID.typeName]
       const parser = typeNameToParser[instance.elemID.typeName]
-      Object.assign(instance.value, await parser(instance.value[layoutOrDefinition]))
+      const parsedInstance = await parser(instance.value[layoutOrDefinition], instance.value.scriptid)
+      Object.assign(instance.value, parsedInstance)
       if (oldInstance?.value[layoutOrDefinition] !== undefined) {
-        if (_.isEqual(await parser(oldInstance.value[layoutOrDefinition]),
-          await parser(instance.value[layoutOrDefinition]))) {
+        if (_.isEqual(await parser(oldInstance.value[layoutOrDefinition], oldInstance.value.scriptid),
+          parsedInstance)) {
           // In case the parsed definitions are equal that mean there is no reason
           // to change the definition string and create a change in the file.
           instance.value[layoutOrDefinition] = oldInstance.value[layoutOrDefinition]
         }
       }
     }
-    await awu([reportDefinitionParams, financialLayoutParams, savedSearchParams]).forEach(async parameters => {
-      const { typeName, type, innerTypes } = parameters
-      _.remove(elements, e => isObjectType(e) && e.elemID.name === typeName)
-      _.remove(elements, e => isObjectType(e) && e.elemID.isEqual(new ElemID(NETSUITE, typeName.concat('_dependencies'))))
+    await awu([reportdefinitionType, savedsearchType, financiallayoutType]).forEach(async parsedType => {
+      const { type, innerTypes } = parsedType()
+      _.remove(elements, e => isObjectType(e) && e.elemID.name === type.elemID.name)
+      _.remove(elements, e => isObjectType(e) && e.elemID.name.startsWith(type.elemID.name))
       const instances = _.remove(elements, e => isInstanceElement(e)
-          && e.elemID.typeName === typeName)
+          && e.elemID.typeName === type.elemID.name)
       elements.push(type)
       elements.push(...Object.values(innerTypes))
       const parsedInstances = await Promise.all(
@@ -94,7 +83,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
   preDeploy: async changes => {
     const removeValuesFromInstance = async (instance: InstanceElement): Promise<void> => {
       instance.value = _.pickBy(instance.value, (_val, key) =>
-        key in typeToParameters[instance.elemID.typeName].oldType.fields)
+        key in typeNameToOldType[instance.elemID.typeName].fields)
     }
 
     changes

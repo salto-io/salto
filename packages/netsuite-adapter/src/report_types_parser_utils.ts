@@ -14,16 +14,12 @@
 * limitations under the License.
 */
 /* eslint-disable no-underscore-dangle */
-import { ObjectType, Values } from '@salto-io/adapter-api'
+import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from './constants'
-import { savedsearchType as oldSavedSearch } from './autogen/types/standard_types/savedsearch'
-import { financiallayoutType as oldFinancialLayout } from './autogen/types/standard_types/financiallayout'
-import { reportdefinitionType as oldReportDefinition } from './autogen/types/standard_types/reportdefinition'
-
 
 export type ElementParts = {
   definition: ElementCompact
@@ -39,19 +35,20 @@ export type AttributeObject = {
 }
 export type RecordValueObject = AttributeObject[] | AttributeObject
 export type RecordObject = {
-  values: { Value: RecordValueObject }
+  values: {
+    Value: RecordValueObject
+  }
 }
-type typeParameters = {
-  name: string
-  oldType: ObjectType
-}
-
-export const typeToParameters: Record<string, typeParameters> = {
-  [SAVED_SEARCH]: { name: 'saved search', oldType: oldSavedSearch().type },
-  [REPORT_DEFINITION]: { name: 'report definition', oldType: oldReportDefinition().type },
-  [FINANCIAL_LAYOUT]: { name: 'financial layout', oldType: oldFinancialLayout().type },
+const tempMap: Record<string, string> = {
+  [REPORT_DEFINITION]: 'ReportDefinition',
+  [SAVED_SEARCH]: 'SearchDefinition',
+  [FINANCIAL_LAYOUT]: 'FinancialLayout',
 }
 
+export const getDefinitionOrLayout = (definition: ElementCompact, reportType: string): ElementCompact => {
+  const tempname = tempMap[reportType]
+  return definition['nssoc:SerializedObjectContainer']['nssoc:definition'][tempname]
+}
 
 export const getJson = async (definition: string): Promise<ElementCompact> => {
   const gzip = Buffer.from(definition.split('@').slice(-1)[0], 'base64')
@@ -72,7 +69,7 @@ export const getAttributeValue = (attribute: AttributeObject): AttributeValue =>
   return attribute._text
 }
 
-export const getObjectFromValues = (values: RecordValueObject): Values =>
+export const getObjectFromValues = (values: RecordValueObject): Record<string, AttributeValue> =>
   Object.fromEntries(collections.array.makeArray(values)
     .filter(i => i._text !== undefined)
     .map(i => [i._attributes.field, getAttributeValue(i)]))

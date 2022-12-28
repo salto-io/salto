@@ -13,11 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable no-underscore-dangle */
-import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ElementCompact } from 'xml-js'
+import { FINANCIAL_LAYOUT } from '../constants'
 import {
   getElementDependency,
   getJson,
@@ -26,50 +24,51 @@ import {
   getObjectFromValues,
   AttributeObject,
   RecordObject,
+  getDefinitionOrLayout,
 } from '../report_types_parser_utils'
-import { FinancialLayoutType } from './parsed_financial_layout'
+import { FinancialLayoutType, LayoutRowType, RowRecordType } from './parsed_financial_layout'
 
 type RowObject = {
   descriptor: {
-     values: { Value: AttributeObject[] }
+     values: {
+      Value: AttributeObject[]
+    }
   }
   details?: {
-    values: { Record: RecordObject | RecordObject[] }
+    values: {
+      Record: RecordObject | RecordObject[]
+    }
   }
 }
-
-const getLayoutDefinition = (search: ElementCompact): ElementCompact =>
-  search['nssoc:SerializedObjectContainer']['nssoc:definition'].FinancialLayout
 
 const getLayoutParts = async (definition: string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
   return {
-    definition: getLayoutDefinition(parsedXml),
+    definition: getDefinitionOrLayout(parsedXml, FINANCIAL_LAYOUT),
     dependency: getElementDependency(parsedXml),
   }
 }
 
-const getRowRecords = (row: RowObject): Values[] =>
+const getRowRecords = (row: RowObject): RowRecordType[] =>
   collections.array.makeArray(row.details?.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
 
 
-const getLayoutRows = (rows: RowObject[]): Values[] =>
+const getLayoutRows = (rows: RowObject[]): LayoutRowType[] =>
   collections.array.makeArray(rows).map(row => {
     const parsedRow = getObjectFromValues(row.descriptor.values.Value)
     const records = getRowRecords(row)
-    if (!_.isEmpty(records)) {
-      Object.assign(parsedRow, { RECORDS: records })
+    return {
+      ...parsedRow,
+      ...!_.isEmpty(records) ? { RECORDS: records } : {},
     }
-    return parsedRow
   })
 
-
-export const parseDefinition = async (definition: string): Promise<FinancialLayoutType> => {
-  const layoutParts = await getLayoutParts(definition)
+export const parseDefinition = async (layout: string, scriptid: string): Promise<FinancialLayoutType> => {
+  const layoutParts = await getLayoutParts(layout)
   const returnInstance = {
     rows: getLayoutRows(layoutParts.definition.rows.values.FinancialRowElement),
-    innerFields: getFlags(layoutParts.definition),
+    flags: getFlags(layoutParts.definition),
   }
-  return returnInstance
+  return { scriptid, layout, ...returnInstance }
 }

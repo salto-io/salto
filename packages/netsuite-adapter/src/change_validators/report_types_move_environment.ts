@@ -51,9 +51,7 @@ const wasModified = async (instance: InstanceElement): Promise<boolean> => {
   const definitionOrLayout = instance.value[mapTypeToLayoutOrDefinition[instance.elemID.typeName]]
   const parserFunction = typeNameToParser[instance.elemID.typeName]
   const parsedDefinition = await parserFunction(definitionOrLayout, instance.value.scriptid)
-  const temp1 = _.pick(instance.value, Object.keys(parsedDefinition))
-  const temp2 = _.isEqual(parsedDefinition, temp1)
-  return !temp2
+  return !_.isEqual(parsedDefinition, _.pick(instance.value, Object.keys(parsedDefinition)))
 }
 
 const getChangeError = async (instance: InstanceElement): Promise<ChangeError> => {

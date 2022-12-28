@@ -56,7 +56,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
 }
 
-const checkOnlyChangeValidators
+export const checkOnlyChangeValidators
   : Record<CheckOnlyChangeValidatorName, ChangeValidatorCreator> = {
     checkOnlyDeploy: createCheckOnlyDeployValidator,
   }
@@ -68,11 +68,14 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
   checkOnly: boolean
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
+  // SALTO-2700: Separate Validators
+  const checkOnlyChangeValidatorsToRun = isCheckOnly ? Object.entries({ ...checkOnlyChangeValidators })
+    : _.filter(
+      Object.entries({ ...checkOnlyChangeValidators }),
+      ([name]) => config.validators?.[name as ChangeValidatorName] !== undefined,
+    )
   const [activeValidators, disabledValidators] = _.partition(
-    // SALTO-2700: Separate Validators
-    Object.entries(isCheckOnly
-      ? { ...checkOnlyChangeValidators, ...changeValidators }
-      : changeValidators),
+    [...Object.entries(changeValidators), ...checkOnlyChangeValidatorsToRun],
     ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
   )
   return createChangeValidator(

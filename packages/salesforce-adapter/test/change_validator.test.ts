@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import createSalesforceChangeValidator, { changeValidators } from '../src/change_validator'
+import createSalesforceChangeValidator, { changeValidators, checkOnlyChangeValidators } from '../src/change_validator'
 
 jest.mock('@salto-io/adapter-utils', () => {
   const actual = jest.requireActual('@salto-io/adapter-utils')
@@ -54,7 +54,9 @@ describe('createSalesforceChangeValidator', () => {
     describe('with a disabled validator config', () => {
       beforeEach(() => {
         validator = createSalesforceChangeValidator({
-          config: { validators: { customFieldType: false } },
+          config: { validators:
+                { customFieldType: false,
+                  checkOnlyDeploy: true } },
           isSandbox: false,
           checkOnly: false,
         })
@@ -63,11 +65,13 @@ describe('createSalesforceChangeValidator', () => {
         expect(validator).toBeDefined()
       })
       it('should put the disabled validator in the disabled list', () => {
-        const enabledValidatorsCount = Object.values(_.omit(changeValidators, 'customFieldType')).length
         const disabledValidators = [changeValidators.customFieldType({}, false,)]
         expect(createChangeValidator).toHaveBeenCalledWith(
           expect.arrayContaining([]), disabledValidators
         )
+      })
+      it('should run checkOnlyDeploy CV despite that checkOnly is false', () => {
+        const enabledValidatorsCount = Object.values({ ..._.omit({ ...changeValidators }, 'customFieldType'), ..._.pick({ ...checkOnlyChangeValidators }, 'checkOnlyDeploy') }).length
         expect(createChangeValidatorMock.mock.calls[0][0]).toHaveLength(enabledValidatorsCount)
       })
     })

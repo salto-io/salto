@@ -197,6 +197,8 @@ jobs:
           at: .
 
       - run:
+          environment:
+            PYTHON: "/usr/bin/python3"
           name: Build native executables
           command: yarn workspace @salto-io/cli package
 

@@ -286,10 +286,11 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       }
     }
 
+    const { timeZone, timeFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
+
     const setChangedAt = async (element: Element, lastModifiedDate: string): Promise<void> => {
-      const { timeZone, timeFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
       if (isDefined(lastModifiedDate)) {
-        const formatedDate = changeDateFormat(lastModifiedDate, QUERY_DATE_FORMAT, timeZone, timeFormat)
+        const formatedDate = changeDateFormat(lastModifiedDate, { dateFormat: QUERY_DATE_FORMAT, timeZone, timeFormat })
         element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate })
       } else {
         const changedAt = elemIdToChangeAtIndex[element.elemID.getFullName()]

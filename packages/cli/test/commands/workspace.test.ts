@@ -19,6 +19,7 @@ import * as mocks from '../mocks'
 import { cleanAction, cacheUpdateAction } from '../../src/commands/workspace'
 import { CliExitCode } from '../../src/types'
 
+
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
   getDefaultAdapterConfig: jest.fn().mockImplementation(service => ({ a: 'a', serviceName: service })),
@@ -63,7 +64,7 @@ describe('workspace command group', () => {
           },
           workspace: mocks.mockWorkspace({}),
         })).toBe(CliExitCode.UserInputError)
-        expect(output.stdout.content.search('Nothing to do.')).toBeGreaterThan(0)
+        expect(output.stdout.content).toContain('Nothing to do.')
       })
     })
 

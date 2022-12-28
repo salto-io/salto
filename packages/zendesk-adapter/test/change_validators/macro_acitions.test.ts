@@ -93,8 +93,8 @@ describe('macro action ticket field test', () => {
     expect(errors).toEqual([{
       elemID: macro.elemID,
       severity: 'Error',
-      message: `One or more of the actions in macro ${macro.elemID.getFullName()}, has a deactivated ticket_field as a field. `,
-      detailedMessage: `One or more of the actions in macro ${macro.elemID.getFullName()}, has a deactivated ticket_field as a field. The deactivated ticket are: ${[deactivatedTicketFieldInstance1.elemID.getFullName(), deactivatedTicketFieldInstance2.elemID.getFullName()]}`,
+      message: `One or more of the actions in macro ${macro.elemID.name}, has a deactivated ticket_field as a field `,
+      detailedMessage: `One or more of the actions in macro ${macro.elemID.name}, has a deactivated ticket_field as a field. The deactivated fields are: ${[deactivatedTicketFieldInstance1.elemID.name, deactivatedTicketFieldInstance2.elemID.name]}`,
     }])
   })
   it('should not return an error when there are only activated ticket_fields', async () => {
@@ -125,6 +125,32 @@ describe('macro action ticket field test', () => {
         deactivatedTicketFieldInstance1,
         deactivatedTicketFieldInstance2,
         activatedTicketFieldInstance3,
+        activatedTicketFieldInstance4,
+      ])
+    )
+    expect(errors).toEqual([])
+  })
+  it('should not return an error when the ticket_field is not found in the elementSource', async () => {
+    const macro = new InstanceElement(
+      'test',
+      macroType,
+      {
+        title: 'test',
+        actions: [
+          {
+            field: 'comment_value_html',
+            value: '<p>Test</p>',
+          },
+          {
+            field: new ReferenceExpression(activatedTicketFieldInstance3.elemID, activatedTicketFieldInstance3),
+            value: '<p>Test</p>',
+          },
+        ],
+      }
+    )
+    const errors = await macroActionsTicketFieldDeactivationValidator(
+      [toChange({ after: macro })],
+      buildElementsSourceFromElements([
         activatedTicketFieldInstance4,
       ])
     )

@@ -59,12 +59,19 @@ const deactivatedTicketFieldInActions = async (macro: InstanceElement, elementSo
     .filter(isReferenceExpression)
     .filter(async (ticketRef: ReferenceExpression) => {
       const ticket = await elementSource.get(ticketRef.elemID)
+      if (ticket === undefined) {
+        log.error(` could not find ticket_field ${ticketRef.elemID.name} in element source`)
+        return false // as it is not what the change validator tries to catch.
+      }
       return !ticket?.value.active // if it is not active return true
     })
-    .map((ticketRef: ReferenceExpression) => ticketRef.elemID.getFullName())
+    .map((ticketRef: ReferenceExpression) => ticketRef.elemID.name)
     .toArray()
 }
 
+/**
+ * this change validator verifies that all the action fields in a macro do not point to a deactivated ticket.
+ */
 export const macroActionsTicketFieldDeactivationValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
@@ -90,7 +97,7 @@ export const macroActionsTicketFieldDeactivationValidator: ChangeValidator = asy
     .flatMap(({ elemID, deactivatedTicketFields }) => [{
       elemID,
       severity: 'Error',
-      message: `One or more of the actions in macro ${elemID.getFullName()}, has a deactivated ticket_field as a field. `,
-      detailedMessage: `One or more of the actions in macro ${elemID.getFullName()}, has a deactivated ticket_field as a field. The deactivated ticket are: ${deactivatedTicketFields}`,
+      message: `One or more of the actions in macro ${elemID.name}, has a deactivated ticket_field as a field `,
+      detailedMessage: `One or more of the actions in macro ${elemID.name}, has a deactivated ticket_field as a field. The deactivated fields are: ${deactivatedTicketFields}`,
     }])
 }

@@ -349,9 +349,9 @@ workflows:
           requires:
             - build
 
-      - unit_test:
-          requires:
-            - build
+      # - unit_test:
+      #    requires:
+      #      - build
 
       - e2e_test:
           requires:
@@ -372,13 +372,13 @@ workflows:
       - package_cli:
           requires:
             - build
-            - unit_test
-            # - e2e_test
+            # - unit_test
+            ## - e2e_test
 
       - package_vscode_extension:
           requires:
             - build
-            - unit_test
+            # - unit_test
             # - e2e_test
 
       - sync_s3_pkg_latest:
@@ -394,7 +394,7 @@ workflows:
                 - main
           requires:
             - build
-            - unit_test
+            # - unit_test
             - e2e_test
 
       - publish_on_version_change:
@@ -405,5 +405,5 @@ workflows:
                 - main
           requires:
             - build
-            - unit_test
+            # - unit_test
             - e2e_test

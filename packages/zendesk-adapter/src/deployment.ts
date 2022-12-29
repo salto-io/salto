@@ -26,8 +26,13 @@ import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
 import { ZendeskApiConfig } from './config'
 
+const { getRetryDelayFromHeaders } = clientUtils
+
 const log = logger(module)
 const { awu } = collections.asynciterable
+const MAX_RETRIES = 3
+// Those error codes are not related to the deployment data, and a retry should work
+const RESPONSES_TO_RETRY = [409, 429, 503]
 
 export const addId = ({
   change, apiDefinitions, response, dataField, addAlsoOnModification = false,
@@ -123,6 +128,7 @@ export const deployChange = async (
   client: ZendeskClient,
   apiDefinitions: configUtils.AdapterApiConfig,
   fieldsToIgnore?: string[],
+  retryNumber = 0
 ): Promise<deployment.ResponseResult> => {
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
@@ -140,6 +146,14 @@ export const deployChange = async (
     })
     return response
   } catch (err) {
+    // Retry requests that failed on Zendesk's side and are not related to our data
+    if (RESPONSES_TO_RETRY.includes(err.response?.status) && retryNumber < MAX_RETRIES) {
+      const timeToWait = getRetryDelayFromHeaders(err.response.headers)
+      if (timeToWait) {
+        await new Promise(f => setTimeout(f, timeToWait))
+      }
+      return deployChange(change, client, apiDefinitions, fieldsToIgnore, retryNumber + 1)
+    }
     throw getZendeskError(getChangeData(change).elemID.getFullName(), err)
   }
 }

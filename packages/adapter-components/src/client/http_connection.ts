@@ -69,7 +69,7 @@ export type ConnectionCreator<TCredentials> = (
   retryOptions: RetryOptions,
 ) => Connection<TCredentials>
 
-const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
+export const getRetryDelayFromHeaders = (headers: Record<string, string>): number | undefined => {
   // Although the standard is 'Retry-After' is seems that some servers
   // returns 'retry-after' so just in case we lowercase the headers
   const lowercaseHeaders = _.mapKeys(

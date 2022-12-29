@@ -49,6 +49,7 @@ import {
   childrenReferencesValidator,
   childInOrderValidator,
   orderChildrenParentValidator,
+  macroActionsTicketFieldDeactivationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -109,6 +110,7 @@ export default ({
     orderChildrenParentValidator,
     guideOrderDeletionValidator,
     // ******************************
+    macroActionsTicketFieldDeactivationValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

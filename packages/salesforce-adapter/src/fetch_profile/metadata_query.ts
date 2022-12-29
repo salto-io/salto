@@ -13,15 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { regex } from '@salto-io/lowerdash'
+import { regex, values } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
+
+const { isDefined } = values
+
+
+// According to Salesforce Metadata API docs, folder names can only contain alphanumeric characters and underscores.
+const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
   isPartialFetch: () => boolean
+  getFolderPathsByName: (folderType: string) => Record<string, string>
 }
 
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
@@ -34,6 +42,8 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   // (AssignmentRules and EscalationRules)
   { metadataType: 'AssignmentRule' },
   { metadataType: 'EscalationRule' },
+  // May conflict with the MetadataType ForecastingCategoryMapping
+  { metadataType: 'CustomObject', name: 'ForecastingCategoryMapping' },
 ]
 
 // Instances of these types will match all namespaces
@@ -42,10 +52,25 @@ const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
   'InstalledPackage',
 ]
 
+
 const getDefaultNamespace = (metadataType: string): string =>
   (DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST.includes(metadataType)
     ? '.*'
     : DEFAULT_NAMESPACE)
+
+const getPaths = (regexString: string): string[] => (
+  regexString
+    .replace(/[()^$]/g, '')
+    .split('|')
+    .filter(path => VALID_FOLDER_PATH_RE.test(path))
+)
+
+// Since fullPaths are provided for nested Folder names, a special handling is required
+const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance, name: string): boolean => (
+  getPaths(name)
+    .some(path => path.endsWith(instanceName))
+  || regex.isFullRegexMatch(instanceName, name)
+)
 
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
@@ -64,9 +89,13 @@ export const buildMetadataQuery = (
     const realNamespace = namespace === ''
       ? getDefaultNamespace(instance.metadataType)
       : namespace
-    return regex.isFullRegexMatch(instance.metadataType, metadataType)
-    && regex.isFullRegexMatch(instance.namespace, realNamespace)
-    && regex.isFullRegexMatch(instance.name, name)
+    if (!regex.isFullRegexMatch(instance.metadataType, metadataType)
+      || !regex.isFullRegexMatch(instance.namespace, realNamespace)) {
+      return false
+    }
+    return instance.isFolderType
+      ? isFolderMetadataTypeNameMatch(instance, name)
+      : regex.isFullRegexMatch(instance.name, name)
   }
 
   const isIncludedInPartialFetch = (type: string): boolean => {
@@ -105,6 +134,18 @@ export const buildMetadataQuery = (
     ),
 
     isPartialFetch: () => target !== undefined,
+
+    getFolderPathsByName: (folderType: string) => {
+      const folderPaths = include
+        .filter(params => params.metadataType === folderType)
+        .flatMap(params => {
+          const { name: nameRegex } = params
+          return isDefined(nameRegex)
+            ? getPaths(nameRegex)
+            : []
+        })
+      return _.keyBy(folderPaths, path => _.last(path.split('/')) ?? path)
+    },
   }
 }
 

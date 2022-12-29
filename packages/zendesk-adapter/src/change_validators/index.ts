@@ -47,3 +47,4 @@ export { childrenReferencesValidator } from './guide_order/children_references_v
 export { childInOrderValidator } from './guide_order/child_in_order_validator'
 export { guideOrderDeletionValidator } from './guide_order/order_deletion_validator'
 export { articleAttachmentSizeValidator } from './article_attachment_size'
+export { macroActionsTicketFieldDeactivationValidator } from './macro_actions'

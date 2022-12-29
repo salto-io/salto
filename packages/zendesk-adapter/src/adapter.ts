@@ -190,7 +190,6 @@ export const DEFAULT_FILTERS = [
   guideParentSection,
   serviceUrlFilter,
   ...Object.values(commonFilters),
-  // articleBodyFilter should run after referencedInstanceNames (which is part of the common filters)
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
@@ -614,21 +613,17 @@ export default class ZendeskAdapter implements AdapterOperations {
     const subdomainsList = brandsList
       .map(brandInstance => brandInstance.value.subdomain)
       .filter(isString)
-    const subdomainToPaginator = Object.fromEntries(subdomainsList.map(subdomain => (
-      [
-        subdomain,
-        createPaginator({
-          client: this.createClientBySubdomain(subdomain),
-          paginationFuncCreator: paginate,
-        }),
-      ]
-    )))
-    const guideDeployResults = await awu(Object.entries(subdomainToPaginator))
-      .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(async ([subdomain, paginator]) => {
+    const subdomainToClient = Object.fromEntries(subdomainsList
+      .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
+      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain)])))
+    const guideDeployResults = await awu(Object.entries(subdomainToClient))
+      .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({
-          filterRunnerClient: this.createClientBySubdomain(subdomain),
-          paginator,
+          filterRunnerClient: client,
+          paginator: createPaginator({
+            client,
+            paginationFuncCreator: paginate,
+          }),
         })
         await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
         const { deployResult: brandDeployResults } = await brandRunner.deploy(

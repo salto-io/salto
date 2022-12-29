@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { createConnection } from '../../src/client/connection'
+import { createConnection, instanceUrl } from '../../src/client/connection'
 
 describe('client connection', () => {
   describe('createConnection', () => {
@@ -54,6 +54,15 @@ describe('client connection', () => {
       mockAxiosAdapter
         .onGet('/api/v2/account/settings').reply(403)
       await expect(() => conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })).rejects.toThrow('Unauthorized - update credentials and try again')
+    })
+  })
+
+  describe('instanceUrl', () => {
+    it('should return the correct url', () => {
+      const domain = 'zenzen.org'
+      const subdomain = 'zendesk'
+      expect(instanceUrl(subdomain, domain)).toEqual('https://zendesk.zenzen.org')
+      expect(instanceUrl(subdomain)).toEqual('https://zendesk.zendesk.com')
     })
   })
 })

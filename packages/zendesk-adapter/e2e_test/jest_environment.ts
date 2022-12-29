@@ -37,7 +37,7 @@ CredsSpec<Required<UsernamePasswordCredentials>> => {
         username: envUtils.required(userNameEnvVarName),
         password: envUtils.required(passwordEnvVarName),
         subdomain: envUtils.required(subdomainEnvVarName),
-        domain: 'zendesk',
+        domain: 'zendesk.com',
       }
     },
     validate: async (_creds: UsernamePasswordCredentials): Promise<void> => {

@@ -182,6 +182,13 @@ describe('adapter creator', () => {
       port: 8080,
       clientId: 'client',
     })).toEqual('https://abc.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
+
+    expect(createUrlFromUserInput({
+      subdomain: 'abc',
+      domain: 'zendesk1.org',
+      port: 8080,
+      clientId: 'client',
+    })).toEqual('https://abc.zendesk1.org/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
   })
 
   it('should validate credentials using createConnection', async () => {
@@ -209,10 +216,17 @@ describe('adapter creator', () => {
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       usernamePasswordCredentialsType,
-      { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1' },
+      { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1.com' },
     ))).toEqual('https://abc.zendesk1.com')
 
-    expect(connection.createConnection).toHaveBeenCalledTimes(3)
+    // with domain is an empty string
+    expect(await adapter.validateCredentials(new InstanceElement(
+      'config',
+      oauthAccessTokenCredentialsType,
+      { authType: 'oauth', accessToken: 'token', subdomain: 'abc', domain: '' },
+    ))).toEqual('https://abc.zendesk.com')
+
+    expect(connection.createConnection).toHaveBeenCalledTimes(4)
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -222,6 +236,20 @@ describe('adapter creator', () => {
 
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(
       2,
+      expect.objectContaining({
+        credentials: { accessToken: 'token', subdomain: 'abc' },
+      })
+    )
+
+    expect(connection.validateCredentials).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        credentials: { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1.com' },
+      })
+    )
+
+    expect(connection.validateCredentials).toHaveBeenNthCalledWith(
+      4,
       expect.objectContaining({
         credentials: { accessToken: 'token', subdomain: 'abc' },
       })

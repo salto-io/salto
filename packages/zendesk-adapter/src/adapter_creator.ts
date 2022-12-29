@@ -60,7 +60,8 @@ see https://support.zendesk.com/hc/en-us/articles/4408845965210 for more informa
 */
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
-  const domain = config.value.domain ? config.value.domain : undefined
+  const domain = config.value.domain === undefined || config.value.domain === ''
+    ? undefined : config.value.domain
   if (config.value.authType === 'oauth') {
     return {
       accessToken: config.value.accessToken,

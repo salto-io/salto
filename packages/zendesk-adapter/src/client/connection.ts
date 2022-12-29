@@ -23,7 +23,7 @@ import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials
 const log = logger(module)
 
 export const instanceUrl = (subdomain: string, domain?: string): string => (
-  domain === undefined ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}.com`
+  domain === undefined ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}`
 )
 const baseUrl = instanceUrl
 // A URL for resource files

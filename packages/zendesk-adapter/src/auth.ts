@@ -17,6 +17,9 @@ import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
+const SUBDOMAIN_MESSAGE = 'subdomain (https://<your subdomain>.zendesk.com)'
+const DOMAIN_MESSAGE = 'domain (optional) - only fill in if your account is not under zendesk.com (https://<subdomain>.<your zendesk domain>)'
+
 export type UsernamePasswordCredentials = {
   username: string
   password: string
@@ -54,14 +57,14 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
-        message: 'subdomain (https://<your subdomain>.zendesk.com)',
+        message: SUBDOMAIN_MESSAGE,
       },
     },
     domain: {
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: false,
-        message: 'domain (optional) (https://<subdomain>.<your zendesk domain>.com)',
+        message: DOMAIN_MESSAGE,
       },
     },
   },
@@ -80,14 +83,14 @@ export const oauthAccessTokenCredentialsType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: true,
-        message: 'subdomain (https://<your subdomain>.zendesk.com)',
+        message: SUBDOMAIN_MESSAGE,
       },
     },
     domain: {
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: false,
-        message: 'domain (optional) (https://<subdomain>.<your zendesk domain>.com)',
+        message: DOMAIN_MESSAGE,
       },
     },
   },
@@ -123,7 +126,7 @@ export const oauthRequestParametersType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: {
         _required: false,
-        message: 'domain (optional) (https://<subdomain>.<your zendesk domain>.com)',
+        message: DOMAIN_MESSAGE,
       },
     },
   },

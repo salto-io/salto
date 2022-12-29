@@ -18,13 +18,10 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, createRefToElmWithValue, Values,
 } from '@salto-io/adapter-api'
-import { TypeAndInnerTypes } from '../types/object_types'
-import * as constants from '../constants'
+import { TypeAndInnerTypes } from '../../types/object_types'
+import * as constants from '../../constants'
 
-export type SavedSearchType = {
-  scriptid: string
-  definition: string
-  dependency?: string[]
+export type ParsedSavedSearchType = {
   search_filter?: Values[]
   search_summary_filters?: Values[]
   available_filters?: Values[]

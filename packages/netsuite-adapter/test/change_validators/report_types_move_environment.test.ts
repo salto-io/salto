@@ -18,9 +18,9 @@ import { savedsearchType } from '../../src/autogen/types/standard_types/savedsea
 import { reportdefinitionType } from '../../src/autogen/types/standard_types/reportdefinition'
 import { financiallayoutType } from '../../src/autogen/types/standard_types/financiallayout'
 import reportTypesMoveEnvironment from '../../src/change_validators/report_types_move_environment'
-import { layoutDefinitionResult } from '../financial_layout_consts'
-import { listedDefinition, emptyDefinition, emptyDefinitionOutcome } from '../saved_search_definition'
-import { fullReportDefinition, simpleReportDefinitionResult } from '../report_definitions_consts'
+import { layoutDefinition, layoutDefinitionResult } from '../type_parsers/financial_layout_consts'
+import { listedDefinition, emptyDefinition, emptyDefinitionOutcome } from '../type_parsers/saved_search_definition'
+import { fullReportDefinition, simpleReportDefinitionResult, simpleReportDefinition } from '../type_parsers/report_definitions_consts'
 
 describe('move environment report types change validator', () => {
   const savedsearch = savedsearchType().type
@@ -33,9 +33,9 @@ describe('move environment report types change validator', () => {
   let financialLayoutInstance: InstanceElement
 
   beforeEach(() => {
-    savedSearchInstance = new InstanceElement('test', savedsearch, emptyDefinitionOutcome)
-    reportDefinitionInstance = new InstanceElement('test', reportdefinition, simpleReportDefinitionResult)
-    financialLayoutInstance = new InstanceElement('test', financiallayout, layoutDefinitionResult)
+    savedSearchInstance = new InstanceElement('test', savedsearch, { definition: emptyDefinition, ...emptyDefinitionOutcome })
+    reportDefinitionInstance = new InstanceElement('test', reportdefinition, { definition: simpleReportDefinition, ...simpleReportDefinitionResult })
+    financialLayoutInstance = new InstanceElement('test', financiallayout, { layout: layoutDefinition, ...layoutDefinitionResult })
   })
   describe('onAdd', () => {
     it('should have warning change error when moving a savedsearch instance with correct definition', async () => {

@@ -23,25 +23,10 @@ import NetsuiteClient from '../../src/client/client'
 import { NETSUITE, SAVED_SEARCH } from '../../src/constants'
 import { FilterOpts } from '../../src/filter'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
-import { savedsearchType as newSavedSearchType } from '../../src/saved_search_parsing/parsed_saved_search'
-
-jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
-  parseDefinition: jest.fn().mockResolvedValue({
-    test: 'test',
-  }),
-}))
-
-jest.mock('../../src/report_definition_parsing/report_definition_parser', () => ({
-  parseDefinition: jest.fn().mockResolvedValue({
-    test: 'test',
-  }),
-}))
-
-jest.mock('../../src/financial_layout_parsing/financial_layout_parser', () => ({
-  parseDefinition: jest.fn().mockResolvedValue({
-    test: 'test',
-  }),
-}))
+import { savedsearchType as newSavedSearchType } from '../../src/type_parsers/saved_search_parsing/parsed_saved_search'
+import { layoutDefinition, layoutDefinitionResult } from '../type_parsers/financial_layout_consts'
+import { emptyDefinition, emptyDefinitionOutcome } from '../type_parsers/saved_search_definition'
+import { simpleReportDefinitionResult, simpleReportDefinition } from '../type_parsers/report_definitions_consts'
 
 
 describe('parse_report_types filter', () => {
@@ -70,7 +55,7 @@ describe('parse_report_types filter', () => {
     savedSearchInstance = new InstanceElement(
       'someSearch',
       savedsearch,
-      {}
+      { definition: emptyDefinition }
     )
     sourceSavedSearchInstance = new InstanceElement(
       'someSearch',
@@ -81,7 +66,7 @@ describe('parse_report_types filter', () => {
     financialLayoutInstance = new InstanceElement(
       'layout1',
       financiallayout,
-      {}
+      { layout: layoutDefinition }
     )
     sourceFinancialLayoutInstance = new InstanceElement(
       'layout1',
@@ -91,7 +76,7 @@ describe('parse_report_types filter', () => {
     reportDefinitionInstance = new InstanceElement(
       'report1',
       reportdefinition,
-      {}
+      { definition: simpleReportDefinition }
     )
     sourceReportDefinitionInstance = new InstanceElement(
       'report1',
@@ -99,9 +84,9 @@ describe('parse_report_types filter', () => {
       {}
     )
 
-    sourceSavedSearchInstance.value.definition = 'testDefinition'
-    sourceFinancialLayoutInstance.value.layout = 'testLayout'
-    sourceReportDefinitionInstance.value.definition = 'testReport'
+    sourceSavedSearchInstance.value.definition = emptyDefinition
+    sourceFinancialLayoutInstance.value.layout = layoutDefinition
+    sourceReportDefinitionInstance.value.definition = simpleReportDefinition
   })
   it('test onFetch removes old object type and adds new type', async () => {
     const savedSearchObject = new ObjectType({ elemID: new ElemID('netsuite', SAVED_SEARCH) })
@@ -125,9 +110,11 @@ describe('parse_report_types filter', () => {
   })
   it('test onFetch adds definition values', async () => {
     await filterCreator(fetchOpts).onFetch?.([savedSearchInstance, reportDefinitionInstance, financialLayoutInstance])
-    expect(savedSearchInstance.value.test).toEqual('test')
-    expect(reportDefinitionInstance.value.test).toEqual('test')
-    expect(financialLayoutInstance.value.test).toEqual('test')
+    expect(savedSearchInstance.value).toEqual({ definition: emptyDefinition, ...emptyDefinitionOutcome })
+    expect(reportDefinitionInstance.value).toEqual(
+      { definition: simpleReportDefinition, ...simpleReportDefinitionResult }
+    )
+    expect(financialLayoutInstance.value).toEqual({ layout: layoutDefinition, ...layoutDefinitionResult })
   })
   it('test onFetch keeps old definition', async () => {
     fetchOpts = {
@@ -143,10 +130,10 @@ describe('parse_report_types filter', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
     }
-    await filterCreator(fetchOpts).onFetch?.([savedSearchInstance, reportDefinitionInstance, financialLayoutInstance])
-    expect(savedSearchInstance.value.definition).toEqual('testDefinition')
-    expect(reportDefinitionInstance.value.definition).toEqual('testReport')
-    expect(financialLayoutInstance.value.layout).toEqual('testLayout')
+    await filterCreator(fetchOpts).onFetch?.([savedSearchInstance])
+    expect(savedSearchInstance.value.definition).toEqual(emptyDefinition)
+    expect(reportDefinitionInstance.value.definition).toEqual(simpleReportDefinition)
+    expect(financialLayoutInstance.value.layout).toEqual(layoutDefinition)
   })
   it('test preDeploy removes values', async () => {
     savedSearchInstance.value.test = 'toBeRemoved'

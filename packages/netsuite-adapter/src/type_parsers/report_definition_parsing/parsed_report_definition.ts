@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, MapType, Values,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { TypeAndInnerTypes } from '../types/object_types'
-import * as constants from '../constants'
+import { TypeAndInnerTypes } from '../../types/object_types'
+import * as constants from '../../constants'
 
 type ReportLayout = {
   FIELD_STANDARD_LAYOUT?: boolean
@@ -43,7 +43,7 @@ type ReportSortType = {
 }
 
 type ReportDependencies = {
-  dependencies: string[]
+  dependency: string[]
 }
 
 export type ReportUiPrefType = {
@@ -165,18 +165,22 @@ export type ReportCriteriaType = {
   values?: ReportCriteriaValuesType[]
 }
 
-type ReportParameters = {
+export type ReportParameters = {
   ACCOUNTING_BOOK_CURRENT_ID?: string
   ACCOUNTING_BOOK_ID?: string
 }
 
-export type ReportDefinitionType = {
-  scriptid: string
-  definition: string
-  name?: string
-  dependencies?: ReportDependencies
+type ReportDefinitionAudience = {
+  allCustomers?: boolean
+  allEmployees?: boolean
+  allPartners?: boolean
+  allRoles?: boolean
+  allVendors?: boolean
+}
+
+export type ParsedReportDefintion = {
   layouts?: ReportLayout[]
-  parameters?: Values
+  parameters?: ReportParameters
   components?: ReportComponent[]
   sorts?: ReportSortType[]
   fields?: ReportFieldsType[]
@@ -184,6 +188,18 @@ export type ReportDefinitionType = {
   criteria?: ReportCriteriaType[]
   flags?: ReportDefinitionInnerFields
 }
+
+export type ReportDefinitionType = {
+  scriptid: string
+  definition: string
+  audience?: ReportDefinitionAudience
+  accessAudience?: ReportDefinitionAudience
+  name: string
+  dependencies?: ReportDependencies
+}
+
+type FullReportType = ReportDefinitionType & ParsedReportDefintion
+
 
 export const reportdefinitionType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
@@ -197,22 +213,11 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   const reportDefinitionUiPrefElemID = new ElemID(constants.NETSUITE, 'reportdefinition_uipreferences')
   const reportDefinitionLayoutsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_layouts')
   const reportDefinitionParamsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_parameters')
-  const reportDefinitionInnerFieldsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_inner_fields')
+  const reportDefinitionInnerFieldsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_fields')
   const reportDefinitionAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_audience')
-  // const reportdefinitionAccessAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_accessaudience')
-  const reportDefinitionNameElemID = new ElemID(constants.NETSUITE, 'reportdefinition_name')
+  const reportdefinitionAccessAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_accessaudience')
 
-  const reportDefinitionName = new ObjectType({
-    elemID: reportDefinitionNameElemID,
-    annotations: {
-    },
-    fields: {
-      name: { refType: BuiltinTypes.STRING },
-    },
-    path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
-  })
-
-  const reportDefinitionAudience = new ObjectType({
+  const reportDefinitionAudience = createMatchingObjectType<ReportDefinitionAudience>({
     elemID: reportDefinitionAudienceElemID,
     annotations: {
     },
@@ -226,19 +231,19 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  // const reportDefinitionAccessAudience = new ObjectType({
-  //   elemID: reportdefinitionAccessAudienceElemID,
-  //   annotations: {
-  //   },
-  //   fields: {
-  //     allCustomers: { refType: BuiltinTypes.BOOLEAN },
-  //     allEmployees: { refType: BuiltinTypes.BOOLEAN },
-  //     allPartners: { refType: BuiltinTypes.BOOLEAN },
-  //     allRoles: { refType: BuiltinTypes.BOOLEAN },
-  //     allVendors: { refType: BuiltinTypes.BOOLEAN },
-  //   },
-  //   path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
-  // })
+  const reportDefinitionAccessAudience = createMatchingObjectType<ReportDefinitionAudience>({
+    elemID: reportdefinitionAccessAudienceElemID,
+    annotations: {
+    },
+    fields: {
+      allCustomers: { refType: BuiltinTypes.BOOLEAN },
+      allEmployees: { refType: BuiltinTypes.BOOLEAN },
+      allPartners: { refType: BuiltinTypes.BOOLEAN },
+      allRoles: { refType: BuiltinTypes.BOOLEAN },
+      allVendors: { refType: BuiltinTypes.BOOLEAN },
+    },
+    path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
+  })
 
   const reportDefinitionComponents = createMatchingObjectType<ReportComponent>({
     elemID: reportDefinitionComponentsElemID,
@@ -297,7 +302,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-      dependencies: {
+      dependency: {
         refType: new ListType(BuiltinTypes.STRING),
         annotations: {
           _required: true,
@@ -468,12 +473,11 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   innerTypes.reportDefinitionParameters = reportDefinitionParameters
   innerTypes.reportDefinitionSorts = reportDefinitionSorts
   innerTypes.reportDefinitionUiPref = reportDefinitionUiPref
-  innerTypes.reportDefinitionName = reportDefinitionName
   innerTypes.reportDefinitionAudience = reportDefinitionAudience
-  // innerTypes.reportDefinitionAccessAudience = reportDefinitionAccessAudience
+  innerTypes.reportDefinitionAccessAudience = reportDefinitionAccessAudience
 
 
-  const reportdefinition = createMatchingObjectType<ReportDefinitionType>({
+  const reportdefinition = createMatchingObjectType<FullReportType>({
     elemID: reportDefinitionElemID,
     fields: {
       scriptid: {
@@ -492,15 +496,24 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       },
       name: {
         refType: BuiltinTypes.STRING,
+        annotations: {
+          _required: true,
+        },
       },
       dependencies: {
         refType: reportDefinitionDependencies,
+      },
+      audience: {
+        refType: reportDefinitionAudience,
+      },
+      accessAudience: {
+        refType: reportDefinitionAudience,
       },
       layouts: {
         refType: new ListType(reportDefinitionLayouts),
       },
       parameters: {
-        refType: new MapType(reportDefinitionParameters),
+        refType: reportDefinitionParameters,
       },
       components: {
         refType: new ListType(reportDefinitionComponents),

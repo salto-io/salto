@@ -13,24 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as savedSearchParser from '../src/saved_search_parsing/saved_search_parser'
+import * as savedSearchParser from '../../src/type_parsers/saved_search_parsing/saved_search_parser'
 import * as testConsts from './saved_search_definition'
 
 describe('saved search parser tests', () => {
   it('test parse empty definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.emptyDefinition, 'testId')
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.emptyDefinition)
     expect(parsedDefinition).toEqual(testConsts.emptyDefinitionOutcome)
   })
   it('test parse listed definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.listedDefinition, 'testId')
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.listedDefinition)
     expect(parsedDefinition).toEqual(testConsts.listedDefinitionOutcome)
   })
   it('test parse singles definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.singlesDefinition, 'testId')
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.singlesDefinition)
     expect(parsedDefinition).toEqual(testConsts.singlesDefinitionOutcome)
   })
   it('test parse edge case definition', async () => {
-    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.edgeCaseDefinition, 'testId')
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.edgeCaseDefinition)
     expect(parsedDefinition).toEqual(testConsts.edgeCaseDefinitionOutcome)
   })
 })

@@ -15,18 +15,17 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { FINANCIAL_LAYOUT } from '../constants'
+import { ElementCompact } from 'xml-js'
+import { FINANCIAL_LAYOUT } from '../../constants'
 import {
-  getElementDependency,
   getJson,
-  ElementParts,
   getFlags,
   getObjectFromValues,
   AttributeObject,
   RecordObject,
   getDefinitionOrLayout,
-} from '../report_types_parser_utils'
-import { FinancialLayoutType, LayoutRowType, RowRecordType } from './parsed_financial_layout'
+} from '../../report_types_parser_utils'
+import { LayoutRowType, ParsedFinancialLayout, RowRecordType } from './parsed_financial_layout'
 
 type RowObject = {
   descriptor: {
@@ -41,12 +40,9 @@ type RowObject = {
   }
 }
 
-const getLayoutParts = async (definition: string): Promise<ElementParts> => {
+const getLayoutParts = async (definition: string): Promise<ElementCompact> => {
   const parsedXml = await getJson(definition)
-  return {
-    definition: getDefinitionOrLayout(parsedXml, FINANCIAL_LAYOUT),
-    dependency: getElementDependency(parsedXml),
-  }
+  return getDefinitionOrLayout(parsedXml, FINANCIAL_LAYOUT)
 }
 
 const getRowRecords = (row: RowObject): RowRecordType[] =>
@@ -64,11 +60,11 @@ const getLayoutRows = (rows: RowObject[]): LayoutRowType[] =>
     }
   })
 
-export const parseDefinition = async (layout: string, scriptid: string): Promise<FinancialLayoutType> => {
-  const layoutParts = await getLayoutParts(layout)
+export const parseDefinition = async (layout: string): Promise<ParsedFinancialLayout> => {
+  const financialLayout = await getLayoutParts(layout)
   const returnInstance = {
-    rows: getLayoutRows(layoutParts.definition.rows.values.FinancialRowElement),
-    flags: getFlags(layoutParts.definition),
+    rows: getLayoutRows(financialLayout.rows.values.FinancialRowElement),
+    flags: getFlags(financialLayout),
   }
-  return { scriptid, layout, ...returnInstance }
+  return returnInstance
 }

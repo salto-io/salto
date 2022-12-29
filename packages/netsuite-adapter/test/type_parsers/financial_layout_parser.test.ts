@@ -15,11 +15,11 @@
 */
 
 import * as testConsts from './financial_layout_consts'
-import * as financialLayoutParser from '../src/financial_layout_parsing/financial_layout_parser'
+import * as financialLayoutParser from '../../src/type_parsers/financial_layout_parsing/financial_layout_parser'
 
 describe('financial layout parser tests', () => {
   it('should parse financial layout', async () => {
-    const parsedLayout = await financialLayoutParser.parseDefinition(testConsts.layoutDefinition, 'test_scriptid')
+    const parsedLayout = await financialLayoutParser.parseDefinition(testConsts.layoutDefinition)
     expect(parsedLayout).toEqual(testConsts.layoutDefinitionResult)
   })
 })

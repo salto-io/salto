@@ -18,7 +18,7 @@ import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementCompact } from 'xml-js'
-import { SAVED_SEARCH } from '../constants'
+import { SAVED_SEARCH } from '../../constants'
 import { ElementParts,
   AttributeObject,
   RecordObject,
@@ -26,8 +26,8 @@ import { ElementParts,
   getObjectFromValues,
   getFlags,
   extractRecordsValues,
-  getDefinitionOrLayout } from '../report_types_parser_utils'
-import { SavedSearchType } from './parsed_saved_search'
+  getDefinitionOrLayout } from '../../report_types_parser_utils'
+import { ParsedSavedSearchType } from './parsed_saved_search'
 
 type FilterObject = { descriptor: { values: { Value: AttributeObject[] }}
  values: { values: {Record: RecordObject | RecordObject[]} }}
@@ -68,7 +68,7 @@ const getSearchPartsFromDefinition = async (definition:string): Promise<ElementP
     dependency: getElementDependency(parsedXml) }
 }
 
-export const parseDefinition = async (definition:string, scriptid:string): Promise<SavedSearchType> => {
+export const parseDefinition = async (definition:string): Promise<ParsedSavedSearchType> => {
   const searchParts = await getSearchPartsFromDefinition(definition)
   const returnInstance = {
     search_filter: extractSearchDefinitionValues(searchParts.definition.filters),
@@ -79,7 +79,7 @@ export const parseDefinition = async (definition:string, scriptid:string): Promi
     sort_columns: extractRecordsValues(searchParts.definition.sortColumns),
     audience: getAudience(searchParts.dependency),
     alert_recipients: getAlertRecipients(searchParts.definition),
-    flags: getFlags(searchParts.definition),
+    ...getFlags(searchParts.definition),
   }
-  return { scriptid, definition, ..._.omitBy(returnInstance, _.isEmpty) }
+  return { ..._.omitBy(returnInstance, _.isEmpty), ...getFlags(searchParts.definition) }
 }

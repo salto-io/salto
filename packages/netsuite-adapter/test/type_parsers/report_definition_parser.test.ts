@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 
-import * as reportDefinitionParser from '../src/report_definition_parsing/report_definition_parser'
+import * as reportDefinitionParser from '../../src/type_parsers/report_definition_parsing/report_definition_parser'
 import * as testConsts from './report_definitions_consts'
 
 describe('report definition parser test', () => {
   it('should parse a simple report definition', async () => {
-    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.simpleReportDefinition, 'test_script')
+    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.simpleReportDefinition)
     expect(parsedReport).toEqual(testConsts.simpleReportDefinitionResult)
   })
 
   it('should parse a full report definition', async () => {
-    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.fullReportDefinition, 'test_script')
+    const parsedReport = await reportDefinitionParser.parseDefinition(testConsts.fullReportDefinition)
     expect(parsedReport).toEqual(testConsts.fullReportDefinitionResult)
   })
 })

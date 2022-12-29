@@ -17,8 +17,8 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { TypeAndInnerTypes } from '../types/object_types'
-import * as constants from '../constants'
+import { TypeAndInnerTypes } from '../../types/object_types'
+import * as constants from '../../constants'
 
 type InnerFields = {
   FIELD_KEY?: number
@@ -70,14 +70,19 @@ export type LayoutRowType = {
   RECORDS?: RowRecordType[]
 }
 
-export type FinancialLayoutType = {
-  scriptid: string
-  layout: string
-  name?: string
-  dependencies?: LayoutDependencies
+export type ParsedFinancialLayout = {
   rows?: LayoutRowType[]
   flags?: InnerFields
 }
+
+export type FinancialLayoutType = {
+  scriptid: string
+  layout: string
+  name: string
+  dependencies?: LayoutDependencies
+}
+
+type FullFinancialLayoutType = ParsedFinancialLayout & FinancialLayoutType
 
 export const financiallayoutType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
@@ -86,7 +91,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
   const financialLayoutDependenciesElemID = new ElemID(constants.NETSUITE, 'financiallayout_dependencies')
   const financialLayoutRowsElemID = new ElemID(constants.NETSUITE, 'financiallayout_rows')
   const financialLayoutRowsRecordElemID = new ElemID(constants.NETSUITE, 'financiallayout_rowRecord')
-  const financialLayoutInnerFieldsElemID = new ElemID(constants.NETSUITE, 'financiallayout_inner_fields')
+  const financialLayoutInnerFieldsElemID = new ElemID(constants.NETSUITE, 'financiallayout_fields')
 
 
   const financialLayoutRowsRecord = createMatchingObjectType<RowRecordType>({
@@ -167,8 +172,9 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
 
   innerTypes.financialLayoutRows = financialLayoutRows
   innerTypes.dependency = financialLayoutDependencies
+  innerTypes.innerfields = financialLayoutInnerFields
 
-  const financiallayout = createMatchingObjectType<FinancialLayoutType>({
+  const financiallayout = createMatchingObjectType<FullFinancialLayoutType>({
     elemID: financialLayoutElemID,
     annotations: {
     },
@@ -189,6 +195,9 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
       },
       name: {
         refType: BuiltinTypes.STRING,
+        annotations: {
+          _required: true,
+        },
       },
       dependencies: {
         refType: financialLayoutDependencies,

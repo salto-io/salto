@@ -19,9 +19,9 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
-import { savedsearchType } from '../saved_search_parsing/parsed_saved_search'
-import { financiallayoutType } from '../financial_layout_parsing/parsed_financial_layout'
-import { reportdefinitionType } from '../report_definition_parsing/parsed_report_definition'
+import { savedsearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
+import { financiallayoutType } from '../type_parsers/financial_layout_parsing/parsed_financial_layout'
+import { reportdefinitionType } from '../type_parsers/report_definition_parsing/parsed_report_definition'
 import { mapTypeToLayoutOrDefinition, typeNameToParser } from '../change_validators/report_types_move_environment'
 import { savedsearchType as oldSavedSearch } from '../autogen/types/standard_types/savedsearch'
 import { financiallayoutType as oldFinancialLayout } from '../autogen/types/standard_types/financiallayout'
@@ -49,10 +49,10 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
     ): Promise<void> => {
       const layoutOrDefinition = mapTypeToLayoutOrDefinition[instance.elemID.typeName]
       const parser = typeNameToParser[instance.elemID.typeName]
-      const parsedInstance = await parser(instance.value[layoutOrDefinition], instance.value.scriptid)
+      const parsedInstance = await parser(instance.value[layoutOrDefinition])
       Object.assign(instance.value, parsedInstance)
       if (oldInstance?.value[layoutOrDefinition] !== undefined) {
-        if (_.isEqual(await parser(oldInstance.value[layoutOrDefinition], oldInstance.value.scriptid),
+        if (_.isEqual(await parser(oldInstance.value[layoutOrDefinition]),
           parsedInstance)) {
           // In case the parsed definitions are equal that mean there is no reason
           // to change the definition string and create a change in the file.
@@ -81,7 +81,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
     })
   },
   preDeploy: async changes => {
-    const removeValuesFromInstance = async (instance: InstanceElement): Promise<void> => {
+    const removeValuesFromInstance = (instance: InstanceElement): void => {
       instance.value = _.pickBy(instance.value, (_val, key) =>
         key in typeNameToOldType[instance.elemID.typeName].fields)
     }
@@ -90,7 +90,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => [SAVED_SEARCH, REPORT_DEFINITION, FINANCIAL_LAYOUT].includes(instance.elemID.typeName))
-      .forEach(instance => removeValuesFromInstance(instance))
+      .forEach(removeValuesFromInstance)
   },
 })
 

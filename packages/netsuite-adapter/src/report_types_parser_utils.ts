@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable no-underscore-dangle */
-import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from './constants'
@@ -74,16 +72,9 @@ export const getObjectFromValues = (values: RecordValueObject): Record<string, A
     .filter(i => i._text !== undefined)
     .map(i => [i._attributes.field, getAttributeValue(i)]))
 
-export const getFlags = (element: ElementCompact): Values =>
+export const getFlags = (element: ElementCompact): Record<string, AttributeValue> =>
   getObjectFromValues(element.descriptor.values.Value)
 
-export const extractRecordsValues = (element: ElementCompact): Values[] =>
+export const extractRecordsValues = (element: ElementCompact): Record<string, AttributeValue>[] =>
   collections.array.makeArray(element?.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
-
-export const safeAssignKeyValue = (instance:Values, key: string, value: Values): void => {
-  if (Array.isArray(value) && _.isEmpty(value)) {
-    return
-  }
-  Object.assign(instance, { [key]: value })
-}

@@ -18,16 +18,16 @@ import { ChangeValidator, getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
-import { parseDefinition as parseSavedSearchDefinition } from '../saved_search_parsing/saved_search_parser'
-import { parseDefinition as parseReportDefintionDefinition } from '../report_definition_parsing/report_definition_parser'
-import { parseDefinition as parseFinancialLayoutDefinition } from '../financial_layout_parsing/financial_layout_parser'
-import { ReportDefinitionType } from '../report_definition_parsing/parsed_report_definition'
-import { FinancialLayoutType } from '../financial_layout_parsing/parsed_financial_layout'
-import { SavedSearchType } from '../saved_search_parsing/parsed_saved_search'
+import { parseDefinition as parseSavedSearchDefinition } from '../type_parsers/saved_search_parsing/saved_search_parser'
+import { parseDefinition as parseReportDefintionDefinition } from '../type_parsers/report_definition_parsing/report_definition_parser'
+import { parseDefinition as parseFinancialLayoutDefinition } from '../type_parsers/financial_layout_parsing/financial_layout_parser'
+import { ParsedReportDefintion } from '../type_parsers/report_definition_parsing/parsed_report_definition'
+import { ParsedFinancialLayout } from '../type_parsers/financial_layout_parsing/parsed_financial_layout'
+import { ParsedSavedSearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
 
 const { awu } = collections.asynciterable
 
-export type ReportTypes = SavedSearchType | ReportDefinitionType | FinancialLayoutType
+export type ReportTypes = ParsedSavedSearchType | ParsedReportDefintion | ParsedFinancialLayout
 
 export const mapTypeToLayoutOrDefinition: Record<string, string> = {
   [FINANCIAL_LAYOUT]: 'layout',
@@ -36,7 +36,7 @@ export const mapTypeToLayoutOrDefinition: Record<string, string> = {
 }
 
 export const typeNameToParser:
-Record<string, (definition: string, scriptid: string) => Promise<Partial<ReportTypes>>> = {
+Record<string, (definition: string) => Promise<ReportTypes>> = {
   [FINANCIAL_LAYOUT]: parseFinancialLayoutDefinition,
   [REPORT_DEFINITION]: parseReportDefintionDefinition,
   [SAVED_SEARCH]: parseSavedSearchDefinition,
@@ -50,7 +50,7 @@ const typeNameToName: Record<string, string> = {
 const wasModified = async (instance: InstanceElement): Promise<boolean> => {
   const definitionOrLayout = instance.value[mapTypeToLayoutOrDefinition[instance.elemID.typeName]]
   const parserFunction = typeNameToParser[instance.elemID.typeName]
-  const parsedDefinition = await parserFunction(definitionOrLayout, instance.value.scriptid)
+  const parsedDefinition = await parserFunction(definitionOrLayout)
   return !_.isEqual(parsedDefinition, _.pick(instance.value, Object.keys(parsedDefinition)))
 }
 

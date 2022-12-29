@@ -17,19 +17,17 @@ import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementCompact } from 'xml-js'
-import { REPORT_DEFINITION } from '../constants'
+import { REPORT_DEFINITION } from '../../constants'
 import {
-  getElementDependency,
   getJson,
-  ElementParts,
   getFlags,
   extractRecordsValues,
   RecordObject,
   getObjectFromValues,
   AttributeObject,
   getDefinitionOrLayout,
-} from '../report_types_parser_utils'
-import { ReportDefinitionType, ReportUiPrefType, ReportCriteriaType } from './parsed_report_definition'
+} from '../../report_types_parser_utils'
+import { ReportUiPrefType, ReportCriteriaType, ParsedReportDefintion, ReportParameters } from './parsed_report_definition'
 
 type ReportCriterionParent = {
   _attributs: {
@@ -74,18 +72,14 @@ type ParameterObject = {
   value: Values
 }
 
-const getReportPartsFromDefinition = async (definition: string): Promise<ElementParts> => {
+const getReportPartsFromDefinition = async (definition: string): Promise<ElementCompact> => {
   const parsedXml = await getJson(definition)
-  return {
-    definition: getDefinitionOrLayout(parsedXml, REPORT_DEFINITION),
-    dependency: getElementDependency(parsedXml),
-  }
+  return getDefinitionOrLayout(parsedXml, REPORT_DEFINITION)
 }
 
-const getReportParameters = (reportParameter: { Map: ParameterObject[] }): { Map: Record<string, string> } => ({
+const getReportParameters = (reportParameter: { Map: ParameterObject[] }): ReportParameters =>
   // eslint-disable-next-line no-underscore-dangle
-  Map: Object.fromEntries(reportParameter.Map.map(i => [i.key._text, i.value._text])),
-})
+  Object.fromEntries(reportParameter.Map.map(i => [i.key._text, i.value._text]))
 
 const getReportCriteria = (criteria: ReportCriteria): ReportCriteriaType[] =>
   collections.array.makeArray(criteria.values?.ReportCriterion)
@@ -98,17 +92,17 @@ const getReportCriteria = (criteria: ReportCriteria): ReportCriteriaType[] =>
 const getUiPreferences = (uiPref: ElementCompact): ReportUiPrefType =>
   getObjectFromValues(uiPref.values.Value)
 
-export const parseDefinition = async (definition: string, scriptid: string): Promise<ReportDefinitionType> => {
-  const reportParts = await getReportPartsFromDefinition(definition)
+export const parseDefinition = async (definition: string): Promise<ParsedReportDefintion> => {
+  const reportDefinition = await getReportPartsFromDefinition(definition)
   const returnInstance = {
-    layouts: extractRecordsValues(reportParts.definition.layouts),
-    components: extractRecordsValues(reportParts.definition.components),
-    parameters: getReportParameters(reportParts.definition.parameters.values),
-    sorts: extractRecordsValues(reportParts.definition.sorts),
-    fields: extractRecordsValues(reportParts.definition.fields),
-    uiPreferences: getUiPreferences(reportParts.definition.uiPreferences),
-    criteria: getReportCriteria(reportParts.definition.criteria),
-    flags: getFlags(reportParts.definition),
+    layouts: extractRecordsValues(reportDefinition.layouts),
+    components: extractRecordsValues(reportDefinition.components),
+    parameters: getReportParameters(reportDefinition.parameters.values),
+    sorts: extractRecordsValues(reportDefinition.sorts),
+    fields: extractRecordsValues(reportDefinition.fields),
+    uiPreferences: getUiPreferences(reportDefinition.uiPreferences),
+    criteria: getReportCriteria(reportDefinition.criteria),
+    flags: getFlags(reportDefinition),
   }
-  return { scriptid, definition, ..._.omitBy(returnInstance, _.isEmpty) }
+  return { ..._.omitBy(returnInstance, _.isEmpty) }
 }

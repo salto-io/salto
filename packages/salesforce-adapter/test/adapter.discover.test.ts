@@ -596,6 +596,39 @@ describe('SalesforceAdapter fetch', () => {
             },
           ],
         )
+        jest.spyOn(xmlTransformerModule, 'fromRetrieveResult').mockResolvedValue([
+          {
+            file: mockFileProperties({
+              type: 'Layout',
+              fullName: layoutName,
+              fileName: `layouts/${layoutName}.layout`,
+            }),
+            values: {
+              fullName: layoutName,
+              layoutSections: [
+                {
+                  label: 'Description Information',
+                  layoutColumns: [
+                    { layoutItems: [{ behavior: 'Edit', field: 'Description' }] },
+                    { layoutItems: [{ behavior: 'Edit2', field: 'Description2' }] },
+                  ],
+                },
+                { label: 'Additional Information', layoutColumns: ['', ''] },
+                { layoutColumns: ['', '', ''], style: 'CustomLinks' },
+                { layoutColumns: '' },
+              ],
+              processMetadataValues: [
+                { name: 'dataType', value: { stringValue: 'Boolean' } },
+                { name: 'leftHandSideReferenceTo', value: '' },
+                { name: 'leftHandSideReferenceTo2', value: { stringValue: '' } },
+                {
+                  name: 'leftHandSideReferenceTo3',
+                  value: { stringValue: { $: { 'xsi:nil': 'true' } } },
+                },
+              ],
+            },
+          },
+        ],)
       })
 
       it('should fetch complicated metadata instance', async () => {

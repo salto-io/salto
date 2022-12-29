@@ -23,9 +23,7 @@ import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
 import { NETSUITE, SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
-import { SavedSearchesResult,
-  SAVED_SEARCH_RESULT_SCHEMA,
-  ModificationInformation } from './constants'
+import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformation } from './constants'
 
 const log = logger(module)
 const { isDefined } = values
@@ -103,7 +101,7 @@ const getTimeAndDateValue = async (
   isPartial: boolean,
   userPreferencesInstance: InstanceElement | undefined
 ): Promise<string> => {
-  const valueOrText = field === DATEFORMAT ? 'text' : 'value'
+  const valueOrText = mapFieldToValue[field]
   const returnField = userPreferencesInstance?.value.configRecord.data.fields?.[field]?.[valueOrText] ?? (
     isPartial ? await getFieldFromElemSource(elementsSource, field) : undefined
   )

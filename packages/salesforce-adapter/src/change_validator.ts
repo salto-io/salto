@@ -25,7 +25,7 @@ import standardFieldLabelValidator from './change_validators/standard_field_labe
 import mapKeysValidator from './change_validators/map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
-import createCheckOnlyDeployValidator from './change_validators/check_only_deploy'
+import omitDataValidator from './change_validators/omit_data'
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
@@ -56,9 +56,9 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
 }
 
-export const checkOnlyChangeValidators
+export const validationChangeValidators
   : Record<CheckOnlyChangeValidatorName, ChangeValidatorCreator> = {
-    checkOnlyDeploy: createCheckOnlyDeployValidator,
+    omitData: omitDataValidator,
   }
 
 
@@ -69,13 +69,12 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
   // SALTO-2700: Separate Validators
-  const checkOnlyChangeValidatorsToRun = isCheckOnly ? Object.entries({ ...checkOnlyChangeValidators })
-    : _.filter(
-      Object.entries({ ...checkOnlyChangeValidators }),
-      ([name]) => config.validators?.[name as ChangeValidatorName] !== undefined,
+  const possibleValidationChangeValidators = isCheckOnly ? Object.entries(validationChangeValidators)
+    : Object.entries(validationChangeValidators).filter(
+      ([name]) => config.validators?.[name as ChangeValidatorName] !== undefined
     )
   const [activeValidators, disabledValidators] = _.partition(
-    [...Object.entries(changeValidators), ...checkOnlyChangeValidatorsToRun],
+    [...Object.entries(changeValidators), ...possibleValidationChangeValidators],
     ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
   )
   return createChangeValidator(

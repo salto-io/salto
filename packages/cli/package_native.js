@@ -16,15 +16,23 @@
 * limitations under the License.
 */
 const fs = require('fs')
+const os = require('os')
 const path = require('path')
 const webpack = require('webpack')
 const nexe = require('nexe')
 const webpackConfig = require('./webpack.config')
 const fontFiles = require('./dist/src/fonts').fontFiles
 
+
+const targetArch = () => {
+    const arch = os.arch()
+    console.log(`Arch: ${arch}`)
+    return arch
+}
+
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
-const TARGET_ARCH = 'x64'
+const TARGET_ARCH = targetArch()
 const TARGET_NODE_VERSION = '18.12.1'
 const TARGET_PLATFORMS = {
   win: { ext: '.exe' },
@@ -124,4 +132,3 @@ const doNexe = (input) => new Promise((resolve, reject) => {
   await doNexe(bundle)
   console.log('Done!')
 })().catch(handleError)
-

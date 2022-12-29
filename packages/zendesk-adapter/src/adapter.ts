@@ -614,11 +614,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     const subdomainsList = brandsList
       .map(brandInstance => brandInstance.value.subdomain)
       .filter(isString)
-    const subdomainToClient = Object.fromEntries(subdomainsList.map(subdomain => (
-      [subdomain, this.createClientBySubdomain(subdomain)]
-    )))
+    const subdomainToClient = Object.fromEntries(subdomainsList
+      .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
+      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain)])))
     const guideDeployResults = await awu(Object.entries(subdomainToClient))
-      .filter(([subdomain]) => subdomainToGuideChanges[subdomain] !== undefined)
       .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({
           filterRunnerClient: client,

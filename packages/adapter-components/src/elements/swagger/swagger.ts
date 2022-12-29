@@ -21,6 +21,7 @@ import { OpenAPI } from 'openapi-types'
 const { sleep } = promises.timeout
 
 const DEFAULT_NUMBER_OF_RETRIES = 5
+const DEFAULT_RETRY_DELAY_MS = 5 * 1000
 
 const log = logger(module)
 
@@ -31,7 +32,8 @@ export type LoadedSwagger = {
 
 export const loadSwagger = async (
   swaggerPath: string,
-  numberOfRetries = DEFAULT_NUMBER_OF_RETRIES
+  numberOfRetries = DEFAULT_NUMBER_OF_RETRIES,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
 ): Promise<LoadedSwagger> => {
   try {
     const parser = new SwaggerParser()
@@ -41,11 +43,15 @@ export const loadSwagger = async (
       parser,
     }
   } catch (err) {
-    log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}. Retries left: ${numberOfRetries} (retrying in 5s)`)
-    if (numberOfRetries <= 0) {
-      throw err
+    if (err.status !== undefined) {
+      log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}. Retries left: ${numberOfRetries} (retrying in %ds)`, retryDelayMs / 1000)
+      if (numberOfRetries <= 0) {
+        throw err
+      }
+      await sleep(retryDelayMs)
+      return loadSwagger(swaggerPath, numberOfRetries - 1)
     }
-    await sleep(5000)
-    return loadSwagger(swaggerPath, numberOfRetries - 1)
+    log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}`)
+    throw err
   }
 }

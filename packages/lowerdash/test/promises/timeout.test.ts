@@ -16,7 +16,6 @@
 import { PromiseTimedOutError, withTimeout, sleep } from '../../src/promises/timeout'
 
 describe('withTimeout', () => {
-  jest.setTimeout(10 * 1000)
 
   const wait = (
     timeout: number,
@@ -118,11 +117,26 @@ describe('withTimeout', () => {
 })
 
 describe('sleep', () => {
+  let setTimeout: jest.SpyInstance
+  beforeEach(() => {
+    setTimeout = jest.spyOn(global, 'setTimeout')
+  })
+  afterAll(() => {
+    jest.clearAllMocks()
+  })
+
   it('should wait at least the specified time and not much more than it', async () => {
     const before = Date.now()
     await sleep(1000)
     const delay = Date.now() - before
+    expect(setTimeout).toHaveBeenCalledTimes(1)
+    expect(setTimeout).toHaveBeenCalledWith(1000)
     expect(delay).toBeGreaterThan(1000)
     expect(delay).toBeLessThan(5000)
+  })
+  it('should return immediately when delay is non-positive', async () => {
+    await sleep(0)
+    await sleep(-5)
+    expect(setTimeout).not.toHaveBeenCalled()
   })
 })

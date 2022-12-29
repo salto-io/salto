@@ -63,7 +63,7 @@ import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
 import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
 import { INSTANCE_SUFFIXES } from '../types'
-import { CustomObjectDependency } from '../fetch_profile/metadata_types'
+import { CustomObjectField } from '../fetch_profile/metadata_types'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -88,7 +88,7 @@ export const NESTED_INSTANCE_VALUE_NAME = {
   INDEXES: 'indexes',
 }
 
-export const NESTED_INSTANCE_TYPE_NAME: Record<string, CustomObjectDependency> = {
+export const NESTED_INSTANCE_TYPE_NAME: Record<string, CustomObjectField> = {
   WEB_LINK: WEBLINK_METADATA_TYPE,
   VALIDATION_RULE: VALIDATION_RULES_METADATA_TYPE,
   BUSINESS_PROCESS: BUSINESS_PROCESS_METADATA_TYPE,
@@ -101,7 +101,7 @@ export const NESTED_INSTANCE_TYPE_NAME: Record<string, CustomObjectDependency> =
 }
 
 // The below metadata types extend Metadata and are mutable using a specific API call
-export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME: Record<string, CustomObjectDependency> = {
+export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME: Record<string, CustomObjectField> = {
   [NESTED_INSTANCE_VALUE_NAME.WEB_LINKS]: NESTED_INSTANCE_TYPE_NAME.WEB_LINK,
   [NESTED_INSTANCE_VALUE_NAME.VALIDATION_RULES]: NESTED_INSTANCE_TYPE_NAME.VALIDATION_RULE,
   [NESTED_INSTANCE_VALUE_NAME.BUSINESS_PROCESSES]: NESTED_INSTANCE_TYPE_NAME.BUSINESS_PROCESS,

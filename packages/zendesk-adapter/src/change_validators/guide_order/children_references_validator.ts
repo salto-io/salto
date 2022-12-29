@@ -18,7 +18,7 @@ import {
   ChangeDataType,
   ChangeError,
   ChangeValidator, getChangeData,
-  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression,
+  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   ARTICLE_ORDER_TYPE_NAME,
@@ -26,6 +26,7 @@ import {
   CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME,
   SECTIONS_FIELD,
 } from '../../constants'
+import { validateOrderType } from '../utils'
 
 
 const createNotReferencesError = (instance: ChangeDataType, orderField: string)
@@ -50,9 +51,9 @@ const validateReferences = ({ changes, orderField, orderTypeName }: {
   orderTypeName: string
 }): ChangeError[] =>
   changes
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
+    .filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
     .filter(instance => orderTypeName === instance.elemID.typeName)
+    .filter(instance => validateOrderType(instance, orderField))
     .filter(instance => !isEverythingReferences(instance, orderField))
     .flatMap(instance => [createNotReferencesError(instance, orderField)])
 

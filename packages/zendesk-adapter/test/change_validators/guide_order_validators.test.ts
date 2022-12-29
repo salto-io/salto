@@ -182,7 +182,7 @@ describe('GuideOrdersValidator', () => {
         elemID: instance.elemID,
         severity: 'Warning',
         message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
-        detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${orderTypeName} sort order, and will be added to be first by default. If order is important, please include it in ${orderTypeName}`,
+        detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added first by default. If order is important, please include it in ${orderTypeName}`,
       }])
     }
 

@@ -28,6 +28,7 @@ import {
   SECTION_ORDER_TYPE_NAME,
   SECTIONS_FIELD,
 } from '../../constants'
+import { validateOrderType } from '../utils'
 
 const { isDefined } = lowerDashValues
 
@@ -66,6 +67,7 @@ const validateOrdersChildrenSameParent = ({ changes, orderField, orderTypeName }
   orderTypeName: string
 }): ChangeError[] => changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
   .filter(change => change.elemID.typeName === orderTypeName)
+  .filter(order => validateOrderType(order, orderField))
   .map(order => orderChildrenDifferentParent(order, order.value[orderField].map((c: ReferenceExpression) => c.value)))
   .filter(isDefined)
   .map(createNotSameParentError)

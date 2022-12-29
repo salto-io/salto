@@ -17,7 +17,6 @@ import {
   Change,
   ChangeError,
   ChangeValidator, getChangeData,
-  InstanceElement,
   isAdditionChange, isAdditionOrModificationChange,
   isInstanceChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -29,13 +28,8 @@ import {
   CATEGORY_TYPE_NAME, SECTION_ORDER_TYPE_NAME, SECTION_TYPE_NAME,
   SECTIONS_FIELD,
 } from '../../constants'
-
-const createNotInOrderInstanceWarning = (instance: InstanceElement, orderTypeName: string): ChangeError => ({
-  elemID: instance.elemID,
-  severity: 'Warning',
-  message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
-  detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${orderTypeName} sort order, and will be added to be first by default. If order is important, please include it in ${orderTypeName}`,
-})
+import { notInOrderError } from '../order'
+import { validateOrderType } from '../utils'
 
 const validateOrderElementAdded = ({ changes, orderField, orderTypeName, childTypeName }: {
    changes: readonly Change[]
@@ -48,13 +42,14 @@ const validateOrderElementAdded = ({ changes, orderField, orderTypeName, childTy
 
   const relevantOrderInstances = changes.filter(isInstanceChange).filter(isAdditionOrModificationChange)
     .map(getChangeData).filter(order => order.elemID.typeName === orderTypeName)
+    .filter(order => validateOrderType(order, orderField))
 
   const childrenInOrderInstances = new Set(relevantOrderInstances
-    .flatMap(order => order.value[orderField] ?? []).filter(isReferenceExpression)
+    .flatMap(order => order.value[orderField]).filter(isReferenceExpression)
     .map(child => child.elemID.getFullName()))
 
   return relevantChildInstances.filter(child => !childrenInOrderInstances.has(child.elemID.getFullName()))
-    .map(child => createNotInOrderInstanceWarning(child, orderTypeName))
+    .map(child => notInOrderError({ instance: child, orderTypeName, defaultLocation: 'first' }))
 }
 
 /**

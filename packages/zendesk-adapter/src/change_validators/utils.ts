@@ -13,5 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import Joi from 'joi'
+import { InstanceElement } from '@salto-io/adapter-api'
+
 export const createEmptyFieldErrorMessage = (fullName: string, fieldName: string): string =>
   `Can not change ${fullName}' ${fieldName} to be empty`
+
+// Validates that the order field exists in the element's value
+export const validateOrderType = (orderInstance: InstanceElement, orderField: string): boolean => {
+  const orderType = Joi.object({ value: Joi.object({ [orderField]: Joi.required() }).required() }).unknown(true)
+  return orderType.validate(orderInstance).error === undefined
+}

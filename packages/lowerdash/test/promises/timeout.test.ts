@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { PromiseTimedOutError, withTimeout } from '../../src/promises/timeout'
+import _ from 'lodash'
+import { PromiseTimedOutError, withTimeout, sleep } from '../../src/promises/timeout'
 
 describe('withTimeout', () => {
   const wait = (
@@ -112,5 +113,27 @@ describe('withTimeout', () => {
       expect(await p).toBeInstanceOf(PromiseTimedOutError)
       expect(await p).toMatchObject({ message: 'Promise timed out after 1 ms' })
     })
+  })
+})
+
+describe('sleep', () => {
+  let setTimeout: jest.SpyInstance
+  beforeEach(() => {
+    jest.clearAllMocks()
+    setTimeout = jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
+  })
+  afterAll(() => {
+    jest.clearAllMocks()
+  })
+
+  it('should wait at least the specified time and not much more than it', async () => {
+    await sleep(1000)
+    expect(setTimeout).toHaveBeenCalledTimes(1)
+    expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 1000)
+  })
+  it('should return immediately when delay is non-positive', async () => {
+    await sleep(0)
+    await sleep(-5)
+    expect(setTimeout).not.toHaveBeenCalled()
   })
 })

@@ -38,6 +38,7 @@ import { buildDataManagement, DataManagement } from './fetch_profile/data_manage
 
 const { toArrayAsync } = collections.asynciterable
 const { partition } = promises.array
+const { sleep } = promises.timeout
 const { awu, keyByAsync } = collections.asynciterable
 const { toMD5 } = hash
 const log = logger(module)
@@ -173,8 +174,6 @@ type CrudFnArgs = {
 }
 
 export type CrudFn = (fnArgs: CrudFnArgs) => Promise<InstanceAndResult[]>
-
-const sleep = (delayMillis: number): Promise<void> => new Promise(r => setTimeout(r, delayMillis))
 
 const isRetryableErr = (retryableFailures: string[]) =>
   (instAndRes: InstanceAndResult): boolean =>

@@ -34,7 +34,7 @@ import {
   toMetadataInfo,
 } from '../transformers/transformer'
 import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfType } from './utils'
-import { WorkflowDependency } from '../fetch_profile/metadata_types'
+import { WorkflowField } from '../fetch_profile/metadata_types'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -52,7 +52,7 @@ export const WORKFLOW_RULES_FIELD = 'rules'
 
 export const WORKFLOW_DIR_NAME = 'WorkflowActions'
 
-export const WORKFLOW_FIELD_TO_TYPE: Record<string, WorkflowDependency> = {
+export const WORKFLOW_FIELD_TO_TYPE: Record<string, WorkflowField> = {
   [WORKFLOW_ALERTS_FIELD]: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
   [WORKFLOW_FIELD_UPDATES_FIELD]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   [WORKFLOW_FLOW_ACTIONS_FIELD]: WORKFLOW_FLOW_ACTION_METADATA_TYPE,

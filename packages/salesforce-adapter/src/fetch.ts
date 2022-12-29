@@ -282,7 +282,10 @@ export const retrieveMetadataInstances = async ({
       ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
-    return _.uniqBy(res, file => file.fullName)
+    return _(res)
+      .uniqBy(file => file.fullName)
+      .map(file => ({ ...file, fullName: getFullName(file) }))
+      .value()
   }
 
   const typesByName = await keyByAsync(types, t => apiName(t))
@@ -294,7 +297,7 @@ export const retrieveMetadataInstances = async ({
   ): Promise<InstanceElement[]> => {
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = fileProps.map(inst => (
-      { ...inst, type: getManifestTypeName(typesByName[inst.type]) }
+      { ...inst, fullName: getFullName(inst), type: getManifestTypeName(typesByName[inst.type]) }
     ))
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)

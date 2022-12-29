@@ -23,7 +23,7 @@ import {
   ObjectType,
   ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   BRAND_TYPE_NAME,
   CATEGORY_TYPE_NAME,
@@ -162,38 +162,68 @@ describe('GuideOrdersValidator', () => {
       await testValidator(articleOrderInstance)
     })
   })
-  describe('Children elements added with and without order element', () => {
-    const childChanges = [
-      ...childrenInstances.map(child => toChange({ after: child })),
-      ...childrenInstances.map(child => toChange({ before: child })),
-      ...childrenInstances.map(child => toChange({ before: child, after: child })),
-    ]
-    const orderChanges = orderInstances.map(order => toChange({ after: order }))
+  describe('Children in order', () => {
+    describe('Children elements added with and without order element', () => {
+      const childChanges = [
+        ...childrenInstances.map(child => toChange({ after: child })),
+        ...childrenInstances.map(child => toChange({ before: child })),
+        ...childrenInstances.map(child => toChange({ before: child, after: child })),
+      ]
+      const orderChanges = orderInstances.map(order => toChange({ after: order }))
 
-    const testWithoutOrderInstances = async (
-      validator: ChangeValidator,
-      instance: InstanceElement,
-      orderTypeName: string,
-    ): Promise<void> => {
+      const testWithoutOrderInstances = async (
+        validator: ChangeValidator,
+        instance: InstanceElement,
+        orderTypeName: string,
+      ): Promise<void> => {
       // Remove the order change that has the tested element
-      const otherOrderChanges = orderChanges.filter(change => getChangeData(change).elemID.typeName !== orderTypeName)
-      const errors = await validator([...childChanges, ...otherOrderChanges])
-      expect(errors).toMatchObject([{
-        elemID: instance.elemID,
-        severity: 'Warning',
-        message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
-        detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added first by default. If order is important, please include it in ${orderTypeName}`,
-      }])
-    }
+        const otherOrderChanges = orderChanges.filter(change => getChangeData(change).elemID.typeName !== orderTypeName)
+        const errors = await validator([...childChanges, ...otherOrderChanges])
+        expect(errors).toMatchObject([{
+          elemID: instance.elemID,
+          severity: 'Warning',
+          message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
+          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added first by default. If order is important, please include it in ${orderTypeName}`,
+        }])
+      }
 
-    it('With order element', async () => {
-      const errors = await childInOrderValidator([...childChanges, ...orderChanges])
-      expect(errors).toMatchObject([])
+      it('With order element', async () => {
+        const errors = await childInOrderValidator([...childChanges, ...orderChanges])
+        expect(errors).toMatchObject([])
+      })
+      it('Without order element', async () => {
+        await testWithoutOrderInstances(childInOrderValidator, categoryInstance, CATEGORY_ORDER_TYPE_NAME)
+        await testWithoutOrderInstances(childInOrderValidator, sectionInstance, SECTION_ORDER_TYPE_NAME)
+        await testWithoutOrderInstances(childInOrderValidator, articleInstance, ARTICLE_ORDER_TYPE_NAME)
+      })
     })
-    it('Without order element', async () => {
-      await testWithoutOrderInstances(childInOrderValidator, categoryInstance, CATEGORY_ORDER_TYPE_NAME)
-      await testWithoutOrderInstances(childInOrderValidator, sectionInstance, SECTION_ORDER_TYPE_NAME)
-      await testWithoutOrderInstances(childInOrderValidator, articleInstance, ARTICLE_ORDER_TYPE_NAME)
+    describe('Duplicate child in same order', () => {
+      const createDuplicateChildError = (orderInstance: InstanceElement): ChangeError => ({
+        elemID: orderInstance.elemID,
+        severity: 'Warning',
+        message: `${orderInstance.elemID.getFullName()} include the same element more than once`,
+        detailedMessage: `${orderInstance.elemID.getFullName()} has the same element more than once, order will be determined by the last occurrence of the element`,
+      })
+
+      it('Same child twice', async () => {
+        const testOrderInstances = orderInstances.map(instance => instance.clone())
+        // Fill the same child again
+        testOrderInstances.forEach(instance => [ARTICLES_FIELD, SECTIONS_FIELD, CATEGORIES_FIELD].forEach(field => {
+          if (instance.value[field] !== undefined) {
+            instance.value[field].push(instance.value[field][0])
+          }
+        }))
+        const changes = testOrderInstances.map(instance => toChange({ after: instance }))
+
+        const errors = (await childInOrderValidator(changes)).map(error => safeJsonStringify(error))
+        expect(errors.length).toBe(testOrderInstances.length)
+
+        // Make sure all warnings were created
+        testOrderInstances.forEach(instance => {
+          const instanceError = safeJsonStringify(createDuplicateChildError(instance))
+          expect(errors.includes(instanceError)).toBe(true)
+        })
+      })
     })
   })
   describe('Order and children parent tests', () => {

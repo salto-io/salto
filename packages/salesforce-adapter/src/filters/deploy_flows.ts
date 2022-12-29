@@ -14,60 +14,53 @@
 * limitations under the License.
 */
 import {
-  Change, ElemID, getChangeData, InstanceElement, isAdditionChange,
+  Change, getChangeData, InstanceElement, isAdditionChange,
   isInstanceChange,
-  isModificationChange, toChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
-import _, { isUndefined } from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { RemoteFilterCreator } from '../filter'
 import { isInstanceOfType } from './utils'
-import { FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
-import { isActivatingChange, isActivatingChangeOnly, isActiveFlowChange } from '../change_validators/flows'
+import { FLOW_METADATA_TYPE } from '../constants'
+import {
+  getDeployAsActiveFlag,
+  getFlowStatus,
+  isActivatingChange,
+  isActivatingChangeOnly,
+  isActiveFlowChange,
+} from '../change_validators/flows'
 
 const { awu } = collections.asynciterable
 const ACTIVE = 'Active'
+const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = true
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean => {
-  if (isAdditionChange(change) && change.data.after.value.status === ACTIVE) {
+  if (isAdditionChange(change) && getFlowStatus(change.data.after) === ACTIVE) {
     return true
   }
-  if (isModificationChange(change)) {
-    if (isActiveFlowChange(change) || (isActivatingChange(change) && !isActivatingChangeOnly(change))) {
-      return true
-    }
+  if (isModificationChange(change)
+    && (
+      isActiveFlowChange(change)
+      // if the change is activating only it supposed to be caught in the CV
+      || (isActivatingChange(change) && !isActivatingChangeOnly(change)))) {
+    return true
   }
-  return false
-}
 
-const deactiveFlow = async (change: Change<InstanceElement>,
-): Promise<Change<InstanceElement>> => {
-  const after = getChangeData(change)
-  const before = isAdditionChange(change) ? undefined : change.data.before
-  const deactivatedAfter = after.clone()
-  deactivatedAfter.value.status = 'Draft'
-  return toChange({
-    before,
-    after: deactivatedAfter,
-  })
+  return false
 }
 
 const filterCreator: RemoteFilterCreator = ({ config, client }) => ({
   preDeploy: async changes => {
     const isSandbox = client.isSandbox()
-    const flowSettings = await config.elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
-    const isEnableFlowDeployAsActiveEnabled = isUndefined(flowSettings)
-    || isUndefined(flowSettings.value.enableFlowDeployAsActiveEnabled)
-      ? true : flowSettings.value.enableFlowDeployAsActiveEnabled
+    const isEnableFlowDeployAsActiveEnabled = await getDeployAsActiveFlag(
+      config.elementsSource, ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT
+    )
     if (!isSandbox && !isEnableFlowDeployAsActiveEnabled) {
-      const activeChanges = await awu(changes)
+      await awu(changes)
         .filter(isInstanceChange)
         .filter(change => isInstanceOfType(FLOW_METADATA_TYPE)(getChangeData(change)))
         .filter(isRelevantChange)
-        .toArray()
-
-      _.pullAll(changes, activeChanges)
-      changes.push(...(await Promise.all(activeChanges.map(deactiveFlow))))
+        .forEach(change => { getChangeData(change).value.status = 'Draft' })
     }
   },
 })

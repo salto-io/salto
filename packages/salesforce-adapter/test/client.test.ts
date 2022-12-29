@@ -935,4 +935,9 @@ describe('salesforce client', () => {
       })
     })
   })
+  describe('isSandbox', () => {
+    it('should return true when sandbox true', () => {
+      expect(client.isSandbox()).toBeTruthy()
+    })
+  })
 })

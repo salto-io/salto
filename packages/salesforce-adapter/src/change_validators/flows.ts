@@ -21,7 +21,7 @@ import {
   InstanceElement,
   isModificationChange,
   ModificationChange,
-  isAdditionChange, ElemID, DeployActions, Change, isRemovalChange,
+  isAdditionChange, ElemID, DeployActions, Change, isRemovalChange, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isEmpty, isUndefined } from 'lodash'
@@ -33,23 +33,36 @@ import { SalesforceConfig } from '../types'
 const { awu } = collections.asynciterable
 const ACTIVE = 'Active'
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
+const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
+
 
 const isFlowChange = (change: Change<InstanceElement>):
     Promise<boolean> => isInstanceOfType(FLOW_METADATA_TYPE)(getChangeData(change))
 
+export const getDeployAsActiveFlag = async (elementsSource: ReadOnlyElementsSource | undefined, defaultValue: boolean)
+    : Promise<boolean> => {
+  const flowSettings = isUndefined(elementsSource)
+    ? undefined : await elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
+  return isUndefined(flowSettings)
+  || isUndefined(flowSettings.value.enableFlowDeployAsActiveEnabled)
+    ? defaultValue : flowSettings.value.enableFlowDeployAsActiveEnabled
+}
+
+export const getFlowStatus = (instance: InstanceElement): string => instance.value.status
+
 export const isActiveFlowChange = (change: ModificationChange<InstanceElement>):
     boolean => (
-  change.data.before.value.status === ACTIVE && change.data.after.value.status === ACTIVE
+  getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) === ACTIVE
 )
 
 const isDeactivateChange = (change: ModificationChange<InstanceElement>):
     boolean => (
-  change.data.before.value.status === ACTIVE && change.data.after.value.status !== ACTIVE
+  getFlowStatus(change.data.before) === ACTIVE && getFlowStatus(change.data.after) !== ACTIVE
 )
 
 export const isActivatingChange = (change: ModificationChange<InstanceElement>):
     boolean => (
-  change.data.before.value.status !== ACTIVE && change.data.after.value.status === ACTIVE
+  getFlowStatus(change.data.before) !== ACTIVE && getFlowStatus(change.data.after) === ACTIVE
 )
 
 const isDeactivationChangeOnly = (change: ModificationChange<InstanceElement>):
@@ -183,13 +196,11 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
  */
 const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): ChangeValidator =>
   async (changes, elementsSource) => {
-    const flowSettings = isUndefined(elementsSource)
-      ? undefined : await elementsSource.get(new ElemID(SALESFORCE, 'FlowSettings', 'instance'))
     const isPreferActiveVersion = config.fetch?.preferActiveFlowVersions
       ?? PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT
-    const isEnableFlowDeployAsActiveEnabled = isUndefined(flowSettings)
-    || isUndefined(flowSettings.value.enableFlowDeployAsActiveEnabled)
-      ? false : flowSettings.value.enableFlowDeployAsActiveEnabled
+    const isEnableFlowDeployAsActiveEnabled = await getDeployAsActiveFlag(
+      elementsSource, ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT
+    )
     const flowChanges = await awu(changes)
       .filter(isInstanceChange)
       .filter(isFlowChange)
@@ -240,7 +251,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): Chan
     const activeFlowAddition = flowChanges
       .filter(isAdditionChange)
       .map(getChangeData)
-      .filter(flow => flow.value.status === ACTIVE)
+      .filter(flow => getFlowStatus(flow) === ACTIVE)
       .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled))
 
     return [...deactivatingFlowChangeErrors, ...activeFlowModification,

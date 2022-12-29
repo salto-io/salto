@@ -28,9 +28,11 @@ describe('deployFlowsFilter', () => {
   let flowChanges: Change<InstanceElement>[]
   const beforeRecord = createInstanceElement({ fullName: 'flow2', status: 'Active', actionType: 'quick' }, mockTypes.Flow)
   const afterRecord = beforeRecord.clone()
+
   afterRecord.value.actionType = 'case'
   beforeEach(() => {
-    flowChanges = [toChange({ before: beforeRecord, after: afterRecord }), toChange({ after: afterRecord })]
+    flowChanges = [toChange({ before: beforeRecord.clone(), after: afterRecord.clone() }),
+      toChange({ after: afterRecord.clone() })]
   })
   describe('enableFlowDeployAsActiveEnabled is off', () => {
     const flowSettings = createInstanceElement({ fullName: '',
@@ -57,6 +59,7 @@ describe('deployFlowsFilter', () => {
         config: { ...defaultFilterContext, elementsSource },
         client,
       }) as FilterWith<'preDeploy'>
+      await filter.preDeploy(flowChanges)
     })
     it('should not change the flows', () => {
       expect(getChangeData(flowChanges[0]).value.status).toBe('Active')

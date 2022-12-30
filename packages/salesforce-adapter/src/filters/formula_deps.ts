@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ElemID, ElemIDType, Field, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, ElemIDType, Field, isObjectType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
@@ -28,6 +29,7 @@ const formulon = require('formulon')
 const { extract } = formulon
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType => (
   ({
@@ -42,16 +44,30 @@ const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType 
 )
 
 const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> => (
-  typeInfos.map(({ type, instance }) => (
-    new ElemID(SALESFORCE,
-      instance.split('.')[0],
-      identifierTypeToElemIdType(type),
-      ...instance.split('.').slice(1))
-  ))
+  // TODO CUSTOM_METADATA_TYPE_RECORD entries have these weird .by_class/.by_handler suffixes that I don't know how to
+  // handle, and the actual field refs already exist in CUSTOM_METADATA_TYPE and CUSTOM_FIELD.
+  // see https://github.com/pgonzaleznetwork/forcemula#custom-metadata-types
+  typeInfos
+    .filter(({ type }) => (type !== IdentifierType.CUSTOM_METADATA_TYPE_RECORD))
+    .map(({ type, instance }) => (
+      new ElemID(SALESFORCE,
+        instance.split('.')[0],
+        identifierTypeToElemIdType(type),
+        ...instance.split('.').slice(1))
+    ))
 )
 
-const addDependenciesAnnotation = async (field: Field): Promise<void> => {
+const addDependenciesAnnotation = async (field: Field, referrableNames: Set<string>): Promise<void> => {
+  const isValidReference = (elemId: ElemID): boolean => (
+    referrableNames.has(elemId.getFullName())
+  )
+
   const formula = field.annotations[FORMULA]
+  if (formula === undefined) {
+    log.error(`Field ${field.elemID.getFullName()} is a formula field with no formula?`)
+    return
+  }
+
   try {
     const formulaVariables: string[] = log.time(
       () => (extract(formula)),
@@ -65,14 +81,29 @@ const addDependenciesAnnotation = async (field: Field): Promise<void> => {
       'Convert formula identifiers to references'
     )
 
-    const references = await referencesFromIdentifiers(identifiersInfo.flat())
+    // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
+    // filtering.
+    let references = (await referencesFromIdentifiers(identifiersInfo.flat()))
 
     if (references.length < identifiersInfo.length) {
       log.warn(`Some formula identifiers were not converted to references.
+      Field: ${field.elemID.getFullName()}
       Formula: ${formula}
       Identifiers: ${identifiersInfo.flat().map(info => info.instance).join(', ')}
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
+
+    references = references.filter(elemId => {
+      const valid = isValidReference(elemId)
+      if (!valid) {
+        log.error(`Created an invalid reference from a formula identifier. This reference will be discarded.
+        Field: ${field.elemID.getFullName()}
+        Formula: ${formula}
+        Identifiers: ${identifiersInfo.flat().map(info => info.instance).join(', ')}
+        Reference: ${elemId.getFullName()}`)
+      }
+      return valid
+    })
 
     const depsAsRefExpr = references.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
@@ -82,13 +113,22 @@ const addDependenciesAnnotation = async (field: Field): Promise<void> => {
   }
 }
 
+const allReferrableNames = async (type: ObjectType): Promise<string[]> => (
+  [
+    type.elemID.getFullName(),
+    ...Object.values(type.fields).map(field => field.elemID.getFullName()),
+  ]
+)
+
 const filter: LocalFilterCreator = () => ({
   name: 'formula_deps',
   onFetch: async elements => {
-    const formulaFields = await Promise.all(
-      elements.filter(isObjectType).map(async t => Object.values(t.fields).filter(isFormulaField))
-    )
-    await Promise.all(formulaFields.flat().map(field => addDependenciesAnnotation(field)))
+    const objectTypes = elements.filter(isObjectType)
+    const referrableNames = new Set((await Promise.all(objectTypes.map(type => allReferrableNames(type)))).flat())
+    const formulaFields = (await Promise.all(
+      objectTypes.map(async t => awu(Object.values(t.fields)).filter(isFormulaField).toArray())
+    )).flat()
+    await Promise.all(formulaFields.map(field => addDependenciesAnnotation(field, referrableNames)))
   },
 })
 

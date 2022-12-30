@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ElemID, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ObjectType, PrimitiveType, ReferenceExpression } from '@salto-io/adapter-api'
 import { FlatDetailedDependency } from '@salto-io/adapter-utils'
 import formulaDepsFilter from '../../src/filters/formula_deps'
-import { defaultFilterContext } from '../utils'
+import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from '../../src/filter'
 import { formulaTypeName, Types } from '../../src/transformers/transformer'
 import { FIELD_TYPE_NAMES, FORMULA, SALESFORCE } from '../../src/constants'
@@ -30,28 +30,90 @@ const depNameToRefExpr = (typeName: string, fieldName: string|undefined = undefi
   }
 }
 
+const customObjectTypeWithFields = (name: string, fields: Record<string, PrimitiveType>): ObjectType => {
+  const formattedFields = Object.entries(fields)
+    .map(([fieldName, fieldType]) => [fieldName, { refType: fieldType }])
+  const objectTypeFields = Object.fromEntries(formattedFields)
+  return createCustomObjectType(name,
+    {
+      fields: objectTypeFields,
+    })
+}
+
 describe('Formula dependencies', () => {
   let filter: FilterWith<'onFetch'>
   let typeWithFormula: ObjectType
+  let referredTypes: ObjectType[]
 
   beforeAll(() => {
     filter = formulaDepsFilter({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
-    typeWithFormula = new ObjectType({
-      elemID: new ElemID(SALESFORCE, 'Account'),
-      annotations: { apiName: 'Account', metadataType: 'CustomObject' },
-      fields: {
-        someField__c: {
-          refType: BuiltinTypes.STRING,
-        },
-        someFormulaField__c: {
-          refType: Types.formulaDataTypes[formulaTypeName(FIELD_TYPE_NAMES.CHECKBOX)],
-          annotations: {
-            [FORMULA]: 'ISBLANK(someField)',
+    typeWithFormula = createCustomObjectType('Account',
+      {
+        fields: {
+          someField__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          someFormulaField__c: {
+            refType: Types.formulaDataTypes[formulaTypeName(FIELD_TYPE_NAMES.CHECKBOX)],
+            annotations: {
+              [FORMULA]: 'ISBLANK(someField__c)',
+            },
+          },
+          AccountNumber: {
+            refType: BuiltinTypes.NUMBER,
+          },
+          OwnerId: {
+            refType: BuiltinTypes.SERVICE_ID_NUMBER,
+          },
+          original_lead__c: {
+            refType: BuiltinTypes.SERVICE_ID_NUMBER,
+          },
+          LastModifiedById: {
+            refType: BuiltinTypes.SERVICE_ID_NUMBER,
+          },
+          OpportunityId: {
+            refType: BuiltinTypes.SERVICE_ID_NUMBER,
+          },
+          Opportunity__c: {
+            refType: BuiltinTypes.SERVICE_ID_NUMBER,
+          },
+          ParentId: {
+            refType: BuiltinTypes.SERVICE_ID_NUMBER,
           },
         },
-      },
-    })
+      })
+    referredTypes = [
+      customObjectTypeWithFields('Contact',
+        {
+          AccountId: BuiltinTypes.SERVICE_ID_NUMBER,
+          AssistantName: BuiltinTypes.STRING,
+          CreatedById: BuiltinTypes.SERVICE_ID_NUMBER,
+        }),
+      customObjectTypeWithFields('Trigger_Context_Status__mdt',
+        {
+          Enable_After_Delete__c: BuiltinTypes.BOOLEAN,
+          Enable_After_Insert__c: BuiltinTypes.BOOLEAN,
+          DeveloperName: BuiltinTypes.STRING,
+        }),
+      customObjectTypeWithFields('User',
+        {
+          ContactId: BuiltinTypes.SERVICE_ID_NUMBER,
+          ManagerId: BuiltinTypes.SERVICE_ID_NUMBER,
+          CompanyName: BuiltinTypes.STRING,
+          ProfileId: BuiltinTypes.SERVICE_ID_NUMBER,
+        }),
+      customObjectTypeWithFields('original_lead__r', { ConvertedAccountId: BuiltinTypes.SERVICE_ID_NUMBER }),
+      customObjectTypeWithFields('Center__c', { My_text_field__c: BuiltinTypes.STRING }),
+      customObjectTypeWithFields('Customer_Support_Setting__c', { Email_Address__c: BuiltinTypes.STRING }),
+      createCustomObjectType('Details', {}),
+      customObjectTypeWithFields('Opportunity', { AccountId: BuiltinTypes.SERVICE_ID_NUMBER }),
+      customObjectTypeWithFields('Opportunity__r', { Related_Asset__c: BuiltinTypes.SERVICE_ID_NUMBER }),
+      customObjectTypeWithFields('Organization', { UiSkin: BuiltinTypes.SERVICE_ID_NUMBER }),
+      customObjectTypeWithFields('Profile', { Id: BuiltinTypes.SERVICE_ID_NUMBER }),
+      customObjectTypeWithFields('Related_Asset__r', { Name: BuiltinTypes.STRING }),
+      customObjectTypeWithFields('SRM_API_Metadata_Client_Setting__mdt', { CreatedDate: BuiltinTypes.STRING }),
+    ]
   })
 
   describe('When the formula has a reference', () => {
@@ -61,9 +123,8 @@ describe('Formula dependencies', () => {
       // eslint-disable-next-line no-underscore-dangle
       const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
-      expect(deps).toHaveLength(2)
       expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName))
-      expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'someField'))
+      expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'someField__c'))
     })
   })
 
@@ -94,20 +155,17 @@ describe('Formula dependencies', () => {
       'salesforce.SRM_API_Metadata_Client_Setting__mdt',
       'salesforce.SRM_API_Metadata_Client_Setting__mdt.field.CreatedDate', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.DeveloperName',
-      'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Insert__c',
-      'salesforce.Trigger_Context_Status__mdt.instance.by_class',
-      'salesforce.Trigger_Context_Status__mdt.instance.by_handler', 'salesforce.User',
+      'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Insert__c', 'salesforce.User',
       'salesforce.User.field.CompanyName', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
       'salesforce.User.field.ProfileId']
     const processBuilderFormulaExpectedRefs = ['salesforce.Account', 'salesforce.Account.field.AccountNumber',
       'salesforce.Account.field.OwnerId', 'salesforce.Account.field.original_lead__c', 'salesforce.Contact',
       'salesforce.Contact.field.AccountId', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Delete__c',
-      'salesforce.Trigger_Context_Status__mdt.instance.by_class', 'salesforce.User', 'salesforce.User.field.ContactId',
-      'salesforce.User.field.ManagerId', 'salesforce.original_lead__r',
-      'salesforce.original_lead__r.field.ConvertedAccountId']
+      'salesforce.User', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
+      'salesforce.original_lead__r', 'salesforce.original_lead__r.field.ConvertedAccountId']
     it('Should extract the correct references from a complex standard formula', async () => {
-      const elements = [typeWithFormula.clone()]
+      const elements = [typeWithFormula.clone(), ...referredTypes]
       elements[0].fields.someFormulaField__c.annotations[FORMULA] = standardFormula
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
@@ -118,7 +176,7 @@ describe('Formula dependencies', () => {
     })
 
     it('Should extract the correct references from a Process Builder formula', async () => {
-      const elements = [typeWithFormula.clone()]
+      const elements = [typeWithFormula.clone(), ...referredTypes]
       elements[0].fields.someFormulaField__c.annotations[FORMULA] = processBuilderFormula
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
@@ -140,27 +198,37 @@ describe('Formula dependencies', () => {
       'salesforce.SBQQ__random__r',
       'salesforce.SBQQ__random__r.field.Name'].sort()
     let typeWithCpqFormula: ObjectType
+    let referredObjectTypes: ObjectType[]
 
     beforeAll(() => {
-      typeWithCpqFormula = new ObjectType({
-        elemID: new ElemID(SALESFORCE, 'SBQQ__QuoTE__c'),
-        annotations: { apiName: 'SBQQ__QuoTE__c', metadataType: 'CustomObject' },
-        fields: {
-          someField__c: {
-            refType: BuiltinTypes.STRING,
-          },
-          someFormulaField__c: {
-            refType: Types.formulaDataTypes[formulaTypeName(FIELD_TYPE_NAMES.CHECKBOX)],
-            annotations: {
-              [FORMULA]: '',
+      typeWithCpqFormula = createCustomObjectType('SBQQ__QuoTE__c',
+        {
+          fields: {
+            SBQQ__DistriBUtor__c: {
+              refType: BuiltinTypes.STRING,
+            },
+            SBQQ__random__c: {
+              refType: BuiltinTypes.STRING,
+            },
+            someField__c: {
+              refType: BuiltinTypes.STRING,
+            },
+            someFormulaField__c: {
+              refType: Types.formulaDataTypes[formulaTypeName(FIELD_TYPE_NAMES.CHECKBOX)],
+              annotations: {
+                [FORMULA]: '',
+              },
             },
           },
-        },
-      })
+        })
+      referredObjectTypes = [
+        customObjectTypeWithFields('SBQQ__random__r', { Name: BuiltinTypes.STRING }),
+        customObjectTypeWithFields('Account', { Name: BuiltinTypes.STRING }),
+      ]
     })
 
     it('Should extract the correct references from a CPQ formula', async () => {
-      const elements = [typeWithCpqFormula.clone()]
+      const elements = [typeWithCpqFormula.clone(), ...referredObjectTypes]
       elements[0].fields.someFormulaField__c.annotations[FORMULA] = simpleFormula
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
@@ -171,7 +239,7 @@ describe('Formula dependencies', () => {
     })
 
     it('Should extract the correct references from a CPQ formula with unknown relationship', async () => {
-      const elements = [typeWithCpqFormula.clone()]
+      const elements = [typeWithCpqFormula.clone(), ...referredObjectTypes]
       elements[0].fields.someFormulaField__c.annotations[FORMULA] = formulaWithUnknownRelationship
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle

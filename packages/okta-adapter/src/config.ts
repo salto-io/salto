@@ -117,6 +117,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
       idFields: ['label'],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   api__v1__apps: {
@@ -263,6 +264,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
       ],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   api__v1__features: {
@@ -284,6 +286,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'featureDependencies', fieldType: 'list<Feature>' },
       ],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   // Policy type is splitted to different kinds of policies
@@ -379,28 +382,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  // TODO SALTO-2733 returns 400 bad request
-  OAuthAuthorizationPolicies: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'OAUTH_AUTHORIZATION_POLICY',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
   UserSchema: {
     request: {
       url: '/api/v1/meta/schemas/user/default',
     },
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   User: {
@@ -510,6 +498,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: '_links' },
       ],
+      fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
     },
   },
@@ -555,59 +544,70 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       idFields: ['title'],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   Domain: {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   OrgSetting: {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   Brand: {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   Authenticator: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   EventHook: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   GroupRule: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   InlineHook: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   NetworkZone: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   TrustedOrigin: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   UserType: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   GroupSchemaAttribute: {
@@ -642,6 +642,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'lastUpdated' },
       ],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   AppUserCredentials: {
@@ -679,7 +680,6 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     { typeName: 'ProfileEnrollmentPolicies', cloneFrom: 'api__v1__policies' },
     { typeName: 'IdentityProviderRoutingRules', cloneFrom: 'api__v1__policies' },
     { typeName: 'PasswordPolicies', cloneFrom: 'api__v1__policies' },
-    { typeName: 'OAuthAuthorizationPolicies', cloneFrom: 'api__v1__policies' },
     // TODO SALTO-2735 this is not the right type to clone from
     { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
   ],
@@ -717,7 +717,6 @@ export const SUPPORTED_TYPES = {
     'ProfileEnrollmentPolicies',
     'IdentityProviderRoutingRules',
     'PasswordPolicies',
-    'OAuthAuthorizationPolicies',
   ],
   SmsTemplate: ['api__v1__templates__sms'],
   TrustedOrigin: ['api__v1__trustedOrigins'],

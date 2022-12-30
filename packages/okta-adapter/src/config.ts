@@ -117,6 +117,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
       idFields: ['label'],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
@@ -264,6 +265,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
       ],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
@@ -286,6 +288,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'featureDependencies', fieldType: 'list<Feature>' },
       ],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
@@ -388,6 +391,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     },
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
@@ -441,6 +445,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   OrgContactTypeObj: {
     transformation: {
       idFields: ['contactType'],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   api__v1__templates__sms: {
@@ -495,9 +500,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'policies', fieldType: 'list<AuthorizationServerPolicy>' },
         { fieldName: 'clients', fieldType: 'list<OAuth2Client>' },
       ],
-      fieldsToOmit: [
-        { fieldName: '_links' },
-      ],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
     },
@@ -544,6 +547,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       idFields: ['title'],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
@@ -565,18 +569,21 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   Authenticator: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   EventHook: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
@@ -589,25 +596,31 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   InlineHook: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   NetworkZone: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   TrustedOrigin: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   UserType: {
     transformation: {
       serviceIdField: 'id',
-      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: '_links' },
+      ],
     },
   },
   GroupSchemaAttribute: {

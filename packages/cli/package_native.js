@@ -51,7 +51,8 @@ const resources = [
 const BASE_NEXE_CONFIG = {
   loglevel: 'verbose',
   resources,
-  build:true,
+  build: true,
+  make: ['--jobs=4'],
 }
 
 const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)

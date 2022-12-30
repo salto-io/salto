@@ -73,6 +73,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: USER_TYPE_NAME },
   },
   {
+    src: { field: 'include', parentTypes: ['UserTypePolicyRuleCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USERTYPE_TYPE_NAME },
+  },
+  {
+    src: { field: 'exclude', parentTypes: ['UserTypePolicyRuleCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USERTYPE_TYPE_NAME },
+  },
+  {
     src: { field: 'createdBy', parentTypes: [USERTYPE_TYPE_NAME, 'EventHook', 'TrustedOrigin'] },
     serializationStrategy: 'id',
     target: { type: USER_TYPE_NAME },

@@ -682,6 +682,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
+  PolicyRuleConditions: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'userType', fieldType: 'UserTypePolicyRuleCondition' },
+      ],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
@@ -695,6 +702,8 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     { typeName: 'PasswordPolicies', cloneFrom: 'api__v1__policies' },
     // TODO SALTO-2735 this is not the right type to clone from
     { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
+    // This type is missing from the swagger but both have the same structure
+    { typeName: 'UserTypePolicyRuleCondition', cloneFrom: 'GroupPolicyRuleCondition' },
   ],
 }
 

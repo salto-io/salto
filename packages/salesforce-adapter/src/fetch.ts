@@ -172,6 +172,17 @@ const getFullName = (obj: FileProperties): string => {
   return fullNameWithCorrectedObjectName
 }
 
+const getPropsWithFullName = (obj: FileProperties): FileProperties => {
+  const correctFullName = getFullName(obj)
+  return {
+    ...obj,
+    fullName: correctFullName,
+    fileName: obj.fileName.includes(correctFullName)
+      ? obj.fileName
+      : obj.fileName.replace(obj.fullName, correctFullName),
+  }
+}
+
 const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
   filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
   const newMetadata = filePropertiesMap[metadata.fullName]?.id
@@ -284,7 +295,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(file => ({ ...file, fullName: getFullName(file) }))
+      .map(getPropsWithFullName)
       .value()
   }
 
@@ -297,7 +308,7 @@ export const retrieveMetadataInstances = async ({
   ): Promise<InstanceElement[]> => {
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = fileProps.map(inst => (
-      { ...inst, fullName: getFullName(inst), type: getManifestTypeName(typesByName[inst.type]) }
+      { ...inst, type: getManifestTypeName(typesByName[inst.type]) }
     ))
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
     log.debug('retrieving types %s', typesToRetrieve)

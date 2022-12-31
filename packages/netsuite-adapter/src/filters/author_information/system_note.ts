@@ -26,7 +26,7 @@ import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
 import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID } from '../../constants'
-import { changeDateFormat } from './saved_searches'
+import { changeDateFormat, getZoneAndFormat } from './saved_searches'
 
 const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
@@ -223,7 +223,7 @@ const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceE
     .filter(async instance => isCustomRecordType(await instance.getType()))
     .toArray()
 
-const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex }): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {
@@ -286,9 +286,11 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       }
     }
 
-    const setChangedAt = (element: Element, lastModifiedDate: string): void => {
+    const { timeZone, timeFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
+
+    const setChangedAt = async (element: Element, lastModifiedDate: string): Promise<void> => {
       if (isDefined(lastModifiedDate)) {
-        const formatedDate = changeDateFormat(lastModifiedDate, QUERY_DATE_FORMAT)
+        const formatedDate = changeDateFormat(lastModifiedDate, { dateFormat: QUERY_DATE_FORMAT, timeZone, timeFormat })
         element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate })
       } else {
         const changedAt = elemIdToChangeAtIndex[element.elemID.getFullName()]
@@ -300,21 +302,21 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       }
     }
 
-    instancesWithInternalId.forEach(instance => {
+    instancesWithInternalId.forEach(async instance => {
       const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
         instance.value.internalId,
         TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]
       )] ?? {}
       setChangedBy(instance, employeeId)
-      setChangedAt(instance, lastModifiedDate)
+      await setChangedAt(instance, lastModifiedDate)
     })
-    customRecordTypesWithInternalIds.forEach(type => {
+    customRecordTypesWithInternalIds.forEach(async type => {
       const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
         type.annotations.internalId,
         TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
       )] ?? {}
       setChangedBy(type, employeeId)
-      setChangedAt(type, lastModifiedDate)
+      await setChangedAt(type, lastModifiedDate)
     })
     await awu(customRecordsWithInternalIds).forEach(async instance => {
       const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
@@ -322,7 +324,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
         getInternalId(await instance.getType())
       )] ?? {}
       setChangedBy(instance, employeeId)
-      setChangedAt(instance, lastModifiedDate)
+      await setChangedAt(instance, lastModifiedDate)
     })
   },
 })

@@ -15,10 +15,9 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression, TemplateExpression, TemplatePart,
-} from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression,
+  SaltoError, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
@@ -34,6 +33,7 @@ import {
 } from '../../constants'
 import { createMissingInstance } from '../references/missing_references'
 import { FETCH_CONFIG } from '../../config'
+import { getBrandsForGuide } from '../utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -122,11 +122,13 @@ const matchBrand = (url: string, brands: Record<string, InstanceElement>): Insta
 const updateArticleBody = (
   articleInstance: InstanceElement,
   additionalInstances: Record<string, Record<string, InstanceElement>>,
-  enableMissingReferences?: boolean
-): void => {
+  includedBrands: InstanceElement[],
+  enableMissingReferences?: boolean,
+): SaltoError[] => {
+  const errors: SaltoError[] = []
   const originalArticleBody = articleInstance.value[BODY_FIELD]
   if (!_.isString(originalArticleBody)) {
-    return
+    return errors
   }
 
   // Find the urls that are in the body
@@ -137,6 +139,15 @@ const updateArticleBody = (
       // Make sure that a brand exists for that domain
       const urlBrand = matchBrand(url, additionalInstances[BRAND_TYPE_NAME])
       if (urlBrand === undefined) {
+        return url
+      }
+
+      if (!includedBrands.includes(urlBrand)) {
+        // If the brand is excluded, don't try to create references
+        errors.push({
+          message: `Article ${articleInstance.elemID.getFullName()} has a link to an excluded brand. To create this reference, please update the configuration under fetch.guide.brands in the configuration file to include brand: ${urlBrand.elemID.getFullName()}`,
+          severity: 'Warning',
+        })
         return url
       }
       // Extract the referenced instances inside
@@ -155,6 +166,7 @@ const updateArticleBody = (
   )
 
   articleInstance.value.body = processedArticleBody
+  return errors
 }
 
 /**
@@ -193,12 +205,16 @@ const filterCreator: FilterCreator = ({ config }) => {
               i => _.toString(i.value.id)
             ),
       }
-
-      instances
+      const includedBrands = getBrandsForGuide(instances, config[FETCH_CONFIG])
+      const warnings = instances
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
-        .forEach(articleInstance => (
-          updateArticleBody(articleInstance, additionalInstances, config[FETCH_CONFIG].enableMissingReferences)))
+        .flatMap(articleInstance => (
+          // eslint-disable-next-line max-len
+          updateArticleBody(articleInstance, additionalInstances, includedBrands, config[FETCH_CONFIG].enableMissingReferences)
+        ))
+
+      return { errors: warnings }
     }, 'articleBodyFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)

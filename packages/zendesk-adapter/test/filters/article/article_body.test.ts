@@ -27,21 +27,22 @@ import {
   ZENDESK,
 } from '../../../src/constants'
 import { createFilterCreatorParams } from '../../utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
 import { createMissingInstance } from '../../../src/filters/references/missing_references'
+import { FilterResult } from '../../../src/filter'
 
 describe('article body filter', () => {
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+  type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy', FilterResult>
   let filter: FilterType
-
-  beforeAll(() => {
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
-  })
+  const config = { ...DEFAULT_CONFIG }
 
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
       brand_url: { refType: BuiltinTypes.STRING },
+      has_help_center: { refType: BuiltinTypes.BOOLEAN },
+      name: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -65,13 +66,19 @@ describe('article body filter', () => {
   const brandInstance = new InstanceElement(
     'brand',
     brandType,
-    { id: 1, brand_url: 'https://brand.zendesk.com', name: 'brand' },
+    { id: 1, brand_url: 'https://brand.zendesk.com', name: 'brand', has_help_center: true },
+  )
+
+  const brandToExclude = new InstanceElement(
+    'excluded',
+    brandType,
+    { id: 1, brand_url: 'https://excluded.zendesk.com', name: 'excluded', has_help_center: true },
   )
 
   const emptyBrandInstance = new InstanceElement(
     'brand2',
     brandType,
-    { id: 2, brand_url: 'https://brand2.zendesk.com', name: 'brand2' },
+    { id: 2, brand_url: 'https://brand2.zendesk.com', name: 'brand2', has_help_center: true },
   )
 
   const createInstanceElement = (type: ObjectType): InstanceElement =>
@@ -112,8 +119,20 @@ describe('article body filter', () => {
     { id: 1005, body: '<p><img src="https://brand.zendesk.com/hc/article_attachments/123" alt="alttext"><img src="https://brand.zendesk.com/hc/article_attachments/123" alt="alttext"></p>' },
   )
 
+  const articeOfExcludedBrand = new InstanceElement(
+    '12321312',
+    articleType,
+    { id: 321, brand: new ReferenceExpression(brandToExclude.elemID, brandToExclude) }
+  )
+  const translationWithExcludedBrand = new InstanceElement(
+    'articleWithExcludedBrand',
+    articleTranslationType,
+    { id: 101010, body: '<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh' },
+  )
+
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
     brandInstance,
+    brandToExclude,
     emptyBrandInstance,
     articleInstance,
     sectionInstance,
@@ -123,61 +142,86 @@ describe('article body filter', () => {
     translationWithEmptyBrand,
     translationWithoutReferences,
     translationWithAttachments,
+    translationWithExcludedBrand,
+    articeOfExcludedBrand,
   ]).map(element => element.clone())
 
   describe('on fetch', () => {
     let elements: (InstanceElement | ObjectType)[]
 
-    beforeAll(async () => {
-      elements = generateElements()
-      await filter.onFetch(elements)
-    })
-
-    it('should convert all possible urls to references', () => {
-      const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithReferences')
-      expect(fetchedTranslationWithReferences?.value.body).toEqual(new TemplateExpression({ parts: [
-        '<p><a href="',
-        new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-        '/hc/en-us/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
-        '/sep/sections/', new ReferenceExpression(sectionInstance.elemID, sectionInstance),
-        '/sep/categories/', new ReferenceExpression(categoryInstance.elemID, categoryInstance),
-        '/sep/article_attachments/', new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
-        '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
-        new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-        '/hc/he/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
-        '-extra_string"',
-      ] }))
-    })
-    it('should only match elements that exists in the matched brand', () => {
-      const brandName = emptyBrandInstance.value.name
-      const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLES_FIELD, `${brandName}_124`)
-      const missingSectionInstance = createMissingInstance(ZENDESK, SECTIONS_FIELD, `${brandName}_123`)
-      const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORIES_FIELD, `${brandName}_123`)
-      const missingArticleAttachmentInstance = createMissingInstance(ZENDESK, ARTICLE_ATTACHMENTS_FIELD, `${brandName}_123`)
-      missingArticleInstance.value.id = '124'
-      missingSectionInstance.value.id = '123'
-      missingCategoryInstance.value.id = '123'
-      missingArticleAttachmentInstance.value.id = '123'
-      const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithEmptyBrand')
-      expect(fetchedTranslationWithoutReferences?.value.body)
-        .toEqual(new TemplateExpression({ parts: [
+    describe('when all brands included', () => {
+      beforeAll(async () => {
+        config[FETCH_CONFIG].guide = { brands: ['.*'] }
+        filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+        elements = generateElements()
+        await filter.onFetch(elements)
+      })
+      it('should convert all possible urls to references', () => {
+        const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithReferences')
+        expect(fetchedTranslationWithReferences?.value.body).toEqual(new TemplateExpression({ parts: [
           '<p><a href="',
-          new ReferenceExpression(emptyBrandInstance.elemID.createNestedID('brand_url'), emptyBrandInstance.value.brand_url),
-          '/hc/en-us/articles/', new ReferenceExpression(missingArticleInstance.elemID, missingArticleInstance),
-          '/sep/sections/', new ReferenceExpression(missingSectionInstance.elemID, missingSectionInstance),
-          '/sep/categories/', new ReferenceExpression(missingCategoryInstance.elemID, missingCategoryInstance),
-          '/sep/article_attachments/', new ReferenceExpression(missingArticleAttachmentInstance.elemID, missingArticleAttachmentInstance),
+          new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+          '/hc/en-us/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
+          '/sep/sections/', new ReferenceExpression(sectionInstance.elemID, sectionInstance),
+          '/sep/categories/', new ReferenceExpression(categoryInstance.elemID, categoryInstance),
+          '/sep/article_attachments/', new ReferenceExpression(attachmentInstance.elemID, attachmentInstance),
           '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
           new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
-          '/hc/he/articles/',
-          new ReferenceExpression(articleInstance.elemID, articleInstance),
+          '/hc/he/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
           '-extra_string"',
         ] }))
+      })
+      it('should only match elements that exists in the matched brand', () => {
+        const brandName = emptyBrandInstance.value.name
+        const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLES_FIELD, `${brandName}_124`)
+        const missingSectionInstance = createMissingInstance(ZENDESK, SECTIONS_FIELD, `${brandName}_123`)
+        const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORIES_FIELD, `${brandName}_123`)
+        const missingArticleAttachmentInstance = createMissingInstance(ZENDESK, ARTICLE_ATTACHMENTS_FIELD, `${brandName}_123`)
+        missingArticleInstance.value.id = '124'
+        missingSectionInstance.value.id = '123'
+        missingCategoryInstance.value.id = '123'
+        missingArticleAttachmentInstance.value.id = '123'
+        const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithEmptyBrand')
+        expect(fetchedTranslationWithoutReferences?.value.body)
+          .toEqual(new TemplateExpression({ parts: [
+            '<p><a href="',
+            new ReferenceExpression(emptyBrandInstance.elemID.createNestedID('brand_url'), emptyBrandInstance.value.brand_url),
+            '/hc/en-us/articles/', new ReferenceExpression(missingArticleInstance.elemID, missingArticleInstance),
+            '/sep/sections/', new ReferenceExpression(missingSectionInstance.elemID, missingSectionInstance),
+            '/sep/categories/', new ReferenceExpression(missingCategoryInstance.elemID, missingCategoryInstance),
+            '/sep/article_attachments/', new ReferenceExpression(missingArticleAttachmentInstance.elemID, missingArticleAttachmentInstance),
+            '-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="',
+            new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+            '/hc/he/articles/',
+            new ReferenceExpression(articleInstance.elemID, articleInstance),
+            '-extra_string"',
+          ] }))
+      })
+      it('should do nothing if elements do not exists', () => {
+        const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithoutReferences')
+        expect(fetchedTranslationWithoutReferences?.value.body)
+          .toEqual('<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/124/sep/sections/124/sep/categories/124/sep/article_attachments/124-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/124-extra_string"')
+      })
     })
-    it('should do nothing if elements do not exists', () => {
-      const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithoutReferences')
-      expect(fetchedTranslationWithoutReferences?.value.body)
-        .toEqual('<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/124/sep/sections/124/sep/categories/124/sep/article_attachments/124-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/124-extra_string"')
+
+    describe('when some brands are excluded', () => {
+      beforeAll(() => {
+        config[FETCH_CONFIG].guide = { brands: ['[^excluded]'] }
+        filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+        elements = generateElements()
+      })
+
+      it('should not create reference for urls of excluded brands', async () => {
+        const filterResult = await filter.onFetch(elements) as FilterResult
+        const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleWithExcludedBrand')
+        expect(fetchedTranslationWithReferences?.value.body)
+          .toEqual('<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh')
+        expect(filterResult.errors).toHaveLength(1)
+        expect(filterResult.errors?.[0]).toEqual({
+          message: 'Article zendesk.article_translation.instance.articleWithExcludedBrand has a link to an excluded brand. To create this reference, please update the configuration under fetch.guide.brands in the configuration file to include brand: zendesk.brand.instance.excluded',
+          severity: 'Warning',
+        })
+      })
     })
   })
   describe('preDeploy', () => {
@@ -185,6 +229,7 @@ describe('article body filter', () => {
     let elementsAfterPreDeploy: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
+      filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
       elementsBeforeFetch = generateElements()
       const elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
@@ -202,6 +247,7 @@ describe('article body filter', () => {
     let elementsAfterOnDeploy: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
+      filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
       // we recreate feth and onDeploy to have the templates in place to be restored by onDeploy
       const elementsBeforeFetch = generateElements()
       elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())

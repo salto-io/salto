@@ -107,6 +107,22 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
   }
 }
 
+export const selectElementsBySelectorsWithoutReferences = (
+  { elementIds, selectors, includeNested = false }: {
+    elementIds: ElemID[]
+    selectors: ElementSelector[]
+    includeNested?: boolean
+  }
+): ElemID[] => {
+  if (selectors.length === 0) {
+    return elementIds
+  }
+  return elementIds.filter(elementId =>
+    (selectors.some(selector =>
+      match(elementId, selector, includeNested))
+    ))
+}
+
 export const selectElementsBySelectors = (
   {
     elementIds, selectors, referenceSourcesIndex, includeNested = false,
@@ -117,21 +133,17 @@ export const selectElementsBySelectors = (
     includeNested?: boolean
   }
 ): AsyncIterable<ElemID> => {
-  const matches: Record<string, boolean> = { }
   if (selectors.length === 0) {
     return elementIds
   }
   return awu(elementIds).filter(obj => awu(selectors).some(
-    async selector => {
-      const result = await matchWithReferenceBy(
+    selector =>
+      (matchWithReferenceBy(
         isElementContainer(obj) ? obj.elemID : obj as ElemID,
         selector,
         referenceSourcesIndex,
         includeNested
-      )
-      matches[selector.origin] = matches[selector.origin] || result
-      return result
-    }
+      ))
   ))
 }
 

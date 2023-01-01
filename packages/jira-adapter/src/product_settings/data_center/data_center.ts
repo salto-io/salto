@@ -293,6 +293,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['post'],
+    url: '/rest/api/3/notificationscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/notificationscheme/.+',
+  },
+  {
+    httpMethods: ['post'],
     url: '/rest/api/3/resolution',
   },
   {

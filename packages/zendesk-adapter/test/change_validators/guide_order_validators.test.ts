@@ -145,7 +145,7 @@ describe('GuideOrdersValidator', () => {
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide order elements removed without their parent',
+        message: 'Guide elements order list removed without its parent',
         detailedMessage: `Deleting ${instanceName} requires deleting its parent (${parentName})`,
       })
     }
@@ -198,31 +198,29 @@ describe('GuideOrdersValidator', () => {
       })
     })
     describe('Duplicate child in same order', () => {
-      const createDuplicateChildError = (orderInstance: InstanceElement): ChangeError => ({
+      const createDuplicateChildError = (orderInstance: InstanceElement, child: ReferenceExpression): ChangeError => ({
         elemID: orderInstance.elemID,
         severity: 'Warning',
-        message: `${orderInstance.elemID.getFullName()} include the same element more than once`,
-        detailedMessage: `${orderInstance.elemID.getFullName()} has the same element more than once, order will be determined by the last occurrence of the element`,
+        message: 'Guide elements order list includes the same element more than once',
+        detailedMessage: `${orderInstance.elemID.getFullName()} has the same element more than once, order will be determined by the last occurrence of the element, elements: '${child.elemID.getFullName()}'`,
       })
 
       it('Same child twice', async () => {
         const testOrderInstances = orderInstances.map(instance => instance.clone())
+        const errorsToCheck: string[] = []
         // Fill the same child again
         testOrderInstances.forEach(instance => [ARTICLES_FIELD, SECTIONS_FIELD, CATEGORIES_FIELD].forEach(field => {
           if (instance.value[field] !== undefined) {
+            errorsToCheck.push(safeJsonStringify(createDuplicateChildError(instance, instance.value[field][0])))
             instance.value[field].push(instance.value[field][0])
           }
         }))
         const changes = testOrderInstances.map(instance => toChange({ after: instance }))
 
         const errors = (await childInOrderValidator(changes)).map(error => safeJsonStringify(error))
-        expect(errors.length).toBe(testOrderInstances.length)
-
+        expect(errors.length).toBe(errorsToCheck.length)
         // Make sure all warnings were created
-        testOrderInstances.forEach(instance => {
-          const instanceError = safeJsonStringify(createDuplicateChildError(instance))
-          expect(errors.includes(instanceError)).toBe(true)
-        })
+        expect(errors.sort()).toMatchObject(errorsToCheck.sort())
       })
     })
   })
@@ -253,7 +251,7 @@ describe('GuideOrdersValidator', () => {
     const createError = (orderInstance: InstanceElement, badChildren: InstanceElement[]): ChangeError => ({
       elemID: orderInstance.elemID,
       severity: 'Error',
-      message: `${orderInstance.elemID.typeName} contains instances that are not of the same parent`,
+      message: 'Guide elements order list includes instances that are not of the same parent',
       detailedMessage: `${badChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.getFullName()}`,
     })
 

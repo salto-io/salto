@@ -862,11 +862,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddNotificationScheme.jspa',
-      modify: '/secure/admin/EditNotificationScheme.jspa',
-      remove: '/secure/admin/DeleteNotificationScheme.jspa',
-    },
   },
   NotificationSchemeEvent: {
     transformation: {
@@ -874,11 +869,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'eventType', fieldType: 'number' },
         { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
       ],
-    },
-    jspRequests: {
-      add: '/secure/admin/AddNotification.jspa',
-      remove: '/secure/admin/DeleteNotification.jspa',
-      query: '/rest/api/3/notificationscheme/{id}?expand=all',
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {

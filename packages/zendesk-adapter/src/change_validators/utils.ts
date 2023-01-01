@@ -21,18 +21,18 @@ import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../constants'
 export const createEmptyFieldErrorMessage = (fullName: string, fieldName: string): string =>
   `Can not change ${fullName}' ${fieldName} to be empty`
 
-type articlesOrderType = InstanceElement & { value: { articles: ReferenceExpression[] } }
-type sectionsOrderType = InstanceElement & { value: { sections: ReferenceExpression[] } }
-type categoriesOrderType = InstanceElement & { value: { categories: ReferenceExpression[] } }
+type ArticlesOrderType = InstanceElement & { value: { articles: ReferenceExpression[] } }
+type SectionsOrderType = InstanceElement & { value: { sections: ReferenceExpression[] } }
+type CategoriesOrderType = InstanceElement & { value: { categories: ReferenceExpression[] } }
 
 const articlesOrderScheme = Joi.object({ [ARTICLES_FIELD]: Joi.required() }).required().unknown(true)
 const sectionsOrderScheme = Joi.object({ [SECTIONS_FIELD]: Joi.required() }).required().unknown(true)
 const categoriesOrderScheme = Joi.object({ [CATEGORIES_FIELD]: Joi.required() }).required().unknown(true)
 
 const fieldToSchemeGuard: Record<string, (instance: InstanceElement) => boolean> = {
-  [ARTICLES_FIELD]: createSchemeGuardForInstance<articlesOrderType>(articlesOrderScheme, 'Received an invalid value for order'),
-  [SECTIONS_FIELD]: createSchemeGuardForInstance<sectionsOrderType>(sectionsOrderScheme, 'Received an invalid value for order'),
-  [CATEGORIES_FIELD]: createSchemeGuardForInstance<categoriesOrderType>(categoriesOrderScheme, 'Received an invalid value for order'),
+  [ARTICLES_FIELD]: createSchemeGuardForInstance<ArticlesOrderType>(articlesOrderScheme, 'Received an invalid value for order'),
+  [SECTIONS_FIELD]: createSchemeGuardForInstance<SectionsOrderType>(sectionsOrderScheme, 'Received an invalid value for order'),
+  [CATEGORIES_FIELD]: createSchemeGuardForInstance<CategoriesOrderType>(categoriesOrderScheme, 'Received an invalid value for order'),
 }
 
 // Validates that the order field exists in the element's value

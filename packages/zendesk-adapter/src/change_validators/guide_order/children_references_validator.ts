@@ -33,8 +33,8 @@ const createNotReferencesError = (instance: ChangeDataType, orderField: string)
     : ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
-  message: 'Guide elements order list includes an invalid Salto reference',
-  detailedMessage: `One or more elements in ${instance.elemID.getFullName()}'s ${orderField} field are not a valid Salto reference`,
+  message: `${instance.elemID.typeName}'s field '${orderField}' includes an invalid Salto reference`,
+  detailedMessage: `${instance.elemID.typeName} instance ${instance.elemID.name}'s field ${orderField} includes one or more invalid Salto references`,
 })
 
 const isEverythingReferences = (orderInstance: ChangeDataType, orderField: string)

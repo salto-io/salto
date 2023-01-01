@@ -31,7 +31,7 @@ export const guideOrderDeletionValidator: ChangeValidator = async changes => {
   return orderRemovals
     .filter(orderInstance => !removedElements.has(getParent(orderInstance).elemID.getFullName()))
     .map(orderInstance => {
-      const instanceName = orderInstance.elemID.getFullName()
+      const instanceName = orderInstance.elemID.name
       const parentName = getParent(orderInstance).elemID.getFullName()
       return {
         elemID: orderInstance.elemID,

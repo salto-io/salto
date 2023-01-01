@@ -52,7 +52,7 @@ const createNotSameParentError = (
   elemID: orderInstance.elemID,
   severity: 'Error',
   message: 'Guide elements order list includes instances that are not of the same parent',
-  detailedMessage: `${wrongParentChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.getFullName()}`,
+  detailedMessage: `${wrongParentChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.name}`,
 })
 
 const orderChildrenDifferentParent = (

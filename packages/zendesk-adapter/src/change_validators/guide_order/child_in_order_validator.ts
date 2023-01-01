@@ -49,7 +49,7 @@ const validateNoDuplicateChild = ({ orderInstances, orderField }: {
         elemID: orderInstance.elemID,
         severity: 'Warning',
         message: 'Guide elements order list includes the same element more than once',
-        detailedMessage: `${orderInstance.elemID.getFullName()} has the same element more than once, order will be determined by the last occurrence of the element, elements: '${duplicates.join(', ')}'`,
+        detailedMessage: `${orderInstance.elemID.typeName} ${orderInstance.elemID.name} has the same element more than once, order will be determined by the last occurrence of the element, elements: '${duplicates.join(', ')}'`,
       })
     }
   })

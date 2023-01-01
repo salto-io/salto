@@ -104,8 +104,8 @@ describe('GuideOrdersValidator', () => {
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide elements order list includes an invalid Salto reference',
-        detailedMessage: `One or more elements in ${orderInstance.elemID.getFullName()}'s ${orderField} field are not a valid Salto reference`,
+        message: `${orderInstance.elemID.typeName}'s field '${orderField}' includes an invalid Salto reference`,
+        detailedMessage: `${orderInstance.elemID.typeName} instance ${orderInstance.elemID.name}'s field ${orderField} includes one or more invalid Salto references`,
       })
     }
 
@@ -137,7 +137,7 @@ describe('GuideOrdersValidator', () => {
         toChange({ before: orderWithoutParent }),
         toChange({ before: getParent(orderInstance) }),
       ]
-      const instanceName = orderInstance.elemID.getFullName()
+      const instanceName = orderInstance.elemID.name
       const parentName = fakeParent.elemID.getFullName()
 
       const errors = await guideOrderDeletionValidator(changes)
@@ -202,7 +202,7 @@ describe('GuideOrdersValidator', () => {
         elemID: orderInstance.elemID,
         severity: 'Warning',
         message: 'Guide elements order list includes the same element more than once',
-        detailedMessage: `${orderInstance.elemID.getFullName()} has the same element more than once, order will be determined by the last occurrence of the element, elements: '${child.elemID.getFullName()}'`,
+        detailedMessage: `${orderInstance.elemID.typeName} ${orderInstance.elemID.name} has the same element more than once, order will be determined by the last occurrence of the element, elements: '${child.elemID.getFullName()}'`,
       })
 
       it('Same child twice', async () => {
@@ -211,6 +211,7 @@ describe('GuideOrdersValidator', () => {
         // Fill the same child again
         testOrderInstances.forEach(instance => [ARTICLES_FIELD, SECTIONS_FIELD, CATEGORIES_FIELD].forEach(field => {
           if (instance.value[field] !== undefined) {
+            // stringify to sort later
             errorsToCheck.push(safeJsonStringify(createDuplicateChildError(instance, instance.value[field][0])))
             instance.value[field].push(instance.value[field][0])
           }
@@ -248,11 +249,11 @@ describe('GuideOrdersValidator', () => {
       toChange({ after: categoryOrderInstance }),
     ]
 
-    const createError = (orderInstance: InstanceElement, badChildren: InstanceElement[]): ChangeError => ({
+    const createError = (orderInstance: InstanceElement, wrongParentChildren: InstanceElement[]): ChangeError => ({
       elemID: orderInstance.elemID,
       severity: 'Error',
       message: 'Guide elements order list includes instances that are not of the same parent',
-      detailedMessage: `${badChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.getFullName()}`,
+      detailedMessage: `${wrongParentChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.name}`,
     })
 
     it('children with same parent as order', async () => {

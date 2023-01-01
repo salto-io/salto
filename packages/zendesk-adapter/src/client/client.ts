@@ -71,7 +71,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   }
 
   public getUrl(): URL {
-    return new URL(instanceUrl(this.credentials.subdomain))
+    return new URL(instanceUrl(this.credentials.subdomain, this.credentials.domain))
   }
 
   public async getSinglePage(

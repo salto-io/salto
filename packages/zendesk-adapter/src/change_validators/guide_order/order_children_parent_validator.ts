@@ -22,6 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import {
   ARTICLE_ORDER_TYPE_NAME, ARTICLE_TYPE_NAME,
   ARTICLES_FIELD, CATEGORIES_FIELD, CATEGORY_ORDER_TYPE_NAME, CATEGORY_TYPE_NAME,
@@ -31,6 +32,7 @@ import {
 import { validateOrderType } from '../utils'
 
 const { isDefined } = lowerDashValues
+const log = logger(module)
 
 const getChildParent = (child: InstanceElement): ReferenceExpression => {
   switch (child.elemID.typeName) {
@@ -43,22 +45,30 @@ const getChildParent = (child: InstanceElement): ReferenceExpression => {
   }
 }
 
-const createNotSameParentError = ([order, badChildren]: [InstanceElement, InstanceElement[]]): ChangeError => ({
-  elemID: order.elemID,
+const createNotSameParentError = (
+  { orderInstance, wrongParentChildren }:
+  { orderInstance: InstanceElement; wrongParentChildren: InstanceElement[] }
+): ChangeError => ({
+  elemID: orderInstance.elemID,
   severity: 'Error',
-  message: `${order.elemID.typeName} contains instances that are not of the same parent`,
-  detailedMessage: `${badChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(order).elemID.typeName} as ${order.elemID.getFullName()}`,
+  message: 'Guide elements order list includes instances that are not of the same parent',
+  detailedMessage: `${wrongParentChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.getFullName()}`,
 })
 
 const orderChildrenDifferentParent = (
   orderInstance: InstanceElement,
   children: InstanceElement[],
-): [InstanceElement, InstanceElement[]] | undefined => {
-  const orderParent = getParent(orderInstance).elemID.getFullName()
-  const wrongParentChildren = children
-    .filter(isInstanceElement)
-    .filter(child => orderParent !== getChildParent(child)?.value.elemID.getFullName())
-  return wrongParentChildren.length > 0 ? [orderInstance, wrongParentChildren] : undefined
+): { orderInstance: InstanceElement; wrongParentChildren: InstanceElement[] } | undefined => {
+  try {
+    const orderParent = getParent(orderInstance).elemID.getFullName()
+    const wrongParentChildren = children
+      .filter(isInstanceElement)
+      .filter(child => orderParent !== getChildParent(child)?.value.elemID.getFullName())
+    return wrongParentChildren.length > 0 ? { orderInstance, wrongParentChildren } : undefined
+  } catch (e) {
+    log.warn(`${orderInstance.elemID.getFullName()} does not have parent annotation`)
+    return undefined
+  }
 }
 
 const validateOrdersChildrenSameParent = ({ changes, orderField, orderTypeName }: {

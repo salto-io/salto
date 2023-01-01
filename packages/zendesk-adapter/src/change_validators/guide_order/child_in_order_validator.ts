@@ -37,17 +37,24 @@ const { findDuplicates } = collections.array
 const validateNoDuplicateChild = ({ orderInstances, orderField }: {
   orderInstances: InstanceElement[]
   orderField: string
-}): ChangeError[] =>
-  orderInstances.filter(order => {
-    const children = order.value[orderField].filter(isReferenceExpression)
+}): ChangeError[] => {
+  const errors: ChangeError[] = []
+  orderInstances.forEach(orderInstance => {
+    const children = orderInstance.value[orderField].filter(isReferenceExpression)
       .map((child: ReferenceExpression) => child.elemID.getFullName())
-    return findDuplicates(children).length !== 0
-  }).map(orderInstance => ({
-    elemID: orderInstance.elemID,
-    severity: 'Warning',
-    message: `${orderInstance.elemID.getFullName()} include the same element more than once`,
-    detailedMessage: `${orderInstance.elemID.getFullName()} has the same element more than once, order will be determined by the last occurrence of the element`,
-  }))
+    const duplicates = findDuplicates(children)
+
+    if (duplicates.length > 0) {
+      errors.push({
+        elemID: orderInstance.elemID,
+        severity: 'Warning',
+        message: 'Guide elements order list includes the same element more than once',
+        detailedMessage: `${orderInstance.elemID.getFullName()} has the same element more than once, order will be determined by the last occurrence of the element, elements: '${duplicates.join(', ')}'`,
+      })
+    }
+  })
+  return errors
+}
 
 const validateOrderElementAdded = ({ orderInstances, childInstances, orderField, orderTypeName }: {
   orderInstances: InstanceElement[]

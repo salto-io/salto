@@ -30,6 +30,7 @@ const { getRetryDelayFromHeaders } = clientUtils
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const DEPLOYMENT_BUFFER_TIME = 250 // This seems to be the optimal wait time (the least errors and shortest time)
 const MAX_RETRIES = 3
 // Those error codes are not related to the deployment data, and a retry should work
 const RESPONSES_TO_RETRY = [409, 429, 503]
@@ -163,8 +164,10 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
   const result = await Promise.all(
-    changes.map(async change => {
+    changes.map(async (change, i) => {
       try {
+        // Zendesk may have conflicts with parallel requests, so we put a buffer between requests (SALTO-2961)
+        await new Promise(f => setTimeout(f, DEPLOYMENT_BUFFER_TIME * i))
         const res = await deployChangeFunc(change)
         return res !== undefined ? res : change
       } catch (err) {

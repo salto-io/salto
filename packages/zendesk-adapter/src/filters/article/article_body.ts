@@ -119,12 +119,17 @@ const matchBrand = (url: string, brands: Record<string, InstanceElement>): Insta
   return undefined
 }
 
-const updateArticleBody = (
-  articleInstance: InstanceElement,
-  additionalInstances: Record<string, Record<string, InstanceElement>>,
-  includedBrands: InstanceElement[],
-  enableMissingReferences?: boolean,
-): SaltoError[] => {
+const updateArticleBody = ({
+  articleInstance,
+  additionalInstances,
+  includedBrands,
+  enableMissingReferences,
+} : {
+  articleInstance: InstanceElement
+  additionalInstances: Record<string, Record<string, InstanceElement>>
+  includedBrands: InstanceElement[]
+  enableMissingReferences?: boolean
+}): SaltoError[] => {
   const errors: SaltoError[] = []
   const originalArticleBody = articleInstance.value[BODY_FIELD]
   if (!_.isString(originalArticleBody)) {
@@ -210,8 +215,12 @@ const filterCreator: FilterCreator = ({ config }) => {
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
         .flatMap(articleInstance => (
-          // eslint-disable-next-line max-len
-          updateArticleBody(articleInstance, additionalInstances, includedBrands, config[FETCH_CONFIG].enableMissingReferences)
+          updateArticleBody({
+            articleInstance,
+            additionalInstances,
+            includedBrands,
+            enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
+          })
         ))
 
       return { errors: warnings }

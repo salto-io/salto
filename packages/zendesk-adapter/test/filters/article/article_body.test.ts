@@ -154,9 +154,9 @@ describe('article body filter', () => {
         config[FETCH_CONFIG].guide = { brands: ['.*'] }
         filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
         elements = generateElements()
-        await filter.onFetch(elements)
       })
-      it('should convert all possible urls to references', () => {
+      it('should convert all possible urls to references', async () => {
+        const filterResult = await filter.onFetch(elements) as FilterResult
         const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithReferences')
         expect(fetchedTranslationWithReferences?.value.body).toEqual(new TemplateExpression({ parts: [
           '<p><a href="',
@@ -170,8 +170,10 @@ describe('article body filter', () => {
           '/hc/he/articles/', new ReferenceExpression(articleInstance.elemID, articleInstance),
           '-extra_string"',
         ] }))
+        expect(filterResult.errors).toHaveLength(0)
       })
-      it('should only match elements that exists in the matched brand', () => {
+      it('should only match elements that exists in the matched brand', async () => {
+        const filterResult = await filter.onFetch(elements) as FilterResult
         const brandName = emptyBrandInstance.value.name
         const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLES_FIELD, `${brandName}_124`)
         const missingSectionInstance = createMissingInstance(ZENDESK, SECTIONS_FIELD, `${brandName}_123`)
@@ -196,11 +198,14 @@ describe('article body filter', () => {
             new ReferenceExpression(articleInstance.elemID, articleInstance),
             '-extra_string"',
           ] }))
+        expect(filterResult.errors).toHaveLength(0)
       })
-      it('should do nothing if elements do not exists', () => {
+      it('should do nothing if elements do not exists', async () => {
+        const filterResult = await filter.onFetch(elements) as FilterResult
         const fetchedTranslationWithoutReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'translationWithoutReferences')
         expect(fetchedTranslationWithoutReferences?.value.body)
           .toEqual('<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/124/sep/sections/124/sep/categories/124/sep/article_attachments/124-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/124-extra_string"')
+        expect(filterResult.errors).toHaveLength(0)
       })
     })
 

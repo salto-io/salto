@@ -22,7 +22,7 @@ import { UsernamePasswordCredentials } from '../src/auth'
 const log = logger(module)
 
 export const credsSpec = (envName?: string):
-CredsSpec<Required<UsernamePasswordCredentials>> => {
+CredsSpec<UsernamePasswordCredentials> => {
   const addEnvName = (varName: string): string => (envName === undefined
     ? varName
     : [varName, envName].join('_'))
@@ -37,7 +37,6 @@ CredsSpec<Required<UsernamePasswordCredentials>> => {
         username: envUtils.required(userNameEnvVarName),
         password: envUtils.required(passwordEnvVarName),
         subdomain: envUtils.required(subdomainEnvVarName),
-        domain: 'zendesk.com',
       }
     },
     validate: async (_creds: UsernamePasswordCredentials): Promise<void> => {

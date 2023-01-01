@@ -1,10 +1,11 @@
 # Zendesk CLI options
 
 ## Non interactive Login Parameters
-Supprted parameters are:
+Supported parameters are:
 * `username`
 * `password`
 * `subdomain`
+* `domain` (optional)
 
 ### Example
 ```

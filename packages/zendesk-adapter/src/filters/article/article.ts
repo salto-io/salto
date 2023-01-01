@@ -22,17 +22,34 @@ import {
   isAdditionOrModificationChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource,
   isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { getParents, replaceTemplatesWithValues, resolveChangeElement } from '@salto-io/adapter-utils'
+import {
+  createSchemeGuard,
+  getParents,
+  replaceTemplatesWithValues,
+  resolveChangeElement,
+} from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
-import { ARTICLE_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../constants'
+import {
+  ARTICLE_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
+  ZENDESK,
+  EVERYONE_USER_TYPE,
+} from '../../constants'
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
 import { removeTitleAndBody } from '../guide_fetch_article_section_and_category'
 import { prepRef } from './article_body'
-import { EVERYONE } from '../everyone_user_segment'
 import ZendeskClient from '../../client/client'
-import { createAttachmentType, createUnassociatedAttachment, deleteArticleAttachment, getArticleAttachments, updateArticleTranslationBody } from './utils'
+import {
+  createAttachmentType,
+  createUnassociatedAttachment,
+  deleteArticleAttachment,
+  getArticleAttachments,
+  updateArticleTranslationBody,
+} from './utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
 
 const log = logger(module)
@@ -45,6 +62,17 @@ export type TranslationType = {
   body?: string
   locale: { locale: string }
 }
+type AttachmentWithId = {
+  id: number
+}
+
+const EXPECTED_ATTACHMENT_SCHEMA = Joi.object({
+  id: Joi.number().required(),
+}).unknown(true).required()
+
+const isAttachmentWithId = createSchemeGuard<AttachmentWithId>(
+  EXPECTED_ATTACHMENT_SCHEMA, 'Received an invalid value for attachment id'
+)
 
 const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
@@ -64,7 +92,7 @@ const setupArticleUserSegmentId = (
 ): void => {
   const everyoneUserSegmentInstance = elements
     .filter(instance => instance.elemID.typeName === USER_SEGMENT_TYPE_NAME)
-    .find(instance => instance.elemID.name === EVERYONE)
+    .find(instance => instance.elemID.name === EVERYONE_USER_TYPE)
   if (everyoneUserSegmentInstance === undefined) {
     log.info("Couldn't find Everyone user_segment instance.")
     return
@@ -94,7 +122,7 @@ const setUserSegmentIdForAdditionChanges = (
 }
 
 const haveAttachmentsBeenAdded = (
-  articleChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
+  articleChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
 ): boolean => {
   const addedAttachments = isAdditionChange(articleChange)
     ? articleChange.data.after.value.attachments
@@ -102,9 +130,13 @@ const haveAttachmentsBeenAdded = (
       articleChange.data.after.value.attachments,
       articleChange.data.before.value.attachments,
       (afterAttachment, beforeAttachment) => (
-        isReferenceExpression(beforeAttachment)
-        && isReferenceExpression(afterAttachment)
-        && _.isEqual(afterAttachment.elemID, beforeAttachment.elemID))
+        (isReferenceExpression(beforeAttachment)
+          && isReferenceExpression(afterAttachment)
+          && _.isEqual(afterAttachment.elemID, beforeAttachment.elemID))
+        || (isAttachmentWithId(beforeAttachment)
+          && isAttachmentWithId(afterAttachment)
+          && _.isEqual((afterAttachment as AttachmentWithId).id, (beforeAttachment as AttachmentWithId).id))
+      )
     )
   if (!_.isArray(addedAttachments)) {
     return false
@@ -299,7 +331,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
     },
 
     onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE)
+      const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE_USER_TYPE)
       const everyoneUserSegmentInstance = await elementsSource.get(everyoneUserSegmentElemID)
       changes
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)

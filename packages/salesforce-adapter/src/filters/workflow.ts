@@ -34,6 +34,7 @@ import {
   toMetadataInfo,
 } from '../transformers/transformer'
 import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfType } from './utils'
+import { WorkflowField } from '../fetch_profile/metadata_types'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -51,7 +52,7 @@ export const WORKFLOW_RULES_FIELD = 'rules'
 
 export const WORKFLOW_DIR_NAME = 'WorkflowActions'
 
-export const WORKFLOW_FIELD_TO_TYPE: Record<string, string> = {
+export const WORKFLOW_FIELD_TO_TYPE: Record<string, WorkflowField> = {
   [WORKFLOW_ALERTS_FIELD]: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
   [WORKFLOW_FIELD_UPDATES_FIELD]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   [WORKFLOW_FLOW_ACTIONS_FIELD]: WORKFLOW_FLOW_ACTION_METADATA_TYPE,
@@ -67,7 +68,7 @@ const isWorkflowInstance = isInstanceOfType(WORKFLOW_METADATA_TYPE)
 
 const isWorkflowChildInstance = async (elem: Element): Promise<boolean> =>
   isInstanceElement(elem)
-    && Object.values(WORKFLOW_FIELD_TO_TYPE).includes(await metadataType(elem))
+    && (Object.values(WORKFLOW_FIELD_TO_TYPE) as ReadonlyArray<string>).includes(await metadataType(elem))
 
 const isWorkflowRelatedChange = async (change: Change): Promise<boolean> => {
   const elem = getChangeData(change)

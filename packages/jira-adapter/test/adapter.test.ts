@@ -60,7 +60,7 @@ describe('adapter', () => {
 
     const config = createConfigInstance(getDefaultConfig({ isDataCenter: false }))
     config.value.client.usePrivateAPI = false
-    config.value.fetch.showUserDisplayNames = false
+    config.value.fetch.convertUsersIds = false
 
     adapter = adapterCreator.operations({
       elementsSource,

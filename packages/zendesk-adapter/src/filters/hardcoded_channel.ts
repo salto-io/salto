@@ -17,7 +17,7 @@ import Joi from 'joi'
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, ObjectType, Values,
 } from '@salto-io/adapter-api'
-import { naclCase, safeJsonStringify } from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
@@ -45,7 +45,7 @@ const EXPECTED_CHANNELS_SCHEMA = Joi.array().items(Joi.object({
 const isChannels = (values: unknown): values is Channel[] => {
   const { error } = EXPECTED_CHANNELS_SCHEMA.validate(values)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the channel values: ${error.message}, ${safeJsonStringify(values)}`)
+    log.error(`Received an invalid response for the channel values: ${error.message}, ${safeJsonStringify(values, elementExpressionStringifyReplacer)}`)
     return false
   }
   return true

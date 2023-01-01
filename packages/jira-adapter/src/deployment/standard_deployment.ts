@@ -100,7 +100,7 @@ export const defaultDeployChange = async ({
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void>
-): Promise<DeployResult> => {
+): Promise<Omit<DeployResult, 'extraProperties'>> => {
   const result = await awu(changes)
     .map(async change => {
       try {

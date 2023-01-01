@@ -293,6 +293,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['post'],
+    url: '/rest/api/3/notificationscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/notificationscheme/.+',
+  },
+  {
+    httpMethods: ['post'],
     url: '/rest/api/3/resolution',
   },
   {
@@ -314,6 +322,22 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['put'],
     url: '/rest/api/3/issuetypescheme/.+/issuetype/move',
+  },
+  {
+    httpMethods: ['post', 'put'],
+    url: '/rest/api/3/issuesecurityschemes',
+  },
+  {
+    httpMethods: ['delete'],
+    url: '/rest/api/3/issuesecurityschemes/.+',
+  },
+  {
+    httpMethods: ['post', 'put'],
+    url: '/rest/api/3/securitylevel/.+',
+  },
+  {
+    httpMethods: ['delete'],
+    url: '/rest/api/3/securitylevel/.+',
   },
 ]
 

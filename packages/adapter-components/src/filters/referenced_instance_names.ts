@@ -16,10 +16,9 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { Element, isInstanceElement, isReferenceExpression, InstanceElement, ElemID,
-  ElemIdGetter,
-  ReferenceExpression } from '@salto-io/adapter-api'
+  ElemIdGetter, ReferenceExpression, isTemplateExpression } from '@salto-io/adapter-api'
 import { filter, references, getParents, transformElement, setPath,
-  walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+  walkOnElement, WalkOnFunc, WALK_NEXT_STEP, resolvePath, createTemplateExpression } from '@salto-io/adapter-utils'
 import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
@@ -168,6 +167,15 @@ const getReferencesToElemIds = (
 ): { path: ElemID; value: ReferenceExpression }[] => {
   const refs: { path: ElemID; value: ReferenceExpression }[] = []
   const findReferences: WalkOnFunc = ({ path, value }) => {
+    if (isTemplateExpression(value)) {
+      const partsWithReferences = value.parts
+        .filter(isReferenceExpression)
+        .filter(part => isReferenceOfSomeElement(part, instancesNamesToRename))
+      if (partsWithReferences.length > 0) {
+        partsWithReferences.forEach(part => refs.push({ path, value: part }))
+        return WALK_NEXT_STEP.SKIP
+      }
+    }
     if (isReferenceExpression(value)
       && isReferenceOfSomeElement(value, instancesNamesToRename)) {
       refs.push({ path, value })
@@ -221,6 +229,20 @@ const updateAllReferences = ({
       if (topLevelInstance !== undefined) {
         // update the path so it would match the new instance
         const updatedPath = createUpdatedPath(ref.path, topLevelInstance as InstanceElement)
+        const oldValue = resolvePath(topLevelInstance, updatedPath)
+        if (isTemplateExpression(oldValue)) {
+          // update only the relevant parts
+          const updatedTemplate = createTemplateExpression({
+            parts: oldValue.parts
+              .map(part => ((isReferenceExpression(part) && part.elemID.getFullName() === instanceOriginalName)
+                ? updatedReference
+                : part
+              ))
+              .filter(isDefined),
+          })
+          setPath(topLevelInstance, updatedPath, updatedTemplate)
+          return
+        }
         setPath(topLevelInstance, updatedPath, updatedReference)
       }
     })

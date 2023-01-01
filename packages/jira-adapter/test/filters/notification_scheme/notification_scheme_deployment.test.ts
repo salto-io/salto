@@ -432,4 +432,38 @@ describe('notificationSchemeDeploymentFilter', () => {
       expect(deployResult.errors).toHaveLength(1)
     })
   })
+  describe('using DC', () => {
+    beforeEach(async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(true)
+      connection = conn
+      client = cli
+      config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+      filter = notificationSchemeDeploymentFilter(getFilterParams({
+        client,
+        paginator,
+        config,
+      })) as filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+    })
+    it('should not add schemeId in preDeploy', async () => {
+      await filter.preDeploy([
+        toChange({ before: instance, after: instance }),
+      ])
+      expect(instance.value.schemeId).toBeUndefined()
+    })
+    it('should not remove schemeId in onDeploy', async () => {
+      instance.value.schemeId = '1'
+      await filter.onDeploy([
+        toChange({ before: instance, after: instance }),
+      ])
+      expect(instance.value.schemeId).toBe('1')
+    })
+    it('should not deploy any change', async () => {
+      const { deployResult, leftoverChanges } = await filter.deploy([
+        toChange({ after: instance }),
+      ])
+      expect(deployResult.appliedChanges).toHaveLength(0)
+      expect(deployResult.errors).toHaveLength(0)
+      expect(leftoverChanges).toHaveLength(1)
+    })
+  })
 })

@@ -24,6 +24,7 @@ import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
 import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, getUpdatedConfig, SETTING_TYPES, SUPPORTED_TYPES } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
+import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
 import objectDefSplitFilter from './filters/object_def_split'
@@ -41,7 +42,11 @@ const { createPaginator } = clientUtils
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
+const { hideTypes, ...otherCommonFilters } = commonFilters
+
 export const DEFAULT_FILTERS = [
+  // hideTypes should run before creating custom objects, so that it doesn't hide them
+  hideTypes,
   // objectDefsFilter should run before everything else
   objectDefsFilter,
 
@@ -57,6 +62,7 @@ export const DEFAULT_FILTERS = [
 
   financeInformationReferencesFilter,
 
+  ...Object.values(otherCommonFilters),
   // objectDefSplitFilter should run at the end - splits elements to divide to multiple files
   objectDefSplitFilter,
 ]

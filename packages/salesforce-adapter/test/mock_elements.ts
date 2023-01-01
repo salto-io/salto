@@ -253,6 +253,51 @@ export const mockTypes = {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
+  Product2: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Product2'),
+    fields: {
+      ProductCode: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Product2.ProductCode',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'Product2',
+    },
+  }),
+  [CPQ_QUOTE]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, CPQ_QUOTE),
+    fields: {
+      SBQQ__Primary__c: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'SBQQ__Primary__c',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: CPQ_QUOTE,
+    },
+  }),
+  Account: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Account'),
+    fields: {
+      Name: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Account.Name',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'Account',
+    },
+  }),
   ListView: createMetadataObjectType({
     annotations: {
       metadataType: 'ListView',
@@ -269,6 +314,32 @@ export const mockTypes = {
     annotations: {
       [API_NAME]: 'MDType__mdt',
       [METADATA_TYPE]: CUSTOM_METADATA,
+    },
+  }),
+  [CPQ_QUOTE]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, CPQ_QUOTE),
+    fields: {
+      Status: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Quote.Status',
+        },
+      },
+      ProductOption: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [API_NAME]: 'Quote.ProductOption',
+        },
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: CPQ_QUOTE,
+    },
+  }),
+  CustomLabel: createMetadataObjectType({
+    annotations: {
+      metadataType: 'CustomLabel',
     },
   }),
 }

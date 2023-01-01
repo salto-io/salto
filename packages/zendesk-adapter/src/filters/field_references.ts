@@ -979,6 +979,14 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     target: { type: 'custom_status' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
+  {
+    src: {
+      field: 'client_id',
+      parentTypes: ['oauth_token'],
+    },
+    serializationStrategy: 'id',
+    target: { type: 'oauth_global_client' },
+  },
 ]
 
 export const fieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [

@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import { ChangeValidator, ElemID, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
-import { EVERYONE } from '../filters/everyone_user_segment'
-import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
+import { EVERYONE_USER_TYPE, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../constants'
 
 export const everyoneUserSegmentModificationValidator: ChangeValidator = async changes => {
-  const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE)
+  const everyoneUserSegmentElemID = new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME, 'instance', EVERYONE_USER_TYPE)
   return changes
     .filter(isInstanceChange)
     .map(getChangeData)

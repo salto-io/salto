@@ -25,7 +25,7 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { SALESFORCE_METADATA_TYPES } from './fetch_profile/fetch_targets'
+import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
 
@@ -58,9 +58,10 @@ export type MetadataInstance = {
   metadataType: string
   namespace: string
   name: string
+  isFolderType: boolean
 }
 
-export type MetadataQueryParams = Partial<MetadataInstance>
+export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
 
 export type MetadataParams = {
   include?: MetadataQueryParams[]
@@ -580,7 +581,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           enforce_value: true,
-          values: SALESFORCE_METADATA_TYPES,
+          values: SUPPORTED_METADATA_TYPES,
         }),
       },
     },

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, isObjectType, Values, ObjectType, ElemIdGetter } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isObjectType, Values, ObjectType, ElemIdGetter, SaltoError } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -72,6 +72,7 @@ export type ConfigChangeSuggestion = {
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]
   elements: T
+  errors?: SaltoError[]
 }
 
 export const getEntriesResponseValues: EntriesRequester = async ({

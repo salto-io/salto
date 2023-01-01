@@ -30,8 +30,8 @@ const { getRetryDelayFromHeaders } = clientUtils
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const DEPLOYMENT_BUFFER_TIME = 250 // This seems to be the optimal wait time (the least errors and shortest time)
-const MAX_RETRIES = 3
+const DEPLOYMENT_BUFFER_TIME = 500 // This seems to be about the optimal wait time (the least errors and shortest time)
+const MAX_RETRIES = 5
 // Those error codes are not related to the deployment data, and a retry should work
 const RESPONSES_TO_RETRY = [409, 429, 503]
 

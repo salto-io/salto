@@ -46,4 +46,4 @@ export const realAdapter = (
   return { client, adapter }
 }
 
-export const credsLease = (): Promise<CredsLease<Required<Credentials>>> => creds(credsSpec(), log)
+export const credsLease = (): Promise<CredsLease<Credentials>> => creds(credsSpec(), log)

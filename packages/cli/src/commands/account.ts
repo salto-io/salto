@@ -20,6 +20,7 @@ import {
   InstanceElement,
   OAuthMethod,
   ObjectType,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { EOL } from 'os'
 import {
@@ -143,7 +144,10 @@ const getLoginConfig = async (
 const createConfigFromLoginParameters = (loginParameters: string[]) => (
   async (credentialsType: ObjectType): Promise<InstanceElement> => {
     const configValues = Object.fromEntries(loginParameters.map(entryFromRawLoginParameter))
-    const missingLoginParameters = Object.keys(credentialsType.fields)
+    const requiredFields = Object.entries(credentialsType.fields)
+      .filter(([_fieldName, field]) => field.annotations[CORE_ANNOTATIONS.REQUIRED] !== false)
+      .map(([fieldName]) => fieldName)
+    const missingLoginParameters = requiredFields
       .filter(key => _.isUndefined(configValues[key]))
     if (!_.isEmpty(missingLoginParameters)) {
       throw new Error(`Missing the following login parameters: ${missingLoginParameters}`)

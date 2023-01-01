@@ -22,7 +22,7 @@ import { UsernamePasswordCredentials } from '../src/auth'
 const log = logger(module)
 
 export const credsSpec = (envName?: string):
-CredsSpec<Required<UsernamePasswordCredentials>> => {
+CredsSpec<UsernamePasswordCredentials> => {
   const addEnvName = (varName: string): string => (envName === undefined
     ? varName
     : [varName, envName].join('_'))

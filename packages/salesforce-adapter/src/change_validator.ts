@@ -72,10 +72,12 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
   checkOnly: boolean
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
-  const [activeValidators, disabledValidators] = _.partition(
-    Object.entries(changeValidators),
-    ([name, defenition]) => config.validators?.[name as ChangeValidatorName]
-        ?? (isCheckOnly ? defenition.defaultInValidate : defenition.defaultInDeploy),
+  const activeValidators = Object.entries(changeValidators).filter(
+    ([name, definition]) => config.validators?.[name as ChangeValidatorName]
+          ?? (isCheckOnly ? definition.defaultInValidate : definition.defaultInDeploy)
+  )
+  const disabledValidators = Object.entries(changeValidators).filter(
+    ([name]) => config.validators?.[name as ChangeValidatorName] === false
   )
   return createChangeValidator(
     activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox)),

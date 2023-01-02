@@ -62,10 +62,11 @@ describe('createSalesforceChangeValidator', () => {
       it('should create a validator', () => {
         expect(validator).toBeDefined()
       })
-      it('should put the increase the size of thedisabled validator by one', () => {
+      it('should customFieldType in the disabled validator list', () => {
+        const disabledValidators = [changeValidators.customFieldType.creator({}, false,)]
         expect(createChangeValidator).toHaveBeenCalledWith(
           expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1),
-          expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => !cv.defaultInDeploy).length + 1)
+          disabledValidators
         )
       })
     })
@@ -100,7 +101,7 @@ describe('createSalesforceChangeValidator', () => {
           expect(validator).toBeDefined()
           expect(createChangeValidator).toHaveBeenCalledWith(
             expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length),
-            expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => !cv.defaultInDeploy).length)
+            []
           )
         })
       })

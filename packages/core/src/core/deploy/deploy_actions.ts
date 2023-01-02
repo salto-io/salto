@@ -142,8 +142,10 @@ export const deployActions = async (
         const item = deployPlan.getItem(key) as PlanItem
         if (nodeError instanceof NodeSkippedError) {
           reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
+          deployErrors.push(new DeployError(item.groupKey, `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`))
+        } else {
+          deployErrors.push(new DeployError(item.groupKey, nodeError.message))
         }
-        deployErrors.push(new DeployError(item.groupKey, nodeError.message))
       })
       if (error.circularDependencyError) {
         error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {

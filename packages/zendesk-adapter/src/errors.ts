@@ -25,25 +25,39 @@ type error1 = {
   errors: { title: string; detail: string }[]
 }
 
-// type error2 = {
-//   description: string
-//   details: Record<string, { description: string }>
-// }
-//
-// type error3 = {
-//   error: {
-//     title: string
-//     message: string
-//   }
-// }
+type error2 = {
+  description: string
+  details: Record<string, { description: string }[]>
+}
+
+type error3 = {
+  error: {
+    title: string
+    message: string
+  }
+}
 
 const error1ToString = (error: error1): string => {
   const errorArray = ['\nError details:']
-  let errorNum = 1
   error.errors.forEach(err => {
-    errorArray.push(`${errorNum}. title: ${err.title}\n detail: ${err.detail}\n`)
-    errorNum += 1
+    errorArray.push(`* Title: ${err.title}\n  Detail: ${err.detail}\n`)
   })
+  return errorArray.join(EOL)
+}
+
+const error2ToString = (error: error2): string => {
+  const errorArray = []
+  errorArray.push(`\n${error.description}\n\nError details:`)
+  Object.keys(error.details).forEach(key => {
+    error.details[key].forEach(val => {
+      errorArray.push(`* ${val.description}\n`)
+    })
+  })
+  return errorArray.join(EOL)
+}
+const error3ToString = (error: error3): string => {
+  const errorArray = ['\nError details:']
+  errorArray.push(`* Title: ${error.error.title}\n  Detail: ${error.error.message}\n`)
   return errorArray.join(EOL)
 }
 
@@ -60,14 +74,21 @@ export const getZendeskError = (fullName: string, error: Error): Error => {
   log.error([baseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(EOL))
   if (_.isArray(errorData.errors)
     && (errorData.errors[0].title !== undefined)
-    && errorData.errors[0].detail !== undefined) {
+    && (errorData.errors[0].detail !== undefined)) {
     errorMessage = error1ToString(errorData as error1)
+  } else if ((errorData.description !== undefined)
+    && (_.isPlainObject(errorData.details))
+    && (_.isObject(errorData.details))
+    && Object.values(errorData.details).every(val => _.isArray(val) && (val[0].description !== undefined))) {
+    errorMessage = error2ToString(errorData as error2)
+  } else if (_.isPlainObject(errorData.error)
+    && (_.isObject(errorData.error))
+    && (errorData.error !== undefined)
+    && ('title' in errorData.error)
+    && ('message' in errorData.error)) {
+    errorMessage = error3ToString(errorData as error3)
   } else {
     errorMessage = safeJsonStringify(error.response.data, undefined, 2)
   }
-  // errorMessage = (!_.isPlainObject(error.response.data))
-  //   ? baseErrorMessage
-  //   : [baseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
-  // log.error(errorMessage)
-  return new Error([baseErrorMessage, errorMessage, `Status Code: ${error.response.status}`].join(EOL))
+  return new Error([baseErrorMessage, errorMessage].join(EOL))
 }

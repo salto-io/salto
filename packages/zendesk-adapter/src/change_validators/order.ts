@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeValidator, getChangeData, InstanceElement,
+import {
+  Change, ChangeError, ChangeValidator, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isInstanceElement,
-  isReferenceExpression } from '@salto-io/adapter-api'
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createOrderTypeName } from '../filters/reorder/creator'
@@ -52,6 +54,19 @@ const isInstanceInOrderList = (orderList: unknown, instance: InstanceElement): b
     && (orderList
       .filter(isReferenceExpression)
       .find(ref => ref.elemID.isEqual(instance.elemID))) !== undefined
+
+export const notInOrderError = ({ instance, orderTypeName, defaultLocation = 'last', messageExtra = '' }
+:{
+    instance: InstanceElement
+    orderTypeName: string
+    defaultLocation?: string
+    messageExtra?: string
+}): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Warning',
+  message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
+  detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added ${defaultLocation} by default. If order is important, please include it in ${orderTypeName}${messageExtra}`,
+})
 
 export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
   changes, elementSource
@@ -95,12 +110,11 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
         ? [orderInstance.value.active ?? [], orderInstance.value.inactive ?? []]
         : [orderInstance.value.inactive ?? [], orderInstance.value.active ?? []]
       if (!isInstanceInOrderList(orderListOfInstanceActivity, instance)) {
-        return [{
-          elemID: instance.elemID,
-          severity: 'Warning',
-          message: `Instance order not specified in ${orderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added at the end by default. If order is important, please include it in ${orderTypeName} under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
-        }]
+        return [notInOrderError({
+          instance,
+          orderTypeName,
+          messageExtra: ` under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+        })]
       }
       if (isInstanceInOrderList(orderListOfTheOtherInstanceActivity, instance)) {
         return [{

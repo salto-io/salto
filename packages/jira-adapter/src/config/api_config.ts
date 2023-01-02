@@ -1575,19 +1575,13 @@ const SUPPORTED_TYPES = {
   Field: ['Fields'],
   FieldConfiguration: ['FieldConfigurations'],
   FieldConfigurationScheme: ['FieldsConfigurationScheme'],
-  // Should remove when doing the configuration migration
-  FieldsConfigurationIssueTypeItem: ['FieldsConfigurationIssueTypeItem'],
   Filter: ['Filters'],
   IssueLinkType: ['IssueLinkTypes'],
   IssueEvent: ['IssueEvents'],
   IssueType: ['IssueType'],
   SecurityScheme: ['SecuritySchemes'],
   IssueTypeScheme: ['IssueTypeSchemes'],
-  // Should remove when doing the configuration migration
-  IssueTypeSchemeMappings: ['IssueTypeSchemeMappings'],
   IssueTypeScreenScheme: ['IssueTypeScreenSchemes'],
-  // Should remove when doing the configuration migration
-  IssueTypeScreenSchemeItems: ['IssueTypeScreenSchemeItems'],
   NotificationScheme: ['NotificationSchemes'],
   Permissions_permissions: ['Permissions'],
   PermissionScheme: ['PermissionSchemes'],

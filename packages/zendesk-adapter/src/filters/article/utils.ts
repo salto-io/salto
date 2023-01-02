@@ -55,14 +55,14 @@ type Attachment = InstanceElement & {
 }
 
 type AttachmentResponse = {
-    id: number
-    // eslint-disable-next-line camelcase
-    file_name: string
-    // eslint-disable-next-line camelcase
-    content_type: string
-    // eslint-disable-next-line camelcase
-    content_url: string
-    inline: boolean
+  id: number
+  // eslint-disable-next-line camelcase
+  file_name: string
+  // eslint-disable-next-line camelcase
+  content_type: string
+  // eslint-disable-next-line camelcase
+  content_url: string
+  inline: boolean
 }
 
 const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
@@ -101,22 +101,6 @@ export const isAttachmentsResponse = (value: unknown): value is AttachmentRespon
   return true
 }
 
-// const createAttachmentInstance = ({
-//   attachment, attachmentType, article, content,
-// }: {
-//   attachment: Attachment
-//   attachmentType: ObjectType
-//   article: InstanceElement
-//   content: Buffer
-// }): void => {
-//   const resourcePathName =
-//   `${normalizeFilePathPart(article.value.title)}/${normalizeFilePathPart(attachment.value.file_name)}`
-//   attachment.value.content = new StaticFile({
-//     filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
-//     content,
-//   })
-// }
-
 const getAttachmentContent = async ({
   brandIdToClient, attachment, article, attachmentType,
 }: {
@@ -126,7 +110,7 @@ const getAttachmentContent = async ({
   attachmentType: ObjectType
 }): Promise<void> => {
   if (article === undefined) {
-    log.error(`could not att attachment ${attachment.elemID.getFullName()}, as could not fide article for article_id ${attachment.value.article_id}`)
+    log.error(`could not att attachment ${attachment.elemID.getFullName()}, as could not find article for article_id ${attachment.value.article_id}`)
     return
   }
   const client = brandIdToClient[attachment.value.brand]
@@ -155,12 +139,10 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
   apiDefinitions: ZendeskApiConfig
   attachments: Attachment[]
 }): Promise<void> => {
-  (await Promise.all(
-    attachments.map(async attachment => {
-      const article = articleById[getParent(attachment).value.id]
-      await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
-    })
-  ))
+  attachments.forEach(async attachment => {
+    const article = articleById[getParent(attachment).value.id]
+    await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
+  })
 }
 
 export const createUnassociatedAttachment = async (

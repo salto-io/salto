@@ -236,6 +236,11 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
 }
 
 const getId = (instance: InstanceElement): number => instance.value.id
+const getName = (instance: InstanceElement): string => instance.elemID.name
+const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name ?? undefined
+const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type ?? undefined
+const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline ?? undefined
+
 
 /**
  * Deploys articles and adds default user_segment value to visible articles
@@ -258,12 +263,20 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       }
       const articleById: Record<number, InstanceElement> = _.keyBy(articleInstances, getId)
       _.remove(attachments, isObjectType)
+      const attachmentByName: Record<string, InstanceElement> = _.keyBy(attachments.filter(isInstanceElement), getName)
       await getArticleAttachments({
         brandIdToClient,
         attachmentType,
         articleById,
         apiDefinitions: config[API_DEFINITIONS_CONFIG],
         attachments: isAttachments(attachments) ? attachments : [],
+      })
+      articleInstances.forEach(article => {
+        article.value.attachments = _.sortBy(article.value.attachments, [
+          (attachment: ReferenceExpression) => getFilename(attachmentByName[attachment.elemID.name]),
+          (attachment: ReferenceExpression) => getContentType(attachmentByName[attachment.elemID.name]),
+          (attachment: ReferenceExpression) => getInline(attachmentByName[attachment.elemID.name]),
+        ])
       })
     }, 'articlesFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {

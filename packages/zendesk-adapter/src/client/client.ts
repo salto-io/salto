@@ -50,6 +50,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
 
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
+    deployRateLimit = DEFAULT_MAX_CONCURRENT_API_REQUESTS.deploy
   ) {
     super(
       ZENDESK,
@@ -57,7 +58,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       createConnection,
       {
         pageSize: DEFAULT_PAGE_SIZE,
-        rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+        rateLimit: Object.assign(DEFAULT_MAX_CONCURRENT_API_REQUESTS, { deploy: deployRateLimit }),
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
       },

@@ -405,10 +405,13 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
 
     this.createClientBySubdomain = (subdomain: string): ZendeskClient => (
-      new ZendeskClient({
-        credentials: { ...credentials, subdomain },
-        config: this.userConfig[CLIENT_CONFIG],
-      })
+      new ZendeskClient(
+        {
+          credentials: { ...credentials, subdomain },
+          config: this.userConfig[CLIENT_CONFIG],
+        },
+        1
+      )
     )
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])

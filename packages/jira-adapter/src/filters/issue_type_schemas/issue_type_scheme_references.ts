@@ -24,7 +24,7 @@ const filter: FilterCreator = () => ({
     const setReferences = (scheme: InstanceElement): void => {
       type IssueTypeMapping = { issueTypeId: ReferenceExpression }
       scheme.value.issueTypeIds = scheme.value.issueTypeIds
-        .map((issueTypeMapping: IssueTypeMapping) => issueTypeMapping.issueTypeId)
+        ?.map((issueTypeMapping: IssueTypeMapping) => issueTypeMapping.issueTypeId)
     }
     elements
       .filter(isInstanceElement)

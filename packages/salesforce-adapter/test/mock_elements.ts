@@ -25,6 +25,8 @@ import {
   CUSTOM_METADATA,
   API_NAME,
   METADATA_TYPE,
+  CUSTOM_OBJECT,
+  CPQ_QUOTE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'

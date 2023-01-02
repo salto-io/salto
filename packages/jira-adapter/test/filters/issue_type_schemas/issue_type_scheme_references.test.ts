@@ -49,7 +49,7 @@ describe('issueTypeSchemeReferences', () => {
   it('should do nothing if there are no issue types', async () => {
     const issueTypeScheme = new InstanceElement(
       'instance',
-      mockTypes.IssueTypeScreenScheme,
+      mockTypes.IssueTypeScheme,
       {
         name: 'inst',
       }

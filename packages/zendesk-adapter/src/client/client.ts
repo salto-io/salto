@@ -23,8 +23,10 @@ import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
 import { PAGE_SIZE } from '../config'
 
-const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  throttle, logDecorator, requiresLogin } = clientUtils
+const {
+  DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  throttle, logDecorator, requiresLogin,
+} = clientUtils
 const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
@@ -35,19 +37,15 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
-  get: Number(PAGE_SIZE),
+  get: PAGE_SIZE,
 }
 
-export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
-  Credentials, clientUtils.ClientRateLimitConfig
-> {
+export default class ZendeskClient extends clientUtils.AdapterHTTPClient<Credentials, clientUtils.ClientRateLimitConfig> {
   // These properties create another connection and client for Zendesk resources API
   protected readonly resourceConn: clientUtils.Connection<Credentials>
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
-  protected resourceClient?: clientUtils.APIConnection<
-    clientUtils.ResponseValue | clientUtils.ResponseValue[]
-  >
+  protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
 
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,

@@ -48,9 +48,9 @@ export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = [
   { fieldName: 'created_by_id' },
   { fieldName: 'updated_by_id' },
 ]
-export const PAGE_SIZE = '100'
+export const PAGE_SIZE = 100
 export const DEFAULT_QUERY_PARAMS = {
-  'page[size]': PAGE_SIZE,
+  'page[size]': String(PAGE_SIZE),
 }
 export const CURSOR_BASED_PAGINATION_FIELD = 'links.next'
 
@@ -73,14 +73,12 @@ export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.Clien
 
 export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {
-    enableMissingReferences?: boolean
-    greedyAppReferences?: boolean
-    appReferenceLocators?: IdLocator[]
-    guide?: Guide
-  }
-export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
->
+  enableMissingReferences?: boolean
+  greedyAppReferences?: boolean
+  appReferenceLocators?: IdLocator[]
+  guide?: Guide
+}
+export type ZendeskApiConfig = configUtils.AdapterApiConfig<configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }>
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
@@ -507,7 +505,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       // We currently not supporting in attachements
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'ticket_form_ids' }),
       fieldTypeOverrides: [
-        { fieldName: 'help_center_state', fieldType: 'string', restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] } },
+        {
+          fieldName: 'help_center_state',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['enabled', 'disabled', 'restricted'] },
+        },
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'categories', fieldType: 'list<category>' },
       ],
@@ -598,7 +600,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'sharing_agreements__sharing_agreements',
       fieldTypeOverrides: [
-        { fieldName: 'status', fieldType: 'string', restrictions: { enforce_value: true, values: ['accepted', 'declined', 'pending', 'inactive'] } },
+        {
+          fieldName: 'status',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['accepted', 'declined', 'pending', 'inactive'] },
+        },
         { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['inbound', 'outbound'] } },
         { fieldName: 'id', fieldType: 'number' },
       ],
@@ -632,11 +638,31 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       sourceTypeName: 'support_addresses__recipient_addresses',
       fieldTypeOverrides: [
-        { fieldName: 'cname_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
-        { fieldName: 'dns_results', fieldType: 'string', restrictions: { enforce_value: true, values: ['verified', 'failed'] } },
-        { fieldName: 'domain_verification_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
-        { fieldName: 'forwarding_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'waiting', 'verified', 'failed'] } },
-        { fieldName: 'spf_status', fieldType: 'string', restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] } },
+        {
+          fieldName: 'cname_status',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] },
+        },
+        {
+          fieldName: 'dns_results',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['verified', 'failed'] },
+        },
+        {
+          fieldName: 'domain_verification_status',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] },
+        },
+        {
+          fieldName: 'forwarding_status',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['unknown', 'waiting', 'verified', 'failed'] },
+        },
+        {
+          fieldName: 'spf_status',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['unknown', 'verified', 'failed'] },
+        },
         { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat([
@@ -813,7 +839,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldTypeOverrides: [
-        { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
+        {
+          fieldName: 'type',
+          fieldType: 'string',
+          restrictions: {
+            enforce_value: true,
+            values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'],
+          },
+        },
         { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -897,7 +930,14 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['key'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
       fieldTypeOverrides: [
-        { fieldName: 'type', fieldType: 'string', restrictions: { enforce_value: true, values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'] } },
+        {
+          fieldName: 'type',
+          fieldType: 'string',
+          restrictions: {
+            enforce_value: true,
+            values: ['checkbox', 'date', 'decimal', 'dropdown', 'integer', 'regexp', 'text', 'textarea'],
+          },
+        },
         { fieldName: 'id', fieldType: 'number' },
       ],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
@@ -2195,7 +2235,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   permission_groups: {
     request: {
       url: '/api/v2/guide/permission_groups',
-      queryParams: { per_page: PAGE_SIZE },
+      queryParams: { per_page: String(PAGE_SIZE) },
       paginationField: 'next_page',
     },
     transformation: {
@@ -2235,7 +2275,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   user_segments: {
     request: {
       url: '/api/v2/help_center/user_segments',
-      queryParams: { per_page: PAGE_SIZE },
+      queryParams: { per_page: String(PAGE_SIZE) },
       paginationField: 'next_page',
     },
     transformation: {
@@ -2250,7 +2290,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'added_user_ids', fieldType: 'unknown' },
         // everyone user type is added as a type we created for user_segment
-        { fieldName: 'user_type', fieldType: 'string', restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', EVERYONE_USER_TYPE] } },
+        {
+          fieldName: 'user_type',
+          fieldType: 'string',
+          restrictions: { enforce_value: true, values: ['signed_in_users', 'staff', EVERYONE_USER_TYPE] },
+        },
 
       ],
       serviceUrl: '/knowledge/user_segments/edit/{id}',

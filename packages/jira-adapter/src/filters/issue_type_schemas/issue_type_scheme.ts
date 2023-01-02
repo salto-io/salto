@@ -53,6 +53,8 @@ const deployNewAndDeletedIssueTypeIds = async (
     }
   }
 
+  // We run this sequentially and not in parallel because there is a bug in Jira which lets you
+  // create an invalid issue type scheme (an issue type scheme without any issues) if you delete the issues in parallel
   await awu(Array.from(removedIds)).forEach(id =>
     client.delete({
       url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,

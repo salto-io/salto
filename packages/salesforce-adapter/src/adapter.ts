@@ -30,7 +30,7 @@ import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
 import customSettingsFilter from './filters/custom_settings_filter'
-import customObjectsSplitFilter from './filters/custom_object_split'
+import customTypeSplit from './filters/custom_type_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
 import dataInstancesAuthorFilter from './filters/author_information/data_instances'
 import sharingRulesAuthorFilter from './filters/author_information/sharing_rules'
@@ -75,8 +75,8 @@ import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
-import customMetadataTypeFilter from './filters/custom_metadata_type'
 import fetchFlowsFilter from './filters/fetch_flows'
+import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import deployFlowsFilter from './filters/deploy_flows'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
@@ -101,6 +101,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: workflowFilter },
   // fetchFlowsFilter should run before flowFilter
   { creator: fetchFlowsFilter, addsNewInformation: true },
+  // customMetadataToObjectTypeFilter should run before customObjectsFromDescribeFilter
+  { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
@@ -144,7 +146,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: hideReadOnlyValuesFilter },
   { creator: currencyIsoCodeFilter },
   { creator: splitCustomLabels },
-  { creator: customMetadataTypeFilter },
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
   // The following filters should remain last in order to make sure they fix all elements
@@ -162,7 +163,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
-  { creator: customObjectsSplitFilter },
+  { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
 ]
 

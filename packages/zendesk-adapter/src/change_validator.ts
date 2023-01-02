@@ -45,10 +45,11 @@ import {
   helpCenterActivationValidator,
   helpCenterCreationOrRemovalValidator,
   everyoneUserSegmentModificationValidator,
-  categoryOrderValidator,
-  sectionOrderValidator,
-  articleOrderValidator,
-  guideOrderValidator, macroActionsTicketFieldDeactivationValidator,
+  guideOrderDeletionValidator,
+  childrenReferencesValidator,
+  childInOrderValidator,
+  orderChildrenParentValidator,
+  macroActionsTicketFieldDeactivationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -103,10 +104,12 @@ export default ({
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,
     helpCenterCreationOrRemovalValidator(client, apiConfig),
-    categoryOrderValidator,
-    sectionOrderValidator,
-    articleOrderValidator,
-    guideOrderValidator,
+    // *** Guide Order Validators ***
+    childInOrderValidator,
+    childrenReferencesValidator,
+    orderChildrenParentValidator,
+    guideOrderDeletionValidator,
+    // ******************************
     macroActionsTicketFieldDeactivationValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)

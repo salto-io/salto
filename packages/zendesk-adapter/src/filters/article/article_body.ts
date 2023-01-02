@@ -54,9 +54,9 @@ const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
 const DOMAIN_REGEX = /(https:\/\/[^/]+)/
 
 // Attempt to match the regex to an element and create a reference to that element
-const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex, field, enableMissingReferences }: {
+const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRegex, field, enableMissingReferences }: {
   urlPart: string
-  urlBrand: InstanceElement
+  urlBrandInstance: InstanceElement
   idToInstance: Record<string, InstanceElement>
   idRegex: RegExp
   field: string
@@ -69,13 +69,13 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex, fie
     const brandId = isReferenceExpression(referencedInstance?.value.brand)
       ? referencedInstance.value.brand.value.value.id
       : referencedInstance?.value.brand
-    if (brandId === urlBrand.value.id) {
+    if (brandId === urlBrandInstance.value.id) {
       // We want to keep the original url and replace just the id
       return [url, new ReferenceExpression(referencedInstance.elemID, referencedInstance)]
     }
     // if could not find a valid instance, create a MissingReferences.
     if (enableMissingReferences) {
-      const missingInstance = createMissingInstance(ZENDESK, field, `${urlBrand.value.name}_${id}`)
+      const missingInstance = createMissingInstance(ZENDESK, field, `${urlBrandInstance.value.name}_${id}`)
       missingInstance.value.id = id
       return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
     }
@@ -83,23 +83,23 @@ const createInstanceReference = ({ urlPart, urlBrand, idToInstance, idRegex, fie
   return undefined
 }
 
-const referenceUrls = ({ urlPart, urlBrand, additionalInstances, enableMissingReferences }: {
+const referenceUrls = ({ urlPart, urlBrandInstance, additionalInstances, enableMissingReferences }: {
   urlPart: string
-  urlBrand: InstanceElement
+  urlBrandInstance: InstanceElement
   additionalInstances: Record<string, Record<string, InstanceElement>>
   enableMissingReferences?: boolean
 }): TemplatePart[] => {
   const urlSubdomain = urlPart.match(DOMAIN_REGEX)?.pop()
   // We already made sure that the brand exists, so we can just return it
   if (urlSubdomain !== undefined) {
-    return [new ReferenceExpression(urlBrand.elemID.createNestedID('brand_url'), urlBrand?.value.brand_url)]
+    return [new ReferenceExpression(urlBrandInstance.elemID.createNestedID('brand_url'), urlBrandInstance?.value.brand_url)]
   }
 
   // Attempt to match other instances, stop on the first result
   const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field }) =>
     createInstanceReference({
       urlPart,
-      urlBrand,
+      urlBrandInstance,
       idToInstance: additionalInstances[field],
       idRegex,
       field,
@@ -119,38 +119,38 @@ const matchBrand = (url: string, brands: Record<string, InstanceElement>): Insta
   return undefined
 }
 
-const updateArticleBody = ({
-  articleInstance,
+const updateArticleTranslationBody = ({
+  translationInstance,
   additionalInstances,
   includedBrands,
   enableMissingReferences,
 } : {
-  articleInstance: InstanceElement
+  translationInstance: InstanceElement
   additionalInstances: Record<string, Record<string, InstanceElement>>
   includedBrands: InstanceElement[]
   enableMissingReferences?: boolean
 }): SaltoError[] => {
   const errors: SaltoError[] = []
-  const originalArticleBody = articleInstance.value[BODY_FIELD]
-  if (!_.isString(originalArticleBody)) {
+  const originalTranslationBody = translationInstance.value[BODY_FIELD]
+  if (!_.isString(originalTranslationBody)) {
     return errors
   }
 
   // Find the urls that are in the body
-  const processedArticleBody = extractTemplate(
-    originalArticleBody,
+  const processedTranslationBody = extractTemplate(
+    originalTranslationBody,
     [URL_REGEX],
     url => {
       // Make sure that a brand exists for that domain
-      const urlBrand = matchBrand(url, additionalInstances[BRAND_TYPE_NAME])
-      if (urlBrand === undefined) {
+      const urlBrandInstance = matchBrand(url, additionalInstances[BRAND_TYPE_NAME])
+      if (urlBrandInstance === undefined) {
         return url
       }
 
-      if (!includedBrands.includes(urlBrand)) {
+      if (!includedBrands.includes(urlBrandInstance)) {
         // If the brand is excluded, don't try to create references
         errors.push({
-          message: `Article ${articleInstance.elemID.getFullName()} has a link to an excluded brand. To create this reference, please update the configuration under fetch.guide.brands in the configuration file to include brand: ${urlBrand.elemID.getFullName()}`,
+          message: `Article ${translationInstance.elemID.getFullName()} has a link to an excluded brand. To create this reference, please update the configuration under fetch.guide.brands in the configuration file to include brand: ${urlBrandInstance.elemID.getFullName()}`,
           severity: 'Warning',
         })
         return url
@@ -161,7 +161,7 @@ const updateArticleBody = ({
         [DOMAIN_REGEX, ...ELEMENTS_REGEXES.map(s => s.urlRegex)],
         urlPart => referenceUrls({
           urlPart,
-          urlBrand,
+          urlBrandInstance,
           additionalInstances,
           enableMissingReferences,
         })
@@ -170,7 +170,7 @@ const updateArticleBody = ({
     }
   )
 
-  articleInstance.value.body = processedArticleBody
+  translationInstance.value.body = processedTranslationBody
   return errors
 }
 
@@ -188,7 +188,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
 }
 
 /**
- * Process body value in article instances to reference other objects
+ * Process body value in article translation instances to reference other objects
  */
 const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
@@ -213,10 +213,10 @@ const filterCreator: FilterCreator = ({ config }) => {
       const includedBrands = getBrandsForGuide(instances, config[FETCH_CONFIG])
       const warnings = instances
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
-        .filter(articleInstance => !_.isEmpty(articleInstance.value[BODY_FIELD]))
-        .flatMap(articleInstance => (
-          updateArticleBody({
-            articleInstance,
+        .filter(translationInstance => !_.isEmpty(translationInstance.value[BODY_FIELD]))
+        .flatMap(translationInstance => (
+          updateArticleTranslationBody({
+            translationInstance,
             additionalInstances,
             includedBrands,
             enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,

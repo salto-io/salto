@@ -25,7 +25,7 @@ import JSZip from 'jszip'
 import * as constants from '../src/constants'
 import {
   annotationsFileName, customFieldsFileName, standardFieldsFileName,
-} from '../src/filters/custom_object_split'
+} from '../src/filters/custom_type_split'
 import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
 import { SYSTEM_FIELDS } from '../src/adapter'

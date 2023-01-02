@@ -22,28 +22,42 @@ import {
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { getParents, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH,
+  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
-import { metadataType, apiName, defaultApiName, Types, isCustomObject } from '../transformers/transformer'
+import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
 
-export const isCustomMetadataType = async (elem: ObjectType): Promise<boolean> => {
+const METADATA_VALUES_SCHEME = Joi.object({
+  [INSTANCE_FULL_NAME_FIELD]: Joi.string().required(),
+}).unknown(true)
+
+export const isMetadataValues = createSchemeGuard<MetadataValues>(METADATA_VALUES_SCHEME)
+
+export const isCustomMetadataRecordType = async (elem: Element): Promise<boolean> => {
   const elementApiName = await apiName(elem)
-  return elementApiName?.endsWith('__mdt') ?? false
+  return isObjectType(elem) && (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
+}
+
+export const isCustomMetadataRecordInstance = async (
+  instance: InstanceElement
+): Promise<boolean> => {
+  const instanceType = await instance.getType()
+  return isCustomMetadataRecordType(instanceType)
 }
 
 export const boolValue = (val: JSONBool):

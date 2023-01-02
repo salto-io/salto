@@ -34,33 +34,37 @@ import fullNameChangedValidator from './change_validators/fullname_changed'
 import invalidListViewFilterScope from './change_validators/invalid_listview_filterscope'
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 
-import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
+import { ChangeValidatorName, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig, isSandbox: boolean) => ChangeValidator
-export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
-  managedPackage: () => packageValidator,
-  picklistStandardField: () => picklistStandardFieldValidator,
-  customObjectInstances: () => customObjectInstancesValidator,
-  unknownField: () => unknownFieldValidator,
-  customFieldType: () => customFieldTypeValidator,
-  standardFieldLabel: () => standardFieldLabelValidator,
-  mapKeys: () => mapKeysValidator,
-  multipleDefaults: () => multipleDefaultsValidator,
-  picklistPromote: () => picklistPromoteValidator,
-  cpqValidator: () => cpqValidator,
-  sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
-  recordTypeDeletion: () => recordTypeDeletionValidator,
-  flowsValidator: (config, isSandbox) => flowsValidator(config, isSandbox),
-  fullNameChangedValidator: () => fullNameChangedValidator,
-  invalidListViewFilterScope: () => invalidListViewFilterScope,
-  caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
+
+type ChangeValidatorDefinition = {
+  creator: ChangeValidatorCreator
+  defaultInDeploy: boolean
+  defaultInValidate: boolean
 }
 
-export const validationChangeValidators
-  : Record<CheckOnlyChangeValidatorName, ChangeValidatorCreator> = {
-    omitData: omitDataValidator,
-  }
+const defaultAlwaysRun = { defaultInDeploy: true, defaultInValidate: true }
 
+export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefinition> = {
+  managedPackage: { creator: () => packageValidator, ...defaultAlwaysRun },
+  picklistStandardField: { creator: () => picklistStandardFieldValidator, ...defaultAlwaysRun },
+  customObjectInstances: { creator: () => customObjectInstancesValidator, ...defaultAlwaysRun },
+  unknownField: { creator: () => unknownFieldValidator, ...defaultAlwaysRun },
+  customFieldType: { creator: () => customFieldTypeValidator, ...defaultAlwaysRun },
+  standardFieldLabel: { creator: () => standardFieldLabelValidator, ...defaultAlwaysRun },
+  mapKeys: { creator: () => mapKeysValidator, ...defaultAlwaysRun },
+  multipleDefaults: { creator: () => multipleDefaultsValidator, ...defaultAlwaysRun },
+  picklistPromote: { creator: () => picklistPromoteValidator, ...defaultAlwaysRun },
+  cpqValidator: { creator: () => cpqValidator, ...defaultAlwaysRun },
+  sbaaApprovalRulesCustomCondition: { creator: () => sbaaApprovalRulesCustomCondition, ...defaultAlwaysRun },
+  recordTypeDeletion: { creator: () => recordTypeDeletionValidator, ...defaultAlwaysRun },
+  flowsValidator: { creator: (config, isSandbox) => flowsValidator(config, isSandbox), ...defaultAlwaysRun },
+  fullNameChangedValidator: { creator: () => fullNameChangedValidator, ...defaultAlwaysRun },
+  invalidListViewFilterScope: { creator: () => invalidListViewFilterScope, ...defaultAlwaysRun },
+  caseAssignmentRulesValidator: { creator: () => caseAssignmentRulesValidator, ...defaultAlwaysRun },
+  omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
+}
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
   config: SalesforceConfig
@@ -68,18 +72,14 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
   checkOnly: boolean
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
-  // SALTO-2700: Separate Validators
-  const possibleValidationChangeValidators = isCheckOnly ? Object.entries(validationChangeValidators)
-    : Object.entries(validationChangeValidators).filter(
-      ([name]) => config.validators?.[name as ChangeValidatorName] !== undefined
-    )
   const [activeValidators, disabledValidators] = _.partition(
-    [...Object.entries(changeValidators), ...possibleValidationChangeValidators],
-    ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
+    Object.entries(changeValidators),
+    ([name, defenition]) => config.validators?.[name as ChangeValidatorName]
+        ?? (isCheckOnly ? defenition.defaultInValidate : defenition.defaultInDeploy),
   )
   return createChangeValidator(
-    activeValidators.map(([_name, validator]) => validator(config, isSandbox)),
-    disabledValidators.map(([_name, validator]) => validator(config, isSandbox)),
+    activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox)),
+    disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox)),
   )
 }
 export default createSalesforceChangeValidator

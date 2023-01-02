@@ -95,12 +95,10 @@ export type ChangeValidatorName = (
   | 'fullNameChangedValidator'
   | 'invalidListViewFilterScope'
   | 'caseAssignmentRulesValidator'
+  | 'omitData'
 )
 
-export type CheckOnlyChangeValidatorName = 'omitData'
-
-
-export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName | CheckOnlyChangeValidatorName, boolean>>
+export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 type ObjectIdSettings = {
   objectsRegex: string

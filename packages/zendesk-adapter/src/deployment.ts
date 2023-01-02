@@ -21,11 +21,12 @@ import {
   config as configUtils, deployment, client as clientUtils,
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
 import { ZendeskApiConfig } from './config'
 
+const { sleep } = promises.timeout
 const { getRetryDelayFromHeaders } = clientUtils
 
 const log = logger(module)
@@ -150,9 +151,7 @@ export const deployChange = async (
     // Retry requests that failed on Zendesk's side and are not related to our data
     if (RESPONSES_TO_RETRY.includes(err.response?.status) && retryNumber < MAX_RETRIES) {
       const timeToWait = getRetryDelayFromHeaders(err.response.headers)
-      if (timeToWait) {
-        await new Promise(f => setTimeout(f, timeToWait))
-      }
+      await sleep(timeToWait ?? DEPLOYMENT_BUFFER_TIME)
       return deployChange(change, client, apiDefinitions, fieldsToIgnore, retryNumber + 1)
     }
     throw getZendeskError(getChangeData(change).elemID.getFullName(), err)
@@ -163,11 +162,15 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
+  let additionBufferCount = 0
   const result = await Promise.all(
-    changes.map(async (change, i) => {
+    changes.map(async change => {
       try {
-        // Zendesk may have conflicts with parallel requests, so we put a buffer between requests (SALTO-2961)
-        await new Promise(f => setTimeout(f, DEPLOYMENT_BUFFER_TIME * i))
+        if (isAdditionChange(change)) {
+          // Zendesk may have conflicts with parallel creations, so we put a buffer between requests (SALTO-2961)
+          await sleep(DEPLOYMENT_BUFFER_TIME * additionBufferCount)
+          additionBufferCount += 1
+        }
         const res = await deployChangeFunc(change)
         return res !== undefined ? res : change
       } catch (err) {

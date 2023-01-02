@@ -21,23 +21,41 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
-type error1 = {
+type Error403 = {
   errors: { title: string; detail: string }[]
 }
 
-type error2 = {
+type Error422 = {
   description: string
   details: Record<string, { description: string }[]>
 }
 
-type error3 = {
+type Error400 = {
   error: {
     title: string
     message: string
   }
 }
 
-const error1ToString = (error: error1): string => {
+const is403Error = (error: Record<string, unknown>): error is Error403 =>
+  (_.isArray(error.errors)
+    && (error.errors[0].title !== undefined)
+    && (error.errors[0].detail !== undefined))
+
+const is422Error = (error: Record<string, unknown>): error is Error422 =>
+  ((error.description !== undefined)
+    && (_.isPlainObject(error.details))
+    && (_.isObject(error.details))
+    && Object.values(error.details).every(val => _.isArray(val) && (val[0].description !== undefined)))
+
+const is400Error = (error: Record<string, unknown>): error is Error400 =>
+  (_.isPlainObject(error.error)
+    && (_.isObject(error.error))
+    && (error.error !== undefined)
+    && ('title' in error.error)
+    && ('message' in error.error))
+
+const error403ToString = (error: Error403): string => {
   const errorArray = ['\nError details:']
   error.errors.forEach(err => {
     errorArray.push(`* Title: ${err.title}\n  Detail: ${err.detail}\n`)
@@ -45,17 +63,17 @@ const error1ToString = (error: error1): string => {
   return errorArray.join(EOL)
 }
 
-const error2ToString = (error: error2): string => {
+const error422ToString = (error: Error422): string => {
   const errorArray = []
   errorArray.push(`\n${error.description}\n\nError details:`)
   Object.keys(error.details).forEach(key => {
     error.details[key].forEach(val => {
-      errorArray.push(`* ${val.description}\n`)
+      errorArray.push(`* ${val.description}`)
     })
   })
   return errorArray.join(EOL)
 }
-const error3ToString = (error: error3): string => {
+const error400ToString = (error: Error400): string => {
   const errorArray = ['\nError details:']
   errorArray.push(`* Title: ${error.error.title}\n  Detail: ${error.error.message}\n`)
   return errorArray.join(EOL)
@@ -67,28 +85,19 @@ export const getZendeskError = (fullName: string, error: Error): Error => {
   }
   const baseErrorMessage = `Deployment of ${fullName} failed.`
   const errorData = error.response.data
-  let errorMessage: string
   if (!_.isPlainObject(errorData)) {
-    return new Error(baseErrorMessage)
+    return new Error(`${baseErrorMessage} ${error}`)
   }
   log.error([baseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(EOL))
-  if (_.isArray(errorData.errors)
-    && (errorData.errors[0].title !== undefined)
-    && (errorData.errors[0].detail !== undefined)) {
-    errorMessage = error1ToString(errorData as error1)
-  } else if ((errorData.description !== undefined)
-    && (_.isPlainObject(errorData.details))
-    && (_.isObject(errorData.details))
-    && Object.values(errorData.details).every(val => _.isArray(val) && (val[0].description !== undefined))) {
-    errorMessage = error2ToString(errorData as error2)
-  } else if (_.isPlainObject(errorData.error)
-    && (_.isObject(errorData.error))
-    && (errorData.error !== undefined)
-    && ('title' in errorData.error)
-    && ('message' in errorData.error)) {
-    errorMessage = error3ToString(errorData as error3)
-  } else {
-    errorMessage = safeJsonStringify(error.response.data, undefined, 2)
+  if (is403Error(errorData)) {
+    return new Error([baseErrorMessage, error403ToString(errorData)].join(EOL))
   }
+  if (is422Error(errorData)) {
+    return new Error([baseErrorMessage, error422ToString(errorData)].join(EOL))
+  }
+  if (is400Error(errorData)) {
+    return new Error([baseErrorMessage, error400ToString(errorData)].join(EOL))
+  }
+  const errorMessage = [`${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
   return new Error([baseErrorMessage, errorMessage].join(EOL))
 }

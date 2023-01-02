@@ -81,21 +81,16 @@ const filter: FilterCreator = ({ client, config }) => ({
         : getParents(getChangeData(change))[0].value.value.id
     })
 
-    const levelsDeployResult = levelsChanges.length !== 0
-      ? await deployChanges(
-        levelsChanges as Change<InstanceElement>[],
-        async change => {
-          await defaultDeployChange({
-            change,
-            client,
-            apiDefinitions: config.apiDefinitions,
-          })
-        }
-      )
-      : {
-        appliedChanges: [],
-        errors: [],
+    const levelsDeployResult = await deployChanges(
+      levelsChanges as Change<InstanceElement>[],
+      async change => {
+        await defaultDeployChange({
+          change,
+          client,
+          apiDefinitions: config.apiDefinitions,
+        })
       }
+    )
 
     return {
       leftoverChanges,

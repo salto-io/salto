@@ -81,7 +81,7 @@ const filter: FilterCreator = ({ client, config }) => ({
         : getParents(getChangeData(change))[0].value.value.id
     })
 
-    const levelsDeployResult = levelsChanges !== undefined
+    const levelsDeployResult = levelsChanges.length !== 0
       ? await deployChanges(
         levelsChanges as Change<InstanceElement>[],
         async change => {

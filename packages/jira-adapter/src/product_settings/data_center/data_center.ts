@@ -333,7 +333,7 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['post', 'put'],
-    url: '/rest/api/3/securitylevel/.+',
+    url: '/rest/api/3/securitylevel.+',
   },
   {
     httpMethods: ['delete'],

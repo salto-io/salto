@@ -78,7 +78,9 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   appReferenceLocators?: IdLocator[]
   guide?: Guide
 }
-export type ZendeskApiConfig = configUtils.AdapterApiConfig<configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }>
+export type ZendeskApiConfig = configUtils.AdapterApiConfig<
+  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
+  >
 
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig

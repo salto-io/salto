@@ -40,7 +40,9 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: PAGE_SIZE,
 }
 
-export default class ZendeskClient extends clientUtils.AdapterHTTPClient<Credentials, clientUtils.ClientRateLimitConfig> {
+export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
+  Credentials, clientUtils.ClientRateLimitConfig
+  > {
   // These properties create another connection and client for Zendesk resources API
   protected readonly resourceConn: clientUtils.Connection<Credentials>
   protected isResourceApiLoggedIn = false

@@ -107,6 +107,8 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
   }
 }
 
+// this function is a synchronous version for selectElementsBySelectors below that allows better performance
+// for use cases where there is no need to get referenced elements.
 export const selectElementsBySelectorsWithoutReferences = (
   { elementIds, selectors, includeNested = false }: {
     elementIds: ElemID[]

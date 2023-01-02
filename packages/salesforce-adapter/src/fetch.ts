@@ -155,21 +155,17 @@ const listMetadataObjectsWithinFolders = async (
 const getFullName = (obj: FileProperties): string => {
   const namePrefix = obj.namespacePrefix
     ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  // Ensure fullName starts with the namespace prefix if there is one
-  // needed due to a SF quirk where sometimes metadata instances return without a namespace
-  // in the fullName even when they should have it
-  const fullNameWithCorrectedObjectName = obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
   if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE && obj.namespacePrefix) {
   // Ensure layout name starts with the namespace prefix if there is one.
   // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
   // <namespace>__<objectName>-<layoutName> where it should be
   // <namespace>__<objectName>-<namespace>__<layoutName>
-    const [objectName, ...layoutName] = fullNameWithCorrectedObjectName.split('-')
+    const [objectName, ...layoutName] = obj.fullName.split('-')
     if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
       return `${objectName}-${namePrefix}${layoutName.join('-')}`
     }
   }
-  return fullNameWithCorrectedObjectName
+  return obj.fullName
 }
 
 const getInstanceFromMetadataInformation = (metadata: MetadataInfo,

@@ -851,7 +851,7 @@ public class MyClass${index} {
         { valueTypeFields: [] },
         [
           {
-            props: { fullName: 'Test', namespacePrefix: namespaceName },
+            props: { fullName: 'asd__Test', namespacePrefix: namespaceName },
             values: { fullName: `${namespaceName}__Test` },
           },
         ]

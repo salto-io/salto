@@ -19,9 +19,9 @@ import { FilterCreator } from '../filter'
 import { addIdsToChildrenUponAddition, deployChange, deployChanges } from '../deployment'
 import { API_DEFINITIONS_CONFIG } from '../config'
 import { createAdditionalParentChanges } from './utils'
+import { ORG_FIELD_TYPE_NAME } from '../constants'
 
 export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
-export const ORG_FIELD_TYPE_NAME = 'organization_field'
 export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 
 const filterCreator: FilterCreator = ({ config, client }) => ({

@@ -42,7 +42,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type WorkatoFetchConfig = configUtils.DuckTypeUserFetchConfig & {
+export type WorkatoFetchConfig = configUtils.UserFetchConfig & {
   serviceConnectionNames?: Record<string, string[]>
 }
 export type WorkatoApiConfig = configUtils.AdapterDuckTypeApiConfig
@@ -232,7 +232,6 @@ export const configType = new ObjectType({
       refType: createUserFetchConfigType(
         WORKATO,
         {
-          hideTypes: { refType: BuiltinTypes.BOOLEAN },
           serviceConnectionNames: {
             refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },

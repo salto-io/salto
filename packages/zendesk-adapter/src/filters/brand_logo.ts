@@ -21,7 +21,7 @@ import {
   ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
 import { collections } from '@salto-io/lowerdash'
@@ -55,7 +55,7 @@ const EXPECTED_BRAND_SCHEMA = Joi.object({
 const isBrand = (value: unknown): value is Brand => {
   const { error } = EXPECTED_BRAND_SCHEMA.validate(value, { allowUnknown: true })
   if (error !== undefined) {
-    log.error(`Received an invalid response for the brand values: ${error.message}, ${safeJsonStringify(value)}`)
+    log.error(`Received an invalid response for the brand values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
     return false
   }
   return true
@@ -81,7 +81,7 @@ const getLogoContent = async (
   logoFileName: string,
 ): Promise<Buffer | undefined> => {
   const res = await client.getResource({
-    url: `/brands/${logoId}/${logoFileName}`,
+    url: `/system/brands/${logoId}/${logoFileName}`,
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
@@ -139,7 +139,7 @@ const fetchBrand = async (
   brandId: string,
 ): Promise<Brand | undefined> => {
   const response = await client.getSinglePage({
-    url: `/brands/${brandId}`,
+    url: `/api/v2/brands/${brandId}`,
   })
   if (response === undefined) {
     log.error('Received empty response from Zendesk API. Not adding brand logo')
@@ -168,7 +168,7 @@ const deployBrandLogo = async (
       form.append('brand[logo][uploaded_data]', logoContent || Buffer.from(''), logoInstance.value.filename)
       // eslint-disable-next-line no-await-in-loop
       const putResult = await client.put({
-        url: `/brands/${brandId}`,
+        url: `/api/v2/brands/${brandId}`,
         data: form,
         headers: { ...form.getHeaders() },
       })

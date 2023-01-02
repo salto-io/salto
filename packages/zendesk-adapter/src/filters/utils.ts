@@ -22,6 +22,8 @@ import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChange
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
+import { ZendeskFetchConfig } from '../config'
+import { BRAND_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -103,3 +105,14 @@ value is (Condition | SubjectCondition)[] => (
     ? isSubjectConditions(value)
     : isConditions(value)
 )
+
+export const getBrandsForGuide = (
+  elements: InstanceElement[],
+  fetchConfig: ZendeskFetchConfig,
+): InstanceElement[] => {
+  const brandsRegexList = fetchConfig.guide?.brands ?? []
+  return elements
+    .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
+    .filter(brandInstance => brandInstance.value.has_help_center)
+    .filter(brandInstance => brandsRegexList.some(regex => new RegExp(regex).test(brandInstance.value.name)))
+}

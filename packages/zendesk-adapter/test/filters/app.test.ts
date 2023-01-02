@@ -81,7 +81,7 @@ describe('app installation filter', () => {
     })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
-      url: '/apps/job_statuses/123',
+      url: '/api/v2/apps/job_statuses/123',
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(0)
@@ -148,7 +148,7 @@ describe('app installation filter', () => {
     })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
-      url: '/apps/job_statuses/123',
+      url: '/api/v2/apps/job_statuses/123',
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)
@@ -170,7 +170,7 @@ describe('app installation filter', () => {
     })
     expect(mockGet).toHaveBeenCalledTimes(1)
     expect(mockGet).toHaveBeenCalledWith({
-      url: '/apps/job_statuses/123',
+      url: '/api/v2/apps/job_statuses/123',
     })
     expect(res.leftoverChanges).toHaveLength(0)
     expect(res.deployResult.errors).toHaveLength(1)

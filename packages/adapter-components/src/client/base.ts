@@ -33,15 +33,17 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
     defaults: {
       retry: Required<ClientRetryConfig>
       rateLimit: Required<TRateLimitConfig>
+      maxRequestsPerMinute: number
       pageSize: Required<ClientPageSizeConfig>
     },
   ) {
     this.clientName = clientName
     this.config = config
-    this.rateLimiters = createRateLimitersFromConfig<TRateLimitConfig>(
-      _.defaults({}, config?.rateLimit, defaults.rateLimit),
-      this.clientName,
-    )
+    this.rateLimiters = createRateLimitersFromConfig<TRateLimitConfig>({
+      rateLimit: _.defaults({}, config?.rateLimit, defaults.rateLimit),
+      clientName: this.clientName,
+      maxRequestsPerMinute: config?.maxRequestsPerMinute ?? defaults.maxRequestsPerMinute,
+    })
     this.getPageSizeInner = (
       this.config?.pageSize?.get
       ?? defaults.pageSize.get

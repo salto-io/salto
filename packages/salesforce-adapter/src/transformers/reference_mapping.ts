@@ -31,7 +31,7 @@ import {
   CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
   CPQ_QUOTE_LINE_FIELDS, DEFAULT_OBJECT_TO_API_MAPPING, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING,
   TEST_OBJECT_TO_API_MAPPING, CPQ_TESTED_OBJECT, CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE,
-  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD,
+  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD, CUSTOM_LABEL_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -57,7 +57,7 @@ const safeApiName = ({ ref, path, relative }: {
 }
 
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
- | 'mapKey'
+ | 'mapKey' | 'customLabel'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -106,6 +106,15 @@ const ReferenceSerializationStrategyLookup: Record<
     serialize: async ({ ref }) => ref.elemID.name,
     lookup: val => val,
   },
+  customLabel: {
+    serialize: async ({ ref, path }) => `$Label${API_NAME_SEPARATOR}${await safeApiName({ ref, path })}`,
+    lookup: val => {
+      if (val.includes('$Label')) {
+        return val.split(API_NAME_SEPARATOR)[1]
+      }
+      return val
+    },
+  },
 }
 
 export type ReferenceContextStrategyName = (
@@ -113,6 +122,7 @@ export type ReferenceContextStrategyName = (
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'neighborTableLookup'
+  | 'neighborCaseOwnerTypeLookup' | 'neighborAssignedToTypeLookup' | 'neighborRelatedEntityTypeLookup'
 )
 
 type SourceDef = {
@@ -129,6 +139,7 @@ type SourceDef = {
 export type FieldReferenceDefinition = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
+  sourceTransformation?: referenceUtils.ReferenceSourceTransformationName
   // If target is missing, the definition is used for resolving
   target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
@@ -548,6 +559,61 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'column', parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'] },
     target: { type: CUSTOM_FIELD },
   },
+  {
+    src: { field: 'recipient', parentTypes: ['WorkflowEmailRecipient'] },
+    target: { type: 'Group' },
+  },
+  {
+    src: { field: 'queue', parentTypes: ['ListView'] },
+    target: { type: 'Queue' },
+  },
+  {
+    src: { field: 'caseOwner', parentTypes: ['EmailToCaseRoutingAddress'] },
+    target: { typeContext: 'neighborCaseOwnerTypeLookup' },
+  },
+  {
+    src: { field: 'assignedTo', parentTypes: ['RuleEntry', 'EscalationAction'] },
+    target: { typeContext: 'neighborAssignedToTypeLookup' },
+  },
+  {
+    src: { field: 'assignedToTemplate', parentTypes: ['EscalationAction'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseAssignNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseCloseNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseCommentNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'caseCreateNotificationTemplate', parentTypes: ['CaseSettings'] },
+    target: { type: 'EmailTemplate' },
+  },
+  {
+    src: { field: 'relatedEntityType', parentTypes: ['ServiceChannel'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'secondaryRoutingPriorityField', parentTypes: ['ServiceChannel'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborRelatedEntityTypeLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'entitlementProcess', parentTypes: ['EntitlementTemplate'] },
+    target: { type: 'EntitlementProcess' },
+    sourceTransformation: 'asCaseInsensitiveString',
+  },
+  {
+    src: { field: 'elementReference', parentTypes: ['FlowElementReferenceOrValue'] },
+    serializationStrategy: 'customLabel',
+    target: { type: CUSTOM_LABEL_METADATA_TYPE },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on
@@ -595,6 +661,7 @@ const matchInstanceType = async (
 export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
+  sourceTransformation: referenceUtils.ReferenceSourceTransformation
   target?: referenceUtils.ExtendedReferenceTargetDefinition<ReferenceContextStrategyName>
 
   constructor(def: FieldReferenceDefinition) {
@@ -602,6 +669,7 @@ export class FieldReferenceResolver {
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'absoluteApiName'
     ]
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined

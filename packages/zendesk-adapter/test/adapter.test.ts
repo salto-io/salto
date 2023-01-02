@@ -25,7 +25,8 @@ import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replie
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
-import { ZENDESK } from '../src/constants'
+import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../src/constants'
+import { createEveryoneUserSegmentInstance } from '../src/filters/everyone_user_segment'
 
 type MockReply = {
   url: string
@@ -49,14 +50,14 @@ jest.mock('@salto-io/adapter-components', () => {
 const callbackResponseFunc = (config: AxiosRequestConfig): any => {
   const { baseURL, url, params } = config
   const requestParams = !_.isEmpty(params) ? { params } : undefined
-  if (baseURL === 'https://mybrand.zendesk.com/api/v2') {
+  if (baseURL?.toLowerCase() === 'https://mybrand.zendesk.com') {
     return [
       200,
       (defaultBrandMockReplies as MockReply[])
-        .find(reply => reply.url === url && reply.params === requestParams)?.response || [],
+        .find(reply => reply.url === url && _.isEqual(reply.params, requestParams?.params))?.response || [],
     ]
   }
-  if (baseURL === 'https://brandwithguide.zendesk.com/api/v2') {
+  if (baseURL?.toLowerCase() === 'https://brandwithguide.zendesk.com') {
     return [
       200,
       (brandWithGuideMockReplies as MockReply[]).find(reply => reply.url === url, [])?.response
@@ -68,10 +69,14 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
+  const userSegmentType = new ObjectType({
+    elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME),
+  })
+  const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/account/settings').replyOnce(200, { settings: {} })
+    mockAxiosAdapter.onGet('/api/v2/account/settings').replyOnce(200, { settings: {} })
   })
 
   afterEach(() => {
@@ -97,7 +102,9 @@ describe('adapter', () => {
                   type: '.*',
                 }],
                 exclude: [],
-                enableGuide: true,
+                guide: {
+                  brands: ['.*'],
+                },
               },
             }
           ),
@@ -137,6 +144,8 @@ describe('adapter', () => {
           'zendesk.account_setting__user',
           'zendesk.account_setting__voice',
           'zendesk.account_settings',
+          'zendesk.api_token',
+          'zendesk.api_tokens',
           'zendesk.app_installation',
           'zendesk.app_installation.instance.Salesforce_10',
           'zendesk.app_installation.instance.Slack_156097',
@@ -149,11 +158,20 @@ describe('adapter', () => {
           'zendesk.app_owned__parameters',
           'zendesk.apps_owned',
           'zendesk.article',
-          'zendesk.article.instance.brandWithGuide_Title_Yo__@ussa',
-          'zendesk.article.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers_@usssssssa',
+          'zendesk.article.instance.How_can_agents_leverage_knowledge_to_help_customers__Apex_Development_myBrand@sssssssauuu',
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+          'zendesk.article__attachments',
+          'zendesk.article_attachment',
+          'zendesk.article_order',
+          'zendesk.article_order.instance.Announcements_General_myBrand__',
+          'zendesk.article_order.instance.Apex_Development_myBrand__',
+          'zendesk.article_order.instance.Billing_and_Subscriptions_General_myBrand_ssuu__@uuuumuu',
+          'zendesk.article_order.instance.FAQ_General_myBrand__',
+          'zendesk.article_order.instance.Internal_KB_General_myBrand_suu__@uuumuu',
+          'zendesk.article_order.instance.greatSection_greatCategory_brandWithGuide__',
           'zendesk.article_translation',
-          'zendesk.article_translation.instance.brandWithGuide_Title_Yo___ussa__en_us_b@uuuumuuum',
-          'zendesk.article_translation.instance.myBrand_How_can_agents_leverage_knowledge_to_help_customers__usssssssa__en_us_b@uuuuuuuuumuuum',
+          'zendesk.article_translation.instance.How_can_agents_leverage_knowledge_to_help_customers__Apex_Development_myBrand_sssssssauuu__myBrand_en_us_ub@uuuuuuuuuuumuuuum',
+          'zendesk.article_translation.instance.Title_Yo___greatSection_greatCategory_brandWithGuide_ssauuu__brandWithGuide_en_us_ub@uuuuuumuuuum',
           'zendesk.article_translation__translations',
           'zendesk.articles',
           'zendesk.automation',
@@ -187,11 +205,15 @@ describe('adapter', () => {
           'zendesk.business_hours_schedules',
           'zendesk.categories',
           'zendesk.category',
-          'zendesk.category.instance.myBrand_Development',
-          'zendesk.category.instance.myBrand_General',
+          'zendesk.category.instance.Development_myBrand',
+          'zendesk.category.instance.General_myBrand',
+          'zendesk.category.instance.greatCategory_brandWithGuide',
+          'zendesk.category_order',
+          'zendesk.category_order.instance.brandWithGuide__',
+          'zendesk.category_order.instance.myBrand__',
           'zendesk.category_translation',
-          'zendesk.category_translation.instance.myBrand_Development__en_us_b@uuuum',
-          'zendesk.category_translation.instance.myBrand_General__en_us_b@uuuum',
+          'zendesk.category_translation.instance.Development_myBrand__myBrand_en_us_ub@uuuuum',
+          'zendesk.category_translation.instance.General_myBrand__myBrand_en_us_ub@uuuuum',
           'zendesk.category_translation__translations',
           'zendesk.channel',
           'zendesk.channel.instance.Answer_Bot_for_Web_Widget@s',
@@ -257,9 +279,20 @@ describe('adapter', () => {
           'zendesk.group.instance.Support4',
           'zendesk.group.instance.Support5',
           'zendesk.groups',
-          'zendesk.help_center_locale',
-          'zendesk.help_center_locale.instance.en_us@b',
-          'zendesk.help_center_locale.instance.he',
+          'zendesk.guide_language_settings',
+          'zendesk.guide_language_settings.instance.brandWithGuide_ar',
+          'zendesk.guide_language_settings.instance.brandWithGuide_en_us@ub',
+          'zendesk.guide_language_settings.instance.brandWithGuide_he',
+          'zendesk.guide_language_settings.instance.myBrand_ar',
+          'zendesk.guide_language_settings.instance.myBrand_en_us@ub',
+          'zendesk.guide_language_settings.instance.myBrand_he',
+          'zendesk.guide_settings',
+          'zendesk.guide_settings.instance.brandWithGuide',
+          'zendesk.guide_settings.instance.myBrand',
+          'zendesk.guide_settings__help_center',
+          'zendesk.guide_settings__help_center__settings',
+          'zendesk.guide_settings__help_center__settings__preferences',
+          'zendesk.guide_settings__help_center__text_filter',
           'zendesk.locale',
           'zendesk.locale.instance.en_US@b',
           'zendesk.locale.instance.es',
@@ -299,6 +332,8 @@ describe('adapter', () => {
           'zendesk.oauth_global_client.instance.myBrand',
           'zendesk.oauth_global_client.instance.myBrand_staging@s',
           'zendesk.oauth_global_clients',
+          'zendesk.oauth_token',
+          'zendesk.oauth_tokens',
           'zendesk.organization',
           'zendesk.organization.instance.myBrand',
           'zendesk.organization.instance.test_org_123@s',
@@ -344,17 +379,28 @@ describe('adapter', () => {
           'zendesk.routing_attribute_value__conditions__all',
           'zendesk.routing_attributes',
           'zendesk.section',
-          'zendesk.section.instance.myBrand_Announcements',
-          'zendesk.section.instance.myBrand_Apex',
-          'zendesk.section.instance.myBrand_Billing_and_Subscriptions@uss',
-          'zendesk.section.instance.myBrand_FAQ',
-          'zendesk.section.instance.myBrand_Internal_KB@us',
+          'zendesk.section.instance.Announcements_General_myBrand',
+          'zendesk.section.instance.Apex_Development_myBrand',
+          'zendesk.section.instance.Billing_and_Subscriptions_General_myBrand@ssuu',
+          'zendesk.section.instance.FAQ_General_myBrand',
+          'zendesk.section.instance.Internal_KB_General_myBrand@suu',
+          'zendesk.section.instance.greatSection_greatCategory_brandWithGuide',
+          'zendesk.section_order',
+          'zendesk.section_order.instance.Announcements_General_myBrand__',
+          'zendesk.section_order.instance.Apex_Development_myBrand__',
+          'zendesk.section_order.instance.Billing_and_Subscriptions_General_myBrand_ssuu__@uuuumuu',
+          'zendesk.section_order.instance.Development_myBrand__',
+          'zendesk.section_order.instance.FAQ_General_myBrand__',
+          'zendesk.section_order.instance.General_myBrand__',
+          'zendesk.section_order.instance.Internal_KB_General_myBrand_suu__@uuumuu',
+          'zendesk.section_order.instance.greatCategory_brandWithGuide__',
+          'zendesk.section_order.instance.greatSection_greatCategory_brandWithGuide__',
           'zendesk.section_translation',
-          'zendesk.section_translation.instance.myBrand_Announcements__en_us_b@uuuum',
-          'zendesk.section_translation.instance.myBrand_Apex__en_us_b@uuuum',
-          'zendesk.section_translation.instance.myBrand_Billing_and_Subscriptions_uss__en_us_b@uuumuuum',
-          'zendesk.section_translation.instance.myBrand_FAQ__en_us_b@uuuum',
-          'zendesk.section_translation.instance.myBrand_Internal_KB_us__en_us_b@uumuuum',
+          'zendesk.section_translation.instance.Announcements_General_myBrand__myBrand_en_us_ub@uuuuuum',
+          'zendesk.section_translation.instance.Apex_Development_myBrand__myBrand_en_us_ub@uuuuuum',
+          'zendesk.section_translation.instance.Billing_and_Subscriptions_General_myBrand_ssuu__myBrand_en_us_ub@uuuumuuuum',
+          'zendesk.section_translation.instance.FAQ_General_myBrand__myBrand_en_us_ub@uuuuuum',
+          'zendesk.section_translation.instance.Internal_KB_General_myBrand_suu__myBrand_en_us_ub@uuumuuuum',
           'zendesk.section_translation__translations',
           'zendesk.sections',
           'zendesk.sharing_agreement',
@@ -492,6 +538,7 @@ describe('adapter', () => {
           'zendesk.user_fields',
           'zendesk.user_segment',
           'zendesk.user_segment.instance.Agents_and_admins@s',
+          'zendesk.user_segment.instance.Everyone',
           'zendesk.user_segment.instance.Signed_in_users@bs',
           'zendesk.user_segment.instance.Tier_3_Articles@s',
           'zendesk.user_segment.instance.VIP_Customers@s',
@@ -556,6 +603,89 @@ describe('adapter', () => {
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
       })
+
+      it('should generate guide elements according to brands config', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const creds = new InstanceElement(
+          'config',
+          usernamePasswordCredentialsType,
+          { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+        )
+        const config = new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              include: [{
+                type: '.*',
+              }],
+              exclude: [],
+              guide: {
+                brands: ['.WithGuide'],
+              },
+            },
+          }
+        )
+        const { elements } = await adapter.operations({
+          credentials: creds,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(elements
+          .filter(isInstanceElement)
+          .filter(e => e.elemID.typeName === 'article')
+          .map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+        ])
+
+        config.value[FETCH_CONFIG].guide.brands = ['[^myBrand]']
+        const fetchRes = await adapter.operations({
+          credentials: creds,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(fetchRes.elements
+          .filter(isInstanceElement)
+          .filter(e => e.elemID.typeName === 'article')
+          .map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
+        ])
+      })
+
+      it('should return fetch error when no brand matches brands config ', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const creds = new InstanceElement(
+          'config',
+          usernamePasswordCredentialsType,
+          { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+        )
+        const config = new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              include: [{
+                type: '.*',
+              }],
+              exclude: [],
+              guide: {
+                brands: ['BestBrand'],
+              },
+            },
+          }
+        )
+        const { errors } = await adapter.operations({
+          credentials: creds,
+          config,
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(errors).toEqual([
+          {
+            message: 'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
+            severity: 'Warning',
+          },
+        ])
+      })
     })
 
     describe('type overrides', () => {
@@ -589,7 +719,7 @@ describe('adapter', () => {
                   },
                   groups: {
                     request: {
-                      url: '/groups',
+                      url: '/api/v2/groups',
                     },
                     transformation: {
                       dataField: 'groups',
@@ -652,7 +782,7 @@ describe('adapter', () => {
                 },
                 groups: {
                   request: {
-                    url: '/groups',
+                    url: '/api/v2/groups',
                   },
                   transformation: {
                     dataField: 'groups',
@@ -699,7 +829,7 @@ describe('adapter', () => {
         previous_page: null,
         count: 1,
       }
-      mockAxiosAdapter.onGet('/groups').replyOnce(
+      mockAxiosAdapter.onGet('/api/v2/groups').replyOnce(
         200, response
       )
       const usersResponse = {
@@ -750,7 +880,7 @@ describe('adapter', () => {
         previous_page: null,
         count: 1,
       }
-      mockAxiosAdapter.onGet('/users').replyOnce(
+      mockAxiosAdapter.onGet('/api/v2/users').replyOnce(
         200, usersResponse
       )
       const { elements: newElements } = await operations
@@ -813,12 +943,12 @@ describe('adapter', () => {
                 group: {
                   deployRequests: {
                     add: {
-                      url: '/groups',
+                      url: '/api/v2/groups',
                       deployAsField: 'group',
                       method: 'post',
                     },
                     modify: {
-                      url: '/groups/{groupId}',
+                      url: '/api/v2/groups/{groupId}',
                       method: 'put',
                       deployAsField: 'group',
                       urlParamsToFields: {
@@ -826,7 +956,7 @@ describe('adapter', () => {
                       },
                     },
                     remove: {
-                      url: '/groups/{groupId}',
+                      url: '/api/v2/groups/{groupId}',
                       method: 'delete',
                       deployAsField: 'group',
                       urlParamsToFields: {
@@ -841,7 +971,7 @@ describe('adapter', () => {
                   },
                   deployRequests: {
                     add: {
-                      url: '/brands',
+                      url: '/api/v2/brands',
                       method: 'post',
                     },
                   },
@@ -852,14 +982,14 @@ describe('adapter', () => {
                   },
                   deployRequests: {
                     add: {
-                      url: '/anotherType',
+                      url: '/api/v2/anotherType',
                       method: 'post',
                     },
                   },
                 },
                 groups: {
                   request: {
-                    url: '/groups',
+                    url: '/api/v2/groups',
                   },
                   transformation: {
                     dataField: 'groups',
@@ -867,7 +997,7 @@ describe('adapter', () => {
                 },
                 brands: {
                   request: {
-                    url: '/brands',
+                    url: '/api/v2/brands',
                   },
                   transformation: {
                     dataField: 'brands',
@@ -877,7 +1007,10 @@ describe('adapter', () => {
             },
           }
         ),
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSource: buildElementsSourceFromElements([
+          userSegmentType,
+          everyoneUserSegmentInstance,
+        ]),
       })
     })
     afterEach(() => {

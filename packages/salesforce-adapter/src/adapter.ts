@@ -39,7 +39,7 @@ import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
 import emailTemplateFilter from './filters/email_template_static_files'
-import profileDeployFilter from './filters/profile_deploy'
+import minifyDeployFilter from './filters/minify_deploy'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
@@ -60,8 +60,8 @@ import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
+import cpqReferencableFieldReferencesFilter from './filters/cpq/referencable_field_references'
 import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
-import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import xmlAttributesFilter from './filters/xml_attributes'
@@ -76,6 +76,7 @@ import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import customMetadataTypeFilter from './filters/custom_metadata_type'
+import fetchFlowsFilter from './filters/fetch_flows'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -85,6 +86,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
+import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -94,9 +96,10 @@ const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
   { creator: settingsFilter, addsNewInformation: true },
-  { creator: customFeedFilterFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },
+  // fetchFlowsFilter should run before flowFilter
+  { creator: fetchFlowsFilter, addsNewInformation: true },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
@@ -120,6 +123,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: standardValueSetFilter, addsNewInformation: true },
   { creator: flowFilter },
   { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
+  { creator: cpqReferencableFieldReferencesFilter },
   { creator: cpqCustomScriptFilter },
   { creator: cpqLookupFieldsFilter },
   { creator: animationRulesFilter },
@@ -140,7 +144,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: splitCustomLabels },
   { creator: customMetadataTypeFilter },
   { creator: xmlAttributesFilter },
-  { creator: profileDeployFilter },
+  { creator: minifyDeployFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
@@ -271,7 +275,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private fetchProfile: FetchProfile
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
+    metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = METADATA_TO_RETRIEVE,
     nestedMetadataTypes = {
@@ -498,14 +502,15 @@ export default class SalesforceAdapter implements AdapterOperations {
     typeInfoPromise: Promise<MetadataObject[]>,
     types: Promise<TypeElement[]>,
   ): Promise<FetchElements<InstanceElement[]>> {
-    const readInstances = async (metadataTypesToRead: ObjectType[]):
+    const readInstances = async (metadataTypes: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
-      const result = await Promise.all(metadataTypesToRead
-        // Just fetch metadata instances of the types that we receive from the describe call
+      const metadataTypesToRead = await awu(metadataTypes)
         .filter(
           async type => !this.metadataTypesOfInstancesFetchedInFilters
             .includes(await apiName(type))
-        ).map(type => this.createMetadataInstances(type)))
+        ).toArray()
+      const result = await Promise.all(metadataTypesToRead
+        .map(type => this.createMetadataInstances(type)))
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),
@@ -550,7 +555,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   Promise<FetchElements<InstanceElement[]>> {
     const typeName = await apiName(type)
     const { elements: fileProps, configChanges } = await listMetadataObjects(
-      this.client, typeName, [],
+      this.client, typeName
     )
 
     const instances = await fetchMetadataInstances({

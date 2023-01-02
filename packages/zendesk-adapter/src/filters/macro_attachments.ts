@@ -62,7 +62,7 @@ const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
 const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value)}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
     return false
   }
   return true
@@ -99,7 +99,7 @@ ReturnType<typeof client.post> => {
   form.append('filename', instance.value.filename)
   try {
     return await client.post({
-      url: '/macros/attachments',
+      url: '/api/v2/macros/attachments',
       data: form,
       headers: { ...form.getHeaders() },
     })
@@ -163,7 +163,7 @@ const getAttachmentContent = async ({
   attachmentType: ObjectType
 }): Promise<InstanceElement | undefined> => {
   const res = await client.getSinglePage({
-    url: `/macros/attachments/${attachment.id}/content`,
+    url: `/api/v2/macros/attachments/${attachment.id}/content`,
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
@@ -184,7 +184,7 @@ const getMacroAttachments = async ({
   // We are ok with calling getSinglePage here
   //  because a macro can be associated with up to five attachments.
   const response = await client.getSinglePage({
-    url: `/macros/${macro.value.id}/attachments`,
+    url: `/api/v2/macros/${macro.value.id}/attachments`,
   })
   if (Array.isArray(response.data)) {
     log.error(`Received invalid response from Zendesk API, ${safeJsonStringify(response.data, undefined, 2)}. Not adding macro attachments`)

@@ -25,10 +25,9 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
-import referencedIdFieldsFilter from './filters/referenced_id_fields'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
-import ducktypeCommonFilters from './filters/ducktype_common'
+import commonFilters from './filters/common'
 import { WORKATO } from './constants'
 import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -43,10 +42,9 @@ export const DEFAULT_FILTERS = [
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
-  // referencedIdFieldsFilter should run after element references are resolved
-  referencedIdFieldsFilter,
   serviceUrlFilter,
-  ...ducktypeCommonFilters,
+  // referencedIdFieldsFilter should run after element references are resolved
+  ...Object.values(commonFilters),
 ]
 
 export interface WorkatoAdapterParams {
@@ -118,11 +116,11 @@ export default class WorkatoAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch workato account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
-    const { elements } = await this.getElements()
+    const { elements, errors } = await this.getElements()
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await this.createFiltersRunner().onFetch(elements)
-    return { elements }
+    return { elements, errors }
   }
 
   @logDuration('updating cross-service references')

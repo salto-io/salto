@@ -42,6 +42,7 @@ import smartValueReferenceFilter from './filters/automation/smart_values/smart_v
 import webhookFilter from './filters/webhook/webhook'
 import screenFilter from './filters/screen/screen'
 import issueTypeScreenSchemeFilter from './filters/issue_type_screen_scheme'
+import issueTypeFilter from './filters/issue_type'
 import fieldConfigurationFilter from './filters/field_configuration/field_configuration'
 import fieldConfigurationIrrelevantFields from './filters/field_configuration/field_configuration_irrelevant_fields'
 import fieldConfigurationSplitFilter from './filters/field_configuration/field_configuration_split'
@@ -70,7 +71,7 @@ import duplicateIdsFilter from './filters/duplicate_ids'
 import unresolvedParentsFilter from './filters/unresolved_parents'
 import fieldNameFilter from './filters/fields/field_name_filter'
 import accountIdFilter from './filters/account_id/account_id_filter'
-import addDisplayNameFilter from './filters/account_id/add_display_name_filter'
+import userIdFilter from './filters/account_id/user_id_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
 import contextDeploymentFilter from './filters/fields/context_deployment_filter'
@@ -80,10 +81,10 @@ import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
 import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
-import resolutionFilter from './filters/resolution'
 import priorityFilter from './filters/priority'
 import statusDeploymentFilter from './filters/statuses/status_deployment'
 import securitySchemeFilter from './filters/security_scheme/security_scheme'
+import groupNameFilter from './filters/group_name'
 import notificationSchemeDeploymentFilter from './filters/notification_scheme/notification_scheme_deployment'
 import notificationSchemeStructureFilter from './filters/notification_scheme/notification_scheme_structure'
 import forbiddenPermissionSchemeFilter from './filters/permission_scheme/forbidden_permission_schemes'
@@ -100,10 +101,16 @@ import { dependencyChanger } from './dependency_changers'
 import { getChangeGroupIds } from './group_change'
 import fetchCriteria from './fetch_criteria'
 import permissionSchemeFilter from './filters/permission_scheme/sd_portals_permission_scheme'
+import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_permission_schemes'
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
-import filtersDcDeployFilter from './filters/filters_dc_deploy'
+import deployDcIssueEventsFilter from './filters/data_center/issue_events'
+import deployDcSecuritySchemeFilter from './filters/data_center/security_scheme'
+import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
+import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
+import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
+import commonFilters from './filters/common'
 
 const {
   generateTypes,
@@ -144,10 +151,15 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
+  issueTypeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,
+  prioritySchemeFetchFilter,
+  prioritySchemeDeployFilter,
+  prioritySchemeProjectAssociationFilter,
   sharePermissionFilter,
   boardFilter,
   boardColumnsFilter,
@@ -160,7 +172,6 @@ export const DEFAULT_FILTERS = [
   projectFilter,
   projectComponentFilter,
   screenFilter,
-  resolutionFilter,
   priorityFilter,
   statusDeploymentFilter,
   securitySchemeFilter,
@@ -196,16 +207,18 @@ export const DEFAULT_FILTERS = [
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
-  // Must run before account id
-  filtersDcDeployFilter,
+  deployDcSecuritySchemeFilter,
+  allowedPermissionsSchemeFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter
-  addDisplayNameFilter,
+  userIdFilter,
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
+  deployDcIssueEventsFilter,
   // Must be last
   defaultInstancesDeployFilter,
+  ...Object.values(commonFilters),
 ]
 
 export interface JiraAdapterParams {
@@ -252,7 +265,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
-    this.getIdMapFunc = getIdMapFuncCreator(paginator)
+    this.getIdMapFunc = getIdMapFuncCreator(paginator, client.isDataCenter)
 
     const filterContext = {}
     this.createFiltersRunner = () => (

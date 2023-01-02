@@ -24,7 +24,7 @@ import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
 import { createMissingInstance } from './references/missing_references'
-import { ZENDESK } from '../constants'
+import { ZENDESK, TICKET_FIELD_TYPE_NAME } from '../constants'
 import { FETCH_CONFIG } from '../config'
 
 
@@ -33,16 +33,14 @@ const log = logger(module)
 const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
+export const TICKET_TICKET_FIELD = 'ticket.ticket_field'
+export const TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
-  'ticket.ticket_field': 'ticket_field',
-  'ticket.ticket_field_option_title': 'ticket_field__custom_field_options',
+  [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
+  [TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
 }
 
-export const SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE = Object.fromEntries(
-  Object.entries(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
-    .map(entry => [entry[1], entry[0]])
-)
 
 const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
 const typeSearchRegexes: RegExp[] = []
@@ -55,7 +53,7 @@ BRACKETS.forEach(([opener, closer]) => {
 })
 const potentialReferenceTypeRegex = new RegExp(`((?:${POTENTIAL_REFERENCE_TYPES.join('|')})_[\\d]+)`, 'g')
 const potentialMacroFields = [
-  'comment_value', 'comment_value_html', 'side_conversation', 'side_conversation_ticket',
+  'comment_value', 'comment_value_html', 'side_conversation', 'side_conversation_ticket', 'subject', 'side_conversation_slack',
 ]
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
@@ -145,22 +143,25 @@ const formulaToTemplate = (
   instancesByType: Record<string, InstanceElement[]>,
   enableMissingReferences?: boolean
 ): TemplateExpression | string => {
-  const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart => {
+  const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
     const splitReference = reference.split(/_([\d]+)/).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, so should contain exactly two parts
     if (splitReference.length !== 2) {
-      return expression
+      return [expression]
     }
     const [type, innerId] = splitReference
     const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]] ?? [])
       .find(instance => instance.value.id?.toString() === innerId)
     if (elem) {
-      return new ReferenceExpression(elem.elemID, elem)
+      return [
+        `${type}_`,
+        new ReferenceExpression(elem.elemID, elem),
+      ]
     }
     // if no id was detected we return the original expression.
     if (!enableMissingReferences) {
-      return expression
+      return [expression]
     }
     // if no id was detected and enableMissingReferences we return a missing reference expression.
     const missingInstance = createMissingInstance(
@@ -169,10 +170,10 @@ const formulaToTemplate = (
       innerId
     )
     missingInstance.value.id = innerId
-    return new ReferenceExpression(
-      missingInstance.elemID,
-      missingInstance
-    )
+    return [
+      `${type}_`,
+      new ReferenceExpression(missingInstance.elemID, missingInstance),
+    ]
   }
 
   const handleDynamicContentReference = (expression: string, ref: RegExpMatchArray):
@@ -240,9 +241,9 @@ const replaceFormulasWithTemplates = async (
   }
 }
 
-const prepRef = (part: ReferenceExpression): TemplatePart => {
-  if (SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]) {
-    return `${SALTO_TYPE_TO_ZENDESK_REFERENCE_TYPE[part.elemID.typeName]}_${part.value.value.id}`
+export const prepRef = (part: ReferenceExpression): TemplatePart => {
+  if (Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE).includes(part.elemID.typeName)) {
+    return `${part.value.value.id}`
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME
     && _.isString(part.value.value.placeholder)) {

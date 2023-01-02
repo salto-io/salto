@@ -58,6 +58,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+        maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
       },
     )
@@ -70,7 +71,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   }
 
   public getUrl(): URL {
-    return new URL(instanceUrl(this.credentials.subdomain))
+    return new URL(instanceUrl(this.credentials.subdomain, this.credentials.domain))
   }
 
   public async getSinglePage(
@@ -85,8 +86,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       if (
         status === 404
         || (status === 403 && [
-          '/workspaces',
-          '/custom_statuses',
+          '/api/v2/workspaces',
+          '/api/v2/custom_statuses',
         ].includes(args.url))
       ) {
         log.warn('Suppressing %d error %o', status, e)

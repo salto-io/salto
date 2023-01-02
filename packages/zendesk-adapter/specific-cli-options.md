@@ -1,12 +1,13 @@
 # Zendesk CLI options
 
 ## Non interactive Login Parameters
-Supprted parameters are:
+Supported parameters are:
 * `username`
 * `password`
 * `subdomain`
+* `domain` (optional)
 
 ### Example
 ```
-salto service add zendesk --login-parameters username=SomeUsername password=SomePasswd subdomain=SomeSubdomain
+salto account add zendesk --login-parameters username=SomeUsername password=SomePasswd subdomain=SomeSubdomain
 ```

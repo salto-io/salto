@@ -56,7 +56,7 @@ export const getAndValidateActiveAccounts = (
 ): string[] => {
   const workspaceAccounts = workspace.accounts()
   if (workspaceAccounts.length === 0) {
-    throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto service add'.`)
+    throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto account add'.`)
   }
 
   const validAccounts = getValidAccounts(workspaceAccounts, inputAccounts)

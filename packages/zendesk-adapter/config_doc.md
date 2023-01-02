@@ -23,6 +23,9 @@ zendesk {
         type = "organization"
       },
     ]
+    guide = {
+      brands = [".*"]
+    }
   }
 }
 ```
@@ -40,6 +43,7 @@ zendesk {
 |---------------------------------------------------------------|--------------------------|------------
 | [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [rateLimit](#rate-limit-configuration-options)                | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
+| [maxRequestsPerMinute]                                        | unlimited                | Limits on the number of requests per minute
 
 #### Client retry options
 
@@ -59,8 +63,9 @@ zendesk {
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
-| [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
-| [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
+| [include](#fetch-entry-options)             | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
+| [guide](#fetch-entry-options)               | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
 
 ## Fetch entry options
 

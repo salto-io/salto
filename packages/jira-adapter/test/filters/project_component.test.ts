@@ -146,4 +146,57 @@ describe('projectComponentFilter', () => {
       expect(instance.value.project).toBeUndefined()
     })
   })
+
+  describe('on data center', () => {
+    beforeEach(async () => {
+      const { client: cli, paginator } = mockClient(true)
+      client = cli
+
+      deployChangeMock.mockClear()
+
+      filter = projectComponentFilter(getFilterParams({
+        client,
+        paginator,
+      })) as typeof filter
+    })
+    it('should set lead account id on fetch', async () => {
+      instance.value = {
+        lead: {
+          key: '1',
+        },
+      }
+      await filter.onFetch([instance])
+      expect(instance.value.leadAccountId).toEqual('1')
+    })
+    it('should set lead user name on pre deploy', async () => {
+      instance.value.leadAccountId = '1'
+      await filter.preDeploy([toChange({ after: instance })])
+      expect(instance.value.leadUserName).toEqual('1')
+      expect(instance.value.leadAccountId).toBeUndefined()
+    })
+    it('should switch to leadAccountId on onDeploy', async () => {
+      instance.value.leadUserName = '18'
+      await filter.onDeploy([toChange({ after: instance })])
+      expect(instance.value.leadAccountId).toEqual('18')
+      expect(instance.value.leadUserName).toBeUndefined()
+    })
+    it('should not fail or change when there is no lead property', async () => {
+      instance.value = {
+        leader: {
+          key: '1',
+        },
+      }
+      await filter.onFetch([instance])
+      expect(instance.value.leadAccountId).toBeUndefined()
+    })
+  })
+  it('should not fail or change when there is no lead property', async () => {
+    instance.value = {
+      leader: {
+        key: '1',
+      },
+    }
+    await filter.onFetch([instance])
+    expect(instance.value.leadAccountId).toBeUndefined()
+  })
 })

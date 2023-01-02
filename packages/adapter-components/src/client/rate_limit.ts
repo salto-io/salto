@@ -28,19 +28,34 @@ export type BottleneckBuckets<TRateLimitConfig> = {
   [P in keyof Required<TRateLimitConfig>]: Bottleneck
 }
 
-export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitExtendedConfig>(
-  rateLimit: Required<TRateLimitConfig>,
-  clientName: string,
-): BottleneckBuckets<TRateLimitConfig> => {
+export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitExtendedConfig>({
+  rateLimit,
+  maxRequestsPerMinute,
+  clientName,
+}: {
+  rateLimit: Required<TRateLimitConfig>
+  maxRequestsPerMinute?: number
+  clientName: string
+}): BottleneckBuckets<TRateLimitConfig> => {
   const toLimit = (
     num: number | undefined
   // 0 is an invalid value (blocked in configuration)
   ): number | undefined => (num && num < 0 ? undefined : num)
   const rateLimitConfig = _.mapValues(rateLimit, toLimit)
   log.debug('%s client rate limit config: %o', clientName, rateLimitConfig)
+  const reservoirArgs = maxRequestsPerMinute !== undefined && maxRequestsPerMinute > 0
+    ? {
+      reservoir: maxRequestsPerMinute,
+      reservoirRefreshAmount: maxRequestsPerMinute,
+      reservoirRefreshInterval: 60 * 1000,
+    }
+    : {}
   return _.mapValues(
     rateLimitConfig,
-    val => new Bottleneck({ maxConcurrent: val })
+    val => new Bottleneck({
+      maxConcurrent: val,
+      ...reservoirArgs,
+    })
   ) as BottleneckBuckets<TRateLimitConfig>
 }
 

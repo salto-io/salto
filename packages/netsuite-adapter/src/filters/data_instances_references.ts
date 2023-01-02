@@ -14,25 +14,54 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, isInstanceElement, isListType, isObjectType, isReferenceExpression, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
+import { ElemID, isElement, isInstanceElement, isListType, isReferenceExpression, ObjectType, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { isDataObjectType } from '../types'
+import { getElementValueOrAnnotations, isDataObjectType } from '../types'
 import { FilterCreator, FilterWith } from '../filter'
-import { getDataInstanceId } from '../elements_source_index/elements_source_index'
+import { assignToInternalIdsIndex, getDataInstanceId } from '../elements_source_index/elements_source_index'
+import { PARENT } from '../constants'
 
 const { awu } = collections.asynciterable
 
 const generateReference = (
   value: Value,
-  type: TypeElement,
+  type: TypeElement | undefined,
   elementsMap: Record<string, ElemID>,
-): ReferenceExpression | undefined =>
+): ReferenceExpression | undefined => {
+  if (!value.internalId) {
+    return undefined
+  }
+  if (type && elementsMap[getDataInstanceId(value.internalId, type.elemID.name)]) {
+    return new ReferenceExpression(
+      elementsMap[getDataInstanceId(value.internalId, type.elemID.name)]
+    )
+  }
+  if (elementsMap[getDataInstanceId(value.internalId, value.typeId)]) {
+    return new ReferenceExpression(
+      elementsMap[getDataInstanceId(value.internalId, value.typeId)]
+    )
+  }
+  return undefined
+}
+
+const generateParentReference = (
+  value: Value,
+  path: ElemID | undefined,
+  type: ObjectType,
+  elementsMap: Record<string, ElemID>,
+): ReferenceExpression | undefined => (
   value.internalId
-  && elementsMap[getDataInstanceId(value.internalId, type)]
-  && new ReferenceExpression(elementsMap[getDataInstanceId(value.internalId, type)])
+  && path && path.nestingLevel === 1 && path.name === PARENT
+  && elementsMap[getDataInstanceId(value.internalId, type.elemID.name)]
+    ? new ReferenceExpression(
+      elementsMap[getDataInstanceId(value.internalId, type.elemID.name)]
+    )
+    : undefined
+)
 
 const replaceReference = (
+  type: ObjectType,
   elementsMap: Record<string, ElemID>
 ): TransformFunc => async ({ value, path, field }) => {
   if (path?.isTopLevel()) {
@@ -50,49 +79,45 @@ const replaceReference = (
     ))
   }
 
-  const reference = fieldType && generateReference(value, fieldType, elementsMap)
+  const reference = generateReference(value, fieldType, elementsMap)
   if (reference !== undefined) {
     return reference
+  }
+  const parentReference = generateParentReference(value, path, type, elementsMap)
+  if (parentReference !== undefined) {
+    return parentReference
   }
   return value
 }
 
+const getReferenceInternalId = (reference: ReferenceExpression): Value => (
+  isElement(reference.value)
+    ? getElementValueOrAnnotations(reference.value)
+    : reference.value ?? {}
+).internalId
+
 const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    const types = elements.filter(isObjectType)
-    const instances = elements.filter(isInstanceElement)
     const elementsMap: Record<string, ElemID> = isPartial ? _.clone(
       (await elementsSourceIndex.getIndexes()).internalIdsIndex ?? {}
     ) : {}
 
-    const instancesWithInternalId = instances
-      .filter(instance => instance.value.internalId !== undefined)
-    await awu(instancesWithInternalId).forEach(async instance => {
-      const instanceId = getDataInstanceId(
-        instance.value.internalId,
-        await instance.getType(),
-      )
-      elementsMap[instanceId] = instance.elemID
+    await awu(elements).forEach(async element => {
+      await assignToInternalIdsIndex(element, elementsMap)
     })
 
-    types
-      .filter(type => type.annotations.internalId !== undefined)
-      .forEach(type => {
-        const typeId = getDataInstanceId(type.annotations.internalId, type)
-        elementsMap[typeId] = type.elemID
-      })
-
-    await awu(instances)
+    await awu(elements)
+      .filter(isInstanceElement)
       .filter(async e => isDataObjectType(await e.getType()))
       .forEach(async instance => {
-        const values = await transformValues({
+        const type = await instance.getType()
+        instance.value = await transformValues({
           values: instance.value,
-          type: await instance.getType(),
-          transformFunc: replaceReference(elementsMap),
+          type,
+          transformFunc: replaceReference(type, elementsMap),
           strict: false,
           pathID: instance.elemID,
-        }) ?? instance.value
-        instance.value = values
+        }) ?? {}
       })
   },
 
@@ -113,18 +138,15 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
               pathID: element.elemID,
               transformFunc: async ({ value, field }) => {
                 if (isReferenceExpression(value)) {
-                  return { internalId: (await value.getResolvedValue()).value.internalId }
+                  return { internalId: getReferenceInternalId(value) }
                 }
                 if (Array.isArray(value) && field?.annotations.isReference) {
                   return {
-                    'platformCore:recordRef': await awu(value).map(
-                      async val => (isReferenceExpression(val)
-                        ? {
-                          attributes: {
-                            internalId: (await val.getResolvedValue()).value.internalId,
-                          },
-                        } : val)
-                    ).toArray(),
+                    'platformCore:recordRef': value.map(val => (
+                      isReferenceExpression(val)
+                        ? { attributes: { internalId: getReferenceInternalId(val) } }
+                        : val
+                    )),
                   }
                 }
                 return value

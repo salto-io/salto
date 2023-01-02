@@ -66,12 +66,18 @@ export const getInstancesWithCollidingElemID = (instances: InstanceElement[]): I
     .flat()
 
 const logInstancesWithCollidingElemID = async (
-  typeToElemIDtoInstances: Record<string, Record<string, InstanceElement[]>>
+  typeToElemIDtoInstances: Record<string, Record<string, InstanceElement[]>>,
+  skipLogCollisionStringify?: boolean
 ): Promise<void> => {
   Object.entries(typeToElemIDtoInstances).forEach(([type, elemIDtoInstances]) => {
     const instancesCount = Object.values(elemIDtoInstances).flat().length
     log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
     Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
+      // SALTO-3059
+      if (skipLogCollisionStringify) {
+        log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID}`)
+        return
+      }
       const relevantInstanceValues = elemIDInstances
         .map(instance => _.pickBy(instance.value, val => val != null))
       const relevantInstanceValuesStr = relevantInstanceValues
@@ -93,6 +99,8 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownElements = MAX_BREAKDOWN_ELEMENTS,
   maxBreakdownDetailsElements = MAX_BREAKDOWN_DETAILS_ELEMENTS,
   baseUrl,
+  skipLogCollisionStringify,
+  docsUrl,
 }: {
   instances: InstanceElement[]
   getTypeName: (instance: InstanceElement) => Promise<string>
@@ -104,9 +112,11 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownElements?: number
   maxBreakdownDetailsElements?: number
   baseUrl?: string
+  skipLogCollisionStringify?: boolean
+  docsUrl?: string
 }): Promise<SaltoError[]> => {
   const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instances, getTypeName)
-  await logInstancesWithCollidingElemID(typeToElemIDtoInstances)
+  await logInstancesWithCollidingElemID(typeToElemIDtoInstances, skipLogCollisionStringify)
   return Promise.all(Object.entries(typeToElemIDtoInstances)
     .map(async ([type, elemIDtoInstances]) => {
       const numInstances = Object.values(elemIDtoInstances)
@@ -126,6 +136,7 @@ ${getInstancesDetailsMsg(await Promise.all(collisionInstances.map(getInstanceNam
 Alternatively, you can exclude ${type} from the ${configurationName} configuration in ${adapterName}.nacl`
       const elemIDCount = Object.keys(elemIDtoInstances).length
       const overflowMsg = elemIDCount > maxBreakdownElements ? ['', `And ${elemIDCount - maxBreakdownElements} more colliding Salto IDs`] : []
+      const linkToDocsMsg = docsUrl ? ['', `Learn more at: ${docsUrl}`] : []
       return createWarningFromMsg([
         header,
         '',
@@ -134,6 +145,7 @@ Alternatively, you can exclude ${type} from the ${configurationName} configurati
         ...overflowMsg,
         '',
         epilogue,
+        ...linkToDocsMsg,
       ].join('\n'))
     }))
 }

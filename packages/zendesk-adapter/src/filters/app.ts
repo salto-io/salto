@@ -20,7 +20,7 @@ import {
   isInstanceElement, Element,
 } from '@salto-io/adapter-api'
 import { retry } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -48,7 +48,7 @@ const EXPECTED_APP_SCHEMA = Joi.object({
 const isJobStatus = (value: unknown): value is JobStatus => {
   const { error } = EXPECTED_APP_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the job status: ${error.message}, ${safeJsonStringify(value)}`)
+    log.error(`Received an invalid response for the job status: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
     return false
   }
   return true
@@ -57,7 +57,7 @@ const isJobStatus = (value: unknown): value is JobStatus => {
 const checkIfJobIsDone = async (
   client: ZendeskClient, jobId: string, fullName: string
 ): Promise<boolean> => {
-  const res = (await client.getSinglePage({ url: `/apps/job_statuses/${jobId}` })).data
+  const res = (await client.getSinglePage({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
     throw new Error(`Got an invalid response for job status. Element: ${fullName}. Job ID: ${jobId}`)
   }

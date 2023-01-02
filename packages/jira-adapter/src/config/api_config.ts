@@ -687,9 +687,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
     request: {
       url: '/rest/api/3/project/{projectId}/permissionscheme',
-      queryParams: {
-        expand: 'all',
-      },
     },
     deployRequests: {
       add: {
@@ -720,65 +717,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  Projects: {
-    request: {
-      url: '/rest/api/3/project/search',
-      paginationField: 'startAt',
-      queryParams: {
-        expand: 'description,lead,url',
-      },
-      recurseInto: [
-        {
-          type: 'PageBeanComponentWithIssueCount',
-          toField: 'components',
-          context: [{ name: 'projectIdOrKey', fromField: 'id' }],
-        },
-        {
-          type: 'ContainerOfWorkflowSchemeAssociations',
-          toField: 'workflowScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'PermissionScheme',
-          toField: 'permissionScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'NotificationScheme',
-          toField: 'notificationScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'ProjectSecurityScheme',
-          toField: 'issueSecurityScheme',
-          context: [{ name: 'projectKeyOrId', fromField: 'key' }],
-          isSingle: true,
-        },
-        {
-          type: 'PageBeanIssueTypeScreenSchemesProjects',
-          toField: 'issueTypeScreenScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'PageBeanIssueTypeSchemeProjects',
-          toField: 'issueTypeScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-        {
-          type: 'PageBeanFieldConfigurationSchemeProjects',
-          toField: 'fieldConfigurationScheme',
-          context: [{ name: 'projectId', fromField: 'id' }],
-          isSingle: true,
-        },
-      ],
-    },
-  },
-
   RoleActor: {
     transformation: {
       fieldsToOmit: [
@@ -827,6 +765,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueSecurityScheme', fieldType: 'ProjectSecurityScheme' },
         { fieldName: 'issueTypeScreenScheme', fieldType: 'IssueTypeScreenScheme' },
         { fieldName: 'fieldConfigurationScheme', fieldType: 'FieldConfigurationScheme' },
+        { fieldName: 'priorityScheme', fieldType: 'number' },
         { fieldName: 'issueTypeScheme', fieldType: ISSUE_TYPE_SCHEMA_NAME },
         { fieldName: 'fieldContexts', fieldType: `list<${FIELD_CONTEXT_TYPE_NAME}>` },
       ],
@@ -923,11 +862,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddNotificationScheme.jspa',
-      modify: '/secure/admin/EditNotificationScheme.jspa',
-      remove: '/secure/admin/DeleteNotificationScheme.jspa',
-    },
   },
   NotificationSchemeEvent: {
     transformation: {
@@ -935,11 +869,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'eventType', fieldType: 'number' },
         { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
       ],
-    },
-    jspRequests: {
-      add: '/secure/admin/AddNotification.jspa',
-      remove: '/secure/admin/DeleteNotification.jspa',
-      query: '/rest/api/3/notificationscheme/{id}?expand=all',
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {
@@ -989,10 +918,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       serviceUrl: '/secure/admin/EditResolution!default.jspa?id={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddResolution.jspa',
-      modify: '/secure/admin/EditResolution.jspa',
-      query: '/rest/api/3/resolution',
+    deployRequests: {
+      add: {
+        url: '/rest/api/3/resolution',
+        method: 'post',
+      },
+      modify: {
+        url: '/rest/api/3/resolution/{id}',
+        method: 'put',
+      },
     },
   },
 
@@ -1167,13 +1101,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
       serviceUrl: '/secure/admin/EditIssueSecurityScheme!default.jspa?=&schemeId={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddIssueSecurityScheme.jspa',
-      modify: '/secure/admin/EditIssueSecurityScheme.jspa',
-      remove: '/secure/admin/DeleteIssueSecurityScheme.jspa',
-      query: '/rest/api/3/issuesecurityschemes',
-      dataField: 'issueSecuritySchemes',
-    },
   },
 
   ProjectSecurityScheme: {
@@ -1213,12 +1140,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueSecurityLevelId' },
       ],
     },
-    jspRequests: {
-      add: '/secure/admin/AddIssueSecurity.jspa',
-      remove: '/secure/admin/DeleteIssueSecurity.jspa',
-      query: '/rest/api/3/issuesecurityschemes/{schemeId}/members',
-      dataField: 'values',
-    },
   },
 
   SecurityLevel: {
@@ -1250,13 +1171,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           fieldName: 'self',
         },
       ],
-    },
-    jspRequests: {
-      add: '/secure/admin/EditIssueSecurities!addLevel.jspa',
-      modify: '/secure/admin/EditSecurityLevel.jspa',
-      remove: '/secure/admin/DeleteIssueSecurityLevel.jspa',
-      query: '/rest/api/3/issuesecurityschemes/{schemeId}',
-      dataField: 'levels',
     },
   },
 
@@ -1340,7 +1254,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'untranslatedName', fieldType: 'string' },
       ],
       fieldsToOmit: [
-        { fieldName: 'subtask' },
         { fieldName: 'avatarId' },
         { fieldName: 'iconUrl' },
       ],
@@ -1411,8 +1324,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 
   Group: {
     transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'originalName', fieldType: 'string' },
+      ],
       fieldsToHide: [
         { fieldName: 'groupId' },
+        { fieldName: 'originalName' },
       ],
       serviceIdField: 'groupId',
     },
@@ -1422,7 +1339,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         method: 'post',
       },
       remove: {
-        url: '/rest/api/3/group?groupId={groupId}',
+        url: '/rest/api/3/group?groupname={name}',
         method: 'delete',
       },
     },
@@ -1548,12 +1465,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         },
       ],
       serviceUrl: '/secure/admin/ListEventTypes.jspa',
-    },
-  },
-  Priorities: {
-    request: {
-      url: '/rest/api/3/priority/search',
-      paginationField: 'startAt',
     },
   },
   Priority: {
@@ -1702,7 +1613,7 @@ const SUPPORTED_TYPES = {
 
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/platform-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/platform-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'FilterDetails',
@@ -1777,16 +1688,8 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
         newName: 'NotificationSchemes',
       },
       {
-        originalName: 'PageBeanPriority',
-        newName: 'Priorities',
-      },
-      {
         originalName: 'rest__api__3__projectCategory',
         newName: 'ProjectCategories',
-      },
-      {
-        originalName: 'PageBeanProject',
-        newName: 'Projects',
       },
       {
         originalName: 'ComponentWithIssueCount',
@@ -1852,7 +1755,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
     ],
   },
   jiraSwagger: {
-    url: 'https://raw.githubusercontent.com/salto-io/jira-swaggers/main/software-swagger.v3.json',
+    url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/jira/software-swagger.v3.json',
     typeNameOverrides: [
       {
         originalName: 'rest__agile__1_0__board@uuuuvuu',

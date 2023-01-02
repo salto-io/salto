@@ -20,6 +20,9 @@ junit.xml
 # yarn
 yarn-error.log
 
+# salto logs
+logsalto.log
+
 # jest
 /.jest_cache
 
@@ -30,4 +33,3 @@ yarn-error.log
 .cache
 
 .eslintcache
-

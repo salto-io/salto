@@ -19,11 +19,20 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import ZendeskAdapter from './adapter'
 import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
-  configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, validateFetchConfig,
-  API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskFetchConfig, validateGuideTypesConfig,
+  configType,
+  ZendeskConfig,
+  CLIENT_CONFIG,
+  FETCH_CONFIG,
+  validateFetchConfig,
+  API_DEFINITIONS_CONFIG,
+  DEFAULT_CONFIG,
+  ZendeskFetchConfig,
+  validateGuideTypesConfig,
+  GUIDE_SUPPORTED_TYPES,
 } from './config'
 import ZendeskClient from './client/client'
-import { createConnection } from './client/connection'
+import { createConnection, instanceUrl } from './client/connection'
+import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
@@ -51,22 +60,27 @@ see https://support.zendesk.com/hc/en-us/articles/4408845965210 for more informa
 */
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
+  const domain = config.value.domain === undefined || config.value.domain === ''
+    ? undefined
+    : config.value.domain
   if (config.value.authType === 'oauth') {
     return {
       accessToken: config.value.accessToken,
       subdomain: config.value.subdomain,
+      domain,
     }
   }
   return {
     username: config.value.username,
     password: config.value.password,
     subdomain: config.value.subdomain,
+    domain,
   }
 }
 
 export const createUrlFromUserInput = (value: Values): string => {
-  const { subdomain, port, clientId } = value
-  return `https://${subdomain}.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:${port}&client_id=${clientId}&scope=read%20write`
+  const { subdomain, domain, port, clientId } = value
+  return `${instanceUrl(subdomain, domain)}/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:${port}&client_id=${clientId}&scope=read%20write`
 }
 
 const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => ({
@@ -76,6 +90,10 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
+  const isGuideDisabled = config?.value.fetch.guide === undefined
+  DEFAULT_CONFIG.apiDefinitions.supportedTypes = isGuideDisabled
+    ? DEFAULT_CONFIG.apiDefinitions.supportedTypes
+    : { ...DEFAULT_CONFIG.apiDefinitions.supportedTypes, ...GUIDE_SUPPORTED_TYPES }
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions
@@ -156,14 +174,16 @@ export const adapter: Adapter = {
       credentialsType: oauthAccessTokenCredentialsType,
       oauthRequestParameters: oauthRequestParametersType,
       createFromOauthResponse: (inputConfig: Values, response: OauthAccessTokenResponse) => {
-        const { subdomain } = inputConfig
+        const { subdomain, domain } = inputConfig
         const { accessToken } = response.fields
         return {
           subdomain,
+          domain,
           accessToken,
         }
       },
     },
   },
   configType,
+  configCreator,
 }

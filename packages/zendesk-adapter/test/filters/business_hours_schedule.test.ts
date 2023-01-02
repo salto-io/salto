@@ -74,7 +74,7 @@ describe('business hours schedule filter', () => {
     })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
-      url: '/business_hours/schedules/2/workweek',
+      url: '/api/v2/business_hours/schedules/2/workweek',
       data: { workweek: { intervals } },
     })
     expect(res.leftoverChanges).toHaveLength(0)
@@ -106,7 +106,7 @@ describe('business hours schedule filter', () => {
     })
     expect(mockPut).toHaveBeenCalledTimes(1)
     expect(mockPut).toHaveBeenCalledWith({
-      url: '/business_hours/schedules/2/workweek',
+      url: '/api/v2/business_hours/schedules/2/workweek',
       data: { workweek: { intervals } },
     })
     expect(res.leftoverChanges).toHaveLength(0)

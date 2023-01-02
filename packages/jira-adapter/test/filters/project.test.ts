@@ -35,7 +35,7 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('projectFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'deploy' | 'onDeploy' | 'preDeploy'>
   let instance: InstanceElement
   let client: JiraClient
   let type: ObjectType
@@ -63,6 +63,7 @@ describe('projectFilter', () => {
         issueTypeScreenScheme: { refType: BuiltinTypes.STRING },
         fieldConfigurationScheme: { refType: BuiltinTypes.STRING },
         issueTypeScheme: { refType: BuiltinTypes.STRING },
+        priorityScheme: { refType: BuiltinTypes.STRING },
         components: { refType: BuiltinTypes.STRING },
       },
     })
@@ -108,11 +109,13 @@ describe('projectFilter', () => {
         issueSecurityScheme: {
           id: '8',
         },
+        priorityScheme: 9,
       }
-      await filter.onFetch([type, instance])
     })
 
-    it('should add the deployment annotations to the schemes', () => {
+    it('should add the deployment annotations to the schemes', async () => {
+      await filter.onFetch([type, instance])
+
       expect(type.fields.workflowScheme.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -129,9 +132,51 @@ describe('projectFilter', () => {
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })
+
+      expect(type.fields.priorityScheme.annotations).toEqual({
+      })
     })
 
-    it('should add the deployment annotations to the components', () => {
+    it('should add the deployment annotations to priority scheme if DC', async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      deployChangeMock.mockClear()
+
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+      })) as typeof filter
+
+      await filter.onFetch([type, instance])
+
+      expect(type.fields.workflowScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+      expect(type.fields.issueTypeScreenScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+      expect(type.fields.fieldConfigurationScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+      expect(type.fields.issueTypeScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+
+      expect(type.fields.priorityScheme.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+    })
+
+    it('should add the deployment annotations to the components', async () => {
+      await filter.onFetch([type, instance])
+
       expect(type.fields.components.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
@@ -139,10 +184,14 @@ describe('projectFilter', () => {
     })
 
     it('should set the leadAccountId', async () => {
+      await filter.onFetch([type, instance])
+
       expect(instance.value.leadAccountId).toEqual('1')
     })
 
     it('should set the schemas ids', async () => {
+      await filter.onFetch([type, instance])
+
       expect(instance.value.workflowScheme).toEqual('2')
       expect(instance.value.issueTypeScreenScheme).toEqual('3')
       expect(instance.value.fieldConfigurationScheme).toEqual('4')
@@ -153,6 +202,8 @@ describe('projectFilter', () => {
     })
 
     it('For impartial instance should set undefined', async () => {
+      await filter.onFetch([type, instance])
+
       instance.value = {
       }
       await filter.onFetch([instance])
@@ -167,28 +218,64 @@ describe('projectFilter', () => {
       const afterInstance = instance.clone()
       afterInstance.value.workflowScheme = 1
       afterInstance.value.id = 2
+      afterInstance.value.priorityScheme = 10
 
       change = toChange({ before: instance, after: afterInstance })
-
-      await filter.deploy([change])
     })
-    it('should call deployChange and ignore scheme', () => {
+    it('should call deployChange and ignore scheme', async () => {
+      await filter.deploy([change])
       expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
         fieldsToIgnore: ['components', 'workflowScheme', 'issueTypeScreenScheme',
-          'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD],
+          'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
       })
     })
 
-    it('should call the endpoint to set the scheme', () => {
+    it('should call the endpoint to set the scheme', async () => {
+      await filter.deploy([change])
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme/project',
         {
           workflowSchemeId: 1,
           projectId: 2,
+        },
+        undefined,
+      )
+    })
+
+    it('should call the endpoint to set the priorityScheme', async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      deployChangeMock.mockClear()
+
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+      })) as typeof filter
+
+      await filter.deploy([change])
+
+      expect(connection.put).toHaveBeenCalledWith(
+        '/rest/api/2/project/2/priorityscheme',
+        {
+          id: 10,
+        },
+        undefined,
+      )
+    })
+
+    it('should not call the endpoint to set the priorityScheme if cloud', async () => {
+      await filter.deploy([change])
+
+      expect(connection.put).not.toHaveBeenCalledWith(
+        '/rest/api/2/project/2/priorityscheme',
+        {
+          id: 10,
         },
         undefined,
       )
@@ -200,6 +287,7 @@ describe('projectFilter', () => {
 
     beforeEach(async () => {
       instance.value.id = 3
+      instance.value.priorityScheme = 11
       change = toChange({ after: instance })
 
       connection.get.mockResolvedValue({
@@ -215,27 +303,31 @@ describe('projectFilter', () => {
           ],
         },
       })
-
-      await filter.deploy([change])
     })
-    it('should call deployChange and ignore the right fields', () => {
+    it('should call deployChange and ignore the right fields', async () => {
+      await filter.deploy([change])
+
       expect(deployChangeMock).toHaveBeenCalledWith({
         change,
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
       })
     })
 
-    it('should call the endpoint to get the components', () => {
+    it('should call the endpoint to get the components', async () => {
+      await filter.deploy([change])
+
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/3',
         undefined,
       )
     })
 
-    it('should call the endpoint to remove the components', () => {
+    it('should call the endpoint to remove the components', async () => {
+      await filter.deploy([change])
+
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/1',
         undefined,
@@ -246,13 +338,48 @@ describe('projectFilter', () => {
         undefined,
       )
     })
+
+    it('should call the endpoint to set the priorityScheme', async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      deployChangeMock.mockClear()
+
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+      })) as typeof filter
+
+      await filter.deploy([change])
+
+      expect(connection.put).toHaveBeenCalledWith(
+        '/rest/api/2/project/3/priorityscheme',
+        {
+          id: 11,
+        },
+        undefined,
+      )
+    })
+
+    it('should not call the endpoint to set the priorityScheme if cloud', async () => {
+      await filter.deploy([change])
+
+      expect(connection.put).not.toHaveBeenCalledWith(
+        '/rest/api/2/project/3/priorityscheme',
+        {
+          id: 11,
+        },
+        undefined,
+      )
+    })
   })
 
   describe('When deploying an addition change with 500 error', () => {
     let change: Change
 
     beforeEach(async () => {
-      deployChangeMock.mockRejectedValue({
+      deployChangeMock.mockRejectedValueOnce({
         response: {
           status: 500,
         },
@@ -260,6 +387,7 @@ describe('projectFilter', () => {
 
       instance.value.id = '3'
       instance.value.key = 'key'
+
       change = toChange({ after: instance })
 
       connection.get.mockImplementation(async url => {
@@ -304,7 +432,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
       })
     })
 
@@ -353,7 +481,7 @@ describe('projectFilter', () => {
     let change: Change
 
     beforeEach(async () => {
-      deployChangeMock.mockRejectedValue({
+      deployChangeMock.mockRejectedValueOnce({
         response: {
           status: 500,
         },
@@ -402,7 +530,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
       })
     })
 
@@ -455,6 +583,77 @@ describe('projectFilter', () => {
 
     it('should convert the id to string', async () => {
       expect(instance.value.id).toEqual('1')
+    })
+  })
+  describe('preDeploy', () => {
+    it('should do nothing', async () => {
+      instance.value.leadAccountId = '1'
+      await filter.preDeploy([toChange({ after: instance })])
+      expect(instance.value.leadAccountId).toEqual('1')
+    })
+  })
+  describe('on data center', () => {
+    beforeEach(async () => {
+      const { client: cli, paginator, connection: conn } = mockClient(true)
+      client = cli
+      connection = conn
+
+      deployChangeMock.mockClear()
+
+      filter = projectFilter(getFilterParams({
+        client,
+        paginator,
+      })) as typeof filter
+    })
+    it('should set lead account id on fetch', async () => {
+      instance.value = {
+        lead: {
+          key: '1',
+        },
+      }
+      await filter.onFetch([instance])
+      expect(instance.value.leadAccountId).toEqual('1')
+    })
+    it('should set back lead on pre deploy', async () => {
+      instance.value.leadAccountId = '1'
+      await filter.preDeploy([toChange({ after: instance })])
+      expect(instance.value.lead).toEqual('1')
+      expect(instance.value.leadAccountId).toBeUndefined()
+    })
+    describe('when deploying addition change', () => {
+      let change: Change
+      beforeEach(async () => {
+        instance.value.workflowScheme = 1
+        instance.value.id = 2
+        change = toChange({ after: instance })
+        await filter.deploy([change])
+      })
+      it('should call deployChange and ignore scheme', () => {
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change,
+          client,
+          endpointDetails: getDefaultConfig({ isDataCenter: true })
+            .apiDefinitions.types.Project.deployRequests,
+          fieldsToIgnore: ['components', 'workflowScheme', 'issueTypeScreenScheme',
+            'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
+        })
+      })
+      it('should call the endpoint to set the scheme', () => {
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/salto/1.0/workflowscheme/project',
+          {
+            workflowSchemeId: 1,
+            projectId: 2,
+          },
+          undefined,
+        )
+      })
+    })
+    it('should switch to leadAccountId on onDeploy', async () => {
+      instance.value.lead = '18'
+      await filter.onDeploy([toChange({ after: instance })])
+      expect(instance.value.leadAccountId).toEqual('18')
+      expect(instance.value.lead).toBeUndefined()
     })
   })
 })

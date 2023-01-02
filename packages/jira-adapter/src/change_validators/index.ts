@@ -28,6 +28,7 @@ import { privateApiValidator } from './private_api'
 import { workflowValidator } from './workflow'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
+import { permissionTypeValidator } from './permission_type'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
@@ -35,9 +36,9 @@ import { globalProjectContextsValidator } from './global_project_contexts'
 import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
-import { accountIdValidator } from './account_id'
 import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
 import { GetIdMapFunc } from '../users_map'
+import { accountIdValidator } from './account_id'
 
 const {
   deployTypesNotSupportedValidator,
@@ -59,6 +60,7 @@ export default (
     workflowValidator,
     dashboardGadgetsValidator,
     dashboardLayoutValidator,
+    permissionTypeValidator,
     automationsValidator,
     maskingValidator(client),
     lockedFieldsValidator,

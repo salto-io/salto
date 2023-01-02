@@ -34,6 +34,7 @@ import { updateDeprecatedConfiguration } from './deprecated_config'
 import createChangeValidator, { changeValidators } from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
+import { configCreator } from './config_creator'
 
 const log = logger(module)
 
@@ -189,11 +190,15 @@ export const adapter: Adapter = {
       deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
       validate: salesforceAdapter.validate.bind(salesforceAdapter),
       deployModifiers: {
-        changeValidator: createChangeValidator({ config, checkOnly: false }),
+        changeValidator: createChangeValidator(
+          { config, isSandbox: credentials.isSandbox, checkOnly: false }
+        ),
         getChangeGroupIds,
       },
       validationModifiers: {
-        changeValidator: createChangeValidator({ config, checkOnly: true }),
+        changeValidator: createChangeValidator(
+          { config, isSandbox: credentials.isSandbox, checkOnly: true }
+        ),
       },
     }
   },
@@ -217,4 +222,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  configCreator,
 }

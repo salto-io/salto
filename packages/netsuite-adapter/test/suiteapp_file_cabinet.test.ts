@@ -24,7 +24,7 @@ import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionErr
 import { customtransactiontypeType } from '../src/autogen/types/standard_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
-import { ElementsSourceIndexes } from '../src/elements_source_index/types'
+import { ElementsSourceIndexes, LazyElementsSourceIndexes } from '../src/elements_source_index/types'
 
 const { awu } = collections.asynciterable
 
@@ -65,6 +65,18 @@ describe('suiteapp_file_cabinet', () => {
     description: 'desc3',
     islink: 'T',
     url: 'someUrl',
+  },
+  // file with unknown folder id will be filtered out
+  {
+    addtimestamptourl: 'F',
+    filesize: '10',
+    folder: '123',
+    hideinbundle: 'F',
+    id: '101',
+    isinactive: 'F',
+    isonline: 'F',
+    name: 'file101',
+    description: 'desc101',
   }]
 
   const topLevelFoldersResponse = [{
@@ -91,6 +103,26 @@ describe('suiteapp_file_cabinet', () => {
     parent: '5',
     bundleable: 'T',
     description: 'desc4',
+  },
+  // folder with unknown parent id will be filtered out
+  {
+    id: '102',
+    isinactive: 'T',
+    isprivate: 'T',
+    name: 'folder102',
+    parent: '123',
+    bundleable: 'T',
+    description: 'desc102',
+  },
+  // inner folder with unknown parent id will be filtered out
+  {
+    id: '1102',
+    isinactive: 'T',
+    isprivate: 'T',
+    name: 'innerFolder102',
+    parent: '102',
+    bundleable: 'T',
+    description: 'descInner102',
   }]
 
   const expectedResults = [
@@ -516,45 +548,7 @@ describe('suiteapp_file_cabinet', () => {
   })
 
   describe('deploy', () => {
-    let changes: Change<InstanceElement>[]
-    const elementsSourceIndexes = {
-      getIndexes: async () => ({
-        pathToInternalIdsIndex: {
-          ...Object.fromEntries(_.range(100).map(i => [`/instance${i}`, i])),
-          '/instance1/instance101': 101,
-        },
-      } as unknown as ElementsSourceIndexes),
-    }
-
     beforeEach(() => {
-      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-        if (suiteQlQuery.includes('FROM file')) {
-          return [{
-            id: '101',
-            isinactive: 'F',
-            isprivate: 'F',
-            name: 'instance101',
-            bundleable: 'F',
-            folder: '1',
-            addtimestamptourl: 'F',
-            filesize: '3',
-            isonline: 'F',
-            hideinbundle: 'F',
-          }]
-        }
-
-        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-          return Array.from(Array(100).keys()).map(id => ({
-            id: id.toString(),
-            isinactive: 'F',
-            isprivate: 'F',
-            name: `instance${id}`,
-            bundleable: 'F',
-          }))
-        }
-        throw new Error(`Unexpected query: ${suiteQlQuery}`)
-      })
-
       mockSuiteAppClient.updateFileCabinetInstances.mockImplementation(
         async fileCabinetInstances => fileCabinetInstances.map(({ id }: { id: number }) => id)
       )
@@ -565,27 +559,37 @@ describe('suiteapp_file_cabinet', () => {
       mockSuiteAppClient.deleteFileCabinetInstances.mockImplementation(
         async fileCabinetInstances => fileCabinetInstances.map(({ id }: { id: number }) => id)
       )
-
-      changes = Array.from(Array(100).keys()).map(id => toChange({
-        before: new InstanceElement(
-          `instance${id}`,
-          folder,
-          {
-            path: `/instance${id}`,
-          }
-        ),
-        after: new InstanceElement(
-          `instance${id}`,
-          folder,
-          {
-            path: `/instance${id}`,
-            description: 'aaa',
-          }
-        ),
-      }))
     })
 
     describe('modifications', () => {
+      const elementsSourceIndexes: LazyElementsSourceIndexes = {
+        getIndexes: () => {
+          throw new Error('getIndexes should not be called!')
+        },
+      }
+
+      let changes: Change<InstanceElement>[]
+      beforeEach(() => {
+        changes = Array.from(Array(100).keys()).map(id => toChange({
+          before: new InstanceElement(
+            `instance${id}`,
+            folder,
+            {
+              path: `/instance${id}`,
+              internalId: id.toString(),
+            }
+          ),
+          after: new InstanceElement(
+            `instance${id}`,
+            folder,
+            {
+              path: `/instance${id}`,
+              description: 'aaa',
+              internalId: id.toString(),
+            }
+          ),
+        }))
+      })
       it('should return only error if api calls fails', async () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
@@ -658,30 +662,6 @@ describe('suiteapp_file_cabinet', () => {
         expect(mockSuiteAppClient.updateFileCabinetInstances).not.toHaveBeenCalledWith()
       })
 
-      it('should return an error if file parent is not found', async () => {
-        const change = toChange({
-          before: new InstanceElement(
-            'instance1',
-            folder,
-            {
-              path: '/someFolder/instance1',
-            }
-          ),
-          after: new InstanceElement(
-            'instance1',
-            folder,
-            {
-              path: '/someFolder/instance1',
-              description: 'aaa',
-            }
-          ),
-        })
-
-        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([change], 'update', elementsSourceIndexes)
-        expect(errors).toEqual([new Error('Directory /someFolder was not found when attempting to deploy a file with path /someFolder/instance1')])
-        expect(appliedChanges).toHaveLength(0)
-      })
       it('should deploy in chunks', async () => {
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
           .deploy(changes, 'update', elementsSourceIndexes)
@@ -697,8 +677,17 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     describe('additions', () => {
+      const elementsSourceIndexes = {
+        getIndexes: async () => ({
+          pathToInternalIdsIndex: {
+            ...Object.fromEntries(_.range(100).map(i => [`/instance${i}`, i])),
+            '/instance1/instance101': 101,
+          },
+        } as unknown as ElementsSourceIndexes),
+      }
+
       it('should split by depths', async () => {
-        changes = [
+        const changes = [
           toChange({
             after: new InstanceElement(
               'newInstance1',
@@ -752,11 +741,41 @@ describe('suiteapp_file_cabinet', () => {
           .map((details: FileCabinetInstanceDetails) => details.path))
           .toEqual(['/instance1/newInstance2/newInstance3'])
       })
+
+      it('should return an error if file parent is not found', async () => {
+        const change = toChange({
+          before: new InstanceElement(
+            'instance1',
+            folder,
+            {
+              path: '/someFolder/instance1',
+            }
+          ),
+          after: new InstanceElement(
+            'instance1',
+            folder,
+            {
+              path: '/someFolder/instance1',
+              description: 'aaa',
+            }
+          ),
+        })
+
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy([change], 'add', elementsSourceIndexes)
+        expect(errors).toEqual([new Error('Directory /someFolder was not found when attempting to deploy a file with path /someFolder/instance1')])
+        expect(appliedChanges).toHaveLength(0)
+      })
     })
 
     describe('deletions', () => {
+      const elementsSourceIndexes: LazyElementsSourceIndexes = {
+        getIndexes: () => {
+          throw new Error('getIndexes should not be called!')
+        },
+      }
       it('should split by depths', async () => {
-        changes = [
+        const changes = [
           toChange({
             before: new InstanceElement(
               'deletedInstance1',
@@ -768,6 +787,7 @@ describe('suiteapp_file_cabinet', () => {
                 isinactive: false,
                 isonline: false,
                 hideinbundle: false,
+                internalId: '101',
               }
             ),
           }),
@@ -782,6 +802,7 @@ describe('suiteapp_file_cabinet', () => {
                 isinactive: false,
                 isonline: false,
                 hideinbundle: false,
+                internalId: '1',
               }
             ),
           }),
@@ -796,6 +817,7 @@ describe('suiteapp_file_cabinet', () => {
                 isinactive: false,
                 isonline: false,
                 hideinBundle: false,
+                internalId: '0',
               }
             ),
           }),

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, collections, promises, values } from '@salto-io/lowerdash'
@@ -24,9 +24,10 @@ import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableEr
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
+import { INTERNAL_ID } from './constants'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { NetsuiteQuery } from './query'
-import { isFileCabinetType, isFileInstance } from './types'
+import { DeployResult, isFileCabinetType, isFileInstance } from './types'
 
 const { awu } = collections.asynciterable
 
@@ -252,6 +253,39 @@ SuiteAppFileCabinetOperations => {
     return results.flat()
   })
 
+  const removeResultsWithoutParentFolder = (
+    { foldersResults, filesResults }: FileCabinetResults
+  ): FileCabinetResults => {
+    const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
+
+    const removeFoldersWithoutParentFolder = (folders: FolderResult[]): FolderResult[] => {
+      const filteredFolders = folders.filter(folder => {
+        if (folder.parent !== undefined && !folderIdsSet.has(folder.parent)) {
+          log.warn('folder\'s parent does not exist: %o', folder)
+          folderIdsSet.delete(folder.id)
+          return false
+        }
+        return true
+      })
+      if (folders.length === filteredFolders.length) {
+        return folders
+      }
+      return removeFoldersWithoutParentFolder(filteredFolders)
+    }
+
+    const filteredFoldersResults = removeFoldersWithoutParentFolder(foldersResults)
+    return {
+      foldersResults: filteredFoldersResults,
+      filesResults: filesResults.filter(file => {
+        if (!folderIdsSet.has(file.folder)) {
+          log.warn('file\'s folder does not exist: %o', file)
+          return false
+        }
+        return true
+      }),
+    }
+  }
+
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
       const topLevelFoldersResults = (await queryTopLevelFolders())
@@ -270,7 +304,8 @@ SuiteAppFileCabinetOperations => {
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
       const filesResults = await queryFiles(foldersResults)
-      fileCabinetResults = { foldersResults, filesResults }
+
+      fileCabinetResults = removeResultsWithoutParentFolder({ foldersResults, filesResults })
     }
     return fileCabinetResults
   }
@@ -279,6 +314,10 @@ SuiteAppFileCabinetOperations => {
   string[] => {
     if (folder.parent === undefined) {
       return [folder.name]
+    }
+    if (idToFolder[folder.parent] === undefined) {
+      log.error('folder\'s parent is unknown\nfolder: %o\nidToFolder: %o', folder, idToFolder)
+      throw new Error(`Failed to get absolute folder path of ${folder.name}`)
     }
     return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
   }
@@ -421,13 +460,17 @@ SuiteAppFileCabinetOperations => {
     return pathToIdResults
   }
 
-  const convertToFileCabinetDetails = async (
-    change: Change<InstanceElement>,
+  const convertToFileCabinetDetails = async (params: {
+    change: Change<InstanceElement>
+  } & ({
+    type: 'delete' | 'update'
+  } | {
+    type: 'add'
     pathToId: Record<string, number>
-  ): Promise<FileCabinetInstanceDetails | Error> => {
-    const instance = getChangeData(change)
+  })): Promise<FileCabinetInstanceDetails | Error> => {
+    const instance = getChangeData(params.change)
     const dirname = path.dirname(instance.value.path)
-    if (dirname !== '/' && !(dirname in pathToId)) {
+    if (dirname !== '/' && params.type === 'add' && !(dirname in params.pathToId)) {
       return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
     }
 
@@ -435,7 +478,7 @@ SuiteAppFileCabinetOperations => {
       ? {
         type: 'file',
         path: instance.value.path,
-        folder: pathToId[dirname],
+        folder: params.type === 'add' ? params.pathToId[dirname] : undefined,
         bundleable: instance.value.bundleable ?? false,
         isInactive: instance.value.isinactive ?? false,
         isOnline: instance.value.availablewithoutlogin ?? false,
@@ -448,7 +491,7 @@ SuiteAppFileCabinetOperations => {
       : {
         type: 'folder',
         path: instance.value.path,
-        parent: dirname !== '/' ? pathToId[dirname] : undefined,
+        parent: dirname !== '/' && params.type === 'add' ? params.pathToId[dirname] : undefined,
         bundleable: instance.value.bundleable ?? false,
         isInactive: instance.value.isinactive ?? false,
         isPrivate: instance.value.isprivate ?? false,
@@ -458,18 +501,18 @@ SuiteAppFileCabinetOperations => {
 
   const convertToExistingFileCabinetDetails = async (
     change: Change<InstanceElement>,
-    pathToId: Record<string, number>
+    type: 'delete' | 'update'
   ): Promise<ExistingFileCabinetInstanceDetails | Error> => {
-    const details = await convertToFileCabinetDetails(change, pathToId)
+    const details = await convertToFileCabinetDetails({ change, type })
     if (details instanceof Error) {
       return details
     }
     const instance = getChangeData(change)
-    if (pathToId[instance.value.path] === undefined) {
+    if (instance.value[INTERNAL_ID] === undefined) {
       log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
       return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
     }
-    return { ...details, id: pathToId[instance.value.path] }
+    return { ...details, id: parseInt(instance.value[INTERNAL_ID], 10) }
   }
 
   const deployInstances = async (
@@ -498,7 +541,9 @@ SuiteAppFileCabinetOperations => {
 
     const instancesDetails = await awu(chunk).map(
       async change => ({
-        details: type === 'add' ? await convertToFileCabinetDetails(change, pathToId) : await convertToExistingFileCabinetDetails(change, pathToId),
+        details: type === 'add'
+          ? await convertToFileCabinetDetails({ change, type, pathToId })
+          : await convertToExistingFileCabinetDetails(change, type),
         change,
       })
     ).toArray()
@@ -554,6 +599,14 @@ SuiteAppFileCabinetOperations => {
       appliedChanges: deployChunkResults
         .flatMap(deployChunkResult => deployChunkResult.appliedChanges),
       errors: deployChunkResults.flatMap(deployChunkResult => deployChunkResult.errors),
+      ...type === 'add' ? {
+        elemIdToInternalId: _(changes)
+          .map(getChangeData)
+          .filter(change => pathToId[change.value.path] !== undefined)
+          .keyBy(change => change.elemID.getFullName())
+          .mapValues(change => pathToId[change.value.path].toString())
+          .value(),
+      } : {},
     }
   }
 
@@ -583,6 +636,9 @@ SuiteAppFileCabinetOperations => {
     return {
       appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
       errors: deployResults.flatMap(deployResult => deployResult.errors),
+      elemIdToInternalId: deployResults
+        .map(deployResult => deployResult.elemIdToInternalId)
+        .reduce((val1, val2) => ({ ...val1, ...val2 })),
     }
   }
 
@@ -591,7 +647,10 @@ SuiteAppFileCabinetOperations => {
     type: DeployType,
     elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<DeployResult> => {
-    const { pathToInternalIdsIndex } = await elementsSourceIndex.getIndexes()
+    const { pathToInternalIdsIndex = {} } = type === 'add'
+      ? await elementsSourceIndex.getIndexes()
+      : {}
+
     return type === 'update'
       ? deployChanges(changes, pathToInternalIdsIndex, 'update')
       : deployAdditionsOrDeletions(changes, pathToInternalIdsIndex, type)

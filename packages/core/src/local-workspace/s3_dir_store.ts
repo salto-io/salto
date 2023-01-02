@@ -16,7 +16,7 @@
 import path from 'path'
 import { logger } from '@salto-io/logging'
 import * as AWS from '@aws-sdk/client-s3'
-import { StandardRetryStrategy, defaultRetryDecider, RetryDecider } from '@aws-sdk/middleware-retry'
+import { createS3Client } from '@salto-io/aws-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { dirStore, staticFiles } from '@salto-io/workspace'
 import Bottleneck from 'bottleneck'
@@ -27,17 +27,6 @@ import { values } from '@salto-io/lowerdash'
 const log = logger(module)
 
 const DEFAULT_CONCURRENCY_LIMIT = 100
-
-const NUMBER_OF_RETRIES = 5
-
-
-export const retryDecider: RetryDecider = error => {
-  if (defaultRetryDecider(error) || (error as { code?: string })?.code === 'ECONNREFUSED') {
-    log.warn(`S3 operation failed: ${error.message}. Retrying`)
-    return true
-  }
-  return false
-}
 
 export const buildS3DirectoryStore = (
   {
@@ -53,9 +42,7 @@ export const buildS3DirectoryStore = (
   }
 ): staticFiles.StateStaticFilesStore => {
   const updated: Record<string, dirStore.File<Buffer>> = {}
-  const s3 = S3Client ?? new AWS.S3({
-    retryStrategy: new StandardRetryStrategy(async () => NUMBER_OF_RETRIES, { retryDecider }),
-  })
+  const s3 = S3Client ?? createS3Client()
   const bottleneck = new Bottleneck({ maxConcurrent: concurrencyLimit })
 
   const getFullPath = (filePath: string): string =>

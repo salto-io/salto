@@ -13,12 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import process from 'process'
+import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
-  DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes, ChangeError, getChangeData, Element,
+  Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
+  ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -26,21 +28,27 @@ import _ from 'lodash'
 import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
-import { getMetadataTypes, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
+import { getElementValueOrAnnotations, getMetadataTypes, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
-  CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
-  FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, NETSUITE, PATH, ROLE, SCRIPT_ID,
-  SKIP_LIST, CONFIG_FEATURES,
-  TRANSACTION_COLUMN_CUSTOM_FIELD,
-  WARN_STALE_DATA, WORKFLOW, FETCH, INCLUDE,
+  CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD,
+  FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, PATH, ROLE, SCRIPT_ID,
+  CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
 
-const { makeArray } = collections.array
+const log = logger(module)
 const { awu } = collections.asynciterable
+
+const logging = (message: string): void => {
+  log.info(message)
+  if (process.env.CONSOLE) {
+    // eslint-disable-next-line no-console
+    console.log(message)
+  }
+}
 
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
@@ -69,6 +77,7 @@ describe('Netsuite adapter E2E with real account', () => {
   beforeAll(async () => {
     await adapterCreator.install?.()
     credentialsLease = await credsLease()
+    logging(`using account ${credentialsLease.value.accountId}`)
   })
 
   afterAll(async () => {
@@ -87,6 +96,11 @@ describe('Netsuite adapter E2E with real account', () => {
     let fetchResult: FetchResult
     let fetchedElements: Element[]
 
+
+    const logMessage = (message: string): void => {
+      logging(`${withSuiteApp ? '(suiteapp) ' : ' '}${message}`)
+    }
+
     const validateConfigSuggestions = (updatedConfig?: InstanceElement): void => {
       if (updatedConfig === undefined) {
         // As expected
@@ -94,20 +108,21 @@ describe('Netsuite adapter E2E with real account', () => {
       }
       // Due to a known SDF bug, sometimes we fail to fetch all types at once but succeed
       // when trying to fetch type by type. In this case we wouldn't like to fail the test
-      expect(updatedConfig.value?.[SKIP_LIST]?.typesToSkip).toBeUndefined()
+      expect(updatedConfig.value?.skipList?.typesToSkip).toBeUndefined()
 
       if (withSuiteApp) {
       // When using SuiteApp some private files under the folders /SuiteBundles and /SuiteApps
       // might be added to the skipList
-        expect(updatedConfig.value?.[SKIP_LIST]?.filePaths
+        expect(updatedConfig.value?.skipList?.filePaths
           ?.filter((path: string) => (!path.startsWith('/SuiteBundles') && !path.startsWith('/SuiteApps'))) ?? []).toHaveLength(0)
       } else {
-        expect(updatedConfig.value?.[SKIP_LIST]?.filePaths).toBeUndefined()
+        expect(updatedConfig.value?.skipList?.filePaths).toBeUndefined()
       }
-      expect(updatedConfig.value?.[FETCH_ALL_TYPES_AT_ONCE] ?? false).toBe(false)
+      expect(updatedConfig.value?.fetchAllTypesAtOnce ?? false).toBe(false)
     }
 
-    const randomString = `created by oss e2e - ${String(Date.now()).substring(6)}`
+    const randomNumber = String(Date.now()).substring(6)
+    const randomString = `created by oss e2e - ${randomNumber}`
 
     const entityCustomFieldToCreate = createInstanceElement(
       ENTITY_CUSTOM_FIELD,
@@ -117,11 +132,12 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
-    const customRecordTypeValues = mockDefaultValues[CUSTOM_RECORD_TYPE]
+    const { fields, annotations } = mockDefaultValues[CUSTOM_RECORD_TYPE]
     const customRecordTypeToCreate = new ObjectType({
-      elemID: new ElemID(NETSUITE, customRecordTypeValues[SCRIPT_ID]),
+      elemID: new ElemID(NETSUITE, annotations[SCRIPT_ID]),
+      fields,
       annotations: {
-        ...customRecordTypeValues,
+        ...annotations,
         recordname: randomString,
       },
     })
@@ -213,6 +229,8 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
+    const featuresInstance = createInstanceElement(CONFIG_FEATURES, {})
+
     const subsidiaryAddressType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'address'),
       fields: {
@@ -256,49 +274,103 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
-    const featuresInstance = createInstanceElement(CONFIG_FEATURES, {})
+    const accountType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'account'),
+      fields: {
+        internalId: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            isAttribute: true,
+          },
+        },
+        acctName: { refType: BuiltinTypes.STRING },
+        acctType: { refType: BuiltinTypes.STRING },
+      },
+      annotations: { source: 'soap' },
+    })
 
-    afterAll(async () => {
-      const revertChanges: Map<ChangeId, Change<InstanceElement>> = new Map([
-        ...withSuiteApp ? [subsidiaryInstance] : [],
-      ].map((instanceToDelete, index) => [
-        index.toString(),
-        toChange({ before: instanceToDelete }),
-      ]))
-
-      if (revertChanges.size === 0) {
-        return
+    const accountInstance = new InstanceElement(
+      naclCase(randomString),
+      accountType,
+      {
+        acctName: randomString,
+        acctType: '_fixedAsset',
       }
+    )
 
-      const idToGroup = (await adapter?.deployModifiers
-        ?.getChangeGroupIds?.(revertChanges))?.changeGroupIdMap as Map<ChangeId, ChangeGroupId>
-      const changesGroups = _(revertChanges)
+    const customRecordScriptId = `record_slt_e2e_test_${randomNumber}`
+    const customRecordInstance = new InstanceElement(
+      customRecordScriptId,
+      customRecordTypeToCreate,
+      {
+        scriptid: customRecordScriptId,
+        isInactive: false,
+        parent: new ReferenceExpression(
+          customRecordTypeToCreate.elemID.createNestedID('instance', 'parent_record'),
+          { internalId: '1' },
+        ),
+        name: randomString,
+        custom_custrecord_field1: 'test',
+        custom_custrecord_field2: 10,
+        custom_custrecord_account: new ReferenceExpression(accountInstance.elemID, accountInstance),
+      },
+    )
+
+    const elementsToCreate = [
+      entityCustomFieldToCreate,
+      customRecordTypeToCreate,
+      workflowToCreate,
+      emailTemplateToCreate,
+      fileToCreate,
+      invalidWorkflowInstance,
+      ...withSuiteApp ? [
+        subsidiaryInstance,
+        accountInstance,
+        customRecordInstance,
+      ] : [],
+    ]
+
+    const elementsMap = _.keyBy(elementsToCreate, instance => instance.elemID.getFullName())
+    const updateInternalIds = (changes: ReadonlyArray<Change>): void => {
+      changes.map(getChangeData).forEach(element => {
+        const { internalId } = getElementValueOrAnnotations(element)
+        if (internalId && element.elemID.getFullName() in elementsMap) {
+          const elementToUpdate = elementsMap[element.elemID.getFullName()]
+          getElementValueOrAnnotations(elementToUpdate).internalId = internalId
+        }
+      })
+    }
+
+    const deployChanges = async (
+      nsAdapter: NetsuiteAdapter,
+      changes: Map<ChangeId, Change>,
+    ): Promise<DeployResult[]> => {
+      const idToGroup = (await nsAdapter?.deployModifiers
+        ?.getChangeGroupIds?.(changes))?.changeGroupIdMap as Map<ChangeId, ChangeGroupId>
+      const changesGroups = _(changes)
         .entries()
         .groupBy(([id, _change]) => idToGroup.get(id))
         .mapValues(
-          group => group.map(([_id, change]) => change as unknown as Change<InstanceElement>)
+          group => group.map(([_id, change]) => change as unknown as Change)
         )
         .entries()
         .value()
 
-      for (const [id, group] of changesGroups) {
-        // eslint-disable-next-line no-await-in-loop
-        await adapter.deploy({
+      return awu(changesGroups).map(async ([id, group]) => {
+        logMessage(`running deploy for group ${id} with ${group.length} changes`)
+        const result = await nsAdapter.deploy({
           changeGroup: { groupID: id, changes: group },
         })
-      }
-    })
+        updateInternalIds(result.appliedChanges)
+        return result
+      }).toArray()
+    }
 
     describe('Create records', () => {
-      const changes: Map<ChangeId, Change> = new Map([
-        entityCustomFieldToCreate,
-        customRecordTypeToCreate,
-        workflowToCreate,
-        emailTemplateToCreate,
-        fileToCreate,
-        invalidWorkflowInstance,
-        ...withSuiteApp ? [subsidiaryInstance] : [],
-      ].map((instanceToCreate, index) => [index.toString(), toChange({ after: instanceToCreate })]))
+      const changes = new Map(elementsToCreate.map((instanceToCreate, index) => [
+        index.toString(),
+        toChange({ after: instanceToCreate }),
+      ]))
 
       const folderToModifyBefore = folderToModify.clone()
       // Modified the description here just so the before won't be the same as the after
@@ -321,44 +393,37 @@ describe('Netsuite adapter E2E with real account', () => {
 
       let deployResult: DeployResult
       beforeAll(async () => {
-        const adapterAttrWithoutElementsSource = realAdapter(
-          { credentials: credentialsLease.value, withSuiteApp },
-          { [FETCH]: { [INCLUDE]: { types: [], fileCabinet: ['/Images.*'] } } }
-        )
-        const mockFetchOpts: MockInterface<FetchOptions> = {
-          progressReporter: { reportProgress: jest.fn() },
+        if (withSuiteApp) {
+          logMessage('running fetch to get folder internalId')
         }
         const { elements } = withSuiteApp
-          ? await adapterAttrWithoutElementsSource.adapter.fetch(mockFetchOpts)
+          // in order to deploy folder modification (/Images) and file addition (/Images/e2eTest.js)
+          // we need to get the folder internalId
+          ? await realAdapter(
+            { credentials: credentialsLease.value, withSuiteApp },
+            { fetch: { include: { types: [], fileCabinet: ['/Images'], customRecords: [] } } }
+          ).adapter.fetch({
+            progressReporter: { reportProgress: jest.fn() },
+          })
           : { elements: [] }
+
+        const fetchedFolder = elements
+          .filter(isInstanceElement)
+          .find(element => element.elemID.isEqual(folderToModify.elemID))
+        if (fetchedFolder && fetchedFolder.value.internalId !== undefined) {
+          folderToModify.value.internalId = fetchedFolder.value.internalId
+        }
 
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp, elements },
         )
         adapter = adapterAttr.adapter
 
-        const idToGroup = (await adapter?.deployModifiers
-          ?.getChangeGroupIds?.(changes))?.changeGroupIdMap as Map<ChangeId, ChangeGroupId>
-        const changesGroups = _(changes)
-          .entries()
-          .groupBy(([id, _change]) => idToGroup.get(id))
-          .mapValues(
-            group => group.map(([_id, change]) => change as unknown as Change<InstanceElement>)
-          )
-          .entries()
-          .value()
+        const results = await deployChanges(adapter, changes)
 
-        deployResult = { appliedChanges: [], errors: [] }
-        for (const [id, group] of changesGroups) {
-          // eslint-disable-next-line no-await-in-loop
-          const { appliedChanges, errors } = await adapter.deploy({
-            changeGroup: { groupID: id, changes: group },
-          })
-
-          deployResult = {
-            appliedChanges: [...deployResult.appliedChanges, ...appliedChanges],
-            errors: [...deployResult.errors, ...errors],
-          }
+        deployResult = {
+          appliedChanges: results.flatMap(result => result.appliedChanges),
+          errors: results.flatMap(result => result.errors),
         }
       })
 
@@ -383,6 +448,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       let deployResult: DeployResult
       beforeAll(async () => {
+        logMessage(`running deploy for group SDF with ${changes.length} changes`)
         deployResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes } })
       })
 
@@ -393,7 +459,7 @@ describe('Netsuite adapter E2E with real account', () => {
     })
 
     describe('safe deploy change validator', () => {
-      describe('on custom type instances', () => {
+      describe('on standard type instances', () => {
         let beforeInstance: InstanceElement
         let afterInstance: InstanceElement
         beforeAll(() => {
@@ -408,13 +474,14 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: true } },
+              { deploy: { warnOnStaleWorkspaceData: true } },
             )
             adapter = adapterAttr.adapter
           })
 
           it('should have warning when applying change validator', async () => {
             const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+            logMessage('running safe deploy validation on standard instance')
             const changeErrors: ReadonlyArray<ChangeError> = await awu([
               adapter.deployModifiers?.changeValidator,
             ])
@@ -432,7 +499,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: false } },
+              { deploy: { warnOnStaleWorkspaceData: false } },
             )
             adapter = adapterAttr.adapter
           })
@@ -464,13 +531,14 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: true } },
+              { deploy: { warnOnStaleWorkspaceData: true } },
             )
             adapter = adapterAttr.adapter
           })
 
           it('should have warning when applying change validator', async () => {
             const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+            logMessage('running safe deploy validation on static resource')
             const changeErrors: ReadonlyArray<ChangeError> = await awu([
               adapter.deployModifiers?.changeValidator,
             ])
@@ -488,7 +556,7 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeAll(async () => {
             const adapterAttr = realAdapter(
               { credentials: credentialsLease.value, withSuiteApp },
-              { deploy: { [WARN_STALE_DATA]: false } },
+              { deploy: { warnOnStaleWorkspaceData: false } },
             )
             adapter = adapterAttr.adapter
           })
@@ -517,6 +585,7 @@ describe('Netsuite adapter E2E with real account', () => {
         const mockFetchOpts: MockInterface<FetchOptions> = {
           progressReporter: { reportProgress: jest.fn() },
         }
+        logMessage('running fetch')
         fetchResult = await adapter.fetch(mockFetchOpts)
         fetchedElements = fetchResult.elements
       })
@@ -557,8 +626,9 @@ describe('Netsuite adapter E2E with real account', () => {
           roleToCreateThatDependsOnCustomRecord.elemID
         ) as InstanceElement
         expect(fetchedRole.value.name).toEqual(randomString)
-        const permissions = makeArray(fetchedRole.value.permissions?.permission)
-        const customRecordTypePermission = permissions
+        const permissions = fetchedRole.value.permissions?.permission
+        expect(_.isPlainObject(permissions)).toBeTruthy()
+        const customRecordTypePermission = Object.values(permissions as Values)
           .find(permission => isReferenceExpression(permission.permkey)
           && permission.permkey.elemID
             .isEqual(customRecordTypeToCreate.elemID.createNestedID('attr', SCRIPT_ID)))
@@ -635,9 +705,39 @@ describe('Netsuite adapter E2E with real account', () => {
             fetchedElements,
             subsidiaryInstance.elemID
           ) as InstanceElement
-          subsidiaryInstance.value.internalId = fetchSubsidiary.value.internalId
           expect(fetchSubsidiary.value.name).toEqual(randomString)
           expect(fetchSubsidiary.value.internalId).toBeDefined()
+        }
+      })
+
+      it('should fetch the created account', async () => {
+        if (withSuiteApp) {
+          const fetchAccount = findElement(
+            fetchedElements,
+            accountInstance.elemID
+          ) as InstanceElement
+          expect(fetchAccount.value.acctName).toEqual(randomString)
+          expect(fetchAccount.value.internalId).toBeDefined()
+        }
+      })
+
+      it('should fetch the created custom record', async () => {
+        if (withSuiteApp) {
+          const fetchCustomRecord = findElement(
+            fetchedElements,
+            customRecordInstance.elemID
+          ) as InstanceElement
+          expect(fetchCustomRecord.value.name).toEqual(randomString)
+          expect(fetchCustomRecord.value.internalId).toBeDefined()
+          expect(fetchCustomRecord.value.scriptid).toEqual(customRecordScriptId)
+          expect(isReferenceExpression(fetchCustomRecord.value.parent)).toBeTruthy()
+          expect(fetchCustomRecord.value.custom_custrecord_field1).toEqual('test')
+          expect(fetchCustomRecord.value.custom_custrecord_field2).toEqual(10)
+          expect(
+            isReferenceExpression(fetchCustomRecord.value.custom_custrecord_account)
+            && fetchCustomRecord.value.custom_custrecord_account.elemID
+              .isEqual(accountInstance.elemID)
+          ).toBeTruthy()
         }
       })
 
@@ -648,6 +748,49 @@ describe('Netsuite adapter E2E with real account', () => {
         ) as InstanceElement
         // using 'withSuiteApp' to validate both boolean values
         expect(fetchFeatures.value.DEPARTMENTS).toBe(withSuiteApp)
+      })
+    })
+
+    describe('Delete records', () => {
+      // TODO: merge revertChanges & revertChangesWithDependencies when SALTO-3036 is resolved
+      const revertChanges: Map<ChangeId, Change<InstanceElement>> = new Map([
+        ...withSuiteApp ? [
+          fileToCreate,
+          subsidiaryInstance,
+          customRecordInstance,
+        ] : [],
+      ].map((instanceToDelete, index) => [
+        index.toString(),
+        toChange({ before: instanceToDelete }),
+      ]))
+      const revertChangesWithDependencies: Map<ChangeId, Change<InstanceElement>> = new Map([
+        ...withSuiteApp ? [
+          accountInstance,
+        ] : [],
+      ].map((instanceToDelete, index) => [
+        index.toString(),
+        toChange({ before: instanceToDelete }),
+      ]))
+
+      let deployResult: DeployResult
+      beforeAll(async () => {
+        const adapterAttr = realAdapter(
+          { credentials: credentialsLease.value, withSuiteApp, elements: [] },
+        )
+        adapter = adapterAttr.adapter
+
+        const results = await deployChanges(adapter, revertChanges)
+        results.push(...await deployChanges(adapter, revertChangesWithDependencies))
+
+        deployResult = {
+          appliedChanges: results.flatMap(result => result.appliedChanges),
+          errors: results.flatMap(result => result.errors),
+        }
+      })
+
+      it('should delete records', async () => {
+        expect(deployResult.errors).toHaveLength(0)
+        expect(deployResult.appliedChanges).toHaveLength(revertChanges.size + revertChangesWithDependencies.size)
       })
     })
   })

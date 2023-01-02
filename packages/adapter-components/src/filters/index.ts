@@ -16,4 +16,4 @@
 export { serviceUrlFilterCreator } from './service_url'
 export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
 export { queryFilterCreator } from './query'
-export * as ducktype from './ducktype'
+export { hideTypesFilterCreator } from './hide_types'

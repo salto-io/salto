@@ -23,6 +23,8 @@ import {
   FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
   CreateMissingRefFunc,
   GetReferenceIdFunc,
+  ReferenceSerializationStrategyLookup,
+  ReferenceSourceTransformation,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -34,9 +36,6 @@ const { isDefined } = lowerDashValues
 const doNothing: ContextFunc = async () => undefined
 
 const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
-
-type ValueIsEqualFunc = (lhs?: string | number, rhs?: string | number) => boolean
-const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
 
 export const MISSING_ANNOTATION = 'salto_missing_ref'
 const checkMissingRef = (element: Element): boolean =>
@@ -55,7 +54,6 @@ export const replaceReferenceValues = async <
   fieldsWithResolvedReferences,
   elemByElemID,
   contextStrategyLookup = emptyContextStrategyLookup,
-  isEqualValue = defaultIsEqualFunc,
 }: {
   instance: InstanceElement
   resolverFinder: ReferenceResolverFinder<T>
@@ -63,10 +61,10 @@ export const replaceReferenceValues = async <
   fieldsWithResolvedReferences: Set<string>
   elemByElemID: multiIndex.Index<[string], Element>
   contextStrategyLookup?: Record<T, ContextFunc>
-  isEqualValue?: ValueIsEqualFunc
 }): Promise<Values> => {
-  const getRefElem = async ({ val, target, field, path, lookupIndexName, createMissingReference }: {
+  const getRefElem = async ({ val, valTransformation, target, field, path, lookupIndexName, createMissingReference }: {
     val: string | number
+    valTransformation: ReferenceSourceTransformation
     field: Field
     path?: ElemID
     target: ExtendedReferenceTargetDefinition<T>
@@ -77,15 +75,22 @@ export const replaceReferenceValues = async <
       ? Object.values(elemLookupMaps)[0]
       : undefined
     const findElem = (
-      value: string | number,
+      value: string,
       targetType?: string,
     ): Element | undefined => {
       const lookup = lookupIndexName !== undefined ? elemLookupMaps[lookupIndexName] : defaultIndex
-      return (
-        targetType !== undefined && lookup !== undefined
-          ? lookup.get(targetType, _.toString(value))
-          : undefined
-      )
+
+      if (targetType === undefined || lookup === undefined) {
+        return undefined
+      }
+
+      const referredElement = lookup.get(targetType, value)
+
+      if (referredElement === undefined) {
+        log.warn(`Can't locate referred entity for '${targetType}:${value}'`)
+      }
+
+      return referredElement
     }
 
     const isValidContextFunc = (funcName?: string): boolean => (
@@ -110,7 +115,7 @@ export const replaceReferenceValues = async <
     const elemType = target.type ?? await typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })
-    return findElem(target.lookup(val, elemParent), elemType)
+    return findElem(target.lookup(valTransformation.transform(val), elemParent), elemType)
       ?? createMissingReference?.({
         value: val.toString(), typeName: elemType, adapter: field.elemID.adapter,
       })
@@ -121,6 +126,7 @@ export const replaceReferenceValues = async <
   ): Promise<Value> => {
     const toValidatedReference = async (
       serializer: ReferenceSerializationStrategy,
+      sourceTransformation: ReferenceSourceTransformation,
       elem: Element | undefined,
     ): Promise<ReferenceExpression | undefined> => {
       const getReferenceExpression = async (element: Element):
@@ -143,23 +149,25 @@ export const replaceReferenceValues = async <
         if (checkMissingRef(element)) {
           return new ReferenceExpression(referenceId)
         }
-        return (
-          isEqualValue(
-            !isRelativeSerializer(serializer)
-              ? await serializer.serialize({
-                ref: new ReferenceExpression(element.elemID, elem),
-                field,
-                element: instance,
-              })
-              : resolvePath(element, referenceId),
-            val,
-          ) ? new ReferenceExpression(
-              referenceId,
-              elem !== undefined && !referenceId.isEqual(elem.elemID)
-                ? resolvePath(elem, referenceId)
-                : elem
-            )
-            : undefined
+
+        const serializedRefExpression = !isRelativeSerializer(serializer)
+          ? await serializer.serialize({
+            ref: new ReferenceExpression(element.elemID, elem),
+            field,
+            element: instance,
+          })
+          : resolvePath(element, referenceId)
+        // this validation is necessary to create a reference from '$Label.check' and not 'check'
+        if (!sourceTransformation.validate(val, serializedRefExpression)) {
+          log.warn(`Invalid reference ${val} => [${serializedRefExpression} (element '${element.elemID.getFullName()}')]`)
+          return undefined
+        }
+
+        return new ReferenceExpression(
+          referenceId,
+          elem !== undefined && !referenceId.isEqual(elem.elemID)
+            ? resolvePath(elem, referenceId)
+            : elem
         )
       }
       if (elem === undefined) {
@@ -176,8 +184,10 @@ export const replaceReferenceValues = async <
       .filter(refResolver => refResolver.target !== undefined)
       .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
+        refResolver.sourceTransformation,
         await getRefElem({
           val,
+          valTransformation: refResolver.sourceTransformation,
           field,
           path,
           target: refResolver.target as ExtendedReferenceTargetDefinition<T>,
@@ -224,14 +234,12 @@ export const addReferences = async <
   defs,
   fieldsToGroupBy = ['id'],
   contextStrategyLookup,
-  isEqualValue,
   fieldReferenceResolverCreator,
 }: {
   elements: Element[]
   defs: GenericFieldReferenceDefinition[]
   fieldsToGroupBy?: string[]
   contextStrategyLookup?: Record<T, ContextFunc>
-  isEqualValue?: ValueIsEqualFunc
   fieldReferenceResolverCreator?:
     (def: GenericFieldReferenceDefinition) => FieldReferenceResolver<T>
 }): Promise<void> => {
@@ -264,7 +272,6 @@ export const addReferences = async <
       fieldsWithResolvedReferences,
       elemByElemID,
       contextStrategyLookup,
-      isEqualValue,
     })
   })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
@@ -312,14 +319,12 @@ export const generateLookupFunc = <
       return ref.value
     }
 
-    const strategy = await determineLookupStrategy({ ref, path, field, element })
-    if (strategy !== undefined && !isRelativeSerializer(strategy)) {
+    const strategy = await determineLookupStrategy({
+      ref, path, field, element,
+    }) ?? ReferenceSerializationStrategyLookup.fullValue
+    if (!isRelativeSerializer(strategy)) {
       return strategy.serialize({ ref, field, element })
     }
-
-    if (isInstanceElement(ref.value)) {
-      return ref.value.value
-    }
-    return ref.value
+    return cloneDeepWithoutRefs(ref.value)
   }
 }

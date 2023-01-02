@@ -18,11 +18,7 @@ import { readFile, readDir, writeFile, mkdirp, rm, rename } from '@salto-io/file
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
-import {
-  APPLICATION_ID,
-  CONFIG_FEATURES,
-  FILE_CABINET_PATH_SEPARATOR, INSTALLED_SUITEAPPS,
-} from '../../src/constants'
+import { APPLICATION_ID, CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../../src/constants'
 import SdfClient, {
   ATTRIBUTES_FILE_SUFFIX,
   ATTRIBUTES_FOLDER_NAME,
@@ -33,7 +29,7 @@ import SdfClient, {
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, ObjectsValidationError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
@@ -214,9 +210,23 @@ describe('sdf client', () => {
   const addDependenciesCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
   const deployProjectCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.DEPLOY_PROJECT })
+    .objectContaining({
+      commandName: COMMANDS.DEPLOY_PROJECT,
+      arguments: { accountspecificvalues: 'WARNING' },
+    })
+  const deploySuiteAppProjectCommandMatcher = expect
+    .objectContaining({
+      commandName: COMMANDS.DEPLOY_PROJECT,
+      arguments: {},
+    })
   const validateProjectCommandMatcher = expect
-    .objectContaining({ commandName: COMMANDS.VALIDATE_PROJECT })
+    .objectContaining({
+      commandName: COMMANDS.VALIDATE_PROJECT,
+      arguments: {
+        accountspecificvalues: 'WARNING',
+        server: true,
+      },
+    })
   const deleteAuthIdCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.MANAGE_AUTH,
     arguments: expect.objectContaining({
@@ -654,7 +664,7 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ [INSTALLED_SUITEAPPS]: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(2)
@@ -1279,7 +1289,7 @@ describe('sdf client', () => {
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
-        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deploySuiteAppProjectCommandMatcher)
       })
 
       it('should succeed for TemplateCustomTypeInfo', async () => {
@@ -1344,12 +1354,11 @@ Validate preferences -- Success
 Validate flags -- Success
 Validate for circular dependencies -- Success
 *** ERROR ***
-
 Validation failed.
 
 An error occurred during custom object validation. (custform_114_t1441298_782)
 File: ~/Objects/custform_114_t1441298_782.xml
-`
+        `
         mockExecuteAction.mockImplementation(({ commandName }) => {
           if (commandName === COMMANDS.DEPLOY_PROJECT) {
             throw errorMessage
@@ -1373,6 +1382,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
         }
         expect(isRejected).toBe(true)
       })
+
       it('should throw ObjectsDeployError when deploy failed with error object message', async () => {
         const errorMessage = `
 The deployment process has encountered an error.
@@ -1676,7 +1686,7 @@ File: ~/AccountConfiguration/features.xml`
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
-        expect(rmMock).toHaveBeenCalledTimes(1)
+        expect(rmMock).toHaveBeenCalledTimes(2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -1708,7 +1718,7 @@ File: ~/AccountConfiguration/features.xml`
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
           dummyFileContent)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
-        expect(rmMock).toHaveBeenCalledTimes(1)
+        expect(rmMock).toHaveBeenCalledTimes(2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -1734,7 +1744,7 @@ File: ~/AccountConfiguration/features.xml`
         expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
-        expect(rmMock).toHaveBeenCalledTimes(1)
+        expect(rmMock).toHaveBeenCalledTimes(2)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -1776,7 +1786,7 @@ File: ~/AccountConfiguration/features.xml`
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
     })
     describe('validate only', () => {
-      const failObject = 'failObject'
+      const failObject = 'fail_object'
       const deployParams: [CustomTypeInfo[], undefined, SdfDeployParams] = [
         [
           { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
@@ -1793,49 +1803,36 @@ File: ~/AccountConfiguration/features.xml`
         await client.deploy(...deployParams)
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
       })
-      it('should throw ObjectsValidationError', async () => {
-        let projectPath: string
-        let errorMessage: string
-        const objectErrorMessage = 'some validation error message.'
-        mockExecuteAction.mockImplementation(context => {
-          if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            projectPath = context.arguments.parentdirectory
-            return Promise.resolve({ isSuccess: () => true })
-          }
-          if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
-            errorMessage = `
-Errors for file ${projectPath}/src/Objects/${failObject}.xml.
-     Line 1 - Error Message: ${objectErrorMessage}
-Errors for file ${projectPath}/src/Objects/${failObject}.xml.`
-            throw new Error(errorMessage)
-          }
-          return Promise.resolve({ isSuccess: () => true })
-        })
-
-        try {
-          await client.deploy(...deployParams)
-          // should throw before this test
-          expect(false).toBeTruthy()
-        } catch (e) {
-          expect(e instanceof ObjectsValidationError).toBeTruthy()
-          expect(e.invalidObjects instanceof Map).toBeTruthy()
-          expect(e.invalidObjects.get(failObject)).toContain(objectErrorMessage)
-        }
-      })
       it('should throw ManifestValidationError', async () => {
-        let projectPath: string
         let errorMessage: string
-        const manifestErrorMessage = 'some manifest validation error message.'
+        const errorReferenceName = 'someRefName'
+        const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
-          if (context.commandName === COMMANDS.CREATE_PROJECT) {
-            projectPath = context.arguments.parentdirectory
-            return Promise.resolve({ isSuccess: () => true })
-          }
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
-            errorMessage = `
-Errors for file ${projectPath}/src/manifest.xml.
-     Line 1 - Error Message: ${manifestErrorMessage}
-`
+            errorMessage = `Warning: The validation process has encountered an error.
+Validating against TSTDRV2257860 - Salto Development - Administrator.
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Success
+
+WARNING -- One or more potential issues were found during custom object validation. (${failObject})
+Details: Missing or invalid field attribute value for field label. When specifying a scriptid as the field value, set translate = T.
+File: ~/Objects/${failObject}.xml
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+Validate account settings -- Failed
+*** ERROR ***
+
+Validation of account settings failed.
+
+An error occurred during account settings validation.
+Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
             throw new Error(errorMessage)
           }
           return Promise.resolve({ isSuccess: () => true })
@@ -1847,7 +1844,7 @@ Errors for file ${projectPath}/src/manifest.xml.
           expect(false).toBeTruthy()
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
-          expect(e.message).toEqual(manifestErrorMessage)
+          expect(e.message).toContain(manifestErrorMessage)
         }
       })
       it('should throw error', async () => {

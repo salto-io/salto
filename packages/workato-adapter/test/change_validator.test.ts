@@ -31,14 +31,14 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID(WORKATO, 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter workato.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Salto does not support workato deployments.',
+          detailedMessage: 'Salto does not support workato deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
         },
         {
           elemID: new ElemID(WORKATO, 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported in adapter workato.',
-          detailedMessage: 'Deploy is not supported.',
+          message: 'Salto does not support workato deployments.',
+          detailedMessage: 'Salto does not support workato deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
         },
       ])
     })

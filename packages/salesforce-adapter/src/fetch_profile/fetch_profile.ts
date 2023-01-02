@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 
+import { values } from '@salto-io/lowerdash'
 import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../constants'
+import { getFetchTargets, SupportedMetadataType } from './metadata_types'
 
+const { isDefined } = values
 
 export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
@@ -26,6 +29,7 @@ export type FetchProfile = {
   readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number
+  readonly preferActiveFlowVersions: boolean
 }
 
 export const buildFetchProfile = ({
@@ -35,12 +39,16 @@ export const buildFetchProfile = ({
   optionalFeatures,
   target,
   maxInstancesPerType,
+  preferActiveFlowVersions,
 }: FetchParameters): FetchProfile => ({
-  metadataQuery: buildMetadataQuery(metadata, target),
+  metadataQuery: buildMetadataQuery(metadata, isDefined(target)
+    ? getFetchTargets(target as SupportedMetadataType[])
+    : undefined),
   dataManagement: data && buildDataManagement(data),
   isFeatureEnabled: name => optionalFeatures?.[name] ?? true,
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
   maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
+  preferActiveFlowVersions: preferActiveFlowVersions ?? false,
 })
 
 export const validateFetchParameters = (

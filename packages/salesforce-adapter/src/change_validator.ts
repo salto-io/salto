@@ -22,19 +22,21 @@ import customObjectInstancesValidator from './change_validators/custom_object_in
 import unknownFieldValidator from './change_validators/unknown_field'
 import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
-import profileMapKeysValidator from './change_validators/profile_map_keys'
+import mapKeysValidator from './change_validators/map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import createCheckOnlyDeployValidator from './change_validators/check_only_deploy'
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
-import activeFlowValidator from './change_validators/active_flow_modifications'
-import flowDeletionValidator from './change_validators/flow_deletion'
+import flowsValidator from './change_validators/flows'
+import fullNameChangedValidator from './change_validators/fullname_changed'
+import invalidListViewFilterScope from './change_validators/invalid_listview_filterscope'
+import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 
 import { ChangeValidatorName, CheckOnlyChangeValidatorName, SalesforceConfig } from './types'
 
-type ChangeValidatorCreator = (config: SalesforceConfig) => ChangeValidator
+type ChangeValidatorCreator = (config: SalesforceConfig, isSandbox: boolean) => ChangeValidator
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
   managedPackage: () => packageValidator,
   picklistStandardField: () => picklistStandardFieldValidator,
@@ -42,14 +44,16 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   unknownField: () => unknownFieldValidator,
   customFieldType: () => customFieldTypeValidator,
   standardFieldLabel: () => standardFieldLabelValidator,
-  profileMapKeys: () => profileMapKeysValidator,
+  mapKeys: () => mapKeysValidator,
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
   sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
   recordTypeDeletion: () => recordTypeDeletionValidator,
-  activeFlowValidator: () => activeFlowValidator,
-  flowDeletionValidator: () => flowDeletionValidator,
+  flowsValidator: (config, isSandbox) => flowsValidator(config, isSandbox),
+  fullNameChangedValidator: () => fullNameChangedValidator,
+  invalidListViewFilterScope: () => invalidListViewFilterScope,
+  caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
 }
 
 const checkOnlyChangeValidators
@@ -58,8 +62,9 @@ const checkOnlyChangeValidators
   }
 
 
-const createSalesforceChangeValidator = ({ config, checkOnly }: {
+const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
   config: SalesforceConfig
+  isSandbox: boolean
   checkOnly: boolean
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
@@ -71,8 +76,8 @@ const createSalesforceChangeValidator = ({ config, checkOnly }: {
     ([name]) => config.validators?.[name as ChangeValidatorName] ?? true,
   )
   return createChangeValidator(
-    activeValidators.map(([_name, validator]) => validator(config)),
-    disabledValidators.map(([_name, validator]) => validator(config)),
+    activeValidators.map(([_name, validator]) => validator(config, isSandbox)),
+    disabledValidators.map(([_name, validator]) => validator(config, isSandbox)),
   )
 }
 export default createSalesforceChangeValidator

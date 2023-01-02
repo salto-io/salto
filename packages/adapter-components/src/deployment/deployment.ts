@@ -15,12 +15,15 @@
 */
 import _ from 'lodash'
 import { ActionName, Change, ElemID, getChangeData, InstanceElement, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
-import { transformElement } from '@salto-io/adapter-utils'
+import { elementExpressionStringifyReplacer, safeJsonStringify, transformElement } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { createUrl } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 import { OPERATION_TO_ANNOTATION } from './annotations'
+
+const log = logger(module)
 
 export type ResponseResult = ResponseValue | ResponseValue[] | undefined
 
@@ -103,6 +106,7 @@ export const deployChange = async ({
   elementsSource?: ReadOnlyElementsSource
 }): Promise<ResponseResult> => {
   const instance = getChangeData(change)
+  log.debug(`Starting deploying instance ${instance.elemID.getFullName()} with action '${change.action}'`)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
@@ -127,7 +131,7 @@ export const deployChange = async ({
   if (_.isEmpty(valuesToDeploy) && isAdditionOrModificationChange(change)) {
     return undefined
   }
-
+  log.trace(`deploying instance ${instance.elemID.getFullName()} with params ${safeJsonStringify({ method: endpoint.method, url, data, queryParams }, elementExpressionStringifyReplacer)}`)
   const response = await client[endpoint.method]({ url, data, queryParams })
   return response.data
 }

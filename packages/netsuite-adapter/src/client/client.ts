@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, Element, isInstanceElement, isField, isObjectType } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -26,6 +26,7 @@ import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
 import { AdditionalDependencies, CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getReferencedElements } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
@@ -33,9 +34,9 @@ import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATIN
 import { DeployResult, getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
-import { convertElementMapsToLists } from '../mapped_lists/utils'
+import { createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError } from '../errors'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
@@ -169,8 +170,9 @@ export default class NetsuiteClient {
   }
 
   private static async toCustomizationInfos(
-    elements: Element[],
-    deployReferencedElements: boolean
+    elements: ChangeDataType[],
+    deployReferencedElements: boolean,
+    elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<CustomizationInfo[]> {
     const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
     const fieldsParents = _(elements)
@@ -180,6 +182,7 @@ export default class NetsuiteClient {
       .uniqBy(parent => parent.elemID.name)
       .value()
 
+    const convertElementMapsToLists = await createConvertStandardElementMapsToLists(elementsSourceIndex)
     return awu(await getReferencedElements(
       elements.concat(fieldsParents),
       deployReferencedElements
@@ -200,33 +203,19 @@ export default class NetsuiteClient {
       .toArray()
   }
 
-  private async sdfValidate(
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
+  private async sdfDeploy({
+    changes,
+    deployReferencedElements,
+    additionalDependencies,
+    validateOnly = false,
+    elementsSourceIndex,
+  }: {
+    changes: ReadonlyArray<Change>
+    deployReferencedElements: boolean
     additionalDependencies: AdditionalDependencies
-  ): Promise<void> {
-    const someElementToDeploy = getChangeData(changes[0])
-    const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
-
-    const customizationInfos = await NetsuiteClient.toCustomizationInfos(
-      changes.map(getChangeData),
-      deployReferencedElements
-    )
-    await log.time(
-      () => this.sdfClient.deploy(
-        customizationInfos,
-        suiteAppId,
-        { additionalDependencies, validateOnly: true }
-      ),
-      'sdfValidate'
-    )
-  }
-
-  private async sdfDeploy(
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
-    additionalDependencies: AdditionalDependencies
-  ): Promise<DeployResult> {
+    validateOnly?: boolean
+    elementsSourceIndex: LazyElementsSourceIndexes
+  }): Promise<DeployResult> {
     const changesToDeploy = Array.from(changes)
 
     const someElementToDeploy = getChangeData(changes[0])
@@ -239,18 +228,26 @@ export default class NetsuiteClient {
       // eslint-disable-next-line no-await-in-loop
       const customizationInfos = await NetsuiteClient.toCustomizationInfos(
         changedInstances,
-        deployReferencedElements
+        deployReferencedElements,
+        elementsSourceIndex,
       )
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
         await log.time(
-          () => this.sdfClient.deploy(customizationInfos, suiteAppId, { additionalDependencies }),
+          () => this.sdfClient.deploy(
+            customizationInfos,
+            suiteAppId,
+            { additionalDependencies, validateOnly }
+          ),
           'sdfDeploy'
         )
         return { errors, appliedChanges: changesToDeploy }
       } catch (error) {
         errors.push(error)
+        if (error instanceof ManifestValidationError) {
+          log.debug('manifest validation errror: sdf deploy failed')
+        }
         if (error instanceof FeaturesDeployError) {
           const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
             error, changesToDeploy
@@ -293,10 +290,18 @@ export default class NetsuiteClient {
     groupID: string,
     deployReferencedElements: boolean,
     additionalSdfDependencies: AdditionalDependencies,
-  ): Promise<void> {
+    elementsSourceIndex: LazyElementsSourceIndexes
+  ): Promise<ReadonlyArray<Error>> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      await this.sdfValidate(changes, deployReferencedElements, additionalSdfDependencies)
+      return (await this.sdfDeploy({
+        changes,
+        deployReferencedElements,
+        additionalDependencies: additionalSdfDependencies,
+        validateOnly: true,
+        elementsSourceIndex,
+      })).errors
     }
+    return []
   }
 
   @NetsuiteClient.logDecorator
@@ -305,11 +310,16 @@ export default class NetsuiteClient {
     groupID: string,
     deployReferencedElements: boolean,
     additionalSdfDependencies: AdditionalDependencies,
-    elementsSourceIndex: LazyElementsSourceIndexes
+    elementsSourceIndex: LazyElementsSourceIndexes,
   ):
     Promise<DeployResult> {
     if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
-      return this.sdfDeploy(changes, deployReferencedElements, additionalSdfDependencies)
+      return this.sdfDeploy({
+        changes,
+        deployReferencedElements,
+        additionalDependencies: additionalSdfDependencies,
+        elementsSourceIndex,
+      })
     }
 
     const instancesChanges = changes.filter(isInstanceChange)
@@ -347,7 +357,6 @@ export default class NetsuiteClient {
     const elemIdToInternalId = Object.fromEntries(deployResults
       .map((result, index) => (typeof result === 'number' ? [instances[index].elemID.getFullName(), result.toString()] : undefined))
       .filter(values.isDefined))
-
 
     return { errors, appliedChanges, elemIdToInternalId }
   }
@@ -416,10 +425,18 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
+  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
     }
     return this.suiteAppClient.getAllRecords(types)
+  }
+
+  @NetsuiteClient.logDecorator
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+    if (this.suiteAppClient === undefined) {
+      throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')
+    }
+    return this.suiteAppClient.getCustomRecords(customRecordTypes)
   }
 }

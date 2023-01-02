@@ -15,7 +15,7 @@
 */
 import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, RemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isPostFetchWorkflowInstance, WorkflowInstance } from './types'
@@ -85,7 +85,7 @@ export const deployWorkflow = async (
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
   const instance = getChangeData(resolvedChange)
   if (!isPostFetchWorkflowInstance(instance)) {
-    log.error(`values ${safeJsonStringify(instance.value)} of instance ${instance.elemID.getFullName} are invalid`)
+    log.error(`values ${safeJsonStringify(instance.value, elementExpressionStringifyReplacer)} of instance ${instance.elemID.getFullName} are invalid`)
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
   removeCreateIssuePermissionValidator(instance)
@@ -110,11 +110,12 @@ export const deployWorkflow = async (
     // If we created the workflow we can edit it
     getChangeData(change).value.operations = { canEdit: true }
 
-    if (config.client.usePrivateAPI && !client.isDataCenter) {
-      // No need to run in DC since there are not triggers in DC
+    if (config.client.usePrivateAPI) {
       await deployTriggers(resolvedChange, client)
       // No need to run in DC since the main deployment requests already supports deploying steps
-      await deploySteps(getChangeData(change), client)
+      if (!client.isDataCenter) {
+        await deploySteps(getChangeData(change), client)
+      }
     }
   }
 }

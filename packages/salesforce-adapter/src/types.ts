@@ -25,6 +25,7 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
 
@@ -57,9 +58,10 @@ export type MetadataInstance = {
   metadataType: string
   namespace: string
   name: string
+  isFolderType: boolean
 }
 
-export type MetadataQueryParams = Partial<MetadataInstance>
+export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
 
 export type MetadataParams = {
   include?: MetadataQueryParams[]
@@ -83,14 +85,16 @@ export type ChangeValidatorName = (
   | 'unknownField'
   | 'customFieldType'
   | 'standardFieldLabel'
-  | 'profileMapKeys'
+  | 'mapKeys'
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'cpqValidator'
   | 'sbaaApprovalRulesCustomCondition'
   | 'recordTypeDeletion'
-  | 'activeFlowValidator'
-  | 'flowDeletionValidator'
+  | 'flowsValidator'
+  | 'fullNameChangedValidator'
+  | 'invalidListViewFilterScope'
+  | 'caseAssignmentRulesValidator'
 )
 
 export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
@@ -163,6 +167,7 @@ export type FetchParameters = {
   optionalFeatures?: OptionalFeatures
   target?: string[]
   maxInstancesPerType?: number
+  preferActiveFlowVersions?: boolean
 }
 
 export type DeprecatedMetadataParams = {
@@ -548,14 +553,16 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownField: { refType: BuiltinTypes.BOOLEAN },
     customFieldType: { refType: BuiltinTypes.BOOLEAN },
     standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
-    profileMapKeys: { refType: BuiltinTypes.BOOLEAN },
+    mapKeys: { refType: BuiltinTypes.BOOLEAN },
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
     sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
-    activeFlowValidator: { refType: BuiltinTypes.BOOLEAN },
-    flowDeletionValidator: { refType: BuiltinTypes.BOOLEAN },
+    flowsValidator: { refType: BuiltinTypes.BOOLEAN },
+    fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
+    invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
+    caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -569,8 +576,17 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     data: { refType: dataManagementType },
     optionalFeatures: { refType: optionalFeaturesType },
     fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
-    target: { refType: new ListType(BuiltinTypes.STRING) },
+    target: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          enforce_value: true,
+          values: SUPPORTED_METADATA_TYPES,
+        }),
+      },
+    },
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
+    preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -603,7 +619,10 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
               { metadataType: 'SiteDotCom' },
-              { metadataType: 'EmailTemplate' },
+              {
+                metadataType: 'EmailTemplate',
+                name: '^MarketoEmailTemplates/*',
+              },
               { metadataType: 'ContentAsset' },
               { metadataType: 'CustomObjectTranslation' },
               { metadataType: 'AnalyticSnapshot' },

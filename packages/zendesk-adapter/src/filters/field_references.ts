@@ -19,7 +19,7 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { BRAND_TYPE_NAME } from '../constants'
+import { BRAND_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME, FIELD_TYPE_NAMES } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
 
@@ -44,6 +44,8 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   set_schedule: 'business_hours_schedule',
   ticket_form_id: 'ticket_form',
   locale_id: 'locale',
+  via_id: 'channel',
+  current_via_id: 'channel',
 }
 
 const SPECIAL_CONTEXT_NAMES: Record<string, string> = {
@@ -80,6 +82,9 @@ const getValueLookupType: referenceUtils.ContextValueMapperFunc = val => {
 
 const getLowerCaseSingularLookupType: referenceUtils.ContextValueMapperFunc = val => {
   const lowercaseVal = val.toLowerCase()
+  if (['user', 'users'].includes(lowercaseVal)) {
+    return undefined
+  }
   // for now this simple conversion to singular form seems good enough, but
   // we may need to improve it later on
   if (lowercaseVal.endsWith('s')) {
@@ -93,9 +98,6 @@ const TICKET_FIELD_ALTERNATIVE_PREFIX = 'ticket_fields_'
 const ORG_FIELD_PREFIX = 'organization.custom_fields.'
 const USER_FIELD_PREFIX = 'requester.custom_fields.'
 const ALTERNATE_USER_FIELD_PREFIX = 'user.custom_fields.'
-const TICKET_FIELD_TYPE_NAME = 'ticket_field'
-const ORG_FIELD_TYPE_NAME = 'organization_field'
-const USER_FIELD_TYPE_NAME = 'user_field'
 const TICKET_FIELD_OPTION_TYPE_NAME = 'ticket_field__custom_field_options'
 const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 const USER_FIELD_OPTION_TYPE_NAME = 'user_field__custom_field_options'
@@ -173,6 +175,8 @@ type ZendeskReferenceSerializationStrategyName = 'ticketField'
   | 'ticketFieldAlternative'
   | 'ticketFieldOption'
   | 'userFieldOption'
+  | 'locale'
+  | 'idString'
 const ZendeskReferenceSerializationStrategyLookup: Record<
   ZendeskReferenceSerializationStrategyName
   | referenceUtils.ReferenceSerializationStrategyName,
@@ -208,6 +212,16 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
     lookup: val => val,
     lookupIndexName: 'id',
   },
+  locale: {
+    serialize: ({ ref }) => (isInstanceElement(ref.value) ? ref.value.value.locale : ref.value),
+    lookup: val => val,
+    lookupIndexName: 'locale',
+  },
+  idString: {
+    serialize: async ({ ref }) => _.toString(ref.value.value.id),
+    lookup: val => val,
+    lookupIndexName: 'id',
+  },
 }
 
 export type ReferenceContextStrategyName = 'neighborField'
@@ -223,6 +237,7 @@ export type ReferenceContextStrategyName = 'neighborField'
   | 'neighborReferenceUserAndOrgField'
   | 'neighborSubjectReferenceTicketField'
   | 'neighborSubjectReferenceUserAndOrgField'
+  | 'neighborParentType'
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
@@ -237,6 +252,7 @@ export const contextStrategyLookup: Record<
   neighborSubjectReferenceTicketField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceTicketFieldLookupFunc, contextValueMapper: neighborReferenceTicketFieldLookupType }),
   neighborSubjectReferenceUserAndOrgField: neighborContextFunc({ contextFieldName: 'subject', getLookUpName: neighborReferenceUserAndOrgFieldLookupFunc, contextValueMapper: neighborReferenceUserAndOrgFieldLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
+  neighborParentType: neighborContextFunc({ contextFieldName: 'direct_parent_type' }),
   parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: getValueLookupType }),
   neighborSubject: neighborContextFunc({ contextFieldName: 'subject', contextValueMapper: getValueLookupType }),
   parentTitle: neighborContextFunc({ contextFieldName: 'title', levelsUp: 1, contextValueMapper: getValueLookupType }),
@@ -265,6 +281,7 @@ export class ZendeskFieldReferenceResolver extends referenceUtils.FieldReference
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
+    this.sourceTransformation = referenceUtils.ReferenceSourceTransformationLookup[def.sourceTransformation ?? 'asString']
   }
 }
 
@@ -360,22 +377,22 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'active', parentTypes: ['organization_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'inactive', parentTypes: ['organization_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'active', parentTypes: ['user_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'inactive', parentTypes: ['user_field_order'] },
     serializationStrategy: 'id',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'active', parentTypes: ['workspace_order'] },
@@ -440,17 +457,17 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'ticket_field_id' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'ticket_field_ids' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'parent_field_id' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -461,25 +478,25 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
-    src: { field: 'custom_field_options', parentTypes: ['ticket_field'] },
+    src: { field: 'custom_field_options', parentTypes: [TICKET_FIELD_TYPE_NAME] },
     serializationStrategy: 'fullValue',
     target: { type: 'ticket_field__custom_field_options' },
   },
   {
-    src: { field: 'default_custom_field_option', parentTypes: ['ticket_field'] },
+    src: { field: 'default_custom_field_option', parentTypes: [TICKET_FIELD_TYPE_NAME] },
     zendeskSerializationStrategy: 'value',
     target: { type: 'ticket_field__custom_field_options' },
   },
   {
-    src: { field: 'custom_field_options', parentTypes: ['user_field'] },
+    src: { field: 'custom_field_options', parentTypes: [USER_FIELD_TYPE_NAME] },
     serializationStrategy: 'fullValue',
     target: { type: 'user_field__custom_field_options' },
   },
   {
-    src: { field: 'default_custom_field_option', parentTypes: ['user_field'] },
+    src: { field: 'default_custom_field_option', parentTypes: [USER_FIELD_TYPE_NAME] },
     zendeskSerializationStrategy: 'value',
     target: { type: 'user_field__custom_field_options' },
   },
@@ -501,7 +518,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketField',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -512,7 +529,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketField',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -523,7 +540,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'ticketFieldAlternative',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -542,7 +559,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'orgField',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -553,7 +570,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'orgField',
-    target: { type: 'organization_field' },
+    target: { type: ORG_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -570,7 +587,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'userField',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -581,7 +598,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'userFieldAlternative',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: {
@@ -592,17 +609,17 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
       ],
     },
     zendeskSerializationStrategy: 'userField',
-    target: { type: 'user_field' },
+    target: { type: USER_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__columns'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__custom_fields'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'ticket_form_id' },
@@ -641,9 +658,14 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'permission_group' },
   },
   {
+    src: { field: 'default_locale', parentTypes: ['guide_settings'] },
+    zendeskSerializationStrategy: 'locale',
+    target: { type: 'guide_language_settings' },
+  },
+  {
     src: { field: 'source_locale', parentTypes: ['article', 'section', 'category'] },
-    serializationStrategy: 'id',
-    target: { type: 'help_center_locale' },
+    zendeskSerializationStrategy: 'locale',
+    target: { type: 'guide_language_settings' },
   },
   {
     src: {
@@ -653,8 +675,8 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
         'section_translation', 'category_translation', 'article_translation',
       ],
     },
-    serializationStrategy: 'id',
-    target: { type: 'help_center_locale' },
+    zendeskSerializationStrategy: 'locale',
+    target: { type: 'guide_language_settings' },
   },
   {
     src: { field: 'publish', parentTypes: ['permission_group'] },
@@ -698,6 +720,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -710,6 +733,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborType' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'id', parentTypes: ['workspace__apps'] },
@@ -724,17 +748,17 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'group_by', parentTypes: ['view__execution'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'sort_by', parentTypes: ['view__execution'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__group', 'view__execution__sort'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_field' },
+    target: { type: TICKET_FIELD_TYPE_NAME },
   },
   {
     src: { field: 'attachments', parentTypes: ['macro'] },
@@ -742,13 +766,35 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'macro_attachment' },
   },
   {
-    src: { field: 'tag', parentTypes: ['ticket_field', 'organization_field', 'user_field'] },
+    src: { field: 'tag', parentTypes: FIELD_TYPE_NAMES },
     serializationStrategy: 'id',
     target: { type: 'tag' },
+  },
+  {
+    src: { field: 'parent_section_id', parentTypes: ['section'] },
+    serializationStrategy: 'id',
+    target: { type: 'section' },
+  },
+  {
+    src: {
+      field: 'direct_parent_id',
+      parentTypes: [
+        'section',
+      ],
+    },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborParentType' },
   },
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
+  // note: this overlaps with additional strategies, but because the first strategy
+  // is chosen for serialization, it is safe
+  {
+    src: { field: 'value', parentTypes: ['workspace__conditions__all'] },
+    zendeskSerializationStrategy: 'idString',
+    target: { typeContext: 'neighborField' },
+  },
   // only one of these applies in a given instance
   {
     src: { field: 'value' },
@@ -924,6 +970,23 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     target: { type: 'group' },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
+  {
+    src: {
+      field: 'custom_statuses',
+      parentTypes: ['ticket_form__agent_conditions__child_fields__required_on_statuses'],
+    },
+    serializationStrategy: 'id',
+    target: { type: 'custom_status' },
+    zendeskMissingRefStrategy: 'typeAndValue',
+  },
+  {
+    src: {
+      field: 'client_id',
+      parentTypes: ['oauth_token'],
+    },
+    serializationStrategy: 'id',
+    target: { type: 'oauth_global_client' },
+  },
 ]
 
 export const fieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
@@ -951,10 +1014,9 @@ const filter: FilterCreator = ({ config }) => ({
       await referenceUtils.addReferences({
         elements,
         defs: fixedDefs,
-        fieldsToGroupBy: ['id', 'name', 'key', 'value'],
+        fieldsToGroupBy: ['id', 'name', 'key', 'value', 'locale'],
         contextStrategyLookup,
         // since ids and references to ids vary inconsistently between string/number, allow both
-        isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
         fieldReferenceResolverCreator: defs => new ZendeskFieldReferenceResolver(defs),
       })
     }
@@ -963,6 +1025,6 @@ const filter: FilterCreator = ({ config }) => ({
     )
     await addReferences(secondIterationFieldNameToTypeMappingDefs)
   }, 'Field reference filter'),
-})
 
+})
 export default filter

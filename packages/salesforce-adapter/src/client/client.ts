@@ -121,6 +121,10 @@ const errorMessagesToRetry = [
   'SERVER_UNAVAILABLE',
   'system may be currently unavailable',
   'Unexpected internal servlet state',
+  'socket hang up',
+  'An internal server error has occurred',
+  'An unexpected connection error occurred',
+  'ECONNREFUSED',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -368,6 +372,42 @@ const createConnectionFromCredentials = (
   return realConnection(creds.isSandbox, options)
 }
 
+const retryOnBadResponse = async <T extends object>(
+  request: () => Promise<T>,
+  retryAttempts = DEFAULT_RETRY_OPTS.maxAttempts,
+): Promise<T> => {
+  const requestWithRetry = async (attempts: number): Promise<T> => {
+    let res: T
+    try {
+      res = await request()
+    } catch (e) {
+      log.warn(`caught exception: ${e.message}. ${attempts} retry attempts left from ${retryAttempts} in total`)
+      if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
+        log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
+        return requestWithRetry(attempts - 1)
+      }
+      throw e
+    }
+
+    if (typeof res === 'string') {
+      log.warn('Received string when expected object, attempting the json parse the received string')
+
+      try {
+        return JSON.parse(res)
+      } catch (e) {
+        log.warn('Received string that is not json parsable when expected object. Retries left %d', attempts - 1)
+        if (attempts > 1) {
+          return requestWithRetry(attempts - 1)
+        }
+        throw e
+      }
+    }
+
+    return res
+  }
+  return requestWithRetry(retryAttempts)
+}
+
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
@@ -378,7 +418,7 @@ export const loginFromCredentialsAndReturnOrgId = async (
     }
   }
   // Oauth connection doesn't require further login
-  const identityInfo = await connection.identity()
+  const identityInfo = await retryOnBadResponse(() => connection.identity())
   log.debug(`connected salesforce user: ${identityInfo.username}`, { identityInfo })
 
   return identityInfo.organization_id
@@ -450,10 +490,12 @@ export default class SalesforceClient {
 
     setPollIntervalForConnection(this.conn, pollingConfig)
     this.setFetchPollingTimeout()
-    this.rateLimiters = createRateLimitersFromConfig(
-      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
-      SALESFORCE
-    )
+    this.rateLimiters = createRateLimitersFromConfig({
+      rateLimit: _.defaults(
+        {}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS,
+      ),
+      clientName: SALESFORCE,
+    })
     this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS
     this.clientName = 'SFDC'
     this.readMetadataChunkSize = _.merge(
@@ -461,6 +503,11 @@ export default class SalesforceClient {
       DEFAULT_READ_METADATA_CHUNK_SIZE,
       config?.readMetadataChunkSize,
     )
+  }
+
+  private retryOnBadResponse = <T extends object>(request: () => Promise<T>): Promise<T> => {
+    const retryAttempts = this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts
+    return retryOnBadResponse(request, retryAttempts)
   }
 
 
@@ -471,36 +518,12 @@ export default class SalesforceClient {
     }
   }
 
-  private retryOnBadResponse<T extends object>(request: () => Promise<T>): Promise<T> {
-    const requestWithRetry = async (attempts: number): Promise<T> => {
-      let res: T
-      try {
-        res = await request()
-      } catch (e) {
-        if (attempts > 1 && errorMessagesToRetry.some(message => e.message.includes(message))) {
-          log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
-          return requestWithRetry(attempts - 1)
-        }
-        throw e
-      }
-
-      if (typeof res === 'string') {
-        log.warn('Received string when expected object, attempting the json parse the received string')
-
-        try {
-          return JSON.parse(res)
-        } catch (e) {
-          log.warn('Received string that is not json parsable when expected object. Retries left %d', attempts - 1)
-          if (attempts > 1) {
-            return requestWithRetry(attempts - 1)
-          }
-          throw e
-        }
-      }
-
-      return res
-    }
-    return requestWithRetry(this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts)
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
+  @logDecorator()
+  @requiresLogin()
+  public async countInstances(typeName: string) : Promise<number> {
+    const countResult = await this.conn.query(`SELECT COUNT() FROM ${typeName}`)
+    return countResult.totalSize
   }
 
   /**
@@ -510,8 +533,8 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    const describeResult = this.retryOnBadResponse(() => this.conn.metadata.describe())
-    return flatValues((await describeResult).metadataObjects)
+    const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
+    return flatValues((describeResult).metadataObjects)
   }
 
   /**

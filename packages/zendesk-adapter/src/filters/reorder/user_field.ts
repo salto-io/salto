@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { USER_FIELD_TYPE_NAME } from '../custom_field_options/user_field'
+import { USER_FIELD_TYPE_NAME } from '../../constants'
 import { createReorderFilterCreator } from './creator'
 
 export const TYPE_NAME = USER_FIELD_TYPE_NAME

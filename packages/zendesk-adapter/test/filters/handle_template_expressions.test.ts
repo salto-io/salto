@@ -16,7 +16,10 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import filterCreator from '../../src/filters/handle_template_expressions'
+import filterCreator, {
+  TICKET_FIELD_OPTION_TITLE,
+  TICKET_TICKET_FIELD,
+} from '../../src/filters/handle_template_expressions'
 import { ZENDESK } from '../../src/constants'
 import { createMissingInstance } from '../../src/filters/references/missing_references'
 import { createFilterCreatorParams } from '../utils'
@@ -106,8 +109,8 @@ describe('handle templates filter', () => {
   })
 
   const placeholder1 = new InstanceElement('placeholder1', placeholder1Type, { id: 1452 })
-  const placeholder2 = new InstanceElement('placeholder2', placeholder2Type, { id: 1453 })
-  const placeholder3 = new InstanceElement('placeholder3', placeholder2Type, { id: 1454 })
+  const placeholder2 = new InstanceElement('placeholder2', placeholder1Type, { id: 1453 })
+  const placeholder3 = new InstanceElement('placeholder3', placeholder1Type, { id: 1454 })
   const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
   const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
@@ -118,20 +121,49 @@ describe('handle templates filter', () => {
     testType,
     {
       id: 1020,
-      actions: [{ value: [
-        'Improved needs for {{ticket.ticket_field_option_title_1454}}',
-        '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
-        'hello',
-        'text/html',
+      actions: [
+        {
+          value:
+            [
+              'Improved needs for {{ticket.ticket_field_option_title_1454}}',
+              '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
+              'hello',
+              'text/html',
+            ],
+          field: 'side_conversation_ticket',
+        },
+        {
+          value:
+            [
+              'Improved needs for {{ticket.ticket_field_option_title_1454}}',
+              '<p>Improved needs for {{ticket.ticket_field_option_title_1454}} due to something</p>',
+              'hello',
+              'text/html',
+            ],
+          field: 'side_conversation_slack',
+        },
+        {
+          value:
+            [
+              'Improved needs for {{ticket.ticket_field_1452}}',
+              '<p>Improved needs for {{ticket.ticket_field_1452}} due to something</p>',
+              'hello',
+              'text/html',
+            ],
+          field: 'side_conversation',
+        },
+        {
+          value: 'Improved needs for {{ticket.ticket_field_1452}} - {{ticket.ticket_field_1452}}',
+          field: 'subject',
+        },
       ],
-      field: 'side_conversation_ticket' }],
     },
   )
 
   const macroWithDC = new InstanceElement('macroDynamicContent', testType, { id: 1033, actions: [{ value: 'dynamic content ref {{dc.dynamic_content_test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
   const macroWithHyphenDC = new InstanceElement('macroHyphenDynamicContent', testType, { id: 1034, actions: [{ value: 'dynamic content ref {{dc.dynamic-content-test}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
 
-  const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1454}}', field: 'comment_value_html' }] })
+  const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1455}}', field: 'comment_value_html' }] })
   const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
   const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
   const trigger = new InstanceElement('trigger', triggerType, { id: 1005, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
@@ -169,10 +201,11 @@ describe('handle templates filter', () => {
 
     it('should resolve almost-template normally', () => {
       const fetchedMacroAlmostTemplate = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroAlmost')
-      const missingInstance = createMissingInstance(ZENDESK, 'ticket_field', '1454')
-      missingInstance.value.id = '1454'
+      const missingInstance = createMissingInstance(ZENDESK, 'ticket_field', '1455')
+      missingInstance.value.id = '1455'
       expect(fetchedMacroAlmostTemplate?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: ['almost template {{ticket.not_an_actual_field_1452}} and {{',
+        parts: [
+          `almost template {{ticket.not_an_actual_field_1452}} and {{${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(missingInstance.elemID, missingInstance),
           '}}',
         ],
@@ -184,37 +217,37 @@ describe('handle templates filter', () => {
     it('should resolve one template correctly, in any type', () => {
       const fetchedMacro2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro2')
       expect(fetchedMacro2?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
-        '{{',
+        `{{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedTarget = elements.filter(isInstanceElement).find(i => i.elemID.name === 'target')
       expect(fetchedTarget?.value.target_url).toEqual(new TemplateExpression({ parts: [
-        'url: {{',
+        `url: {{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedWebhook = elements.filter(isInstanceElement).find(i => i.elemID.name === 'webhook')
       expect(fetchedWebhook?.value.endpoint).toEqual(new TemplateExpression({ parts: [
-        'endpoint: {{',
+        `endpoint: {{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
       expect(fetchedTrigger?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
-        'ticket: {{',
+        `ticket: {{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedAutomation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'automation')
       expect(fetchedAutomation?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
-        'ticket: {{',
+        `ticket: {{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedDynamicContent = elements.filter(isInstanceElement).find(i => i.elemID.name === 'dc')
       expect(fetchedDynamicContent?.value.content).toEqual(new TemplateExpression({ parts: [
-        'content: {{',
+        `content: {{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedAppInstallation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'appInstallation')
       expect(fetchedAppInstallation?.value.settings.uri_templates).toEqual(
         new TemplateExpression({ parts: [
-          'template: {{',
+          `template: {{${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] })
       )
       expect(fetchedAppInstallation?.value.settings_objects[0].value).toEqual(
         new TemplateExpression({ parts: [
-          'object template: {{',
+          `object template: {{${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] })
       )
       const fetchedDCMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroDynamicContent')
@@ -222,7 +255,7 @@ describe('handle templates filter', () => {
         new TemplateExpression({ parts: [
           'dynamic content ref {{',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          '}} and {{',
+          `}} and {{${TICKET_FIELD_OPTION_TITLE}_`,
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}'] })
       )
@@ -232,7 +265,7 @@ describe('handle templates filter', () => {
         new TemplateExpression({ parts: [
           'dynamic content ref {{',
           new ReferenceExpression(hyphenDynamicContentRecord.elemID, hyphenDynamicContentRecord),
-          '}} and {{',
+          `}} and {{${TICKET_FIELD_OPTION_TITLE}_`,
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}'] })
       )
@@ -241,7 +274,7 @@ describe('handle templates filter', () => {
     it('should resolve more complicated templates correctly', () => {
       const fetchedMacroComplicated = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroComplicated')
       expect(fetchedMacroComplicated?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: ['{{some other irrelevancies-',
+        parts: [`{{some other irrelevancies-${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(placeholder1.elemID, placeholder1),
           ' | something irrelevant | dynamic content now: ',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
@@ -249,7 +282,7 @@ describe('handle templates filter', () => {
       }))
       const fetchedMacroDifferentBracket = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroDifferentBracket')
       expect(fetchedMacroDifferentBracket?.value.actions[0].value).toEqual(new TemplateExpression({
-        parts: ['{%some other irrelevancies-',
+        parts: [`{%some other irrelevancies-${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(placeholder1.elemID, placeholder1),
           ' | something irrelevant | dynamic content now: ',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
@@ -261,9 +294,9 @@ describe('handle templates filter', () => {
       const fetchedMacro3 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macro3')
       expect(fetchedMacro3?.value.actions[0].value).toEqual(new TemplateExpression({
         parts: [
-          'multiple refs {{',
+          `multiple refs {{${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(placeholder1.elemID, placeholder1),
-          '}} and {{',
+          `}} and {{${TICKET_FIELD_OPTION_TITLE}_`,
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}',
         ],
@@ -276,11 +309,32 @@ describe('handle templates filter', () => {
         .filter(i => i.elemID.name === 'macroSideConvTicket')[0]
       expect(macroWithSideConv).toBeDefined()
       expect(macroWithSideConv.value.actions[0].value).toEqual([
-        new TemplateExpression({ parts: ['Improved needs for {{', new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
-        new TemplateExpression({ parts: ['<p>Improved needs for {{', new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
+        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
+        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
         'hello',
         'text/html',
       ])
+      expect(macroWithSideConv.value.actions[1].value).toEqual([
+        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
+        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
+        'hello',
+        'text/html',
+      ])
+      expect(macroWithSideConv.value.actions[2].value).toEqual([
+        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_TICKET_FIELD}_`, new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }),
+        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_TICKET_FIELD}_`, new ReferenceExpression(placeholder1.elemID, placeholder1), '}} due to something</p>'] }),
+        'hello',
+        'text/html',
+      ])
+      expect(macroWithSideConv.value.actions[3].value).toEqual(
+        new TemplateExpression({ parts: [
+          `Improved needs for {{${TICKET_TICKET_FIELD}_`,
+          new ReferenceExpression(placeholder1.elemID, placeholder1),
+          `}} - {{${TICKET_TICKET_FIELD}_`,
+          new ReferenceExpression(placeholder1.elemID, placeholder1),
+          '}}',
+        ] }),
+      )
     })
   })
   describe('preDeploy', () => {

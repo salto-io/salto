@@ -32,20 +32,22 @@ export type Reals = {
 export type Opts = {
   adapterParams?: Partial<JiraAdapterParams>
   credentials: Credentials
+  isDataCenter?: boolean
 }
 
-export const realAdapter = ({ adapterParams, credentials }: Opts, config?: JiraConfig): Reals => {
+export const realAdapter = ({ adapterParams, credentials, isDataCenter = false }: Opts, config?: JiraConfig): Reals => {
   const client = (adapterParams && adapterParams.client)
-    || new JiraClient({ credentials, isDataCenter: false })
+    || new JiraClient({ credentials, isDataCenter })
   const adapter = new JiraAdapter({
     client,
-    config: config ?? getDefaultConfig({ isDataCenter: false }),
+    config: config ?? getDefaultConfig({ isDataCenter }),
     elementsSource: buildElementsSourceFromElements([]),
   })
   return { client, adapter }
 }
 
-export const credsLease = (): Promise<CredsLease<Required<Credentials>>> => creds(
-  credsSpec(),
+export const credsLease = (isDataCenter = false)
+: Promise<CredsLease<Required<Credentials>>> => creds(
+  credsSpec(isDataCenter),
   log,
 )

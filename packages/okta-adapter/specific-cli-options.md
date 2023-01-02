@@ -7,5 +7,5 @@ Supprted parameters are:
 
 ### Example
 ```
-salto service add okta --login-parameters baseUrl=https://someSubDomain.okta.com/ token=SomeApiToken
+salto account add okta --login-parameters baseUrl=https://someSubDomain.okta.com/ token=SomeApiToken
 ```

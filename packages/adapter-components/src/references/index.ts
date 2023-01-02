@@ -19,6 +19,9 @@ export {
   ReferenceSerializationStrategy,
   ReferenceSerializationStrategyName,
   ReferenceSerializationStrategyLookup,
+  ReferenceSourceTransformationLookup,
+  ReferenceSourceTransformationName,
+  ReferenceSourceTransformation,
   MissingReferenceStrategy,
   MissingReferenceStrategyName,
   FieldReferenceDefinition,
@@ -27,4 +30,5 @@ export {
   ReferenceTargetDefinition,
   ExtendedReferenceTargetDefinition,
   LookupFunc,
+  basicLookUp,
 } from './reference_mapping'

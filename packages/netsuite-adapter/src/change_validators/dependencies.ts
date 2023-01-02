@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Change, ChangeError, Element, getChangeData, SeverityLevel,
+  Change, ChangeDataType, ChangeError, getChangeData, SeverityLevel,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { findDependingElementsFromRefs } from '../reference_dependencies'
@@ -31,7 +31,7 @@ export const validateDependsOnInvalidElement = async (
     inputInvalidElementIds.map(id => [id, 'invalid'])
   )
 
-  const isInvalid = async (element: Element): Promise<boolean> => {
+  const isInvalid = async (element: ChangeDataType): Promise<boolean> => {
     const status = elemValidity.get(element.elemID.getFullName())
     if (status !== undefined) {
       return status === 'invalid'

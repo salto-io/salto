@@ -46,33 +46,35 @@ export const isLabelsPostResponse = createSchemeGuard<LabelsResponse>(LABELS_POS
 const updateAutomationLabel = async (
   instance: InstanceElement,
   client: JiraClient,
-  cloudId: string,
 ): Promise<void> => {
   const resolvedInstance = await resolveValues(instance, getLookUpName)
 
   const data = {
     ...resolvedInstance.value,
   }
-  await client.put({
-    url: `gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels/${instance.value.id}`,
-    data,
-  })
+
+  const url = client.isDataCenter
+    ? `/rest/cb-automation/latest/rule-label/${instance.value.id}`
+    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels/${instance.value.id}`
+
+  await client.put({ url, data })
 }
 
 const createAutomationLabel = async (
   instance: InstanceElement,
   client: JiraClient,
-  cloudId: string,
 ): Promise<void> => {
   const resolvedInstance = await resolveValues(instance, getLookUpName)
 
   const data = {
     ...resolvedInstance.value,
   }
-  const response = await client.post({
-    url: `gateway/api/automation/internal-api/jira/${cloudId}/pro/rest/GLOBAL/rule-labels`,
-    data,
-  })
+
+  const url = client.isDataCenter
+    ? '/rest/cb-automation/latest/rule-label'
+    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
+
+  const response = await client.post({ url, data })
   if (!isLabelsPostResponse(response.data)) {
     throw new Error(`Received an invalid automation label response when attempting to add automation label: ${instance.elemID.getFullName()}`)
   }
@@ -107,11 +109,10 @@ const filter: FilterCreator = ({ client, config }) => ({
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        const cloudId = await getCloudId(client)
         if (isAdditionChange(change)) {
-          await createAutomationLabel(getChangeData(change), client, cloudId)
+          await createAutomationLabel(getChangeData(change), client)
         } else if (isModificationChange(change)) {
-          await updateAutomationLabel(getChangeData(change), client, cloudId)
+          await updateAutomationLabel(getChangeData(change), client)
         }
       }
     )

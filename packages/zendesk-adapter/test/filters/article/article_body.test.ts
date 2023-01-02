@@ -75,6 +75,12 @@ describe('article body filter', () => {
     { id: 1, brand_url: 'https://excluded.zendesk.com', name: 'excluded', has_help_center: true },
   )
 
+  const brandToExclude2 = new InstanceElement(
+    'excluded2',
+    brandType,
+    { id: 3, brand_url: 'https://excluded2.zendesk.com', name: 'excluded2', has_help_center: true },
+  )
+
   const emptyBrandInstance = new InstanceElement(
     'brand2',
     brandType,
@@ -127,12 +133,13 @@ describe('article body filter', () => {
   const translationWithExcludedBrand = new InstanceElement(
     'articleWithExcludedBrand',
     articleTranslationType,
-    { id: 101010, body: '<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh' },
+    { id: 101010, body: '<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh' },
   )
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
     brandInstance,
     brandToExclude,
+    brandToExclude2,
     emptyBrandInstance,
     articleInstance,
     sectionInstance,
@@ -211,7 +218,7 @@ describe('article body filter', () => {
 
     describe('when some brands are excluded', () => {
       beforeAll(() => {
-        config[FETCH_CONFIG].guide = { brands: ['[^excluded]'] }
+        config[FETCH_CONFIG].guide = { brands: ['^(?!excluded).*$'] }
         filter = filterCreator(createFilterCreatorParams({ config })) as FilterType
         elements = generateElements()
       })
@@ -220,10 +227,14 @@ describe('article body filter', () => {
         const filterResult = await filter.onFetch(elements) as FilterResult
         const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleWithExcludedBrand')
         expect(fetchedTranslationWithReferences?.value.body)
-          .toEqual('<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh')
-        expect(filterResult.errors).toHaveLength(1)
+          .toEqual('<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh')
+        expect(filterResult.errors).toHaveLength(2)
         expect(filterResult.errors?.[0]).toEqual({
-          message: 'Article zendesk.article_translation.instance.articleWithExcludedBrand has a link to an excluded brand. To create this reference, please update the configuration under fetch.guide.brands in the configuration file to include brand: zendesk.brand.instance.excluded',
+          message: 'Brand excluded is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following article translations (partial list limited to 10): articleWithExcludedBrand',
+          severity: 'Warning',
+        })
+        expect(filterResult.errors?.[1]).toEqual({
+          message: 'Brand excluded2 is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following article translations (partial list limited to 10): articleWithExcludedBrand',
           severity: 'Warning',
         })
       })

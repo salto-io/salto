@@ -129,11 +129,11 @@ const updateArticleTranslationBody = ({
   additionalInstances: Record<string, Record<string, InstanceElement>>
   includedBrands: InstanceElement[]
   enableMissingReferences?: boolean
-}): SaltoError[] => {
-  const errors: SaltoError[] = []
+}): string[] => {
+  const missingBrandNames: string[] = []
   const originalTranslationBody = translationInstance.value[BODY_FIELD]
   if (!_.isString(originalTranslationBody)) {
-    return errors
+    return missingBrandNames
   }
 
   // Find the urls that are in the body
@@ -149,10 +149,7 @@ const updateArticleTranslationBody = ({
 
       if (!includedBrands.includes(urlBrandInstance)) {
         // If the brand is excluded, don't try to create references
-        errors.push({
-          message: `Article ${translationInstance.elemID.getFullName()} has a link to an excluded brand. To create this reference, please update the configuration under fetch.guide.brands in the configuration file to include brand: ${urlBrandInstance.elemID.getFullName()}`,
-          severity: 'Warning',
-        })
+        missingBrandNames.push(urlBrandInstance.value.name)
         return url
       }
       // Extract the referenced instances inside
@@ -171,7 +168,7 @@ const updateArticleTranslationBody = ({
   )
 
   translationInstance.value.body = processedTranslationBody
-  return errors
+  return _.uniq(missingBrandNames)
 }
 
 /**
@@ -185,6 +182,20 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
     throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
   }
   return part.value
+}
+
+const getWarningsForMissingBrands = (
+  translationToMissingBrands: Record<string, string[]>
+): SaltoError[] => {
+  const brandArticlePairs = Object.entries(translationToMissingBrands)
+    .flatMap(([translationName, missingBrands]) =>
+      missingBrands.map(brandName => ({ brandName, translationName })))
+  const missingBrandsToTranslationNames = _(brandArticlePairs).groupBy('brandName').map((pair, brand) => ({ brand, translations: _.map(pair, 'translationName') })).value()
+  return missingBrandsToTranslationNames
+    .map(brandToTranslation => ({
+      message: `Brand ${brandToTranslation.brand} is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following article translations (partial list limited to 10): ${_.take(brandToTranslation.translations, 10).join(', ')}`,
+      severity: 'Warning',
+    }))
 }
 
 /**
@@ -211,18 +222,23 @@ const filterCreator: FilterCreator = ({ config }) => {
             ),
       }
       const includedBrands = getBrandsForGuide(instances, config[FETCH_CONFIG])
-      const warnings = instances
+      const translationToMissingBrands = Object.fromEntries(instances
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(translationInstance => !_.isEmpty(translationInstance.value[BODY_FIELD]))
-        .flatMap(translationInstance => (
-          updateArticleTranslationBody({
+        .map(translationInstance => {
+          const missingBrandNames = updateArticleTranslationBody({
             translationInstance,
             additionalInstances,
             includedBrands,
             enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
           })
-        ))
+          return _.isEmpty(missingBrandNames) ? undefined : [translationInstance.elemID.name, missingBrandNames]
+        })
+        .filter(isDefined))
 
+      const warnings = _.isEmpty(translationToMissingBrands)
+        ? []
+        : getWarningsForMissingBrands(translationToMissingBrands)
       return { errors: warnings }
     }, 'articleBodyFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]) => {

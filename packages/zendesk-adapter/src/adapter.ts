@@ -410,7 +410,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           credentials: { ...credentials, subdomain },
           config: this.userConfig[CLIENT_CONFIG],
         },
-        1
+        1 // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
       )
     )
 

@@ -184,7 +184,7 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         modify: {
           url: '/rest/api/3/issuesecurityschemes',
           method: 'put',
-          fieldsToIgnore: ['levels'],
+          fieldsToIgnore: ['schemeId', 'levels'],
         },
         remove: {
           url: '/rest/api/3/issuesecurityschemes/{id}',

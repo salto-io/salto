@@ -140,7 +140,7 @@ export const deployChange = async (
     })
     return response
   } catch (err) {
-    throw getZendeskError(getChangeData(change).elemID.getFullName(), err)
+    throw getZendeskError(getChangeData(change).elemID, err)
   }
 }
 

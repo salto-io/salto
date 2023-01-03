@@ -217,7 +217,7 @@ export const createUnassociatedAttachment = async (
     }
     attachmentInstance.value.id = createdAttachment[0].id
   } catch (err) {
-    throw getZendeskError(attachmentInstance.elemID.getFullName(), err)
+    throw getZendeskError(attachmentInstance.elemID, err)
   }
 }
 

@@ -57,7 +57,7 @@ export const brandCreationValidator: (client: ZendeskClient) =>
         elemID: instance.elemID,
         severity: 'Warning',
         message: 'Verify brand subdomain uniqueness',
-        detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name}`,
+        detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name} before attempting to create it from Salto`,
       }]
     ))
   }

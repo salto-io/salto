@@ -58,7 +58,7 @@ describe('brandCreationValidator', () => {
       elemID: brandInstance.elemID,
       severity: 'Warning',
       message: 'Verify brand subdomain uniqueness',
-      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name}`,
+      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
     }])
   })
   it('should not return an error if the brand was modified', async () => {

@@ -16,8 +16,13 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { BRAND_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { brandCreationValidator } from '../../src/change_validators/brand_creation'
+import ZendeskClient from '../../src/client/client'
 
 describe('brandCreationValidator', () => {
+  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+  const changeValidator = brandCreationValidator(client)
+  let mockGet: jest.SpyInstance
+
   const brandType = new ObjectType({
     elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME),
   })
@@ -26,30 +31,73 @@ describe('brandCreationValidator', () => {
     brandType,
     { name: 'test', subdomain: 'subdomain_test' },
   )
+
+  beforeEach(async () => {
+    jest.clearAllMocks()
+  })
+
   it('should return a warning if a new brand is created', async () => {
-    const errors = await brandCreationValidator(
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet.mockImplementation(params => {
+      if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
+        return {
+          status: 200,
+          data: { success: false },
+        }
+      }
+      throw new Error('Err')
+    })
+    const errors = await changeValidator(
       [toChange({ after: brandInstance })],
     )
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    expect(mockGet).toHaveBeenCalledWith({
+      url: `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`,
+    })
     expect(errors).toEqual([{
       elemID: brandInstance.elemID,
       severity: 'Warning',
       message: 'Verify brand subdomain uniqueness',
-      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
+      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name}`,
     }])
   })
   it('should not return an error if the brand was modified', async () => {
     const clonedBeforeBrand = brandInstance.clone()
     const clonedAfterBrand = brandInstance.clone()
     clonedAfterBrand.value.subdomain = 'edited'
-    const errors = await brandCreationValidator(
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    const errors = await changeValidator(
       [toChange({ before: clonedBeforeBrand, after: clonedAfterBrand })],
     )
+    expect(mockGet).toHaveBeenCalledTimes(0)
     expect(errors).toHaveLength(0)
   })
   it('should not return an error if the brand was removed', async () => {
-    const errors = await brandCreationValidator(
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    const errors = await changeValidator(
       [toChange({ before: brandInstance })],
     )
+    expect(mockGet).toHaveBeenCalledTimes(0)
     expect(errors).toHaveLength(0)
+  })
+  it('should not return a warning if a new brand is created and subdomain is valid', async () => {
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet.mockImplementation(params => {
+      if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
+        return {
+          status: 200,
+          data: { success: true },
+        }
+      }
+      throw new Error('Err')
+    })
+    const errors = await changeValidator(
+      [toChange({ after: brandInstance })],
+    )
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    expect(mockGet).toHaveBeenCalledWith({
+      url: `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`,
+    })
+    expect(errors).toEqual([])
   })
 })

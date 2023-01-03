@@ -374,7 +374,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private configInstance?: InstanceElement
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
-  private createClientBySubdomain: (subdomain: string) => ZendeskClient
+  private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -404,15 +404,20 @@ export default class ZendeskAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
 
-    this.createClientBySubdomain = (subdomain: string): ZendeskClient => (
-      new ZendeskClient(
+    this.createClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
+      const clientConfig = { ...this.userConfig[CLIENT_CONFIG] }
+      if (deployRateLimit) {
+        // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
+        Object.assign(clientConfig, { rateLimit: { deploy: 1 } })
+      }
+      return new ZendeskClient(
         {
           credentials: { ...credentials, subdomain },
-          config: this.userConfig[CLIENT_CONFIG],
+          config: clientConfig,
         },
-        1 // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
       )
-    )
+    }
+
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
@@ -618,7 +623,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       .filter(isString)
     const subdomainToClient = Object.fromEntries(subdomainsList
       .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain)])))
+      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain, true)])))
     const guideDeployResults = await awu(Object.entries(subdomainToClient))
       .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({

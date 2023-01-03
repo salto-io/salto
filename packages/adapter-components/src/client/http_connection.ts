@@ -126,7 +126,7 @@ export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): R
     return retryDelay
   },
   retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
-    || (err.response?.status !== undefined && [409, 429, 503].includes(err.response.status)),
+    || err.response?.status === 429,
 })
 
 type ConnectionParams<TCredentials> = {

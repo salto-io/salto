@@ -55,8 +55,8 @@ export const brandCreationValidator: (client: ZendeskClient) =>
     return brandAddition.flatMap(instance => (
       [{
         elemID: instance.elemID,
-        severity: 'Warning',
-        message: 'Verify brand subdomain uniqueness',
+        severity: 'Error',
+        message: 'Brand subdomain is already taken',
         detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name} before attempting to create it from Salto`,
       }]
     ))

@@ -56,8 +56,8 @@ describe('brandCreationValidator', () => {
     })
     expect(errors).toEqual([{
       elemID: brandInstance.elemID,
-      severity: 'Warning',
-      message: 'Verify brand subdomain uniqueness',
+      severity: 'Error',
+      message: 'Brand subdomain is already taken',
       detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
     }])
   })

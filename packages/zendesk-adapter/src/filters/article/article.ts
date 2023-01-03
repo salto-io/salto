@@ -237,9 +237,9 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
 
 const getId = (instance: InstanceElement): number => instance.value.id
 const getName = (instance: InstanceElement): string => instance.elemID.name
-const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name ?? undefined
-const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type ?? undefined
-const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline ?? undefined
+const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name
+const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type
+const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline
 
 
 /**
@@ -263,7 +263,12 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       }
       const articleById: Record<number, InstanceElement> = _.keyBy(articleInstances, getId)
       _.remove(attachments, isObjectType)
-      const attachmentByName: Record<string, InstanceElement> = _.keyBy(attachments.filter(isInstanceElement), getName)
+      const attachmentByName: Record<string, InstanceElement> = _.keyBy(
+        attachments
+          .filter(isInstanceElement)
+          .filter(attachment => attachment.value.name !== undefined),
+        getName,
+      )
       await getArticleAttachments({
         brandIdToClient,
         attachmentType,

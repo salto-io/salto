@@ -145,7 +145,6 @@ const listMetadataObjectsWithinFolders = async (
   )
   const elements = result
     .map(props => withFullPath(props, folderPathByName))
-    .filter(props => notInSkipList(metadataQuery, props, false))
     .concat(includedFolderElements)
   const configChanges = (errors?.map(createListMetadataObjectsConfigChange) ?? [])
     .concat(folders.configChanges)
@@ -346,7 +345,7 @@ export const retrieveMetadataInstances = async ({
       // We get folders as part of getting the records inside them
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
-  ))
+  )).filter(props => notInSkipList(metadataQuery, props, false))
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

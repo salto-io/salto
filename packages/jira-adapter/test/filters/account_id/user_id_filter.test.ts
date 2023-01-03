@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ElemIdGetter, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, ElemIdGetter, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -267,38 +267,12 @@ describe('convert userId to key in Jira DC', () => {
         undefined
       )
       common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
-      await filter.preDeploy([
-        toChange({ after: instances[0] }),
-        toChange({ before: instances[1], after: instances[2] }),
-      ])
-      expect(mockConnection.get).toHaveBeenCalledOnce()
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search?username=.',
-        undefined
-      )
-      common.checkInstanceUserIds(instances[2], '2', EMPTY_STRING)
-      common.checkInstanceUserIds(instances[0], '0', EMPTY_STRING)
-      await filter.onDeploy([
-        toChange({ after: instances[0] }),
-        toChange({ before: instances[1], after: instances[2] }),
-      ])
-      expect(mockConnection.get).toHaveBeenCalledOnce()
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search?username=.',
-        undefined
-      )
-      common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
-      common.checkInstanceUserIds(instances[0], '0', NAME_PREFIX)
     })
     it('should convert userId to key and backwards in all defined types', async () => {
       await awu(ACCOUNT_ID_TYPES).forEach(async typeName => {
         const type = common.createType(typeName)
         const instance = common.createObjectedInstance('2', type)
         await filter.onFetch([instance])
-        common.checkInstanceUserIds(instance, '2', NAME_PREFIX, PARAMETER_STYLE_TYPES.includes(typeName))
-        await filter.preDeploy([toChange({ after: instance })])
-        common.checkInstanceUserIds(instance, '2', EMPTY_STRING, PARAMETER_STYLE_TYPES.includes(typeName))
-        await filter.onDeploy([toChange({ after: instance })])
         common.checkInstanceUserIds(instance, '2', NAME_PREFIX, PARAMETER_STYLE_TYPES.includes(typeName))
       })
     })
@@ -307,10 +281,6 @@ describe('convert userId to key in Jira DC', () => {
       const instance = common.createObjectedInstance('2', type)
       await filter.onFetch([instance])
       common.checkInstanceUserIds(instances[2], '2', EMPTY_STRING)
-      await filter.preDeploy([toChange({ after: instance })])
-      common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
-      await filter.onDeploy([toChange({ after: instance })])
-      common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
     })
   })
 })

@@ -24,26 +24,26 @@ describe('errors', () => {
     const elemId = new ElemID(ZENDESK, 'obj', 'instance', 'inst')
     it('should return just the base error if no data in the response', async () => {
       expect(getZendeskError(
-        elemId.getFullName(),
+        elemId,
         new clientUtils.HTTPError(
           'err',
           { data: 'err' as unknown as clientUtils.ResponseValue, status: 400 }
         )
-      )).toEqual(new Error(`Deployment of ${elemId.getFullName()} failed. Error: err`))
+      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed: Error: err`))
     })
     it('should return the correct error message', async () => {
       const data = { error: 'err' }
       expect(getZendeskError(
-        elemId.getFullName(),
+        elemId,
         new clientUtils.HTTPError('err', { data, status: 400 })
-      )).toEqual(new Error(`Deployment of ${elemId.getFullName()} failed.\nError: err${EOL}{${EOL}  "error": "err"${EOL}}`))
+      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}Error: err${EOL}{${EOL}  "error": "err"${EOL}}`))
     })
     it('should return the correct error message for 403 error', async () => {
       const data = { errors: [{ title: 'one', detail: 'one detail' }, { title: 'two', detail: 'two detail' }] }
       expect(getZendeskError(
-        elemId.getFullName(),
+        elemId,
         new clientUtils.HTTPError('err', { data, status: 403 })
-      )).toEqual(new Error(`Deployment of ${elemId.getFullName()} failed.${EOL}\nError details:\n* Title: one\n  Detail: one detail\n\n* Title: two\n  Detail: two detail\n`))
+      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: one${EOL}  Detail: one detail${EOL}${EOL}* Title: two${EOL}  Detail: two detail${EOL}`))
     })
     it('should return the correct error message for 422 error', async () => {
       const data = {
@@ -54,16 +54,16 @@ describe('errors', () => {
         },
       }
       expect(getZendeskError(
-        elemId.getFullName(),
+        elemId,
         new clientUtils.HTTPError('err', { data, status: 422 })
-      )).toEqual(new Error(`Deployment of ${elemId.getFullName()} failed.${EOL}\n${data.description}\n\nError details:${EOL}* a-one des\n* a-two des\n* b-one des\n* b-two des`))
+      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}${data.description}${EOL}${EOL}Error details:${EOL}* a-one des${EOL}* a-two des${EOL}* b-one des${EOL}* b-two des`))
     })
     it('should return the correct error message for 400 error', async () => {
       const data = { error: { title: 'a', message: 'b' } }
       expect(getZendeskError(
-        elemId.getFullName(),
+        elemId,
         new clientUtils.HTTPError('err', { data, status: 400 })
-      )).toEqual(new Error(`Deployment of ${elemId.getFullName()} failed.${EOL}\nError details:\n* Title: a\n  Detail: b\n`))
+      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: a${EOL}  Detail: b${EOL}`))
     })
   })
 })

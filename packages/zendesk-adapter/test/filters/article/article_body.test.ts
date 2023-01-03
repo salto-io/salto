@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType,
-  BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression } from '@salto-io/adapter-api'
+  BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../../src/filters/article/article_body'
 import {
@@ -66,25 +66,25 @@ describe('article body filter', () => {
   const brandInstance = new InstanceElement(
     'brand',
     brandType,
-    { id: 1, brand_url: 'https://brand.zendesk.com', name: 'brand', has_help_center: true },
+    { id: 1, brand_url: 'https://brand.zendesk.com', name: 'brand', has_help_center: true, subdomain: 'brandSub' },
   )
 
   const brandToExclude = new InstanceElement(
     'excluded',
     brandType,
-    { id: 1, brand_url: 'https://excluded.zendesk.com', name: 'excluded', has_help_center: true },
+    { id: 1, brand_url: 'https://excluded.zendesk.com', name: 'excluded', has_help_center: true, subdomain: 'excludedSub' },
   )
 
   const brandToExclude2 = new InstanceElement(
     'excluded2',
     brandType,
-    { id: 3, brand_url: 'https://excluded2.zendesk.com', name: 'excluded2', has_help_center: true },
+    { id: 3, brand_url: 'https://excluded2.zendesk.com', name: 'excluded2', has_help_center: true, subdomain: 'excluded2Sub' },
   )
 
   const emptyBrandInstance = new InstanceElement(
     'brand2',
     brandType,
-    { id: 2, brand_url: 'https://brand2.zendesk.com', name: 'brand2', has_help_center: true },
+    { id: 2, brand_url: 'https://brand2.zendesk.com', name: 'brand2', has_help_center: true, subdomain: 'brand2Sub' },
   )
 
   const createInstanceElement = (type: ObjectType): InstanceElement =>
@@ -101,28 +101,37 @@ describe('article body filter', () => {
   // To test that the code catches both brand as id and brand as reference expression
   attachmentInstance.value.brand = brandInstance.value.id
 
+  const parentArticle = new InstanceElement('articleParent', articleType, { id: 100, name: 'ar' })
   const translationWithReferences = new InstanceElement(
     'translationWithReferences',
     articleTranslationType,
     { id: 1, body: '<p><a href="https://brand.zendesk.com/hc/en-us/articles/123/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://brand.zendesk.com/hc/he/articles/123-extra_string"' },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
   )
 
   const translationWithEmptyBrand = new InstanceElement(
     'translationWithEmptyBrand',
     articleTranslationType,
     { id: 1, body: '<p><a href="https://brand2.zendesk.com/hc/en-us/articles/124/sep/sections/123/sep/categories/123/sep/article_attachments/123-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://brand.zendesk.com/hc/he/articles/123-extra_string"' },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
   )
 
   const translationWithoutReferences = new InstanceElement(
     'translationWithoutReferences',
     articleTranslationType,
     { id: 1, body: '<p><a href="https://nobrand.zendesk.com/hc/en-us/articles/124/sep/sections/124/sep/categories/124/sep/article_attachments/124-extra_string" target="_self">linkedArticle</a></p>kjdsahjkdshjkdsjkh\n<a href="https://nobrand.zendesk.com/hc/he/articles/124-extra_string"' },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
   )
 
   const translationWithAttachments = new InstanceElement(
     'articleWithAttachments',
     articleTranslationType,
     { id: 1005, body: '<p><img src="https://brand.zendesk.com/hc/article_attachments/123" alt="alttext"><img src="https://brand.zendesk.com/hc/article_attachments/123" alt="alttext"></p>' },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
   )
 
   const articeOfExcludedBrand = new InstanceElement(
@@ -134,6 +143,16 @@ describe('article body filter', () => {
     'articleWithExcludedBrand',
     articleTranslationType,
     { id: 101010, body: '<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh' },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
+  )
+
+  const translationWithMixedBrands = new InstanceElement(
+    'articleWithMixedBrand',
+    articleTranslationType,
+    { id: 202020, body: '<p><a href="https://brand.zendesk.com/hc/en-us/articles/123" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh' },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentArticle.elemID, parentArticle)] },
   )
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([
@@ -150,6 +169,8 @@ describe('article body filter', () => {
     translationWithoutReferences,
     translationWithAttachments,
     translationWithExcludedBrand,
+    parentArticle,
+    translationWithMixedBrands,
     articeOfExcludedBrand,
   ]).map(element => element.clone())
 
@@ -228,13 +249,22 @@ describe('article body filter', () => {
         const fetchedTranslationWithReferences = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleWithExcludedBrand')
         expect(fetchedTranslationWithReferences?.value.body)
           .toEqual('<p><a href="https://excluded.zendesk.com/hc/en-us/articles/321" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh')
+        const fetchedTranslationWithReferences2 = elements.filter(isInstanceElement).find(i => i.elemID.name === 'articleWithMixedBrand')
+        expect(fetchedTranslationWithReferences2?.value.body)
+          .toEqual(new TemplateExpression({ parts: [
+            '<p><a href="',
+            new ReferenceExpression(brandInstance.elemID.createNestedID('brand_url'), brandInstance.value.brand_url),
+            '/hc/en-us/articles/',
+            new ReferenceExpression(articleInstance.elemID, articleInstance),
+            '" target="_self">linkedArticle</a><img src="https://excluded2.zendesk.com/hc/article_attachments/bla" alt="alttext"></p>kjdsahjkdshjkdsjkh',
+          ] }))
         expect(filterResult.errors).toHaveLength(2)
         expect(filterResult.errors?.[0]).toEqual({
-          message: 'Brand excluded is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following article translations (partial list limited to 10): articleWithExcludedBrand',
+          message: 'Brand excluded (subdomain excludedSub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
           severity: 'Warning',
         })
         expect(filterResult.errors?.[1]).toEqual({
-          message: 'Brand excluded2 is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following article translations (partial list limited to 10): articleWithExcludedBrand',
+          message: 'Brand excluded2 (subdomain excluded2Sub) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): articleParent',
           severity: 'Warning',
         })
       })

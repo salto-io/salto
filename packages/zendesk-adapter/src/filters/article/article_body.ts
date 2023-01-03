@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange,
   isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression,
   SaltoError, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, extractTemplate, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, extractTemplate, getParent, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { FilterCreator } from '../../filter'
@@ -52,6 +52,12 @@ const ELEMENTS_REGEXES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, ARTI
 
 const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
 const DOMAIN_REGEX = /(https:\/\/[^/]+)/
+
+type missingBrandInfo = {
+  brandName: string
+  brandSubdomain: string
+  articleName: string
+}
 
 // Attempt to match the regex to an element and create a reference to that element
 const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRegex, field, enableMissingReferences }: {
@@ -129,13 +135,14 @@ const updateArticleTranslationBody = ({
   additionalInstances: Record<string, Record<string, InstanceElement>>
   includedBrands: InstanceElement[]
   enableMissingReferences?: boolean
-}): string[] => {
-  const missingBrandNames: string[] = []
+}): missingBrandInfo[] => {
+  const missingBrands: missingBrandInfo[] = []
   const originalTranslationBody = translationInstance.value[BODY_FIELD]
   if (!_.isString(originalTranslationBody)) {
-    return missingBrandNames
+    return []
   }
 
+  const articleName = getParent(translationInstance).elemID.name
   // Find the urls that are in the body
   const processedTranslationBody = extractTemplate(
     originalTranslationBody,
@@ -149,7 +156,11 @@ const updateArticleTranslationBody = ({
 
       if (!includedBrands.includes(urlBrandInstance)) {
         // If the brand is excluded, don't try to create references
-        missingBrandNames.push(urlBrandInstance.value.name)
+        missingBrands.push({
+          brandName: urlBrandInstance.value.name,
+          brandSubdomain: urlBrandInstance.value.subdomain,
+          articleName,
+        })
         return url
       }
       // Extract the referenced instances inside
@@ -168,7 +179,7 @@ const updateArticleTranslationBody = ({
   )
 
   translationInstance.value.body = processedTranslationBody
-  return _.uniq(missingBrandNames)
+  return _.isEmpty(missingBrands) ? [] : _.unionBy(missingBrands, obj => obj.brandName)
 }
 
 /**
@@ -185,15 +196,20 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
 }
 
 const getWarningsForMissingBrands = (
-  translationToMissingBrands: Record<string, string[]>
+  missingBrandsForWarning: missingBrandInfo[]
 ): SaltoError[] => {
-  const brandArticlePairs = Object.entries(translationToMissingBrands)
-    .flatMap(([translationName, missingBrands]) =>
-      missingBrands.map(brandName => ({ brandName, translationName })))
-  const missingBrandsToTranslationNames = _(brandArticlePairs).groupBy('brandName').map((pair, brand) => ({ brand, translations: _.map(pair, 'translationName') })).value()
-  return missingBrandsToTranslationNames
-    .map(brandToTranslation => ({
-      message: `Brand ${brandToTranslation.brand} is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following article translations (partial list limited to 10): ${_.take(brandToTranslation.translations, 10).join(', ')}`,
+  const missingBrandsByBrandNames = _.groupBy(missingBrandsForWarning, 'brandName')
+  const missingBrandsToArticleNames = Object.entries(missingBrandsByBrandNames)
+    .map(([brandName, warningObjects]) =>
+      ({
+        brandName,
+        // warningObjects is a list of length 1 at least
+        brandSubdomain: warningObjects[0].brandSubdomain,
+        articles: _.uniq(warningObjects.map(obj => obj.articleName)),
+      }))
+  return missingBrandsToArticleNames
+    .map(missingBrandInfo => ({
+      message: `Brand ${missingBrandInfo.brandName} (subdomain ${missingBrandInfo.brandSubdomain}) is referenced by articles, but it is not currently fetched - therefore URLs pointing to it are treated as external, and will not be modified if these articles are deployed to another environment.\nIf you would like to include this brand, please add it under fetch.guide.brands.\nThe brand is referenced from the following articles (partial list limited to 10): ${(missingBrandInfo.articles.slice(0, 10)).join(', ')}`,
       severity: 'Warning',
     }))
 }
@@ -222,19 +238,17 @@ const filterCreator: FilterCreator = ({ config }) => {
             ),
       }
       const includedBrands = getBrandsForGuide(instances, config[FETCH_CONFIG])
-      const translationToMissingBrands = Object.fromEntries(instances
+      const translationToMissingBrands = instances
         .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
         .filter(translationInstance => !_.isEmpty(translationInstance.value[BODY_FIELD]))
-        .map(translationInstance => {
-          const missingBrandNames = updateArticleTranslationBody({
+        .flatMap(translationInstance => (
+          updateArticleTranslationBody({
             translationInstance,
             additionalInstances,
             includedBrands,
             enableMissingReferences: config[FETCH_CONFIG].enableMissingReferences,
           })
-          return _.isEmpty(missingBrandNames) ? undefined : [translationInstance.elemID.name, missingBrandNames]
-        })
-        .filter(isDefined))
+        ))
 
       const warnings = _.isEmpty(translationToMissingBrands)
         ? []

@@ -115,7 +115,7 @@ const GUIDE_ELEMENT_NAME: Record<string, (instance?: InstanceElement) => string>
   [ARTICLE_TYPE_NAME]: getNameFromTitle,
   [CATEGORY_TYPE_NAME]: getNameFromName,
   [SECTION_TYPE_NAME]: getNameFromName,
-  [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.filename ?? NO_VALUE_DEFAULT,
+  [ARTICLE_ATTACHMENT_TYPE_NAME]: (instance?: InstanceElement) => instance?.value.file_name ?? NO_VALUE_DEFAULT,
 }
 
 

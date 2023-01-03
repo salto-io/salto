@@ -20,7 +20,7 @@ import {
   AdditionChange,
   Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isModificationChange,
   isAdditionOrModificationChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource,
-  isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS,
+  isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS, isObjectType,
 } from '@salto-io/adapter-api'
 import {
   createSchemeGuard,
@@ -44,13 +44,13 @@ import { removeTitleAndBody } from '../guide_fetch_article_section_and_category'
 import { prepRef } from './article_body'
 import ZendeskClient from '../../client/client'
 import {
-  createAttachmentType,
   createUnassociatedAttachment,
   deleteArticleAttachment,
-  getArticleAttachments,
+  getArticleAttachments, isAttachments,
   updateArticleTranslationBody,
 } from './utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
+
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -235,6 +235,13 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   return attachmentChanges.map(getChangeData)
 }
 
+const getId = (instance: InstanceElement): number => instance.value.id
+const getName = (instance: InstanceElement): string => instance.elemID.name
+const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name
+const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type
+const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline
+
+
 /**
  * Deploys articles and adds default user_segment value to visible articles
  */
@@ -245,19 +252,37 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       const articleInstances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
+        .filter(article => article.value.id !== undefined)
       setupArticleUserSegmentId(elements, articleInstances)
-      const attachmentType = createAttachmentType()
-      const articleAttachments = (await Promise.all(articleInstances
-        .map(async article => getArticleAttachments({
-          client: brandIdToClient[article.value.brand],
-          attachmentType,
-          article,
-          apiDefinitions: config[API_DEFINITIONS_CONFIG],
-        })))).flat()
-
-      // Verify article_attachment type added only once
-      _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
-      elements.push(attachmentType, ...articleAttachments)
+      const attachments = elements
+        .filter(instance => instance.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
+      const attachmentType = attachments.find(isObjectType)
+      if (attachmentType === undefined) {
+        log.error('could not find article_attachment object type')
+        return
+      }
+      const articleById: Record<number, InstanceElement> = _.keyBy(articleInstances, getId)
+      _.remove(attachments, isObjectType)
+      const attachmentByName: Record<string, InstanceElement> = _.keyBy(
+        attachments
+          .filter(isInstanceElement)
+          .filter(attachment => attachment.value.name !== undefined),
+        getName,
+      )
+      await getArticleAttachments({
+        brandIdToClient,
+        attachmentType,
+        articleById,
+        apiDefinitions: config[API_DEFINITIONS_CONFIG],
+        attachments: isAttachments(attachments) ? attachments : [],
+      })
+      articleInstances.forEach(article => {
+        article.value.attachments = _.sortBy(article.value.attachments, [
+          (attachment: ReferenceExpression) => getFilename(attachmentByName[attachment.elemID.name]),
+          (attachment: ReferenceExpression) => getContentType(attachmentByName[attachment.elemID.name]),
+          (attachment: ReferenceExpression) => getInline(attachmentByName[attachment.elemID.name]),
+        ])
+      })
     }, 'articlesFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       const addedArticleAttachments = await handleArticleAttachmentsPreDeploy(

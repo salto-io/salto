@@ -1081,8 +1081,8 @@ export const resolveTypeShallow = async (
   }
 }
 
-export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage?: string)
-: (value: unknown) => value is T => (value): value is T => {
+export const createSchemeGuard = <T, U = unknown>(scheme: Joi.AnySchema, errorMessage?: string)
+: (value: U) => value is U & T => (value): value is U & T => {
     const { error } = scheme.validate(value)
     if (error !== undefined) {
       if (errorMessage !== undefined) {

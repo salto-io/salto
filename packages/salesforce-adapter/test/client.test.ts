@@ -32,6 +32,7 @@ import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
+import { MappableErrorCode, ERROR_CODE_TO_USER_VISIBLE_ERROR } from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -305,6 +306,21 @@ describe('salesforce client', () => {
       const { result } = await client.readMetadata('TopicsForObjects', ['aaa', 'bbb'])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+
+  describe('with JSForce HTTP error', () => {
+    const MAPPABLE_ERROR_CODE: MappableErrorCode = 502
+    describe('when error code is mappable', () => {
+      it('should modify the error message', async () => {
+        const dodoScope = nock('http://dodo22')
+          .post(/.*/)
+          .times(1)
+          .reply(MAPPABLE_ERROR_CODE, 'Some unreadable HTML response')
+        await expect(client.listMetadataTypes())
+          .rejects.toThrow(ERROR_CODE_TO_USER_VISIBLE_ERROR[MAPPABLE_ERROR_CODE])
+        expect(dodoScope.isDone()).toBeTrue()
+      })
     })
   })
 

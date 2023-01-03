@@ -28,7 +28,7 @@ export const dashboardLayoutValidator: ChangeValidator = async changes =>
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
     .map(instance => {
-      const invalidGadgets = instance.value.gadgets
+      const invalidGadgets = (instance.value.gadgets ?? [])
         .filter(isReferenceExpression)
         .filter((gadget: ReferenceExpression) =>
           gadget.value.value.position.column >= instance.value.layout.length)

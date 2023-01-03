@@ -27,7 +27,7 @@ import {
   AttributeObject,
   getDefinitionOrLayout,
 } from '../../report_types_parser_utils'
-import { ReportUiPrefType, ReportCriteriaType, ParsedReportDefintion, ReportParameters } from './parsed_report_definition'
+import { ReportUiPrefType, ReportCriteriaType, ParsedReportDefinition, ReportParameters } from './parsed_report_definition'
 
 type ReportCriterionParent = {
   _attributs: {
@@ -79,7 +79,7 @@ const getReportPartsFromDefinition = async (definition: string): Promise<Element
 
 const getReportParameters = (reportParameter: { Map: ParameterObject[] }): ReportParameters =>
   // eslint-disable-next-line no-underscore-dangle
-  Object.fromEntries(reportParameter.Map.map(i => [i.key._text, i.value._text]))
+  Object.fromEntries(reportParameter?.Map?.map(i => [i.key._text, i.value._text]))
 
 const getReportCriteria = (criteria: ReportCriteria): ReportCriteriaType[] =>
   collections.array.makeArray(criteria.values?.ReportCriterion)
@@ -92,7 +92,7 @@ const getReportCriteria = (criteria: ReportCriteria): ReportCriteriaType[] =>
 const getUiPreferences = (uiPref: ElementCompact): ReportUiPrefType =>
   getObjectFromValues(uiPref.values.Value)
 
-export const parseDefinition = async (definition: string): Promise<ParsedReportDefintion> => {
+export const parseDefinition = async (definition: string): Promise<ParsedReportDefinition> => {
   const reportDefinition = await getReportPartsFromDefinition(definition)
   const returnInstance = {
     layouts: extractRecordsValues(reportDefinition.layouts),

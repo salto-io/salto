@@ -30,7 +30,6 @@ export type ParsedSavedSearchType = {
   sort_columns?: Values[]
   audience?: Values
   alert_recipients?: Values[]
-  flags?: Values
 }
 
 export const savedsearchType = (): TypeAndInnerTypes => {

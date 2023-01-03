@@ -21,13 +21,13 @@ import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
 import { parseDefinition as parseSavedSearchDefinition } from '../type_parsers/saved_search_parsing/saved_search_parser'
 import { parseDefinition as parseReportDefintionDefinition } from '../type_parsers/report_definition_parsing/report_definition_parser'
 import { parseDefinition as parseFinancialLayoutDefinition } from '../type_parsers/financial_layout_parsing/financial_layout_parser'
-import { ParsedReportDefintion } from '../type_parsers/report_definition_parsing/parsed_report_definition'
+import { ParsedReportDefinition } from '../type_parsers/report_definition_parsing/parsed_report_definition'
 import { ParsedFinancialLayout } from '../type_parsers/financial_layout_parsing/parsed_financial_layout'
 import { ParsedSavedSearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
 
 const { awu } = collections.asynciterable
 
-export type ReportTypes = ParsedSavedSearchType | ParsedReportDefintion | ParsedFinancialLayout
+export type ReportTypes = ParsedSavedSearchType | ParsedReportDefinition | ParsedFinancialLayout
 
 export const mapTypeToLayoutOrDefinition: Record<string, string> = {
   [FINANCIAL_LAYOUT]: 'layout',

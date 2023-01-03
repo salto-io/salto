@@ -35,7 +35,7 @@ type InnerFields = {
 }
 
 type LayoutDependencies = {
-  dependency: string[]
+  dependency: string
 }
 
 
@@ -143,7 +143,7 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
     },
     fields: {
       dependency: {
-        refType: new ListType(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           _required: true,
         },
@@ -171,8 +171,9 @@ export const financiallayoutType = (): TypeAndInnerTypes => {
   })
 
   innerTypes.financialLayoutRows = financialLayoutRows
-  innerTypes.dependency = financialLayoutDependencies
+  innerTypes.financiallayout_dependencies = financialLayoutDependencies
   innerTypes.innerfields = financialLayoutInnerFields
+  innerTypes.financialLayoutRowsRecord = financialLayoutRowsRecord
 
   const financiallayout = createMatchingObjectType<FullFinancialLayoutType>({
     elemID: financialLayoutElemID,

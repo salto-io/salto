@@ -79,7 +79,6 @@ export const parseDefinition = async (definition:string): Promise<ParsedSavedSea
     sort_columns: extractRecordsValues(searchParts.definition.sortColumns),
     audience: getAudience(searchParts.dependency),
     alert_recipients: getAlertRecipients(searchParts.definition),
-    ...getFlags(searchParts.definition),
   }
   return { ..._.omitBy(returnInstance, _.isEmpty), ...getFlags(searchParts.definition) }
 }

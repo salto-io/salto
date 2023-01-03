@@ -43,7 +43,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       new InstanceElement(instance.elemID.name, type, instance.value,
         instance.path, instance.annotations)
 
-    const assignSavedSearchValues = async (
+    const assignReportTypesValues = async (
       instance: InstanceElement,
       oldInstance: InstanceElement | undefined
     ): Promise<void> => {
@@ -73,7 +73,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
           .filter(isInstanceElement)
           .map(instance => cloneReportInstance(instance, type))
           .map(async (instance: InstanceElement) => {
-            await assignSavedSearchValues(instance, await elementsSource.get(instance.elemID))
+            await assignReportTypesValues(instance, await elementsSource.get(instance.elemID))
             return instance
           })
       )

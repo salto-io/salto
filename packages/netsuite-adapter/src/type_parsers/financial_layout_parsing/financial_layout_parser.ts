@@ -66,5 +66,5 @@ export const parseDefinition = async (layout: string): Promise<ParsedFinancialLa
     rows: getLayoutRows(financialLayout.rows.values.FinancialRowElement),
     flags: getFlags(financialLayout),
   }
-  return returnInstance
+  return { ..._.omitBy(returnInstance, _.isEmpty) }
 }

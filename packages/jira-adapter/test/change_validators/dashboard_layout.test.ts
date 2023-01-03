@@ -67,4 +67,16 @@ describe('dashboardLayoutValidator', () => {
     expect(await dashboardLayoutValidator([toChange({ before: instance, after: afterInstance })]))
       .toEqual([])
   })
+
+  it('should not return an error when there are no gadgets', async () => {
+    instance.value.layout = 'AA'
+
+    delete instance.value.gadgets
+
+    const afterInstance = instance.clone()
+    afterInstance.value.layout = 'AAA'
+
+    expect(await dashboardLayoutValidator([toChange({ before: instance, after: afterInstance })]))
+      .toEqual([])
+  })
 })

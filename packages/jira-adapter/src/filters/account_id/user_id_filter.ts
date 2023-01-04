@@ -14,13 +14,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
 import { IdMap } from '../../users_map'
+import { AUTOMATION_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -61,6 +62,35 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
         }
       })
   }, 'user_id_filter fetch'),
+  preDeploy: async changes => {
+    if (!(config.fetch.convertUsersIds ?? true)
+        || !client.isDataCenter) {
+      return
+    }
+    const idMap = await getIdMapFunc()
+    const reversedIdMap: IdMap = Object.fromEntries(Object.entries(idMap).map(([key, mapValue]) => [mapValue, key]))
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+      .forEach(element =>
+        walkOnElement({ element, func: walkOnUsers(convertId(reversedIdMap)) }))
+  },
+  onDeploy: async changes => log.time(async () => {
+    if (!(config.fetch.convertUsersIds ?? true)
+       || !client.isDataCenter) {
+      return
+    }
+    const idMap = await getIdMapFunc()
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE)
+      .forEach(element =>
+        walkOnElement({ element, func: walkOnUsers(convertId(idMap)) }))
+  }, 'user_id_filter deploy'),
 })
 
 export default filter

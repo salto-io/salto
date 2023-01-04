@@ -16,14 +16,14 @@
 
 const REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
 
-const MAPPABLE_ERROR_CODES = [
+const MAPPABLE_ERROR_NAMES = [
   'ERROR_HTTP_502',
   REQUEST_LIMIT_EXCEEDED,
 ] as const
 
-export type MappableErrorCode = typeof MAPPABLE_ERROR_CODES[number]
+export type MAPPABLE_ERROR_NAME = typeof MAPPABLE_ERROR_NAMES[number]
 
-export const ERROR_CODE_TO_USER_VISIBLE_ERROR: Record<MappableErrorCode, string> = {
+export const ERROR_NAME_TO_USER_VISIBLE_ERROR: Record<MAPPABLE_ERROR_NAME, string> = {
   ERROR_HTTP_502: 'We are unable to connect to your Salesforce account right now. '
     + 'This is either an issue on the Salesforce side (please check https://status.salesforce.com/current/incidents) '
     + 'or on the Salto side (please check https://status.salto.io/ or contact support@salto.io)',
@@ -32,6 +32,6 @@ export const ERROR_CODE_TO_USER_VISIBLE_ERROR: Record<MappableErrorCode, string>
   + 'Please try again later or contact your account executive to increase your API limit. ',
 }
 
-export const isMappableErrorCode = (errorCode: string): errorCode is MappableErrorCode => (
-  (MAPPABLE_ERROR_CODES as ReadonlyArray<string>).includes(errorCode)
+export const isMappableErrorName = (errorName: string): errorName is MAPPABLE_ERROR_NAME => (
+  (MAPPABLE_ERROR_NAMES as ReadonlyArray<string>).includes(errorName)
 )

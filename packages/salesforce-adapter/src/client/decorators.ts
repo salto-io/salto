@@ -13,33 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import Joi from 'joi'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { decorators } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ERROR_CODE_TO_USER_VISIBLE_ERROR, isMappableErrorCode } from './user_facing_errors'
+import { ERROR_NAME_TO_USER_VISIBLE_ERROR, isMappableErrorName } from './user_facing_errors'
 
 const log = logger(module)
-
-const JSFORCE_ERROR_SCHEMA = Joi.object({
-  errorCode: Joi.string().required(),
-}).unknown(true).required()
-
-export type JSForceError = Error & {
-  errorCode: string
-}
-
-const isJSForceError = createSchemeGuard<JSForceError, Error>(JSFORCE_ERROR_SCHEMA)
 
 export const mapErrors = decorators.wrapMethodWith(
   async (original: decorators.OriginalCall): Promise<unknown> => {
     try {
       return await Promise.resolve(original.call())
     } catch (e: unknown) {
-      if (_.isError(e) && isJSForceError(e) && isMappableErrorCode(e.errorCode)) {
+      if (_.isError(e) && isMappableErrorName(e.name)) {
         log.debug('Replacing user facing error. Original error: %o', e)
-        e.message = ERROR_CODE_TO_USER_VISIBLE_ERROR[e.errorCode]
+        e.message = ERROR_NAME_TO_USER_VISIBLE_ERROR[e.name]
       }
       throw e
     }

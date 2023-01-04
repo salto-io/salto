@@ -32,7 +32,7 @@ import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
-import { MappableErrorCode, ERROR_CODE_TO_USER_VISIBLE_ERROR } from '../src/client/user_facing_errors'
+import { MAPPABLE_ERROR_NAME, ERROR_NAME_TO_USER_VISIBLE_ERROR } from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -310,8 +310,8 @@ describe('salesforce client', () => {
   })
 
   describe('when JSForce throws mappable error', () => {
-    const MAPPABLE_HTTP_ERROR: MappableErrorCode = 'ERROR_HTTP_502'
-    const MAPPABLE_SALESFORCE_ERROR: MappableErrorCode = 'sf:REQUEST_LIMIT_EXCEEDED'
+    const MAPPABLE_HTTP_ERROR: MAPPABLE_ERROR_NAME = 'ERROR_HTTP_502'
+    const MAPPABLE_SALESFORCE_ERROR: MAPPABLE_ERROR_NAME = 'sf:REQUEST_LIMIT_EXCEEDED'
     describe('when error code is HTTP error', () => {
       it('should modify the error message', async () => {
         const dodoScope = nock('http://dodo22')
@@ -319,7 +319,7 @@ describe('salesforce client', () => {
           .times(1)
           .reply(502, 'Some unreadable HTML response')
         await expect(client.listMetadataTypes())
-          .rejects.toThrow(ERROR_CODE_TO_USER_VISIBLE_ERROR[MAPPABLE_HTTP_ERROR])
+          .rejects.toThrow(ERROR_NAME_TO_USER_VISIBLE_ERROR[MAPPABLE_HTTP_ERROR])
         expect(dodoScope.isDone()).toBeTrue()
       })
     })
@@ -335,7 +335,7 @@ describe('salesforce client', () => {
             headers,
           )
         await expect(client.listMetadataTypes())
-          .rejects.toThrow(ERROR_CODE_TO_USER_VISIBLE_ERROR[MAPPABLE_SALESFORCE_ERROR])
+          .rejects.toThrow(ERROR_NAME_TO_USER_VISIBLE_ERROR[MAPPABLE_SALESFORCE_ERROR])
         expect(dodoScope.isDone()).toBeTrue()
       })
     })

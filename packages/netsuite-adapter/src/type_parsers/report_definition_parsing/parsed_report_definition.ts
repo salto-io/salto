@@ -278,6 +278,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       FIELD_DESCRIPTOR: { refType: BuiltinTypes.STRING },
       FLAG_IS_HIDDEN: { refType: BuiltinTypes.BOOLEAN },
     },
+    path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
   const reportCriteriaValues = createMatchingObjectType<ReportCriteriaValuesType>({
@@ -289,6 +290,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
       FILED_VALUE: { refType: BuiltinTypes.STRING },
     },
+    path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
   const reportDefinitionCriteria = createMatchingObjectType<ReportCriteriaType>({

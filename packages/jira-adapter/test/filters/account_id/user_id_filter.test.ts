@@ -23,7 +23,7 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import addDisplayNameFilter from '../../../src/filters/account_id/user_id_filter'
 import * as common from './account_id_common'
 import { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
-import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
+import { AUTOMATION_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 
 const { awu } = collections.asynciterable
 
@@ -178,6 +178,8 @@ describe('convert userId to key in Jira DC', () => {
 
   let automationType: ObjectType
   let automationInstance: InstanceElement
+  let dashboardType: ObjectType
+  let dashboardInstance: InstanceElement
 
   beforeEach(() => {
     elemIdGetter = mockFunction<ElemIdGetter>()
@@ -205,6 +207,38 @@ describe('convert userId to key in Jira DC', () => {
         },
       },
     })
+
+    dashboardType = new ObjectType({
+      elemID: new ElemID(JIRA, DASHBOARD_TYPE),
+      fields: {
+        gadgets: {
+          refType: BuiltinTypes.STRING,
+        },
+
+        layout: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
+
+    dashboardInstance = new InstanceElement(
+      'instance',
+      dashboardType,
+      {
+        id: '0',
+        layout: 'AAA',
+        gadgets: [
+        ],
+        editPermissions: {
+          type: 'user',
+          user: {
+            accountId: {
+              id: 'JIRAUSER10200',
+            },
+          },
+        },
+      }
+    )
 
     automationInstance = new InstanceElement(
       'instance',
@@ -287,6 +321,9 @@ describe('convert userId to key in Jira DC', () => {
       }, {
         key: 'JIRAUSER10100',
         name: 'salto',
+      }, {
+        key: 'JIRAUSER10200',
+        name: 'admin',
       }],
     })
   })
@@ -295,8 +332,9 @@ describe('convert userId to key in Jira DC', () => {
       common.checkInstanceUserIds(instances[2], '2', EMPTY_STRING)
       common.checkInstanceUserIds(instances[0], '0', EMPTY_STRING)
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'JIRAUSER10100' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'JIRAUSER10200' })
 
-      await filter.onFetch([instances[2], instances[0], automationInstance])
+      await filter.onFetch([instances[2], instances[0], automationInstance, dashboardInstance])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search?username=.',
@@ -305,13 +343,15 @@ describe('convert userId to key in Jira DC', () => {
       common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
       common.checkInstanceUserIds(instances[0], '0', NAME_PREFIX)
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
     })
-    it('should convert only automation instance key to userId on preDeploy and onDeploy', async () => {
-      await filter.onFetch([instances[2], instances[0], automationInstance])
+    it('should convert only automation and dashboard instances key to userId on preDeploy and onDeploy', async () => {
+      await filter.onFetch([instances[2], instances[0], automationInstance, dashboardInstance])
       await filter.preDeploy([
         toChange({ after: instances[0] }),
         toChange({ before: instances[1], after: instances[2] }),
         toChange({ after: automationInstance }),
+        toChange({ after: dashboardInstance }),
       ])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
@@ -321,10 +361,12 @@ describe('convert userId to key in Jira DC', () => {
       common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
       common.checkInstanceUserIds(instances[0], '0', NAME_PREFIX)
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'JIRAUSER10100' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'JIRAUSER10200' })
       await filter.onDeploy([
         toChange({ after: instances[0] }),
         toChange({ before: instances[1], after: instances[2] }),
         toChange({ after: automationInstance }),
+        toChange({ after: dashboardInstance }),
       ])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
@@ -334,6 +376,7 @@ describe('convert userId to key in Jira DC', () => {
       common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
       common.checkInstanceUserIds(instances[0], '0', NAME_PREFIX)
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
     })
     it('should not convert userId to key or backwards for undefined types', async () => {
       const type = common.createType('Other')

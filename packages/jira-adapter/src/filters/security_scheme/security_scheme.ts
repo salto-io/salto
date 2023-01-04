@@ -319,7 +319,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     securitySchemeInstance.value.schemeId = securitySchemeInstance.value.id
 
     const createNoDefaultLevelDuplicate = (): Change<InstanceElement> => {
-      const securitySchemeInstanceNoDefaultLevel = _.cloneDeep(securitySchemeInstance)
+      const securitySchemeInstanceNoDefaultLevel: InstanceElement = securitySchemeInstance.clone() as InstanceElement
       delete securitySchemeInstanceNoDefaultLevel.value.defaultLevel
       return toChange({
         before: securitySchemeInstanceNoDefaultLevel,

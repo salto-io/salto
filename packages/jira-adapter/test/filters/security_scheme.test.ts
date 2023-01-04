@@ -325,7 +325,7 @@ describe('securitySchemeFilter', () => {
           getNameFunction: expect.toBeFunction(),
         })
 
-        const noDefaultScheme = _.cloneDeep(securitySchemeInstance)
+        const noDefaultScheme = securitySchemeInstance.clone()
         delete noDefaultScheme.value.defaultLevel
 
         expect(deployWithJspEndpointsMock).toHaveBeenNthCalledWith(4, {

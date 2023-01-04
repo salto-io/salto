@@ -309,16 +309,33 @@ describe('salesforce client', () => {
     })
   })
 
-  describe('with JSForce HTTP error', () => {
-    const MAPPABLE_ERROR_CODE: MappableErrorCode = 502
-    describe('when error code is mappable', () => {
+  describe('when JSForce throws mappable error', () => {
+    const MAPPABLE_HTTP_ERROR: MappableErrorCode = 'ERROR_HTTP_502'
+    const MAPPABLE_SALESFORCE_ERROR: MappableErrorCode = 'sf:REQUEST_LIMIT_EXCEEDED'
+    describe('when error code is HTTP error', () => {
       it('should modify the error message', async () => {
         const dodoScope = nock('http://dodo22')
           .post(/.*/)
           .times(1)
-          .reply(MAPPABLE_ERROR_CODE, 'Some unreadable HTML response')
+          .reply(502, 'Some unreadable HTML response')
         await expect(client.listMetadataTypes())
-          .rejects.toThrow(ERROR_CODE_TO_USER_VISIBLE_ERROR[MAPPABLE_ERROR_CODE])
+          .rejects.toThrow(ERROR_CODE_TO_USER_VISIBLE_ERROR[MAPPABLE_HTTP_ERROR])
+        expect(dodoScope.isDone()).toBeTrue()
+      })
+    })
+
+    describe('when error code is Salesforce error', () => {
+      it('should modify the error message', async () => {
+        const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
+          .post(/.*/)
+          .times(1)
+          .reply(
+            500,
+            { 'a:Envelope': { 'a:Body': { 'a:Fault': { faultcode: MAPPABLE_SALESFORCE_ERROR, faultstring: 'INVALID_TYPE: This type of metadata is not available for this organization' } } } },
+            headers,
+          )
+        await expect(client.listMetadataTypes())
+          .rejects.toThrow(ERROR_CODE_TO_USER_VISIBLE_ERROR[MAPPABLE_SALESFORCE_ERROR])
         expect(dodoScope.isDone()).toBeTrue()
       })
     })

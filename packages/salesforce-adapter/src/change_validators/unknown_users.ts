@@ -44,7 +44,7 @@ const TypesWithUserFields = {
 type TypeWithUserFields = keyof typeof TypesWithUserFields
 
 
-type TypesWithUserFields = Record<TypeWithUserFields, UserFieldGetter[]>;
+type TypesWithUserFields = Record<TypeWithUserFields, UserFieldGetter[]>
 
 type MissingUser = {
   instance: InstanceElement
@@ -152,7 +152,7 @@ const unknownUserError = ({ instance, field, userName }: MissingUser): ChangeErr
   {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Invalid user reference',
+    message: `User ${userName} doesn't exist`,
     detailedMessage: `The field ${field} in '${instance.elemID.getFullName()}' refers to the user '${userName}' which does not exist in this Salesforce environment`,
   }
 )

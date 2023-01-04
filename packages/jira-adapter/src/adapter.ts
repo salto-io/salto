@@ -105,7 +105,6 @@ import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
-import deployDcSecuritySchemeFilter from './filters/data_center/security_scheme'
 import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
@@ -207,7 +206,6 @@ export const DEFAULT_FILTERS = [
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
-  deployDcSecuritySchemeFilter,
   allowedPermissionsSchemeFilter,
   // Must run after user filter
   accountIdFilter,

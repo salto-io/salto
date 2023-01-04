@@ -95,10 +95,8 @@ export type ChangeValidatorName = (
   | 'fullNameChangedValidator'
   | 'invalidListViewFilterScope'
   | 'caseAssignmentRulesValidator'
+  | 'omitData'
 )
-
-export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
-
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -563,6 +561,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
     invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
     caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
+    omitData: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

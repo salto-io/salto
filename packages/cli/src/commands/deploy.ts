@@ -237,7 +237,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   outputLine(postDeployActionsOutput.join('\n'), output)
   const deploymentUrls = result.extraProperties?.deploymentUrls ?? []
   if (!_.isEmpty(deploymentUrls)) {
-    outputLine(`You can see your ${deployOrValidate(checkOnly, false, true)} here:\n${deploymentUrls.join('\n')}`, output)
+    outputLine(`You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`, output)
   }
   return cliExitCode
 }

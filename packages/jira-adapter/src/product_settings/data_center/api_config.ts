@@ -159,12 +159,12 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
     SecurityLevel: {
       deployRequests: {
         add: {
-          url: '/rest/api/3/securitylevel/?securitySchemeId={schemeId}',
+          url: '/rest/api/3/securitylevel?securitySchemeId={schemeId}',
           method: 'post',
           fieldsToIgnore: ['schemeId'],
         },
         modify: {
-          url: '/rest/api/3/securitylevel/?securitySchemeId={schemeId}',
+          url: '/rest/api/3/securitylevel?securitySchemeId={schemeId}',
           method: 'put',
           fieldsToIgnore: ['schemeId', 'levelId'],
         },

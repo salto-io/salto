@@ -104,7 +104,7 @@ ReturnType<typeof client.post> => {
       headers: { ...form.getHeaders() },
     })
   } catch (err) {
-    throw getZendeskError(instance.elemID.getFullName(), err)
+    throw getZendeskError(instance.elemID, err)
   }
 }
 

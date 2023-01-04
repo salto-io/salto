@@ -30,7 +30,7 @@ import { createEveryoneUserSegmentInstance } from '../src/filters/everyone_user_
 
 type MockReply = {
   url: string
-  params: Record<string, string>
+  params: Record<string, string | undefined>
   response: unknown
 }
 
@@ -160,8 +160,8 @@ describe('adapter', () => {
           'zendesk.article',
           'zendesk.article.instance.How_can_agents_leverage_knowledge_to_help_customers__Apex_Development_myBrand@sssssssauuu',
           'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
-          'zendesk.article__attachments',
           'zendesk.article_attachment',
+          'zendesk.article_attachment__article_attachments',
           'zendesk.article_order',
           'zendesk.article_order.instance.Announcements_General_myBrand__',
           'zendesk.article_order.instance.Apex_Development_myBrand__',

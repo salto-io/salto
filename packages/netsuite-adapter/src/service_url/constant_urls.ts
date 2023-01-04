@@ -79,6 +79,8 @@ const TYPE_TO_URL: Record<StandardType | 'file' | 'folder', string| undefined> =
   promotionsplugin: undefined,
   publisheddashboard: undefined,
   workbook: undefined,
+  financiallayout: undefined,
+  reportdefinition: undefined,
 }
 
 const setServiceUrl: ServiceUrlSetter = (elements, client) => {

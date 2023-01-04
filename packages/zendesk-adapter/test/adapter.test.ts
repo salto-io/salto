@@ -16,17 +16,35 @@
 import _ from 'lodash'
 import axios, { AxiosRequestConfig } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, ReferenceExpression,
-  AdapterOperations, toChange, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  isInstanceElement,
+  ReferenceExpression,
+  AdapterOperations,
+  toChange,
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  isRemovalChange,
+  getChangeData,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import defaultBrandMockReplies from './mock_replies/myBrand_mock_replies.json'
 import brandWithGuideMockReplies from './mock_replies/brandWithGuide_mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG } from '../src/config'
-import { USER_SEGMENT_TYPE_NAME, ZENDESK } from '../src/constants'
+import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
+import {
+  BRAND_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
+  ZENDESK,
+} from '../src/constants'
 import { createEveryoneUserSegmentInstance } from '../src/filters/everyone_user_segment'
+import ZendeskAdapter from '../src/adapter'
+import { createFilterCreatorParams } from './utils'
 
 type MockReply = {
   url: string
@@ -1208,6 +1226,46 @@ describe('adapter', () => {
       expect(deployRes.appliedChanges).toEqual([
         toChange({ before: new InstanceElement('inst', groupType) }),
       ])
+    })
+    it('should rate limit guide requests to 1, and not limit support requests', async () => {
+      const { client } = createFilterCreatorParams({})
+      const brand1 = new InstanceElement('brand1', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), { subdomain: 'domain1', id: 1 })
+      const brand2 = new InstanceElement('brand2', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), { subdomain: 'domain2', id: 2 })
+      const settings1 = new InstanceElement('guide_language_settings1', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 1 })
+      const settings2 = new InstanceElement('guide_language_settings2', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 2 })
+      const zendeskAdapter = new ZendeskAdapter({
+        config: DEFAULT_CONFIG,
+        client,
+        credentials: { accessToken: '', subdomain: '' },
+        elementsSource: buildElementsSourceFromElements([brand1, brand2, settings1, settings2]),
+      })
+      // any is needed to be able to spy on private method
+      // eslint-disable-next-line
+      const createClientSpy = jest.spyOn(zendeskAdapter as any, 'createClientBySubdomain')
+      // eslint-disable-next-line
+      const createFiltersRunnerSpy = jest.spyOn(zendeskAdapter as any, 'createFiltersRunner')
+      await zendeskAdapter.deploy({
+        changeGroup: {
+          groupID: '1',
+          changes: [toChange({ after: settings1 }), toChange({ after: settings2 })],
+        },
+      })
+
+      const guideFilterRunnerCall = expect.objectContaining({
+        filterRunnerClient: expect.objectContaining({
+          config: {
+            rateLimit: {
+              deploy: 1,
+            },
+          },
+        }),
+      })
+
+      expect(createClientSpy).toHaveBeenCalledTimes(2)
+      expect(createFiltersRunnerSpy).toHaveBeenCalledTimes(3)
+      expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy
+      expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
+      expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
     })
   })
 })

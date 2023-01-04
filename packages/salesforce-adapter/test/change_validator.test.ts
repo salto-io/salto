@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import createSalesforceChangeValidator, { changeValidators } from '../src/change_validator'
@@ -44,17 +43,18 @@ describe('createSalesforceChangeValidator', () => {
       it('should create a validator', () => {
         expect(validator).toBeDefined()
       })
-      it('should create a validator will all internal validators enabled', () => {
+      it('should create a validator with all internal validators enabled', () => {
         expect(createChangeValidator).toHaveBeenCalledTimes(1)
         expect(
           createChangeValidatorMock.mock.calls[0][0]
-        ).toHaveLength(Object.values(changeValidators).length)
+        ).toHaveLength(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length)
       })
     })
     describe('with a disabled validator config', () => {
       beforeEach(() => {
         validator = createSalesforceChangeValidator({
-          config: { validators: { customFieldType: false } },
+          config: { validators:
+                { customFieldType: false } },
           isSandbox: false,
           checkOnly: false,
         })
@@ -62,13 +62,12 @@ describe('createSalesforceChangeValidator', () => {
       it('should create a validator', () => {
         expect(validator).toBeDefined()
       })
-      it('should put the disabled validator in the disabled list', () => {
-        const enabledValidatorsCount = Object.values(_.omit(changeValidators, 'customFieldType')).length
-        const disabledValidators = [changeValidators.customFieldType({}, false,)]
+      it('should customFieldType in the disabled validator list', () => {
+        const disabledValidators = [changeValidators.customFieldType.creator({}, false,)]
         expect(createChangeValidator).toHaveBeenCalledWith(
-          expect.arrayContaining([]), disabledValidators
+          expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1),
+          disabledValidators
         )
-        expect(createChangeValidatorMock.mock.calls[0][0]).toHaveLength(enabledValidatorsCount)
       })
     })
     // Remove as part of SALTO-2700
@@ -87,20 +86,22 @@ describe('createSalesforceChangeValidator', () => {
         })
       )
       describe('when checkOnly is true in the deploy config', () => {
-        it('should create validator with the extra checkOnlyValidator', () => {
+        it('should create validator according to the defaultInValidate field', () => {
           validator = createValidatorWithConfig(true)
           expect(validator).toBeDefined()
           expect(createChangeValidator).toHaveBeenCalledWith(
-            expect.toBeArrayOfSize(Object.keys(changeValidators).length + 1), []
+            expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInValidate).length),
+            expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => !cv.defaultInValidate).length)
           )
         })
       })
       describe('when checkOnly is false in the deploy config', () => {
-        it('should create validator without the extra checkOnlyValidator', () => {
+        it('should create validator according to the defaultInDeploy field', () => {
           validator = createValidatorWithConfig(false)
           expect(validator).toBeDefined()
           expect(createChangeValidator).toHaveBeenCalledWith(
-            expect.toBeArrayOfSize(Object.keys(changeValidators).length), []
+            expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length),
+            []
           )
         })
       })
@@ -114,10 +115,11 @@ describe('createSalesforceChangeValidator', () => {
         checkOnly: true,
       })
     })
-    it('should create a validator with the extra checkOnlyValidator', () => {
+    it('should create validator according to the defaultInValidate field', () => {
       expect(validator).toBeDefined()
       expect(createChangeValidator).toHaveBeenCalledWith(
-        expect.toBeArrayOfSize(Object.keys(changeValidators).length + 1), []
+        expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInValidate).length),
+        expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => !cv.defaultInValidate).length)
       )
     })
   })

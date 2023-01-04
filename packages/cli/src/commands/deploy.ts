@@ -24,7 +24,7 @@ import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForA
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies, formatDeployActions } from '../formatter'
-import Prompts from '../prompts'
+import Prompts, { deployOrValidate } from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
 import { updateWorkspace, isValidWorkspaceForCommand, shouldRecommendFetch } from '../workspace/workspace'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
@@ -54,21 +54,22 @@ const printPlan = async (
   outputLine(await formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan), output)
 }
 
-const printStartDeploy = async (output: CliOutput, executingDeploy: boolean): Promise<void> => {
+const printStartDeploy = async (output: CliOutput, executingDeploy: boolean, checkOnly: boolean): Promise<void> => {
   if (executingDeploy) {
-    outputLine(deployPhaseHeader, output)
+    outputLine(deployPhaseHeader(checkOnly), output)
   } else {
-    outputLine(cancelDeployOutput, output)
+    outputLine(cancelDeployOutput(checkOnly), output)
   }
 }
 
 export const shouldDeploy = async (
   actions: Plan,
+  checkOnly: boolean,
 ): Promise<boolean> => {
   if (_.isEmpty(actions)) {
     return false
   }
-  return getUserBooleanInput(Prompts.SHOULD_EXECUTE_DEPLOY_PLAN)
+  return getUserBooleanInput(Prompts.SHOULD_EXECUTE_DEPLOY_PLAN(checkOnly))
 }
 
 type DeployArgs = {
@@ -142,8 +143,8 @@ const deployPlan = async (
       }
     }
   }
-  const executingDeploy = (force || await shouldDeploy(actionPlan))
-  await printStartDeploy(output, executingDeploy)
+  const executingDeploy = (force || await shouldDeploy(actionPlan, checkOnly))
+  await printStartDeploy(output, executingDeploy, checkOnly)
   const result = executingDeploy
     ? await deploy(
       workspace,
@@ -159,6 +160,7 @@ const deployPlan = async (
   outputLine(deployPhaseEpilogue(
     nonErroredActions.length,
     result.errors.length,
+    checkOnly,
   ), output)
   output.stdout.write(EOL)
   log.debug(`${result.errors.length} errors occurred:\n${result.errors.map(err => err.message).join('\n')}`)
@@ -235,7 +237,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   outputLine(postDeployActionsOutput.join('\n'), output)
   const deploymentUrls = result.extraProperties?.deploymentUrls ?? []
   if (!_.isEmpty(deploymentUrls)) {
-    outputLine(`You can see your deployment here:\n${deploymentUrls.join('\n')}`, output)
+    outputLine(`You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`, output)
   }
   return cliExitCode
 }

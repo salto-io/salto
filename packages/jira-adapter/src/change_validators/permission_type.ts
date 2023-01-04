@@ -51,7 +51,7 @@ const getInvalidPermissions = (
   permissionScheme: InstanceElement,
   allowedPermissions: Set<string>,
 ): string[] =>
-  permissionScheme.value.permissions
+  (permissionScheme.value.permissions ?? [])
     .map((permission: { permission: string }) => permission.permission)
     .filter((permission: string) => !allowedPermissions.has(permission))
 

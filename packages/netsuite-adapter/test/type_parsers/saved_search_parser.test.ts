@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as savedSearchParser from '../src/saved_search_parsing/saved_search_parser'
+import * as savedSearchParser from '../../src/type_parsers/saved_search_parsing/saved_search_parser'
 import * as testConsts from './saved_search_definition'
 
 describe('saved search parser tests', () => {

@@ -82,6 +82,12 @@ describe('accountIdValidator', () => {
     }, {
       accountId: '1list2',
       displayName: 'disp1list2',
+    }, {
+      accountId: '0owner',
+      displayName: 'disp0owner',
+    }, {
+      accountId: '1list2',
+      displayName: 'disp1list2',
     }],
   })
 
@@ -260,7 +266,7 @@ Go to ${url} to see valid users and account IDs.`,
     ])).toEqual([])
   })
   it('should not raise errors when the type is not deployable', async () => {
-    const objectType = common.createObjectedType('Filter')
+    const objectType = common.createObjectedType('Board')
     instances = common.createInstanceElementArrayWithDisplayNames(2, objectType)
     const changeErrors = await validator([
       toChange({

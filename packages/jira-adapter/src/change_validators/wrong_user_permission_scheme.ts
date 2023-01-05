@@ -50,8 +50,10 @@ export const wrongUserPermissionSchemeValidator: (
     if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
-    const { baseUrl } = client
-    const idMap = await getIdMapFunc()
+    const { baseUrl, isDataCenter } = client
+    const idMap = isDataCenter
+      ? Object.fromEntries(Object.entries(await getIdMapFunc()).map(([key, mapValue]) => [mapValue, key]))
+      : await getIdMapFunc()
     const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(idMap)
     return changes
       .filter(isInstanceChange)

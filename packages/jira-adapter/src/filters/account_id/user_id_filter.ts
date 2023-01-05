@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
 import { IdMap } from '../../users_map'
-import { AUTOMATION_TYPE, DASHBOARD_TYPE } from '../../constants'
+import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -73,7 +73,7 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE || instance.elemID.typeName === DASHBOARD_TYPE)
+      .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
         walkOnElement({ element, func: walkOnUsers(convertId(reversedIdMap)) }))
   },
@@ -87,7 +87,7 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE || instance.elemID.typeName === DASHBOARD_TYPE)
+      .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
         walkOnElement({ element, func: walkOnUsers(convertId(idMap)) }))
   }, 'user_id_filter deploy'),

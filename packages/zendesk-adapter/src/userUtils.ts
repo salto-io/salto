@@ -25,13 +25,16 @@ const { makeArray } = collections.array
 type User = {
   id: number
   email: string
-  customRoleId: number
+  role: string
+  // eslint-disable-next-line camelcase
+  custom_role_id: number
 }
 
 const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
   id: Joi.number().required(),
   email: Joi.string().required(),
-  customRoleId: Joi.number(),
+  role: Joi.string(),
+  custom_role_id: Joi.number(),
 }).unknown(true)).required()
 
 const areUsers = (values: unknown): values is User[] => {

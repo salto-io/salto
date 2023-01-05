@@ -27,6 +27,7 @@ import {
   removedFromParentValidatorCreator,
   parentAnnotationToHaveSingleValueValidatorCreator,
   customRoleNameValidator,
+  customRoleRemovalValidator,
   invalidActionsValidator,
   orderInstanceContainsAllTheInstancesValidator,
   triggerOrderInstanceContainsAllTheInstancesValidator,
@@ -111,6 +112,7 @@ export default ({
     guideOrderDeletionValidator,
     // ******************************
     macroActionsTicketFieldDeactivationValidator,
+    customRoleRemovalValidator(client),
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

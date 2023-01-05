@@ -14,34 +14,48 @@
 * limitations under the License.
 */
 import {
+  ChangeError,
   ChangeValidator, getChangeData, InstanceElement,
   isAdditionChange, isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { BRAND_TYPE_NAME } from '../constants'
 import ZendeskClient from '../client/client'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
-type SuccessRes = {
+type ValidRes = {
   success: boolean
 }
 
-const isSuccess = (res: unknown): res is SuccessRes => _.isObject(res) && ('success' in res)
+const isValidRes = (res: unknown): res is ValidRes => _.isObject(res) && ('success' in res)
 
 
-const invalidSubdomain = async (brand: InstanceElement, client: ZendeskClient): Promise<boolean> => {
+const invalidSubdomain = async (brand: InstanceElement, client: ZendeskClient): Promise<boolean | undefined> => {
   if (brand.value.subdomain === undefined) {
     return true
   }
-  const res = (await client.getSinglePage({
-    url: `/api/v2/accounts/available.json?subdomain=${brand.value.subdomain}`,
-  })).data
-  return isSuccess(res) && !res.success
+  let res
+  try {
+    res = (await client.getSinglePage({
+      url: `/api/v2/accounts/available.json?subdomain=${brand.value.subdomain}`,
+    })).data
+  } catch (e) {
+    log.error(e)
+    res = undefined
+  }
+  if (res === undefined || !isValidRes(res)) {
+    return undefined
+  }
+  return !res.success
 }
 
-
+/**
+ * this validator checks if the subdomain of the brand is globally uniq
+ */
 export const brandCreationValidator: (client: ZendeskClient) =>
   ChangeValidator = client => async changes => {
     const brandAddition = await awu(changes)
@@ -49,15 +63,23 @@ export const brandCreationValidator: (client: ZendeskClient) =>
       .map(getChangeData)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
-      .filter(instance => invalidSubdomain(instance, client))
+      .map(async instance => ({ instance, invalid: await invalidSubdomain(instance, client) }))
       .toArray()
 
-    return brandAddition.flatMap(instance => (
-      [{
-        elemID: instance.elemID,
-        severity: 'Error',
-        message: 'Brand subdomain is already taken',
-        detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name} before attempting to create it from Salto`,
-      }]
-    ))
+    return brandAddition
+      .filter(brandDetails => brandDetails.invalid || brandDetails.invalid === undefined)
+      .map(({ instance, invalid }): ChangeError => {
+        if (invalid === undefined) {
+          return { elemID: instance.elemID,
+            severity: 'Warning',
+            message: 'Verify brand subdomain uniqueness',
+            detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name} before attempting to create it from Salto` }
+        }
+        return {
+          elemID: instance.elemID,
+          severity: 'Error',
+          message: 'Brand subdomain is already taken',
+          detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${instance.value.name} before attempting to create it from Salto`,
+        }
+      })
   }

@@ -36,7 +36,7 @@ describe('brandCreationValidator', () => {
     jest.clearAllMocks()
   })
 
-  it('should return a warning if a new brand is created', async () => {
+  it('should return an error if a new brand is created', async () => {
     mockGet = jest.spyOn(client, 'getSinglePage')
     mockGet.mockImplementation(params => {
       if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
@@ -58,6 +58,56 @@ describe('brandCreationValidator', () => {
       elemID: brandInstance.elemID,
       severity: 'Error',
       message: 'Brand subdomain is already taken',
+      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
+    }])
+  })
+  it('should return a warning if a new brand is created and getSinglePage fails', async () => {
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet.mockImplementation(params => {
+      if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
+        return {
+          status: 400,
+          data: [],
+        }
+      }
+      throw new Error('Err')
+    })
+    const errors = await changeValidator(
+      [toChange({ after: brandInstance })],
+    )
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    expect(mockGet).toHaveBeenCalledWith({
+      url: `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`,
+    })
+    expect(errors).toEqual([{
+      elemID: brandInstance.elemID,
+      severity: 'Warning',
+      message: 'Verify brand subdomain uniqueness',
+      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
+    }])
+  })
+  it('should return a warning if a new brand is created and getSinglePage returns invalid answer', async () => {
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet.mockImplementation(params => {
+      if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
+        return {
+          status: 200,
+          data: [],
+        }
+      }
+      throw new Error('Err')
+    })
+    const errors = await changeValidator(
+      [toChange({ after: brandInstance })],
+    )
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    expect(mockGet).toHaveBeenCalledWith({
+      url: `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`,
+    })
+    expect(errors).toEqual([{
+      elemID: brandInstance.elemID,
+      severity: 'Warning',
+      message: 'Verify brand subdomain uniqueness',
       detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
     }])
   })

@@ -1531,13 +1531,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
-  ticket_form__agent_conditions__child_fields__required_on_statuses: {
-    transformation: {
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
-        { fieldName: 'statuses' },
-      ),
-    },
-  },
   // eslint-disable-next-line camelcase
   ticket_fields: {
     request: {

@@ -17,9 +17,9 @@
 
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import filterCreator, { TICKET_FORM_TYPE_NAME } from '../../src/filters/ticket_form'
+import filterCreator from '../../src/filters/ticket_form'
 import { createFilterCreatorParams } from '../utils'
-import { ZENDESK } from '../../src/constants'
+import { TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -96,20 +96,28 @@ describe('ticket form filter', () => {
   })
 
   describe('deploy', () => {
-    it('should not deploy remove changes', async () => {
+    it('should deploy removal changes', async () => {
       const clonedElement = invalidTicketForm
       mockDeployChange
         .mockImplementation(async () => ({
           ticket_forms: clonedElement,
         }))
       const res = await filter.deploy([toChange({ before: clonedElement })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(0)
-      expect(res.leftoverChanges).toHaveLength(1)
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'remove', data: { before: clonedElement } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([toChange({ before: clonedElement })])
     })
 
-    it('should not deploy when custum_statuses is undefined', async () => {
+    it('should deploy when custom_statuses is undefined', async () => {
       const validTicketForm = new InstanceElement(
         'valid',
         ticketFormType,
@@ -141,12 +149,20 @@ describe('ticket form filter', () => {
           ticket_forms: validTicketForm,
         }))
       const res = await filter.deploy([toChange({ after: validTicketForm })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(0)
-      expect(res.leftoverChanges).toHaveLength(1)
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: validTicketForm } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([toChange({ after: validTicketForm })])
     })
-    it('should not deploy when custum_statuses is an empty array', async () => {
+    it('should not deploy when custom_statuses is an empty array', async () => {
       const validTicketForm = new InstanceElement(
         'valid',
         ticketFormType,
@@ -178,10 +194,17 @@ describe('ticket form filter', () => {
           ticket_forms: validTicketForm,
         }))
       const res = await filter.deploy([toChange({ after: validTicketForm })])
-      expect(mockDeployChange).toHaveBeenCalledTimes(0)
-      expect(res.leftoverChanges).toHaveLength(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: validTicketForm } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
-      expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([toChange({ after: validTicketForm })])
     })
     it('should deploy modification change when both statuses and custom_statuses appear', async () => {
       const clonedElement = invalidTicketForm

@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import { createReorderFilterCreator } from './creator'
+import { TICKET_FORM_TYPE_NAME } from '../../constants'
 
-export const TYPE_NAME = 'ticket_form'
 
 /**
  * Add ticket forms order element with all the ticket forms ordered
  */
 const filterCreator = createReorderFilterCreator({
-  typeName: TYPE_NAME,
+  typeName: TICKET_FORM_TYPE_NAME,
   orderFieldName: 'ticket_form_ids',
   activeFieldName: 'active',
 })

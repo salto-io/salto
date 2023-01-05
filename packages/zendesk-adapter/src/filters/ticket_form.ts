@@ -16,13 +16,16 @@
 import {
   Change, DeployResult,
   getChangeData,
-  InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, toChange,
+  InstanceElement, isAdditionOrModificationChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
+import { TICKET_FORM_TYPE_NAME } from '../constants'
 
-export const TICKET_FORM_TYPE_NAME = 'ticket_form'
+const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
 
 
@@ -32,7 +35,7 @@ type Child = {
     type: string
     statuses?: string[]
     // eslint-disable-next-line camelcase
-    custom_statuses?: number[]
+    custom_statuses: number[]
   }
 }
 
@@ -54,65 +57,61 @@ const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceVa
       && condition.child_fields.some((child: Child) =>
         _.isObject(child.required_on_statuses)
         && child.required_on_statuses.type === SOME_STATUSES
-        && (child.required_on_statuses.statuses !== undefined) // even if it is an empty array it is not valid
         && (child.required_on_statuses.custom_statuses !== undefined
         && !_.isEmpty(child.required_on_statuses.custom_statuses))))
 
 const invalidTicketFormChange = (change: Change<InstanceElement>): boolean =>
-  TICKET_FORM_TYPE_NAME === getChangeData(change).elemID.typeName
-  && isAdditionOrModificationChange(change)
+  isAdditionOrModificationChange(change)
   && isInstanceChange(change)
   && isInvalidTicketForm(getChangeData(change).value)
 
-const returnValidInstance = (arg: InstanceElement): InstanceElement => {
-  const clonedArg = arg.clone()
-  if (isInvalidTicketForm(clonedArg.value)) {
-    clonedArg.value.agent_conditions
+const returnValidInstance = (inst: InstanceElement): InstanceElement => {
+  const clonedInst = inst.clone()
+  if (isInvalidTicketForm(clonedInst.value)) {
+    clonedInst.value.agent_conditions
       .forEach(condition => condition.child_fields
         .forEach(child => {
           if (child.required_on_statuses.type === SOME_STATUSES
-            && (child.required_on_statuses.statuses !== undefined)
             && (child.required_on_statuses.custom_statuses !== undefined
               && !_.isEmpty(child.required_on_statuses.custom_statuses))) {
             delete child.required_on_statuses.statuses
           }
         }))
   }
-  return clonedArg
+  return clonedInst
 }
 
-
+/**
+ * this filter deploys ticket_form changes. if the instance has both statuses and custom_statuses under
+ * required_on_statuses then it removes the statuses field.
+ */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [invalidTicketFormChanges, leftoverChanges] = _.partition(
+    const [TicketFormChanges, leftoverChanges] = _.partition(
       changes,
+      change => TICKET_FORM_TYPE_NAME === getChangeData(change).elemID.typeName,
+    )
+    const [invalidModificationAndAdditionChanges, otherTicketFormChanges] = _.partition(
+      TicketFormChanges,
       invalidTicketFormChange,
     )
 
-    const fixedTicketFormChanges = invalidTicketFormChanges.map(change => {
-      if (isAdditionChange(change)) {
-        return toChange({ after: returnValidInstance(getChangeData(change)) })
-      }
-      if (isModificationChange(change)) {
-        const { before } = change.data
-        const { after } = change.data
-        return toChange({ before: returnValidInstance(before), after: returnValidInstance(after) })
-      }
-      return change
-    })
+    const fixedTicketFormChanges = await awu(invalidModificationAndAdditionChanges)
+      .map(change => applyFunctionToChangeData(change, returnValidInstance))
+      .toArray()
 
     const tempDeployResult = await deployChanges(
-      fixedTicketFormChanges,
+      [...fixedTicketFormChanges, ...otherTicketFormChanges],
       async change => {
         await deployChange(change, client, config.apiDefinitions)
       }
     )
-    const deployedChangesElemId = tempDeployResult.appliedChanges
-      .map(change => getChangeData(change).elemID.getFullName())
+    const deployedChangesElemId = new Set(tempDeployResult.appliedChanges
+      .map(change => getChangeData(change).elemID.getFullName()))
 
     const deployResult: DeployResult = {
-      appliedChanges: invalidTicketFormChanges
-        .filter(change => deployedChangesElemId.includes(getChangeData(change).elemID.getFullName())),
+      appliedChanges: TicketFormChanges
+        .filter(change => deployedChangesElemId.has(getChangeData(change).elemID.getFullName())),
       errors: tempDeployResult.errors,
     }
     return { deployResult, leftoverChanges }

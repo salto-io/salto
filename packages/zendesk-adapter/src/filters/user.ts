@@ -14,38 +14,18 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { conditionFieldValue, isCorrectConditions } from './utils'
+import { getUsersFunc } from '../userUtils'
 
 const log = logger(module)
-const { toArrayAsync, awu } = collections.asynciterable
-const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 type UserReplacer = (instance: InstanceElement, mapping: Record<string, string>) => void
-type User = {
-  id: number
-  email: string
-}
-
-const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
-  id: Joi.number().required(),
-  email: Joi.string().required(),
-}).unknown(true)).required()
-
-const areUsers = (values: unknown): values is User[] => {
-  const { error } = EXPECTED_USER_SCHEMA.validate(values)
-  if (error !== undefined) {
-    log.warn(`Received an invalid response for the users values: ${error.message}`)
-    return false
-  }
-  return true
-}
 
 type ReplacerCreatorParams = {
   fieldName: string
@@ -175,23 +155,6 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
   article_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
 }
 
-const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
-  const paginationArgs = {
-    url: '/api/v2/users',
-    paginationField: 'next_page',
-    queryParams: {
-      role: ['admin', 'agent'],
-    },
-  }
-  const users = (await toArrayAsync(
-    paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
-  )).flat().flatMap(response => response.users)
-  if (!areUsers(users)) {
-    return []
-  }
-  return users
-}
-
 const isRelevantChange = (change: Change<InstanceElement>): boolean => (
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
 )
@@ -218,7 +181,7 @@ const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
     onFetch: async elements => log.time(async () => {
-      const users = await getUsers(paginator)
+      const users = await (getUsersFunc(paginator))()
       if (_.isEmpty(users)) {
         return
       }
@@ -235,7 +198,7 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      const users = await getUsers(paginator)
+      const users = await (getUsersFunc(paginator))()
       if (_.isEmpty(users)) {
         return
       }

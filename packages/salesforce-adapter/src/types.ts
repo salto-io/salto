@@ -97,6 +97,7 @@ export type ChangeValidatorName = (
   | 'caseAssignmentRulesValidator'
   | 'omitData'
   | 'unknownUser'
+  | 'animationRuleRecordType'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -564,6 +565,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
     omitData: { refType: BuiltinTypes.BOOLEAN },
     unknownUser: { refType: BuiltinTypes.BOOLEAN },
+    animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

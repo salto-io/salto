@@ -33,7 +33,9 @@ import fullNameChangedValidator from './change_validators/fullname_changed'
 import invalidListViewFilterScope from './change_validators/invalid_listview_filterscope'
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 import unknownUser from './change_validators/unknown_users'
+import animationRuleRecordType from './change_validators/animation_rule_recordtype'
 import SalesforceClient from './client/client'
+
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
 
@@ -68,6 +70,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   caseAssignmentRulesValidator: { creator: () => caseAssignmentRulesValidator, ...defaultAlwaysRun },
   omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
+  animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {
@@ -89,4 +92,5 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
 }
+
 export default createSalesforceChangeValidator

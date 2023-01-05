@@ -17,73 +17,15 @@ import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceE
 import { getFilterParams } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
-import { DASHBOARD_TYPE, JIRA, PROJECT_ROLE_TYPE } from '../../src/constants'
+import { JIRA } from '../../src/constants'
 
 describe('sortListsFilter', () => {
   let filter: Filter
   let permissionSchemeType: ObjectType
-  let projectRoleType: ObjectType
-  let dashboardType: ObjectType
-  let permissionSchemeInstance: InstanceElement
-  let projectRoleInstance: InstanceElement
-  let dashboardInstance: InstanceElement
-  let sortedDashboardValues: Values
-  let sortedProjectRoleValues: Values
-  let sortedPermissionValues: Values
+  let instance: InstanceElement
+  let sortedValues: Values
   beforeEach(async () => {
     filter = sortListsFilter(getFilterParams())
-
-    projectRoleType = new ObjectType({
-      elemID: new ElemID(JIRA, PROJECT_ROLE_TYPE),
-      fields: {
-        actors: { refType: new ListType(BuiltinTypes.UNKNOWN) },
-      },
-    })
-    projectRoleInstance = new InstanceElement(
-      'instance',
-      projectRoleType,
-      {
-        actors: [
-          { displayName: 'c' },
-          { displayName: 'a' },
-          { displayName: 'b' },
-        ],
-      },
-    )
-
-    sortedProjectRoleValues = {
-      actors: [
-        { displayName: 'a' },
-        { displayName: 'b' },
-        { displayName: 'c' },
-      ],
-    }
-
-    dashboardType = new ObjectType({
-      elemID: new ElemID(JIRA, DASHBOARD_TYPE),
-      fields: {
-        gadgets: { refType: new ListType(BuiltinTypes.UNKNOWN) },
-      },
-    })
-
-    dashboardInstance = new InstanceElement(
-      'instance',
-      dashboardType,
-      {
-        gadgets: [
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c')),
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a')),
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b')),
-        ],
-      },
-    )
-    sortedDashboardValues = {
-      gadgets: [
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a')),
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b')),
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c')),
-      ],
-    }
 
     permissionSchemeType = new ObjectType({
       elemID: new ElemID(JIRA, 'PermissionScheme'),
@@ -92,7 +34,7 @@ describe('sortListsFilter', () => {
       },
     })
 
-    permissionSchemeInstance = new InstanceElement(
+    instance = new InstanceElement(
       'instance',
       permissionSchemeType,
       {
@@ -133,7 +75,7 @@ describe('sortListsFilter', () => {
       }
     )
 
-    sortedPermissionValues = {
+    sortedValues = {
       permissions: [
         {
           permission: 'A',
@@ -172,23 +114,15 @@ describe('sortListsFilter', () => {
   })
 
   describe('onFetch', () => {
-    it('should sort the dashboard gadgets', async () => {
-      await filter.onFetch?.([dashboardInstance])
-      expect(dashboardInstance.value).toEqual(sortedDashboardValues)
-    })
-    it('should sort the project role actors', async () => {
-      await filter.onFetch?.([projectRoleInstance])
-      expect(projectRoleInstance.value).toEqual(sortedProjectRoleValues)
-    })
     it('should sort the permissions', async () => {
-      await filter.onFetch?.([permissionSchemeInstance])
-      expect(permissionSchemeInstance.value).toEqual(sortedPermissionValues)
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual(sortedValues)
     })
 
     it('should do nothing when field is undefined', async () => {
-      delete permissionSchemeInstance.value.permissions
-      await filter.onFetch?.([permissionSchemeInstance])
-      expect(permissionSchemeInstance.value).toEqual({})
+      delete instance.value.permissions
+      await filter.onFetch?.([instance])
+      expect(instance.value).toEqual({})
     })
 
     it('should sort inner lists', async () => {

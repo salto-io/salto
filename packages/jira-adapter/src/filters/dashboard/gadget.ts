@@ -13,19 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalChange, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as adapterElements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
-import { DASHBOARD_GADGET_TYPE } from '../../constants'
+import { DASHBOARD_GADGET_TYPE, JIRA } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
+
+const configType = new ObjectType({
+  elemID: new ElemID(JIRA, 'GadgetConfig'),
+  fields: {
+    statType: { refType: BuiltinTypes.STRING },
+  },
+  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, 'GadgetConfig'],
+})
+
+const propertiesType = new ObjectType({
+  elemID: new ElemID(JIRA, 'GadgetProperties'),
+  fields: {
+    config: { refType: configType },
+  },
+  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, 'GadgetProperties'],
+})
 
 const deployGadgetProperties = async (
   instance: InstanceElement,
@@ -103,6 +119,8 @@ const filter: FilterCreator = ({ client, config }) => ({
       log.warn(`${DASHBOARD_GADGET_TYPE} type not found`)
       return
     }
+    gadgetType.fields.properties = new Field(gadgetType, 'properties', propertiesType)
+    elements.push(configType, propertiesType)
     setFieldDeploymentAnnotations(gadgetType, 'properties')
   },
 

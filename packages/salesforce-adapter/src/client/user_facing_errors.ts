@@ -25,7 +25,7 @@ export type MappableErrorName = typeof MAPPABLE_ERROR_NAMES[number]
 
 export const ERROR_NAME_TO_USER_VISIBLE_ERROR: Record<MappableErrorName, string> = {
   ERROR_HTTP_502: 'We are unable to connect to your Salesforce account right now. '
-    + 'This might be an issue Salesforce side. please check https://status.salesforce.com/current/incidents',
+    + 'This might be an issue in Salesforce side. please check https://status.salesforce.com/current/incidents',
   [REQUEST_LIMIT_EXCEEDED]: 'Your Salesforce org has limited API calls for a 24-hour period. '
   + 'We are unable to connect to your org because this limit has been exceeded. '
   + 'Please try again later or contact your account executive to increase your API limit. ',

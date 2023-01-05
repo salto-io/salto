@@ -20,7 +20,7 @@ import { client as clientUtils, elements as adapterElements } from '@salto-io/ad
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
-import { DASHBOARD_GADGET_TYPE, JIRA } from '../../constants'
+import { DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE, DASHBOARD_GADGET_PROPERTIES_TYPE, DASHBOARD_GADGET_TYPE, JIRA } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
@@ -28,19 +28,19 @@ import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 const log = logger(module)
 
 const configType = new ObjectType({
-  elemID: new ElemID(JIRA, 'GadgetConfig'),
+  elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE),
   fields: {
     statType: { refType: BuiltinTypes.STRING },
   },
-  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, 'GadgetConfig'],
+  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE],
 })
 
 const propertiesType = new ObjectType({
-  elemID: new ElemID(JIRA, 'GadgetProperties'),
+  elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_TYPE),
   fields: {
     config: { refType: configType },
   },
-  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, 'GadgetProperties'],
+  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_TYPE],
 })
 
 const deployGadgetProperties = async (

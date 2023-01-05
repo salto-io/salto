@@ -159,10 +159,11 @@ describe('workflowScheme', () => {
       await filter.preDeploy?.([toChange({ before: instance, after: instance })])
       expect(instance.value).toEqual({
         updateDraftIfNeeded: true,
+        issueTypeMappings: {},
       })
     })
 
-    it('should do nothing if there are no items', async () => {
+    it('should add empty list if there are no items', async () => {
       const instance = new InstanceElement(
         'instance',
         workflowSchemeType,
@@ -173,6 +174,7 @@ describe('workflowScheme', () => {
       await filter.preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         val: 1,
+        issueTypeMappings: {},
       })
     })
   })

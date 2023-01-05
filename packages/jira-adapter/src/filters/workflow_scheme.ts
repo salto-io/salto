@@ -127,13 +127,11 @@ export const preDeployWorkflowScheme = async (
   action: ActionName,
   elementsSource?: ReadOnlyElementsSource
 ): Promise<void> => {
-  if (instance.value.items !== undefined) {
-    const resolvedInstance = await resolveValues(instance, getLookUpName, elementsSource)
-    instance.value.issueTypeMappings = _(resolvedInstance.value.items)
-      .keyBy(mapping => mapping.issueType)
-      .mapValues(mapping => mapping.workflow)
-      .value()
-  }
+  const resolvedInstance = await resolveValues(instance, getLookUpName, elementsSource)
+  instance.value.issueTypeMappings = _(resolvedInstance.value.items ?? [])
+    .keyBy(mapping => mapping.issueType)
+    .mapValues(mapping => mapping.workflow)
+    .value()
 
   if (action === 'modify') {
     instance.value.updateDraftIfNeeded = true

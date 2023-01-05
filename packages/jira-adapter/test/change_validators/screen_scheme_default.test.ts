@@ -18,11 +18,10 @@ import { screenSchemeDefaultValidator } from '../../src/change_validators/screen
 import { JIRA, SCREEN_SCHEME_TYPE } from '../../src/constants'
 
 describe('screenSchemeDefaultValidator', () => {
-  let type: ObjectType
   let instance: InstanceElement
 
   beforeEach(() => {
-    type = new ObjectType({ elemID: new ElemID(JIRA, SCREEN_SCHEME_TYPE) })
+    const type = new ObjectType({ elemID: new ElemID(JIRA, SCREEN_SCHEME_TYPE) })
     instance = new InstanceElement(
       'instance',
       type,

@@ -64,6 +64,7 @@ export const getUsersFunc = (paginator: clientUtils.Paginator):() => Promise<Use
       paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
     )).flat().flatMap(response => response.users)
     if (!areUsers(users)) {
+      calculatedUsers = []
       return []
     }
     calculatedUsers = users

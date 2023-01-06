@@ -67,3 +67,4 @@ export const ACCOUNT_IDS_FIELDS_NAMES = ['leadAccountId', 'authorAccountId', 'ac
 export const JIRA_USERS_PAGE = 'jira/people/search'
 export const ISSUE_EVENT_TYPE_NAME = 'IssueEvent'
 export const PRIORITY_SCHEME_TYPE_NAME = 'PriorityScheme'
+export const SCREEN_SCHEME_TYPE = 'ScreenScheme'

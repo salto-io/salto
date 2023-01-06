@@ -38,11 +38,10 @@ type UserFieldGetter = {
 }
 
 // https://stackoverflow.com/a/44154193
-const TypesWithUserFields = {
-  CaseSettings: 'CaseSettings',
-} as const
-type TypeWithUserFields = keyof typeof TypesWithUserFields
-
+const TYPES_WITH_USER_FIELDS = [
+  'CaseSettings',
+] as const
+type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
 type TypesWithUserFields = Record<TypeWithUserFields, UserFieldGetter[]>
 
@@ -91,7 +90,7 @@ const userFieldGettersForInstance = async (defMapping: TypesWithUserFields, inst
     : Promise<UserFieldGetter[]> => {
   const instanceTypeAsTypeWithUserFields = async (): Promise<TypeWithUserFields | undefined> => {
     const typeAsString = await apiName(await instance.getType())
-    return Object.values(TypesWithUserFields).find(t => t === typeAsString)
+    return TYPES_WITH_USER_FIELDS.find(t => t === typeAsString)
   }
 
   const instanceType = await instanceTypeAsTypeWithUserFields()

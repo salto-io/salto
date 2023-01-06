@@ -77,7 +77,9 @@ const buildQueryStrings = async (
   fields: Field[],
   ids?: string[]
 ): Promise<string[]> => {
-  const fieldNames = await awu(fields).flatMap(getFieldNamesForQuery).toArray()
+  const fieldNames = await awu(fields)
+    .flatMap(getFieldNamesForQuery)
+    .toArray()
   return buildSelectQueries(typeName, fieldNames, ids?.map(id => ({ Id: `'${id}'` })))
 }
 

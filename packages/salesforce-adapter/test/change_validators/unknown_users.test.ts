@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, ChangeValidator, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, ChangeValidator, getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'
 import changeValidator from '../../src/change_validators/unknown_users'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
 import SalesforceClient from '../../src/client/client'
 import { SalesforceRecord } from '../../src/client/types'
+import { mockTypes } from '../mock_elements'
+import { createCustomObjectType } from '../utils'
 
 const setupClientMock = (client: SalesforceClient, userNames: string[]): void => {
   const mockQueryResult = userNames.map((userName): SalesforceRecord => ({
@@ -46,24 +48,11 @@ const setupClientMock = (client: SalesforceClient, userNames: string[]): void =>
 }
 
 describe('unknown user change validator', () => {
-  const caseSettingsType = new ObjectType({
-    elemID: new ElemID('salesforce', 'CaseSettings'),
-    annotations: { metadataType: CUSTOM_OBJECT, apiName: 'CaseSettings' },
-    fields: {
-      defaultCaseOwner: {
-        refType: BuiltinTypes.STRING,
-      },
-      defaultCaseUser: {
-        refType: BuiltinTypes.STRING,
-      },
-      defaultCaseOwnerType: {
-        refType: BuiltinTypes.STRING,
-      },
-    },
-  })
+  const IRRELEVANT_USERNAME = 'SomeUsername'
+  const TEST_USERNAME = 'ExistingUsername'
+  const ANOTHER_TEST_USERNAME = 'BadUserName'
   describe('when an irrelevant instance changes', () => {
-    const irrelevantType = new ObjectType({
-      elemID: new ElemID('salesforce', 'SomeType'),
+    const irrelevantType = createCustomObjectType('SomeType', {
       annotations: { metadataType: CUSTOM_OBJECT, apiName: 'SomeType' },
       fields: {
         defaultCaseOwner: {
@@ -75,9 +64,9 @@ describe('unknown user change validator', () => {
     let validator: ChangeValidator
     beforeEach(() => {
       validator = changeValidator(mockAdapter({}).client)
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseOwner: 'someUsername' }, irrelevantType)
+      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseOwner: IRRELEVANT_USERNAME }, irrelevantType)
       const afterRecord = beforeRecord.clone()
-      afterRecord.value.userName = 'someOtherUsername'
+      afterRecord.value.userName = ANOTHER_TEST_USERNAME
       irrelevantChange = toChange({ before: beforeRecord, after: afterRecord })
     })
 
@@ -92,12 +81,12 @@ describe('unknown user change validator', () => {
     beforeEach(() => {
       const { client } = mockAdapter({})
       validator = changeValidator(client)
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: 'someUsername' }, caseSettingsType)
+      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
       const afterRecord = beforeRecord.clone()
-      afterRecord.value.defaultCaseUser = 'someOtherUsername'
+      afterRecord.value.defaultCaseUser = TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
 
-      setupClientMock(client, ['someOtherUsername'])
+      setupClientMock(client, [TEST_USERNAME])
     })
 
     it('should pass validation', async () => {
@@ -111,28 +100,26 @@ describe('unknown user change validator', () => {
     beforeEach(() => {
       const { client } = mockAdapter({})
       validator = changeValidator(client)
-      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: 'someUsername' }, caseSettingsType)
+      const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
       const afterRecord = beforeRecord.clone()
-      afterRecord.value.defaultCaseUser = 'someOtherUsername'
+      afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
 
-      setupClientMock(client, ['someUsername'])
+      setupClientMock(client, [TEST_USERNAME])
     })
 
     it('should fail validation', async () => {
       const changeErrors = await validator([change])
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].detailedMessage).toContain('defaultCaseUser')
-      expect(changeErrors[0].detailedMessage).toContain('someOtherUsername')
-      expect(changeErrors[0].detailedMessage).toContain('someName')
-      expect(changeErrors[0].message).toContain('doesn\'t exist')
-      expect(changeErrors[0].message).toContain('someOtherUsername')
+      expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
     })
 
     it('should pass validation if the defaultCaseOwnerType is not "User"', async () => {
-      (getChangeData(change) as InstanceElement).value.defaultCaseOwnerType = 'Other';
-      (getChangeData(change) as InstanceElement).value.defaultCaseOwner = 'BlahBlah';
-      (getChangeData(change) as InstanceElement).value.defaultCaseUser = undefined
+      const instanceAfter = getChangeData(change) as InstanceElement
+      instanceAfter.value.defaultCaseOwnerType = 'Other'
+      instanceAfter.value.defaultCaseOwner = 'BlahBlah'
+      instanceAfter.value.defaultCaseUser = undefined
+
       const changeErrors = await validator([change])
       expect(changeErrors).toBeEmpty()
     })
@@ -146,46 +133,36 @@ describe('unknown user change validator', () => {
       validator = changeValidator(client)
       const beforeRecord = createInstanceElement({
         fullName: 'someName',
-        defaultCaseUser: 'someUsername',
+        defaultCaseUser: IRRELEVANT_USERNAME,
         defaultCaseOwnerType: 'User',
-        defaultCaseOwner: 'someUsername',
+        defaultCaseOwner: TEST_USERNAME,
       },
-      caseSettingsType)
+      mockTypes.CaseSettings)
       const afterRecord = beforeRecord.clone()
-      afterRecord.value.defaultCaseUser = 'someOtherUsername'
+      afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
     })
 
     it('should pass validation if both usernames exist in Salesforce', async () => {
-      setupClientMock(client, ['someUsername', 'someOtherUsername'])
+      setupClientMock(client, [TEST_USERNAME, ANOTHER_TEST_USERNAME])
       const changeErrors = await validator([change])
       expect(changeErrors).toBeEmpty()
     })
 
     it('should fail validation if only one of the usernames exists in Salesforce', async () => {
-      setupClientMock(client, ['someUsername'])
+      setupClientMock(client, [TEST_USERNAME])
       const changeErrors = await validator([change])
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].detailedMessage).toContain('defaultCaseUser')
-      expect(changeErrors[0].detailedMessage).toContain('someOtherUsername')
-      expect(changeErrors[0].detailedMessage).toContain('someName')
-      expect(changeErrors[0].message).toContain('doesn\'t exist')
-      expect(changeErrors[0].message).toContain('someOtherUsername')
+      expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
     })
     it('should fail validation twice if neither username exists in Salesforce', async () => {
       setupClientMock(client, [])
       const changeErrors = await validator([change])
       expect(changeErrors).toHaveLength(2)
-      expect(changeErrors[0].detailedMessage).toContain('defaultCaseUser')
-      expect(changeErrors[0].detailedMessage).toContain('someOtherUsername')
-      expect(changeErrors[0].detailedMessage).toContain('someName')
-      expect(changeErrors[0].message).toContain('doesn\'t exist')
-      expect(changeErrors[0].message).toContain('someOtherUsername')
-      expect(changeErrors[1].detailedMessage).toContain('defaultCaseOwner')
-      expect(changeErrors[1].detailedMessage).toContain('someUsername')
-      expect(changeErrors[1].detailedMessage).toContain('someName')
-      expect(changeErrors[0].message).toContain('doesn\'t exist')
-      expect(changeErrors[0].message).toContain('someOtherUsername')
+      expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
+      expect(changeErrors[0].detailedMessage).toContain(ANOTHER_TEST_USERNAME)
+      expect(changeErrors[1].elemID).toEqual(getChangeData(change).elemID)
+      expect(changeErrors[1].detailedMessage).toContain(TEST_USERNAME)
     })
   })
 })

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-import { logger } from '@salto-io/logging'
 import { Element, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'
 import { defaultFilterContext } from '../utils'
@@ -25,7 +24,6 @@ import SalesforceClient from '../../src/client/client'
 import { SalesforceRecord } from '../../src/client/types'
 import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
 
-const log = logger(module)
 
 describe('Enrich standard objects from query filter', () => {
   let client: SalesforceClient
@@ -95,8 +93,8 @@ describe('Enrich standard objects from query filter', () => {
     it('should enrich objects', async () => {
       setupMocks()
       await filter.onFetch([testElement])
-      log.warn(`In the test - elements[0].fullName: ${(testElement as InstanceElement).value.fullName}`)
-      expect((testElement as InstanceElement).value.fullName).toEqual('Some Name')
+      expect((testElement as InstanceElement).value.fullName).toEqual('some name')
+      expect((testElement as InstanceElement).value.name).toEqual('Some Name')
     })
   })
 })

@@ -43,11 +43,7 @@ const enrichmentDefs: EnrichmentDef[] = [
     fields: [
       {
         source: 'Name',
-        target: 'fullName',
-      },
-      {
-        source: 'NameNorm',
-        target: 'normalizedFullName',
+        target: 'name',
       },
     ],
   },
@@ -73,21 +69,22 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
 
-    await awu(enrichmentDefs).forEach(async def => {
-      const queryString = buildQueryString(def.sourceType, def.fields.map(f => f.source))
-      await awu(await client.queryAll(queryString))
-        .flat()
-        .forEach(sfRecord => {
-          def.fields.forEach(({ source, target }) => {
-            const targetInstance = def.instanceLookup(sfRecord, instancesToEnrich)
-            if (!targetInstance) {
-              log.warn(`No matching Salto element for Salesforce record ${sfRecord}`)
-              return
-            }
-            targetInstance.value[target] = sfRecord[source]
+    await awu(enrichmentDefs)
+      .forEach(async def => {
+        const queryString = buildQueryString(def.sourceType, def.fields.map(f => f.source))
+        await awu(await client.queryAll(queryString))
+          .flat()
+          .forEach(sfRecord => {
+            def.fields.forEach(({ source, target }) => {
+              const targetInstance = def.instanceLookup(sfRecord, instancesToEnrich)
+              if (!targetInstance) {
+                log.warn(`No matching Salto element for Salesforce record ${sfRecord}`)
+                return
+              }
+              targetInstance.value[target] = sfRecord[source]
+            })
           })
-        })
-    })
+      })
   },
 })
 

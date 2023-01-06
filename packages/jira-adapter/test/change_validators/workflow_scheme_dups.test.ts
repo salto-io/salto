@@ -58,11 +58,42 @@ describe('workflowSchemeDupsValidator', () => {
         elemID: instance1.elemID,
         severity: 'Error',
         message: 'Workflow scheme names must be unique',
-        detailedMessage: 'A workflow scheme with the name "name2" already exists',
+        detailedMessage: 'A workflow scheme with the name "name2" already exists (the name is case insensitive)',
       },
     ])
   })
-  it('should not return an error if instance name is not unique', async () => {
+
+  it('should return an error if instance name is not unique with different case', async () => {
+    instance1.value.name = 'NaMe2'
+    expect(await workflowSchemeDupsValidator(
+      [
+        toChange({
+          after: instance1,
+        }),
+      ],
+      elementSource,
+    )).toEqual([
+      {
+        elemID: instance1.elemID,
+        severity: 'Error',
+        message: 'Workflow scheme names must be unique',
+        detailedMessage: 'A workflow scheme with the name "NaMe2" already exists (the name is case insensitive)',
+      },
+    ])
+  })
+
+  it('should do nothing if element source is not passed', async () => {
+    instance1.value.name = 'name2'
+    expect(await workflowSchemeDupsValidator(
+      [
+        toChange({
+          after: instance1,
+        }),
+      ],
+    )).toEqual([])
+  })
+
+  it('should not return an error if instance name is unique', async () => {
     expect(await workflowSchemeDupsValidator(
       [
         toChange({

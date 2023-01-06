@@ -41,6 +41,6 @@ export const workflowSchemeDupsValidator: ChangeValidator = async (changes, elem
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Workflow scheme names must be unique',
-      detailedMessage: `A workflow scheme with the name "${instance.value.name}" already exists`,
+      detailedMessage: `A workflow scheme with the name "${instance.value.name}" already exists (the name is case insensitive)`,
     }))
 }

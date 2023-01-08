@@ -19,7 +19,14 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { BRAND_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME, FIELD_TYPE_NAMES } from '../constants'
+import {
+  BRAND_TYPE_NAME,
+  TICKET_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  FIELD_TYPE_NAMES,
+  TICKET_FORM_TYPE_NAME,
+} from '../constants'
 import { FETCH_CONFIG } from '../config'
 import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
 
@@ -42,7 +49,7 @@ const NEIGHBOR_FIELD_TO_TYPE_NAMES: Record<string, string> = {
   schedule_id: 'business_hours_schedule',
   within_schedule: 'business_hours_schedule',
   set_schedule: 'business_hours_schedule',
-  ticket_form_id: 'ticket_form',
+  ticket_form_id: TICKET_FORM_TYPE_NAME,
   locale_id: 'locale',
   via_id: 'channel',
   current_via_id: 'channel',
@@ -367,12 +374,12 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'active', parentTypes: ['ticket_form_order'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_form' },
+    target: { type: TICKET_FORM_TYPE_NAME },
   },
   {
     src: { field: 'inactive', parentTypes: ['ticket_form_order'] },
     serializationStrategy: 'id',
-    target: { type: 'ticket_form' },
+    target: { type: TICKET_FORM_TYPE_NAME },
   },
   {
     src: { field: 'active', parentTypes: ['organization_field_order'] },
@@ -624,13 +631,13 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
   {
     src: { field: 'ticket_form_id' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_form' },
+    target: { type: TICKET_FORM_TYPE_NAME },
     zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'ticket_form_ids' },
     serializationStrategy: 'id',
-    target: { type: 'ticket_form' },
+    target: { type: TICKET_FORM_TYPE_NAME },
   },
   {
     src: { field: 'skill_based_filtered_views' },

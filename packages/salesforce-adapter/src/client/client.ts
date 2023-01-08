@@ -125,6 +125,7 @@ const errorMessagesToRetry = [
   'An internal server error has occurred',
   'An unexpected connection error occurred',
   'ECONNREFUSED',
+  'Internal_Error',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

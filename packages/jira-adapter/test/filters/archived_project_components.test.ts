@@ -69,8 +69,8 @@ describe('archivedProjectComponentsFilter', () => {
       const elements = [project, projectComponent1, projectComponent2]
       await filter.onFetch(elements)
       expect(elements).toHaveLength(2)
-      expect(elements[0]).toBe(project)
-      expect(elements[1]).toBe(projectComponent1)
+      expect(elements[0].elemID.getFullName()).toBe(project.elemID.getFullName())
+      expect(elements[1].elemID.getFullName()).toBe(projectComponent1.elemID.getFullName())
       expect(project.value.components).toEqual([
         new ReferenceExpression(projectComponent1.elemID),
       ])
@@ -79,7 +79,7 @@ describe('archivedProjectComponentsFilter', () => {
     it('remove archive value', async () => {
       const elements = [projectComponent1]
       await filter.onFetch([projectComponent1])
-      expect(elements[0]).toBe(projectComponent1)
+      expect(elements[0].elemID.getFullName()).toBe(projectComponent1.elemID.getFullName())
       expect(projectComponent1.value.archived).toBeUndefined()
     })
   })

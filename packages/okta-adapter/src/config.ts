@@ -512,6 +512,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'policyRules', fieldType: 'list<AuthorizationServerPolicyRule>' },
       ],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   api__v1__brands: {
@@ -706,6 +707,31 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldTypeOverrides: [
         { fieldName: 'userType', fieldType: 'UserTypePolicyRuleCondition' },
       ],
+    },
+  },
+  OAuth2Scope: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: '_links', fieldType: 'map<unknown>' },
+      ],
+      fieldsToOmit: [
+        { fieldName: '_links' },
+      ],
+    },
+  },
+  OAuth2Claim: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: '_links' },
+      ],
+    },
+  },
+  AuthorizationServerPolicyRule: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: '_links', fieldType: 'map<unknown>' },
+      ],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
 }

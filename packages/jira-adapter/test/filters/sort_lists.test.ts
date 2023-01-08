@@ -71,17 +71,17 @@ describe('sortListsFilter', () => {
       dashboardType,
       {
         gadgets: [
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c')),
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a')),
-          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b')),
+          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c'), { value: { position: { column: 1, row: 0 } } }),
+          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a'), { value: { position: { column: 0, row: 1 } } }),
+          new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b'), { value: { position: { column: 0, row: 0 } } }),
         ],
       },
     )
     sortedDashboardValues = {
       gadgets: [
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a')),
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b')),
-        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c')),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.b'), { value: { position: { column: 0, row: 0 } } }),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.a'), { value: { position: { column: 0, row: 1 } } }),
+        new ReferenceExpression(ElemID.fromFullName('adapter.type.instance.c'), { value: { position: { column: 1, row: 0 } } }),
       ],
     }
 

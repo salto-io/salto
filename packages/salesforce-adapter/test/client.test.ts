@@ -32,7 +32,7 @@ import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
-import { MappableErrorName, ERROR_NAME_TO_USER_VISIBLE_ERROR } from '../src/client/user_facing_errors'
+import { MappableErrorName, ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE } from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -319,7 +319,7 @@ describe('salesforce client', () => {
           .times(1)
           .reply(502, 'Some unreadable HTML response')
         await expect(client.listMetadataTypes())
-          .rejects.toThrow(ERROR_NAME_TO_USER_VISIBLE_ERROR[MAPPABLE_HTTP_ERROR])
+          .rejects.toThrow(ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[MAPPABLE_HTTP_ERROR])
         expect(dodoScope.isDone()).toBeTrue()
       })
     })
@@ -335,7 +335,7 @@ describe('salesforce client', () => {
             headers,
           )
         await expect(client.listMetadataTypes())
-          .rejects.toThrow(ERROR_NAME_TO_USER_VISIBLE_ERROR[MAPPABLE_SALESFORCE_ERROR])
+          .rejects.toThrow(ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[MAPPABLE_SALESFORCE_ERROR])
         expect(dodoScope.isDone()).toBeTrue()
       })
     })

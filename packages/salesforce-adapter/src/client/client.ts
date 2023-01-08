@@ -61,7 +61,7 @@ import {
   UsernamePasswordCredentials,
 } from '../types'
 import Connection from './jsforce'
-import { mapErrors } from './decorators'
+import { mapToUserFriendlyErrors } from './decorators'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -526,7 +526,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async countInstances(typeName: string) : Promise<number> {
     const countResult = await this.conn.query(`SELECT COUNT() FROM ${typeName}`)
     return countResult.totalSize
@@ -538,7 +538,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
     return flatValues((describeResult).metadataObjects)
@@ -551,7 +551,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = await this.retryOnBadResponse(
@@ -563,7 +563,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'list', keys: ['type', '0.type'] })
   @logDecorator(['type', '0.type'])
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
@@ -578,7 +578,7 @@ export default class SalesforceClient {
   }
 
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async getUrl(): Promise<URL | undefined> {
     try {
       return new URL(this.conn.instanceUrl)
@@ -600,7 +600,7 @@ export default class SalesforceClient {
     },
   )
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async readMetadata(
     type: string,
     name: string | string[],
@@ -630,7 +630,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return flatValues((await this.retryOnBadResponse(() => this.conn.describeGlobal())).sobjects)
   }
@@ -638,7 +638,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async describeSObjects(objectNames: string[]):
   Promise<DescribeSObjectResult[]> {
     return (await sendChunked({
@@ -658,7 +658,7 @@ export default class SalesforceClient {
   @logDecorator(['fullName'])
   @validateSaveResult
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<UpsertResult[]> {
     const result = await sendChunked({
@@ -680,7 +680,7 @@ export default class SalesforceClient {
   @logDecorator()
   @validateDeleteResult
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     const result = await sendChunked({
       operationInfo: `delete (${type})`,
@@ -694,7 +694,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
     return flatValues(
       await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
@@ -710,7 +710,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async deploy(zip: Buffer, deployOptions?: DeployOptions): Promise<DeployResult> {
     this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
@@ -733,7 +733,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.query(queryString))
@@ -742,7 +742,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.queryMore(queryString))
@@ -788,7 +788,7 @@ export default class SalesforceClient {
    * @param queryString the string to query with for records
    */
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async queryAll(
     queryString: string,
     useToolingApi = false,
@@ -799,7 +799,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-  @mapErrors
+  @mapToUserFriendlyErrors
   public async bulkLoadOperation(
     type: string,
     operation: BulkLoadOperation,

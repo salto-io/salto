@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { conditionFieldValue, isCorrectConditions } from './utils'
-import { getUsersFunc } from '../userUtils'
+import { getUsers } from '../user_utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -181,7 +181,7 @@ const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
     onFetch: async elements => log.time(async () => {
-      const users = await (getUsersFunc(paginator))()
+      const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         return
       }
@@ -198,7 +198,7 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      const users = await (getUsersFunc(paginator))()
+      const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         return
       }

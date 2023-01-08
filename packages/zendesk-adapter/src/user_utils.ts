@@ -46,10 +46,15 @@ const areUsers = (values: unknown): values is User[] => {
   return true
 }
 
-export const getUsersFunc = (paginator: clientUtils.Paginator):() => Promise<User[]> => {
+/*
+* Fetch all users with admin and agent roles.
+* Results are cached after the initial call to improve performance.
+*
+*/
+const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> => {
   let calculatedUsers: User[]
 
-  const getUsers = async (): Promise<User[]> => {
+  const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
     if (calculatedUsers !== undefined) {
       return calculatedUsers
     }
@@ -73,3 +78,5 @@ export const getUsersFunc = (paginator: clientUtils.Paginator):() => Promise<Use
 
   return getUsers
 }
+
+export const getUsers = getUsersFunc()

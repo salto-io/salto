@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator, getChangeData, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { getUsersFunc } from '../userUtils'
+import { getUsers } from '../user_utils'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
@@ -31,9 +31,9 @@ export const customRoleRemovalValidator: (client: ZendeskClient) =>
   ChangeValidator = client => async changes => {
     const relevantInstances = changes
       .filter(isRemovalChange)
+      .filter(isInstanceChange)
       .filter(change => getChangeData(change).elemID.typeName === CUSTOM_ROLE_TYPE_NAME)
       .map(getChangeData)
-      .filter(isInstanceElement)
 
     if (_.isEmpty(relevantInstances)) {
       return []
@@ -43,11 +43,11 @@ export const customRoleRemovalValidator: (client: ZendeskClient) =>
       client,
       paginationFuncCreator: paginate,
     })
-    const users = await (getUsersFunc(paginator))()
+    const users = await getUsers(paginator)
     if (_.isEmpty(users)) {
       return []
     }
-    const agentUsers = users.filter(user => user.role === 'agent')
+    const agentUsers = users.filter(user => user.role === 'agent' && user.custom_role_id !== undefined)
     const agentsByCustomRoleId = _.groupBy(agentUsers, agentUser => agentUser.custom_role_id)
     return relevantInstances
       .filter(customRoleInstance => agentsByCustomRoleId[customRoleInstance.value.id] !== undefined)
@@ -57,7 +57,7 @@ export const customRoleRemovalValidator: (client: ZendeskClient) =>
           elemID: customRoleInstance.elemID,
           severity: 'Error',
           message: 'Can not remove custom role with associated agents',
-          detailedMessage: `Can not remove ${customRoleInstance.elemID.name} of type ${customRoleInstance.elemID.typeName} because ${relatedAgents.length} agents are associated with this role (partial list): [${(relatedAgents.map(agent => agent.email).slice(0, 10).join(', '))}].\nPlease remove agents from role before deploying this change.`,
+          detailedMessage: `Can not remove ${customRoleInstance.elemID.name} of type ${customRoleInstance.elemID.typeName} because ${relatedAgents.length} agents are associated with this role (partial list): [${(relatedAgents.map(agent => agent.email).slice(0, 10).join(', '))}].\nPlease disconnect the agents from the role before deploying this change.`,
         }
       })
   }

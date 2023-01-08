@@ -15,18 +15,21 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
-import { getUsersFunc } from '../src/userUtils'
+import * as usersUtilsModule from '../src/user_utils'
 
-describe('getUserFunc', () => {
-  let mockPaginator: clientUtils.Paginator
+describe('getUsers', () => {
+  let userUtils: typeof usersUtilsModule
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    jest.isolateModules(() => {
+      // eslint-disable-next-line global-require
+      userUtils = require('../src/user_utils')
+    })
   })
 
   it('should return valid users when called', async () => {
-    mockPaginator = mockFunction<clientUtils.Paginator>()
-      .mockImplementationOnce(async function *get() {
+    const mockPaginator = mockFunction<clientUtils.Paginator>()
+      .mockImplementation(async function *get() {
         yield [
           { users: [
             { id: 1, email: 'a@a.com' },
@@ -35,8 +38,8 @@ describe('getUserFunc', () => {
           ] },
         ]
       })
-    const getUsers = getUsersFunc(mockPaginator)
-    const users = await getUsers()
+
+    const users = await userUtils.getUsers(mockPaginator)
     expect(users).toEqual(
       [
         { id: 1, email: 'a@a.com' },
@@ -46,8 +49,8 @@ describe('getUserFunc', () => {
     )
   })
   it('should cache results when between getUsers calls', async () => {
-    mockPaginator = mockFunction<clientUtils.Paginator>()
-      .mockImplementationOnce(async function *get() {
+    const mockPaginator = mockFunction<clientUtils.Paginator>()
+      .mockImplementation(async function *get() {
         yield [
           { users: [
             { id: 1, email: 'a@a.com' },
@@ -55,27 +58,26 @@ describe('getUserFunc', () => {
           ] },
         ]
       })
-    const getUsers = getUsersFunc(mockPaginator)
-    const users = await getUsers()
+    const users = await userUtils.getUsers(mockPaginator)
     expect(users).toEqual(
       [
         { id: 1, email: 'a@a.com' },
         { id: 2, email: 'b@b.com' },
       ]
     )
-    const getUsersAfterCache = await getUsers()
+    const getUsersAfterCache = await userUtils.getUsers(mockPaginator)
     expect(getUsersAfterCache).toEqual(
       [
         { id: 1, email: 'a@a.com' },
         { id: 2, email: 'b@b.com' },
       ]
     )
-    await getUsers()
+    await userUtils.getUsers(mockPaginator)
     expect(mockPaginator).toHaveBeenCalledTimes(1)
   })
   it('should return empty list if users are in invalid format', async () => {
-    mockPaginator = mockFunction<clientUtils.Paginator>()
-      .mockImplementationOnce(async function *get() {
+    const mockPaginator = mockFunction<clientUtils.Paginator>()
+      .mockImplementation(async function *get() {
         yield [
           { users: [
             { id: 1 },
@@ -84,8 +86,7 @@ describe('getUserFunc', () => {
           ] },
         ]
       })
-    const getUsers = getUsersFunc(mockPaginator)
-    const users = await getUsers()
+    const users = await userUtils.getUsers(mockPaginator)
     expect(users).toEqual([])
     expect(mockPaginator).toHaveBeenCalledTimes(1)
   })

@@ -124,7 +124,7 @@ export const deployActions = async (
             result.errors.map(err => err.stack ?? err.message).join('\n\n'),
           )
           throw new Error(
-            `Failed to deploy ${item.groupKey} with errors:\n${result.errors.join('\n')}`
+            `Failed to ${checkOnly ? 'validate' : 'deploy'} ${item.groupKey} with errors:\n${result.errors.join('\n')}`
           )
         }
         reportProgress(item, 'finished')

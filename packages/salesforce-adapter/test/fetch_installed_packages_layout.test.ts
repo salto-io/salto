@@ -99,7 +99,7 @@ describe('Test fetching layouts of installed packages', () => {
     const instance = elements
       .filter(isInstanceElement)
       .find(inst => inst.elemID.typeName === constants.LAYOUT_TYPE_ID_METADATA_TYPE)
-    const targetFullName = namespacePrefix ? 'SBQQ__TestApiName__c-SBQQ__Test Layout' : `${apiName}-Test Layout`
+    const targetFullName = `${apiName}-SBQQ__Test Layout`
     expect(instance).toBeDefined()
     expect(instance?.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(targetFullName)))
   }

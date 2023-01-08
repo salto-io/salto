@@ -335,19 +335,19 @@ export const formatExecutionPlan = async (
 const deployPhaseIndent = 2
 const formatItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
 
-export const deployPhaseHeader = header([
+export const deployPhaseHeader = (checkOnly: boolean): string => header([
   emptyLine(),
-  Prompts.START_DEPLOY_EXEC,
+  Prompts.START_DEPLOY_EXEC(checkOnly),
   emptyLine(),
 ].join('\n'))
 
-export const cancelDeployOutput = [
+export const cancelDeployOutput = (checkOnly: boolean): string => [
   emptyLine(),
-  Prompts.CANCEL_DEPLOY,
+  Prompts.CANCEL_DEPLOY(checkOnly),
   emptyLine(),
 ].join('\n')
 
-export const deployPhaseEpilogue = (numChanges: number, numErrors: number): string => {
+export const deployPhaseEpilogue = (numChanges: number, numErrors: number, checkOnly: boolean): string => {
   const hadChanges = numChanges > 0
   const hadErrors = numErrors > 0
   if (hadChanges || hadErrors) {
@@ -357,9 +357,9 @@ export const deployPhaseEpilogue = (numChanges: number, numErrors: number): stri
     if (hadChanges && hadErrors) {
       epilogueLines.push(Prompts.FULL_DEPLOY_SUMMARY(numChanges, numErrors))
     } else if (hadChanges) {
-      epilogueLines.push(Prompts.CHANGES_DEPLOY_SUMMARY(numChanges))
+      epilogueLines.push(Prompts.CHANGES_DEPLOY_SUMMARY(numChanges, checkOnly))
     } else {
-      epilogueLines.push(Prompts.ERRORS_DEPLOY_SUMMARY(numErrors))
+      epilogueLines.push(Prompts.ERRORS_DEPLOY_SUMMARY(numErrors, checkOnly))
     }
     return epilogueLines.join('\n')
   }

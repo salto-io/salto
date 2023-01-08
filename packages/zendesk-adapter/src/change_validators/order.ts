@@ -22,10 +22,9 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createOrderTypeName } from '../filters/reorder/creator'
-import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../constants'
+import { ORG_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../constants'
 import { TYPE_NAME as AUTOMATION_TYPE_NAME } from '../filters/reorder/automation'
 import { TYPE_NAME as SLA_POLICY_TYPE_NAME } from '../filters/reorder/sla_policy'
-import { TYPE_NAME as TICKET_FORM_TYPE_NAME } from '../filters/reorder/ticket_form'
 import { TYPE_NAME as VIEW_TYPE_NAME } from '../filters/reorder/view'
 import { TYPE_NAME as WORKSPACE_TYPE_NAME } from '../filters/reorder/workspace'
 

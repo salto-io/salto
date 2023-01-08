@@ -26,7 +26,7 @@ export const mapErrors = decorators.wrapMethodWith(
       return await Promise.resolve(original.call())
     } catch (e: unknown) {
       if (_.isError(e) && isMappableErrorName(e.name)) {
-        log.debug('Replacing user facing error. Original error: %o', e)
+        log.debug('Replacing jsforce error. Original error: %o', e)
         e.message = ERROR_NAME_TO_USER_VISIBLE_ERROR[e.name]
       }
       throw e

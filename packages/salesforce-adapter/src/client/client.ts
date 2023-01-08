@@ -518,6 +518,10 @@ export default class SalesforceClient {
     }
   }
 
+  isSandbox(): boolean {
+    return this.credentials.isSandbox
+  }
+
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()

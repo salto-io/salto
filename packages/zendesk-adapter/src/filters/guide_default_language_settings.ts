@@ -111,7 +111,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
           }
         } catch (err) {
           // If changing the default failed, don't continue
-          return { errors: [getZendeskError(getChangeData(change).elemID.getFullName(), err)] }
+          return { errors: [getZendeskError(getChangeData(change).elemID, err)] }
         }
       }
 

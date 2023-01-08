@@ -188,9 +188,9 @@ const deployBrandLogo = async (
       log.debug(`Re-uploading ${logoInstance.elemID.name} of the type brand_logo due to logo modification. Try number ${i}/${NUMBER_OF_DEPLOY_RETRIES}`)
     }
   } catch (err) {
-    return getZendeskError(logoInstance.elemID.getFullName(), err)
+    return getZendeskError(logoInstance.elemID, err)
   }
-  return getZendeskError(logoInstance.elemID.getFullName(), new Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
+  return getZendeskError(logoInstance.elemID, new Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
 }
 
 /**

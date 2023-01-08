@@ -58,9 +58,10 @@ export type MetadataInstance = {
   metadataType: string
   namespace: string
   name: string
+  isFolderType: boolean
 }
 
-export type MetadataQueryParams = Partial<MetadataInstance>
+export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>
 
 export type MetadataParams = {
   include?: MetadataQueryParams[]
@@ -94,10 +95,8 @@ export type ChangeValidatorName = (
   | 'fullNameChangedValidator'
   | 'invalidListViewFilterScope'
   | 'caseAssignmentRulesValidator'
+  | 'omitData'
 )
-
-export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
-
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -562,6 +561,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
     invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
     caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
+    omitData: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

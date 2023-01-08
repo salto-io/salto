@@ -14,14 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TypeElement, BuiltinTypes, ListType, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import {
+  SALESFORCE,
   INSTANCE_FULL_NAME_FIELD,
   ASSIGNMENT_RULES_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   SETTINGS_METADATA_TYPE,
-  SALESFORCE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CPQ_QUOTE,
+  CUSTOM_METADATA,
+  API_NAME,
+  METADATA_TYPE,
+  CUSTOM_OBJECT,
+  CPQ_QUOTE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -303,6 +308,14 @@ export const mockTypes = {
     },
     fields: {
       filter: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  // CustomMetadataRecordType with name MDType__mdt
+  CustomMetadataRecordType: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'MDType__mdt'),
+    annotations: {
+      [API_NAME]: 'MDType__mdt',
+      [METADATA_TYPE]: CUSTOM_METADATA,
     },
   }),
   [CPQ_QUOTE]: new ObjectType({

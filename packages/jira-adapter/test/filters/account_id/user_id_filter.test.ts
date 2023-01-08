@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ElemIdGetter, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ElemIdGetter, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -23,6 +23,7 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import addDisplayNameFilter from '../../../src/filters/account_id/user_id_filter'
 import * as common from './account_id_common'
 import { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
+import { AUTOMATION_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 
 const { awu } = collections.asynciterable
 
@@ -170,10 +171,15 @@ describe('convert userId to key in Jira DC', () => {
   let elemIdGetter: jest.MockedFunction<ElemIdGetter>
   let config: JiraConfig
 
-  let objectType: ObjectType
-  let instances: InstanceElement[] = []
   const EMPTY_STRING = ''
   const NAME_PREFIX = 'name'
+
+  let automationType: ObjectType
+  let automationInstance: InstanceElement
+  let dashboardType: ObjectType
+  let dashboardInstance: InstanceElement
+  let projectType: ObjectType
+  let projectInstance: InstanceElement
 
   beforeEach(() => {
     elemIdGetter = mockFunction<ElemIdGetter>()
@@ -191,13 +197,85 @@ describe('convert userId to key in Jira DC', () => {
     })) as typeof filter
 
 
-    objectType = common.createObjectedType('SecurityLevel')
+    automationType = new ObjectType({
+      elemID: new ElemID(JIRA, AUTOMATION_TYPE),
+      fields: {
+        name: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
 
+    dashboardType = new ObjectType({
+      elemID: new ElemID(JIRA, DASHBOARD_TYPE),
+      fields: {
+        gadgets: {
+          refType: BuiltinTypes.STRING,
+        },
 
-    instances = []
-    for (let i = 0; i < 3; i += 1) {
-      instances[i] = common.createObjectedInstance(i.toString(), objectType)
-    }
+        layout: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    })
+
+    dashboardInstance = new InstanceElement(
+      'instance',
+      dashboardType,
+      {
+        id: '0',
+        layout: 'AAA',
+        gadgets: [
+        ],
+        editPermissions: {
+          type: 'user',
+          user: {
+            accountId: {
+              id: 'JIRAUSER10200',
+            },
+          },
+        },
+      }
+    )
+
+    automationInstance = new InstanceElement(
+      'instance',
+      automationType,
+      {
+        name: 'someName',
+        state: 'ENABLED',
+        projects: [
+          {
+            projectId: '1',
+          },
+        ],
+        actorAccountId: 'JIRAUSER10100',
+        authorAccountId: {
+          id: 'JIRAUSER10100',
+        },
+      }
+    )
+
+    projectType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Project'),
+      fields: {
+        workflowScheme: { refType: BuiltinTypes.STRING },
+        issueTypeScreenScheme: { refType: BuiltinTypes.STRING },
+        fieldConfigurationScheme: { refType: BuiltinTypes.STRING },
+        issueTypeScheme: { refType: BuiltinTypes.STRING },
+        priorityScheme: { refType: BuiltinTypes.STRING },
+        components: { refType: BuiltinTypes.STRING },
+      },
+    })
+    projectInstance = new InstanceElement(
+      'instance',
+      projectType,
+      {
+        leadAccountId: {
+          id: 'JIRAUSER10300',
+        },
+      }
+    )
 
     mockConnection.get.mockResolvedValue({
       status: 200,
@@ -229,84 +307,68 @@ describe('convert userId to key in Jira DC', () => {
         key: '2list2',
         name: `${NAME_PREFIX}2list2`,
       }, {
-        key: '0',
-        name: `${NAME_PREFIX}0`,
+        key: 'JIRAUSER10100',
+        name: 'salto',
       }, {
-        key: '0l',
-        name: `${NAME_PREFIX}0l`,
+        key: 'JIRAUSER10200',
+        name: 'admin',
       }, {
-        key: '0n',
-        name: `${NAME_PREFIX}0n`,
-      }, {
-        key: '0an',
-        name: `${NAME_PREFIX}0an`,
-      }, {
-        key: '00n',
-        name: `${NAME_PREFIX}00n`,
-      }, {
-        key: '00',
-        name: `${NAME_PREFIX}00`,
-      }, {
-        key: '0h',
-        name: `${NAME_PREFIX}0h`,
-      }, {
-        key: '0list1',
-        name: `${NAME_PREFIX}0list1`,
-      }, {
-        key: '0list2',
-        name: `${NAME_PREFIX}0list2`,
+        key: 'JIRAUSER10300',
+        name: 'projectLeadAccount',
       }],
     })
   })
   describe('fetch', () => {
-    it('should convert userId to key and backwards for all 5 types', async () => {
-      await filter.onFetch([instances[2]])
+    it('should convert all instances userId to key on fetch', async () => {
+      expect(automationInstance.value.authorAccountId).toEqual({ id: 'JIRAUSER10100' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'JIRAUSER10200' })
+      expect(projectInstance.value.leadAccountId).toEqual({ id: 'JIRAUSER10300' })
+
+      await filter.onFetch([automationInstance, dashboardInstance, projectInstance])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search?username=.',
         undefined
       )
-      common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
-      await filter.preDeploy([
-        toChange({ after: instances[0] }),
-        toChange({ before: instances[1], after: instances[2] }),
-      ])
-      expect(mockConnection.get).toHaveBeenCalledOnce()
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search?username=.',
-        undefined
-      )
-      common.checkInstanceUserIds(instances[2], '2', EMPTY_STRING)
-      common.checkInstanceUserIds(instances[0], '0', EMPTY_STRING)
-      await filter.onDeploy([
-        toChange({ after: instances[0] }),
-        toChange({ before: instances[1], after: instances[2] }),
-      ])
-      expect(mockConnection.get).toHaveBeenCalledOnce()
-      expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search?username=.',
-        undefined
-      )
-      common.checkInstanceUserIds(instances[2], '2', NAME_PREFIX)
-      common.checkInstanceUserIds(instances[0], '0', NAME_PREFIX)
+      expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
+      expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
     })
-    it('should convert userId to key and backwards in all defined types', async () => {
-      await awu(ACCOUNT_ID_TYPES).forEach(async typeName => {
-        const type = common.createType(typeName)
-        const instance = common.createObjectedInstance('2', type)
-        await filter.onFetch([instance])
-        common.checkInstanceUserIds(instance, '2', NAME_PREFIX, PARAMETER_STYLE_TYPES.includes(typeName))
-        await filter.preDeploy([toChange({ after: instance })])
-        common.checkInstanceUserIds(instance, '2', EMPTY_STRING, PARAMETER_STYLE_TYPES.includes(typeName))
-        await filter.onDeploy([toChange({ after: instance })])
-        common.checkInstanceUserIds(instance, '2', NAME_PREFIX, PARAMETER_STYLE_TYPES.includes(typeName))
-      })
+    it('should not convert only project instance key to userId on preDeploy and onDeploy', async () => {
+      await filter.onFetch([automationInstance, dashboardInstance, projectInstance])
+      await filter.preDeploy([
+        toChange({ after: automationInstance }),
+        toChange({ before: dashboardInstance, after: dashboardInstance }),
+        toChange({ after: projectInstance }),
+      ])
+      expect(mockConnection.get).toHaveBeenCalledOnce()
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/api/2/user/search?username=.',
+        undefined
+      )
+      expect(automationInstance.value.authorAccountId).toEqual({ id: 'JIRAUSER10100' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'JIRAUSER10200' })
+      expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
+      await filter.onDeploy([
+        toChange({ after: automationInstance }),
+        toChange({ before: dashboardInstance, after: dashboardInstance }),
+        toChange({ after: projectInstance }),
+      ])
+      expect(mockConnection.get).toHaveBeenCalledOnce()
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/api/2/user/search?username=.',
+        undefined
+      )
+      expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
+      expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
+      expect(projectInstance.value.leadAccountId).toEqual({ id: 'projectLeadAccount' })
     })
     it('should not convert userId to key or backwards for undefined types', async () => {
       const type = common.createType('Other')
       const instance = common.createObjectedInstance('2', type)
       await filter.onFetch([instance])
-      common.checkInstanceUserIds(instances[2], '2', EMPTY_STRING)
+      common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
+
       await filter.preDeploy([toChange({ after: instance })])
       common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
       await filter.onDeploy([toChange({ after: instance })])

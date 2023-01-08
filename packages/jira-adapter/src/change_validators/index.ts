@@ -39,6 +39,8 @@ import { permissionSchemeValidator } from './sd_portals_permission_scheme'
 import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
 import { GetIdMapFunc } from '../users_map'
 import { accountIdValidator } from './account_id'
+import { screenSchemeDefaultValidator } from './screen_scheme_default'
+import { workflowSchemeDupsValidator } from './workflow_scheme_dups'
 
 const {
   deployTypesNotSupportedValidator,
@@ -68,8 +70,10 @@ export default (
     systemFieldsValidator,
     workflowPropertiesValidator,
     permissionSchemeValidator,
+    screenSchemeDefaultValidator,
     wrongUserPermissionSchemeValidator(client, config, getIdMapFunc),
     accountIdValidator(client, config, getIdMapFunc),
+    workflowSchemeDupsValidator,
   ]
 
   return createChangeValidator(validators)

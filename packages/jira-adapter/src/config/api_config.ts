@@ -862,11 +862,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/secure/admin/EditNotifications!default.jspa?schemeId={id}',
     },
-    jspRequests: {
-      add: '/secure/admin/AddNotificationScheme.jspa',
-      modify: '/secure/admin/EditNotificationScheme.jspa',
-      remove: '/secure/admin/DeleteNotificationScheme.jspa',
-    },
   },
   NotificationSchemeEvent: {
     transformation: {
@@ -874,11 +869,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'eventType', fieldType: 'number' },
         { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
       ],
-    },
-    jspRequests: {
-      add: '/secure/admin/AddNotification.jspa',
-      remove: '/secure/admin/DeleteNotification.jspa',
-      query: '/rest/api/3/notificationscheme/{id}?expand=all',
     },
   },
   PageBeanIssueTypeScreenSchemesProjects: {
@@ -1585,19 +1575,13 @@ const SUPPORTED_TYPES = {
   Field: ['Fields'],
   FieldConfiguration: ['FieldConfigurations'],
   FieldConfigurationScheme: ['FieldsConfigurationScheme'],
-  // Should remove when doing the configuration migration
-  FieldsConfigurationIssueTypeItem: ['FieldsConfigurationIssueTypeItem'],
   Filter: ['Filters'],
   IssueLinkType: ['IssueLinkTypes'],
   IssueEvent: ['IssueEvents'],
   IssueType: ['IssueType'],
   SecurityScheme: ['SecuritySchemes'],
   IssueTypeScheme: ['IssueTypeSchemes'],
-  // Should remove when doing the configuration migration
-  IssueTypeSchemeMappings: ['IssueTypeSchemeMappings'],
   IssueTypeScreenScheme: ['IssueTypeScreenSchemes'],
-  // Should remove when doing the configuration migration
-  IssueTypeScreenSchemeItems: ['IssueTypeScreenSchemeItems'],
   NotificationScheme: ['NotificationSchemes'],
   Permissions_permissions: ['Permissions'],
   PermissionScheme: ['PermissionSchemes'],

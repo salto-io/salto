@@ -36,7 +36,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, INTERNAL_ID_ANNOTATION,
-  INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE, FLEXI_PAGE_TYPE,
+  INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE, FLEXI_PAGE_TYPE, KEY_PREFIX,
 } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -63,7 +63,7 @@ import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
 import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
 import { INSTANCE_SUFFIXES } from '../types'
-import { CustomObjectDependency } from '../fetch_profile/metadata_types'
+import { CustomObjectField } from '../fetch_profile/metadata_types'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -88,7 +88,7 @@ export const NESTED_INSTANCE_VALUE_NAME = {
   INDEXES: 'indexes',
 }
 
-export const NESTED_INSTANCE_TYPE_NAME: Record<string, CustomObjectDependency> = {
+export const NESTED_INSTANCE_TYPE_NAME: Record<string, CustomObjectField> = {
   WEB_LINK: WEBLINK_METADATA_TYPE,
   VALIDATION_RULE: VALIDATION_RULES_METADATA_TYPE,
   BUSINESS_PROCESS: BUSINESS_PROCESS_METADATA_TYPE,
@@ -101,7 +101,7 @@ export const NESTED_INSTANCE_TYPE_NAME: Record<string, CustomObjectDependency> =
 }
 
 // The below metadata types extend Metadata and are mutable using a specific API call
-export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME: Record<string, CustomObjectDependency> = {
+export const NESTED_INSTANCE_VALUE_TO_TYPE_NAME: Record<string, CustomObjectField> = {
   [NESTED_INSTANCE_VALUE_NAME.WEB_LINKS]: NESTED_INSTANCE_TYPE_NAME.WEB_LINK,
   [NESTED_INSTANCE_VALUE_NAME.VALIDATION_RULES]: NESTED_INSTANCE_TYPE_NAME.VALIDATION_RULE,
   [NESTED_INSTANCE_VALUE_NAME.BUSINESS_PROCESSES]: NESTED_INSTANCE_TYPE_NAME.BUSINESS_PROCESS,
@@ -333,27 +333,9 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         })
     }).toArray()
 
-const createObjectType = async ({
-  name,
-  label,
-  keyPrefix,
-}: {
-  name: string
-  label: string
-  keyPrefix?: string | null
-}): Promise<ObjectType> => {
-  const serviceIds = {
-    [API_NAME]: name,
-    [METADATA_TYPE]: CUSTOM_OBJECT,
-  }
-  const object = Types.createObjectType(name, true, false, serviceIds)
-  addApiName(object, name)
-  addMetadataType(object)
-  addLabel(object, label)
-  addKeyPrefix(object, keyPrefix === null ? undefined : keyPrefix)
-  object.path = [...await getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
-  return object
-}
+const hasCustomSuffix = (objectName: string): boolean => (
+  INSTANCE_SUFFIXES.some(suffix => objectName.endsWith(`__${suffix}`))
+)
 
 const createFieldFromMetadataInstance = async (
   customObject: ObjectType,
@@ -393,35 +375,64 @@ const createFieldFromMetadataInstance = async (
   )
 }
 
-const hasCustomSuffix = (objectName: string): boolean => (
-  INSTANCE_SUFFIXES.some(suffix => objectName.endsWith(`__${suffix}`))
-)
+const DEFAULT_TYPES_FROM_INSTANCE: TypesFromInstance = {
+  customAnnotationTypes: {},
+  customSettingsAnnotationTypes: {},
+  nestedMetadataTypes: {},
+  standardAnnotationTypes: {},
+}
+
+export const createCustomTypeFromCustomObjectInstance = async ({
+  instance,
+  typesFromInstance = DEFAULT_TYPES_FROM_INSTANCE,
+  fieldsToSkip = [],
+  metadataType: objectMetadataType,
+}: {
+  instance: InstanceElement
+  typesFromInstance?: TypesFromInstance
+  fieldsToSkip?: string[]
+  metadataType?: string
+}): Promise<ObjectType> => {
+  const name = instance.value[INSTANCE_FULL_NAME_FIELD]
+  const label = instance.value[LABEL]
+  const keyPrefix = instance.value[KEY_PREFIX]
+  const serviceIds = {
+    [API_NAME]: name,
+    [METADATA_TYPE]: CUSTOM_OBJECT,
+  }
+  const object = Types.createObjectType(name, true, false, serviceIds)
+  addApiName(object, name)
+  addMetadataType(object, objectMetadataType)
+  addLabel(object, label)
+  addKeyPrefix(object, keyPrefix === null ? undefined : keyPrefix)
+  object.path = [...await getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
+  const annotationTypes = annotationTypesForObject(
+    typesFromInstance,
+    instance,
+    hasCustomSuffix(name),
+  )
+  await transformObjectAnnotations(object, annotationTypes, instance)
+  const instanceFields = makeArray(instance.value.fields)
+  await awu(instanceFields)
+    .forEach(async fieldValues => {
+      const field = await createFieldFromMetadataInstance(object, fieldValues, name)
+      if (!(fieldsToSkip).includes(field.name)) {
+        object.fields[field.name] = field
+      }
+    })
+  return object
+}
 
 const createFromInstance = async (
   instance: InstanceElement,
   typesFromInstance: TypesFromInstance,
   fieldsToSkip?: string[],
 ): Promise<Element[]> => {
-  const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
-  const object = await createObjectType({
-    name: objectName,
-    label: instance.value[LABEL],
-    keyPrefix: instance.value.keyPrefix,
-  })
-  const annotationTypes = annotationTypesForObject(
-    typesFromInstance,
+  const object = await createCustomTypeFromCustomObjectInstance({
     instance,
-    hasCustomSuffix(objectName),
-  )
-  await transformObjectAnnotations(object, annotationTypes, instance)
-  const instanceFields = makeArray(instance.value.fields)
-  await awu(instanceFields)
-    .forEach(async fieldValues => {
-      const field = await createFieldFromMetadataInstance(object, fieldValues, objectName)
-      if (!(fieldsToSkip ?? []).includes(field.name)) {
-        object.fields[field.name] = field
-      }
-    })
+    typesFromInstance,
+    fieldsToSkip,
+  })
   const nestedMetadataInstances = await createNestedMetadataInstances(instance, object,
     typesFromInstance.nestedMetadataTypes)
   return [object, ...nestedMetadataInstances]
@@ -628,7 +639,7 @@ const isCustomObjectRelatedChange = async (change: Change): Promise<boolean> => 
   )
 }
 
-const createCustomObjectChange = async (
+export const createCustomObjectChange = async (
   fieldsToSkip: string[] = [],
   fullName: string,
   changes: ReadonlyArray<Change>,

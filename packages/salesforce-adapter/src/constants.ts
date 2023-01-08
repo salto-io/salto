@@ -138,6 +138,7 @@ export const FOREIGN_KEY_DOMAIN = 'foreignKeyDomain'
 export const CUSTOM_SETTINGS_TYPE = 'customSettingsType'
 export const LIST_CUSTOM_SETTINGS_TYPE = 'List'
 export const IS_ATTRIBUTE = 'isAttribute'
+export const FOLDER_CONTENT_TYPE = 'folderContentType'
 // must have the same name as INTERNAL_ID_FIELD
 export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
 
@@ -348,6 +349,7 @@ export const ROLE_METADATA_TYPE = 'Role'
 export const GROUP_METADATA_TYPE = 'Group'
 export const FLOW_METADATA_TYPE = 'Flow'
 export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
+export const CUSTOM_METADATA = 'CustomMetadata'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 
 // Artifitial Types

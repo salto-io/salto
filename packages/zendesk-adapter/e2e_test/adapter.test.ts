@@ -723,8 +723,8 @@ describe('Zendesk adapter E2E', () => {
       const articleAttachment = createInstanceElement({
         type: ARTICLE_ATTACHMENT_TYPE_NAME,
         valuesOverride: {
-          filename: fileName,
-          contentType: 'image/png',
+          file_name: fileName,
+          content_type: 'image/png',
           content: new StaticFile({
             filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${fileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
@@ -739,8 +739,8 @@ describe('Zendesk adapter E2E', () => {
       const articleInlineAttachment = createInstanceElement({
         type: ARTICLE_ATTACHMENT_TYPE_NAME,
         valuesOverride: {
-          filename: inlineFileName,
-          contentType: 'image/png',
+          file_name: inlineFileName,
+          content_type: 'image/png',
           content: new StaticFile({
             filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${inlineFileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),

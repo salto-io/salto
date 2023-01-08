@@ -935,4 +935,19 @@ describe('salesforce client', () => {
       })
     })
   })
+  describe('isSandbox', () => {
+    const nonSandBoxClient = new SalesforceClient({
+      credentials: new UsernamePasswordCredentials({
+        username: '',
+        password: '',
+        isSandbox: false,
+      }),
+    })
+    it('should return true when sandbox true', () => {
+      expect(client.isSandbox()).toBeTruthy()
+    })
+    it('should return false when sandbox false', () => {
+      expect(nonSandBoxClient.isSandbox()).toBeFalsy()
+    })
+  })
 })

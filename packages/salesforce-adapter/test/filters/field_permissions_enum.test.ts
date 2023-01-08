@@ -29,7 +29,7 @@ import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import fieldPermissionsEnumFilter, { enumFieldPermissions, profileFieldLevelSecurity } from '../../src/filters/field_permissions_enum'
 import { generateProfileType, defaultFilterContext } from '../utils'
-import { METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
 describe('FieldPermissionsEnum filter', () => {
   let filter: FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
@@ -133,6 +133,22 @@ describe('FieldPermissionsEnum filter', () => {
     }
   )
 
+  const objA = new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'ObjA', 'type'),
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'ObjA',
+    },
+  })
+
+  const objB = new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'ObjB', 'type'),
+    annotations: {
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: 'ObjB',
+    },
+  })
+
   describe('onFetch', () => {
     let elements: (InstanceElement | ObjectType)[]
     let profileInstanceClone: InstanceElement
@@ -156,6 +172,8 @@ describe('FieldPermissionsEnum filter', () => {
           permissionSetInstanceClone,
           permissionSetbjectBeforeConvertClone,
           permissionSetInstanceBeforeConvertClone,
+          objA,
+          objB,
         ]
         filter = fieldPermissionsEnumFilter(
           { config: { ...defaultFilterContext, enumFieldPermissions: true } },
@@ -211,6 +229,8 @@ describe('FieldPermissionsEnum filter', () => {
           permissionSetObjectClone,
           profileInstanceClone,
           permissionSetInstanceClone,
+          objA,
+          objB,
         ]
         await filter.onFetch(elements)
       })
@@ -223,6 +243,25 @@ describe('FieldPermissionsEnum filter', () => {
       it('Should not change Profile and PermissionSet instances', () => {
         expect(profileInstance.isEqual(profileInstanceClone)).toBeTruthy()
         expect(permissionSetInstance.isEqual(permissionSetInstanceClone)).toBeTruthy()
+      })
+    })
+
+    describe('with fieldPermissions that are not part of the fetch', () => {
+      beforeAll(async () => {
+        filter = fieldPermissionsEnumFilter(
+          { config: { ...defaultFilterContext } },
+        ) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+        profileInstanceClone = profileInstance.clone()
+        profileObjectClone = profileObj.clone()
+        elements = [
+          profileObjectClone,
+          profileInstanceClone,
+        ]
+        await filter.onFetch(elements)
+      })
+
+      it('Should omit the fieldPermissions from the instance', () => {
+        expect(profileInstanceClone.value.fieldPermissions).toBeEmpty()
       })
     })
   })

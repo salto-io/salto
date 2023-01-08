@@ -16,7 +16,7 @@
 import {
   ChangeError, ElemID, InstanceElement, ObjectType, toChange, ChangeValidator,
 } from '@salto-io/adapter-api'
-import createCheckOnlyDeployValidator from '../../src/change_validators/check_only_deploy'
+import createCheckOnlyDeployValidator from '../../src/change_validators/omit_data'
 import { CUSTOM_OBJECT } from '../../src/constants'
 
 describe('checkOnly deploy validator', () => {

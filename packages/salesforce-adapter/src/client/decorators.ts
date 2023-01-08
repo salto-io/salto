@@ -14,20 +14,24 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { decorators } from '@salto-io/lowerdash'
+import { decorators, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE, isMappableJSForceErrorName } from './user_facing_errors'
+import { MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE, isMappableErrorProperty } from './user_facing_errors'
 
 const log = logger(module)
+const { isDefined } = values
 
-export const mapToUserFriendlyErrors = decorators.wrapMethodWith(
+export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(
   async (original: decorators.OriginalCall): Promise<unknown> => {
     try {
       return await Promise.resolve(original.call())
     } catch (e: unknown) {
-      if (_.isError(e) && isMappableJSForceErrorName(e.name)) {
-        log.debug('Replacing error returned from salesforce. Original error: %o', e)
-        e.message = JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[e.name]
+      if (_.isError(e)) {
+        const mappableError = Object.values(e).find(isMappableErrorProperty)
+        if (isDefined(mappableError)) {
+          log.debug('Replacing error %s. Original error: %o', mappableError, e)
+          e.message = MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE[mappableError]
+        }
       }
       throw e
     }

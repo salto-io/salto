@@ -14,27 +14,39 @@
 * limitations under the License.
 */
 
+import _ from 'lodash'
+
 const ERROR_HTTP_502 = 'ERROR_HTTP_502'
 const REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
 const INVALID_GRANT = 'invalid_grant'
+const ENOTFOUND = 'ENOTFOUND'
 
-const JSFORCE_MAPPABLE_ERROR_NAMES = [
+
+/**
+ * To allow more robust support and avoid boilerplate
+ * for supporting different Error objects (e.g. Node DNSError, JSForce error)
+ * this values can be any of the Error object properties.
+ */
+const MAPPABLE_ERROR_PROPERTIES = [
   ERROR_HTTP_502,
   REQUEST_LIMIT_EXCEEDED,
   INVALID_GRANT,
+  ENOTFOUND,
 ] as const
 
-export type JSForceMappableErrorName = typeof JSFORCE_MAPPABLE_ERROR_NAMES[number]
+export type MappableErrorProperty = typeof MAPPABLE_ERROR_PROPERTIES[number]
 
-export const JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE: Record<JSForceMappableErrorName, string> = {
+export const MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE: Record<MappableErrorProperty, string> = {
   [ERROR_HTTP_502]: 'We are unable to connect to your Salesforce account right now. '
     + 'This might be an issue in Salesforce side. please check https://status.salesforce.com/current/incidents',
   [REQUEST_LIMIT_EXCEEDED]: 'Your Salesforce org has limited API calls for a 24-hour period. '
   + 'We are unable to connect to your org because this limit has been exceeded. '
   + 'Please try again later or contact your account executive to increase your API limit. ',
   [INVALID_GRANT]: 'Salesforce user is inactive, please re-authenticate',
+  [ENOTFOUND]: 'Unable to communicate with the salesforce org.'
+  + 'This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
 }
 
-export const isMappableJSForceErrorName = (errorName: string): errorName is JSForceMappableErrorName => (
-  (JSFORCE_MAPPABLE_ERROR_NAMES as ReadonlyArray<string>).includes(errorName)
+export const isMappableErrorProperty = (errorProperty: unknown): errorProperty is MappableErrorProperty => (
+  _.isString(errorProperty) && (MAPPABLE_ERROR_PROPERTIES as ReadonlyArray<string>).includes(errorProperty)
 )

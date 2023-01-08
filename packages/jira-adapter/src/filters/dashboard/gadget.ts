@@ -27,21 +27,27 @@ import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
 
-const configType = new ObjectType({
-  elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE),
-  fields: {
-    statType: { refType: BuiltinTypes.STRING },
-  },
-  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE],
-})
 
-const propertiesType = new ObjectType({
-  elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_TYPE),
-  fields: {
-    config: { refType: configType },
-  },
-  path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_TYPE],
-})
+const getSubTypes = (): {
+  configType: ObjectType
+  propertiesType: ObjectType
+} => {
+  const configType = new ObjectType({
+    elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE),
+    fields: {
+      statType: { refType: BuiltinTypes.STRING },
+    },
+    path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE],
+  })
+  const propertiesType = new ObjectType({
+    elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_TYPE),
+    fields: {
+      config: { refType: configType },
+    },
+    path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_TYPE],
+  })
+  return { configType, propertiesType }
+}
 
 const deployGadgetProperties = async (
   instance: InstanceElement,
@@ -119,6 +125,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       log.warn(`${DASHBOARD_GADGET_TYPE} type not found`)
       return
     }
+    const { configType, propertiesType } = getSubTypes()
     gadgetType.fields.properties = new Field(gadgetType, 'properties', propertiesType)
     elements.push(configType, propertiesType)
     setFieldDeploymentAnnotations(gadgetType, 'properties')

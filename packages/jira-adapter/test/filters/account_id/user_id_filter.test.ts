@@ -328,7 +328,13 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search?username=.',
-        undefined
+        {
+          headers: undefined,
+          params: {
+            maxResults: '1000',
+          },
+          responseType: undefined,
+        }
       )
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })
@@ -344,7 +350,13 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search?username=.',
-        undefined
+        {
+          headers: undefined,
+          params: {
+            maxResults: '1000',
+          },
+          responseType: undefined,
+        }
       )
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'JIRAUSER10100' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'JIRAUSER10200' })
@@ -357,7 +369,13 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search?username=.',
-        undefined
+        {
+          headers: undefined,
+          params: {
+            maxResults: '1000',
+          },
+          responseType: undefined,
+        }
       )
       expect(automationInstance.value.authorAccountId).toEqual({ id: 'salto' })
       expect(dashboardInstance.value.editPermissions.user.accountId).toEqual({ id: 'admin' })

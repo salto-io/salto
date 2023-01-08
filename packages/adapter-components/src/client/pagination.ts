@@ -29,6 +29,7 @@ type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
 export type ClientGetWithPaginationParams = ClientBaseParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
+  queryParamsPageSizeName?: string
 }
 
 export type PageEntriesExtractor = (page: ResponseValue) => ResponseValue[]
@@ -158,14 +159,18 @@ export const traverseRequests: (
  */
 export const getWithItemOffsetPagination = ({
   firstIndex,
-  itemsPerPage,
+  queryParamsPageSizeName,
 } : {
   firstIndex: number
-  itemsPerPage: number
+  queryParamsPageSizeName: string | undefined
 }): PaginationFunc => {
   const nextPage: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
-    const { paginationField } = getParams
-    if (paginationField === undefined || page.length < pageSize) {
+    const { paginationField, queryParams } = getParams
+
+    const itemsPerPage = queryParamsPageSizeName && queryParams
+      ? Number(queryParams[queryParamsPageSizeName])
+      : pageSize
+    if (paginationField === undefined || page.length < itemsPerPage) {
       return []
     }
     return [{

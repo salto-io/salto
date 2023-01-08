@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
+const log = logger(module)
 
 export type IdMap = Record<string, string>
 export type GetIdMapFunc = () => Promise<IdMap>
@@ -26,12 +28,17 @@ export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCent
     : GetIdMapFunc => {
   let idMap: IdMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
-  return async (): Promise<IdMap> => {
+  return async (): Promise<IdMap> => log.time(async () => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
         const paginationArgs = isDataCenter
           ? {
             url: '/rest/api/2/user/search?username=.',
+            paginationField: 'startAt',
+            queryParams: {
+              maxResults: '1000',
+            },
+            queryParamsPageSizeName: 'maxResults',
           }
           : {
             url: '/rest/api/3/users/search',
@@ -55,5 +62,5 @@ export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCent
       }
     }
     return idMap
-  }
+  }, 'idMap creating')
 }

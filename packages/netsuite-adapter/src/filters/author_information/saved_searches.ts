@@ -101,7 +101,6 @@ const getTimeAndDateValue = async (
   isPartial: boolean,
   userPreferencesInstance: InstanceElement | undefined
 ): Promise<string> => {
-  // const valueOrText = mapFieldToValue[field]
   const returnField = userPreferencesInstance?.value.configRecord.data.fields?.[field] ?? (
     isPartial ? await getFieldFromElemSource(elementsSource, field) : undefined
   )

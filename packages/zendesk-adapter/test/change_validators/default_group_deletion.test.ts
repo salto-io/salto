@@ -40,7 +40,7 @@ describe('defaultGroupDeletion', () => {
       elemID: defaultGroup.elemID,
       severity: 'Error',
       message: 'Default group cannot be deleted',
-      detailedMessage: `Group ${defaultGroup.elemID.name} is marked as default and therefore cannot be deleted`,
+      detailedMessage: `Group '${defaultGroup.elemID.name}' is marked as default and therefore cannot be deleted`,
     })
   })
 })

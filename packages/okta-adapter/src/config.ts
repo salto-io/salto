@@ -390,6 +390,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       url: '/api/v1/meta/schemas/user/default',
     },
     transformation: {
+      fieldTypeOverrides: [{ fieldName: 'description', fieldType: 'string' }],
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
@@ -589,6 +590,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   },
   GroupRule: {
     transformation: {
+      fieldTypeOverrides: [{ fieldName: 'allGroupsValid', fieldType: 'boolean' }],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
     },
@@ -679,6 +681,23 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: [
         // we are not managing secrets
         { fieldName: 'credentials' },
+      ],
+    },
+  },
+  IdentityProviderCredentialsClient: {
+    transformation: {
+      fieldsToOmit: [
+        // we are not managing secrets
+        { fieldName: 'client_secret' },
+      ],
+    },
+  },
+  AuthenticatorProviderConfiguration: {
+    transformation: {
+      fieldsToOmit: [
+        // we are not managing secrets
+        { fieldName: 'secretKey' },
+        { fieldName: 'sharedSecret' },
       ],
     },
   },

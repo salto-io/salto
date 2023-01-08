@@ -58,7 +58,35 @@ describe('brandCreationValidator', () => {
       elemID: brandInstance.elemID,
       severity: 'Error',
       message: 'Brand subdomain is already taken',
-      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
+      detailedMessage: `Brand subdomains are globally unique, and the subdomain '${brandInstance.value.subdomain}' used for brand ${brandInstance.value.name} is not available. Please choose a different one.`,
+    }])
+  })
+  it('should return an error if brand does not have a subdomain', async () => {
+    const invalidBrandInstance = new InstanceElement(
+      'New Test',
+      brandType,
+      { name: 'test' },
+    )
+
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet.mockImplementation(params => {
+      if (params.url === `/api/v2/accounts/available.json?subdomain=${brandInstance.value.subdomain}`) {
+        return {
+          status: 200,
+          data: { success: false },
+        }
+      }
+      throw new Error('Err')
+    })
+    const errors = await changeValidator(
+      [toChange({ after: invalidBrandInstance })],
+    )
+    expect(mockGet).toHaveBeenCalledTimes(0)
+    expect(errors).toEqual([{
+      elemID: invalidBrandInstance.elemID,
+      severity: 'Error',
+      message: 'Brand subdomain is already taken',
+      detailedMessage: `Brand subdomains are globally unique, and the subdomain '${invalidBrandInstance.value.subdomain}' used for brand ${invalidBrandInstance.value.name} is not available. Please choose a different one.`,
     }])
   })
   it('should return a warning if a new brand is created and getSinglePage fails', async () => {
@@ -83,7 +111,7 @@ describe('brandCreationValidator', () => {
       elemID: brandInstance.elemID,
       severity: 'Warning',
       message: 'Verify brand subdomain uniqueness',
-      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
+      detailedMessage: `Brand subdomains are globally unique, and we were unable to check the uniqueness of the subdomain '${brandInstance.value.subdomain}' used for brand ${brandInstance.value.name}. Please ensure its uniqueness before deploying`,
     }])
   })
   it('should return a warning if a new brand is created and getSinglePage returns invalid answer', async () => {
@@ -108,13 +136,35 @@ describe('brandCreationValidator', () => {
       elemID: brandInstance.elemID,
       severity: 'Warning',
       message: 'Verify brand subdomain uniqueness',
-      detailedMessage: `Brand subdomains are globally unique, please make sure to set an available subdomain for brand ${brandInstance.value.name} before attempting to create it from Salto`,
+      detailedMessage: `Brand subdomains are globally unique, and we were unable to check the uniqueness of the subdomain '${brandInstance.value.subdomain}' used for brand ${brandInstance.value.name}. Please ensure its uniqueness before deploying`,
     }])
   })
-  it('should not return an error if the brand was modified', async () => {
+  it('should not return an error if the subdomain was modified to a valid one', async () => {
     const clonedBeforeBrand = brandInstance.clone()
     const clonedAfterBrand = brandInstance.clone()
     clonedAfterBrand.value.subdomain = 'edited'
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet.mockImplementation(params => {
+      if (params.url === `/api/v2/accounts/available.json?subdomain=${clonedAfterBrand.value.subdomain}`) {
+        return {
+          status: 200,
+          data: { success: true },
+        }
+      }
+      throw new Error('Err')
+    })
+    const errors = await changeValidator(
+      [toChange({ before: clonedBeforeBrand, after: clonedAfterBrand })],
+    )
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    expect(mockGet).toHaveBeenCalledWith({
+      url: `/api/v2/accounts/available.json?subdomain=${clonedAfterBrand.value.subdomain}`,
+    })
+    expect(errors).toHaveLength(0)
+  })
+  it('should not return an error if the subdomain was not modified', async () => {
+    const clonedBeforeBrand = brandInstance.clone()
+    const clonedAfterBrand = brandInstance.clone()
     mockGet = jest.spyOn(client, 'getSinglePage')
     const errors = await changeValidator(
       [toChange({ before: clonedBeforeBrand, after: clonedAfterBrand })],

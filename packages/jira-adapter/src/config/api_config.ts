@@ -779,6 +779,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'simplified' },
         { fieldName: 'isPrivate' },
         { fieldName: 'expand' },
+        { fieldName: 'archived' },
       ],
       standaloneFields: [
         {

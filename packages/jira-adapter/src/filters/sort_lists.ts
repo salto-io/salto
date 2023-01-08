@@ -75,7 +75,7 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
     properties: ['key'],
   },
   [DASHBOARD_TYPE]: {
-    gadgets: ['elemID.name'],
+    gadgets: ['value.value.position.column', 'value.value.position.row'],
   },
   [PROJECT_ROLE_TYPE]: {
     actors: ['displayName'],

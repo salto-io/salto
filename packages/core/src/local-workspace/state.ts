@@ -124,11 +124,13 @@ const parseFromPaths = async (
       stream,
       parser({ jsonStreaming: true }),
     ])
-    chain([parseChain, processElements])
-    chain([parseChain, processUpdateDate])
-    chain([parseChain, processPathIndices])
-    chain([parseChain, processVersions])
-    await getStream(parseChain)
+    const chains = [
+      chain([parseChain, processElements]),
+      chain([parseChain, processUpdateDate]),
+      chain([parseChain, processPathIndices]),
+      chain([parseChain, processVersions]),
+    ]
+    await Promise.all(chains.map(c => getStream(c)))
   })
   return res
 }

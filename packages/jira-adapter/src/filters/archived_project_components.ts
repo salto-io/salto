@@ -13,26 +13,38 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { PROJECT_COMPONENT_TYPE, PROJECT_TYPE } from '../constants'
 
 /**
- * Remove archived projects and project components
+ * Remove archived project components
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    _.remove(
+    const removedComponents = _.remove(
       elements,
       element => isInstanceElement(element)
-        && [PROJECT_COMPONENT_TYPE, PROJECT_TYPE].includes(element.elemID.typeName)
+        && element.elemID.typeName === PROJECT_COMPONENT_TYPE
         && element.value.archived
     )
 
+    const removedComponentsIds = new Set(removedComponents.map(instance => instance.elemID.getFullName()))
+
     elements
       .filter(isInstanceElement)
-      .filter(instance => [PROJECT_COMPONENT_TYPE, PROJECT_TYPE].includes(instance.elemID.typeName))
+      .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
+      .forEach(instance => {
+        _.remove(
+          instance.value.components,
+          ref => isReferenceExpression(ref) && removedComponentsIds.has(ref.elemID.getFullName())
+        )
+      })
+
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === PROJECT_COMPONENT_TYPE)
       .forEach(instance => {
         delete instance.value.archived
       })

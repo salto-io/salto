@@ -13,47 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
-import archivedProjectsFilter from '../../src/filters/archived_projects'
+import archivedProjectComponentsFilter from '../../src/filters/archived_project_components'
 import { getFilterParams } from '../utils'
 
-describe('archivedProjectsFilter', () => {
+describe('archivedProjectComponentsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
-  let project1: InstanceElement
-  let project2: InstanceElement
+  let project: InstanceElement
   let projectComponent1: InstanceElement
   let projectComponent2: InstanceElement
-  let projectType: ObjectType
-  let projectComponentType: ObjectType
 
   beforeEach(async () => {
-    filter = archivedProjectsFilter(getFilterParams()) as typeof filter
+    filter = archivedProjectComponentsFilter(getFilterParams()) as typeof filter
 
-    projectType = new ObjectType({
+    const projectType = new ObjectType({
       elemID: new ElemID(JIRA, 'Project'),
     })
 
-    projectComponentType = new ObjectType({
+    const projectComponentType = new ObjectType({
       elemID: new ElemID(JIRA, 'ProjectComponent'),
     })
-
-    project1 = new InstanceElement(
-      'instance1',
-      projectType,
-      {
-        archived: false,
-      }
-    )
-
-    project2 = new InstanceElement(
-      'instance2',
-      projectType,
-      {
-        archived: true,
-      }
-    )
 
     projectComponent1 = new InstanceElement(
       'instance3',
@@ -70,18 +51,35 @@ describe('archivedProjectsFilter', () => {
         archived: true,
       }
     )
+
+    project = new InstanceElement(
+      'project',
+      projectType,
+      {
+        components: [
+          new ReferenceExpression(projectComponent1.elemID),
+          new ReferenceExpression(projectComponent2.elemID),
+        ],
+      }
+    )
   })
 
   describe('onFetch', () => {
-    it('remove archived project and components', async () => {
-      const elements = [project2, projectComponent2]
+    it('remove archived components', async () => {
+      const elements = [project, projectComponent1, projectComponent2]
       await filter.onFetch(elements)
-      expect(elements).toEqual([])
+      expect(elements).toHaveLength(2)
+      expect(elements[0]).toBe(project)
+      expect(elements[1]).toBe(projectComponent1)
+      expect(project.value.components).toEqual([
+        new ReferenceExpression(projectComponent1.elemID),
+      ])
     })
 
     it('remove archive value', async () => {
-      await filter.onFetch([project1, projectComponent1])
-      expect(project1.value.archived).toBeUndefined()
+      const elements = [projectComponent1]
+      await filter.onFetch([projectComponent1])
+      expect(elements[0]).toBe(projectComponent1)
       expect(projectComponent1.value.archived).toBeUndefined()
     })
   })

@@ -57,7 +57,7 @@ import gadgetFilter from './filters/dashboard/gadget'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
-import archivedProjectsFilter from './filters/archived_projects'
+import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -172,7 +172,7 @@ export const DEFAULT_FILTERS = [
   gadgetFilter,
   projectFilter,
   projectComponentFilter,
-  archivedProjectsFilter,
+  archivedProjectComponentsFilter,
   screenFilter,
   priorityFilter,
   statusDeploymentFilter,

@@ -327,11 +327,12 @@ describe('convert userId to key in Jira DC', () => {
       await filter.onFetch([automationInstance, dashboardInstance, projectInstance])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search?username=.',
+        '/rest/api/2/user/search',
         {
           headers: undefined,
           params: {
             maxResults: '1000',
+            username: '.',
           },
           responseType: undefined,
         }
@@ -349,11 +350,12 @@ describe('convert userId to key in Jira DC', () => {
       ])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search?username=.',
+        '/rest/api/2/user/search',
         {
           headers: undefined,
           params: {
             maxResults: '1000',
+            username: '.',
           },
           responseType: undefined,
         }
@@ -368,11 +370,12 @@ describe('convert userId to key in Jira DC', () => {
       ])
       expect(mockConnection.get).toHaveBeenCalledOnce()
       expect(mockConnection.get).toHaveBeenCalledWith(
-        '/rest/api/2/user/search?username=.',
+        '/rest/api/2/user/search',
         {
           headers: undefined,
           params: {
             maxResults: '1000',
+            username: '.',
           },
           responseType: undefined,
         }

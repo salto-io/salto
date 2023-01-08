@@ -33,10 +33,11 @@ export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCent
       if (usersCallPromise === undefined) {
         const paginationArgs = isDataCenter
           ? {
-            url: '/rest/api/2/user/search?username=.',
+            url: '/rest/api/2/user/search',
             paginationField: 'startAt',
             queryParams: {
               maxResults: '1000',
+              username: '.',
             },
             queryParamsPageSizeName: 'maxResults',
           }

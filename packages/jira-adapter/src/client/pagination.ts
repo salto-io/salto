@@ -21,7 +21,7 @@ const { makeArray } = collections.array
 
 const ITEM_INDEX_PAGINATION_URLS = [
   '/rest/api/3/users/search',
-  '/rest/api/2/user/search?username=.',
+  '/rest/api/2/user/search',
   '/rest/api/2/priorityschemes',
 ]
 

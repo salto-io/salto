@@ -28,6 +28,6 @@ export const defaultGroupDeletion: ChangeValidator = async changes => (
       elemID: group.elemID,
       severity: 'Error',
       message: 'Default group cannot be deleted',
-      detailedMessage: `Group ${group.value.nmae} is marked as default and therefore cannot be deleted`,
+      detailedMessage: `Group '${group.elemID.name}' is marked as default and therefore cannot be deleted`,
     }))
 )

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { decorators } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE, isMappableErrorName } from './user_facing_errors'
+import { JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE, isMappableJSForceErrorName } from './user_facing_errors'
 
 const log = logger(module)
 
@@ -25,9 +25,9 @@ export const mapToUserFriendlyErrors = decorators.wrapMethodWith(
     try {
       return await Promise.resolve(original.call())
     } catch (e: unknown) {
-      if (_.isError(e) && isMappableErrorName(e.name)) {
+      if (_.isError(e) && isMappableJSForceErrorName(e.name)) {
         log.debug('Replacing error returned from salesforce. Original error: %o', e)
-        e.message = ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[e.name]
+        e.message = JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[e.name]
       }
       throw e
     }

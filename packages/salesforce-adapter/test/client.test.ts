@@ -32,7 +32,7 @@ import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
-import { MappableErrorName, ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE } from '../src/client/user_facing_errors'
+import { JSForceMappableErrorName, JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE } from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -310,8 +310,8 @@ describe('salesforce client', () => {
   })
 
   describe('when JSForce throws mappable error', () => {
-    const MAPPABLE_HTTP_ERROR: MappableErrorName = 'ERROR_HTTP_502'
-    const MAPPABLE_SALESFORCE_ERROR: MappableErrorName = 'sf:REQUEST_LIMIT_EXCEEDED'
+    const MAPPABLE_HTTP_ERROR: JSForceMappableErrorName = 'ERROR_HTTP_502'
+    const MAPPABLE_SALESFORCE_ERROR: JSForceMappableErrorName = 'sf:REQUEST_LIMIT_EXCEEDED'
     describe('when error code is HTTP error', () => {
       it('should modify the error message', async () => {
         const dodoScope = nock('http://dodo22')
@@ -319,7 +319,7 @@ describe('salesforce client', () => {
           .times(1)
           .reply(502, 'Some unreadable HTML response')
         await expect(client.listMetadataTypes())
-          .rejects.toThrow(ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[MAPPABLE_HTTP_ERROR])
+          .rejects.toThrow(JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[MAPPABLE_HTTP_ERROR])
         expect(dodoScope.isDone()).toBeTrue()
       })
     })
@@ -335,7 +335,7 @@ describe('salesforce client', () => {
             headers,
           )
         await expect(client.listMetadataTypes())
-          .rejects.toThrow(ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[MAPPABLE_SALESFORCE_ERROR])
+          .rejects.toThrow(JSFORCE_ERROR_NAME_TO_FRIENDLY_ERROR_MESSAGE[MAPPABLE_SALESFORCE_ERROR])
         expect(dodoScope.isDone()).toBeTrue()
       })
     })

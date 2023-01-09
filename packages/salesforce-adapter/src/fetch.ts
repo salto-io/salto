@@ -218,7 +218,7 @@ export const fetchMetadataInstances = async ({
 
   const metadataTypeName = await apiName(metadataType)
 
-  const { result: metadataInfos, errors } = await client.readMetadata(
+  const { result: metadataInfos, errors, configSuggestions } = await client.readMetadata(
     metadataTypeName,
     fileProps.map(
       prop => ({
@@ -244,7 +244,8 @@ export const fetchMetadataInstances = async ({
   return {
     elements,
     configChanges: makeArray(errors)
-      .map(e => createSkippedListConfigChange({ type: metadataTypeName, instance: e })),
+      .map(e => createSkippedListConfigChange({ type: metadataTypeName, instance: e }))
+      .concat(configSuggestions),
   }
 }
 

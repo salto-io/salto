@@ -1311,6 +1311,8 @@ public class LargeClass${index} {
       beforeAll(() => {
         client.readMetadata = jest.fn().mockResolvedValue({
           result: new Array(MOCK_METADATA_LENGTH).fill(includeFilePropMock),
+          errors: [],
+          configSuggestions: [],
         })
         metadataType.elemID.isTopLevel = jest.fn().mockReturnValue(true)
       })

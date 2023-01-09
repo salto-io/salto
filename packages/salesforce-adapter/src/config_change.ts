@@ -25,7 +25,7 @@ import {
   SalesforceConfig,
   DataManagementConfig,
   isRetrieveSizeConfigSuggstion,
-  MAX_INSTANCES_PER_TYPE,
+  MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
 import { UNLIMITED_INSTANCES_VALUE } from './constants'
@@ -102,6 +102,14 @@ export const createSkippedListConfigChange = ({ type, instance, reason }
     reason,
   }
 }
+
+export const createFetchTimeoutConfigChange = (
+  metadataQueryParams: Required<Pick<MetadataQueryParams, 'metadataType' | 'name'>>
+): MetadataConfigSuggestion => ({
+  type: 'metadataExclude',
+  value: metadataQueryParams,
+  reason: `${metadataQueryParams.metadataType} with name ${metadataQueryParams.name} exceeded fetch timeout`,
+})
 
 export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery):
   ConfigChangeSuggestion => createSkippedListConfigChange({ type: res.type, instance: res.folder })

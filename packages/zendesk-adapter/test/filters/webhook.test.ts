@@ -73,7 +73,7 @@ describe('webhook filter', () => {
         change: { action: 'add', data: { after: deployedWebhook } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: undefined,
+        fieldsToIgnore: ['external_source'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -94,7 +94,7 @@ describe('webhook filter', () => {
         change: { action: 'add', data: { after: deployedWebhook } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: undefined,
+        fieldsToIgnore: ['external_source'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -122,7 +122,7 @@ describe('webhook filter', () => {
         change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: undefined,
+        fieldsToIgnore: ['external_source'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -152,7 +152,7 @@ describe('webhook filter', () => {
         change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: undefined,
+        fieldsToIgnore: ['external_source'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -183,7 +183,7 @@ describe('webhook filter', () => {
         change: { action: 'modify', data: { before: clonedWebhookBefore, after: deployedWebhookAfter } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: undefined,
+        fieldsToIgnore: ['external_source'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(0)
@@ -224,7 +224,7 @@ describe('webhook filter', () => {
         change: { action: 'add', data: { after: deployedWebhook } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
-        fieldsToIgnore: undefined,
+        fieldsToIgnore: ['external_source'],
       })
       expect(res.leftoverChanges).toHaveLength(0)
       expect(res.deployResult.errors).toHaveLength(1)

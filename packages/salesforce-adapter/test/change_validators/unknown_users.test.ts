@@ -18,39 +18,38 @@ import mockAdapter from '../adapter'
 import changeValidator from '../../src/change_validators/unknown_users'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
-import SalesforceClient from '../../src/client/client'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
+import * as filterUtilsModule from '../../src/filters/utils'
 
-const setupClientMock = (client: SalesforceClient, userNames: string[]): void => {
+jest.mock('../../src/filters/utils', () => ({
+  ...jest.requireActual('../../src/filters/utils'),
+  queryClient: jest.fn(),
+}))
+
+const mockedFilterUtils = jest.mocked(filterUtilsModule)
+
+const setupClientMock = (userNames: string[]): void => {
   const mockQueryResult = userNames.map((userName): SalesforceRecord => ({
     [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
     Username: userName,
   }))
 
-  client.queryAll = async (_queryString: string): Promise<AsyncIterable<SalesforceRecord[]>> => (
-    Promise.resolve({
-      [Symbol.asyncIterator]: (): AsyncIterator<SalesforceRecord[]> => {
-        let callCnt = 0
-        return {
-          next: () => {
-            if (callCnt < 1) {
-              callCnt += 1
-              return Promise.resolve({ done: false, value: mockQueryResult })
-            }
-            return Promise.resolve({ done: true, value: undefined })
-          },
-        }
-      },
-    })
-  )
+  mockedFilterUtils.queryClient.mockResolvedValue(mockQueryResult)
 }
 
 describe('unknown user change validator', () => {
   const IRRELEVANT_USERNAME = 'SomeUsername'
   const TEST_USERNAME = 'ExistingUsername'
   const ANOTHER_TEST_USERNAME = 'BadUserName'
+
+  let validator:ChangeValidator
+
+  beforeAll(() => {
+    validator = changeValidator(mockAdapter({}).client)
+  })
+
   describe('when an irrelevant instance changes', () => {
     const irrelevantType = createCustomObjectType('SomeType', {
       annotations: { metadataType: CUSTOM_OBJECT, apiName: 'SomeType' },
@@ -61,9 +60,7 @@ describe('unknown user change validator', () => {
       },
     })
     let irrelevantChange: Change
-    let validator: ChangeValidator
     beforeEach(() => {
-      validator = changeValidator(mockAdapter({}).client)
       const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseOwner: IRRELEVANT_USERNAME }, irrelevantType)
       const afterRecord = beforeRecord.clone()
       afterRecord.value.userName = ANOTHER_TEST_USERNAME
@@ -77,16 +74,13 @@ describe('unknown user change validator', () => {
   })
   describe('when a username exists in Salesforce', () => {
     let change: Change
-    let validator: ChangeValidator
     beforeEach(() => {
-      const { client } = mockAdapter({})
-      validator = changeValidator(client)
       const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
 
-      setupClientMock(client, [TEST_USERNAME])
+      setupClientMock([TEST_USERNAME])
     })
 
     it('should pass validation', async () => {
@@ -96,16 +90,13 @@ describe('unknown user change validator', () => {
   })
   describe('when a username does not exist in Salesforce', () => {
     let change: Change
-    let validator: ChangeValidator
     beforeEach(() => {
-      const { client } = mockAdapter({})
-      validator = changeValidator(client)
       const beforeRecord = createInstanceElement({ fullName: 'someName', defaultCaseUser: IRRELEVANT_USERNAME }, mockTypes.CaseSettings)
       const afterRecord = beforeRecord.clone()
       afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
       change = toChange({ before: beforeRecord, after: afterRecord })
 
-      setupClientMock(client, [TEST_USERNAME])
+      setupClientMock([TEST_USERNAME])
     })
 
     it('should fail validation', async () => {
@@ -125,12 +116,8 @@ describe('unknown user change validator', () => {
     })
   })
   describe('when an instance references multiple usernames', () => {
-    let client: SalesforceClient
     let change: Change
-    let validator: ChangeValidator
     beforeEach(() => {
-      client = mockAdapter({}).client
-      validator = changeValidator(client)
       const beforeRecord = createInstanceElement({
         fullName: 'someName',
         defaultCaseUser: IRRELEVANT_USERNAME,
@@ -144,19 +131,19 @@ describe('unknown user change validator', () => {
     })
 
     it('should pass validation if both usernames exist in Salesforce', async () => {
-      setupClientMock(client, [TEST_USERNAME, ANOTHER_TEST_USERNAME])
+      setupClientMock([TEST_USERNAME, ANOTHER_TEST_USERNAME])
       const changeErrors = await validator([change])
       expect(changeErrors).toBeEmpty()
     })
 
     it('should fail validation if only one of the usernames exists in Salesforce', async () => {
-      setupClientMock(client, [TEST_USERNAME])
+      setupClientMock([TEST_USERNAME])
       const changeErrors = await validator([change])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
     })
     it('should fail validation twice if neither username exists in Salesforce', async () => {
-      setupClientMock(client, [])
+      setupClientMock([])
       const changeErrors = await validator([change])
       expect(changeErrors).toHaveLength(2)
       expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)

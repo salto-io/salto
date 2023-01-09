@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
 import { DeployMessage } from 'jsforce'
 
 const ERROR_HTTP_502 = 'ERROR_HTTP_502'

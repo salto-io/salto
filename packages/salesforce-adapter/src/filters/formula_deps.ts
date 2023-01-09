@@ -68,6 +68,8 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
     return
   }
 
+  log.debug(`Extracting formula refs from ${field.elemID.getFullName()}`)
+
   try {
     const formulaVariables: string[] = log.time(
       () => (extract(formula)),
@@ -83,7 +85,7 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
 
     // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
     // filtering.
-    let references = (await referencesFromIdentifiers(identifiersInfo.flat()))
+    const references = (await referencesFromIdentifiers(identifiersInfo.flat()))
 
     if (references.length < identifiersInfo.length) {
       log.warn(`Some formula identifiers were not converted to references.
@@ -93,7 +95,7 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
 
-    references = references.filter(elemId => {
+    const validReferences = references.filter(elemId => {
       const valid = isValidReference(elemId)
       if (!valid) {
         log.error(`Created an invalid reference from a formula identifier. This reference will be discarded.
@@ -105,7 +107,7 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
       return valid
     })
 
-    const depsAsRefExpr = references.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
+    const depsAsRefExpr = validReferences.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
     extendGeneratedDependencies(field, depsAsRefExpr)
   } catch (e) {
@@ -113,12 +115,10 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
   }
 }
 
-const allReferrableNames = async (type: ObjectType): Promise<string[]> => (
-  [
-    type.elemID.getFullName(),
-    ...Object.values(type.fields).map(field => field.elemID.getFullName()),
-  ]
-)
+const allReferrableNames = (type: ObjectType): string[] => [
+  type.elemID.getFullName(),
+  ...Object.values(type.fields).map(field => field.elemID.getFullName()),
+]
 
 const filter: LocalFilterCreator = () => ({
   name: 'formula_deps',

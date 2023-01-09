@@ -49,11 +49,11 @@ export type FormulaIdentifierInfo = {
   instance: string
 }
 
-export const parseField = (value: string, object: string | undefined = undefined): FormulaIdentifierInfo => {
+export const parseField = (value: string, object?: string): FormulaIdentifierInfo => {
   let actualValue = value
   if (!value.includes('.')) {
     if (object === undefined) {
-      log.error('This should not happen!')
+      log.error('In a formula field, there`s an identifier that seems to implicitly refer to a field in the parent object, but no parent object was passed to the parsing function.This should not happen!')
     } else {
       actualValue = createApiName(object, value)
     }

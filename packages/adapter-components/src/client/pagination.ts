@@ -29,7 +29,7 @@ type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
 export type ClientGetWithPaginationParams = ClientBaseParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
-  queryParamsPageSizeName?: string
+  pageSizeArgName?: string
 }
 
 export type PageEntriesExtractor = (page: ResponseValue) => ResponseValue[]
@@ -96,7 +96,7 @@ export const traverseRequests: (
   pageSize,
   getParams,
 }) {
-  const { url, paginationField, queryParams, recursiveQueryParams } = getParams
+  const { url, queryParams, recursiveQueryParams } = getParams
   const requestQueryArgs: Record<string, string>[] = [{}]
   const usedParams = new Set<string>()
   let numResults = 0
@@ -138,7 +138,7 @@ export const traverseRequests: (
     requestQueryArgs.unshift(...paginationFunc({
       responseData: response.data,
       page,
-      getParams: { ...getParams, paginationField },
+      getParams,
       pageSize,
       currentParams: additionalArgs,
       responseHeaders: response.headers,
@@ -159,19 +159,21 @@ export const traverseRequests: (
  */
 export const getWithItemOffsetPagination = ({
   firstIndex,
-  queryParamsPageSizeName,
+  pageSizeArgName
+  ,
 } : {
   firstIndex: number
-  queryParamsPageSizeName: string | undefined
+  pageSizeArgName: string | undefined
 }): PaginationFunc => {
   const nextPage: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
     const { paginationField, queryParams } = getParams
 
-    const itemsPerPage = queryParamsPageSizeName !== undefined
-      && queryParams?.[queryParamsPageSizeName] !== undefined
-      ? Number(queryParams[queryParamsPageSizeName])
+    const itemsPerPage = (pageSizeArgName !== undefined && queryParams !== undefined
+       && !Number.isNaN(Number(queryParams?.[pageSizeArgName])))
+      ? Number(queryParams[pageSizeArgName])
       : pageSize
-    if (paginationField === undefined || page.length < itemsPerPage) {
+
+    if (paginationField === undefined || page.length < itemsPerPage || page.length === 0) {
       return []
     }
     return [{

@@ -24,31 +24,37 @@ const log = logger(module)
 export type IdMap = Record<string, string>
 export type GetIdMapFunc = () => Promise<IdMap>
 
+const paginateUsers = async (paginator: clientUtils.Paginator, isDataCenter: boolean)
+  : Promise<clientUtils.ResponseValue[][]> => {
+  const paginationArgs = isDataCenter
+    ? {
+      url: '/rest/api/2/user/search',
+      paginationField: 'startAt',
+      queryParams: {
+        maxResults: '1000',
+        username: '.',
+      },
+      pageSizeArgName: 'maxResults',
+    }
+    : {
+      url: '/rest/api/3/users/search',
+      paginationField: 'startAt',
+    }
+  const usersCallPromise = toArrayAsync(paginator(
+    paginationArgs,
+    page => makeArray(page) as clientUtils.ResponseValue[]
+  ))
+  return usersCallPromise
+}
+
 export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCenter: boolean)
     : GetIdMapFunc => {
   let idMap: IdMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
-  return async (): Promise<IdMap> => log.time(async () => {
+  return async (): Promise<IdMap> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
-        const paginationArgs = isDataCenter
-          ? {
-            url: '/rest/api/2/user/search',
-            paginationField: 'startAt',
-            queryParams: {
-              maxResults: '1000',
-              username: '.',
-            },
-            queryParamsPageSizeName: 'maxResults',
-          }
-          : {
-            url: '/rest/api/3/users/search',
-            paginationField: 'startAt',
-          }
-        usersCallPromise = toArrayAsync(paginator(
-          paginationArgs,
-          page => makeArray(page) as clientUtils.ResponseValue[]
-        ))
+        usersCallPromise = log.time(async () => paginateUsers(paginator, isDataCenter), 'users pagination')
       }
       if (isDataCenter) {
         idMap = Object.fromEntries((await usersCallPromise)
@@ -63,5 +69,5 @@ export const getIdMapFuncCreator = (paginator: clientUtils.Paginator, isDataCent
       }
     }
     return idMap
-  }, 'idMap creating')
+  }
 }

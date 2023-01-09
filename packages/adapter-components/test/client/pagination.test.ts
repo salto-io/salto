@@ -345,7 +345,7 @@ describe('client_pagination', () => {
   })
   describe('getWithItemIndexPagination', () => {
     it('should query a single page if data has less items than page size', async () => {
-      const paginate = getWithItemIndexPagination({ firstIndex: 0, queryParamsPageSizeName: 'maxResults' })
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: 'maxResults' })
       const args = {
         getParams: {
           url: '/ep',
@@ -371,8 +371,8 @@ describe('client_pagination', () => {
         page: [],
       })).toEqual([])
     })
-    it('should query a single page with default size if data has less items than page size and pageSize not provided', async () => {
-      const paginate = getWithItemIndexPagination({ firstIndex: 0, queryParamsPageSizeName: undefined })
+    it('should query a single page with default size if data has less items than page size and pageSizeArgName is not provided', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: undefined })
       const args = {
         getParams: {
           url: '/ep',
@@ -389,8 +389,29 @@ describe('client_pagination', () => {
         }],
       })).toEqual([])
     })
+    it('should query a single page with default size if data has less items than page size and maxResults is not a number', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: undefined })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+          queryParams: {
+            maxResults: 'not a number',
+          },
+        },
+        pageSize: 30,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }],
+      })).toEqual([])
+    })
     it('should query multiple pages if response has more items than page size (or equal)', async () => {
-      const paginate = getWithItemIndexPagination({ firstIndex: 0, queryParamsPageSizeName: 'maxResults' })
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: 'maxResults' })
       const args = {
         getParams: {
           url: '/ep',
@@ -430,12 +451,53 @@ describe('client_pagination', () => {
         }],
       })).toEqual([])
     })
-    it('should query multiple pages if response has more items than page size (or equal) with default pageSize', async () => {
-      const paginate = getWithItemIndexPagination({ firstIndex: 0, queryParamsPageSizeName: undefined })
+    it('should query multiple pages if response has more items than page size (or equal) with pageSizeArgName is not provided', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: undefined })
       const args = {
         getParams: {
           url: '/ep',
           paginationField: 'startAt',
+        },
+        pageSize: 2,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '2' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '2' },
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '4' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '4' },
+        responseData: {},
+        page: [{
+          a: 'a2',
+        }],
+      })).toEqual([])
+    })
+    it('should query multiple pages if response has more items than page size (or equal) and maxResults is not a number', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: 'maxResults' })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+          queryParams: {
+            maxResults: 'not a number',
+          },
         },
         pageSize: 2,
       }

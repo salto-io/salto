@@ -55,7 +55,7 @@ export const paginate: clientUtils.PaginationFuncCreator = args => {
     return clientUtils.getWithItemIndexPagination(
       {
         firstIndex: 0,
-        queryParamsPageSizeName: args.getParams.queryParamsPageSizeName,
+        pageSizeArgName: args.getParams.pageSizeArgName,
       }
     )
   }

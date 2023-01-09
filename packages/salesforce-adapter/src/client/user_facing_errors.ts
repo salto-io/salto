@@ -68,7 +68,7 @@ const isMappableSalesforceProblem = (problem: string): problem is MappableSalesf
 export const MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE: Record<MappableSalesforceProblem, string> = {
   [SCHEDULABLE_CLASS]: 'This deployment contains a scheduled Apex class (or a class related to one).'
   + 'By default, Salesforce does not allow changes to scheduled apex. '
-  + 'Please follow the instructions in this article and attempt your deployment again.',
+  + 'Please follow the instructions here: https://help.salesforce.com/s/articleView?id=000384960&type=1',
 }
 
 export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => ({

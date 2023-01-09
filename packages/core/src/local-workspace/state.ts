@@ -24,7 +24,7 @@ import { parser } from 'stream-json/jsonl/Parser'
 import getStream from 'get-stream'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, mkdirp, rm, rename, replaceContents, generateGZipString, createGZipReadStreamOrPakoStream } from '@salto-io/file'
+import { exists, readTextFile, mkdirp, rm, rename, replaceContents, generateGZipString, isPakoZipFile, readZipFile, createGZipReadStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles } from '@salto-io/workspace'
 import { hash, collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -82,6 +82,23 @@ const parseFromPaths = async (
     pathIndices: [],
     versions: [],
   }
+
+  // backward-compatible function for reading the state file (changed in SALTO-3149)
+  const createGZipReadStreamOrPakoStream = async (
+    zipFilename: string,
+  ): Promise<Readable> => {
+    if (await isPakoZipFile(zipFilename)) {
+      // old state file compressed using pako, with an incorrectly-serialized version row
+      const data = await readZipFile(zipFilename) ?? ''
+      // hack to fix non-jsonl format in old state file
+      const lines = data.split('\n')
+      const updatedData = [...lines.slice(0, 3), `"${lines[3]}"`].join('\n')
+
+      return Readable.from(updatedData)
+    }
+    return createGZipReadStream(zipFilename)
+  }
+
   const streams = (await Promise.all(paths.map(async (p: string) => (await exists(p)
     ? { filePath: p, stream: await createGZipReadStreamOrPakoStream(p) }
     : undefined

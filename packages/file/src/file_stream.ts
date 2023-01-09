@@ -25,6 +25,16 @@ export const createGZipReadStream = (
   fs.createReadStream(zipFilename).pipe(createGunzip())
 )
 
+export const isPakoZipFile = async (zipFilename: string): Promise<boolean> => {
+  const prefix = await getStream.buffer(fs.createReadStream(zipFilename, {
+    encoding: 'utf8',
+    start: 0,
+    end: 2,
+  }))
+  // standard gzip compression starts with \x1f\x8b , pako adds \xc2
+  return prefix.compare(Buffer.from([0x1f, 0xc2, 0x8b])) === 0
+}
+
 // backward-compatible function for reading the state file (changed in SALTO-3149)
 export const createGZipReadStreamOrPakoStream = async (
   zipFilename: string,

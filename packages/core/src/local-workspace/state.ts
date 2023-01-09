@@ -68,7 +68,7 @@ const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
 type PathEntry = [string, string[][]]
 type ParsedState = {
   elements: Element[]
-  updateDates: object[] // TODON define structure
+  updateDates: Record<string, string>[]
   pathIndices: PathEntry[]
   versions: string[]
 }
@@ -190,7 +190,7 @@ export const localState = (
   }
 
   const getHashFromContent = (contents: string[]): string =>
-    toMD5(safeJsonStringify(contents.map(toMD5).sort())) // TODON (later) get hash with streaming?
+    toMD5(safeJsonStringify(contents.map(toMD5).sort()))
 
   const getHash = async (filePaths: string[]): Promise<string> =>
     // TODO fix?
@@ -234,7 +234,7 @@ export const localState = (
       ),
     )
     const accountToDates = await inMemState.getAccountsUpdateDates()
-    const accountToPathIndex = pathIndex.serializePathIndexByAccount( // TODON stream as well?
+    const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray()
     )
     async function *getStateStream(serializedStream: AsyncIterable<string>, account: string): AsyncIterable<string> {
@@ -242,7 +242,7 @@ export const localState = (
       yield [
         '',
         safeJsonStringify({ [account]: accountToDates[account] } || {}),
-        accountToPathIndex[account] || '[]',
+        yield* accountToPathIndex[account] || '[]',
         safeJsonStringify(version),
       ].join(EOL)
       log.debug(`finished dumping state text [#elements=${elements.length}]`)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, types } from '@salto-io/lowerdash'
+import { collections, types, serialize as lowerdashSerialize } from '@salto-io/lowerdash'
 import {
   PrimitiveType, ElemID, Field, Element, ListType, MapType,
   ObjectType, InstanceElement, isType, isElement, isContainerType,
@@ -50,6 +50,7 @@ import {
 } from '../validator'
 
 const { awu } = collections.asynciterable
+const { getSerializedStream } = lowerdashSerialize
 
 // There are two issues with naive json stringification:
 //
@@ -228,23 +229,9 @@ export const serializeStream = async <T = Element>(
   await awu(promises).forEach(promise => promise)
 
   // avoid creating a single string for all elements, which may exceed the max allowed string length
-  async function *getElementStream(): AsyncIterable<string> {
-    let first = true
-    yield '['
-    for (const elem of clonedElements) {
-      if (first) {
-        first = false
-      } else {
-        yield ','
-      }
-      // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
-      // circles
-      // eslint-disable-next-line no-restricted-syntax
-      yield JSON.stringify(elem)
-    }
-    yield ']'
-  }
-  return getElementStream()
+  // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
+  // circles
+  return getSerializedStream(clonedElements)
 }
 
 export const serialize = async <T = Element>(

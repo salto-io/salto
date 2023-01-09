@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections, values, serialize as lowerdashSerialize } from '@salto-io/lowerdash'
 import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
   ObjectType, InstanceElement } from '@salto-io/adapter-api'
-import { safeJsonStringify, filterByID } from '@salto-io/adapter-utils'
+import { filterByID } from '@salto-io/adapter-utils'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
+const { getSerializedStream } = lowerdashSerialize
 
 export type Path = readonly string[]
 
@@ -201,14 +202,14 @@ export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry
 export const deserializedPathsIndex = (dataEntries: string[]): RemoteMapEntry<Path[], string>[] =>
   dataEntries.flatMap(data => loadPathIndex(JSON.parse(data)))
 
-export const serializedPathIndex = (entries: RemoteMapEntry<Path[], string>[]): string => (
-  safeJsonStringify(Array.from(entries.map(e => [e.key, e.value] as [string, Path[]])))
+export const serializedPathIndex = (entries: RemoteMapEntry<Path[], string>[]): AsyncIterable<string> => (
+  getSerializedStream(Array.from(entries.map(e => [e.key, e.value] as [string, Path[]])))
 )
 export const serializePathIndexByAccount = (entries: RemoteMapEntry<Path[], string>[]):
-Record<string, string> =>
+Record<string, AsyncIterable<string>> =>
   _.mapValues(
     _.groupBy(Array.from(entries), entry => ElemID.fromFullName(entry.key).adapter),
-    e => serializedPathIndex(e), // TODON check if should stream as well
+    e => serializedPathIndex(e),
   )
 export const getFromPathIndex = async (
   elemID: ElemID,

@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { ZENDESK } from '../../src/constants'
+import { WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createChangeError, webhookAuthDataValidator } from '../../src/change_validators/webhook'
-import { WEBHOOK_TYPE_NAME } from '../../src/filters/webhook'
 import ZendeskClient from '../../src/client/client'
 
 describe('webhookAuthDataValidator', () => {

@@ -15,8 +15,8 @@
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ZENDESK } from '../../src/constants'
-import filterCreator, { WEBHOOK_TYPE_NAME, AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA } from '../../src/filters/webhook'
+import { WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
+import filterCreator, { AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA } from '../../src/filters/webhook'
 import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()

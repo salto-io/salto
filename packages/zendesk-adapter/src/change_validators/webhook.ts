@@ -16,7 +16,7 @@
 import { ChangeError, ChangeValidator, ElemID, getChangeData,
   isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import ZendeskClient from '../client/client'
-import { WEBHOOK_TYPE_NAME } from '../filters/webhook'
+import { WEBHOOK_TYPE_NAME } from '../constants'
 
 const WEBHOOKS_SERVICE_URL = 'admin/apps-integrations/webhooks/webhooks'
 

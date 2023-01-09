@@ -50,6 +50,7 @@ import {
   childInOrderValidator,
   orderChildrenParentValidator,
   macroActionsTicketFieldDeactivationValidator,
+  externalSourceWebhook,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -111,6 +112,7 @@ export default ({
     guideOrderDeletionValidator,
     // ******************************
     macroActionsTicketFieldDeactivationValidator,
+    externalSourceWebhook,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

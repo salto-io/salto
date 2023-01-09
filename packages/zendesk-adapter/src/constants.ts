@@ -35,7 +35,7 @@ export const USER_FIELD_TYPE_NAME = 'user_field'
 export const FIELD_TYPE_NAMES = [TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME]
 export const EVERYONE_USER_TYPE = 'Everyone'
 export const TICKET_FORM_TYPE_NAME = 'ticket_form'
-
+export const WEBHOOK_TYPE_NAME = 'webhook'
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'

@@ -31,7 +31,7 @@ const invalidRecordTypeError = (instance: InstanceElement): ChangeError => (
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Invalid AnimationRule RecordType',
-    detailedMessage: 'The RecordTypeId field is missing even though RecordTypeContext requires a RecordTypeId.',
+    detailedMessage: `In ${instance.elemID.getFullName()}, The RecordTypeId field is missing even though RecordTypeContext requires a RecordTypeId.`,
   }
 )
 

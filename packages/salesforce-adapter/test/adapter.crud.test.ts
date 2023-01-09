@@ -30,6 +30,7 @@ import { createValueSetEntry, createCustomObjectType } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
+import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
 
 const { makeArray } = collections.array
 
@@ -172,6 +173,35 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return an error', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0].message).toContain('Some error')
+        })
+      })
+
+      describe('when the request fails with mappable problem', () => {
+        const MAPPABLE_PROBLEM: MappableSalesforceProblem = 'This schedulable class has jobs pending or in progress'
+        let result: DeployResult
+        beforeEach(async () => {
+          const newInst = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
+
+          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
+            success: false,
+            componentFailure: [{
+              fullName: await apiName(newInst),
+              componentType: await metadataType(newInst),
+              problem: MAPPABLE_PROBLEM,
+            }],
+          }))
+
+          result = await adapter.deploy({
+            changeGroup: {
+              groupID: newInst.elemID.getFullName(),
+              changes: [{ action: 'add', data: { after: newInst } }],
+            },
+          })
+        })
+
+        it('should return an error with user friendly message', () => {
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0].message).toContain(MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_PROBLEM])
         })
       })
 

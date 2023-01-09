@@ -15,6 +15,7 @@
 */
 
 import _ from 'lodash'
+import { DeployMessage } from 'jsforce'
 
 const ERROR_HTTP_502 = 'ERROR_HTTP_502'
 const REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
@@ -50,3 +51,30 @@ export const MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE: Record<MappableErrorProper
 export const isMappableErrorProperty = (errorProperty: unknown): errorProperty is MappableErrorProperty => (
   _.isString(errorProperty) && (MAPPABLE_ERROR_PROPERTIES as ReadonlyArray<string>).includes(errorProperty)
 )
+
+// Deploy Errors Mapping
+
+const SCHEDULABLE_CLASS = 'This schedulable class has jobs pending or in progress'
+
+const MAPPABLE_SALESFORCE_PROBLEMS = [
+  SCHEDULABLE_CLASS,
+] as const
+
+export type MappableSalesforceProblem = typeof MAPPABLE_SALESFORCE_PROBLEMS[number]
+
+const isMappableSalesforceProblem = (problem: string): problem is MappableSalesforceProblem => (
+  (MAPPABLE_SALESFORCE_PROBLEMS as ReadonlyArray<string>).includes(problem)
+)
+
+export const MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE: Record<MappableSalesforceProblem, string> = {
+  [SCHEDULABLE_CLASS]: 'This deployment contains a scheduled Apex class (or a class related to one).'
+  + 'By default, Salesforce does not allow changes to scheduled apex. '
+  + 'Please follow the instructions in this article and attempt your deployment again.',
+}
+
+export const getUserFriendlyDeployMessage = (deployMessage: DeployMessage): DeployMessage => ({
+  ...deployMessage,
+  problem: isMappableSalesforceProblem(deployMessage.problem)
+    ? MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE[deployMessage.problem]
+    : deployMessage.problem,
+})

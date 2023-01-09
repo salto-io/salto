@@ -35,6 +35,7 @@ import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType,
 import { fullApiName } from './filters/utils'
 import { INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
+import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 
 const { awu } = collections.asynciterable
 
@@ -188,6 +189,7 @@ const processDeployResponse = (
     ))
   const componentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
+    .map(getUserFriendlyDeployMessage)
     .map(failure => new Error(
       `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))

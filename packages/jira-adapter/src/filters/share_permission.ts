@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, ElemID, Field, isInstanceElement, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { BuiltinTypes, Change, Element, ElemID, Field, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { JIRA } from '../constants'
 import { FilterCreator } from '../filter'
+import { setFieldDeploymentAnnotations } from '../utils'
 
 const { awu } = collections.asynciterable
 
@@ -34,10 +35,14 @@ const transformType = (elements: Element[]): void => {
   const projectPermissionType = new ObjectType({
     elemID: new ElemID(JIRA, 'ProjectPermission'),
     fields: {
-      id: { refType: BuiltinTypes.STRING },
+      id: {
+        refType: BuiltinTypes.STRING,
+      },
     },
     path: [JIRA, elementUtils.TYPES_PATH, 'ProjectPermission'],
   })
+
+  setFieldDeploymentAnnotations(projectPermissionType, 'id')
 
   sharePermissionType.fields.project = new Field(sharePermissionType, 'project', projectPermissionType)
 
@@ -48,6 +53,8 @@ const transformType = (elements: Element[]): void => {
     },
     path: [JIRA, elementUtils.TYPES_PATH, 'ProjectRolePermission'],
   })
+
+  setFieldDeploymentAnnotations(projectRolePermissionType, 'id')
 
   sharePermissionType.fields.role = new Field(sharePermissionType, 'role', projectRolePermissionType)
 
@@ -68,6 +75,25 @@ const transformSharePermissionValues = (sharePermissionValues: Values): void => 
   }
 }
 
+const transformSharedPermissions = async (
+  instance: InstanceElement,
+  func: (sharedPermission: Values) => void
+): Promise<void> => {
+  await transformValues({
+    values: instance.value,
+    type: await instance.getType(),
+    strict: false,
+    allowEmpty: true,
+    transformFunc: async ({ value, field }) => {
+      if ((await field?.getType())?.elemID.typeName === 'SharePermission') {
+        func(value)
+        return undefined
+      }
+      return value
+    },
+  })
+}
+
 /**
  * Change SharePermission structure to fit the deployment endpoint
  */
@@ -78,21 +104,47 @@ const filter: FilterCreator = () => ({
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        await transformValues({
-          values: instance.value,
-          type: await instance.getType(),
-          strict: false,
-          allowEmpty: true,
-          transformFunc: async ({ value, field }) => {
-            if ((await field?.getType())?.elemID.typeName === 'SharePermission') {
-              transformSharePermissionValues(value)
-              return undefined
-            }
-            return value
-          },
-        })
+        await transformSharedPermissions(instance, transformSharePermissionValues)
       })
   },
+
+  preDeploy: async changes =>
+    awu(changes)
+      .filter(isInstanceChange)
+      .forEach(change =>
+        applyFunctionToChangeData<Change<InstanceElement>>(
+          change,
+          async instance => {
+            await transformSharedPermissions(
+              instance,
+              sharedPermission => {
+                if (sharedPermission.role !== undefined) {
+                  sharedPermission.type = 'projectRole'
+                }
+              },
+            )
+            return instance
+          }
+        )),
+
+  onDeploy: async changes =>
+    awu(changes)
+      .filter(isInstanceChange)
+      .forEach(change =>
+        applyFunctionToChangeData<Change<InstanceElement>>(
+          change,
+          async instance => {
+            await transformSharedPermissions(
+              instance,
+              sharedPermission => {
+                if (sharedPermission.type === 'projectRole') {
+                  sharedPermission.type = 'project'
+                }
+              },
+            )
+            return instance
+          }
+        )),
 })
 
 export default filter

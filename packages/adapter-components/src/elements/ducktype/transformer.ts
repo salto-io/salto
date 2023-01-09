@@ -378,6 +378,7 @@ export const getAllElements = async ({
   )
 
   const configSuggestions: ConfigChangeSuggestion[] = []
+  const errors: SaltoError[] = []
   const elements = await getElementsWithContext({
     fetchQuery,
     supportedTypes: supportedTypesWithEndpoints,
@@ -394,6 +395,14 @@ export const getAllElements = async ({
           configSuggestions.push({
             typeToExclude: supportedTypesReversedMapping[args.typeName],
           })
+          return []
+        }
+        if (e.response.status === 403) {
+          const NewError: SaltoError = {
+            message: `Salto was forbidden from accessing the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access`,
+            severity: 'Warning',
+          }
+          errors.push(NewError)
           return []
         }
         throw e
@@ -418,5 +427,6 @@ export const getAllElements = async ({
   return {
     elements: instancesAndTypes,
     configChanges: getUniqueConfigSuggestions(configSuggestions),
+    errors,
   }
 }

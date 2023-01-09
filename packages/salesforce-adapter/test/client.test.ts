@@ -32,6 +32,7 @@ import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
+import { MappableErrorProperty, MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE } from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -305,6 +306,38 @@ describe('salesforce client', () => {
       const { result } = await client.readMetadata('TopicsForObjects', ['aaa', 'bbb'])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+
+  describe('when JSForce throws mappable error', () => {
+    const MAPPABLE_HTTP_ERROR: MappableErrorProperty = 'ERROR_HTTP_502'
+    const MAPPABLE_SALESFORCE_ERROR: MappableErrorProperty = 'sf:REQUEST_LIMIT_EXCEEDED'
+    describe('when error code is HTTP error', () => {
+      it('should modify the error message', async () => {
+        const dodoScope = nock('http://dodo22')
+          .post(/.*/)
+          .times(1)
+          .reply(502, 'Some unreadable HTML response')
+        await expect(client.listMetadataTypes())
+          .rejects.toThrow(MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_HTTP_ERROR])
+        expect(dodoScope.isDone()).toBeTrue()
+      })
+    })
+
+    describe('when error code is Salesforce error', () => {
+      it('should modify the error message', async () => {
+        const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
+          .post(/.*/)
+          .times(1)
+          .reply(
+            500,
+            { 'a:Envelope': { 'a:Body': { 'a:Fault': { faultcode: MAPPABLE_SALESFORCE_ERROR, faultstring: 'INVALID_TYPE: This type of metadata is not available for this organization' } } } },
+            headers,
+          )
+        await expect(client.listMetadataTypes())
+          .rejects.toThrow(MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE[MAPPABLE_SALESFORCE_ERROR])
+        expect(dodoScope.isDone()).toBeTrue()
+      })
     })
   })
 

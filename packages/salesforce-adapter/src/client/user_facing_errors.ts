@@ -48,8 +48,8 @@ export const MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE: Record<MappableErrorProper
   + 'This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
 }
 
-export const isMappableErrorProperty = (errorProperty: unknown): errorProperty is MappableErrorProperty => (
-  _.isString(errorProperty) && (MAPPABLE_ERROR_PROPERTIES as ReadonlyArray<string>).includes(errorProperty)
+export const isMappableErrorProperty = (errorProperty: string): errorProperty is MappableErrorProperty => (
+  (MAPPABLE_ERROR_PROPERTIES as ReadonlyArray<string>).includes(errorProperty)
 )
 
 // Deploy Errors Mapping

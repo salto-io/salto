@@ -27,7 +27,9 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(
       return await Promise.resolve(original.call())
     } catch (e: unknown) {
       if (_.isError(e)) {
-        const mappableError = Object.values(e).find(isMappableErrorProperty)
+        const mappableError = Object.values(e)
+          .filter(_.isString)
+          .find(isMappableErrorProperty)
         if (isDefined(mappableError)) {
           log.debug('Replacing error %s. Original error: %o', mappableError, e)
           e.message = MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE[mappableError]

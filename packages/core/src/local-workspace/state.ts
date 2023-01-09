@@ -17,12 +17,9 @@ import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
 import { Readable } from 'stream'
-import Chain, { chain } from 'stream-chain'
+import { chain } from 'stream-chain'
 
-import { parser } from 'stream-json/Parser'
-import { pick } from 'stream-json/filters/Pick'
-import { streamArray } from 'stream-json/streamers/StreamArray'
-import { streamValues } from 'stream-json/streamers/StreamValues'
+import { parser } from 'stream-json/jsonl/Parser'
 
 import getStream from 'get-stream'
 import { Element, ElemID } from '@salto-io/adapter-api'
@@ -85,53 +82,27 @@ const parseFromPaths = async (
     pathIndices: [],
     versions: [],
   }
-  const streams = (await Promise.all(paths.map(async (p: string) =>
-    ((await exists(p)) ? createGZipReadStreamOrPakoStream(p) : undefined)))).filter(isDefined)
-  await awu(streams).forEach(async stream => {
-    const processElements = (source: Readable): Chain => chain([
-      source,
-      pick({ filter: '0' }), // 1st row
-      streamArray(),
-      async (data: { value: unknown }): Promise<void> => {
-        res.elements.push(...await deserializeParsed([data.value]))
-      },
-    ])
-    const processUpdateDate = (source: Readable): Chain => chain([
-      source,
-      pick({ filter: '1' }), // 2nd row
-      streamValues(),
-      (data: object): void => {
-        res.updateDates.push(data)
-      },
-    ])
-    const processPathIndices = (source: Readable): Chain => chain([
-      source,
-      pick({ filter: '2' }), // 3rd row
-      streamArray(),
-      async (data: { value: PathEntry }): Promise<void> => {
-        res.pathIndices.push(data.value) // TODON not sure if should flatten or not - check
-      },
-    ])
-    const processVersions = (source: Readable): Chain => chain([
-      source,
-      pick({ filter: '3' }), // 4th row
-      (data: string): void => {
-        res.versions.push(data)
-      },
-    ])
-
-    const parseChain = chain([
-      stream,
-      parser({ jsonStreaming: true }),
-    ])
-    const chains = [
-      chain([parseChain, processElements]),
-      chain([parseChain, processUpdateDate]),
-      chain([parseChain, processPathIndices]),
-      chain([parseChain, processVersions]),
-    ]
-    await Promise.all(chains.map(c => getStream(c)))
-  })
+  const streams = (await Promise.all(paths.map(async (p: string) => (await exists(p)
+    ? { filePath: p, stream: await createGZipReadStreamOrPakoStream(p) }
+    : undefined
+  )))).filter(isDefined)
+  await awu(streams).forEach(async ({ filePath, stream }) => getStream(chain([
+    stream,
+    parser(),
+    async ({ key, value }) => {
+      if (key === 0) {
+        res.elements = res.elements.concat(await deserializeParsed(value))
+      } else if (key === 1) {
+        res.updateDates.push(value)
+      } else if (key === 2) {
+        res.pathIndices = res.pathIndices.concat(value)
+      } else if (key === 3) {
+        res.versions.push(value)
+      } else {
+        log.error('found unexpected entry in state file %s - key %s. ignoring', filePath, key)
+      }
+    },
+  ])))
   return res
 }
 
@@ -255,7 +226,7 @@ export const localState = (
         '',
         safeJsonStringify({ [account]: accountToDates[account] } || {}),
         accountToPathIndex[account] || '[]',
-        version,
+        safeJsonStringify(version),
       ].join(EOL)
       log.debug(`finished dumping state text [#elements=${elements.length}]`)
     }
@@ -270,11 +241,11 @@ export const localState = (
       const contents = await awu(Object.keys(stateTextPerAccount))
         .map(async (account: string): Promise<[string, Buffer]> => [
           `${currentFilePrefix}.${account}${ZIPPED_STATE_EXTENSION}`,
-          await generateGZipString(await getStream.buffer(stateTextPerAccount[account])), // TODON pipe?
+          await generateGZipString(await getStream.buffer(stateTextPerAccount[account])),
         ]).toArray()
       contentsAndHash = {
         contents,
-        hash: getHashFromContent(contents.map(e => e[1].toString())), // TODON can also do as a side-effect of a stream?
+        hash: getHashFromContent(contents.map(e => e[1].toString())),
       }
     }
     return contentsAndHash

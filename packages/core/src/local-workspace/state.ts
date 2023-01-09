@@ -237,18 +237,23 @@ export const localState = (
     const accountToPathIndex = pathIndex.serializePathIndexByAccount(
       await awu((await inMemState.getPathIndex()).entries()).toArray()
     )
-    async function *getStateStream(serializedStream: AsyncIterable<string>, account: string): AsyncIterable<string> {
-      yield* serializedStream
-      yield [
-        '',
-        safeJsonStringify({ [account]: accountToDates[account] } || {}),
-        yield* accountToPathIndex[account] || '[]',
-        safeJsonStringify(version),
-      ].join(EOL)
+    async function *getStateStream(account: string): AsyncIterable<string> {
+      async function *yieldWithEOL(streams: AsyncIterable<string>[]): AsyncIterable<string> {
+        for (const stream of streams) {
+          yield* stream
+          yield EOL
+        }
+      }
+      yield* yieldWithEOL([
+        accountToElementStreams[account],
+        awu([safeJsonStringify({ [account]: accountToDates[account] } || {})]),
+        accountToPathIndex[account] || '[]',
+        awu([safeJsonStringify(version)]),
+      ])
       log.debug(`finished dumping state text [#elements=${elements.length}]`)
     }
-    return _.mapValues(accountToElementStreams, (serializedStream, account) => {
-      const iterable = getStateStream(serializedStream, account)
+    return _.mapValues(accountToElementStreams, (_val, account) => {
+      const iterable = getStateStream(account)
       return Readable.from(iterable)
     })
   }

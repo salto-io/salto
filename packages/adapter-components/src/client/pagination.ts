@@ -169,7 +169,7 @@ export const getWithItemOffsetPagination = ({
     const { paginationField, queryParams } = getParams
 
     const itemsPerPage = (pageSizeArgName !== undefined && queryParams !== undefined
-       && !Number.isNaN(Number(queryParams?.[pageSizeArgName])))
+      && !Number.isNaN(Number(queryParams?.[pageSizeArgName])))
       ? Number(queryParams[pageSizeArgName])
       : pageSize
 

@@ -114,7 +114,9 @@ const parseFromPaths = async (
       } else if (key === 2) {
         res.pathIndices = res.pathIndices.concat(value)
       } else if (key === 3) {
-        res.versions.push(value)
+        if (!_.isEmpty(value)) {
+          res.versions.push(value)
+        }
       } else {
         log.error('found unexpected entry in state file %s - key %s. ignoring', filePath, key)
       }

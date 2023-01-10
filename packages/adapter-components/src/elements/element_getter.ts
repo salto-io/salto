@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element } from '@salto-io/adapter-api'
+import { Element, SaltoError } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TypeConfig } from '../config'
 import { ElementQuery } from './query'
+import { FetchElements } from './swagger'
+
 
 const { isDefined } = lowerdashValues
 
@@ -52,8 +54,8 @@ export const getElementsWithContext = async <E extends Element>({
   typeElementGetter: (args: {
     typeName: string
     contextElements?: Record<string, E[]>
-  }) => Promise<E[]>
-}): Promise<E[]> => {
+  }) => Promise<FetchElements<E[]>>
+}): Promise<FetchElements<E[]>> => {
   const includeTypes = _(supportedTypes)
     .entries()
     .filter(([typeName]) => fetchQuery.isTypeMatch(typeName))
@@ -75,30 +77,43 @@ export const getElementsWithContext = async <E extends Element>({
 
   const contextElements: Record<string, {
     elements: E[]
+    errors: SaltoError[]
     // if the type is only fetched as context for another type, do not persist it
     persistInstances: boolean
   }> = Object.fromEntries(await Promise.all(
-    [...independentEndpoints, ...additionalContextTypes].map(async typeName =>
-      [
+    [...independentEndpoints, ...additionalContextTypes].map(async typeName => {
+      const res = await typeElementGetter({ typeName })
+      return [
         typeName,
         {
-          elements: await typeElementGetter({ typeName }),
+          elements: res.elements,
           persistInstances: independentEndpoints.has(typeName),
+          errors: res.errors,
         },
-      ])
+      ]
+    })
   ))
   const dependentElements = await Promise.all(
-    [...dependentEndpoints].map(async typeName => typeElementGetter({
-      typeName,
-      contextElements: _.mapValues(contextElements, val => val.elements),
-    }))
+    [...dependentEndpoints].map(async typeName => {
+      const res = await typeElementGetter({
+        typeName,
+        contextElements: _.mapValues(contextElements, val => val.elements),
+      })
+      return { elements: res.elements, errors: res.errors }
+    })
   )
 
-  return [
-    ...Object.values(contextElements)
-      .flatMap(({ persistInstances, elements }) => (persistInstances
-        ? elements
-        : [])),
-    ...dependentElements.flat(),
-  ]
+  return {
+    elements: [
+      ...Object.values(contextElements)
+        .flatMap(({ persistInstances, elements }) => (persistInstances
+          ? elements
+          : [])),
+      ...Object.values(dependentElements).flatMap(({ elements }) => elements),
+    ],
+    errors: [
+      ...Object.values(contextElements).flatMap(({ errors }) => errors ?? []),
+      ...Object.values(dependentElements).flatMap(({ errors }) => errors ?? []),
+    ],
+  }
 }

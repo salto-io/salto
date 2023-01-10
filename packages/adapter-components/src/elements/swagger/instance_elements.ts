@@ -494,25 +494,23 @@ export const getAllInstances = async ({
     getElemIdFunc,
   }
 
-  const errors: SaltoError[] = []
-  const elements = await getElementsWithContext<InstanceElement>({
+  const { elements, errors } = await getElementsWithContext<InstanceElement>({
     fetchQuery,
     types: apiConfig.types,
     supportedTypes,
     typeElementGetter: async args => {
       try {
-        return await getInstancesForType({
-          ...elementGenerationParams,
-          ...args,
-        })
+        return {
+          elements: (await getInstancesForType({ ...elementGenerationParams, ...args })),
+          errors: [],
+        }
       } catch (e) {
         if (e.response?.status === 403) {
-          const NewError: SaltoError = {
+          const newError: SaltoError = {
             message: `Salto was forbidden from accessing the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access`,
             severity: 'Warning',
           }
-          errors.push(NewError)
-          return []
+          return { elements: [], errors: [newError] }
         }
         throw e
       }

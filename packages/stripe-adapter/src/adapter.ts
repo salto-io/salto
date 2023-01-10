@@ -91,7 +91,7 @@ export default class StripeAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.TypeSwaggerConfig>
-  ): Promise<InstanceElement[]> {
+  ): Promise<elementUtils.swagger.FetchElements<InstanceElement>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig[API_DEFINITIONS_CONFIG],
       // user config takes precedence over parsed config
@@ -122,7 +122,7 @@ export default class StripeAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getAllTypes()
     progressReporter.reportProgress({ message: 'Fetching instances' })
-    const instances = await this.getInstances(allTypes, parsedConfigs)
+    const { elements: instances } = await this.getInstances(allTypes, parsedConfigs)
 
     const elements = [
       ...Object.values(allTypes),

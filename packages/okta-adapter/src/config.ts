@@ -154,8 +154,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'accessPolicy', fieldType: 'string' },
       ],
       standaloneFields: [{ fieldName: 'appUsers' }],
-      // TODO SALTO-2644 It's possible to have many applications with the same name
-      idFields: ['name', 'status'],
+      idFields: ['label'],
       serviceIdField: 'id',
       fieldsToHide: [
         { fieldName: 'id' },

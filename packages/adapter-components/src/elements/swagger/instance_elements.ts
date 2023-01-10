@@ -40,7 +40,7 @@ const { isPlainRecord } = lowerdashValues
 const log = logger(module)
 
 export type FetchElements<T> = {
-  elements: T[]
+  elements: T
   errors?: SaltoError[]
 }
 
@@ -481,7 +481,7 @@ export const getAllInstances = async ({
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
   getElemIdFunc?: ElemIdGetter
-}): Promise<FetchElements<InstanceElement>> => {
+}): Promise<FetchElements<InstanceElement[]>> => {
   const { types, typeDefaults } = apiConfig
 
   const elementGenerationParams = {

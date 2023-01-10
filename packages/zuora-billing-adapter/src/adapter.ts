@@ -176,7 +176,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
-  ): Promise<elementUtils.swagger.FetchElements<InstanceElement>> {
+  ): Promise<elementUtils.swagger.FetchElements<InstanceElement[]>> {
     // standard objects are not included in the swagger and need special handling - done in a filter
     const standardObjectTypeName = getStandardObjectTypeName(this.apiDefinitions(parsedConfigs))
 

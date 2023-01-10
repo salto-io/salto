@@ -91,7 +91,7 @@ export default class StripeAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.TypeSwaggerConfig>
-  ): Promise<elementUtils.swagger.FetchElements<InstanceElement>> {
+  ): Promise<elementUtils.swagger.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig[API_DEFINITIONS_CONFIG],
       // user config takes precedence over parsed config

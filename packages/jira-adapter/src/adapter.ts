@@ -320,7 +320,7 @@ export default class JiraAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  ): Promise<elementUtils.swagger.FetchElements<InstanceElement>> {
+  ): Promise<elementUtils.swagger.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {

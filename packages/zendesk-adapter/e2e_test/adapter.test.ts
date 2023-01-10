@@ -262,7 +262,6 @@ describe('Zendesk adapter E2E', () => {
 
     const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
       _.zip(orgArray, fetchArray)
-        .sort()
         .forEach(val => {
           if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
             expect(val[0].elemID.getFullName()).toEqual(val[1].elemID.getFullName())

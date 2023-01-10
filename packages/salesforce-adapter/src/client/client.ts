@@ -43,6 +43,7 @@ import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
 import {
+  CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
@@ -52,7 +53,8 @@ import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
 import {
   ClientPollingConfig,
   ClientRateLimitConfig,
-  ClientRetryConfig, ConfigChangeSuggestion,
+  ClientRetryConfig,
+  ConfigChangeSuggestion,
   Credentials,
   CustomObjectsDeployRetryConfig,
   OauthAccessTokenCredentials,
@@ -688,7 +690,9 @@ export default class SalesforceClient {
       configSuggestionsCreators: [
         {
           predicate: ({ chunkInput, error }) => (chunkInput.length === 1 && isSocketTimeoutError(error)),
-          create: ({ chunkInput }) => [createFetchTimeoutConfigChange({ metadataType: 'CustomObject', name: chunkInput[0] })],
+          create: ({ chunkInput }) => [
+            createFetchTimeoutConfigChange({ metadataType: CUSTOM_OBJECT, name: chunkInput[0] }),
+          ],
         },
       ],
     })

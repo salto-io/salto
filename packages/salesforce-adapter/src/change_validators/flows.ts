@@ -29,11 +29,13 @@ import { detailedCompare } from '@salto-io/adapter-utils'
 import { FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
 import { SalesforceConfig } from '../types'
+import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
 const ACTIVE = 'Active'
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
+const URL_SUFFIX = 'lightning/setup/Flows/home'
 
 
 const isFlowChange = (change: Change<InstanceElement>):
@@ -96,14 +98,31 @@ const testCoveragePostDeploy = (instance: InstanceElement): DeployActions => ({
   },
 })
 
-const deployAsInactivePostDeploy = (instance: InstanceElement): DeployActions => ({
-  postAction: {
-    title: 'Deploying as inactive',
-    subActions: [
-      `Your salesforce is configured not to allow deployment of active flows, please make sure to manually activate the flow. Flow name: ${instance.elemID.getFullName()}`,
-    ],
-  },
-})
+const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl: URL | undefined): DeployActions => {
+  if (baseUrl !== undefined) {
+    return {
+      postAction: {
+        title: 'Deploying as inactive',
+        subActions: [
+          `go to: ${baseUrl}${URL_SUFFIX}`,
+          `Search for the ${instance.elemID.getFullName()} flow and click on it`,
+          'Activate it by clicking “Activate”',
+        ],
+      },
+    }
+  }
+  return {
+    postAction: {
+      title: 'Deploying as inactive',
+      subActions: [
+        'go to the flow set up page in your org',
+        `Search for the ${instance.elemID.getFullName()} flow and click on it`,
+        'Activate it by clicking “Activate”',
+      ],
+    },
+  }
+}
+
 
 const removeFlowError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
@@ -138,7 +157,7 @@ const deactivatingError = (instance: InstanceElement): ChangeError => ({
   detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}`,
 })
 
-const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean):
+const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl: URL | undefined):
     ChangeError => {
   if (enableActiveDeploy) {
     return {
@@ -151,7 +170,7 @@ const activeFlowModificationError = (instance: InstanceElement, enableActiveDepl
   }
   return {
     ...newVersionInfo(instance, false),
-    deployActions: deployAsInactivePostDeploy(instance),
+    deployActions: deployAsInactivePostDeploy(instance, baseUrl),
   }
 }
 
@@ -174,7 +193,7 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
   }
 }
 
-const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: boolean):
+const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl: URL | undefined):
     ChangeError => {
   if (enableActiveDeploy) {
     return {
@@ -187,20 +206,21 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
   }
   return {
     ...newVersionInfo(instance, false),
-    deployActions: deployAsInactivePostDeploy(instance),
+    deployActions: deployAsInactivePostDeploy(instance, baseUrl),
   }
 }
 
 /**
  * Handling all changes regarding active flows
  */
-const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): ChangeValidator =>
+const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean, client: SalesforceClient): ChangeValidator =>
   async (changes, elementsSource) => {
     const isPreferActiveVersion = config.fetch?.preferActiveFlowVersions
       ?? PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT
     const isEnableFlowDeployAsActiveEnabled = await getDeployAsActiveFlag(
       elementsSource, ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT
     )
+    const baseUrl = await client.getUrl()
     const flowChanges = await awu(changes)
       .filter(isInstanceChange)
       .filter(isFlowChange)
@@ -236,7 +256,7 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): Chan
       .filter(isModificationChange)
       .filter(isActiveFlowChange)
       .map(getChangeData)
-      .map(flow => activeFlowModificationError(flow, isEnableFlowDeployAsActiveEnabled))
+      .map(flow => activeFlowModificationError(flow, isEnableFlowDeployAsActiveEnabled, baseUrl))
 
     const activatingFlow = flowChanges
       .filter(isModificationChange)
@@ -245,14 +265,14 @@ const activeFlowValidator = (config: SalesforceConfig, isSandbox: boolean): Chan
         if (isActivatingChangeOnly(change)) {
           return activatingFlowError(getChangeData(change), isEnableFlowDeployAsActiveEnabled)
         }
-        return activeFlowModificationError(getChangeData(change), isEnableFlowDeployAsActiveEnabled)
+        return activeFlowModificationError(getChangeData(change), isEnableFlowDeployAsActiveEnabled, baseUrl)
       })
 
     const activeFlowAddition = flowChanges
       .filter(isAdditionChange)
       .map(getChangeData)
       .filter(flow => getFlowStatus(flow) === ACTIVE)
-      .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled))
+      .map(flow => activeFlowAdditionError(flow, isEnableFlowDeployAsActiveEnabled, baseUrl))
 
     return [...deactivatingFlowChangeErrors, ...activeFlowModification,
       ...activatingFlow, ...activeFlowAddition, ...removingFlowChangeErrors]

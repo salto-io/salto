@@ -18,7 +18,7 @@ import { Element, SaltoError } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TypeConfig } from '../config'
 import { ElementQuery } from './query'
-import { FetchElements } from './swagger'
+import { FetchElements } from './swagger/fetch_type'
 
 
 const { isDefined } = lowerdashValues

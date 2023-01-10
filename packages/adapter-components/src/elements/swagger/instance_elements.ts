@@ -33,16 +33,13 @@ import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../
 import { getElementsWithContext } from '../element_getter'
 import { TimeoutError } from '../../client/http_client'
 import { ElementQuery } from '../query'
+import { FetchElements } from './fetch_type'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
 const { isPlainRecord } = lowerdashValues
 const log = logger(module)
 
-export type FetchElements<T> = {
-  elements: T
-  errors?: SaltoError[]
-}
 
 class InvalidTypeConfig extends Error {}
 

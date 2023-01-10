@@ -70,16 +70,16 @@ const isChangeInSubdomain = (change: Change<InstanceElement>): boolean => {
  */
 export const brandCreationValidator: (client: ZendeskClient) =>
   ChangeValidator = client => async changes => {
-    const brandAddition = await awu(changes)
+    const brandSubdomainChanges = await awu(changes)
       .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === BRAND_TYPE_NAME)
       .filter(isChangeInSubdomain)
       .map(getChangeData)
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === BRAND_TYPE_NAME)
       .map(async instance => ({ instance, valid: await isSubdomainValid(instance, client) }))
       .toArray()
 
-    return brandAddition
+    return brandSubdomainChanges
       .filter(brandDetails => !brandDetails.valid)
       .map(({ instance, valid }): ChangeError => {
         if (valid === undefined) {

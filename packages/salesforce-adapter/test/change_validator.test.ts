@@ -16,6 +16,8 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import createSalesforceChangeValidator, { changeValidators } from '../src/change_validator'
+import mockAdapter from './adapter'
+import SalesforceClient from '../src/client/client'
 
 jest.mock('@salto-io/adapter-utils', () => {
   const actual = jest.requireActual('@salto-io/adapter-utils')
@@ -28,9 +30,13 @@ jest.mock('@salto-io/adapter-utils', () => {
 describe('createSalesforceChangeValidator', () => {
   let createChangeValidatorMock: jest.MockedFunction<typeof createChangeValidator>
   let validator: ChangeValidator
+  let client: SalesforceClient
+
   beforeEach(() => {
     createChangeValidatorMock = createChangeValidator as typeof createChangeValidatorMock
     createChangeValidatorMock.mockClear()
+    const adapter = mockAdapter({})
+    client = adapter.client
   })
 
   describe('when checkOnly is false', () => {
@@ -38,7 +44,8 @@ describe('createSalesforceChangeValidator', () => {
       beforeEach(() => {
         validator = createSalesforceChangeValidator({ config: {},
           isSandbox: false,
-          checkOnly: false })
+          checkOnly: false,
+          client })
       })
       it('should create a validator', () => {
         expect(validator).toBeDefined()
@@ -57,13 +64,14 @@ describe('createSalesforceChangeValidator', () => {
                 { customFieldType: false } },
           isSandbox: false,
           checkOnly: false,
+          client,
         })
       })
       it('should create a validator', () => {
         expect(validator).toBeDefined()
       })
       it('should customFieldType in the disabled validator list', () => {
-        const disabledValidators = [changeValidators.customFieldType.creator({}, false,)]
+        const disabledValidators = [changeValidators.customFieldType.creator({}, false, client)]
         expect(createChangeValidator).toHaveBeenCalledWith(
           expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1),
           disabledValidators
@@ -83,6 +91,7 @@ describe('createSalesforceChangeValidator', () => {
           },
           isSandbox: false,
           checkOnly: false,
+          client,
         })
       )
       describe('when checkOnly is true in the deploy config', () => {
@@ -113,6 +122,7 @@ describe('createSalesforceChangeValidator', () => {
         config: {},
         isSandbox: false,
         checkOnly: true,
+        client,
       })
     })
     it('should create validator according to the defaultInValidate field', () => {

@@ -95,6 +95,8 @@ export default ({
     targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
     automationAllConditionsValidator,
+    macroActionsTicketFieldDeactivationValidator,
+    customRoleRemovalValidator(client),
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
@@ -111,8 +113,6 @@ export default ({
     orderChildrenParentValidator,
     guideOrderDeletionValidator,
     // ******************************
-    macroActionsTicketFieldDeactivationValidator,
-    customRoleRemovalValidator(client),
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

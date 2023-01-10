@@ -21,6 +21,7 @@ import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { DescribeSObjectResult, MetadataInfo } from 'jsforce'
 import SalesforceClient, {
   API_VERSION,
   ApiLimitsTooLowError,
@@ -30,7 +31,7 @@ import SalesforceClient, {
 import mockClient from './client'
 import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
-import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { CUSTOM_OBJECT, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import { MappableErrorProperty, MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE } from '../src/client/user_facing_errors'
 
@@ -411,6 +412,111 @@ describe('salesforce client', () => {
       testConnection.metadata.list.mockResolvedValue('aaa' as unknown as FileProperties[])
       const result = testClient.listMetadataObjects({ type: 'CustomObject' })
       await expect(result).rejects.toThrow()
+    })
+  })
+
+  describe('when jsforce client throws error that creates config suggestion', () => {
+    let testClient: SalesforceClient
+    let testConnection: MockInterface<Connection>
+
+    beforeEach(() => {
+      const mocks = mockClient()
+      testClient = mocks.client
+      testConnection = mocks.connection
+    })
+
+    describe('on readMetadata', () => {
+      const METADATA_TYPE = 'Role'
+      const METADATA_INSTANCE_NAMES = [
+        'CEO',
+        'CTO',
+      ]
+      const TIMEOUT_METADATA_INSTANCE_NAMES = [
+        'Jira-Manager',
+        'Product',
+      ]
+
+      describe('on ESOCKETTIMEDOUT', () => {
+        beforeEach(() => {
+          testConnection.metadata.read
+            .mockImplementationOnce(() => { throw new Error('ESOCKETTIMEDOUT') })
+            .mockImplementation(async (_typeName, fullNames) => {
+              const names = makeArray(fullNames)
+              const [instanceName] = names
+              if (names.length > 1) {
+                throw new Error('Bug in Test. Didnt send chunk on each Element separately')
+              }
+              if (TIMEOUT_METADATA_INSTANCE_NAMES.includes(instanceName)) {
+                throw new Error('ESOCKETTIMEDOUT')
+              }
+              return {
+                fullName: instanceName,
+              }
+            })
+        })
+        it('should create config suggestion', async () => {
+          const { result, errors, configSuggestions } = await testClient
+            .readMetadata(METADATA_TYPE, METADATA_INSTANCE_NAMES.concat(TIMEOUT_METADATA_INSTANCE_NAMES))
+
+          const expectedConfigSuggestions = TIMEOUT_METADATA_INSTANCE_NAMES
+            .map(name => ({
+              type: 'metadataExclude',
+              value: { metadataType: METADATA_TYPE, name },
+            }))
+          const expectedResult: MetadataInfo[] = METADATA_INSTANCE_NAMES
+            .map(name => ({ fullName: name }))
+
+          expect(configSuggestions).toIncludeAllPartialMembers(expectedConfigSuggestions)
+          expect(errors).toBeEmpty()
+          expect(result).toEqual(expectedResult)
+        })
+      })
+    })
+
+    describe('on describeSObjects', () => {
+      const CUSTOM_OBJECT_NAMES = [
+        'Account',
+        'Status',
+      ]
+      const TIMEOUT_CUSTOM_OBJECT_NAMES = [
+        'CMT__mdt',
+        'TestCustomObject__c',
+      ]
+
+      describe('on ESOCKETTIMEDOUT', () => {
+        beforeEach(() => {
+          testConnection.soap.describeSObjects
+            .mockImplementationOnce(() => { throw new Error('ESOCKETTIMEDOUT') })
+            .mockImplementation(async input => {
+              const objectNames = makeArray(input)
+              const [objectName] = objectNames
+              if (objectNames.length > 1) {
+                throw new Error('Bug in Test. Didnt send chunk on each Element separately')
+              }
+              if (TIMEOUT_CUSTOM_OBJECT_NAMES.includes(objectName)) {
+                throw new Error('ESOCKETTIMEDOUT')
+              }
+              return {
+                name: objectName,
+              } as DescribeSObjectResult
+            })
+        })
+        it('should create config suggestions only for instances that caused timeout', async () => {
+          const { result, errors, configSuggestions } = await testClient
+            .describeSObjects(CUSTOM_OBJECT_NAMES.concat(TIMEOUT_CUSTOM_OBJECT_NAMES))
+
+          const expectedConfigSuggestions = TIMEOUT_CUSTOM_OBJECT_NAMES
+            .map(name => ({
+              value: { metadataType: CUSTOM_OBJECT, name },
+            }))
+          const expectedResult = CUSTOM_OBJECT_NAMES
+            .map(objectName => ({ name: objectName }))
+
+          expect(result).toIncludeAllPartialMembers(expectedResult)
+          expect(errors).toBeEmpty()
+          expect(configSuggestions).toIncludeAllPartialMembers(expectedConfigSuggestions)
+        })
+      })
     })
   })
 

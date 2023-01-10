@@ -78,6 +78,7 @@ import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import deployFlowsFilter from './filters/deploy_flows'
+import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -165,6 +166,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
+  { creator: organizationWideDefaults, addsNewInformation: true },
 ]
 
 // By default we run all filters and provide a client

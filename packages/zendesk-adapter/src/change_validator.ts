@@ -104,6 +104,7 @@ export default ({
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,
     helpCenterCreationOrRemovalValidator(client, apiConfig),
+    defaultGroupDeletion,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,
@@ -111,7 +112,6 @@ export default ({
     guideOrderDeletionValidator,
     // ******************************
     macroActionsTicketFieldDeactivationValidator,
-    defaultGroupDeletion,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

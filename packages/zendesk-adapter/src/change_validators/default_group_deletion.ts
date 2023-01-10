@@ -14,20 +14,34 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, getChangeData,
+  Change,
+  ChangeValidator, getChangeData, isAdditionOrModificationChange,
   isInstanceChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { GROUP_TYPE_NAME } from '../constants'
 
-export const defaultGroupDeletion: ChangeValidator = async changes => (
-  changes
-    .filter(isInstanceChange).filter(isRemovalChange).map(getChangeData)
-    .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
-    .filter(group => group.value.default === true)
-    .map(group => ({
-      elemID: group.elemID,
+// Check if there was any change that marked a new default group
+const isThereNewDefaultGroup = (changes: Change[]): boolean =>
+  changes.filter(isInstanceChange).filter(isAdditionOrModificationChange).map(getChangeData)
+    .some(group => group.value.default === true)
+
+/**
+ * Validates the default group is not deleted, unless another group becomes the default
+ * There is a filter that runs modifications before removals (so change of default group will run before deletion)
+ */
+export const defaultGroupDeletion: ChangeValidator = async changes => {
+  const groupChanges = changes.filter(isInstanceChange)
+    .filter(change => getChangeData(change).elemID.typeName === GROUP_TYPE_NAME)
+
+  const defaultGroupRemoval = groupChanges.filter(isRemovalChange).map(getChangeData)
+    .find(group => group.value.default === true)
+
+  // If there is no new default group and the previous one is removed, create an error
+  return isThereNewDefaultGroup(groupChanges) || defaultGroupRemoval === undefined
+    ? [] : [{
+      elemID: defaultGroupRemoval.elemID,
       severity: 'Error',
       message: 'Default group cannot be deleted',
-      detailedMessage: `Group '${group.elemID.name}' is marked as default and therefore cannot be deleted`,
-    }))
-)
+      detailedMessage: `Group '${defaultGroupRemoval.elemID.name}' is marked as default and therefore cannot be deleted`,
+    }]
+}

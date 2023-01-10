@@ -43,4 +43,15 @@ describe('defaultGroupDeletion', () => {
       detailedMessage: `Group '${defaultGroup.elemID.name}' is marked as default and therefore cannot be deleted`,
     })
   })
+  it('dont return error if another group became default', async () => {
+    const newDefaultGroup = defaultGroup.clone()
+    const changes = [
+      toChange({ before: defaultGroup }),
+      toChange({ before: notDefaultGroup }),
+      toChange({ after: newDefaultGroup }),
+    ]
+
+    const errors = await defaultGroupDeletion(changes)
+    expect(errors.length).toBe(0)
+  })
 })

@@ -16,7 +16,7 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
-import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD } from '../constants'
+import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, isRelationshipFieldName } from '../constants'
 
 export type JSONBool = boolean | 'true' | 'false'
 
@@ -224,10 +224,7 @@ export class CustomField implements MetadataInfo {
     } else if (type === FIELD_TYPE_NAMES.CHECKBOX && !formula) {
       // For Checkbox the default value comes from defaultVal and not defaultValFormula
       this.defaultValue = defaultVal
-    } else if (type === FIELD_TYPE_NAMES.LOOKUP) {
-      this.relationshipName = relationshipName
-      this.referenceTo = relatedTo
-    } else if (type === FIELD_TYPE_NAMES.MASTER_DETAIL) {
+    } else if (isRelationshipFieldName(type)) {
       this.relationshipName = relationshipName
       this.referenceTo = relatedTo
     } else if (type === FIELD_TYPE_NAMES.ROLLUP_SUMMARY && summaryFilterItems) {

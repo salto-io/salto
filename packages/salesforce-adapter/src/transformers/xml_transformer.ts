@@ -22,7 +22,6 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import fs from 'fs'
 import { API_VERSION } from '../client/client'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
@@ -444,14 +443,12 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       const typeName = getManifestTypeName(type)
       deleteManifest.get(typeName).push(name)
     },
-    getZip: async () => {
+    getZip: () => {
       zip.file(`${PACKAGE}/package.xml`, toPackageXml(addManifest))
       if (deleteManifest.size !== 0) {
         zip.file(`${PACKAGE}/${deletionsPackageName}`, toPackageXml(deleteManifest))
       }
-      const buffer = await zip.generateAsync({ type: 'nodebuffer' })
-      fs.writeFileSync('/Users/tamir/xmls/out.zip', buffer)
-      return buffer
+      return zip.generateAsync({ type: 'nodebuffer' })
     },
     getDeletionsPackageName: () => deletionsPackageName,
   }

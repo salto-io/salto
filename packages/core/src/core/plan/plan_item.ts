@@ -20,14 +20,14 @@ import { Change, getChangeData, DetailedChange, CompareOptions } from '@salto-io
 import { detailedCompare } from '@salto-io/adapter-utils'
 
 export type PlanItemId = NodeId
-type ChangeWithDetailedChanges = Change & {
+export type ChangeWithDetails = Change & {
   detailedChanges: () => DetailedChange[]
 }
 export type PlanItem = Group<Change> & {
   action: ActionName
   changes: () => Iterable<Change>
   detailedChanges: () => Iterable<DetailedChange>
-  changesWithDetailed: () => Iterable<ChangeWithDetailedChanges>
+  changesWithDetails: () => Iterable<ChangeWithDetails>
 }
 
 const getGroupAction = (group: Group<Change>): ActionName => {
@@ -68,7 +68,7 @@ export const addPlanItemAccessors = (
       .map(change => getDetailedChanges(change, compareOptions))
       .flatten()
   },
-  changesWithDetailed() {
+  changesWithDetails() {
     return wu(group.items.values())
       .map(change => ({
         ...change,

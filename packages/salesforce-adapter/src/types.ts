@@ -293,7 +293,10 @@ export const usernamePasswordCredentialsType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { message: 'Token (empty if your org uses IP whitelisting)' },
     },
-    sandbox: { refType: BuiltinTypes.BOOLEAN },
+    sandbox: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: { message: 'Is Sandbox/Scratch Org' },
+    },
   },
 })
 

@@ -47,7 +47,7 @@ import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-  SALESFORCE,
+  SALESFORCE, SALESFORCE_ERRORS,
 } from '../constants'
 import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
 import {
@@ -64,7 +64,7 @@ import {
 } from '../types'
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './decorators'
-import { createFetchTimeoutConfigChange } from '../config_change'
+import { createFetchTimeoutConfigChange, createInvalidCrossReferenceKeyConfigChange } from '../config_change'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -271,6 +271,10 @@ const realConnection = (
 const isSocketTimeoutError = (e: Error): boolean => (
   e.message === 'ESOCKETTIMEDOUT'
 )
+const isInvalidCrossReferenceKeyError = (e: Error): boolean => {
+  const errorCode = _.get(e, 'errorCode')
+  return _.isString(errorCode) && errorCode === SALESFORCE_ERRORS.INVALID_CROSS_REFERENCE_KEY
+}
 
 type ConfigSuggestionsInput<T> = {
   error: Error
@@ -660,6 +664,12 @@ export default class SalesforceClient {
         {
           predicate: ({ chunkInput, error }) => (chunkInput.length === 1 && isSocketTimeoutError(error)),
           create: ({ chunkInput }) => [createFetchTimeoutConfigChange({ metadataType: type, name: chunkInput[0] })],
+        },
+        {
+          predicate: ({ chunkInput, error }) => (chunkInput.length === 1 && isInvalidCrossReferenceKeyError(error)),
+          create: ({ chunkInput }) => [
+            createInvalidCrossReferenceKeyConfigChange({ metadataType: type, name: chunkInput[0] }),
+          ],
         },
       ],
     })

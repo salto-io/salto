@@ -31,7 +31,7 @@ import SalesforceClient, {
 import mockClient from './client'
 import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
-import { CUSTOM_OBJECT, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { CUSTOM_OBJECT, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, SALESFORCE_ERRORS } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import { MappableErrorProperty, MAPPABLE_ERROR_TO_USER_FRIENDLY_MESSAGE } from '../src/client/user_facing_errors'
 
@@ -454,7 +454,48 @@ describe('salesforce client', () => {
               }
             })
         })
-        it('should create config suggestion', async () => {
+        it('should create config suggestions only for instances that caused timeout', async () => {
+          const { result, errors, configSuggestions } = await testClient
+            .readMetadata(METADATA_TYPE, METADATA_INSTANCE_NAMES.concat(TIMEOUT_METADATA_INSTANCE_NAMES))
+
+          const expectedConfigSuggestions = TIMEOUT_METADATA_INSTANCE_NAMES
+            .map(name => ({
+              type: 'metadataExclude',
+              value: { metadataType: METADATA_TYPE, name },
+            }))
+          const expectedResult: MetadataInfo[] = METADATA_INSTANCE_NAMES
+            .map(name => ({ fullName: name }))
+
+          expect(configSuggestions).toIncludeAllPartialMembers(expectedConfigSuggestions)
+          expect(errors).toBeEmpty()
+          expect(result).toEqual(expectedResult)
+        })
+      })
+      describe('on INVALID_CROSS_REFERENCE_KEY', () => {
+        const INVALID_CROSS_REFERENCE_KEY_ERROR = {
+          message: SALESFORCE_ERRORS.INVALID_CROSS_REFERENCE_KEY,
+          name: SALESFORCE_ERRORS.INVALID_CROSS_REFERENCE_KEY,
+          errorCode: SALESFORCE_ERRORS.INVALID_CROSS_REFERENCE_KEY,
+        }
+        beforeEach(() => {
+          testConnection.metadata.read
+            .mockImplementationOnce(() => { throw INVALID_CROSS_REFERENCE_KEY_ERROR })
+            .mockImplementation(async (_typeName, fullNames) => {
+              const names = makeArray(fullNames)
+              const [instanceName] = names
+              if (names.length > 1) {
+                throw new Error('Bug in Test. Didnt send chunk on each Element separately')
+              }
+              if (TIMEOUT_METADATA_INSTANCE_NAMES.includes(instanceName)) {
+                throw INVALID_CROSS_REFERENCE_KEY_ERROR
+              }
+              return {
+                fullName: instanceName,
+              }
+            })
+        })
+
+        it('should create config suggestions only for instances that failed on INVALID_CROSS_REFERENCE_KEY', async () => {
           const { result, errors, configSuggestions } = await testClient
             .readMetadata(METADATA_TYPE, METADATA_INSTANCE_NAMES.concat(TIMEOUT_METADATA_INSTANCE_NAMES))
 

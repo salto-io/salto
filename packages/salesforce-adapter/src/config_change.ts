@@ -111,6 +111,14 @@ export const createFetchTimeoutConfigChange = (
   reason: `${metadataQueryParams.metadataType} with name ${metadataQueryParams.name} exceeded fetch timeout`,
 })
 
+export const createInvalidCrossReferenceKeyConfigChange = (
+  metadataQueryParams: Required<Pick<MetadataQueryParams, 'metadataType' | 'name'>>
+): MetadataConfigSuggestion => ({
+  type: 'metadataExclude',
+  value: metadataQueryParams,
+  reason: `${metadataQueryParams.metadataType} with name ${metadataQueryParams.name} failed due to INVALID_CROSS_REFERENCE_KEY`,
+})
+
 export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery):
   ConfigChangeSuggestion => createSkippedListConfigChange({ type: res.type, instance: res.folder })
 

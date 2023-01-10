@@ -117,7 +117,7 @@ const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Pr
     return []
   }
 
-  const queries = await buildSelectQueries('User', ['Username'], users.map(userName => ({ Username: userName })), SALESFORCE_MAX_QUERY_LEN)
+  const queries = await buildSelectQueries('User', ['Username'], users.map(userName => ({ Username: `'${userName}'` })), SALESFORCE_MAX_QUERY_LEN)
 
   return awu(await queryClient(client, queries)).map(sfRecord => sfRecord.Username).toArray()
 }

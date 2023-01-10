@@ -20,7 +20,7 @@ import {
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { CURRENCY, DATASET, EXCHANGE_RATE, NETSUITE, WORKBOOK } from './constants'
+import { CURRENCY, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { AdditionalDependencies, AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
@@ -247,6 +247,12 @@ export const fetchDefault: FetchParams = {
       type: CURRENCY,
       fields: [
         EXCHANGE_RATE,
+      ],
+    },
+    {
+      type: 'customrecord.*',
+      fields: [
+        PERMISSIONS,
       ],
     },
   ],

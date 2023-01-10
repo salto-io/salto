@@ -156,7 +156,13 @@ const cleanup = async (adapterAttr: Reals): Promise<void> => {
     progressReporter:
       { reportProgress: () => null },
   })
-  expect(fetchResult.errors).toHaveLength(0)
+  expect(fetchResult.errors).toHaveLength(1)
+  expect(fetchResult.errors).toEqual([
+    {
+      severity: 'Warning',
+      message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access',
+    },
+  ])
   const { elements } = fetchResult
   const e2eBrandInstances = elements
     .filter(isInstanceElement)
@@ -224,7 +230,13 @@ describe('Zendesk adapter E2E', () => {
           { reportProgress: () => null },
       })
       elements = fetchResult.elements
-      expect(fetchResult.errors).toHaveLength(0)
+      expect(fetchResult.errors).toHaveLength(1)
+      expect(fetchResult.errors).toEqual([
+        {
+          severity: 'Warning',
+          message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access',
+        },
+      ])
       adapterAttr = realAdapter(
         { credentials: credLease.value,
           elementsSource: buildElementsSourceFromElements(elements) },

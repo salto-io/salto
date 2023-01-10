@@ -78,7 +78,7 @@ const extractStandaloneFields = async (
       getElemIdFunc,
     })
     additionalInstances.push(...refInstances)
-    return refInstances.map(refInst => new ReferenceExpression(refInst.elemID))
+    return refInstances.map(refInst => new ReferenceExpression(refInst.elemID, refInst))
   }
 
   const extractFields: TransformFunc = async ({ value, field, path }) => {

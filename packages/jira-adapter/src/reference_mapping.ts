@@ -558,6 +558,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: 'Priority' },
   },
+  {
+    src: { field: 'statType', parentTypes: ['GadgetConfig'] },
+    serializationStrategy: 'id',
+    target: { type: 'Field' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

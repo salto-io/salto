@@ -109,6 +109,11 @@ describe('views filter', () => {
             operator: 'is',
             value: 3,
           },
+          {
+            field: 'custom_status_id',
+            operator: 'includes',
+            value: [5, 6],
+          },
         ],
         any: [
           {
@@ -147,6 +152,7 @@ describe('views filter', () => {
       expect(clonedView.value.all).toEqual([
         { field: 'status', operator: 'is', value: 'open' },
         { field: 'brand_id', operator: 'is', value: '3' },
+        { field: 'custom_status_id', operator: 'includes', value: ['5', '6'] },
       ])
     })
     it('should add output', async () => {

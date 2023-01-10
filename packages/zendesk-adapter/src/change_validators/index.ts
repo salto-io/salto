@@ -49,3 +49,4 @@ export { guideOrderDeletionValidator } from './guide_order/order_deletion_valida
 export { articleAttachmentSizeValidator } from './article_attachment_size'
 export { macroActionsTicketFieldDeactivationValidator } from './macro_actions'
 export { defaultGroupDeletion } from './default_group_deletion'
+export { customRoleRemovalValidator } from './custom_role_removal'

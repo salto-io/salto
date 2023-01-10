@@ -34,7 +34,6 @@
     "@salto-io/adapter-api": "0.3.29",
     "@salto-io/adapter-components": "0.3.29",
     "@salto-io/adapter-utils": "0.3.29",
-    "@salto-io/e2e-credentials-store": "0.3.29",
     "@salto-io/logging": "0.3.29",
     "@salto-io/lowerdash": "0.3.29",
     "@types/parse-link-header": "^2.0.0",
@@ -46,6 +45,7 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
+    "@salto-io/e2e-credentials-store": "0.3.29",
     "@salto-io/test-utils": "0.3.29",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",

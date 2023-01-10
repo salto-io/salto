@@ -35,6 +35,7 @@ import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType,
 import { fullApiName } from './filters/utils'
 import { INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
+import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 
 const { awu } = collections.asynciterable
 
@@ -176,6 +177,7 @@ const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): 
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
+  checkOnly: boolean,
 ): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<Error> } => {
   const allFailureMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentFailures))
@@ -188,8 +190,9 @@ const processDeployResponse = (
     ))
   const componentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
+    .map(getUserFriendlyDeployMessage)
     .map(failure => new Error(
-      `Failed to deploy ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
+      `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
   const codeCoverageWarningErrors = makeArray(result.details)
     .map(detail => detail.runTestResult as RunTestsResult | undefined)
@@ -307,7 +310,7 @@ export const deployMetadata = async (
   log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
-    deployRes, pkg.getDeletionsPackageName()
+    deployRes, pkg.getDeletionsPackageName(), checkOnly ?? false
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)

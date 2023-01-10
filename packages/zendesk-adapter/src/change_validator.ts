@@ -27,6 +27,7 @@ import {
   removedFromParentValidatorCreator,
   parentAnnotationToHaveSingleValueValidatorCreator,
   customRoleNameValidator,
+  customRoleRemovalValidator,
   invalidActionsValidator,
   orderInstanceContainsAllTheInstancesValidator,
   triggerOrderInstanceContainsAllTheInstancesValidator,
@@ -89,11 +90,13 @@ export default ({
     invalidActionsValidator,
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
-    brandCreationValidator,
+    brandCreationValidator(client),
     webhookAuthDataValidator(client),
     targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
     automationAllConditionsValidator,
+    macroActionsTicketFieldDeactivationValidator,
+    customRoleRemovalValidator(client),
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
@@ -111,7 +114,6 @@ export default ({
     orderChildrenParentValidator,
     guideOrderDeletionValidator,
     // ******************************
-    macroActionsTicketFieldDeactivationValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

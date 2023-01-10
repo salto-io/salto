@@ -73,6 +73,7 @@ export const IS_SUB_INSTANCE = 'isSubInstance'
 export const PARENT = 'parent'
 export const CUSTOM_FIELD_PREFIX = 'custom_'
 export const EXCHANGE_RATE = 'exchangeRate'
+export const PERMISSIONS = 'permissions'
 
 // Field Annotations
 export const SOAP = 'soap'

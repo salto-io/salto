@@ -167,6 +167,17 @@ const getFullName = (obj: FileProperties): string => {
   return obj.fullName
 }
 
+const getPropsWithFullName = (obj: FileProperties): FileProperties => {
+  const correctFullName = getFullName(obj)
+  return {
+    ...obj,
+    fullName: correctFullName,
+    fileName: obj.fileName.includes(correctFullName)
+      ? obj.fileName
+      : obj.fileName.replace(obj.fullName, correctFullName),
+  }
+}
+
 const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
   filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
   const newMetadata = filePropertiesMap[metadata.fullName]?.id
@@ -277,7 +288,10 @@ export const retrieveMetadataInstances = async ({
       ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
-    return _.uniqBy(res, file => file.fullName)
+    return _(res)
+      .uniqBy(file => file.fullName)
+      .map(getPropsWithFullName)
+      .value()
   }
 
   const typesByName = await keyByAsync(types, t => apiName(t))

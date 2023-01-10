@@ -494,6 +494,14 @@ const toPlanItem = (
   action: parent.action,
   changes: () => [parent, ...subChanges],
   detailedChanges: () => detailed,
+  changesWithDetails: () => {
+    const changes = [parent, ...subChanges]
+    const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())
+    return changes.map(change => ({
+      ...change,
+      detailedChanges: () => detailedChangesByChange[getChangeData(change).elemID.getFullName()],
+    }))
+  },
 })
 
 const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {

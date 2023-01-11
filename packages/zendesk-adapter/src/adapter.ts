@@ -112,7 +112,11 @@ import guideArrangePaths from './filters/guide_arrange_paths'
 import guideDefaultLanguage from './filters/guide_default_language_settings'
 import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_translation'
 import ticketFormDeploy from './filters/ticket_form'
+<<<<<<< HEAD
 import supportAddress from './filters/support_address'
+=======
+import customStatus from './filters/custom_statuses'
+>>>>>>> 5f8f6fc10 (support deploy of default)
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -155,7 +159,11 @@ export const DEFAULT_FILTERS = [
   removeDefinitionInstancesFilter,
   usersFilter,
   tagsFilter,
+<<<<<<< HEAD
   supportAddress,
+=======
+  customStatus,
+>>>>>>> 5f8f6fc10 (support deploy of default)
   guideAddBrandToArticleTranslation,
   macroAttachmentsFilter,
   ticketFormDeploy,

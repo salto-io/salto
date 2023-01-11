@@ -40,7 +40,12 @@ export const EVERYONE_USER_TYPE = 'Everyone'
 export const TICKET_FORM_TYPE_NAME = 'ticket_form'
 export const TICKET_FORM_ORDER_TYPE_NAME = 'ticket_form_order'
 export const SUPPORT_ADDRESS_TYPE_NAME = 'support_address'
-
+export const CUSTOM_STATUS_TYPE_NAME = 'custom_status'
+export const DEFAULT_CUSTOM_STATUSES_TYPE_NAME = 'default_custom_statuses'
+export const PENDING_CATEGORY = 'pending'
+export const SOLVED_CATEGORY = 'solved'
+export const HOLD_CATEGORY = 'hold'
+export const OPEN_CATEGORY = 'open'
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'

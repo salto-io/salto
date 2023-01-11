@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,14 +18,17 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/ad
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
 import { queryClient } from './utils'
-import { createInstanceElement } from '../transformers/transformer'
-import { SALESFORCE, TYPES_PATH } from '../constants'
+import { createInstanceElement, getTypePath } from '../transformers/transformer'
+import { SALESFORCE } from '../constants'
 
 const log = logger(module)
 
 const ORGANIZATION_OBJECT_TYPE = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'Organization'),
   fields: {
+    fullName: {
+      refType: BuiltinTypes.STRING,
+    },
     DefaultAccountAccess: {
       refType: BuiltinTypes.STRING,
     },
@@ -56,7 +59,7 @@ const ORGANIZATION_OBJECT_TYPE = new ObjectType({
     [CORE_ANNOTATIONS.UPDATABLE]: false,
   },
   isSettings: true,
-  path: [SALESFORCE, TYPES_PATH, 'Organization'],
+  path: getTypePath('Organization'),
 })
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
@@ -71,7 +74,7 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       .filter(([key]) => (Object.keys(ORGANIZATION_OBJECT_TYPE.fields).includes(key)))
     const organizationInstance = createInstanceElement(
       {
-        fullName: new ElemID(SALESFORCE, 'Organization', 'instance', organizationObject.Name).getFullName(),
+        fullName: 'Organization', // Note: Query results don't have a fullName field
         ...Object.fromEntries(relevantFields),
       },
       ORGANIZATION_OBJECT_TYPE,

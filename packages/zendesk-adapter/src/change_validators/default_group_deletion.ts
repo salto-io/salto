@@ -22,7 +22,7 @@ import { GROUP_TYPE_NAME } from '../constants'
 
 // Check if there was any change that marked a new default group
 const isThereNewDefaultGroup = (changes: Change[]): boolean =>
-  changes.filter(isInstanceChange).filter(isAdditionOrModificationChange).map(getChangeData)
+  changes.filter(isAdditionOrModificationChange).map(getChangeData)
     .some(group => group.value.default === true)
 
 /**

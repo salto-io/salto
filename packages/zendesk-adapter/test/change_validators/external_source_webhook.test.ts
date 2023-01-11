@@ -14,15 +14,26 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { externalSourceWebhook } from '../../src/change_validators'
+import { APP_INSTALLATION_TYPE_NAME } from '../../src/filters/app'
 
 describe('Webhooks with external_source', () => {
+  const appInstallation = new InstanceElement(
+    'someAppInstallation',
+    new ObjectType({ elemID: new ElemID(ZENDESK, APP_INSTALLATION_TYPE_NAME) }),
+    { settings: { name: 'test' } }
+  )
   const webhook = new InstanceElement(
     'webhook',
     new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }),
-    { status: 'active', signing_secret: '123', external_source: { type: 'test' }, name: 'test' }
+    {
+      status: 'active',
+      signing_secret: '123',
+      name: 'test',
+      external_source: { data: { installation_id: new ReferenceExpression(appInstallation.elemID, appInstallation) } },
+    }
   )
   const regularWebhook = webhook.clone()
   delete regularWebhook.value.external_source
@@ -34,8 +45,8 @@ describe('Webhooks with external_source', () => {
     expect(errors).toMatchObject([{
       elemID: webhook.elemID,
       severity: 'Error',
-      message: 'Webhooks installed by an external app can\'t be removal TODO',
-      detailedMessage: 'TODO',
+      message: 'Removal of a webhook that was installed by an external app',
+      detailedMessage: `This webhook was installed by the external app '${appInstallation.elemID.name}'. In order to remove it, please uninstall that app.`,
     }])
   })
   it('webhook addition', async () => {
@@ -44,9 +55,9 @@ describe('Webhooks with external_source', () => {
 
     expect(errors).toMatchObject([{
       elemID: webhook.elemID,
-      severity: 'Warning',
-      message: 'External app\' webhook installation, it wont be connected to the app',
-      detailedMessage: 'TODO',
+      severity: 'Error',
+      message: 'Installation of a webhook that was installed by an external app',
+      detailedMessage: `This webhook was installed by the external app '${appInstallation.elemID.name}'. In order to add it, please install that app.`,
     }])
   })
 
@@ -59,8 +70,8 @@ describe('Webhooks with external_source', () => {
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Error',
-        message: 'external_source field change',
-        detailedMessage: 'Cannot set \'external_source\' or \'signing_secret\' on change of a webhook',
+        message: 'Illegal webhook modification',
+        detailedMessage: 'Cannot modify \'external_source\' or \'signing_secret\' fields of a webhook',
       }])
     })
     it('modification of signing_secret', async () => {
@@ -71,8 +82,8 @@ describe('Webhooks with external_source', () => {
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Error',
-        message: 'external_source field change',
-        detailedMessage: 'Cannot set \'external_source\' or \'signing_secret\' on change of a webhook',
+        message: 'Illegal webhook modification',
+        detailedMessage: 'Cannot modify \'external_source\' or \'signing_secret\' fields of a webhook',
       }])
     })
     it('deactivation of the webhook', async () => {
@@ -83,7 +94,7 @@ describe('Webhooks with external_source', () => {
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Warning',
-        message: 'External source webhook deactivation',
+        message: 'Deactivation of a webhook that was installed by an external app',
         detailedMessage: 'If you deactivate this webhook, the app that created it might not work as intended. You\'ll need to reactivate it to use it again.',
       }])
     })
@@ -95,7 +106,7 @@ describe('Webhooks with external_source', () => {
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Warning',
-        message: 'External source webhook change',
+        message: 'Change of a webhook that was installed by an external app',
         detailedMessage: 'If you edit this webhook, the app that created it might not work as intended.',
       }])
     })

@@ -24,18 +24,18 @@ import {
   isAdditionChange, ElemID, DeployActions, Change, isRemovalChange, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { isEmpty, isUndefined } from 'lodash'
+import _, { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
 import { SalesforceConfig } from '../types'
 import SalesforceClient from '../client/client'
+import { FLOW_URL_SUFFIX } from '../elements_url_retreiver/lightining_url_resolvers'
 
 const { awu } = collections.asynciterable
 const ACTIVE = 'Active'
 const PREFER_ACTIVE_FLOW_VERSIONS_DEFAULT = false
 const ENABLE_FLOW_DEPLOY_AS_ACTIVE_ENABLED_DEFAULT = false
-const URL_SUFFIX = 'lightning/setup/Flows/home'
 
 
 const isFlowChange = (change: Change<InstanceElement>):
@@ -99,12 +99,26 @@ const testCoveragePostDeploy = (instance: InstanceElement): DeployActions => ({
 })
 
 const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl: URL | undefined): DeployActions => {
+  const url = _.get(instance, ['annotations', '_service_url'])
+  if (url !== undefined) {
+    return {
+      postAction: {
+        title: 'Deploying as inactive',
+        description: 'Your salesforce is configured not to allow deployment of active flows, please make sure to manually activate the flow',
+        subActions: [
+          `Go to: ${url}`,
+          'Activate it by clicking “Activate”',
+        ],
+      },
+    }
+  }
   if (baseUrl !== undefined) {
     return {
       postAction: {
         title: 'Deploying as inactive',
+        description: 'Your salesforce is configured not to allow deployment of active flows, please make sure to manually activate the flow',
         subActions: [
-          `go to: ${baseUrl}${URL_SUFFIX}`,
+          `Go to: ${baseUrl}${FLOW_URL_SUFFIX}`,
           `Search for the ${instance.elemID.getFullName()} flow and click on it`,
           'Activate it by clicking “Activate”',
         ],
@@ -114,8 +128,9 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl: URL | un
   return {
     postAction: {
       title: 'Deploying as inactive',
+      description: 'Your salesforce is configured not to allow deployment of active flows, please make sure to manually activate the flow',
       subActions: [
-        'go to the flow set up page in your org',
+        'Go to the flow set up page in your org',
         `Search for the ${instance.elemID.getFullName()} flow and click on it`,
         'Activate it by clicking “Activate”',
       ],

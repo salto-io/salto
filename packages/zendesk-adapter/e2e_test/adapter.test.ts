@@ -237,7 +237,7 @@ describe('Zendesk adapter E2E', () => {
      */
     const getElementsAfterFetch = (originalInstances: InstanceElement[]):
       Record<string, InstanceElement | undefined> => {
-      const nameToElemId = _.keyBy(originalInstances, instance => instance.elemID.name)
+      const nameToElemId = _.keyBy(originalInstances, instance => instance.elemID.getFullName())
       return _.mapValues(
         nameToElemId,
         instance => {
@@ -1123,7 +1123,9 @@ describe('Zendesk adapter E2E', () => {
     it('should handel guide elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch(guideInstances)
       guideInstances
-        .forEach(elem => verifyInstanceValues(fetchedElements[elem.elemID.name], elem, Object.keys(elem.value)))
+        .forEach(
+          elem => verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value))
+        )
     })
   })
 })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SalesforceClient, testHelpers as salesforceTestHelpers, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
+import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
+// eslint-disable-next-line no-restricted-imports
+import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import path from 'path'
 import { Plan } from '@salto-io/core'
 import { parser } from '@salto-io/workspace'

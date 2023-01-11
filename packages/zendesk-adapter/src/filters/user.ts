@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,38 +14,18 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { conditionFieldValue, isCorrectConditions } from './utils'
+import { getUsers } from '../user_utils'
 
 const log = logger(module)
-const { toArrayAsync, awu } = collections.asynciterable
-const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 type UserReplacer = (instance: InstanceElement, mapping: Record<string, string>) => void
-type User = {
-  id: number
-  email: string
-}
-
-const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
-  id: Joi.number().required(),
-  email: Joi.string().required(),
-}).unknown(true)).required()
-
-const areUsers = (values: unknown): values is User[] => {
-  const { error } = EXPECTED_USER_SCHEMA.validate(values)
-  if (error !== undefined) {
-    log.warn(`Received an invalid response for the users values: ${error.message}`)
-    return false
-  }
-  return true
-}
 
 type ReplacerCreatorParams = {
   fieldName: string
@@ -173,23 +153,6 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
   section_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
   category_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
   article_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
-}
-
-const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
-  const paginationArgs = {
-    url: '/api/v2/users',
-    paginationField: 'next_page',
-    queryParams: {
-      role: ['admin', 'agent'],
-    },
-  }
-  const users = (await toArrayAsync(
-    paginator(paginationArgs, page => makeArray(page) as clientUtils.ResponseValue[])
-  )).flat().flatMap(response => response.users)
-  if (!areUsers(users)) {
-    return []
-  }
-  return users
 }
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean => (

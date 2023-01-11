@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -513,7 +513,44 @@ describe('SalesforceAdapter fetch', () => {
     })
 
     describe('with complicated metadata instance', () => {
-      const layoutName = 'Order-Order Layout'
+      const LAYOUT_NAME = 'Order-Order Layout'
+      const INSTALLED_PACKAGE_NAMESPACE_PREFIX = 'SBQQ'
+      const INSTALLED_PACKAGE_LAYOUT_NAME = 'SBQQ__SearchFilter__c-SearchFilter Layout'
+
+      let fromRetrieveResultSpy: jest.SpyInstance
+
+      const createLayoutInstance = (layoutName: string, namespacePrefix?: string): MockInstanceParams => ({
+        props: {
+          fullName: layoutName,
+          fileName: `layouts/${layoutName}.layout`,
+          namespacePrefix,
+        },
+        values: {
+          fullName: layoutName,
+          layoutSections: [
+            {
+              label: 'Description Information',
+              layoutColumns: [
+                { layoutItems: [{ behavior: 'Edit', field: 'Description' }] },
+                { layoutItems: [{ behavior: 'Edit2', field: 'Description2' }] },
+              ],
+            },
+            { label: 'Additional Information', layoutColumns: ['', ''] },
+            { layoutColumns: ['', '', ''], style: 'CustomLinks' },
+            { layoutColumns: '' },
+          ],
+          processMetadataValues: [
+            { name: 'dataType', value: { stringValue: 'Boolean' } },
+            { name: 'leftHandSideReferenceTo', value: '' },
+            { name: 'leftHandSideReferenceTo2', value: { stringValue: '' } },
+            {
+              name: 'leftHandSideReferenceTo3',
+              value: { stringValue: { $: { 'xsi:nil': 'true' } } },
+            },
+          ],
+        },
+      })
+
       beforeEach(() => {
         mockMetadataType(
           { xmlName: 'Layout' },
@@ -564,38 +601,44 @@ describe('SalesforceAdapter fetch', () => {
             ],
           },
           [
-            {
-              props: {
-                fullName: layoutName,
-                fileName: `layouts/${layoutName}.layout`,
-              },
-              values: {
-                fullName: layoutName,
-                layoutSections: [
-                  {
-                    label: 'Description Information',
-                    layoutColumns: [
-                      { layoutItems: [{ behavior: 'Edit', field: 'Description' }] },
-                      { layoutItems: [{ behavior: 'Edit2', field: 'Description2' }] },
-                    ],
-                  },
-                  { label: 'Additional Information', layoutColumns: ['', ''] },
-                  { layoutColumns: ['', '', ''], style: 'CustomLinks' },
-                  { layoutColumns: '' },
-                ],
-                processMetadataValues: [
-                  { name: 'dataType', value: { stringValue: 'Boolean' } },
-                  { name: 'leftHandSideReferenceTo', value: '' },
-                  { name: 'leftHandSideReferenceTo2', value: { stringValue: '' } },
-                  {
-                    name: 'leftHandSideReferenceTo3',
-                    value: { stringValue: { $: { 'xsi:nil': 'true' } } },
-                  },
-                ],
-              },
-            },
+            createLayoutInstance(LAYOUT_NAME),
+            createLayoutInstance(INSTALLED_PACKAGE_LAYOUT_NAME, INSTALLED_PACKAGE_NAMESPACE_PREFIX),
           ],
         )
+        fromRetrieveResultSpy = jest.spyOn(xmlTransformerModule, 'fromRetrieveResult')
+        fromRetrieveResultSpy.mockResolvedValue([
+          {
+            file: mockFileProperties({
+              type: 'Layout',
+              fullName: LAYOUT_NAME,
+              fileName: `layouts/${LAYOUT_NAME}.layout`,
+            }),
+            values: {
+              fullName: LAYOUT_NAME,
+              layoutSections: [
+                {
+                  label: 'Description Information',
+                  layoutColumns: [
+                    { layoutItems: [{ behavior: 'Edit', field: 'Description' }] },
+                    { layoutItems: [{ behavior: 'Edit2', field: 'Description2' }] },
+                  ],
+                },
+                { label: 'Additional Information', layoutColumns: ['', ''] },
+                { layoutColumns: ['', '', ''], style: 'CustomLinks' },
+                { layoutColumns: '' },
+              ],
+              processMetadataValues: [
+                { name: 'dataType', value: { stringValue: 'Boolean' } },
+                { name: 'leftHandSideReferenceTo', value: '' },
+                { name: 'leftHandSideReferenceTo2', value: { stringValue: '' } },
+                {
+                  name: 'leftHandSideReferenceTo3',
+                  value: { stringValue: { $: { 'xsi:nil': 'true' } } },
+                },
+              ],
+            },
+          },
+        ],)
       })
 
       it('should fetch complicated metadata instance', async () => {
@@ -603,7 +646,7 @@ describe('SalesforceAdapter fetch', () => {
         const layout = findElements(result, 'Layout', 'Order_Order_Layout@bs').pop() as InstanceElement
         expect(layout).toBeDefined()
         expect((await layout.getType()).elemID).toEqual(LAYOUT_TYPE_ID)
-        expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
+        expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(LAYOUT_NAME)
         expect(layout.value.layoutSections.length).toBe(4)
         expect(layout.value.layoutSections[0].label).toBe('Description Information')
         expect(layout.value.layoutSections[0].layoutColumns[0].layoutItems[0].behavior).toBe('Edit')
@@ -622,6 +665,17 @@ describe('SalesforceAdapter fetch', () => {
         expect(layout.value.processMetadataValues[3].name).toBe('leftHandSideReferenceTo3')
         // nulls should be omitted
         expect(layout.value.processMetadataValues[3].value).toBeUndefined()
+
+        // Validates `fromRetrieveResult` is called with correct file properties.
+        expect(fromRetrieveResultSpy).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.arrayContaining([
+            expect.objectContaining({ fileName: 'layouts/Order-Order Layout.layout', fullName: 'Order-Order Layout' }),
+            expect.objectContaining({ fileName: 'layouts/SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout.layout', fullName: 'SBQQ__SearchFilter__c-SBQQ__SearchFilter Layout' }),
+          ]),
+          expect.anything(),
+          expect.anything(),
+        )
       })
     })
 

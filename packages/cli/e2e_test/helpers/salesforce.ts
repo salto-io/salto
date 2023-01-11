@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,12 +15,12 @@
 */
 import SalesforceAdapter, {
   SalesforceClient,
-  testHelpers as salesforceTestHelpers,
-  testTypes as salesforceTestTypes,
   adapter as salesforceAdapter,
   UsernamePasswordCredentials,
   OauthAccessTokenCredentials,
 } from '@salto-io/salesforce-adapter'
+// eslint-disable-next-line no-restricted-imports
+import { testHelpers as salesforceTestHelpers, testTypes as salesforceTestTypes } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import _ from 'lodash'
 import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeData } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'

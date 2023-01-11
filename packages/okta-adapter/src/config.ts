@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -117,6 +117,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
       idFields: ['label'],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   api__v1__apps: {
@@ -152,8 +154,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'accessPolicy', fieldType: 'string' },
       ],
       standaloneFields: [{ fieldName: 'appUsers' }],
-      // TODO SALTO-2644 It's possible to have many applications with the same name
-      idFields: ['name', 'status'],
+      idFields: ['label'],
       serviceIdField: 'id',
       fieldsToHide: [
         { fieldName: 'id' },
@@ -263,6 +264,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
       ],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   api__v1__features: {
@@ -284,6 +287,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'featureDependencies', fieldType: 'list<Feature>' },
       ],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   // Policy type is splitted to different kinds of policies
@@ -379,28 +384,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  // TODO SALTO-2733 returns 400 bad request
-  OAuthAuthorizationPolicies: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'OAUTH_AUTHORIZATION_POLICY',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
   UserSchema: {
     request: {
       url: '/api/v1/meta/schemas/user/default',
     },
     transformation: {
+      fieldTypeOverrides: [{ fieldName: 'description', fieldType: 'string' }],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   User: {
@@ -453,6 +445,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   OrgContactTypeObj: {
     transformation: {
       idFields: ['contactType'],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   api__v1__templates__sms: {
@@ -507,9 +500,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'policies', fieldType: 'list<AuthorizationServerPolicy>' },
         { fieldName: 'clients', fieldType: 'list<OAuth2Client>' },
       ],
-      fieldsToOmit: [
-        { fieldName: '_links' },
-      ],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
     },
   },
@@ -519,6 +511,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'policyRules', fieldType: 'list<AuthorizationServerPolicyRule>' },
       ],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   api__v1__brands: {
@@ -555,59 +548,81 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       idFields: ['title'],
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   Domain: {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   OrgSetting: {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   Brand: {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   Authenticator: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   EventHook: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   GroupRule: {
     transformation: {
+      fieldTypeOverrides: [{ fieldName: 'allGroupsValid', fieldType: 'boolean' }],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   InlineHook: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   NetworkZone: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   TrustedOrigin: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   UserType: {
     transformation: {
       serviceIdField: 'id',
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: '_links' },
+      ],
     },
   },
   GroupSchemaAttribute: {
@@ -642,6 +657,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'lastUpdated' },
       ],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   AppUserCredentials: {
@@ -668,6 +684,55 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
+  IdentityProviderCredentialsClient: {
+    transformation: {
+      fieldsToOmit: [
+        // we are not managing secrets
+        { fieldName: 'client_secret' },
+      ],
+    },
+  },
+  AuthenticatorProviderConfiguration: {
+    transformation: {
+      fieldsToOmit: [
+        // we are not managing secrets
+        { fieldName: 'secretKey' },
+        { fieldName: 'sharedSecret' },
+      ],
+    },
+  },
+  PolicyRuleConditions: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'userType', fieldType: 'UserTypePolicyRuleCondition' },
+      ],
+    },
+  },
+  OAuth2Scope: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: '_links', fieldType: 'map<unknown>' },
+      ],
+      fieldsToOmit: [
+        { fieldName: '_links' },
+      ],
+    },
+  },
+  OAuth2Claim: {
+    transformation: {
+      fieldsToOmit: [
+        { fieldName: '_links' },
+      ],
+    },
+  },
+  AuthorizationServerPolicyRule: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: '_links', fieldType: 'map<unknown>' },
+      ],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
@@ -679,9 +744,10 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     { typeName: 'ProfileEnrollmentPolicies', cloneFrom: 'api__v1__policies' },
     { typeName: 'IdentityProviderRoutingRules', cloneFrom: 'api__v1__policies' },
     { typeName: 'PasswordPolicies', cloneFrom: 'api__v1__policies' },
-    { typeName: 'OAuthAuthorizationPolicies', cloneFrom: 'api__v1__policies' },
     // TODO SALTO-2735 this is not the right type to clone from
     { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
+    // This type is missing from the swagger but both have the same structure
+    { typeName: 'UserTypePolicyRuleCondition', cloneFrom: 'GroupPolicyRuleCondition' },
   ],
 }
 
@@ -717,7 +783,6 @@ export const SUPPORTED_TYPES = {
     'ProfileEnrollmentPolicies',
     'IdentityProviderRoutingRules',
     'PasswordPolicies',
-    'OAuthAuthorizationPolicies',
   ],
   SmsTemplate: ['api__v1__templates__sms'],
   TrustedOrigin: ['api__v1__trustedOrigins'],

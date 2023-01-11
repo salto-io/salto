@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -779,6 +779,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'simplified' },
         { fieldName: 'isPrivate' },
         { fieldName: 'expand' },
+        { fieldName: 'archived' },
       ],
       standaloneFields: [
         {

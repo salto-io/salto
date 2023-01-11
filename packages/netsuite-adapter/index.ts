@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,6 +15,5 @@
 */
 export { default } from './src/adapter'
 export { adapter } from './src/adapter_creator'
-export { credsLease } from './e2e_test/adapter'
 export { Credentials, toCredentialsAccountId } from './src/client/credentials'
 export { SDK_VERSION as NETSUITE_SDF_VERSION } from '@salto-io/suitecloud-cli'

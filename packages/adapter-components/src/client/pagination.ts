@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -29,6 +29,7 @@ type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
 export type ClientGetWithPaginationParams = ClientBaseParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
+  pageSizeArgName?: string
 }
 
 export type PageEntriesExtractor = (page: ResponseValue) => ResponseValue[]
@@ -95,7 +96,7 @@ export const traverseRequests: (
   pageSize,
   getParams,
 }) {
-  const { url, paginationField, queryParams, recursiveQueryParams } = getParams
+  const { url, queryParams, recursiveQueryParams } = getParams
   const requestQueryArgs: Record<string, string>[] = [{}]
   const usedParams = new Set<string>()
   let numResults = 0
@@ -137,7 +138,7 @@ export const traverseRequests: (
     requestQueryArgs.unshift(...paginationFunc({
       responseData: response.data,
       page,
-      getParams: { ...getParams, paginationField },
+      getParams,
       pageSize,
       currentParams: additionalArgs,
       responseHeaders: response.headers,
@@ -158,14 +159,21 @@ export const traverseRequests: (
  */
 export const getWithItemOffsetPagination = ({
   firstIndex,
-  itemsPerPage,
+  pageSizeArgName
+  ,
 } : {
   firstIndex: number
-  itemsPerPage: number
+  pageSizeArgName: string | undefined
 }): PaginationFunc => {
   const nextPage: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
-    const { paginationField } = getParams
-    if (paginationField === undefined || page.length < pageSize) {
+    const { paginationField, queryParams } = getParams
+
+    const itemsPerPage = (pageSizeArgName !== undefined && queryParams !== undefined
+      && !Number.isNaN(Number(queryParams?.[pageSizeArgName])))
+      ? Number(queryParams[pageSizeArgName])
+      : pageSize
+
+    if (paginationField === undefined || page.length < itemsPerPage || page.length === 0) {
       return []
     }
     return [{

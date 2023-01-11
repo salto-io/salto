@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isRemovalChange, Values,
+  Change, getChangeData, InstanceElement, isRemovalChange, Value, Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -23,6 +23,8 @@ import { deployChange, deployChanges } from '../deployment'
 import { applyforInstanceChangesOfType } from './utils'
 
 export const VIEW_TYPE_NAME = 'view'
+
+const valToString = (val: Value): string | string[] => (_.isArray(val) ? val.map(String) : val.toString())
 
 /**
  * Deploys views
@@ -36,9 +38,9 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         instance.value = {
           ...instance.value,
           all: (instance.value.conditions.all ?? [])
-            .map((e: Values) => ({ ...e, value: e.value.toString() })),
+            .map((e: Values) => ({ ...e, value: valToString(e.value) })),
           any: (instance.value.conditions.any ?? [])
-            .map((e: Values) => ({ ...e, value: e.value.toString() })),
+            .map((e: Values) => ({ ...e, value: valToString(e.value) })),
           output: {
             ...instance.value.execution,
             group_by: instance.value.execution.group_by?.toString(),

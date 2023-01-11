@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -72,8 +72,8 @@ const getSavedSearchesMap = async (
 
 export const changeDateFormat = (date: string, timeAndFormat: TimeZoneAndFormat): string => {
   const { timeZone, timeFormat, dateFormat } = timeAndFormat
-  // replace 'Month' with 'MMMM' since moment.tz doesnt support the 'D Month, YYYY' netsuite date format
-  const utcDate = moment.tz(date, [dateFormat.replace('Month', 'MMMM'), timeFormat].join(' '), timeZone)
+  // replace 'Month' with 'MMMM' since moment.tz doesn't support the 'D Month, YYYY' netsuite date format
+  const utcDate = moment.tz(date, [dateFormat.replace('Month', 'MMMM'), timeFormat.toLowerCase()].join(' '), timeZone)
   return utcDate.utc().format()
 }
 
@@ -101,8 +101,7 @@ const getTimeAndDateValue = async (
   isPartial: boolean,
   userPreferencesInstance: InstanceElement | undefined
 ): Promise<string> => {
-  const valueOrText = mapFieldToValue[field]
-  const returnField = userPreferencesInstance?.value.configRecord.data.fields?.[field]?.[valueOrText] ?? (
+  const returnField = userPreferencesInstance?.value.configRecord.data.fields?.[field] ?? (
     isPartial ? await getFieldFromElemSource(elementsSource, field) : undefined
   )
   return returnField

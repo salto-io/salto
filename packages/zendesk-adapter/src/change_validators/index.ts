@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -48,3 +48,4 @@ export { childInOrderValidator } from './guide_order/child_in_order_validator'
 export { guideOrderDeletionValidator } from './guide_order/order_deletion_validator'
 export { articleAttachmentSizeValidator } from './article_attachment_size'
 export { macroActionsTicketFieldDeactivationValidator } from './macro_actions'
+export { customRoleRemovalValidator } from './custom_role_removal'

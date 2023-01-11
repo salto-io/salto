@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -84,13 +84,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       const status = e.response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)
       // Specifically for workspaces and custom statuses, it returns 403
-      if (
-        status === 404
-        || (status === 403 && [
-          '/api/v2/workspaces',
-          '/api/v2/custom_statuses',
-        ].includes(args.url))
-      ) {
+      if (status === 404) {
         log.warn('Suppressing %d error %o', status, e)
         return { data: [], status }
       }

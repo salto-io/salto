@@ -83,7 +83,7 @@ const unpopulatedParameters = (
     return []
   }
   const appOwned = appOwnedInstances[appInstallation.value.app_id]
-  if (appOwned?.value.parameters === undefined || !isAppOwned(appOwned)) {
+  if (_.isEmpty(appOwned?.value.parameters) || !isAppOwned(appOwned)) {
     return []
   }
   const { parameters } = appOwned.value

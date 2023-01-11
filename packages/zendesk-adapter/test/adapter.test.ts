@@ -301,6 +301,8 @@ describe('adapter', () => {
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__en_US_b@uuumuuum',
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__es@uuumuu',
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__he@uuumuu',
+          'zendesk.feature',
+          'zendesk.features',
           'zendesk.group',
           'zendesk.group.instance.Support',
           'zendesk.group.instance.Support2',

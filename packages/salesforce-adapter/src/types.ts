@@ -96,6 +96,8 @@ export type ChangeValidatorName = (
   | 'invalidListViewFilterScope'
   | 'caseAssignmentRulesValidator'
   | 'omitData'
+  | 'unknownUser'
+  | 'animationRuleRecordType'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -292,7 +294,10 @@ export const usernamePasswordCredentialsType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { message: 'Token (empty if your org uses IP whitelisting)' },
     },
-    sandbox: { refType: BuiltinTypes.BOOLEAN },
+    sandbox: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: { message: 'Is Sandbox/Scratch Org' },
+    },
   },
 })
 
@@ -562,6 +567,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
     caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
     omitData: { refType: BuiltinTypes.BOOLEAN },
+    unknownUser: { refType: BuiltinTypes.BOOLEAN },
+    animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

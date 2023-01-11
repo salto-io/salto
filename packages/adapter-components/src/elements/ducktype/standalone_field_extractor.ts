@@ -134,7 +134,7 @@ const addFieldTypeAndInstances = async ({
       }
       return fieldInstance
     }).filter(isDefined).toArray()
-    const refs = fieldInstances.map(refInst => new ReferenceExpression(refInst.elemID))
+    const refs = fieldInstances.map(refInst => new ReferenceExpression(refInst.elemID, refInst))
     if (Array.isArray(inst.value[fieldName])) {
       inst.value[fieldName] = refs
     } else {

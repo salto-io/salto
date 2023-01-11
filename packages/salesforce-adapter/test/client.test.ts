@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -467,7 +467,7 @@ describe('salesforce client', () => {
             .map(name => ({ fullName: name }))
 
           expect(configSuggestions).toIncludeAllPartialMembers(expectedConfigSuggestions)
-          expect(errors).toBeEmpty()
+          expect(errors).toEqual(TIMEOUT_METADATA_INSTANCE_NAMES)
           expect(result).toEqual(expectedResult)
         })
       })
@@ -508,7 +508,7 @@ describe('salesforce client', () => {
             .map(name => ({ fullName: name }))
 
           expect(configSuggestions).toIncludeAllPartialMembers(expectedConfigSuggestions)
-          expect(errors).toBeEmpty()
+          expect(errors).toEqual(TIMEOUT_METADATA_INSTANCE_NAMES)
           expect(result).toEqual(expectedResult)
         })
       })
@@ -554,7 +554,7 @@ describe('salesforce client', () => {
             .map(objectName => ({ name: objectName }))
 
           expect(result).toIncludeAllPartialMembers(expectedResult)
-          expect(errors).toBeEmpty()
+          expect(errors).toEqual(TIMEOUT_CUSTOM_OBJECT_NAMES)
           expect(configSuggestions).toIncludeAllPartialMembers(expectedConfigSuggestions)
         })
       })

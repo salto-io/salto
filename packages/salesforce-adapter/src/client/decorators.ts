@@ -26,7 +26,7 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(
     try {
       return await Promise.resolve(original.call())
     } catch (e: unknown) {
-      if (_.isError(e)) {
+      if (_.isPlainObject(e)) {
         const mappableError = Object.values(e)
           .filter(_.isString)
           .find(isMappableErrorProperty)

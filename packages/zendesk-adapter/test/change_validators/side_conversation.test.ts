@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,12 +15,12 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ZENDESK, MACRO_TYPE_NAME, FEATURE_TYPE_NAME } from '../../src/constants'
+import { ZENDESK, MACRO_TYPE_NAME, ACCOUNT_FEATURES_TYPE_NAME } from '../../src/constants'
 import { sideConversationsValidator } from '../../src/change_validators'
 
 describe('macro side conversation fields', () => {
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
-  const featureType = new ObjectType({ elemID: new ElemID(ZENDESK, FEATURE_TYPE_NAME) })
+  const featureType = new ObjectType({ elemID: new ElemID(ZENDESK, ACCOUNT_FEATURES_TYPE_NAME) })
 
   it('should return an error when macro contains disabled side conversation fields', async () => {
     const macroInstance1 = new InstanceElement(

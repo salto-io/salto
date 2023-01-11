@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { FEATURE_TYPE_NAME, MACRO_TYPE_NAME, ZENDESK } from '../constants'
+import { ACCOUNT_FEATURES_TYPE_NAME, MACRO_TYPE_NAME, ZENDESK } from '../constants'
 import { ActionsType, isAction } from './macro_actions'
 
 const log = logger(module)
@@ -59,10 +59,10 @@ export const sideConversationsValidator: ChangeValidator = async (
   }
 
   const featureInstance = await elementSource.get(
-    new ElemID(ZENDESK, FEATURE_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
+    new ElemID(ZENDESK, ACCOUNT_FEATURES_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
   )
   if (!isInstanceElement(featureInstance)) {
-    log.error(`Failed to run sideConversationsValidator because ${FEATURE_TYPE_NAME} instance was not found`)
+    log.error(`Failed to run sideConversationsValidator because ${ACCOUNT_FEATURES_TYPE_NAME} instance was not found`)
     return []
   }
   const accountDisabledSCFields = Object.keys(SIDE_CONVERSATION_MAP)

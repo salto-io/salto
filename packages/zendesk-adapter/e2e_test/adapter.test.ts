@@ -1001,6 +1001,7 @@ describe('Zendesk adapter E2E', () => {
     })
     it('should fetch the regular instances and types', async () => {
       const typesToFetch = [
+        'account_features',
         'account_setting',
         'app_installation',
         'automation',

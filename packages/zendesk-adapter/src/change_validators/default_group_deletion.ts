@@ -15,13 +15,13 @@
 */
 import {
   Change,
-  ChangeValidator, getChangeData, isAdditionOrModificationChange,
+  ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange,
   isInstanceChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { GROUP_TYPE_NAME } from '../constants'
 
 // Check if there was any change that marked a new default group
-const isThereNewDefaultGroup = (changes: Change[]): boolean =>
+const isThereNewDefaultGroup = (changes: Change<InstanceElement>[]): boolean =>
   changes.filter(isAdditionOrModificationChange).map(getChangeData)
     .some(group => group.value.default === true)
 

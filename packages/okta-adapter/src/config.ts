@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -154,8 +154,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'accessPolicy', fieldType: 'string' },
       ],
       standaloneFields: [{ fieldName: 'appUsers' }],
-      // TODO SALTO-2644 It's possible to have many applications with the same name
-      idFields: ['name', 'status'],
+      idFields: ['label'],
       serviceIdField: 'id',
       fieldsToHide: [
         { fieldName: 'id' },

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -134,7 +134,7 @@ const addFieldTypeAndInstances = async ({
       }
       return fieldInstance
     }).filter(isDefined).toArray()
-    const refs = fieldInstances.map(refInst => new ReferenceExpression(refInst.elemID))
+    const refs = fieldInstances.map(refInst => new ReferenceExpression(refInst.elemID, refInst))
     if (Array.isArray(inst.value[fieldName])) {
       inst.value[fieldName] = refs
     } else {

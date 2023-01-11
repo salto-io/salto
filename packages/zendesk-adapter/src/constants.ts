@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -33,6 +33,7 @@ export const TICKET_FIELD_TYPE_NAME = 'ticket_field'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'
 export const USER_FIELD_TYPE_NAME = 'user_field'
 export const FIELD_TYPE_NAMES = [TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME]
+export const CUSTOM_ROLE_TYPE_NAME = 'custom_role'
 export const EVERYONE_USER_TYPE = 'Everyone'
 export const TICKET_FORM_TYPE_NAME = 'ticket_form'
 

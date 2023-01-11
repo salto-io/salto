@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import { transformValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
+import { AUTOMATION_TYPE, DASHBOARD_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PROJECT_ROLE_TYPE, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -72,6 +72,16 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
   [WORKFLOW_TRANSITION_TYPE_NAME]: {
     from: ['elemID.name'],
+    properties: ['key'],
+  },
+  [DASHBOARD_TYPE]: {
+    gadgets: ['value.value.position.column', 'value.value.position.row'],
+  },
+  [PROJECT_ROLE_TYPE]: {
+    actors: ['displayName'],
+  },
+  [WORKFLOW_STATUS_TYPE_NAME]: {
+    properties: ['key'],
   },
 }
 

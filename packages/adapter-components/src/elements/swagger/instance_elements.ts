@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -78,7 +78,7 @@ const extractStandaloneFields = async (
       getElemIdFunc,
     })
     additionalInstances.push(...refInstances)
-    return refInstances.map(refInst => new ReferenceExpression(refInst.elemID))
+    return refInstances.map(refInst => new ReferenceExpression(refInst.elemID, refInst))
   }
 
   const extractFields: TransformFunc = async ({ value, field, path }) => {

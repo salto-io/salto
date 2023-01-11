@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,19 +13,41 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalChange, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as adapterElements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
-import { DASHBOARD_GADGET_TYPE } from '../../constants'
+import { DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE, DASHBOARD_GADGET_PROPERTIES_TYPE, DASHBOARD_GADGET_TYPE, JIRA } from '../../constants'
 import JiraClient from '../../client/client'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
+
+
+const getSubTypes = (): {
+  configType: ObjectType
+  propertiesType: ObjectType
+} => {
+  const configType = new ObjectType({
+    elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE),
+    fields: {
+      statType: { refType: BuiltinTypes.STRING },
+    },
+    path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE],
+  })
+  const propertiesType = new ObjectType({
+    elemID: new ElemID(JIRA, DASHBOARD_GADGET_PROPERTIES_TYPE),
+    fields: {
+      config: { refType: configType },
+    },
+    path: [JIRA, adapterElements.TYPES_PATH, adapterElements.SUBTYPES_PATH, DASHBOARD_GADGET_PROPERTIES_TYPE],
+  })
+  return { configType, propertiesType }
+}
 
 const deployGadgetProperties = async (
   instance: InstanceElement,
@@ -103,6 +125,9 @@ const filter: FilterCreator = ({ client, config }) => ({
       log.warn(`${DASHBOARD_GADGET_TYPE} type not found`)
       return
     }
+    const { configType, propertiesType } = getSubTypes()
+    gadgetType.fields.properties = new Field(gadgetType, 'properties', propertiesType)
+    elements.push(configType, propertiesType)
     setFieldDeploymentAnnotations(gadgetType, 'properties')
   },
 

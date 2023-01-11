@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -32,6 +32,8 @@ export const LEVEL_MEMBER_TYPE_NAME = 'IssueSecurityLevelMember'
 export const DASHBOARD_TYPE = 'Dashboard'
 export const DASHBOARD_GADGET_TYPE = 'DashboardGadget'
 export const DASHBOARD_GADGET_POSITION_TYPE = 'DashboardGadgetPosition'
+export const DASHBOARD_GADGET_PROPERTIES_TYPE = 'GadgetProperties'
+export const DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE = 'GadgetConfig'
 export const NOTIFICATION_SCHEME_TYPE_NAME = 'NotificationScheme'
 export const NOTIFICATION_EVENT_TYPE_NAME = 'NotificationSchemeEvent'
 export const PROJECT_TYPE = 'Project'

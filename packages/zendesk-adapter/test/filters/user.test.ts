@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,11 +19,17 @@ import { mockFunction } from '@salto-io/test-utils'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
+import { getUsers } from '../../src/user_utils'
 
+jest.mock('../../src/user_utils', () => ({
+  ...jest.requireActual<{}>('../../src/user_utils'),
+  getUsers: jest.fn(),
+}))
 
 describe('user filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
+  let getUsersMock: jest.MockedFunction<typeof getUsers>
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
   const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK, 'sla_policy') })
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
@@ -257,18 +263,7 @@ describe('user filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    mockPaginator = mockFunction<clientUtils.Paginator>()
-      .mockImplementationOnce(async function *get() {
-        yield [
-          { users: [
-            { id: 1, email: 'a@a.com' },
-            { id: 2, email: 'b@b.com' },
-          ] },
-          { users: [
-            { id: 3, email: 'c@c.com' },
-          ] },
-        ]
-      })
+    getUsersMock = getUsers as jest.MockedFunction<typeof getUsers>
     filter = filterCreator(
       createFilterCreatorParams({ paginator: mockPaginator })
     ) as FilterType
@@ -276,6 +271,12 @@ describe('user filter', () => {
 
   describe('onFetch', () => {
     it('should change the user ids to emails', async () => {
+      getUsersMock
+        .mockResolvedValueOnce([
+          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
+          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
+        ])
       const elements = [
         macroType, slaPolicyType, triggerType, workspaceType, routingAttributeValueType,
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
@@ -406,6 +407,12 @@ describe('user filter', () => {
       })
     })
     it('should not replace anything if the field is not exist', async () => {
+      getUsersMock
+        .mockResolvedValueOnce([
+          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
+          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
+        ])
       const macroInstanceNoField = new InstanceElement(
         'test',
         macroType,
@@ -466,14 +473,11 @@ describe('user filter', () => {
     it('should not replace anything if the user does not exist', async () => {
       const elements = [macroType.clone(), macroInstance.clone(),
         userSegmentType.clone(), userSegmentInstance.clone()]
+      getUsersMock
+        .mockResolvedValueOnce([
+          { id: 4, email: 'd@d.com', role: 'admin', custom_role_id: 123 },
+        ])
       const paginator = mockFunction<clientUtils.Paginator>()
-        .mockImplementationOnce(async function *get() {
-          yield [
-            { users: [
-              { id: 4, email: 'd@d.com' },
-            ] },
-          ]
-        })
       const newFilter = filterCreator(
         createFilterCreatorParams({ paginator })
       ) as FilterType
@@ -504,14 +508,8 @@ describe('user filter', () => {
     })
     it('should not replace anything if the users response is invalid', async () => {
       const elements = [macroType.clone(), macroInstance.clone()]
+      getUsersMock.mockResolvedValueOnce([])
       const paginator = mockFunction<clientUtils.Paginator>()
-        .mockImplementationOnce(async function *get() {
-          yield [
-            { users: [
-              { test: 1, email: 'a@a.com' },
-            ] },
-          ]
-        })
       const newFilter = filterCreator(
         createFilterCreatorParams({ paginator })
       ) as FilterType
@@ -530,11 +528,18 @@ describe('user filter', () => {
     })
   })
   describe('preDeploy', () => {
-    it('should change the emails to user ids ', async () => {
+    it('should change the emails to user ids', async () => {
+      getUsersMock
+        .mockResolvedValue([
+          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
+          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
+        ])
       const instances = [
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
         articleInstance, sectionTranslationInstance,
       ].map(e => e.clone())
+      await filter.onFetch(instances)
       const changes = instances.map(instance => toChange({ after: instance }))
       await filter.preDeploy(changes)
       const changedInstances = changes.map(getChangeData)
@@ -546,7 +551,7 @@ describe('user filter', () => {
           { field: 'assignee_id', value: '2' },
           { field: 'follower', value: '1' },
         ],
-        restriction: { type: 'User', id: 3 },
+        restriction: { type: 'User', id: '3' },
       })
       const sla = changedInstances.find(e => e.elemID.typeName === 'sla_policy')
       expect(sla?.value).toEqual({
@@ -604,7 +609,7 @@ describe('user filter', () => {
             usage_7d: 0,
             restriction: {
               type: 'User',
-              id: 3,
+              id: '3',
             },
           },
         ],
@@ -629,6 +634,12 @@ describe('user filter', () => {
   })
   describe('onDeploy', () => {
     it('should change the user ids to emails', async () => {
+      getUsersMock
+        .mockResolvedValueOnce([
+          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
+          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
+        ])
       const instances = [
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
         articleInstance, sectionTranslationInstance,
@@ -729,13 +740,7 @@ describe('user filter', () => {
     it('should not replace anything if the users response is invalid', async () => {
       const instances = [macroInstance.clone()]
       const paginator = mockFunction<clientUtils.Paginator>()
-        .mockImplementationOnce(async function *get() {
-          yield [
-            { users: [
-              { test: 1, email: 'a@a.com' },
-            ] },
-          ]
-        })
+      getUsersMock.mockResolvedValueOnce([])
       const newFilter = filterCreator(
         createFilterCreatorParams({ paginator })
       ) as FilterType

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -84,6 +84,16 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
   }
   return [404]
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const callbackResponseFuncWith403 = (config: AxiosRequestConfig): any => {
+  const { url } = config
+  if (url !== undefined && url.includes('custom_status')) {
+    return [403]
+  }
+  return callbackResponseFunc(config)
+}
+
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
@@ -620,6 +630,44 @@ describe('adapter', () => {
           brand_id: expect.any(ReferenceExpression),
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
+      })
+      it('should return an 403 error for custom statuses', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFuncWith403)
+        const { elements, errors } = await adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            usernamePasswordCredentialsType,
+            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                include: [{
+                  type: '.*',
+                }],
+                exclude: [],
+                guide: {
+                  brands: ['.*'],
+                },
+              },
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(errors).toBeDefined()
+        expect(errors).toEqual([
+          {
+            severity: 'Warning',
+            message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access',
+          },
+        ])
+        const elementsNames = elements.map(e => e.elemID.getFullName())
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.new___zd_status_new__@u_00123_00123vu_00125_00125')
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.open___zd_status_open__@u_00123_00123vu_00125_00125')
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.open_test_n1')
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.open_test_n1@ub')
       })
 
       it('should generate guide elements according to brands config', async () => {

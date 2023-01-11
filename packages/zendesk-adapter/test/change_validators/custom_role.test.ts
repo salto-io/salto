@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,8 +15,8 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ZENDESK } from '../../src/constants'
-import { customRoleNameValidator, CUSTOM_ROLE_TYPE_NAME } from '../../src/change_validators/custom_role'
+import { ZENDESK, CUSTOM_ROLE_TYPE_NAME } from '../../src/constants'
+import { customRoleNameValidator } from '../../src/change_validators/custom_role'
 
 describe('customRoleNameValidator', () => {
   const customRoleType = new ObjectType({

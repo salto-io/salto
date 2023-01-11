@@ -25,12 +25,12 @@ import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { MACRO_TYPE_NAME } from '../filters/macro_attachments'
+import { MACRO_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-type ActionsType = {
+export type ActionsType = {
   field: string | ReferenceExpression
   value: unknown
 }
@@ -40,7 +40,7 @@ const EXPECTED_ACTION_SCHEMA = Joi.object({
   value: Joi.required(),
 }).unknown(true).required()
 
-const isAction = createSchemeGuard<ActionsType>(
+export const isAction = createSchemeGuard<ActionsType>(
   EXPECTED_ACTION_SCHEMA, 'Received an invalid value for macro actions'
 )
 

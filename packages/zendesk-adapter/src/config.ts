@@ -2382,6 +2382,20 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
     },
   },
+  features: {
+    request: {
+      url: '/api/v2/account/features',
+    },
+    transformation: {
+      dataField: 'features',
+    },
+  },
+  feature: {
+    transformation: {
+      sourceTypeName: 'features__features',
+      isSingleton: true,
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {
@@ -2418,6 +2432,7 @@ export const SUPPORTED_TYPES = {
   view: ['views'],
   webhook: ['webhooks'],
   workspace: ['workspaces'],
+  feature: ['features'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand

@@ -115,7 +115,6 @@ export default ({
     orderChildrenParentValidator,
     guideOrderDeletionValidator,
     // ******************************
-    macroActionsTicketFieldDeactivationValidator,
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

@@ -38,10 +38,9 @@ export const validateCredentials = async ({ connection }: {
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async ({ username, token }: Credentials) => ({
+    authParamsFunc: async ({ token }: Credentials) => ({
       headers: {
-        'x-user-email': username,
-        'x-user-token': token,
+        Authorization: `Bearer ${token}`,
       },
     }),
     baseURLFunc: () => BASE_URL,

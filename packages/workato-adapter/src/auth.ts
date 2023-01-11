@@ -13,20 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
-export const usernameTokenCredentialsType = new ObjectType({
+export type UsernameTokenCredentials = {
+  username?: string
+  token: string
+}
+
+export const usernameTokenCredentialsType = createMatchingObjectType<UsernameTokenCredentials>({
   elemID: new ElemID(constants.WORKATO),
   fields: {
     username: { refType: BuiltinTypes.STRING },
-    token: { refType: BuiltinTypes.STRING },
+    token: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
   },
 })
-
-export type UsernameTokenCredentials = {
-  username: string
-  token: string
-}
 
 export type Credentials = UsernameTokenCredentials

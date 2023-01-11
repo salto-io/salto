@@ -37,7 +37,7 @@ describe('adapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onGet(
-      '/users/me', undefined, expect.objectContaining({ 'x-user-email': 'user123', 'x-user-token': 'token456' }),
+      '/users/me', undefined, expect.objectContaining({ Authorization: 'Bearer token456' }),
     ).reply(200, {
       id: 'user123',
     });

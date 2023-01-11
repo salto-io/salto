@@ -73,11 +73,11 @@ describe('client connection', () => {
     it('should make get requests with correct parameters', async () => {
       const conn = createConnection({ retries: 3 })
       mockAxiosAdapter.onGet(
-        '/users/me', undefined, expect.objectContaining({ 'x-user-email': 'user123', 'x-user-token': 'token123' }),
+        '/users/me', undefined, expect.objectContaining({ Authorization: 'Bearer token123' }),
       ).reply(200, {
         id: 'user123',
       }).onGet(
-        '/a/b', undefined, expect.objectContaining({ 'x-user-email': 'user123', 'x-user-token': 'token123' }),
+        '/a/b', undefined, expect.objectContaining({ Authorization: 'Bearer token123' }),
       ).reply(200, {
         something: 'bla',
       })

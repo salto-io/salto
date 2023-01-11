@@ -1123,7 +1123,7 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
     ),
     getElementFileNames: async (env?: string): Promise<Map<string, string[]>> =>
-      (await getLoadedNaclFilesSource()).getElementFileNames(currentEnv()),
+      (await getLoadedNaclFilesSource()).getElementFileNames(env ?? currentEnv()),
     getTotalSize: async () => (
       (await getLoadedNaclFilesSource()).getTotalSize()
     ),

@@ -262,7 +262,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['put', 'delete'],
     url: '/rest/api/3/dashboard/\\d+/gadget/\\d+',
   },
-
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/dashboard/.+/items/.+/properties/.+',
+  },
   {
     httpMethods: ['post'],
     url: '/rest/api/3/priority',

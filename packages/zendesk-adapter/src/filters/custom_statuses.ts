@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -56,9 +56,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .filter(inst => inst.elemID.typeName === CUSTOM_STATUS_TYPE_NAME)
       .filter(inst => inst.value.default)
 
-    _.remove(elements, element =>
-      isObjectType(element) && element.elemID.typeName === DEFAULT_CUSTOM_STATUSES_TYPE_NAME)
-
     const pending = defaultCustomStatuses.find(inst => inst.value.status_category === PENDING_CATEGORY)
     const solved = defaultCustomStatuses.find(inst => inst.value.status_category === SOLVED_CATEGORY)
     const open = defaultCustomStatuses.find(inst => inst.value.status_category === OPEN_CATEGORY)
@@ -68,6 +65,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       log.error('could not find default status for one of the status categories ')
       return
     }
+
+    _.remove(elements, element =>
+      isObjectType(element) && element.elemID.typeName === DEFAULT_CUSTOM_STATUSES_TYPE_NAME)
 
     const defaultCustomStatusesType = new ObjectType(
       {
@@ -107,7 +107,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       changes,
       change => CUSTOM_STATUS_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
-    const CustomStatusesdeployResult = await deployChanges(
+    const CustomStatusesDeployResult = await deployChanges(
       customStatusChanges,
       async change => {
         await deployChange(change, client, config.apiDefinitions)
@@ -134,8 +134,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     }
     const appliedChanges = _.isEmpty(error) ? defaultCustomStatusChanges : []
     const deployResult: DeployResult = {
-      appliedChanges: CustomStatusesdeployResult.appliedChanges.concat(appliedChanges),
-      errors: CustomStatusesdeployResult.errors.concat(error),
+      appliedChanges: CustomStatusesDeployResult.appliedChanges.concat(appliedChanges),
+      errors: CustomStatusesDeployResult.errors.concat(error),
     }
     return { deployResult, leftoverChanges }
   },

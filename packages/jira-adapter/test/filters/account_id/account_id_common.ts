@@ -225,6 +225,13 @@ export const createInstance = (
         value: `${id}automation5`,
       },
     },
+    automation9: {
+      selectedFieldType: 'com.atlassian.servicedesk:sd-request-participants',
+      compareFieldValue: {
+        type: 'ID',
+        value: `${id}automation9`,
+      },
+    },
     automation6: {
       fieldType: 'com.atlassian.jira.plugin.system.customfieldtypes:userpicker',
       compareFieldValue: {
@@ -412,6 +419,15 @@ export const createObjectedInstance = (id: string, objectType: ObjectType): Inst
         },
       },
     },
+    automation9: {
+      selectedFieldType: 'com.atlassian.servicedesk:sd-request-participants',
+      compareFieldValue: {
+        type: 'ID',
+        value: {
+          id: `${id}automation9`,
+        },
+      },
+    },
     automation6: {
       fieldType: 'com.atlassian.jira.plugin.system.customfieldtypes:userpicker',
       compareFieldValue: {
@@ -501,6 +517,7 @@ export const checkObjectedInstanceIds = (
     expect(objInstance.value.automation3.compareFieldValue.value.id).toEqual(`${id}automation3`)
     expect(objInstance.value.automation4.compareFieldValue.value.id).toEqual(`${id}automation4`)
     expect(objInstance.value.automation5.compareFieldValue.value.id).toEqual(`${id}automation5`)
+    expect(objInstance.value.automation9.compareFieldValue.value.id).toEqual(`${id}automation9`)
     expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value.id).toEqual(`${id}automation6`)
     expect(objInstance.value.automation7.compareFieldValue[0].value.conditions[1].criteria[0].value.id).toEqual(`${id}automation7`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[0].id).toEqual(`${id}automation8a`)
@@ -529,6 +546,7 @@ export const checkSimpleInstanceIds = (
     expect(objInstance.value.automation3.compareFieldValue.value).toEqual(`${id}automation3`)
     expect(objInstance.value.automation4.compareFieldValue.value).toEqual(`${id}automation4`)
     expect(objInstance.value.automation5.compareFieldValue.value).toEqual(`${id}automation5`)
+    expect(objInstance.value.automation9.compareFieldValue.value).toEqual(`${id}automation9`)
     expect(objInstance.value.automation6.compareFieldValue.value.operations[0].value[0].value).toEqual(`${id}automation6`)
     expect(objInstance.value.automation7.compareFieldValue[0].value.conditions[1].criteria[0].value).toEqual(`${id}automation7`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[0]).toEqual(`${id}automation8a`)
@@ -565,6 +583,7 @@ export const checkDisplayNames = (
     expect(instance.value.automation3.compareFieldValue.value.displayName).toEqual(`disp${id}automation3`)
     expect(instance.value.automation4.compareFieldValue.value.displayName).toEqual(`disp${id}automation4`)
     expect(instance.value.automation5.compareFieldValue.value.displayName).toEqual(`disp${id}automation5`)
+    expect(instance.value.automation9.compareFieldValue.value.displayName).toEqual(`disp${id}automation9`)
     expect(instance.value.automation6.compareFieldValue.value.operations[0].value[0].value.displayName).toEqual(`disp${id}automation6`)
     expect(instance.value.automation7.compareFieldValue[0].value.conditions[1].criteria[0].value.displayName).toEqual(`disp${id}automation7`)
     expect(instance.value.automation8.compareFieldValue[0].value.assignee.values[0].displayName).toEqual(`disp${id}automation8a`)

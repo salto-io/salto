@@ -119,6 +119,9 @@ describe('add_display_name_filter', () => {
         accountId: '2automation8b',
         displayName: 'disp2automation8b',
       }, {
+        accountId: '2automation9',
+        displayName: 'disp2automation9',
+      }, {
         accountId: '2owner',
         displayName: 'disp2owner',
       }, {

@@ -39,7 +39,8 @@ const VALUE_FIELD = 'value'
 const VALUES_FIELD = 'values'
 const PARAMETER_FIELD = 'parameter'
 const OWNER_FIELD = 'owner'
-const USER_TYPE_FIELDS = ['assignee', 'reporter', 'creator', 'com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker', 'com.atlassian.jira.plugin.system.customfieldtypes:userpicker']
+const USER_TYPE_FIELDS = ['assignee', 'reporter', 'creator', 'com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker',
+  'com.atlassian.jira.plugin.system.customfieldtypes:userpicker', 'com.atlassian.servicedesk:sd-request-participants']
 
 type AccountIdCacheInfo = {
   path: ElemID

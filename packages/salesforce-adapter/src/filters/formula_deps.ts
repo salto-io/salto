@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { ElemID, ElemIDType, Field, isObjectType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
@@ -29,7 +29,6 @@ const formulon = require('formulon')
 const { extract } = formulon
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType => (
   ({
@@ -39,7 +38,7 @@ const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType 
     [IdentifierType.CUSTOM_SETTING.name]: 'type', // TODO is this right?
     [IdentifierType.STANDARD_FIELD.name]: 'field',
     [IdentifierType.CUSTOM_FIELD.name]: 'field',
-    [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'instance',
+    // [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'instance', //see comment in referencesFromIdentifiers
   } as const)[identifierType.name]
 )
 
@@ -62,6 +61,20 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
     referrableNames.has(elemId.getFullName())
   )
 
+  const logInvalidReferences = (
+    invalidReferences: ElemID[],
+    formula: string,
+    identifiersInfo: FormulaIdentifierInfo[][]
+  ): void => {
+    invalidReferences.forEach(refElemId => {
+      log.error(`Created an invalid reference from a formula identifier. This reference will be discarded.
+        Field: ${field.elemID.getFullName()}
+        Formula: ${formula}
+        Identifiers: ${identifiersInfo.flat().map(info => info.instance).join(', ')}
+        Reference: ${refElemId.getFullName()}`)
+    })
+  }
+
   const formula = field.annotations[FORMULA]
   if (formula === undefined) {
     log.error(`Field ${field.elemID.getFullName()} is a formula field with no formula?`)
@@ -71,14 +84,14 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
   log.debug(`Extracting formula refs from ${field.elemID.getFullName()}`)
 
   try {
-    const formulaVariables: string[] = log.time(
+    const formulaIdentifiers: string[] = log.time(
       () => (extract(formula)),
       `Parse formula '${formula.slice(0, 15)}'`
     )
 
     const identifiersInfo = await log.time(
       () => Promise.all(
-        formulaVariables.map(async x => parseFormulaIdentifier(x, field.parent.elemID.typeName))
+        formulaIdentifiers.map(async identifier => parseFormulaIdentifier(identifier, field.parent.elemID.typeName))
       ),
       'Convert formula identifiers to references'
     )
@@ -95,17 +108,8 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
 
-    const validReferences = references.filter(elemId => {
-      const valid = isValidReference(elemId)
-      if (!valid) {
-        log.error(`Created an invalid reference from a formula identifier. This reference will be discarded.
-        Field: ${field.elemID.getFullName()}
-        Formula: ${formula}
-        Identifiers: ${identifiersInfo.flat().map(info => info.instance).join(', ')}
-        Reference: ${elemId.getFullName()}`)
-      }
-      return valid
-    })
+    const [validReferences, invalidReferences] = _.partition(references, isValidReference)
+    logInvalidReferences(invalidReferences, formula, identifiersInfo)
 
     const depsAsRefExpr = validReferences.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
@@ -120,14 +124,21 @@ const allReferrableNames = (type: ObjectType): string[] => [
   ...Object.values(type.fields).map(field => field.elemID.getFullName()),
 ]
 
+/**
+ * Extract references from formulas
+ * Formulas appear in the field definitions of types and may refer to fields in their parent type or in another type.
+ * This filter parses formulas, identifies such references and adds them to the _generated_references annotation of the
+ * formula field.
+ * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
+ * Note: Because formulas are part of the type's definition we assume they can only refer to other types/fields and to
+ *       instances
+ */
 const filter: LocalFilterCreator = () => ({
   name: 'formula_deps',
   onFetch: async elements => {
     const objectTypes = elements.filter(isObjectType)
     const referrableNames = new Set((await Promise.all(objectTypes.map(type => allReferrableNames(type)))).flat())
-    const formulaFields = (await Promise.all(
-      objectTypes.map(async t => awu(Object.values(t.fields)).filter(isFormulaField).toArray())
-    )).flat()
+    const formulaFields = objectTypes.flatMap(type => Object.values(type.fields)).filter(isFormulaField)
     await Promise.all(formulaFields.map(field => addDependenciesAnnotation(field, referrableNames)))
   },
 })

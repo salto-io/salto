@@ -42,6 +42,7 @@ import animationRuleRecordType from './change_validators/animation_rule_recordty
 import duplicateRulesSortOrder from './change_validators/duplicate_rules_sort_order'
 import lastLayoutRemoval from './change_validators/last_layout_removal'
 import currencyIsoCodes from './change_validators/currency_iso_codes'
+import accountSettings from './change_validators/account_settings'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
@@ -82,6 +83,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   duplicateRulesSortOrder: { creator: () => duplicateRulesSortOrder, ...defaultAlwaysRun },
   currencyIsoCodes: { creator: () => currencyIsoCodes, ...defaultAlwaysRun },
   lastLayoutRemoval: { creator: () => lastLayoutRemoval, ...defaultAlwaysRun },
+  accountSettings: { creator: () => accountSettings(), ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

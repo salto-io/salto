@@ -730,7 +730,7 @@ describe('Zendesk adapter E2E', () => {
       })
 
       const attachmentName = createName('attachment')
-      const fileName = `nacl${attachmentName}`
+      const fileName = `anacl${attachmentName}`
       const articleAttachment = createInstanceElement({
         type: ARTICLE_ATTACHMENT_TYPE_NAME,
         valuesOverride: {
@@ -764,12 +764,12 @@ describe('Zendesk adapter E2E', () => {
       })
 
       articleInstance.value.attachments = [
-        new ReferenceExpression(articleAttachment.elemID, articleAttachment),
         new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
+        new ReferenceExpression(articleAttachment.elemID, articleAttachment),
       ]
       articleInstance.value.attachments = _.sortBy(articleInstance.value.attachments, [
         (attachment: ReferenceExpression) => attachment.value.value.file_name,
-        (attachment: ReferenceExpression) => attachment.value.value.constent_type,
+        (attachment: ReferenceExpression) => attachment.value.value.content_type,
         (attachment: ReferenceExpression) => attachment.value.value.inline,
       ])
 

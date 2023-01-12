@@ -52,7 +52,13 @@ import {
   orderChildrenParentValidator,
   macroActionsTicketFieldDeactivationValidator,
   sideConversationsValidator,
+<<<<<<< HEAD
   missingUsersValidator,
+=======
+  customStatusUniqueAgentLabelValidator,
+  customStatusCategoryChangeValidator,
+  customStatusCategoryValidator,
+>>>>>>> a6cc2fb29 (custom status validators)
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -98,6 +104,9 @@ export default ({
     phoneNumbersValidator,
     automationAllConditionsValidator,
     macroActionsTicketFieldDeactivationValidator,
+    customStatusUniqueAgentLabelValidator,
+    customStatusCategoryChangeValidator,
+    customStatusCategoryValidator,
     customRoleRemovalValidator(client),
     sideConversationsValidator,
     missingUsersValidator(client),

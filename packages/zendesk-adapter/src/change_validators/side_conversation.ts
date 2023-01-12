@@ -28,14 +28,13 @@ const SIDE_CONVERSATION_MAP: Record<string, string> = {
   side_conversation_ticket: 'side_conversations_tickets',
 }
 
-const getSideConversationFields = (macroInstance: InstanceElement): string[] => {
-  const actionWithTicketFields = macroInstance.value.actions
-    ?.filter(isAction)
+const getSideConversationFields = (macroInstance: InstanceElement): string[] => (
+  (macroInstance.value.actions ?? [])
+    .filter(isAction)
     .filter((action: ActionsType) =>
       _.isString(action.field) && Object.keys(SIDE_CONVERSATION_MAP).includes(action.field))
     .map((action: ActionsType) => action.field)
-  return actionWithTicketFields
-}
+)
 
 /**
  * Verify side_conversation features are enabled before deployment of a macro with side_conversation fields
@@ -43,17 +42,17 @@ const getSideConversationFields = (macroInstance: InstanceElement): string[] => 
 export const sideConversationsValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
+  if (elementSource === undefined) {
+    log.error('Failed to run sideConversationsValidator because no element source was provided')
+    return []
+  }
+
   const relevantInstances = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === MACRO_TYPE_NAME)
     .filter(macroInstance => !_.isEmpty(getSideConversationFields(macroInstance)))
-
-  if (elementSource === undefined) {
-    log.error('Failed to run sideConversationsValidator because no element source was provided')
-    return []
-  }
   if (_.isEmpty(relevantInstances)) {
     return []
   }

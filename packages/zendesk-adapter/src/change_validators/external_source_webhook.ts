@@ -27,14 +27,14 @@ import { WEBHOOK_TYPE_NAME } from '../constants'
 const createExternalSourceWebhookChangeWarning = (webhook: InstanceElement): ChangeError => ({
   elemID: webhook.elemID,
   severity: 'Warning',
-  message: 'Change of a webhook that was installed by an external app',
+  message: 'Changing a webhook that was installed by an external app',
   detailedMessage: 'If you edit this webhook, the app that created it might not work as intended.',
 })
 
 const createDeactivationWarning = (webhook: InstanceElement): ChangeError => ({
   elemID: webhook.elemID,
   severity: 'Warning',
-  message: 'Deactivation of a webhook that was installed by an external app',
+  message: 'Deactivating a webhook that was installed by an external app',
   detailedMessage: 'If you deactivate this webhook, the app that created it might not work as intended. You\'ll need to reactivate it to use it again.',
 })
 
@@ -51,20 +51,20 @@ const handleModificationChanges = (changes: ModificationChange<InstanceElement>[
     const detailedChanges = detailedCompare(change.data.before, change.data.after)
 
     // It's impossible to change some fields of a webhook using Zendesk's api
-    if (detailedChanges.some(detailedChange => detailedChange.id.getFullName().includes('external_source'))
-        || detailedChanges.some(detailedChange => detailedChange.id.getFullName().includes('signing_secret'))) {
+    if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path.includes('external_source'))
+        || detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path.includes('signing_secret'))) {
       errors.push(createExternalSourceChangeError(change.data.after))
-      return
     }
 
-    const inactivationChange = detailedChanges.filter(isModificationChange).find(detailedChange => detailedChange.id.name === 'status')
-    const wasDeactivated = inactivationChange && inactivationChange.data.before === 'active' && inactivationChange.data.after === 'inactive'
+    const wasDeactivated = change.data.before.value.status === 'active' && change.data.after.value.status === 'inactive'
     if (wasDeactivated) {
       errors.push(createDeactivationWarning(change.data.after))
     }
 
-    // There is a different warning for changes that are not deactivation, so if there is another change - warn it too
-    if (!wasDeactivated || detailedChanges.length > 1) {
+    // Filter all the changes we already handled, if there are ny other - we have a different warning for them
+    const otherChanges = detailedChanges.filter(detailedChange =>
+      ['external_source', 'signing_secret', 'status'].every(field => !detailedChange.id.createTopLevelParentID().path.includes(field)))
+    if (otherChanges.length > 0) {
       errors.push(createExternalSourceWebhookChangeWarning(change.data.after))
     }
   })
@@ -79,7 +79,7 @@ const createAdditionError = (webhooks: InstanceElement[]): ChangeError[] =>
     return {
       elemID: webhook.elemID,
       severity: 'Error',
-      message: 'Installation of a webhook that was installed by an external app',
+      message: 'Installing a webhook that was installed by an external app',
       detailedMessage: `This webhook was installed by the external app${appNameMessage}. In order to add it, please install that app.`,
     }
   })
@@ -92,15 +92,23 @@ const createRemovalErrorMessage = (webhooks: InstanceElement[]): ChangeError[] =
     return {
       elemID: webhook.elemID,
       severity: 'Error',
-      message: 'Removal of a webhook that was installed by an external app',
+      message: 'Removing a webhook that was installed by an external app',
       detailedMessage: `This webhook was installed by the external app${appNameMessage}. In order to remove it, please uninstall that app.`,
     }
   })
 
+/**
+ * Validated everything related to webhooks that were install by an external app
+ *  * They can't be created
+ *  * They can't be removed
+ *  * external_source and signing_secret fields can't be changed
+ *  * If they are deactivated, a warning is added
+ *  * If they are modified, a warning is added
+ */
 export const externalSourceWebhook: ChangeValidator = async changes => {
   const externalSourceWebhookChanges = changes.filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE_NAME)
-    .filter(change => getChangeData(change).value.external_source)
+    .filter(change => getChangeData(change).value.external_source !== undefined)
 
   return [
     createAdditionError(externalSourceWebhookChanges.filter(isAdditionChange).map(getChangeData)),

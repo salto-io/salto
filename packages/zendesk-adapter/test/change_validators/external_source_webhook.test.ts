@@ -45,7 +45,7 @@ describe('Webhooks with external_source', () => {
     expect(errors).toMatchObject([{
       elemID: webhook.elemID,
       severity: 'Error',
-      message: 'Removal of a webhook that was installed by an external app',
+      message: 'Removing a webhook that was installed by an external app',
       detailedMessage: `This webhook was installed by the external app '${appInstallation.elemID.name}'. In order to remove it, please uninstall that app.`,
     }])
   })
@@ -56,7 +56,7 @@ describe('Webhooks with external_source', () => {
     expect(errors).toMatchObject([{
       elemID: webhook.elemID,
       severity: 'Error',
-      message: 'Installation of a webhook that was installed by an external app',
+      message: 'Installing a webhook that was installed by an external app',
       detailedMessage: `This webhook was installed by the external app '${appInstallation.elemID.name}'. In order to add it, please install that app.`,
     }])
   })
@@ -94,7 +94,7 @@ describe('Webhooks with external_source', () => {
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Warning',
-        message: 'Deactivation of a webhook that was installed by an external app',
+        message: 'Deactivating a webhook that was installed by an external app',
         detailedMessage: 'If you deactivate this webhook, the app that created it might not work as intended. You\'ll need to reactivate it to use it again.',
       }])
     })
@@ -106,7 +106,7 @@ describe('Webhooks with external_source', () => {
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Warning',
-        message: 'Change of a webhook that was installed by an external app',
+        message: 'Changing a webhook that was installed by an external app',
         detailedMessage: 'If you edit this webhook, the app that created it might not work as intended.',
       }])
     })

@@ -16,18 +16,14 @@
 import _ from 'lodash'
 import {
   Change,
-  Element,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
-  isInstanceElement,
   isModificationChange,
-  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-import { APP_INSTALLATION_TYPE_NAME } from './app'
 import { WEBHOOK_TYPE_NAME } from '../constants'
 
 export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
@@ -40,25 +36,6 @@ export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
  * onDeploy: Removes the authentication data from webhook if it wasn't changed
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
-  onFetch: async (elements: Element[]) => {
-    const instanceElements = elements.filter(isInstanceElement)
-    const webhooks = instanceElements.filter(e => e.elemID.typeName === WEBHOOK_TYPE_NAME)
-    const appInstallations = instanceElements.filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME)
-
-    webhooks.forEach(webhook => {
-      const installationId = webhook.value.external_source?.data?.installation_id
-
-      // If the webhook was installed by an external source (an app), put a reference to it in the webhook's data
-      if (installationId !== undefined) {
-        const webhookAppInstallation = appInstallations.find(installation => installation.value.id === installationId)
-
-        if (webhookAppInstallation) {
-          const installationReference = new ReferenceExpression(webhookAppInstallation.elemID, webhookAppInstallation)
-          webhook.value.external_source.data.installation_id = installationReference
-        }
-      }
-    })
-  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [webhookModificationChanges, leftoverChanges] = _.partition(
       changes,

@@ -792,6 +792,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     serializationStrategy: 'id',
     target: { typeContext: 'neighborParentType' },
   },
+  {
+    src: { field: 'installation_id', parentTypes: ['webhook__external_source__data'] },
+    serializationStrategy: 'id',
+    target: { type: 'app_installation' },
+  },
 ]
 
 const commonFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [

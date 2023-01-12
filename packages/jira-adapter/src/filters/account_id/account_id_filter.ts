@@ -131,15 +131,16 @@ const accountIdsScenarios = (
       fieldName: index.toString(),
     }))
   }
-  // sixth scenario the type is Automation, various conditions that contain user name
+  // sixth scenario the type is Automation, various conditions and actions that contain user name
   if (path.typeName === AUTOMATION_TYPE) {
+    // issue field conditions with a user field type
     if (USER_TYPE_FIELDS.includes(value.selectedFieldType)
     && value.compareFieldValue?.type === 'ID') {
       callbackValueOrValues({ value: value.compareFieldValue,
         path: path.createNestedID('compareFieldValue'),
         callback })
     }
-
+    // edit issue actions with a user field
     if (USER_TYPE_FIELDS.includes(value.fieldType)) {
       walkOnValue({ value,
         elemId: path,
@@ -148,12 +149,12 @@ const accountIdsScenarios = (
         callback) })
       return WALK_NEXT_STEP.SKIP
     }
-
+    // user condition
     if (value.type === 'jira.user.condition') {
       walkOnValue({ value, elemId: path, func: walkOnAutomationValue('value\\.conditions\\.\\d+\\.criteria\\.\\d+', callback) })
       return WALK_NEXT_STEP.SKIP
     }
-
+    // assign action
     if (value.type === 'jira.issue.assign') {
       walkOnValue({ value, elemId: path, func: walkOnAutomationValue('value\\.assignee', callback) })
       return WALK_NEXT_STEP.SKIP

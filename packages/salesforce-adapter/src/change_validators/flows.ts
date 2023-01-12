@@ -21,10 +21,10 @@ import {
   InstanceElement,
   isModificationChange,
   ModificationChange,
-  isAdditionChange, ElemID, DeployActions, Change, isRemovalChange, ReadOnlyElementsSource,
+  isAdditionChange, ElemID, DeployActions, Change, isRemovalChange, ReadOnlyElementsSource, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import _, { isEmpty, isUndefined } from 'lodash'
+import { isEmpty, isUndefined } from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { FLOW_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
@@ -98,8 +98,8 @@ const testCoveragePostDeploy = (instance: InstanceElement): DeployActions => ({
   },
 })
 
-const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl: URL | undefined): DeployActions => {
-  const url = _.get(instance, ['annotations', '_service_url'])
+const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): DeployActions => {
+  const url = instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]
   if (url !== undefined) {
     return {
       postAction: {
@@ -172,7 +172,7 @@ const deactivatingError = (instance: InstanceElement): ChangeError => ({
   detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}`,
 })
 
-const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl: URL | undefined):
+const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl?: URL):
     ChangeError => {
   if (enableActiveDeploy) {
     return {
@@ -208,7 +208,7 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
   }
 }
 
-const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl: URL | undefined):
+const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl?: URL):
     ChangeError => {
   if (enableActiveDeploy) {
     return {

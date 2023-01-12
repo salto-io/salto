@@ -145,6 +145,9 @@ const accountIdsScenarios = (
     if (USER_TYPE_FIELDS.includes(value.fieldType)) {
       walkOnValue({ value,
         elemId: path,
+        // two options are supported here (with or), where value is a single object or an array
+        // the first  is 'value.operations.0.value.1' (numbers can differ)
+        // the second is 'value.operations.0.value' (numbers can differ)
         func: walkOnAutomationValue('value\\.operations\\.\\d+.value\\.\\d+'
           + '|value\\.operations\\.\\d+\\.value',
         callback) })

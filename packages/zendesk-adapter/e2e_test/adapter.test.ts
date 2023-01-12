@@ -767,6 +767,11 @@ describe('Zendesk adapter E2E', () => {
         new ReferenceExpression(articleAttachment.elemID, articleAttachment),
         new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
       ]
+      articleInstance.value.attachments = _.sortBy(articleInstance.value.attachments, [
+        (attachment: ReferenceExpression) => attachment.value.value.file_name,
+        (attachment: ReferenceExpression) => attachment.value.value.constent_type,
+        (attachment: ReferenceExpression) => attachment.value.value.inline,
+      ])
 
       const articleTranslationEn = createInstanceElement({
         type: ARTICLE_TRANSLATION_TYPE_NAME,

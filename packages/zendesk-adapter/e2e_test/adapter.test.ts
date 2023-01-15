@@ -38,7 +38,13 @@ import {
   Value,
   Values,
 } from '@salto-io/adapter-api'
-import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, naclCase } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  buildElementsSourceFromElements,
+  detailedCompare,
+  naclCase,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -777,11 +783,14 @@ describe('Zendesk adapter E2E', () => {
         new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
         new ReferenceExpression(articleAttachment.elemID, articleAttachment),
       ]
-      articleInstance.value.attachments = _.sortBy(articleInstance.value.attachments, [
+      articleInstance.value.attachments
+        .forEach((ref: ReferenceExpression) => log.info(safeJsonStringify(ref.value.value)))
+      const temp = _.sortBy(articleInstance.value.attachments, [
         (attachment: ReferenceExpression) => attachment.value.value.file_name,
         (attachment: ReferenceExpression) => attachment.value.value.content_type,
         (attachment: ReferenceExpression) => attachment.value.value.inline,
       ])
+      articleInstance.value.attachments = temp
 
       const articleTranslationEn = createInstanceElement({
         type: ARTICLE_TRANSLATION_TYPE_NAME,

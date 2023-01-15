@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { AccountId, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
@@ -38,10 +39,15 @@ export const validateCredentials = async ({ connection }: {
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async ({ token }: Credentials) => ({
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    authParamsFunc: async ({ username, token }: Credentials) => ({
+      headers: _.isEmpty(username)
+        ? {
+          Authorization: `Bearer ${token}`,
+        }
+        : {
+          'x-user-email': username,
+          'x-user-token': token,
+        },
     }),
     baseURLFunc: () => BASE_URL,
     credValidateFunc: validateCredentials,

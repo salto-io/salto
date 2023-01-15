@@ -59,7 +59,7 @@ describe('adapter', () => {
           credentials: new InstanceElement(
             'config',
             usernameTokenCredentialsType,
-            { username: 'user123', token: 'token456' },
+            { token: 'token456' },
           ),
           config: new InstanceElement(
             'config',
@@ -256,7 +256,7 @@ describe('adapter', () => {
           credentials: new InstanceElement(
             'config',
             usernameTokenCredentialsType,
-            { username: 'user123', token: 'token456' },
+            { token: 'token456' },
           ),
           config: new InstanceElement(
             'config',
@@ -304,7 +304,7 @@ describe('adapter', () => {
           credentials: new InstanceElement(
             'config',
             usernameTokenCredentialsType,
-            { username: 'user123', token: 'token456' },
+            { token: 'token456' },
           ),
           config: new InstanceElement(
             'config',
@@ -386,7 +386,7 @@ describe('adapter', () => {
           credentials: new InstanceElement(
             'config',
             usernameTokenCredentialsType,
-            { username: 'user123', token: 'token456' },
+            { token: 'token456' },
           ),
           config: new InstanceElement(
             'config',
@@ -442,7 +442,7 @@ describe('adapter', () => {
         credentials: new InstanceElement(
           'config',
           usernameTokenCredentialsType,
-          { username: 'user123', token: 'token456' },
+          { token: 'token456' },
         ),
         config: new InstanceElement(
           'config',

@@ -23,7 +23,7 @@ describe('client', () => {
     let client: WorkatoClient
     beforeEach(() => {
       mockAxios = new MockAdapter(axios)
-      client = new WorkatoClient({ credentials: { username: 'dummy_user', token: 'dummy_token' } })
+      client = new WorkatoClient({ credentials: { token: 'dummy_token' } })
     })
 
     afterEach(() => {

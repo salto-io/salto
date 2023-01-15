@@ -219,7 +219,7 @@ describe('adapter', () => {
         });
 
       (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
-        .mockResolvedValue([testInstance]);
+        .mockResolvedValue({ elements: [testInstance] });
       (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
         .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
 

@@ -62,7 +62,7 @@ export const getStandardObjectElements = async ({
     fetchQuery: {
       isTypeMatch: typeName => typeName === standardObjecWrapperTypeName,
     },
-  })).map(inst => new InstanceElement(
+  })).elements.map(inst => new InstanceElement(
     inst.elemID.name,
     standardObjectDefType,
     inst.value,

@@ -14,12 +14,24 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element } from '@salto-io/adapter-api'
+import { Element, SaltoError } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TypeConfig } from '../config'
 import { ElementQuery } from './query'
 
+
 const { isDefined } = lowerdashValues
+
+export type ConfigChangeSuggestion = {
+  typeToExclude: string
+}
+
+export type FetchElements<T> = {
+  elements: T
+  errors?: SaltoError[]
+  configChanges?: ConfigChangeSuggestion[]
+}
+
 
 /**
  * Get all dependencies types (by the usage of "dependsOn")
@@ -52,8 +64,8 @@ export const getElementsWithContext = async <E extends Element>({
   typeElementGetter: (args: {
     typeName: string
     contextElements?: Record<string, E[]>
-  }) => Promise<E[]>
-}): Promise<E[]> => {
+  }) => Promise<FetchElements<E[]>>
+}): Promise<FetchElements<E[]>> => {
   const includeTypes = _(supportedTypes)
     .entries()
     .filter(([typeName]) => fetchQuery.isTypeMatch(typeName))
@@ -73,19 +85,21 @@ export const getElementsWithContext = async <E extends Element>({
   const additionalContextTypes: string[] = getDependencies([...dependentEndpoints], types)
     .filter(typeName => !independentEndpoints.has(typeName))
 
-  const contextElements: Record<string, {
-    elements: E[]
+  const contextElements: Record<string, FetchElements<E[]> & {
     // if the type is only fetched as context for another type, do not persist it
     persistInstances: boolean
   }> = Object.fromEntries(await Promise.all(
-    [...independentEndpoints, ...additionalContextTypes].map(async typeName =>
-      [
+    [...independentEndpoints, ...additionalContextTypes].map(async typeName => {
+      const res = await typeElementGetter({ typeName })
+      return [
         typeName,
         {
-          elements: await typeElementGetter({ typeName }),
+          elements: res.elements,
           persistInstances: independentEndpoints.has(typeName),
+          errors: res.errors,
         },
-      ])
+      ]
+    })
   ))
   const dependentElements = await Promise.all(
     [...dependentEndpoints].map(async typeName => typeElementGetter({
@@ -94,11 +108,13 @@ export const getElementsWithContext = async <E extends Element>({
     }))
   )
 
-  return [
-    ...Object.values(contextElements)
+  return {
+    elements: Object.values(contextElements)
       .flatMap(({ persistInstances, elements }) => (persistInstances
         ? elements
-        : [])),
-    ...dependentElements.flat(),
-  ]
+        : [])).concat(Object.values(dependentElements).flatMap(({ elements }) => elements)),
+    errors:
+      Object.values(contextElements).flatMap(({ errors }) => errors ?? [])
+        .concat(Object.values(dependentElements).flatMap(({ errors }) => errors ?? [])),
+  }
 }

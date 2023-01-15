@@ -26,7 +26,7 @@ import {
   createSchemeGuard,
   getParents,
   replaceTemplatesWithValues,
-  resolveChangeElement, safeJsonStringify,
+  resolveChangeElement,
 } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
@@ -277,8 +277,6 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         attachments: isAttachments(attachments) ? attachments : [],
       })
       articleInstances.forEach(article => {
-        article.value.attachments
-          .forEach((ref: ReferenceExpression) => log.info(safeJsonStringify(attachmentByName[ref.elemID.name].value)))
         const temp = _.sortBy(article.value.attachments, [
           (attachment: ReferenceExpression) => getFilename(attachmentByName[attachment.elemID.name]),
           (attachment: ReferenceExpression) => getContentType(attachmentByName[attachment.elemID.name]),

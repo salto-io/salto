@@ -43,7 +43,6 @@ import {
   buildElementsSourceFromElements,
   detailedCompare,
   naclCase,
-  safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
@@ -783,8 +782,6 @@ describe('Zendesk adapter E2E', () => {
         new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
         new ReferenceExpression(articleAttachment.elemID, articleAttachment),
       ]
-      articleInstance.value.attachments
-        .forEach((ref: ReferenceExpression) => log.info(safeJsonStringify(ref.value.value)))
       const temp = _.sortBy(articleInstance.value.attachments, [
         (attachment: ReferenceExpression) => attachment.value.value.file_name,
         (attachment: ReferenceExpression) => attachment.value.value.content_type,

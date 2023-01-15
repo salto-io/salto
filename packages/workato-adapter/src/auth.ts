@@ -25,7 +25,12 @@ export type UsernameTokenCredentials = {
 export const usernameTokenCredentialsType = createMatchingObjectType<UsernameTokenCredentials>({
   elemID: new ElemID(constants.WORKATO),
   fields: {
-    username: { refType: BuiltinTypes.STRING },
+    username: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        message: 'message (optional) - keep empty if using token-based authentication',
+      },
+    },
     token: {
       refType: BuiltinTypes.STRING,
       annotations: { _required: true },

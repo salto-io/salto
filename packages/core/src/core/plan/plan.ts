@@ -24,10 +24,13 @@ import {
   shouldResolve,
   isTemplateExpression,
   CompareOptions,
+  DetailedChange,
+  ChangeWithDetails,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
@@ -463,26 +466,25 @@ const resolveNodeElements = (
   return graph
 }, 'resolve node elements for %d nodes', graph.size)
 
-export type Plan = GroupDAG<Change> & {
+export type Plan = GroupDAG<ChangeWithDetails> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
   getItem: (id: PlanItemId) => PlanItem
   changeErrors: ReadonlyArray<ChangeError>
 }
 
 const addPlanFunctions = (
-  groupGraph: GroupDAG<Change>,
+  groupGraph: GroupDAG<ChangeWithDetails>,
   changeErrors: ReadonlyArray<ChangeError>,
-  compareOptions?: CompareOptions,
 ): Plan => Object.assign(groupGraph,
   {
     itemsByEvalOrder(): Iterable<PlanItem> {
       return wu(groupGraph.evaluationOrder())
         .map(group => groupGraph.getData(group))
-        .map(group => addPlanItemAccessors(group, compareOptions))
+        .map(group => addPlanItemAccessors(group))
     },
 
     getItem(planItemId: PlanItemId): PlanItem {
-      return addPlanItemAccessors(groupGraph.getData(planItemId), compareOptions)
+      return addPlanItemAccessors(groupGraph.getData(planItemId))
     },
     changeErrors,
   })
@@ -532,6 +534,37 @@ const removeRedundantFieldChanges = (
     }))
   )
 ), 'removeRedundantFieldChanges')
+
+export const toDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChange[] => {
+  const elem = getChangeData(change)
+  if (change.action !== 'modify') {
+    return [{ ...change, id: elem.elemID }]
+  }
+  return detailedCompare(
+    change.data.before,
+    change.data.after,
+    compareOptions,
+  )
+}
+
+const calculateDetailedChanges = (
+  graph: GroupDAG<Change<ChangeDataType>>,
+  compareOptions?: CompareOptions
+): GroupDAG<ChangeWithDetails> => log.time(() => (
+  new DAG<Group<ChangeWithDetails>>(
+    graph.entries(),
+    new Map(wu(graph.keys()).map(key => {
+      const group = graph.getData(key)
+      const changesWithDetails = new Map(
+        wu(group.items.entries()).map(([id, change]) => ([id, {
+          ...change,
+          detailedChanges: toDetailedChanges(change, compareOptions),
+        }]))
+      )
+      return [key, { groupKey: group.groupKey, items: changesWithDetails }]
+    }))
+  )
+), 'calculateDetailedChanges')
 
 export type AdditionalResolveContext = {
   before: ReadonlyArray<Element>
@@ -595,7 +628,8 @@ export const getPlan = async ({
         disjointGroups
       )
     )
+    const groupedGraphWithDetailedChanges = calculateDetailedChanges(groupedGraph, compareOptions)
     // build plan
-    return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)
+    return addPlanFunctions(groupedGraphWithDetailedChanges, filterResult.changeErrors)
   }, 'get plan with %o -> %o elements', numBeforeElements, numAfterElements)
 }

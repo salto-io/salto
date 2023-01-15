@@ -96,6 +96,10 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
     path?: ReadonlyArray<string>
   }
 
+export type ChangeWithDetails = Change & {
+  detailedChanges: DetailedChange[]
+}
+
 export type ChangeParams<T> = { before?: T; after?: T }
 
 type ChangeParamType<T> = T extends ChangeParams<infer U> ? U : never

@@ -16,18 +16,14 @@
 import wu from 'wu'
 
 import { NodeId, Group, ActionName } from '@salto-io/dag'
-import { Change, getChangeData, DetailedChange, CompareOptions } from '@salto-io/adapter-api'
-import { detailedCompare } from '@salto-io/adapter-utils'
+import { Change, getChangeData, DetailedChange, ChangeWithDetails } from '@salto-io/adapter-api'
 
 export type PlanItemId = NodeId
-export type ChangeWithDetails = Change & {
-  detailedChanges: () => DetailedChange[]
-}
-export type PlanItem = Group<Change> & {
+
+export type PlanItem = Group<ChangeWithDetails> & {
   action: ActionName
-  changes: () => Iterable<Change>
+  changes: () => Iterable<ChangeWithDetails>
   detailedChanges: () => Iterable<DetailedChange>
-  changesWithDetails: () => Iterable<ChangeWithDetails>
 }
 
 const getGroupAction = (group: Group<Change>): ActionName => {
@@ -43,21 +39,8 @@ const getGroupAction = (group: Group<Change>): ActionName => {
     : 'modify'
 }
 
-const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChange[] => {
-  const elem = getChangeData(change)
-  if (change.action !== 'modify') {
-    return [{ ...change, id: elem.elemID }]
-  }
-  return detailedCompare(
-    change.data.before,
-    change.data.after,
-    compareOptions,
-  )
-}
-
 export const addPlanItemAccessors = (
-  group: Group<Change>,
-  compareOptions?: CompareOptions,
+  group: Group<ChangeWithDetails>,
 ): PlanItem => Object.assign(group, {
   action: getGroupAction(group),
   changes() {
@@ -65,14 +48,7 @@ export const addPlanItemAccessors = (
   },
   detailedChanges() {
     return wu(group.items.values())
-      .map(change => getDetailedChanges(change, compareOptions))
+      .map(change => change.detailedChanges)
       .flatten()
-  },
-  changesWithDetails() {
-    return wu(group.items.values())
-      .map(change => ({
-        ...change,
-        detailedChanges: () => getDetailedChanges(change, compareOptions),
-      }))
   },
 })

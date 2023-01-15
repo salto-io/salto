@@ -22,6 +22,7 @@ import {
   AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
   createRefToElmWithValue,
   StaticFile,
+  ChangeWithDetails,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
@@ -486,23 +487,22 @@ const toPlanItem = (
   parent: Change,
   subChanges: Change[],
   detailed: DetailedChange[]
-): PlanItem => ({
-  groupKey: getChangeData(parent).elemID.getFullName(),
-  items: new Map<string, Change>(
-    [parent, ...subChanges].map(c => [_.uniqueId(), c])
-  ),
-  action: parent.action,
-  changes: () => [parent, ...subChanges],
-  detailedChanges: () => detailed,
-  changesWithDetails: () => {
-    const changes = [parent, ...subChanges]
-    const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())
-    return changes.map(change => ({
-      ...change,
-      detailedChanges: () => detailedChangesByChange[getChangeData(change).elemID.getFullName()],
-    }))
-  },
-})
+): PlanItem => {
+  const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())
+  const toChangeWithDetails = (change: Change): ChangeWithDetails => ({
+    ...change,
+    detailedChanges: detailedChangesByChange[getChangeData(change).elemID.getFullName()],
+  })
+  return ({
+    groupKey: getChangeData(parent).elemID.getFullName(),
+    items: new Map<string, ChangeWithDetails>(
+      [parent, ...subChanges].map(c => [_.uniqueId(), toChangeWithDetails(c)])
+    ),
+    action: parent.action,
+    changes: () => [parent, ...subChanges].map(toChangeWithDetails),
+    detailedChanges: () => detailed,
+  })
+}
 
 const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {
   const elemID = new ElemID('salesforce', ...path)

@@ -15,21 +15,22 @@
 */
 import wu from 'wu'
 import {
-  Change, ObjectType, isObjectType, ElemID, getChangeData,
+  Change, ObjectType, isObjectType, ElemID, getChangeData, ChangeWithDetails,
 } from '@salto-io/adapter-api'
 import { Group, DAG } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from '../../src/core/plan'
 import { addPlanItemAccessors } from '../../src/core/plan/plan_item'
+import { toDetailedChanges } from '../../src/core/plan/plan'
 import { getAllElements } from './elements'
 
 export const createPlan = (changeGroups: Change[][]): Plan => {
-  const toGroup = (changes: Change[]): Group<Change> => ({
+  const toGroup = (changes: Change[]): Group<ChangeWithDetails> => ({
     groupKey: changes.length > 0
       ? getChangeData(changes[0]).elemID.createTopLevelParentID().parent.getFullName()
       : '',
-    items: new Map(changes.map((change, idx) => [`${idx}`, change])),
+    items: new Map(changes.map((change, idx) => [`${idx}`, { ...change, detailedChanges: toDetailedChanges(change) }])),
   })
-  const graph = new DAG<Group<Change>>(
+  const graph = new DAG<Group<ChangeWithDetails>>(
     changeGroups.map((_changes, idx) => [`${idx}`, new Set()]),
     new Map(changeGroups.map((changes, idx) => [`${idx}`, toGroup(changes)])),
   )

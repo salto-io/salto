@@ -123,6 +123,16 @@ export const createDashboardType = (): ObjectType => {
   })
 }
 
+export const createFieldContextType = (): ObjectType => {
+  const defaultValue = createEmptyType('DefaultValue')
+  return new ObjectType({
+    elemID: new ElemID(JIRA, 'CustomFieldContext'),
+    fields: {
+      defaultValue: { refType: defaultValue },
+    },
+  })
+}
+
 export const createInstance = (
   id: string,
   objectType: ObjectType,

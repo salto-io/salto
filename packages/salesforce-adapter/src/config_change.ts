@@ -28,7 +28,7 @@ import {
   MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
-import { UNLIMITED_INSTANCES_VALUE } from './constants'
+import { INVALID_CROSS_REFERENCE_KEY, SOCKET_TIMEOUT, UNLIMITED_INSTANCES_VALUE } from './constants'
 
 const { isDefined } = values
 const { makeArray } = collections.array
@@ -103,21 +103,59 @@ export const createSkippedListConfigChange = ({ type, instance, reason }
   }
 }
 
-export const createFetchTimeoutConfigChange = (
-  metadataQueryParams: Required<Pick<MetadataQueryParams, 'metadataType' | 'name'>>
+type ConfigSuggestionsCreatorInput = Required<Pick<MetadataQueryParams, 'metadataType' | 'name'>>
+
+type CreateConfigSuggestionFunc = (input: ConfigSuggestionsCreatorInput) => MetadataConfigSuggestion
+type CreateConfigSuggestionPredicate = (error: Error) => boolean
+
+const isSocketTimeoutError: CreateConfigSuggestionPredicate = (e: Error): boolean => (
+  e.message === SOCKET_TIMEOUT
+)
+const isInvalidCrossReferenceKeyError: CreateConfigSuggestionPredicate = (e: Error): boolean => {
+  const errorCode = _.get(e, 'errorCode')
+  return _.isString(errorCode) && errorCode === INVALID_CROSS_REFERENCE_KEY
+}
+
+type ConfigSuggestionCreator = {
+  predicate: CreateConfigSuggestionPredicate
+  create: CreateConfigSuggestionFunc
+}
+
+export const createSocketTimeoutConfigSuggestion: CreateConfigSuggestionFunc = (
+  input: ConfigSuggestionsCreatorInput
 ): MetadataConfigSuggestion => ({
   type: 'metadataExclude',
-  value: metadataQueryParams,
-  reason: `${metadataQueryParams.metadataType} with name ${metadataQueryParams.name} exceeded fetch timeout`,
+  value: input,
+  reason: `${input.metadataType} with name ${input.name} exceeded fetch timeout`,
 })
 
-export const createInvalidCrossReferenceKeyConfigChange = (
-  metadataQueryParams: Required<Pick<MetadataQueryParams, 'metadataType' | 'name'>>
+export const createInvalidCrossReferenceKeyConfigSuggestion: CreateConfigSuggestionFunc = (
+  input: ConfigSuggestionsCreatorInput
 ): MetadataConfigSuggestion => ({
   type: 'metadataExclude',
-  value: metadataQueryParams,
-  reason: `${metadataQueryParams.metadataType} with name ${metadataQueryParams.name} failed due to INVALID_CROSS_REFERENCE_KEY`,
+  value: input,
+  reason: `${input.metadataType} with name ${input.name} failed due to INVALID_CROSS_REFERENCE_KEY`,
 })
+
+
+const CONFIG_SUGGESTION_CREATORS: Record<string, ConfigSuggestionCreator> = {
+  [SOCKET_TIMEOUT]: {
+    predicate: isSocketTimeoutError,
+    create: createSocketTimeoutConfigSuggestion,
+  },
+  [INVALID_CROSS_REFERENCE_KEY]: {
+    predicate: isInvalidCrossReferenceKeyError,
+    create: createInvalidCrossReferenceKeyConfigSuggestion,
+  },
+}
+
+export const createSkippedListConfigChangeFromError = ({ creatorInput, error }
+  : { creatorInput: ConfigSuggestionsCreatorInput; error: Error }): ConfigChangeSuggestion => (
+  Object.values(CONFIG_SUGGESTION_CREATORS)
+    .find(creator => creator.predicate(error))
+    ?.create(creatorInput)
+  ?? createSkippedListConfigChange({ type: creatorInput.metadataType, instance: creatorInput.name })
+)
 
 export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery):
   ConfigChangeSuggestion => createSkippedListConfigChange({ type: res.type, instance: res.folder })

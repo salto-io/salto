@@ -43,18 +43,16 @@ import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
 import {
-  CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-  SALESFORCE, SALESFORCE_ERRORS,
+  SALESFORCE,
 } from '../constants'
 import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
 import {
   ClientPollingConfig,
   ClientRateLimitConfig,
   ClientRetryConfig,
-  ConfigChangeSuggestion,
   Credentials,
   CustomObjectsDeployRetryConfig,
   OauthAccessTokenCredentials,
@@ -64,7 +62,6 @@ import {
 } from '../types'
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './decorators'
-import { createFetchTimeoutConfigChange, createInvalidCrossReferenceKeyConfigChange } from '../config_change'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -267,25 +264,6 @@ const realConnection = (
   })
 )
 
-
-const isSocketTimeoutError = (e: Error): boolean => (
-  e.message === 'ESOCKETTIMEDOUT'
-)
-const isInvalidCrossReferenceKeyError = (e: Error): boolean => {
-  const errorCode = _.get(e, 'errorCode')
-  return _.isString(errorCode) && errorCode === SALESFORCE_ERRORS.INVALID_CROSS_REFERENCE_KEY
-}
-
-type ConfigSuggestionsInput<T> = {
-  error: Error
-  chunkInput: T
-}
-
-type ConfigSuggestionsCreator<T> = {
-  predicate: (input: ConfigSuggestionsInput<T>) => boolean
-  create: (input: ConfigSuggestionsInput<T>) => ConfigChangeSuggestion[]
-}
-
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>
@@ -293,12 +271,16 @@ type SendChunkedArgs<TIn, TOut> = {
   chunkSize?: number
   isSuppressedError?: ErrorFilter
   isUnhandledError?: ErrorFilter
-  configSuggestionsCreators?: ConfigSuggestionsCreator<TIn[]>[]
 }
+
+type SendChunkedError<TIn> = {
+  input: TIn
+  error: Error
+}
+
 export type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
-  errors: TIn[]
-  configSuggestions: ConfigChangeSuggestion[]
+  errors: SendChunkedError<TIn>[]
 }
 const sendChunked = async <TIn, TOut>({
   input,
@@ -307,7 +289,6 @@ const sendChunked = async <TIn, TOut>({
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   isSuppressedError = () => false,
   isUnhandledError = () => true,
-  configSuggestionsCreators = [],
 }: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
@@ -317,19 +298,8 @@ const sendChunked = async <TIn, TOut>({
       if (chunkSize === 1 && chunkInput.length > 0) {
         log.debug('Finished %s on %o', operationInfo, chunkInput[0])
       }
-      return { result, errors: [], configSuggestions: [] }
+      return { result, errors: [] }
     } catch (error) {
-      const configSuggestions = configSuggestionsCreators
-        .filter(creator => creator.predicate({ chunkInput, error }))
-        .flatMap(creator => creator.create({ chunkInput, error }))
-      if (!_.isEmpty(configSuggestions)) {
-        log.debug('chunked %s config suggestions: %o', operationInfo, { chunkInput, configSuggestions, error })
-        return {
-          result: [],
-          errors: chunkInput,
-          configSuggestions,
-        }
-      }
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
         log.warn('chunked %s failed on chunk with error: %s. Message: %s. Trying each element separately.',
@@ -338,13 +308,12 @@ const sendChunked = async <TIn, TOut>({
         return {
           result: _.flatten(sendChunkResult.map(e => e.result).map(flatValues)),
           errors: _.flatten(sendChunkResult.map(e => e.errors)),
-          configSuggestions: _.flatten(sendChunkResult.map(e => e.configSuggestions)),
         }
       }
       if (isSuppressedError(error)) {
         log.warn('chunked %s ignoring recoverable error on %o: %s',
           operationInfo, chunkInput[0], error.message)
-        return { result: [], errors: [], configSuggestions: [] }
+        return { result: [], errors: [] }
       }
       if (isUnhandledError(error)) {
         log.warn('chunked %s unrecoverable error on %o: %o',
@@ -353,7 +322,7 @@ const sendChunked = async <TIn, TOut>({
       }
       log.warn('chunked %s unknown error on %o: %o',
         operationInfo, chunkInput[0], error)
-      return { result: [], errors: chunkInput, configSuggestions: [] }
+      return { result: [], errors: chunkInput.map(i => ({ input: i, error })) }
     }
   }
   const result = await Promise.all(_.chunk(makeArray(input), chunkSize)
@@ -362,7 +331,6 @@ const sendChunked = async <TIn, TOut>({
   return {
     result: _.flatten(result.map(e => e.result)),
     errors: _.flatten(result.map(e => e.errors)),
-    configSuggestions: _.flatten(result.map(e => e.configSuggestions)),
   }
 }
 
@@ -660,18 +628,6 @@ export default class SalesforceClient {
         || (type === 'TopicsForObjects' && error.name === 'sf:INVALID_TYPE_FOR_OPERATION')
       ),
       isUnhandledError,
-      configSuggestionsCreators: [
-        {
-          predicate: ({ chunkInput, error }) => (chunkInput.length === 1 && isSocketTimeoutError(error)),
-          create: ({ chunkInput }) => [createFetchTimeoutConfigChange({ metadataType: type, name: chunkInput[0] })],
-        },
-        {
-          predicate: ({ chunkInput, error }) => (chunkInput.length === 1 && isInvalidCrossReferenceKeyError(error)),
-          create: ({ chunkInput }) => [
-            createInvalidCrossReferenceKeyConfigChange({ metadataType: type, name: chunkInput[0] }),
-          ],
-        },
-      ],
     })
   }
 
@@ -697,14 +653,6 @@ export default class SalesforceClient {
       input: objectNames,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.soap.describeSObjects(chunk)),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
-      configSuggestionsCreators: [
-        {
-          predicate: ({ chunkInput, error }) => (chunkInput.length === 1 && isSocketTimeoutError(error)),
-          create: ({ chunkInput }) => [
-            createFetchTimeoutConfigChange({ metadataType: CUSTOM_OBJECT, name: chunkInput[0] }),
-          ],
-        },
-      ],
     })
   }
 

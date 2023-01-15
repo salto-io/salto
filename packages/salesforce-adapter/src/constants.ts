@@ -437,7 +437,7 @@ export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
 
-// Salesforce Errors
-export const SALESFORCE_ERRORS = {
-  INVALID_CROSS_REFERENCE_KEY: 'sf:INVALID_CROSS_REFERENCE_KEY',
-}
+
+// Errors
+export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
+export const INVALID_CROSS_REFERENCE_KEY = 'sf:INVALID_CROSS_REFERENCE_KEY'

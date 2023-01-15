@@ -22,6 +22,7 @@ import { FilterResult, RemoteFilterCreator } from '../filter'
 import { getSObjectFieldElement, apiName, toCustomField } from '../transformers/transformer'
 import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
 import { CustomField } from '../client/types'
+import { createSkippedListConfigChangeFromError } from '../config_change'
 
 const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -140,7 +141,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         .map(objDesc => objDesc.name)
         .filter(name => potentialObjectNames.has(name))
 
-      const { result: sObjects, configSuggestions } = await client.describeSObjects(objectNamesToDescribe)
+      const { result: sObjects, errors } = await client.describeSObjects(objectNamesToDescribe)
 
       await Promise.all(
         sObjects.map(
@@ -152,7 +153,12 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         )
       )
       return {
-        configSuggestions,
+        configSuggestions:
+          errors
+            .map(({ input, error }) => createSkippedListConfigChangeFromError({
+              creatorInput: { metadataType: CUSTOM_OBJECT, name: input },
+              error,
+            })),
       }
     },
   }),

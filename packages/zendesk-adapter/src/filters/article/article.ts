@@ -266,7 +266,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       const attachmentByName: Record<string, InstanceElement> = _.keyBy(
         attachments
           .filter(isInstanceElement)
-          .filter(attachment => attachment.value.name !== undefined),
+          .filter(attachment => attachment.elemID.name !== undefined),
         getName,
       )
       await getArticleAttachments({

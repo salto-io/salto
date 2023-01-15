@@ -49,7 +49,6 @@ import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import * as fs from 'fs'
 import * as path from 'path'
-import { logger } from '@salto-io/logging'
 import { resolve } from '../../workspace/src/expressions'
 import {
   API_DEFINITIONS_CONFIG,
@@ -78,7 +77,6 @@ import { getChangeGroupIds } from '../src/group_change'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
-const log = logger(module)
 const { awu } = collections.asynciterable
 const { replaceInstanceTypeForDeploy } = elementUtils.ducktype
 
@@ -268,22 +266,9 @@ describe('Zendesk adapter E2E', () => {
     }
 
     const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
-      const zipped = _.zip(orgArray, fetchArray)
-
-      zipped.forEach((val, index): void => {
-        if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
-          log.info(`index: ${index} original name: ${val[0].elemID.getFullName()} fetch name:${val[1].elemID.getFullName()}`)
-        } else {
-          log.info(`index: ${index} original name: ${val[0]} fetch name:${val[1]}`)
-        }
-      })
-      zipped.forEach(val => {
-        if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
-          expect(val[0].elemID.getFullName()).toEqual(val[1].elemID.getFullName())
-        } else {
-          expect(val[0]).toEqual(val[1])
-        }
-      })
+      const orgVals = orgArray.map(val => (isReferenceExpression(val) ? val.elemID.getFullName() : val))
+      const fetchVals = fetchArray.map(val => (isReferenceExpression(val) ? val.elemID.getFullName() : val))
+      expect(orgVals).toEqual(fetchVals)
     }
 
     const verifyInstanceValues = (
@@ -782,12 +767,12 @@ describe('Zendesk adapter E2E', () => {
         new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
         new ReferenceExpression(articleAttachment.elemID, articleAttachment),
       ]
-      const temp = _.sortBy(articleInstance.value.attachments, [
+      const sortedAttachments = _.sortBy(articleInstance.value.attachments, [
         (attachment: ReferenceExpression) => attachment.value.value.file_name,
         (attachment: ReferenceExpression) => attachment.value.value.content_type,
         (attachment: ReferenceExpression) => attachment.value.value.inline,
       ])
-      articleInstance.value.attachments = temp
+      articleInstance.value.attachments = sortedAttachments
 
       const articleTranslationEn = createInstanceElement({
         type: ARTICLE_TRANSLATION_TYPE_NAME,

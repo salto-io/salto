@@ -267,9 +267,9 @@ describe('Zendesk adapter E2E', () => {
 
       zipped.forEach((val, index): void => {
         if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
-          log.trace(`index: ${index} original name: ${val[0].elemID.getFullName()} fetch name:${val[1].elemID.getFullName()}`)
+          log.info(`index: ${index} original name: ${val[0].elemID.getFullName()} fetch name:${val[1].elemID.getFullName()}`)
         } else {
-          log.trace(`index: ${index} original name: ${val[0]} fetch name:${val[1]}`)
+          log.info(`index: ${index} original name: ${val[0]} fetch name:${val[1]}`)
         }
       })
       zipped.forEach(val => {

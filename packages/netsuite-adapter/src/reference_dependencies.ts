@@ -105,7 +105,7 @@ const getAllReferencedElements = async (
  * of deploy and writing them in the manifest.xml doesn't suffice.
  * Here we add manually all of the quirks we identified.
  */
-const getRequiredReferencedElements = async (
+export const getRequiredReferencedElements = async (
   sourceElements: ReadonlyArray<ChangeDataType>
 ): Promise<ReadonlyArray<ChangeDataType>> => {
   const getReferencedElement = (

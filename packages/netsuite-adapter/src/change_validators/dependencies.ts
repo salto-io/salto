@@ -17,19 +17,34 @@ import {
   Change, ChangeDataType, ChangeError, getChangeData, SeverityLevel,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { findDependingElementsFromRefs } from '../reference_dependencies'
+import { getRequiredReferencedElements } from '../reference_dependencies'
 
 const { awu } = collections.asynciterable
 
 type ValidityStatus = 'valid' | 'invalid' | 'unknown'
 
+// TODO: ??? if an additional change is invalid, all depended changes must be additional changes?
+
+// consider only additional changes as dependency-breaker changes
+const getElemValidityMap = (
+  invalidElementIds: string[],
+  changes: ReadonlyArray<Change>
+): Map<string, ValidityStatus> => {
+  const additionalElemIds = changes
+    .filter(change => change.action === 'add')
+    .map(change => getChangeData(change).elemID.getFullName())
+  const invalidAdditionalElementIds = invalidElementIds.filter(id => additionalElemIds.includes(id))
+
+  return new Map<string, ValidityStatus>(
+    invalidAdditionalElementIds.map(id => [id, 'invalid'])
+  )
+}
+
 export const validateDependsOnInvalidElement = async (
   inputInvalidElementIds: string[],
   changes: ReadonlyArray<Change>,
 ): Promise<ReadonlyArray<ChangeError>> => {
-  const elemValidity = new Map<string, ValidityStatus>(
-    inputInvalidElementIds.map(id => [id, 'invalid'])
-  )
+  const elemValidity = getElemValidityMap(inputInvalidElementIds, changes)
 
   const isInvalid = async (element: ChangeDataType): Promise<boolean> => {
     const status = elemValidity.get(element.elemID.getFullName())
@@ -38,7 +53,7 @@ export const validateDependsOnInvalidElement = async (
     }
     // Mark validity unknown to avoid reference loops
     elemValidity.set(element.elemID.getFullName(), 'unknown')
-    const elemIsInvalid = await awu((await findDependingElementsFromRefs(element)))
+    const elemIsInvalid = await awu((await getRequiredReferencedElements([element])))
       .some(isInvalid)
     // Remember final validity decision to avoid checking this instance again
     elemValidity.set(element.elemID.getFullName(), elemIsInvalid ? 'invalid' : 'valid')

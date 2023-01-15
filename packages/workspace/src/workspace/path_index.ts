@@ -199,9 +199,6 @@ export const updatePathIndex = async (
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>
   parsedEntries.flatMap(e => ({ key: e[0], value: e[1] }))
 
-export const deserializedPathsIndex = (dataEntries: string[]): RemoteMapEntry<Path[], string>[] =>
-  dataEntries.flatMap(data => loadPathIndex(JSON.parse(data)))
-
 export const serializedPathIndex = (entries: RemoteMapEntry<Path[], string>[]): AsyncIterable<string> => (
   getSerializedStream(Array.from(entries.map(e => [e.key, e.value] as [string, Path[]])))
 )

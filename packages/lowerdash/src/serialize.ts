@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,7 @@
  * avoid creating a single string for all items, which may exceed the max allowed string length.
  * currently only supports JSON.stringify - if cycles are possible, safeJsonStringify should be used instead.
  */
-export async function *getSerializedStream(items: (unknown[] | object)[]): AsyncIterable<string> {
+export async function *getSerializedStream(items: (unknown[] | Record<string, unknown>)[]): AsyncIterable<string> {
   let first = true
   yield '['
   for (const item of items) {

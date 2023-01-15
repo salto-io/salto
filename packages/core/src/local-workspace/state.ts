@@ -24,7 +24,7 @@ import { parser } from 'stream-json/jsonl/Parser'
 import getStream from 'get-stream'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, mkdirp, rm, rename, replaceContents, generateGZipString, isPakoZipFile, readZipFile, createGZipReadStream } from '@salto-io/file'
+import { exists, readTextFile, mkdirp, rm, rename, replaceContents, generateGZipBuffer, isOldFormatStateZipFile, readOldFormatGZipFile, createGZipReadStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles } from '@salto-io/workspace'
 import { hash, collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -65,6 +65,7 @@ const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
   return [...stateFiles, ...oldStateFiles]
 }
 
+// a single entry in the path index, [elemid, filepath[] ] - based on the types defined in workspace/path_index.ts
 type PathEntry = [string, string[][]]
 type ParsedState = {
   elements: Element[]
@@ -84,36 +85,51 @@ const parseFromPaths = async (
   }
 
   // backward-compatible function for reading the state file (changed in SALTO-3149)
-  const createGZipReadStreamOrPakoStream = async (
+  const createBackwardCompatibleGZipReadStream = async (
     zipFilename: string,
   ): Promise<Readable> => {
-    if (await isPakoZipFile(zipFilename)) {
-      // old state file compressed using pako, with an incorrectly-serialized version row
-      const data = await readZipFile(zipFilename) ?? ''
+    if (await isOldFormatStateZipFile(zipFilename)) {
+      // old state file compressed with UTF encoding, with an incorrectly-serialized version row
+      const data = await readOldFormatGZipFile(zipFilename) ?? ''
       // hack to fix non-jsonl format in old state file
-      const lines = data.split('\n')
-      const updatedData = [...lines.slice(0, 3), `"${lines[3]}"`].join('\n')
+      // (the last line which contains the version was missing quotes, e.g. 0.1.2 instead of "0.1.2")
+      const dataWithNewlines = (EOL !== '\n'
+        ? data.replace(EOL, '\n')
+        : data)
+      const lines = dataWithNewlines.split('\n')
+      const updatedData = [...lines.slice(0, 3), `"${lines[3]}"`].join(EOL)
 
       return Readable.from(updatedData)
     }
     return createGZipReadStream(zipFilename)
   }
 
-  const streams = (await Promise.all(paths.map(async (p: string) => (await exists(p)
-    ? { filePath: p, stream: await createGZipReadStreamOrPakoStream(p) }
-    : undefined
-  )))).filter(isDefined)
+  const streams = (await Promise.all(
+    paths.map(async (p: string) => (
+      await exists(p)
+        ? { filePath: p, stream: await createBackwardCompatibleGZipReadStream(p) }
+        : undefined
+    ))
+  )).filter(isDefined)
   await awu(streams).forEach(async ({ filePath, stream }) => getStream(chain([
     stream,
-    parser(),
+    parser({ checkErrors: true }),
     async ({ key, value }) => {
       if (key === 0) {
+        // line 1 - serialized elements, e.g.
+        //   [{"elemID":{...},"annotations":{...}},{"elemID":{...},"annotations":{...}},...]
         res.elements = res.elements.concat(await deserializeParsed(value))
       } else if (key === 1) {
+        // line 2 - update dates, e.g.
+        //   {"dummy":"2023-01-09T15:57:59.322Z"}
         res.updateDates.push(value)
       } else if (key === 2) {
+        // line 3 - path index, e.g.
+        //   [["dummy.aaa",[["dummy","Types","aaa"]]],["dummy.aaa.instance.bbb",[["dummy","Records","aaa","bbb"]]]]
         res.pathIndices = res.pathIndices.concat(value)
       } else if (key === 3) {
+        // line 4 - version, e.g.
+        //   "0.1.2"
         if (!_.isEmpty(value)) {
           res.versions.push(value)
         }
@@ -265,7 +281,7 @@ export const localState = (
       const contents = await awu(Object.keys(stateTextPerAccount))
         .map(async (account: string): Promise<[string, Buffer]> => [
           `${currentFilePrefix}.${account}${ZIPPED_STATE_EXTENSION}`,
-          await generateGZipString(await getStream.buffer(stateTextPerAccount[account])),
+          await generateGZipBuffer(await getStream(stateTextPerAccount[account])),
         ]).toArray()
       contentsAndHash = {
         contents,

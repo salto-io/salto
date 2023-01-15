@@ -246,7 +246,7 @@ export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
 const generalDeserializeParsed = async <T>(
-  parsed: unknown[],
+  parsed: unknown,
   staticFileReviver?: StaticFileReviver
 ): Promise<T[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -518,6 +518,9 @@ const generalDeserializeParsed = async <T>(
     return value
   }
 
+  if (!Array.isArray(parsed)) {
+    throw new Error('got non-array JSON data')
+  }
   const elements = parsed.map(restoreClasses)
   if (staticFiles.length > 0) {
     await Promise.all(staticFiles.map(
@@ -534,9 +537,6 @@ const generalDeserialize = async <T>(
   staticFileReviver?: StaticFileReviver
 ): Promise<T[]> => {
   const parsed = JSON.parse(data)
-  if (!Array.isArray(parsed)) {
-    throw new Error('got non-array JSON data')
-  }
   return generalDeserializeParsed(parsed, staticFileReviver)
 }
 
@@ -579,7 +579,7 @@ export const deserializeSingleElement = async (
 }
 
 export const deserializeParsed = async (
-  parsed: unknown[],
+  parsed: unknown,
   staticFileReviver?: StaticFileReviver,
 ): Promise<Element[]> => {
   const elements = await generalDeserializeParsed<Element>(parsed, staticFileReviver)

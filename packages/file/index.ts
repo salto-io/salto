@@ -14,4 +14,4 @@
 * limitations under the License.
 */
 export * from './src/file'
-export * from './src/file_stream'
+export * from './src/gzip'

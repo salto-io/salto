@@ -490,7 +490,7 @@ export const getAllInstances = async ({
     getElemIdFunc,
   }
 
-  const { elements, errors } = await getElementsWithContext<InstanceElement>({
+  return getElementsWithContext<InstanceElement>({
     fetchQuery,
     types: apiConfig.types,
     supportedTypes,
@@ -512,8 +512,4 @@ export const getAllInstances = async ({
       }
     },
   })
-  return {
-    elements,
-    errors,
-  }
 }

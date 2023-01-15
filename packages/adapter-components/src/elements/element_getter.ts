@@ -85,9 +85,7 @@ export const getElementsWithContext = async <E extends Element>({
   const additionalContextTypes: string[] = getDependencies([...dependentEndpoints], types)
     .filter(typeName => !independentEndpoints.has(typeName))
 
-  const contextElements: Record<string, {
-    elements: E[]
-    errors: SaltoError[]
+  const contextElements: Record<string, FetchElements<E[]> & {
     // if the type is only fetched as context for another type, do not persist it
     persistInstances: boolean
   }> = Object.fromEntries(await Promise.all(

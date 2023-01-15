@@ -28,7 +28,6 @@ import {
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-// import { FetchElements } from '@salto-io/adapter-components/dist/src/elements/element_getter'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult, BrandIdToClient } from './filter'
 import {

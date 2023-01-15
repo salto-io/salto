@@ -62,6 +62,7 @@ import {
 } from '../types'
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './decorators'
+import { HANDLED_ERROR_PREDICATES } from '../config_change'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -138,16 +139,8 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 
 export type ErrorFilter = (error: Error) => boolean
 
-const NON_TRANSIENT_ERROR_TYPES = [
-  'sf:DUPLICATE_VALUE',
-  'sf:INVALID_CROSS_REFERENCE_KEY',
-  'sf:INVALID_ID_FIELD',
-  'sf:INVALID_FIELD',
-  'sf:INVALID_TYPE',
-  'sf:UNKNOWN_EXCEPTION',
-]
 const isSFDCUnhandledException = (error: Error): boolean => (
-  !NON_TRANSIENT_ERROR_TYPES.includes(error.name)
+  !HANDLED_ERROR_PREDICATES.some(predicate => predicate(error))
 )
 
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>

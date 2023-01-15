@@ -28,7 +28,13 @@ import {
   MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
-import { INVALID_CROSS_REFERENCE_KEY, SOCKET_TIMEOUT, UNLIMITED_INSTANCES_VALUE } from './constants'
+import {
+  DUPLICATE_VALUE,
+  INVALID_CROSS_REFERENCE_KEY, INVALID_FIELD,
+  INVALID_ID_FIELD, INVALID_TYPE,
+  SOCKET_TIMEOUT, UNKNOWN_EXCEPTION,
+  UNLIMITED_INSTANCES_VALUE,
+} from './constants'
 
 const { isDefined } = values
 const { makeArray } = collections.array
@@ -116,6 +122,18 @@ const isInvalidCrossReferenceKeyError: CreateConfigSuggestionPredicate = (e: Err
   return _.isString(errorCode) && errorCode === INVALID_CROSS_REFERENCE_KEY
 }
 
+export const NON_TRANSIENT_SALESFORCE_ERRORS = [
+  DUPLICATE_VALUE,
+  INVALID_ID_FIELD,
+  INVALID_FIELD,
+  INVALID_TYPE,
+  UNKNOWN_EXCEPTION,
+]
+
+const isNonTransientSalesforceError: CreateConfigSuggestionPredicate = (e: Error): boolean => (
+  NON_TRANSIENT_SALESFORCE_ERRORS.includes(e.name)
+)
+
 type ConfigSuggestionCreator = {
   predicate: CreateConfigSuggestionPredicate
   create: CreateConfigSuggestionFunc
@@ -137,8 +155,25 @@ export const createInvalidCrossReferenceKeyConfigSuggestion: CreateConfigSuggest
   reason: `${input.metadataType} with name ${input.name} failed due to INVALID_CROSS_REFERENCE_KEY`,
 })
 
+export const createNonTransientSalesforceErrorConfigSuggestion: CreateConfigSuggestionFunc = (
+  input: ConfigSuggestionsCreatorInput
+): MetadataConfigSuggestion => ({
+  type: 'metadataExclude',
+  value: input,
+  reason: `${input.metadataType} with name ${input.name} failed with non transient error`,
+})
 
-const CONFIG_SUGGESTION_CREATORS: Record<string, ConfigSuggestionCreator> = {
+const NON_TRANSIENT_SALESFORCE_ERROR = 'NON_TRANSIENT_SALESFORCE_ERROR'
+
+const CONFIG_SUGGESTION_CREATOR_NAMES = [
+  SOCKET_TIMEOUT,
+  INVALID_CROSS_REFERENCE_KEY,
+  NON_TRANSIENT_SALESFORCE_ERROR,
+] as const
+
+type ConfigSuggestionCreatorName = typeof CONFIG_SUGGESTION_CREATOR_NAMES[number]
+
+const CONFIG_SUGGESTION_CREATORS: Record<ConfigSuggestionCreatorName, ConfigSuggestionCreator> = {
   [SOCKET_TIMEOUT]: {
     predicate: isSocketTimeoutError,
     create: createSocketTimeoutConfigSuggestion,
@@ -147,7 +182,14 @@ const CONFIG_SUGGESTION_CREATORS: Record<string, ConfigSuggestionCreator> = {
     predicate: isInvalidCrossReferenceKeyError,
     create: createInvalidCrossReferenceKeyConfigSuggestion,
   },
+  [NON_TRANSIENT_SALESFORCE_ERROR]: {
+    predicate: isNonTransientSalesforceError,
+    create: createNonTransientSalesforceErrorConfigSuggestion,
+  },
 }
+
+export const HANDLED_ERROR_PREDICATES = Object.values(CONFIG_SUGGESTION_CREATORS)
+  .map(creator => creator.predicate)
 
 export const createSkippedListConfigChangeFromError = ({ creatorInput, error }
   : { creatorInput: ConfigSuggestionsCreatorInput; error: Error }): ConfigChangeSuggestion => (

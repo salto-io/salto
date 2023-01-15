@@ -24,7 +24,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import { Types } from '../src/transformers/transformer'
+import { apiName, Types } from '../src/transformers/transformer'
 import { findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
@@ -38,13 +38,24 @@ import { fetchMetadataInstances } from '../src/fetch'
 import * as fetchModule from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
+import { INVALID_CROSS_REFERENCE_KEY, SOCKET_TIMEOUT } from '../src/constants'
+import { isInstanceOfType } from '../src/filters/utils'
+import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
   let fetchMetadataInstancesSpy: jest.SpyInstance
+
+  class SFError extends Error {
+    constructor(name: string, message?: string) {
+      super(message)
+      this.name = name
+    }
+  }
 
   const metadataExclude = [
     { metadataType: 'Test1' },
@@ -1163,12 +1174,6 @@ public class LargeClass${index} {
     })
 
     describe('should return errors when fetch on certain instances failed', () => {
-      class SFError extends Error {
-        constructor(name: string, message?: string) {
-          super(message)
-          this.name = name
-        }
-      }
       let result: FetchResult
       let config: InstanceElement
 
@@ -1423,6 +1428,101 @@ public class LargeClass${index} {
           expect.objectContaining({ fileName: 'reports/ReportsFolder', fullName: 'ReportsFolder', type: 'ReportFolder' }),
           expect.objectContaining({ fileName: 'reports/ReportsFolder/NestedFolder', fullName: 'NestedFolder', type: 'ReportFolder' }),
         ]))
+      })
+    })
+
+    describe('with error that creates config suggestions', () => {
+      const ROLE_INSTANCE_NAMES = [
+        'CEO',
+        'JiraAdmin',
+      ]
+      const FAILING_ROLE_INSTANCE_NAMES = [
+        'SalesforceAdmin',
+        'ProductManager',
+      ]
+      beforeEach(() => {
+        mockMetadataType(
+          { xmlName: 'Role', directoryName: 'roles' },
+          {
+            valueTypeFields: [
+              {
+                name: 'fullName',
+                soapType: 'string',
+              },
+            ],
+          },
+          [
+            {
+              props: {
+                fullName: 'CEO',
+                fileName: 'roles/CEO.role',
+              },
+              values: {
+                fullName: 'CEO',
+              },
+            },
+            {
+              props: {
+                fullName: 'JiraAdmin',
+                fileName: 'roles/CEO.role',
+              },
+              values: {
+                fullName: 'JiraAdmin',
+              },
+            },
+            {
+              props: {
+                fullName: 'SalesforceAdmin',
+                fileName: 'roles/CEO.role',
+              },
+              values: {
+                fullName: 'SalesforceAdmin',
+              },
+            },
+            {
+              props: {
+                fullName: 'ProductManager',
+                fileName: 'roles/CEO.role',
+              },
+              values: {
+                fullName: 'ProductManager',
+              },
+            },
+          ]
+        )
+      })
+      describe.each([
+        new Error(SOCKET_TIMEOUT),
+        Object.assign(new Error(INVALID_CROSS_REFERENCE_KEY), { errorCode: INVALID_CROSS_REFERENCE_KEY }),
+        ...NON_TRANSIENT_SALESFORCE_ERRORS.map(errorName => new SFError(errorName)),
+      ])('when client throws %p', thrownError => {
+        beforeEach(() => {
+          connection.metadata.read.mockImplementation(async (_typeName, fullNames) => {
+            const names = makeArray(fullNames)
+            const [instanceName] = names
+            if (names.length > 1) {
+              throw thrownError
+            }
+            if (FAILING_ROLE_INSTANCE_NAMES.includes(instanceName)) {
+              throw thrownError
+            }
+            return {
+              fullName: instanceName,
+            }
+          })
+        })
+        it('should create config suggestions for instances that failed', async () => {
+          const fetchResult = await adapter.fetch(mockFetchOpts)
+          const expectedMetadataExcludes = FAILING_ROLE_INSTANCE_NAMES
+            .map(instanceName => expect.objectContaining({ metadataType: 'Role', name: instanceName }))
+          expect(fetchResult?.updatedConfig?.config[0].value.fetch.metadata.exclude)
+            .toEqual(expect.arrayContaining(expectedMetadataExcludes))
+          const fetchedInstancesNames = await awu(fetchResult.elements)
+            .filter(isInstanceOfType('Role'))
+            .map(instance => apiName(instance))
+            .toArray()
+          expect(fetchedInstancesNames).toEqual(ROLE_INSTANCE_NAMES)
+        })
       })
     })
   })

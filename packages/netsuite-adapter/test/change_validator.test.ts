@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
+import { Change, ChangeError, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange, getChangeData, SeverityLevel } from '@salto-io/adapter-api'
 import { Filter } from '../src/filter'
 import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
@@ -22,6 +22,7 @@ import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validato
 import { NetsuiteQuery } from '../src/query'
 import NetsuiteClient from '../src/client/client'
 import { LazyElementsSourceIndexes } from '../src/elements_source_index/types'
+import * as dependencies from '../src/change_validators/dependencies'
 
 const DEFAULT_OPTIONS = {
   withSuiteApp: false,
@@ -155,6 +156,46 @@ describe('change validator', () => {
       )(changes)
       expect(netsuiteClientValidationMock).toHaveBeenCalledWith(
         changes,
+        client,
+        DEFAULT_OPTIONS.additionalDependencies,
+        DEFAULT_OPTIONS.filtersRunner,
+        DEFAULT_OPTIONS.elementsSourceIndex,
+        DEFAULT_OPTIONS.deployReferencedElements,
+      )
+    })
+  })
+
+  describe('filter invalid changes', () => {
+    let fetchByQuery: FetchByQueryFunc
+    netsuiteClientValidationMock.mockResolvedValue([])
+
+    const validChange = toChange({ after: new InstanceElement('valid_change', file) })
+    const invalidChange = toChange({ after: new InstanceElement('invalid_dependencies_change', file) })
+    const changes = [validChange, invalidChange]
+    const validChanges = [validChange]
+    const changeErrors: ReadonlyArray<ChangeError> = [{
+      elemID: getChangeData(invalidChange).elemID,
+      severity: 'Error' as SeverityLevel,
+      message: 'Depends on an element that has errors',
+      detailedMessage: `(${getChangeData(invalidChange).elemID.getFullName()}) depends on an element that has errors`,
+    }]
+
+    beforeEach(() => {
+      const spiedValidateDependsOnInvalidElement = jest.spyOn(dependencies, 'validateDependsOnInvalidElement')
+      spiedValidateDependsOnInvalidElement.mockImplementation(() => Promise.resolve(changeErrors))
+    })
+
+    it('should call netsuiteClientValidation only with valid changes', async () => {
+      await getChangeValidator(
+        {
+          ...DEFAULT_OPTIONS,
+          client,
+          fetchByQuery,
+          validate: true,
+        }
+      )(changes)
+      expect(netsuiteClientValidationMock).toHaveBeenCalledWith(
+        validChanges,
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,

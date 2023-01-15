@@ -118,7 +118,7 @@ const filter: FilterCreator = () => ({
             await transformSharedPermissions(
               instance,
               sharedPermission => {
-                if (sharedPermission.role !== undefined) {
+                if (sharedPermission.type === 'project' && sharedPermission.role !== undefined) {
                   sharedPermission.type = 'projectRole'
                 }
               },

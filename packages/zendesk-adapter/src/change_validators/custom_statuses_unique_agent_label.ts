@@ -32,6 +32,10 @@ const log = logger(module)
 const getName = (inst: InstanceElement): string => inst.elemID.name
 const getAgentLabel = (inst: InstanceElement): string => inst.value.raw_agent_label
 
+
+/**
+ * this change validator checks that the raw_agent_label is unique.
+ */
 export const customStatusUniqueAgentLabelValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
@@ -47,9 +51,12 @@ export const customStatusUniqueAgentLabelValidator: ChangeValidator = async (
 
   const statusByName = _.keyBy(allStatuses, getName)
 
+  // {name , agent_label}
   const agentLabelsByName = _.mapValues(statusByName, getAgentLabel)
 
-
+  /**
+   * checks that no other statuses besides inst have its raw_agent_label
+   */
   const isAgentLabelTaken = (inst: InstanceElement): boolean => !_.isEmpty(Object.keys(agentLabelsByName)
     .filter(key => key !== inst.elemID.name && agentLabelsByName[key] === inst.value.raw_agent_label))
 

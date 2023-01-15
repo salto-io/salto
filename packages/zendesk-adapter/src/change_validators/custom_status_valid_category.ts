@@ -18,7 +18,10 @@ import { CUSTOM_STATUS_TYPE_NAME, HOLD_CATEGORY, OPEN_CATEGORY, PENDING_CATEGORY
 
 const VALID_CATEGORY = [PENDING_CATEGORY, SOLVED_CATEGORY, HOLD_CATEGORY, OPEN_CATEGORY]
 
-
+/**
+ * this change validator checks that the status category is valid (open, pending, hold, and solved).
+ * It is impossible to create a status with 'new' as its category.
+ */
 export const customStatusCategoryValidator: ChangeValidator = async changes => changes
   .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)
   .filter(isInstanceChange)

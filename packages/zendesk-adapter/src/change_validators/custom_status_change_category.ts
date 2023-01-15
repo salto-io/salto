@@ -21,6 +21,11 @@ import {
 } from '@salto-io/adapter-api'
 import { CUSTOM_STATUS_TYPE_NAME } from '../constants'
 
+
+/**
+ * this change validator notifies the user that a modification in the status_category is not possible to an existing
+ * status.
+ */
 export const customStatusCategoryChangeValidator: ChangeValidator = async changes => changes
   .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)
   .filter(isModificationChange)

@@ -58,7 +58,11 @@ import {
   customStatusUniqueAgentLabelValidator,
   customStatusCategoryChangeValidator,
   customStatusCategoryValidator,
+<<<<<<< HEAD
 >>>>>>> a6cc2fb29 (custom status validators)
+=======
+  defaultCustomStatusesValidator,
+>>>>>>> c2a4f3ddb (add default custom statuses validator and unit test)
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -107,6 +111,7 @@ export default ({
     customStatusUniqueAgentLabelValidator,
     customStatusCategoryChangeValidator,
     customStatusCategoryValidator,
+    defaultCustomStatusesValidator,
     customRoleRemovalValidator(client),
     sideConversationsValidator,
     missingUsersValidator(client),

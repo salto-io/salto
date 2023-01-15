@@ -146,7 +146,13 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
     replaceConditionsAndActionsCreator(DEFAULT_REPLACER_PARAMS_FOR_CONDITIONS),
     replaceRestriction,
   ]),
-  workspace: workspaceReplacer,
+  workspace: mergeUserReplacers([
+    replaceConditionsAndActionsCreator([
+      { fieldName: 'conditions.all', fieldsToReplace: [{ name: 'assignee_id' }] },
+      { fieldName: 'conditions.any', fieldsToReplace: [{ name: 'assignee_id' }] },
+    ]),
+    workspaceReplacer,
+  ]),
   oauth_token: fieldReplacer(['user_id']),
   user_segment: fieldReplacer(['added_user_ids']),
   article: fieldReplacer(['author_id']),

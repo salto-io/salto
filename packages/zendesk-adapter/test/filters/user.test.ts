@@ -245,6 +245,22 @@ describe('user filter', () => {
     workspaceType,
     {
       title: 'test',
+      conditions: {
+        all: [
+          {
+            field: 'assignee_id',
+            operator: 'is',
+            value: '2',
+          },
+        ],
+        any: [
+          {
+            field: 'assignee_id',
+            operator: 'is not',
+            value: '2',
+          },
+        ],
+      },
       selected_macros: [
         {
           id: 1234,
@@ -362,6 +378,22 @@ describe('user filter', () => {
       const workspace = instances.find(e => e.elemID.typeName === 'workspace')
       expect(workspace?.value).toEqual({
         title: 'test',
+        conditions: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: 'b@b.com',
+            },
+          ],
+          any: [
+            {
+              field: 'assignee_id',
+              operator: 'is not',
+              value: 'b@b.com',
+            },
+          ],
+        },
         selected_macros: [
           {
             id: 1234,
@@ -601,6 +633,22 @@ describe('user filter', () => {
       const newWorkspace = instances.find(e => e.elemID.typeName === 'workspace')
       expect(newWorkspace?.value).toEqual({
         title: 'test',
+        conditions: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: '2',
+            },
+          ],
+          any: [
+            {
+              field: 'assignee_id',
+              operator: 'is not',
+              value: '2',
+            },
+          ],
+        },
         selected_macros: [
           {
             id: 1234,
@@ -707,6 +755,22 @@ describe('user filter', () => {
       const workspace = changedInstances.find(e => e.elemID.typeName === 'workspace')
       expect(workspace?.value).toEqual({
         title: 'test',
+        conditions: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: 'b@b.com',
+            },
+          ],
+          any: [
+            {
+              field: 'assignee_id',
+              operator: 'is not',
+              value: 'b@b.com',
+            },
+          ],
+        },
         selected_macros: [
           {
             id: 1234,

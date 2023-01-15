@@ -30,10 +30,9 @@ import {
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
-import { getElementsWithContext } from '../element_getter'
+import { FetchElements, getElementsWithContext } from '../element_getter'
 import { TimeoutError } from '../../client/http_client'
 import { ElementQuery } from '../query'
-import { FetchElements } from './fetch_type'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable

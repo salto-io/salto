@@ -28,6 +28,7 @@ import {
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+// import { FetchElements } from '@salto-io/adapter-components/dist/src/elements/element_getter'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner, FilterResult, BrandIdToClient } from './filter'
 import {
@@ -298,7 +299,7 @@ const getGuideElements = async ({
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-}): Promise<elementUtils.ducktype.FetchElements<Element[]>> => {
+}): Promise<elementUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
 
@@ -348,7 +349,8 @@ const getGuideElements = async ({
     getElemIdFunc,
   })
 
-  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.configChanges)
+  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes
+    .flatMap(fetchResult => fetchResult.configChanges ?? [])
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
     elements: zendeskGuideElements,
@@ -527,8 +529,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
 
     return {
-      configChanges: defaultSubdomainElements.configChanges
-        .concat(zendeskGuideElements.configChanges),
+      configChanges: (defaultSubdomainElements.configChanges ?? [])
+        .concat(zendeskGuideElements.configChanges ?? []),
       elements: zendeskElements,
       errors: (defaultSubdomainElements.errors ?? [])
         .concat(zendeskGuideElements.errors ?? []),
@@ -560,7 +562,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     // This exposes different subdomain clients for Guide related types filters
     const result = await (await this.createFiltersRunner({ brandIdToClient }))
       .onFetch(elements) as FilterResult
-    const updatedConfig = this.configInstance
+    const updatedConfig = this.configInstance && configChanges
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
 

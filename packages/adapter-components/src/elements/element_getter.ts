@@ -18,10 +18,20 @@ import { Element, SaltoError } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TypeConfig } from '../config'
 import { ElementQuery } from './query'
-import { FetchElements } from './swagger/fetch_type'
 
 
 const { isDefined } = lowerdashValues
+
+export type ConfigChangeSuggestion = {
+  typeToExclude: string
+}
+
+export type FetchElements<T> = {
+  elements: T
+  errors?: SaltoError[]
+  configChanges?: ConfigChangeSuggestion[]
+}
+
 
 /**
  * Get all dependencies types (by the usage of "dependsOn")
@@ -94,26 +104,19 @@ export const getElementsWithContext = async <E extends Element>({
     })
   ))
   const dependentElements = await Promise.all(
-    [...dependentEndpoints].map(async typeName => {
-      const res = await typeElementGetter({
-        typeName,
-        contextElements: _.mapValues(contextElements, val => val.elements),
-      })
-      return { elements: res.elements, errors: res.errors }
-    })
+    [...dependentEndpoints].map(async typeName => typeElementGetter({
+      typeName,
+      contextElements: _.mapValues(contextElements, val => val.elements),
+    }))
   )
 
   return {
-    elements: [
-      ...Object.values(contextElements)
-        .flatMap(({ persistInstances, elements }) => (persistInstances
-          ? elements
-          : [])),
-      ...Object.values(dependentElements).flatMap(({ elements }) => elements),
-    ],
-    errors: [
-      ...Object.values(contextElements).flatMap(({ errors }) => errors ?? []),
-      ...Object.values(dependentElements).flatMap(({ errors }) => errors ?? []),
-    ],
+    elements: Object.values(contextElements)
+      .flatMap(({ persistInstances, elements }) => (persistInstances
+        ? elements
+        : [])).concat(Object.values(dependentElements).flatMap(({ elements }) => elements)),
+    errors:
+      Object.values(contextElements).flatMap(({ errors }) => errors ?? [])
+        .concat(Object.values(dependentElements).flatMap(({ errors }) => errors ?? [])),
   }
 }

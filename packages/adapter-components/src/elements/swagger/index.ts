@@ -19,4 +19,3 @@ export { toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD, SchemaObject, SchemasAndR
 export { loadSwagger, LoadedSwagger } from './swagger'
 export { addDeploymentAnnotations } from './deployment/annotations'
 export { flattenAdditionalProperties } from './deployment/additional_properties'
-export { FetchElements } from './fetch_type'

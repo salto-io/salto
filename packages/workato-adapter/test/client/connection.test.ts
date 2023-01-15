@@ -70,7 +70,28 @@ describe('client connection', () => {
       mockAxiosAdapter.restore()
     })
 
-    it('should make get requests with correct parameters', async () => {
+    it('should make get requests with correct parameters with token auth', async () => {
+      const conn = createConnection({ retries: 3 })
+      mockAxiosAdapter.onGet(
+        '/users/me', undefined, expect.objectContaining({ Authorization: 'Bearer token123' }),
+      ).reply(200, {
+        id: 'user123',
+      }).onGet(
+        '/a/b', undefined, expect.objectContaining({ Authorization: 'Bearer token123' }),
+      ).reply(200, {
+        something: 'bla',
+      })
+      const apiConn = await conn.login({ token: 'token123' })
+      expect(apiConn.accountId).toEqual('')
+      expect(mockAxiosAdapter.history.get.length).toBe(1)
+
+      const getRes = apiConn.get('/a/b')
+      const res = await getRes
+      expect(res.data).toEqual({ something: 'bla' })
+      expect(res.status).toEqual(200)
+      expect(mockAxiosAdapter.history.get.length).toBe(2)
+    })
+    it('should make get requests with correct parameters with legacy username + API key auth', async () => {
       const conn = createConnection({ retries: 3 })
       mockAxiosAdapter.onGet(
         '/users/me', undefined, expect.objectContaining({ 'x-user-email': 'user123', 'x-user-token': 'token123' }),

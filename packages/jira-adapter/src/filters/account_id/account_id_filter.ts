@@ -14,12 +14,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath } from '@salto-io/adapter-utils'
+import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
+  isInstanceElement, isObjectType, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
+import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import _ from 'lodash'
-import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES } from '../../constants'
+import _, { isArray } from 'lodash'
+import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, AUTOMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { accountIdInfoType } from './types'
 
@@ -35,8 +36,11 @@ export const ACCOUNT_ID_TYPES = [...NON_DEPLOYABLE_TYPES, ...DEPLOYABLE_TYPES]
 
 const USER_TYPE = 'user'
 const VALUE_FIELD = 'value'
+const VALUES_FIELD = 'values'
 const PARAMETER_FIELD = 'parameter'
 const OWNER_FIELD = 'owner'
+const USER_TYPE_FIELDS = ['assignee', 'reporter', 'creator', 'com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker',
+  'com.atlassian.jira.plugin.system.customfieldtypes:userpicker', 'com.atlassian.servicedesk:sd-request-participants']
 
 type AccountIdCacheInfo = {
   path: ElemID
@@ -66,11 +70,33 @@ const isAccountIdType = (instanceElement: InstanceElement): boolean =>
 export type WalkOnUsersCallback = (
   { value, path, fieldName }: { value: Value; path: ElemID; fieldName: string }) => void
 
+const callbackValueOrValues = (
+  { value, path, callback }
+  : { value: Value; path: ElemID; callback: WalkOnUsersCallback }
+): void => {
+  if (isArray(value.values)) {
+    _.range(value.values.length).forEach(index => {
+      callback({ value: value.values, path: path.createNestedID(VALUES_FIELD), fieldName: index.toString() })
+    })
+  } else {
+    callback({ value, path, fieldName: VALUE_FIELD })
+  }
+}
+
+const walkOnAutomationValue = (regexPath: string, callback: WalkOnUsersCallback)
+: WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
+  if (new RegExp(regexPath).test(path.getFullName()) && value.type === 'ID') {
+    callbackValueOrValues({ value, path, callback })
+    return WALK_NEXT_STEP.SKIP
+  }
+  return WALK_NEXT_STEP.RECURSE
+}
+
 const accountIdsScenarios = (
   value: Value,
   path: ElemID,
   callback: WalkOnUsersCallback
-): void => {
+): WALK_NEXT_STEP => {
   // main scenario, field is within the ACCOUNT_IDS_FIELDS_NAMES
   ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
     if (Object.prototype.hasOwnProperty.call(value, fieldName)) {
@@ -95,31 +121,63 @@ const accountIdsScenarios = (
       && value.owner !== undefined) {
     callback({ value, path, fieldName: OWNER_FIELD })
   }
-  // fifth scenario the type is Board, inside the admins property there is a users
+  // fifth scenario the type is Board, inside the admins property there is a users'
   // property that is a list of account ids without any additional parameter
-  if (path.typeName === 'Board') {
-    if (path.name === 'users'
-        && Array.isArray(value)) {
-      _.range(value.length).forEach(index => callback({
-        value,
-        path,
-        fieldName: index.toString(),
-      }))
+  if (path.typeName === BOARD_TYPE_NAME
+    && path.name === 'users'
+    && Array.isArray(value)) {
+    _.range(value.length).forEach(index => callback({
+      value,
+      path,
+      fieldName: index.toString(),
+    }))
+  }
+  // sixth scenario the type is Automation, various conditions and actions that contain user name
+  if (path.typeName === AUTOMATION_TYPE) {
+    // issue field conditions with a user field type
+    if (USER_TYPE_FIELDS.includes(value.selectedFieldType)
+    && value.compareFieldValue?.type === 'ID') {
+      callbackValueOrValues({ value: value.compareFieldValue,
+        path: path.createNestedID('compareFieldValue'),
+        callback })
+    }
+    // edit issue actions with a user field
+    if (USER_TYPE_FIELDS.includes(value.fieldType)) {
+      walkOnValue({ value,
+        elemId: path,
+        // two options are supported here (with or), where value is a single object or an array
+        // the first  is 'value.operations.0.value.1' (numbers can differ)
+        // the second is 'value.operations.0.value' (numbers can differ)
+        func: walkOnAutomationValue('value\\.operations\\.\\d+.value\\.\\d+'
+          + '|value\\.operations\\.\\d+\\.value',
+        callback) })
+      return WALK_NEXT_STEP.SKIP
+    }
+    // user condition
+    if (value.type === 'jira.user.condition') {
+      walkOnValue({ value, elemId: path, func: walkOnAutomationValue('value\\.conditions\\.\\d+\\.criteria\\.\\d+', callback) })
+      return WALK_NEXT_STEP.SKIP
+    }
+    // assign action
+    if (value.type === 'jira.issue.assign') {
+      walkOnValue({ value, elemId: path, func: walkOnAutomationValue('value\\.assignee', callback) })
+      return WALK_NEXT_STEP.SKIP
     }
   }
+  return WALK_NEXT_STEP.RECURSE
 }
 
 export const walkOnUsers = (callback: WalkOnUsersCallback): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
     if (isInstanceElement(value)) {
-      if (!isAccountIdType(value)) {
-        return WALK_NEXT_STEP.EXIT
-      }
-      accountIdsScenarios(value.value, path, callback)
-    } else if (value !== undefined) {
-      accountIdsScenarios(value, path, callback)
+      return isAccountIdType(value)
+        ? accountIdsScenarios(value.value, path, callback)
+        : WALK_NEXT_STEP.EXIT
     }
-    return WALK_NEXT_STEP.RECURSE
+    if (value !== undefined) {
+      return accountIdsScenarios(value, path, callback)
+    }
+    return WALK_NEXT_STEP.SKIP
   })
 
 const objectifyAccountId: WalkOnUsersCallback = ({ value, fieldName }): void => {

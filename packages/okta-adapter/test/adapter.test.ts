@@ -82,7 +82,7 @@ describe('Okta adapter', () => {
           parsedConfigs: { OktaTest: { request: { url: 'okta' } } },
         });
       (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
-        .mockResolvedValue([testInstance])
+        .mockResolvedValue({ elements: [testInstance] })
 
       result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
     })

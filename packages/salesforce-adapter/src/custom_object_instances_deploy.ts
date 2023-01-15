@@ -367,7 +367,8 @@ const deployAddInstances = async (
 
 const deployRemoveInstances = async (
   instances: InstanceElement[],
-  client: SalesforceClient
+  client: SalesforceClient,
+  groupId: string
 ): Promise<DeployResult> => {
   const { successInstances, errorMessages } = await retryFlow(
     deleteInstances,
@@ -377,12 +378,16 @@ const deployRemoveInstances = async (
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
     errors: errorMessages.map(error => new Error(error)),
+    extraProperties: {
+      groups: [{ id: groupId }],
+    },
   }
 }
 
 const deployModifyChanges = async (
   changes: Readonly<ModificationChange<InstanceElement>[]>,
   client: SalesforceClient,
+  groupId: string
 ): Promise<DeployResult> => {
   const changesData = changes
     .map(change => change.data)
@@ -407,6 +412,9 @@ const deployModifyChanges = async (
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
+    extraProperties: {
+      groups: [{ id: groupId }],
+    },
   }
 }
 
@@ -455,10 +463,10 @@ export const deployCustomObjectInstancesGroup = async (
       return await deployAddInstances(instances, idFields, client, groupId)
     }
     if (changes.every(isRemovalChange)) {
-      return await deployRemoveInstances(instances, client)
+      return await deployRemoveInstances(instances, client, groupId)
     }
     if (isModificationChangeList(changes)) {
-      return await deployModifyChanges(changes, client)
+      return await deployModifyChanges(changes, client, groupId)
     }
     throw new Error('Custom Object Instances change group must have one action')
   } catch (error) {

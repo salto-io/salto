@@ -27,9 +27,10 @@ import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServ
 import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import Prompts, { deployOrValidate } from './prompts'
+import Prompts from './prompts'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
 
 export const header = (txt: string): string => chalk.bold(txt)
 
@@ -768,7 +769,7 @@ export const formatAdapterProgress = (adapterName: string, progressMessage: stri
 )
 
 type QuickDeployableGroup = Group & {
-  requestID: string
+  requestId: string
   hash: string
 }
 
@@ -778,17 +779,18 @@ const isQuickDeployableGroup = (group: Group): group is QuickDeployableGroup => 
 
 export const formatGroups = (groups: Group[], checkOnly: boolean): string => {
   const quickDeployableGroups = groups.filter(isQuickDeployableGroup)
-  const deploymentUrls = groups.filter(group => group.url !== undefined)
+  const deploymentUrls = groups
     .map(group => group.url)
+    .filter(isDefined)
   const res: string[] = []
   if (!_.isEmpty(quickDeployableGroups)) {
-    res.push('Validation parameters: ')
+    res.push(Prompts.VALIDATION_PARAMETERS)
     quickDeployableGroups.forEach(group =>
-      res.push(`requestId = ${group.requestId}, hash = ${group.hash}\n`))
+      res.push(Prompts.QUICK_DEPLOY_PARAMETERS(group.requestId, group.hash)))
   }
 
   if (!_.isEmpty(deploymentUrls)) {
-    res.push(`You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`)
+    res.push(Prompts.DEPLOYMENT_URLS(checkOnly, deploymentUrls))
   }
   return res.join('\n')
 }

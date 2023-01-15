@@ -363,7 +363,7 @@ export const quickDeploy = async (
   const deploymentUrl = await getDeployStatusUrl(deployRes, client)
   return {
     appliedChanges: validChanges,
-    errors: [...validationErrors],
+    errors: validationErrors,
     extraProperties: {
       deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
       groups: [{ id: groupId, url: deploymentUrl }],

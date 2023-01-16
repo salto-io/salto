@@ -14,38 +14,18 @@
 * limitations under the License.
 */
 import {
+  ChangeError,
   ChangeValidator,
   getChangeData,
-  InstanceElement,
   isInstanceChange, isReferenceExpression,
-  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { DEFAULT_CUSTOM_STATUSES_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-
-
-const isValidDefault = async (inst: InstanceElement, elementSource: ReadOnlyElementsSource): Promise<boolean> => {
-  const invalidKeys = await awu(Object.keys(inst.value))
-    .filter(async key => {
-      if (isReferenceExpression(inst.value[key])) {
-        const statusInstance = await elementSource.get(inst.value[key].elemID)
-        if (statusInstance === undefined) {
-          log.error(`could not find status ${inst.value[key].elemID.getFullName()}`)
-        }
-        // it is invalid if the status is not active or it is not the right category
-        return !statusInstance.value.active || !(statusInstance.value.status_category === key)
-      }
-      log.error(`the key ${key} in default_custom_statuses is not a reference expression`)
-      return false
-    }).toArray()
-
-  return !_.isEmpty(invalidKeys) // if it is not empty then there is an invalid key
-}
+const { isDefined } = lowerdashValues
 
 /**
  * this change validator checks that all default custom statuses are active and are default of the correct category
@@ -58,20 +38,56 @@ export const defaultCustomStatusesValidator: ChangeValidator = async (
     return []
   }
 
-  const invalidDefault = await awu(changes)
-    .filter(change => getChangeData(change).elemID.typeName === DEFAULT_CUSTOM_STATUSES_TYPE_NAME)
+  const defaultInstance = changes
     .filter(isInstanceChange)
+    .filter(change => getChangeData(change).elemID.typeName === DEFAULT_CUSTOM_STATUSES_TYPE_NAME)
     .map(getChangeData)
-    .filter(inst => isValidDefault(inst, elementSource))
+    .find(inst => inst.elemID.typeName === DEFAULT_CUSTOM_STATUSES_TYPE_NAME) // as there is only one instance
+  if (defaultInstance === undefined) {
+    return []
+  }
+  const inactiveStatusesErrors: ChangeError[] = await awu(Object.keys(defaultInstance.value))
+    .map(async key => {
+      if (isReferenceExpression(defaultInstance.value[key])) {
+        const statusInstance = await elementSource.get(defaultInstance.value[key].elemID)
+        if (statusInstance === undefined) {
+          log.error(`could not find status ${defaultInstance.value[key].elemID.getFullName()}`)
+          return undefined
+        }
+        return !statusInstance.value.active ? statusInstance : undefined
+      }
+      return undefined // if it is not a reference expression
+    })
+    .filter(isDefined)
+    .map((instance):ChangeError => ({
+      elemID: defaultInstance.elemID,
+      severity: 'Error',
+      message: 'Default custom statuses must be active.',
+      detailedMessage: `Please set the default custom status ${instance.elemID.name} as active or choose a different default custom status`,
+    }))
     .toArray()
 
-  return invalidDefault
-    .flatMap(instance => (
-      [{
-        elemID: instance.elemID,
-        severity: 'Error',
-        message: 'Default custom statuses must be active and be defaults of the valid category',
-        detailedMessage: 'Default custom statuses must be active and be defaults of the valid category',
-      }]
-    ))
+  const mismatchedStatusesErrors: ChangeError[] = await awu(Object.keys(defaultInstance.value))
+    .map(async key => {
+      if (isReferenceExpression(defaultInstance.value[key])) {
+        const statusInstance = await elementSource.get(defaultInstance.value[key].elemID)
+        if (statusInstance === undefined) {
+          log.error(`could not find status ${defaultInstance.value[key].elemID.getFullName()}`)
+          return undefined
+        }
+        return statusInstance.value.status_category !== key ? { instance: statusInstance, category: key } : undefined
+      }
+      return undefined // if it is not a reference expression
+    })
+    .filter(isDefined)
+    .map(({ instance, category }): ChangeError => ({
+      elemID: defaultInstance.elemID,
+      severity: 'Error',
+      message: 'Default custom status category mismatch',
+      detailedMessage: `The category of the default custom status ${instance.elemID.name} must be ${category}.`,
+    }))
+    .toArray()
+
+
+  return inactiveStatusesErrors.concat(mismatchedStatusesErrors)
 }

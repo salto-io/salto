@@ -31,7 +31,7 @@ export const customStatusCategoryValidator: ChangeValidator = async changes => c
     [{
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Invalid status category. Status Category - must be one of these: open, pending, hold, and solved',
-      detailedMessage: `Invalid status category for ${instance.elemID.name}. Status Category - must be one of these: open, pending, hold, and solved`,
+      message: 'Invalid status category.',
+      detailedMessage: `Invalid status category for ${instance.elemID.name}. Status category value must be one of: open, pending, hold, and solved`,
     }]
   ))

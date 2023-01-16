@@ -49,9 +49,9 @@ describe('customStatusCategoryChangeValidator', () => {
     ])
     expect(errors).toEqual([{
       elemID: afterPending.elemID,
-      severity: 'Warning',
-      message: 'It is not possible to update the category on an existing status in zendesk',
-      detailedMessage: `The category of ${afterPending.elemID.name} will not be updated since it is not possible to update the category on an existing status in zendesk`,
+      severity: 'Error',
+      message: 'Cannot modify custom status category.',
+      detailedMessage: 'Modifying the category of a custom status is not supported in zendesk.',
     }])
   })
 })

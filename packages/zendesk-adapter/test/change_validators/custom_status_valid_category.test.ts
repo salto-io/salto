@@ -54,8 +54,8 @@ describe('customStatusCategoryValidator', () => {
       {
         elemID: invalidStatus.elemID,
         severity: 'Error',
-        message: 'Invalid status category. Status Category - must be one of these: open, pending, hold, and solved',
-        detailedMessage: `Invalid status category for ${invalidStatus.elemID.name}. Status Category - must be one of these: open, pending, hold, and solved`,
+        message: 'Invalid status category.',
+        detailedMessage: `Invalid status category for ${invalidStatus.elemID.name}. Status category value must be one of: open, pending, hold, and solved`,
       },
     ])
   })
@@ -67,8 +67,8 @@ describe('customStatusCategoryValidator', () => {
       {
         elemID: invalidStatus.elemID,
         severity: 'Error',
-        message: 'Invalid status category. Status Category - must be one of these: open, pending, hold, and solved',
-        detailedMessage: `Invalid status category for ${invalidStatus.elemID.name}. Status Category - must be one of these: open, pending, hold, and solved`,
+        message: 'Invalid status category.',
+        detailedMessage: `Invalid status category for ${invalidStatus.elemID.name}. Status category value must be one of: open, pending, hold, and solved`,
       },
     ])
   })

@@ -57,8 +57,8 @@ describe('customStatusUniqueAgentLabelValidator', () => {
       {
         elemID: afterPending.elemID,
         severity: 'Error',
-        message: 'Invalid agent label. The label is already used by another status',
-        detailedMessage: `Invalid agent label for ${afterPending.elemID.name}. The label is already used by another status`,
+        message: 'Non unique agent label.',
+        detailedMessage: `Agent label for ${afterPending.elemID.name} is already taken by another custom status.`,
       },
     ])
   })

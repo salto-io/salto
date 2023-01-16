@@ -91,8 +91,8 @@ describe('defaultCustomStatusesValidator', () => {
       {
         elemID: invalidDefaultCustomStatusesInstance.elemID,
         severity: 'Error',
-        message: 'Default custom statuses must be active and be defaults of the valid category',
-        detailedMessage: 'Default custom statuses must be active and be defaults of the valid category',
+        message: 'Default custom statuses must be active.',
+        detailedMessage: `Please set the default custom status ${pending.elemID.name} as active or choose a different default custom status`,
       },
     ])
   })
@@ -115,9 +115,52 @@ describe('defaultCustomStatusesValidator', () => {
       {
         elemID: invalidDefaultCustomStatusesInstance.elemID,
         severity: 'Error',
-        message: 'Default custom statuses must be active and be defaults of the valid category',
-        detailedMessage: 'Default custom statuses must be active and be defaults of the valid category',
+        message: 'Default custom status category mismatch',
+        detailedMessage: `The category of the default custom status ${openActive.elemID.name} must be pending.`,
+      },
+      {
+        elemID: invalidDefaultCustomStatusesInstance.elemID,
+        severity: 'Error',
+        message: 'Default custom status category mismatch',
+        detailedMessage: `The category of the default custom status ${pendingActive.elemID.name} must be open.`,
       },
     ])
   })
+  it('should return an error when default is not valid because of mixed categories and there is an inactive status',
+    async () => {
+      const invalidDefaultCustomStatusesInstance = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        defaultCustomStatusesType,
+        {
+          [PENDING_CATEGORY]: new ReferenceExpression(openActive.elemID, openActive),
+          [SOLVED_CATEGORY]: new ReferenceExpression(solvedActive.elemID, solvedActive),
+          [OPEN_CATEGORY]: new ReferenceExpression(pending.elemID, pending),
+          [HOLD_CATEGORY]: new ReferenceExpression(holdActive.elemID, holdActive),
+        },
+      )
+      const elementSource = buildElementsSourceFromElements([pending, solvedActive, openActive, holdActive])
+      const errors = await defaultCustomStatusesValidator([
+        toChange({ before: invalidDefaultCustomStatusesInstance, after: invalidDefaultCustomStatusesInstance }),
+      ], elementSource)
+      expect(errors).toEqual([
+        {
+          elemID: invalidDefaultCustomStatusesInstance.elemID,
+          severity: 'Error',
+          message: 'Default custom statuses must be active.',
+          detailedMessage: `Please set the default custom status ${pending.elemID.name} as active or choose a different default custom status`,
+        },
+        {
+          elemID: invalidDefaultCustomStatusesInstance.elemID,
+          severity: 'Error',
+          message: 'Default custom status category mismatch',
+          detailedMessage: `The category of the default custom status ${openActive.elemID.name} must be pending.`,
+        },
+        {
+          elemID: invalidDefaultCustomStatusesInstance.elemID,
+          severity: 'Error',
+          message: 'Default custom status category mismatch',
+          detailedMessage: `The category of the default custom status ${pending.elemID.name} must be open.`,
+        },
+      ])
+    })
 })

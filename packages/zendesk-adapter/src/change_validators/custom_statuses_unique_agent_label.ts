@@ -69,8 +69,8 @@ export const customStatusUniqueAgentLabelValidator: ChangeValidator = async (
       [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Invalid agent label. The label is already used by another status',
-        detailedMessage: `Invalid agent label for ${instance.elemID.name}. The label is already used by another status`,
+        message: 'Non unique agent label.',
+        detailedMessage: `Agent label for ${instance.elemID.name} is already taken by another custom status.`,
       }]
     ))
 }

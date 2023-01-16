@@ -38,6 +38,7 @@ export const MACRO_TYPE_NAME = 'macro'
 export const ACCOUNT_FEATURES_TYPE_NAME = 'account_features'
 export const EVERYONE_USER_TYPE = 'Everyone'
 export const TICKET_FORM_TYPE_NAME = 'ticket_form'
+export const TICKET_FORM_ORDER_TYPE_NAME = 'ticket_form_order'
 
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'

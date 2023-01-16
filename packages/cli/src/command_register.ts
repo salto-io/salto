@@ -106,6 +106,9 @@ const registerCommand = <T>(
     .command(`${name} ${positionalOptionsStr(positionalOptions)}`)
     .exitOverride()
   command.description(description)
+  if (description.includes('\n')) {
+    command.summary(description.split('\n')[0])
+  }
   positionalOptions.forEach(positionalOption =>
     // Positional options are added as non-required Options because for positional options
     // requireness derives from <> or [] in the command and not option definition

@@ -139,6 +139,7 @@ describe('adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.account_features',
           'zendesk.account_setting',
           'zendesk.account_setting.instance',
           'zendesk.account_setting__active_features',
@@ -301,6 +302,7 @@ describe('adapter', () => {
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__en_US_b@uuumuuum',
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__es@uuumuu',
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__he@uuumuu',
+          'zendesk.features',
           'zendesk.group',
           'zendesk.group.instance.Support',
           'zendesk.group.instance.Support2',

@@ -51,6 +51,7 @@ import {
   childInOrderValidator,
   orderChildrenParentValidator,
   macroActionsTicketFieldDeactivationValidator,
+  sideConversationsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -97,6 +98,7 @@ export default ({
     automationAllConditionsValidator,
     macroActionsTicketFieldDeactivationValidator,
     customRoleRemovalValidator(client),
+    sideConversationsValidator,
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,

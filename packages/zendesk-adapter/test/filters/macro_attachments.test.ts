@@ -21,8 +21,8 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { ZENDESK } from '../../src/constants'
-import filterCreator, { ATTACHMENTS_FIELD_NAME, MACRO_ATTACHMENT_TYPE_NAME, MACRO_TYPE_NAME } from '../../src/filters/macro_attachments'
+import { ZENDESK, MACRO_TYPE_NAME } from '../../src/constants'
+import filterCreator, { ATTACHMENTS_FIELD_NAME, MACRO_ATTACHMENT_TYPE_NAME } from '../../src/filters/macro_attachments'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {

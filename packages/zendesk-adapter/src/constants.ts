@@ -34,6 +34,8 @@ export const ORG_FIELD_TYPE_NAME = 'organization_field'
 export const USER_FIELD_TYPE_NAME = 'user_field'
 export const FIELD_TYPE_NAMES = [TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME]
 export const CUSTOM_ROLE_TYPE_NAME = 'custom_role'
+export const MACRO_TYPE_NAME = 'macro'
+export const ACCOUNT_FEATURES_TYPE_NAME = 'account_features'
 export const EVERYONE_USER_TYPE = 'Everyone'
 export const TICKET_FORM_TYPE_NAME = 'ticket_form'
 

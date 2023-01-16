@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData } from '@salto-io/adapter-api'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeStandardTypesValidator from './change_validators/remove_standard_types'
@@ -68,6 +68,11 @@ const nonSuiteAppValidators: ChangeValidator[] = [
   removeFileCabinetValidator,
 ]
 
+const changeErrorsToElementIDs = (changeErrors: readonly ChangeError[]): readonly string[] =>
+  changeErrors
+    .filter(error => error.severity === 'Error')
+    .map(error => error.elemID.createBaseID().parent.getFullName())
+
 /**
  * This method runs all change validators and then walks recursively on all references of the valid
  * changes to detect changes that depends on invalid ones and then generate errors for them as well
@@ -111,23 +116,31 @@ const getChangeValidator: ({
         ? [...changeValidators]
         : [...changeValidators, ...nonSuiteAppValidators]
 
-      const changeErrors: ChangeError[] = _.flatten(await Promise.all([
+      const validatorChangeErrors: ChangeError[] = _.flatten(await Promise.all([
         ...validators.map(validator => validator(changes)),
         warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
-        validate ? netsuiteClientValidation(
-          changes,
-          client,
-          additionalDependencies,
-          filtersRunner,
-          elementsSourceIndex,
-          deployReferencedElements,
-        ) : [],
       ]))
+      const dependedChangeErrors = await validateDependsOnInvalidElement(
+        changeErrorsToElementIDs(validatorChangeErrors),
+        changes
+      )
+      const changeErrors = validatorChangeErrors.concat(dependedChangeErrors)
 
-      const invalidElementIds = changeErrors
-        .filter(error => error.severity === 'Error')
-        .map(error => error.elemID.getFullName())
-      return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
+      // filter out invalid changes to run netsuiteClientValidation only on relevant changes
+      const invalidElementIds = new Set(changeErrorsToElementIDs(changeErrors))
+      const validChanges = changes.filter(change =>
+        !invalidElementIds.has(getChangeData(change).elemID.getFullName()))
+
+      const netsuiteValidatorErrors = validate ? await netsuiteClientValidation(
+        validChanges,
+        client,
+        additionalDependencies,
+        filtersRunner,
+        elementsSourceIndex,
+        deployReferencedElements,
+      ) : []
+
+      return changeErrors.concat(netsuiteValidatorErrors)
     }
 
 export default getChangeValidator

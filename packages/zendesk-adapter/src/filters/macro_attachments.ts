@@ -26,7 +26,7 @@ import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { ZENDESK } from '../constants'
+import { ZENDESK, MACRO_TYPE_NAME } from '../constants'
 import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
@@ -38,7 +38,6 @@ const { awu } = collections.asynciterable
 
 const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 
-export const MACRO_TYPE_NAME = 'macro'
 export const MACRO_ATTACHMENT_TYPE_NAME = 'macro_attachment'
 export const ATTACHMENTS_FIELD_NAME = 'attachments'
 const MACRO_ATTACHMENT_DATA_FIELD = 'macro_attachment'

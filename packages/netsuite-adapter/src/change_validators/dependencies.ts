@@ -24,7 +24,7 @@ const { awu } = collections.asynciterable
 type ValidityStatus = 'valid' | 'invalid' | 'unknown'
 
 export const validateDependsOnInvalidElement = async (
-  inputInvalidElementIds: string[],
+  inputInvalidElementIds: readonly string[],
   changes: ReadonlyArray<Change>,
 ): Promise<ReadonlyArray<ChangeError>> => {
   const elemValidity = new Map<string, ValidityStatus>(

@@ -53,14 +53,14 @@ export const ticketFormDependencyChanger: DependencyChanger = async changes => {
   }
 
   const ticketFormOrderValue = getChangeData(ticketFormOrderChange.change).value
-  const orderTicketForms = (ticketFormOrderValue.active ?? []).concat(ticketFormOrderValue.inactive ?? [])
-    .filter(isReferenceExpression)
+  const orderTicketForms = new Set((ticketFormOrderValue.active ?? []).concat(ticketFormOrderValue.inactive ?? [])
+    .filter(isReferenceExpression).map((ref: ReferenceExpression) => ref.value.elemID.getFullName()).flat())
 
 
   const addedFormsDependencies = ticketFormChanges.filter(change => isAdditionChange(change.change)).map(change => {
     const ticketFormInstance = getChangeData(change.change)
     // If we can't find the ticket_form in the ticket_form_order, add a dependency from the ticket form to the order
-    if (orderTicketForms.find((form: ReferenceExpression) => form.value.isEqual(ticketFormInstance)) === undefined) {
+    if (!orderTicketForms.has(ticketFormInstance.elemID.getFullName())) {
       return dependencyChange(
         'add',
         change.key,

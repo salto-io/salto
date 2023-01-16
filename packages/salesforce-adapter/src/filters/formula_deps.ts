@@ -137,7 +137,7 @@ const filter: LocalFilterCreator = () => ({
   name: 'formula_deps',
   onFetch: async elements => {
     const objectTypes = elements.filter(isObjectType)
-    const referrableNames = new Set((await Promise.all(objectTypes.map(type => allReferrableNames(type)))).flat())
+    const referrableNames = new Set(objectTypes.flatMap(type => allReferrableNames(type)))
     const formulaFields = objectTypes.flatMap(type => Object.values(type.fields)).filter(isFormulaField)
     await Promise.all(formulaFields.map(field => addDependenciesAnnotation(field, referrableNames)))
   },

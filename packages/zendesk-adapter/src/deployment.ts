@@ -15,15 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change,
-  ChangeDataType,
-  DeployResult,
-  getChangeData,
-  InstanceElement,
-  isAdditionChange,
-  isModificationChange,
-  isRemovalChange,
-  Values,
+  Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, Values,
 } from '@salto-io/adapter-api'
 import {
   config as configUtils, deployment, client as clientUtils,
@@ -134,14 +126,6 @@ export const deployChange = async (
 ): Promise<deployment.ResponseResult> => {
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
-    if (isModificationChange(change)) {
-      await new Promise(resolve => setTimeout(resolve, 5000))
-    }
-    if (isRemovalChange(change)) {
-      await new Promise(resolve => setTimeout(resolve, 10000))
-    }
-    // eslint-disable-next-line no-console
-    console.log(`deploying ${getChangeData(change).elemID.getFullName()}`)
     const response = await deployment.deployChange({
       change,
       client,

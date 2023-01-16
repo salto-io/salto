@@ -436,3 +436,9 @@ export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
+
+// Errors
+export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
+export const SF_REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
+export const INVALID_GRANT = 'invalid_grant'
+export const ENOTFOUND = 'ENOTFOUND'

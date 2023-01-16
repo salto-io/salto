@@ -61,7 +61,7 @@ import {
   UsernamePasswordCredentials,
 } from '../types'
 import Connection from './jsforce'
-import { mapToUserFriendlyErrorMessages } from './decorators'
+import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash

@@ -28,8 +28,8 @@ export const VERSION_CODE = 'commander.version'
 export const createProgramCommand = (): commander.Command => (
   new commander.Command('salto')
     .version(`${versionString}\n`)
-    .passCommandToAction(false)
     .exitOverride()
+    .showHelpAfterError('See \'salto --help\'.')
 )
 
 const wrapWithRequired = (innerStr: string): string =>
@@ -103,7 +103,6 @@ const registerCommand = <T>(
     action,
   } = commandDef
   const command = new commander.Command()
-    .passCommandToAction(false)
     .command(`${name} ${positionalOptionsStr(positionalOptions)}`)
     .exitOverride()
   command.description(description)

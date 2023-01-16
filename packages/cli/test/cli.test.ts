@@ -26,6 +26,7 @@ describe('cli as a whole', () => {
   jest.spyOn(logger, 'end').mockResolvedValue(undefined)
   const consoleErrorSpy = jest.spyOn(console, 'error')
   const stdout = jest.spyOn(process.stdout, 'write')
+  const stderr = jest.spyOn(process.stderr, 'write')
 
   describe('when called with --help', () => {
     beforeEach(async () => {
@@ -60,12 +61,13 @@ describe('cli as a whole', () => {
   describe('when called with an invalid command', () => {
     beforeEach(async () => {
       consoleErrorSpy.mockClear()
+      stderr.mockClear()
       o = await mocks.cli({ args: ['nosuchcommand'] })
     })
 
     it('outputs an error message to stderr', () => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringMatching(/unknown command 'nosuchcommand'/))
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringMatching(/--help/))
+      expect(stderr).toHaveBeenCalledWith(expect.stringMatching(/unknown command 'nosuchcommand'/))
+      expect(stderr).toHaveBeenCalledWith(expect.stringMatching(/--help/))
     })
 
     it('exits with code 1', () => {

@@ -25,9 +25,8 @@ export type ChangeWithDetails = Change & {
 }
 export type PlanItem = Group<Change> & {
   action: ActionName
-  changes: () => Iterable<Change>
+  changes: () => Iterable<ChangeWithDetails>
   detailedChanges: () => Iterable<DetailedChange>
-  changesWithDetails: () => Iterable<ChangeWithDetails>
 }
 
 const getGroupAction = (group: Group<Change>): ActionName => {
@@ -61,18 +60,15 @@ export const addPlanItemAccessors = (
 ): PlanItem => Object.assign(group, {
   action: getGroupAction(group),
   changes() {
-    return group.items.values()
-  },
-  detailedChanges() {
-    return wu(group.items.values())
-      .map(change => getDetailedChanges(change, compareOptions))
-      .flatten()
-  },
-  changesWithDetails() {
     return wu(group.items.values())
       .map(change => ({
         ...change,
         detailedChanges: () => getDetailedChanges(change, compareOptions),
       }))
+  },
+  detailedChanges() {
+    return wu(group.items.values())
+      .map(change => getDetailedChanges(change, compareOptions))
+      .flatten()
   },
 })

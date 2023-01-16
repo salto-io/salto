@@ -17,9 +17,10 @@ import { logger } from '@salto-io/logging'
 import { DetailedChange, ElemID, isRemovalChange } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
 import wu from 'wu'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { IDFilter, getPlan } from './plan/plan'
+import { ChangeWithDetails } from './plan/plan_item'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -116,13 +117,30 @@ const createMatchers = async (
   }
 }
 
-export const createDiffChanges = async (
+export function createDiffChanges(
+  toElementsSrc: elementSource.ElementsSource,
+  fromElementsSrc: elementSource.ElementsSource,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  elementSelectors: ElementSelector[] | undefined,
+  topLevelFilters: IDFilter[] | undefined,
+  resultType: 'changes'
+): Promise<ChangeWithDetails[]>
+export function createDiffChanges(
+  toElementsSrc: elementSource.ElementsSource,
+  fromElementsSrc: elementSource.ElementsSource,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  elementSelectors?: ElementSelector[],
+  topLevelFilters?: IDFilter[],
+  resultType?: 'detailedChanges'
+): Promise<DetailedChange[]>
+export async function createDiffChanges(
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
   referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
   elementSelectors: ElementSelector[] = [],
-  topLevelFilters: IDFilter[] = []
-): Promise<DetailedChange[]> => {
+  topLevelFilters: IDFilter[] = [],
+  resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
+): Promise<DetailedChange[] | ChangeWithDetails[]> {
   if (elementSelectors.length > 0) {
     const matchers = await createMatchers(
       toElementsSrc,
@@ -136,10 +154,23 @@ export const createDiffChanges = async (
       dependencyChangers: [],
       topLevelFilters: topLevelFilters.concat(matchers.isTopLevelElementMatchSelectors),
     })
-    return awu(plan.itemsByEvalOrder())
-      .flatMap(item => item.detailedChanges())
-      .filter(matchers.isChangeMatchSelectors)
-      .toArray()
+    return resultType === 'changes'
+      ? awu(plan.itemsByEvalOrder())
+        .flatMap(item => item.changes())
+        .map(change => {
+          const filteredDetailedChanges = change.detailedChanges().filter(matchers.isChangeMatchSelectors)
+          if (filteredDetailedChanges.length > 0) {
+            // we return the whole change even if only some of the detailed changes match the selectors.
+            return { ...change, detailedChanges: () => filteredDetailedChanges }
+          }
+          return undefined
+        })
+        .filter(values.isDefined)
+        .toArray()
+      : awu(plan.itemsByEvalOrder())
+        .flatMap(item => item.detailedChanges())
+        .filter(matchers.isChangeMatchSelectors)
+        .toArray()
   }
   const plan = await getPlan({
     before: toElementsSrc,
@@ -148,7 +179,7 @@ export const createDiffChanges = async (
     topLevelFilters,
   })
   return wu(plan.itemsByEvalOrder())
-    .map(item => item.detailedChanges())
+    .map(item => item[resultType]())
     .flatten()
     .toArray()
 }

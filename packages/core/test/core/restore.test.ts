@@ -18,6 +18,7 @@ import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { createRestoreChanges } from '../../src/core/restore'
 import { createElementSource } from '../common/helpers'
+import { ChangeWithDetails } from '../../src/core/plan/plan_item'
 
 const { awu } = collections.asynciterable
 const { mergeElements } = merger
@@ -138,14 +139,30 @@ describe('restore', () => {
   })
 
   describe('with no changes', () => {
-    it('should not create changes ws and the state are the same', async () => {
-      const changes = await createRestoreChanges(
-        createElementSource(allElement),
-        createElementSource(allElement),
-        index,
-        new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-      )
-      expect(changes).toHaveLength(0)
+    describe('detailedChanges', () => {
+      it('should not create changes ws and the state are the same', async () => {
+        const changes = await createRestoreChanges(
+          createElementSource(allElement),
+          createElementSource(allElement),
+          index,
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+        )
+        expect(changes).toHaveLength(0)
+      })
+    })
+    describe('changesWithDetails', () => {
+      it('should not create changes ws and the state are the same', async () => {
+        const changes = await createRestoreChanges(
+          createElementSource(allElement),
+          createElementSource(allElement),
+          index,
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          undefined,
+          undefined,
+          'changes'
+        )
+        expect(changes).toHaveLength(0)
+      })
     })
   })
 
@@ -168,61 +185,132 @@ describe('restore', () => {
       ]
     })
 
-    describe('without filters', () => {
-      let changes: DetailedChange[]
-      beforeAll(async () => {
-        changes = await createRestoreChanges(
-          createElementSource([...wsElements, nestedType]),
-          createElementSource([...stateElements, nestedType]),
-          index,
-          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-        )
-      })
-
-      it('should create all changes', () => {
-        expect(changes).toHaveLength(4)
-      })
-
-      it('should create add changes for elements which are only in the state with proper path', () => {
-        const addChanges = changes.filter(isAdditionChange)
-        expect(addChanges).toHaveLength(2)
-        addChanges.forEach(change => {
-          expect(change.id).toEqual(multiPathObjMerged.elemID)
-          expect(change.data.after.elemID).toEqual(change.id)
+    describe('detailedChanges', () => {
+      describe('without filters', () => {
+        let changes: DetailedChange[]
+        beforeAll(async () => {
+          changes = await createRestoreChanges(
+            createElementSource([...wsElements, nestedType]),
+            createElementSource([...stateElements, nestedType]),
+            index,
+            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          )
         })
-        const changePaths = addChanges.map(change => change.path)
-        expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'anno'])
-        expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'fields'])
+        it('should create all changes', () => {
+          expect(changes).toHaveLength(4)
+        })
+        it('should create add changes for elements which are only in the state with proper path', () => {
+          const addChanges = changes.filter(isAdditionChange)
+          expect(addChanges).toHaveLength(2)
+          addChanges.forEach(change => {
+            expect(change.id).toEqual(multiPathObjMerged.elemID)
+            expect(change.data.after.elemID).toEqual(change.id)
+          })
+          const changePaths = addChanges.map(change => change.path)
+          expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'anno'])
+          expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'fields'])
+        })
+        it('should create remove changes for elements which are only in the workspace with proper path', () => {
+          const removeChange = changes.find(isRemovalChange)
+          expect(removeChange).toBeDefined()
+          expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
+          expect(removeChange?.data.before.elemID).toEqual(removeChange?.id)
+          expect(removeChange?.path).toBeUndefined()
+        })
+        it('should create modify changes for elements which have different values in the state and ws with proper path', () => {
+          const modifyChange = changes.find(isModificationChange)
+          expect(modifyChange).toBeDefined()
+          expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
+            .createNestedID('nested').createNestedID('str'))
+          expect(modifyChange?.path).toEqual(['salto', 'inst', 'simple'])
+        })
       })
-      it('should create remove changes for elements which are only in the workspace with proper path', () => {
-        const removeChange = changes.find(isRemovalChange)
-        expect(removeChange).toBeDefined()
-        expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
-        expect(removeChange?.data.before.elemID).toEqual(removeChange?.id)
-        expect(removeChange?.path).toBeUndefined()
-      })
-      it('should create modify changes for elements which have different values in the state and ws with proper path', () => {
-        const modifyChange = changes.find(isModificationChange)
-        expect(modifyChange).toBeDefined()
-        expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
-          .createNestedID('nested').createNestedID('str'))
-        expect(modifyChange?.path).toEqual(['salto', 'inst', 'simple'])
+    })
+    describe('changesWithDetails', () => {
+      describe('without filters', () => {
+        let changes: ChangeWithDetails[]
+        beforeAll(async () => {
+          changes = await createRestoreChanges(
+            createElementSource([...wsElements, nestedType]),
+            createElementSource([...stateElements, nestedType]),
+            index,
+            new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+            undefined,
+            undefined,
+            'changes'
+          )
+        })
+        it('should create all changes', () => {
+          expect(changes).toHaveLength(3)
+        })
+        it('should create add changes for elements which are only in the state with proper path', () => {
+          const addChanges = changes.filter(isAdditionChange)
+          expect(addChanges).toHaveLength(1)
+          expect(addChanges[0].data.after.elemID).toEqual(multiPathObjMerged.elemID)
+          const detailedChanges = addChanges[0].detailedChanges()
+          expect(detailedChanges).toHaveLength(2)
+          detailedChanges.forEach(change => {
+            expect(change.id).toEqual(multiPathObjMerged.elemID)
+          })
+          const changePaths = detailedChanges.map(change => change.path)
+          expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'anno'])
+          expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'fields'])
+        })
+        it('should create remove changes for elements which are only in the workspace with proper path', () => {
+          const removeChanges = changes.filter(isRemovalChange)
+          expect(removeChanges).toHaveLength(1)
+          expect(removeChanges[0].data.before.elemID).toEqual(singlePathObjMerged.elemID)
+          const detailedChanges = removeChanges[0].detailedChanges()
+          expect(detailedChanges).toHaveLength(1)
+          expect(detailedChanges[0].id).toEqual(singlePathObjMerged.elemID)
+          expect(detailedChanges[0].path).toBeUndefined()
+        })
+        it('should create modify changes for elements which have different values in the state and ws with proper path', () => {
+          const modifyChanges = changes.filter(isModificationChange)
+          expect(modifyChanges).toHaveLength(1)
+          expect(modifyChanges[0].data.after.elemID).toEqual(singlePathInstMergedAfter.elemID)
+          const detailedChanges = modifyChanges[0].detailedChanges()
+          expect(detailedChanges).toHaveLength(1)
+          expect(detailedChanges[0].id).toEqual(singlePathInstMergedAfter.elemID
+            .createNestedID('nested').createNestedID('str'))
+          expect(detailedChanges[0].path).toEqual(['salto', 'inst', 'simple'])
+        })
       })
     })
   })
 
   describe('with remove changes for elements with multiple path hints', () => {
-    let changes: DetailedChange[]
-    beforeAll(async () => {
-      changes = await createRestoreChanges(
-        createElementSource([multiPathObjMerged]),
-        createElementSource([]),
-        index,
-        new remoteMap.InMemoryRemoteMap<ElemID[]>(),
-      )
+    describe('detailedChanges', () => {
+      let changes: DetailedChange[]
+      beforeAll(async () => {
+        changes = await createRestoreChanges(
+          createElementSource([multiPathObjMerged]),
+          createElementSource([]),
+          index,
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+        )
+      })
+      it('should return only on change (avoid spliting by path hint)', () => {
+        expect(changes).toHaveLength(1)
+      })
     })
-    it('should return only on change (avoid spliting by path hint)', () => {
-      expect(changes).toHaveLength(1)
+    describe('changesWithDetails', () => {
+      let changes: ChangeWithDetails[]
+      beforeAll(async () => {
+        changes = await createRestoreChanges(
+          createElementSource([multiPathObjMerged]),
+          createElementSource([]),
+          index,
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
+          undefined,
+          undefined,
+          'changes'
+        )
+      })
+      it('should return only on change (avoid spliting by path hint)', () => {
+        expect(changes).toHaveLength(1)
+        expect(changes[0].detailedChanges()).toHaveLength(1)
+      })
     })
   })
 })

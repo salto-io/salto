@@ -19,10 +19,11 @@ import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
+import { ChangeWithDetails } from './plan/plan_item'
 
 const { awu } = collections.asynciterable
 
-const splitChangeByPath = async (
+const splitDetailedChangeByPath = async (
   change: DetailedChange,
   index: pathIndex.PathIndex
 ): Promise<DetailedChange[]> => {
@@ -46,23 +47,62 @@ const splitChangeByPath = async (
   }))
 }
 
-export const createRestoreChanges = async (
+export function createRestoreChanges(
+  workspaceElements: elementSource.ElementsSource,
+  state: elementSource.ElementsSource,
+  index: remoteMap.RemoteMap<pathIndex.Path[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  elementSelectors: ElementSelector[] | undefined,
+  accounts: readonly string[] | undefined,
+  resultType: 'changes'
+): Promise<ChangeWithDetails[]>
+export function createRestoreChanges(
+  workspaceElements: elementSource.ElementsSource,
+  state: elementSource.ElementsSource,
+  index: remoteMap.RemoteMap<pathIndex.Path[]>,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
+  elementSelectors?: ElementSelector[],
+  accounts?: readonly string[],
+  resultType?: 'detailedChanges'
+): Promise<DetailedChange[]>
+export async function createRestoreChanges(
   workspaceElements: elementSource.ElementsSource,
   state: elementSource.ElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
   referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
   elementSelectors: ElementSelector[] = [],
-  accounts?: readonly string[]
-): Promise<DetailedChange[]> => {
-  const changes = await createDiffChanges(
+  accounts?: readonly string[],
+  resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
+): Promise<DetailedChange[] | ChangeWithDetails[]> {
+  if (resultType === 'changes') {
+    const changes = await createDiffChanges(
+      workspaceElements,
+      state,
+      referenceSourcesIndex,
+      elementSelectors,
+      [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
+      'changes'
+    )
+    return awu(changes)
+      .map(async change => {
+        const detailedChangesByPath = (await Promise.all(
+          change.detailedChanges()
+            .map(detailedChange => splitDetailedChangeByPath(detailedChange, index))
+        )).flat()
+        return { ...change, detailedChanges: () => detailedChangesByPath }
+      })
+      .toArray()
+  }
+
+  const detailedChanges = await createDiffChanges(
     workspaceElements,
     state,
     referenceSourcesIndex,
     elementSelectors,
-    [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE]
+    [id => (accounts?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE],
+    'detailedChanges'
   )
-  const detailedChanges = await awu(changes)
-    .flatMap(change => splitChangeByPath(change, index))
+  return awu(detailedChanges)
+    .flatMap(change => splitDetailedChangeByPath(change, index))
     .toArray()
-  return detailedChanges
 }

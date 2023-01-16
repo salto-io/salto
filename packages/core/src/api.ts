@@ -46,6 +46,7 @@ import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_k
 import { createDiffChanges } from './core/diff'
 import getChangeValidators from './core/plan/change_validators'
 import { renameChecks, renameElement, updateStateElements } from './core/rename'
+import { ChangeWithDetails } from './core/plan/plan_item'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -358,25 +359,70 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
 
 export type LocalChange = Omit<FetchChange, 'pendingChanges'>
 
-export const restore = async (
+export function restore(
+  workspace: Workspace,
+  accountFilters: string[] | undefined,
+  elementSelectors: ElementSelector[] | undefined,
+  resultType: 'changes'
+): Promise<ChangeWithDetails[]>
+export function restore(
+  workspace: Workspace,
+  accountFilters?: string[],
+  elementSelectors?: ElementSelector[],
+  resultType?: 'detailedChanges'
+): Promise<LocalChange[]>
+export async function restore(
   workspace: Workspace,
   accountFilters?: string[],
   elementSelectors: ElementSelector[] = [],
-): Promise<LocalChange[]> => {
+  resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
+): Promise<LocalChange[] | ChangeWithDetails[]> {
   log.debug('restore starting..')
   const fetchAccounts = accountFilters ?? workspace.accounts()
-  const changes = await createRestoreChanges(
+  if (resultType === 'changes') {
+    return createRestoreChanges(
+      await workspace.elements(),
+      workspace.state(),
+      await workspace.state().getPathIndex(),
+      await workspace.getReferenceSourcesIndex(),
+      elementSelectors,
+      fetchAccounts,
+      'changes'
+    )
+  }
+  const detailedChanges = await createRestoreChanges(
     await workspace.elements(),
     workspace.state(),
     await workspace.state().getPathIndex(),
     await workspace.getReferenceSourcesIndex(),
     elementSelectors,
-    fetchAccounts
+    fetchAccounts,
+    'detailedChanges'
   )
-  return changes.map(change => ({ change, serviceChanges: [change] }))
+  return detailedChanges.map(change => ({ change, serviceChanges: [change] }))
 }
 
-export const diff = async (
+export function diff(
+  workspace: Workspace,
+  fromEnv: string,
+  toEnv: string,
+  includeHidden: boolean | undefined,
+  useState: boolean | undefined,
+  accountFilters: string[] | undefined,
+  elementSelectors: ElementSelector[] | undefined,
+  resultType: 'changes'
+): Promise<ChangeWithDetails[]>
+export function diff(
+  workspace: Workspace,
+  fromEnv: string,
+  toEnv: string,
+  includeHidden?: boolean,
+  useState?: boolean,
+  accountFilters?: string[],
+  elementSelectors?: ElementSelector[],
+  resultType?: 'detailedChanges'
+): Promise<LocalChange[]>
+export async function diff(
   workspace: Workspace,
   fromEnv: string,
   toEnv: string,
@@ -384,7 +430,8 @@ export const diff = async (
   useState = false,
   accountFilters?: string[],
   elementSelectors: ElementSelector[] = [],
-): Promise<LocalChange[]> => {
+  resultType: 'changes' | 'detailedChanges' = 'detailedChanges'
+): Promise<LocalChange[] | ChangeWithDetails[]> {
   const diffAccounts = accountFilters ?? workspace.accounts()
   const fromElements = useState
     ? workspace.state(fromEnv)
@@ -393,12 +440,24 @@ export const diff = async (
     ? workspace.state(toEnv)
     : await workspace.elements(includeHidden, toEnv)
 
+  if (resultType === 'changes') {
+    return createDiffChanges(
+      toElements,
+      fromElements,
+      await workspace.getReferenceSourcesIndex(),
+      elementSelectors,
+      [shouldElementBeIncluded(diffAccounts)],
+      'changes'
+    )
+  }
+
   const diffChanges = await createDiffChanges(
     toElements,
     fromElements,
     await workspace.getReferenceSourcesIndex(),
     elementSelectors,
-    [shouldElementBeIncluded(diffAccounts)]
+    [shouldElementBeIncluded(diffAccounts)],
+    'detailedChanges'
   )
 
   return diffChanges.map(change => ({ change, serviceChanges: [change] }))

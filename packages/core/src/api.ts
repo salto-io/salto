@@ -459,7 +459,6 @@ export async function diff(
     [shouldElementBeIncluded(diffAccounts)],
     'detailedChanges'
   )
-
   return diffChanges.map(change => ({ change, serviceChanges: [change] }))
 }
 

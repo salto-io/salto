@@ -36,6 +36,7 @@ export const FIELD_TYPE_NAMES = [TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, O
 export const CUSTOM_ROLE_TYPE_NAME = 'custom_role'
 export const EVERYONE_USER_TYPE = 'Everyone'
 export const TICKET_FORM_TYPE_NAME = 'ticket_form'
+export const TICKET_FORM_ORDER_TYPE_NAME = 'ticket_form_order'
 
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'

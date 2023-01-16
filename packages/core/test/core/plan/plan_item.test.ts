@@ -168,11 +168,11 @@ describe('PlanItem', () => {
     })
   })
 
-  describe('changesWithDetailed method', () => {
+  describe('changes method', () => {
     it('should break field modification to specific value changes', async () => {
       const [plan, newElement] = await planWithTypeChanges()
       const planItem = getFirstPlanItem(plan)
-      const changes = [...planItem.changesWithDetails()]
+      const changes = [...planItem.changes()]
       expect(changes).toHaveLength(1)
       const detailedChanges = changes[0].detailedChanges()
       expect(detailedChanges).toHaveLength(2)
@@ -188,7 +188,7 @@ describe('PlanItem', () => {
     it('should return field changes with the correct id', async () => {
       const [plan, newElement] = await planWithFieldChanges()
       const planItem = getFirstPlanItem(plan)
-      const changes = [...planItem.changesWithDetails()]
+      const changes = [...planItem.changes()]
       expect(changes).toHaveLength(2)
 
       const detailedChanges1 = changes[0].detailedChanges()
@@ -205,7 +205,7 @@ describe('PlanItem', () => {
     it('should return add / remove changes at the appropriate level', async () => {
       const [plan, newElement] = await planWithNewType()
       const planItem = getFirstPlanItem(plan)
-      const changes = [...planItem.changesWithDetails()]
+      const changes = [...planItem.changes()]
       expect(changes).toHaveLength(1)
       const detailedChanges = changes[0].detailedChanges()
       expect(detailedChanges).toHaveLength(1)
@@ -214,7 +214,7 @@ describe('PlanItem', () => {
     it('should return deep nested changes', async () => {
       const [plan, updatedInst] = await planWithInstanceChange()
       const planItem = getFirstPlanItem(plan)
-      const changes = [...planItem.changesWithDetails()]
+      const changes = [...planItem.changes()]
       expect(changes).toHaveLength(1)
       const detailedChanges = changes[0].detailedChanges()
       expect(detailedChanges).toHaveLength(2)
@@ -227,7 +227,7 @@ describe('PlanItem', () => {
     it('should return list modification when a value is added', async () => {
       const [plan, updatedInst] = await planWithListChange()
       const planItem = getFirstPlanItem(plan)
-      const changes = [...planItem.changesWithDetails()]
+      const changes = [...planItem.changes()]
       expect(changes).toHaveLength(1)
       const detailedChanges = changes[0].detailedChanges()
       expect(detailedChanges).toHaveLength(1)
@@ -239,7 +239,7 @@ describe('PlanItem', () => {
     it('should return list of annotationType changes in case of annotationType change', async () => {
       const [plan, obj] = await planWithAnnotationTypesChanges()
       const planItem = getFirstPlanItem(plan)
-      const changes = [...planItem.changesWithDetails()]
+      const changes = [...planItem.changes()]
       expect(changes).toHaveLength(1)
       const detailedChanges = changes[0].detailedChanges()
       expect(detailedChanges).toHaveLength(1)
@@ -251,7 +251,7 @@ describe('PlanItem', () => {
     it('should return is list value modification when a field is changed to list', async () => {
       const [plan, changedElem] = await planWithFieldIsListChanges()
       const planItem = getFirstPlanItem(plan)
-      const changes = [...planItem.changesWithDetails()]
+      const changes = [...planItem.changes()]
       expect(changes).toHaveLength(2)
 
       const detailedChanges1 = changes[0].detailedChanges()

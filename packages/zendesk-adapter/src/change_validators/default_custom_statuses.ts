@@ -88,6 +88,5 @@ export const defaultCustomStatusesValidator: ChangeValidator = async (
     }))
     .toArray()
 
-
   return inactiveStatusesErrors.concat(mismatchedStatusesErrors)
 }

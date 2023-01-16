@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { logger } from '@salto-io/logging'
+
 import { NodeId, Group, ActionName } from '@salto-io/dag'
 import { Change, getChangeData, DetailedChange, CompareOptions } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
-
-const log = logger(module)
 
 export type PlanItemId = NodeId
 export type ChangeWithDetails = Change & {
@@ -49,11 +47,11 @@ const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): De
   if (change.action !== 'modify') {
     return [{ ...change, id: elem.elemID }]
   }
-  return log.time(() => detailedCompare(
+  return detailedCompare(
     change.data.before,
     change.data.after,
     compareOptions,
-  ), 'calculation detailed changes of %s', elem.elemID.getFullName(), { compareOptions })
+  )
 }
 
 export const addPlanItemAccessors = (

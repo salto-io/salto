@@ -298,7 +298,7 @@ describe('gadgetFilter', () => {
       await filter.deploy([change])
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        'value1',
+        '"value1"',
         {
           headers: {
             'Content-Type': 'application/json',
@@ -308,7 +308,7 @@ describe('gadgetFilter', () => {
 
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        'value2',
+        '"value2"',
         {
           headers: {
             'Content-Type': 'application/json',

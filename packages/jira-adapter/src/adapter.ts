@@ -118,7 +118,6 @@ const {
   loadSwagger,
   addDeploymentAnnotations,
 } = elementUtils.swagger
-
 const { createPaginator } = clientUtils
 const log = logger(module)
 
@@ -321,7 +320,7 @@ export default class JiraAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  ): Promise<InstanceElement[]> {
+  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {
@@ -349,7 +348,7 @@ export default class JiraAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     progressReporter.reportProgress({ message: 'Fetching instances' })
-    const instances = await this.getInstances(allTypes, parsedConfigs)
+    const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
 
     const elements = [
       ...Object.values(allTypes),
@@ -368,9 +367,7 @@ export default class JiraAdapter implements AdapterOperations {
       this.userConfig.apiDefinitions,
     )
 
-    return filterResult.errors !== undefined
-      ? { elements, errors: filterResult.errors }
-      : { elements }
+    return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []) }
   }
 
   /**

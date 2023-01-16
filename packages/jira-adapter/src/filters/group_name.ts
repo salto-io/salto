@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemIdGetter, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, ElemIdGetter, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementUtils, config as configUtils } from '@salto-io/adapter-components'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
@@ -57,6 +57,12 @@ const getInstanceName = (
   return getElemIdFunc(JIRA, serviceIds, defaultName).name
 }
 
+const getGroupName = (instance: InstanceElement): string => (
+  isTrustedGroupInstance(instance)
+    ? GROUP_NAME
+    : instance.value.name
+)
+
 const getRenamedInstance = (
   instance: InstanceElement,
   config: JiraConfig,
@@ -64,7 +70,7 @@ const getRenamedInstance = (
 ): InstanceElement => {
   const elementName = getInstanceName(instance, config, getElemIdFunc)
   const originalName = instance.value.name
-  const newName = isTrustedGroupInstance(instance) ? GROUP_NAME : instance.value.name
+  const newName = getGroupName(instance)
   const newPath = [...(instance.path ?? []).slice(0, -1), pathNaclCase(elementName)]
   return new InstanceElement(
     elementName,
@@ -86,6 +92,17 @@ const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
       .filter(isInstanceElement)
       .map(e => getRenamedInstance(e, config, getElemIdFunc))
     newInstances.forEach(instance => elements.push(instance))
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isInstanceChange)
+      .filter(isAdditionChange)
+      .map(getChangeData)
+      .filter(instance => isGroupElement(instance))
+      .forEach(instance => {
+        instance.value.originalName = instance.value.name
+        instance.value.name = getGroupName(instance)
+      })
   },
 })
 

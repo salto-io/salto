@@ -266,7 +266,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       const attachmentByName: Record<string, InstanceElement> = _.keyBy(
         attachments
           .filter(isInstanceElement)
-          .filter(attachment => attachment.value.name !== undefined),
+          .filter(attachment => getName(attachment) !== undefined),
         getName,
       )
       await getArticleAttachments({
@@ -277,11 +277,12 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         attachments: isAttachments(attachments) ? attachments : [],
       })
       articleInstances.forEach(article => {
-        article.value.attachments = _.sortBy(article.value.attachments, [
+        const sortedAttachments = _.sortBy(article.value.attachments, [
           (attachment: ReferenceExpression) => getFilename(attachmentByName[attachment.elemID.name]),
           (attachment: ReferenceExpression) => getContentType(attachmentByName[attachment.elemID.name]),
           (attachment: ReferenceExpression) => getInline(attachmentByName[attachment.elemID.name]),
         ])
+        article.value.attachments = sortedAttachments
       })
     }, 'articlesFilter'),
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {

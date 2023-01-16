@@ -27,6 +27,8 @@ export type ReverseRecord<T extends Record<keyof T, keyof never>> = {
   }[keyof T]
 }
 
+export type NonEmptyArray<T> = [T, ...T[]]
+
 export const hasMember = <T, M extends keyof T>(
   m: M,
   o: T,

@@ -18,7 +18,7 @@ import nock from 'nock'
 import { Bulk, FileProperties, Metadata, RetrieveResult } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import SalesforceClient, {
@@ -48,6 +48,7 @@ const { array, asynciterable } = collections
 const { makeArray } = array
 const { mapAsync, toArrayAsync } = asynciterable
 const logging = logger('salesforce-adapter/src/client/client')
+
 
 describe('salesforce client', () => {
   beforeEach(() => {
@@ -327,7 +328,7 @@ describe('salesforce client', () => {
       responseCode?: number
       faultString?: string
     }
-    const mappableErrorToTestInputs: Record<MappableErrorProperty, TestInput[] | TestInput> = {
+    const mappableErrorToTestInputs: Record<MappableErrorProperty, types.NonEmptyArray<TestInput> | TestInput> = {
       [SF_REQUEST_LIMIT_EXCEEDED]: [
         { faultString: 'ConcurrentRequests (Concurrent API Requests) Limit exceeded.', expectedMessage: MAX_CONCURRENT_REQUESTS_MESSAGE },
         { faultString: 'TotalRequests Limit exceeded.', expectedMessage: REQUEST_LIMIT_EXCEEDED_MESSAGE },

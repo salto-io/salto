@@ -34,6 +34,7 @@ describe('user filter', () => {
   const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK, 'sla_policy') })
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
   const workspaceType = new ObjectType({ elemID: new ElemID(ZENDESK, 'workspace') })
+  const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, 'ticket_field') })
   const routingAttributeValueType = new ObjectType({ elemID: new ElemID(ZENDESK, 'routing_attribute_value') })
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
   const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, 'article') })
@@ -275,6 +276,29 @@ describe('user filter', () => {
       ],
     },
   )
+  const ticketFieldInstance = new InstanceElement(
+    'test',
+    ticketFieldType,
+    {
+      type: 'bla',
+      relationship_filter: {
+        all: [
+          {
+            field: 'assignee_id',
+            operator: 'is',
+            value: '2',
+          },
+        ],
+        any: [
+          {
+            field: 'requester_id',
+            operator: 'is',
+            value: '1',
+          },
+        ],
+      },
+    },
+  )
   let mockPaginator: clientUtils.Paginator
 
   beforeEach(async () => {
@@ -298,6 +322,7 @@ describe('user filter', () => {
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance,
         routingAttributeValueInstance, userSegmentType, userSegmentInstance,
         articleType, articleInstance, sectionTranslationInstance, sectionTranslationType,
+        ticketFieldInstance, ticketFieldType,
       ].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
@@ -312,6 +337,8 @@ describe('user filter', () => {
           'zendesk.section_translation.instance.test',
           'zendesk.sla_policy',
           'zendesk.sla_policy.instance.test',
+          'zendesk.ticket_field',
+          'zendesk.ticket_field.instance.test',
           'zendesk.trigger',
           'zendesk.trigger.instance.test',
           'zendesk.user_segment',
@@ -407,6 +434,26 @@ describe('user filter', () => {
           },
         ],
       })
+      const ticketField = instances.find(e => e.elemID.typeName === 'ticket_field')
+      expect(ticketField?.value).toEqual({
+        type: 'bla',
+        relationship_filter: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: 'b@b.com',
+            },
+          ],
+          any: [
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: 'a@a.com',
+            },
+          ],
+        },
+      },)
       const routingAttributeValue = instances.find(e => e.elemID.typeName === 'routing_attribute_value')
       expect(routingAttributeValue?.value).toEqual({
         title: 'test',
@@ -569,7 +616,7 @@ describe('user filter', () => {
         ])
       const instances = [
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
-        articleInstance, sectionTranslationInstance,
+        articleInstance, sectionTranslationInstance, ticketFieldInstance,
       ].map(e => e.clone())
       await filter.onFetch(instances)
       const changes = instances.map(instance => toChange({ after: instance }))
@@ -662,6 +709,26 @@ describe('user filter', () => {
           },
         ],
       })
+      const newTicketField = instances.find(e => e.elemID.typeName === 'ticket_field')
+      expect(newTicketField?.value).toEqual({
+        type: 'bla',
+        relationship_filter: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: '2',
+            },
+          ],
+          any: [
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: '1',
+            },
+          ],
+        },
+      })
       const sectionTranslation = instances
         .find(e => e.elemID.typeName === SECTION_TRANSLATION_TYPE_NAME)
       expect(sectionTranslation?.value).toEqual({
@@ -690,7 +757,7 @@ describe('user filter', () => {
         ])
       const instances = [
         macroInstance, slaPolicyInstance, triggerInstance, workspaceInstance, userSegmentInstance,
-        articleInstance, sectionTranslationInstance,
+        articleInstance, sectionTranslationInstance, ticketFieldInstance,
       ].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings
@@ -784,6 +851,26 @@ describe('user filter', () => {
           },
         ],
       })
+      const ticketField = changedInstances.find(e => e.elemID.typeName === 'ticket_field')
+      expect(ticketField?.value).toEqual({
+        type: 'bla',
+        relationship_filter: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: 'b@b.com',
+            },
+          ],
+          any: [
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: 'a@a.com',
+            },
+          ],
+        },
+      },)
       const userSegment = instances.find(e => e.elemID.typeName === 'user_segment')
       expect(userSegment?.value).toEqual({
         title: 'test',

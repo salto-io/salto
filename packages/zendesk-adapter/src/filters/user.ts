@@ -153,6 +153,10 @@ const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
     ]),
     workspaceReplacer,
   ]),
+  ticket_field: replaceConditionsAndActionsCreator([
+    { fieldName: 'relationship_filter.all', fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+    { fieldName: 'relationship_filter.any', fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+  ]),
   oauth_token: fieldReplacer(['user_id']),
   user_segment: fieldReplacer(['added_user_ids']),
   article: fieldReplacer(['author_id']),

@@ -40,6 +40,7 @@ type UserFieldGetter = {
 // https://stackoverflow.com/a/44154193
 const TYPES_WITH_USER_FIELDS = [
   'CaseSettings',
+  'FolderShare',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
@@ -73,6 +74,18 @@ const userFieldValue = (expectedFieldName: string): GetUserField => (
   }
 )
 
+const getFolderShareUser = (instance: InstanceElement, fieldName: string): string | undefined => {
+  if (fieldName !== 'sharedTo') {
+    log.error(`Unexpected field name: ${fieldName}.`)
+    return undefined
+  }
+  if (instance.value.sharedToType !== 'User') {
+    log.debug('sharedToType is not User. Skipping.')
+    return undefined
+  }
+  return instance.value.sharedTo
+}
+
 const USER_GETTERS: TypesWithUserFields = {
   CaseSettings: [
     {
@@ -82,6 +95,12 @@ const USER_GETTERS: TypesWithUserFields = {
     {
       field: 'defaultCaseOwner',
       getter: (instance, fieldName) => getCaseSettingsOwner(instance, fieldName),
+    },
+  ],
+  FolderShare: [
+    {
+      field: 'sharedTo',
+      getter: getFolderShareUser,
     },
   ],
 }

@@ -42,7 +42,7 @@ import {
   ZENDESK,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
@@ -691,7 +691,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         // article_attachment additions supported in a filter
-        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES],
+        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
       }),
       dependencyChanger,
       getChangeGroupIds,

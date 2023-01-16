@@ -21,7 +21,7 @@ import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
   BRAND_TYPE_NAME,
-  CATEGORY_ORDER_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, EVERYONE_USER_TYPE,
+  CATEGORY_ORDER_TYPE_NAME, EVERYONE_USER_TYPE,
   SECTION_ORDER_TYPE_NAME,
   ZENDESK,
 } from './constants'
@@ -772,14 +772,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         urlParamsToFields: {
           custom_status_id: 'id',
         },
-      },
-    },
-  },
-  [DEFAULT_CUSTOM_STATUSES_TYPE_NAME]: {
-    deployRequests: {
-      modify: {
-        url: '/api/v2/custom_status/default',
-        method: 'put',
       },
     },
   },

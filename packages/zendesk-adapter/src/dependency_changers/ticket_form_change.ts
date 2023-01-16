@@ -53,7 +53,7 @@ export const ticketFormDependencyChanger: DependencyChanger = async changes => {
   }
 
   const ticketFormOrderValue = getChangeData(ticketFormOrderChange.change).value
-  const orderTicketForms = ticketFormOrderValue.active.concat(ticketFormOrderValue.inactive)
+  const orderTicketForms = (ticketFormOrderValue.active ?? []).concat(ticketFormOrderValue.inactive ?? [])
     .filter(isReferenceExpression)
 
 

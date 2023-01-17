@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -32,6 +32,7 @@ describe('Webhooks with external_source', () => {
       status: 'active',
       signing_secret: '123',
       name: 'test',
+      not_relevant_field: { external_source: 'test' },
       external_source: { data: { installation_id: new ReferenceExpression(appInstallation.elemID, appInstallation) } },
     }
   )
@@ -46,7 +47,7 @@ describe('Webhooks with external_source', () => {
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Removing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by the external app '${appInstallation.elemID.name}'. In order to remove it, please uninstall that app.`,
+      detailedMessage: `This webhook was installed by an external app '${appInstallation.elemID.name}'. In order to remove it, please uninstall that app.`,
     }])
   })
   it('webhook addition', async () => {
@@ -57,7 +58,7 @@ describe('Webhooks with external_source', () => {
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Installing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by the external app '${appInstallation.elemID.name}'. In order to add it, please install that app.`,
+      detailedMessage: `This webhook was installed by an external app '${appInstallation.elemID.name}'. In order to add it, please install that app.`,
     }])
   })
 
@@ -95,19 +96,20 @@ describe('Webhooks with external_source', () => {
         elemID: webhook.elemID,
         severity: 'Warning',
         message: 'Deactivating a webhook that was installed by an external app',
-        detailedMessage: 'If you deactivate this webhook, the app that created it might not work as intended. You\'ll need to reactivate it to use it again.',
+        detailedMessage: `If you deactivate this webhook (${changedWebhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
       }])
     })
     it('regular change of the webhook', async () => {
       const changedWebhook = webhook.clone()
       changedWebhook.value.name = 'changed'
+      changedWebhook.value.not_relevant_field.external_source = 'changed'
       const errors = await externalSourceWebhook([toChange({ before: webhook, after: changedWebhook })])
 
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Warning',
         message: 'Changing a webhook that was installed by an external app',
-        detailedMessage: 'If you edit this webhook, the app that created it might not work as intended.',
+        detailedMessage: `If you edit this webhook (${changedWebhook.elemID.name}), the app that created it might not work as intended.`,
       }])
     })
   })

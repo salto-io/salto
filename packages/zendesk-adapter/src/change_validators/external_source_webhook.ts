@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -28,14 +28,14 @@ const createExternalSourceWebhookChangeWarning = (webhook: InstanceElement): Cha
   elemID: webhook.elemID,
   severity: 'Warning',
   message: 'Changing a webhook that was installed by an external app',
-  detailedMessage: 'If you edit this webhook, the app that created it might not work as intended.',
+  detailedMessage: `If you edit this webhook (${webhook.elemID.name}), the app that created it might not work as intended.`,
 })
 
 const createDeactivationWarning = (webhook: InstanceElement): ChangeError => ({
   elemID: webhook.elemID,
   severity: 'Warning',
   message: 'Deactivating a webhook that was installed by an external app',
-  detailedMessage: 'If you deactivate this webhook, the app that created it might not work as intended. You\'ll need to reactivate it to use it again.',
+  detailedMessage: `If you deactivate this webhook (${webhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
 })
 
 const createExternalSourceChangeError = (webhook: InstanceElement): ChangeError => ({
@@ -51,8 +51,8 @@ const handleModificationChanges = (changes: ModificationChange<InstanceElement>[
     const detailedChanges = detailedCompare(change.data.before, change.data.after)
 
     // It's impossible to change some fields of a webhook using Zendesk's api
-    if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path.includes('external_source'))
-        || detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path.includes('signing_secret'))) {
+    if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')
+        || detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'signing_secret')) {
       errors.push(createExternalSourceChangeError(change.data.after))
     }
 
@@ -80,7 +80,7 @@ const createAdditionError = (webhooks: InstanceElement[]): ChangeError[] =>
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Installing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by the external app${appNameMessage}. In order to add it, please install that app.`,
+      detailedMessage: `This webhook was installed by an external app${appNameMessage}. In order to add it, please install that app.`,
     }
   })
 
@@ -93,12 +93,12 @@ const createRemovalErrorMessage = (webhooks: InstanceElement[]): ChangeError[] =
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Removing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by the external app${appNameMessage}. In order to remove it, please uninstall that app.`,
+      detailedMessage: `This webhook was installed by an external app${appNameMessage}. In order to remove it, please uninstall that app.`,
     }
   })
 
 /**
- * Validated everything related to webhooks that were install by an external app
+ * Validated everything related to webhooks that were installed by an external app
  *  * They can't be created
  *  * They can't be removed
  *  * external_source and signing_secret fields can't be changed

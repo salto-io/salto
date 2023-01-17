@@ -88,6 +88,47 @@ describe('unknown user change validator', () => {
       expect(changeErrors).toBeEmpty()
     })
   })
+  describe('when the username is in a FolderShare instance', () => {
+    let change: Change
+
+    describe('when the username exists', () => {
+      beforeEach(() => {
+        const beforeRecord = createInstanceElement({
+          fullName: 'someName',
+          sharedTo: IRRELEVANT_USERNAME,
+          sharedToType: 'User',
+        }, mockTypes.FolderShare)
+        const afterRecord = beforeRecord.clone()
+        afterRecord.value.sharedTo = TEST_USERNAME
+        change = toChange({ before: beforeRecord, after: afterRecord })
+
+        setupClientMock([TEST_USERNAME])
+      })
+
+      it('should pass validation', async () => {
+        const changeErrors = await validator([change])
+        expect(changeErrors).toBeEmpty()
+      })
+    })
+    describe('when the username doesn\'t exist but sharedToType is not \'User\'', () => {
+      beforeEach(() => {
+        const beforeRecord = createInstanceElement({
+          fullName: 'someName',
+          sharedTo: IRRELEVANT_USERNAME,
+          sharedToType: 'Role',
+        }, mockTypes.FolderShare)
+        const afterRecord = beforeRecord.clone()
+        afterRecord.value.sharedTo = TEST_USERNAME
+        change = toChange({ before: beforeRecord, after: afterRecord })
+
+        setupClientMock([])
+      })
+      it('should pass validation', async () => {
+        const changeErrors = await validator([change])
+        expect(changeErrors).toBeEmpty()
+      })
+    })
+  })
   describe('when a username does not exist in Salesforce', () => {
     let change: Change
     beforeEach(() => {

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -64,7 +64,8 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   cpqValidator: { creator: () => cpqValidator, ...defaultAlwaysRun },
   sbaaApprovalRulesCustomCondition: { creator: () => sbaaApprovalRulesCustomCondition, ...defaultAlwaysRun },
   recordTypeDeletion: { creator: () => recordTypeDeletionValidator, ...defaultAlwaysRun },
-  flowsValidator: { creator: (config, isSandbox) => flowsValidator(config, isSandbox), ...defaultAlwaysRun },
+  flowsValidator: { creator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
+    ...defaultAlwaysRun },
   fullNameChangedValidator: { creator: () => fullNameChangedValidator, ...defaultAlwaysRun },
   invalidListViewFilterScope: { creator: () => invalidListViewFilterScope, ...defaultAlwaysRun },
   caseAssignmentRulesValidator: { creator: () => caseAssignmentRulesValidator, ...defaultAlwaysRun },

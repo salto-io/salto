@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -51,6 +51,7 @@ import {
   childInOrderValidator,
   orderChildrenParentValidator,
   macroActionsTicketFieldDeactivationValidator,
+  sideConversationsValidator,
   externalSourceWebhook,
 } from './change_validators'
 import ZendeskClient from './client/client'
@@ -98,6 +99,7 @@ export default ({
     automationAllConditionsValidator,
     macroActionsTicketFieldDeactivationValidator,
     customRoleRemovalValidator(client),
+    sideConversationsValidator,
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,

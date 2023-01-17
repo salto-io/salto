@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,7 @@ const { awu } = collections.asynciterable
 type ValidityStatus = 'valid' | 'invalid' | 'unknown'
 
 export const validateDependsOnInvalidElement = async (
-  inputInvalidElementIds: string[],
+  inputInvalidElementIds: readonly string[],
   changes: ReadonlyArray<Change>,
 ): Promise<ReadonlyArray<ChangeError>> => {
   const elemValidity = new Map<string, ValidityStatus>(

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../../src/constants'
 import sharePermissionFilter from '../../src/filters/share_permission'
 import { getFilterParams } from '../utils'
 
 describe('sharePermissionFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
   let type: ObjectType
   let sharePermissionType: ObjectType
@@ -117,5 +117,51 @@ describe('sharePermissionFilter', () => {
     expect((await sharePermissionType.fields.role.getType()).elemID.getFullName()).toBe('jira.ProjectRolePermission')
     expect((await sharePermissionType.fields.project.getType()).elemID.getFullName()).toBe('jira.ProjectPermission')
     expect(elements).toHaveLength(3)
+  })
+
+  it('if there is role should change type to projectRole', async () => {
+    instance.value.permissions.type = 'project'
+    instance.value.permissions.role = {
+      id: 1,
+    }
+    await filter.preDeploy([toChange({ after: instance })])
+    expect(instance.value).toEqual({
+      permissions: {
+        type: 'projectRole',
+        role: {
+          id: 1,
+        },
+      },
+    })
+  })
+
+  it('if there is no role should not change type to projectRole', async () => {
+    instance.value.permissions.type = 'project'
+    await filter.preDeploy([toChange({ after: instance })])
+    expect(instance.value).toEqual({
+      permissions: {
+        type: 'project',
+      },
+    })
+  })
+
+  it('should change projectRole to project on deploy', async () => {
+    instance.value.permissions.type = 'projectRole'
+    await filter.onDeploy([toChange({ after: instance })])
+    expect(instance.value).toEqual({
+      permissions: {
+        type: 'project',
+      },
+    })
+  })
+
+  it('should not change non projectRole types on deploy', async () => {
+    instance.value.permissions.type = 'user'
+    await filter.onDeploy([toChange({ after: instance })])
+    expect(instance.value).toEqual({
+      permissions: {
+        type: 'user',
+      },
+    })
   })
 })

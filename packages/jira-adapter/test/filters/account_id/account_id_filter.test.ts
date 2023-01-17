@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, ACCOUNT_IDS_FIELDS_NAMES } from '../../../src/constants'
-import accountIdFilter, { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
+import accountIdFilter, { ACCOUNT_ID_TYPES } from '../../../src/filters/account_id/account_id_filter'
 import * as common from './account_id_common'
 
 const { awu } = collections.asynciterable
@@ -109,7 +109,7 @@ describe('account_id_filter', () => {
         const type = common.createType(typeName)
         const instance = common.createInstance('1', type)
         await filter.onFetch([instance])
-        common.checkObjectedInstanceIds(instance, '1', PARAMETER_STYLE_TYPES.includes(typeName))
+        common.checkObjectedInstanceIds(instance, '1')
       })
     })
     it('should not change account ids for undefined types', async () => {

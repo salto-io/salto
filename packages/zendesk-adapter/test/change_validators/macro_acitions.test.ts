@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,8 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ZENDESK } from '../../src/constants'
-import { MACRO_TYPE_NAME } from '../../src/filters/macro_attachments'
+import { ZENDESK, MACRO_TYPE_NAME } from '../../src/constants'
 import { macroActionsTicketFieldDeactivationValidator } from '../../src/change_validators'
 
 describe('macro action ticket field test', () => {

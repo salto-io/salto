@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -45,18 +45,36 @@ jest.mock('../src/core/fetch', () => ({
   fetchChangesFromWorkspace: jest.fn(),
 }))
 jest.mock('../src/core/restore', () => ({
-  createRestoreChanges: jest.fn().mockResolvedValue([{
-    action: 'add',
-    data: { after: 'value' },
-    path: ['path'],
-  }]),
+  createRestoreChanges: jest.fn((...args) => {
+    const detailedChanges = [{
+      action: 'add',
+      data: { after: 'value' },
+      path: ['path'],
+    }]
+    return args[6] === 'changes'
+      ? [{
+        action: 'add',
+        data: { after: 'value' },
+        detailedChanges: () => detailedChanges,
+      }]
+      : detailedChanges
+  }),
 }))
 
 jest.mock('../src/core/diff', () => ({
-  createDiffChanges: jest.fn().mockResolvedValue([{
-    action: 'add',
-    data: { after: 'value' },
-  }]),
+  createDiffChanges: jest.fn((...args) => {
+    const detailedChanges = [{
+      action: 'add',
+      data: { after: 'value' },
+    }]
+    return args[5] === 'changes'
+      ? [{
+        action: 'add',
+        data: { after: 'value' },
+        detailedChanges: () => detailedChanges,
+      }]
+      : detailedChanges
+  }),
 }))
 
 describe('api.ts', () => {
@@ -565,15 +583,31 @@ describe('api.ts', () => {
       expect(changes).toHaveLength(1)
       expect(_.keys(changes[0])).toEqual(['change', 'serviceChanges'])
     })
+    it('should return all changes as changesWithDetails', async () => {
+      const ws = mockWorkspace({
+        elements: [],
+        name: 'restore',
+        index: [],
+        stateElements: [],
+      })
+      const changes = await api.restore(ws, undefined, undefined, 'changes')
+      expect(changes).toHaveLength(1)
+      expect(_.keys(changes[0])).toEqual(['action', 'data', 'detailedChanges'])
+    })
   })
 
   describe('diff', () => {
     const ws = mockWorkspace({ name: 'diff' })
-    it('should return changes', async () => {
+    it('should return detailedChanges', async () => {
       const changes = await api.diff(ws, 'active', 'other', false, false)
       expect(changes).toHaveLength(1)
       expect(ws.elements).toHaveBeenCalledWith(false, 'active')
       expect(ws.elements).toHaveBeenCalledWith(false, 'other')
+    })
+    it('should return changesWithDetails', async () => {
+      const changes = await api.diff(ws, 'active', 'other', false, false, undefined, undefined, 'changes')
+      expect(changes).toHaveLength(1)
+      expect(changes[0].detailedChanges()).toHaveLength(1)
     })
     it('should get the data from state when the state flag is true', async () => {
       const changes = await api.diff(ws, 'active', 'other', false, true)

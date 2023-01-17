@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -60,7 +60,10 @@ const deployGadgetProperties = async (
       .map(([key, value]) =>
         client.put({
           url: `/rest/api/3/dashboard/${dashboardId}/items/${instance.value.id}/properties/${key}`,
-          data: value,
+          // Axios has a weird behavior when converting the value to json
+          // where a value of '"false"' will be converted to false instead of "false"
+          // so we use json stringify here
+          data: safeJsonStringify(value),
           headers: {
             // value can be a string and in that case axios won't send
             // this header so we need to add it

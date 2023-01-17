@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -825,6 +825,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'issueCount', fieldType: 'number' },
         { fieldName: 'leadAccountId', fieldType: 'string' },
         { fieldName: 'componentBean', fieldType: 'ProjectComponent' },
+        { fieldName: 'deleted', fieldType: 'boolean' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -838,6 +839,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'realAssigneeType' },
         { fieldName: 'assignee' },
         { fieldName: 'componentBean' },
+        { fieldName: 'deleted' },
       ],
     },
     deployRequests: {

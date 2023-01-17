@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import addDisplayNameFilter from '../../../src/filters/account_id/user_id_filter'
 import * as common from './account_id_common'
-import { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
+import { ACCOUNT_ID_TYPES } from '../../../src/filters/account_id/account_id_filter'
 import { AUTOMATION_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
 
 const { awu } = collections.asynciterable
@@ -88,6 +88,48 @@ describe('add_display_name_filter', () => {
       }, {
         accountId: '2list2',
         displayName: 'disp2list2',
+      }, {
+        accountId: '2operations1',
+        displayName: 'disp2operations1',
+      }, {
+        accountId: '2automation1',
+        displayName: 'disp2automation1',
+      }, {
+        accountId: '2automation2',
+        displayName: 'disp2automation2',
+      }, {
+        accountId: '2automation3',
+        displayName: 'disp2automation3',
+      }, {
+        accountId: '2automation4',
+        displayName: 'disp2automation4',
+      }, {
+        accountId: '2automation5',
+        displayName: 'disp2automation5',
+      }, {
+        accountId: '2automation6',
+        displayName: 'disp2automation6',
+      }, {
+        accountId: '2automation7',
+        displayName: 'disp2automation7',
+      }, {
+        accountId: '2automation8a',
+        displayName: 'disp2automation8a',
+      }, {
+        accountId: '2automation8b',
+        displayName: 'disp2automation8b',
+      }, {
+        accountId: '2automation9',
+        displayName: 'disp2automation9',
+      }, {
+        accountId: '2owner',
+        displayName: 'disp2owner',
+      }, {
+        accountId: '2users1',
+        displayName: 'disp2users1',
+      }, {
+        accountId: '2users2',
+        displayName: 'disp2users2',
       }],
     })
   })
@@ -145,7 +187,7 @@ describe('add_display_name_filter', () => {
       const type = common.createType(typeName)
       const instance = common.createObjectedInstance('2', type)
       await filter.onFetch([instance])
-      common.checkDisplayNames(instance, '2', PARAMETER_STYLE_TYPES.includes(typeName))
+      common.checkDisplayNames(instance, '2')
     })
   })
   it('should not add display names for undefined types', async () => {

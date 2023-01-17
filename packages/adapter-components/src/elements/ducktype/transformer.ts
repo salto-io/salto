@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -25,7 +25,7 @@ import { TypeConfig, getConfigWithDefault, getTransformationConfigByType } from 
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig, DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
-import { getElementsWithContext } from '../element_getter'
+import { ConfigChangeSuggestion, FetchElements, getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
@@ -65,15 +65,6 @@ type Entries = {
   nestedTypes: ObjectType[]
 }
 
-export type ConfigChangeSuggestion = {
-  typeToExclude: string
-}
-
-export type FetchElements<T> = {
-  configChanges: ConfigChangeSuggestion[]
-  elements: T
-  errors?: SaltoError[]
-}
 
 export const getEntriesResponseValues: EntriesRequester = async ({
   paginator,
@@ -378,32 +369,30 @@ export const getAllElements = async ({
   )
 
   const configSuggestions: ConfigChangeSuggestion[] = []
-  const errors: SaltoError[] = []
-  const elements = await getElementsWithContext({
+  const { elements, errors } = await getElementsWithContext({
     fetchQuery,
     supportedTypes: supportedTypesWithEndpoints,
     types,
     typeElementGetter: async args => {
       try {
-        return await getTypeAndInstances({
-          ...elementGenerationParams,
-          ...args,
-        })
+        return {
+          elements: (await getTypeAndInstances({ ...elementGenerationParams, ...args })),
+          errors: [],
+        }
       } catch (e) {
         if (isErrorTurnToConfigSuggestion?.(e)
           && (supportedTypesReversedMapping[args.typeName] !== undefined)) {
           configSuggestions.push({
             typeToExclude: supportedTypesReversedMapping[args.typeName],
           })
-          return []
+          return { elements: [], errors: [] }
         }
-        if (e.response.status === 403) {
-          const NewError: SaltoError = {
+        if (e.response?.status === 403) {
+          const newError: SaltoError = {
             message: `Salto was forbidden from accessing the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access`,
             severity: 'Warning',
           }
-          errors.push(NewError)
-          return []
+          return { elements: [], errors: [newError] }
         }
         throw e
       }

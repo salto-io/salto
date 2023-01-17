@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -79,6 +79,12 @@ describe('accountIdValidator', () => {
     }, {
       accountId: '1list1',
       displayName: 'disp1list1',
+    }, {
+      accountId: '1list2',
+      displayName: 'disp1list2',
+    }, {
+      accountId: '0owner',
+      displayName: 'disp0owner',
     }, {
       accountId: '1list2',
       displayName: 'disp1list2',
@@ -260,7 +266,7 @@ Go to ${url} to see valid users and account IDs.`,
     ])).toEqual([])
   })
   it('should not raise errors when the type is not deployable', async () => {
-    const objectType = common.createObjectedType('Filter')
+    const objectType = common.createObjectedType('Board')
     instances = common.createInstanceElementArrayWithDisplayNames(2, objectType)
     const changeErrors = await validator([
       toChange({

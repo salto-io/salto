@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -77,7 +77,6 @@ import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
-import deployFlowsFilter from './filters/deploy_flows'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -125,7 +124,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },
   { creator: flowFilter },
-  { creator: deployFlowsFilter, addsNewInformation: true },
   { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
   { creator: cpqReferencableFieldReferencesFilter },
   { creator: cpqCustomScriptFilter },

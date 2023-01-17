@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -38,7 +38,12 @@ import {
   Value,
   Values,
 } from '@salto-io/adapter-api'
-import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, naclCase } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  buildElementsSourceFromElements,
+  detailedCompare,
+  naclCase,
+} from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -261,14 +266,9 @@ describe('Zendesk adapter E2E', () => {
     }
 
     const verifyArray = (orgArray: Array<unknown>, fetchArray: Array<unknown>): void => {
-      _.zip(orgArray, fetchArray)
-        .forEach(val => {
-          if (isReferenceExpression(val[0]) && isReferenceExpression(val[1])) {
-            expect(val[0].elemID.getFullName()).toEqual(val[1].elemID.getFullName())
-          } else {
-            expect(val[0]).toEqual(val[1])
-          }
-        })
+      const orgVals = orgArray.map(val => (isReferenceExpression(val) ? val.elemID.getFullName() : val))
+      const fetchVals = fetchArray.map(val => (isReferenceExpression(val) ? val.elemID.getFullName() : val))
+      expect(orgVals).toEqual(fetchVals)
     }
 
     const verifyInstanceValues = (
@@ -764,9 +764,15 @@ describe('Zendesk adapter E2E', () => {
       })
 
       articleInstance.value.attachments = [
-        new ReferenceExpression(articleAttachment.elemID, articleAttachment),
         new ReferenceExpression(articleInlineAttachment.elemID, articleInlineAttachment),
+        new ReferenceExpression(articleAttachment.elemID, articleAttachment),
       ]
+      const sortedAttachments = _.sortBy(articleInstance.value.attachments, [
+        (attachment: ReferenceExpression) => attachment.value.value.file_name,
+        (attachment: ReferenceExpression) => attachment.value.value.content_type,
+        (attachment: ReferenceExpression) => attachment.value.value.inline,
+      ])
+      articleInstance.value.attachments = sortedAttachments
 
       const articleTranslationEn = createInstanceElement({
         type: ARTICLE_TRANSLATION_TYPE_NAME,
@@ -996,6 +1002,7 @@ describe('Zendesk adapter E2E', () => {
     })
     it('should fetch the regular instances and types', async () => {
       const typesToFetch = [
+        'account_features',
         'account_setting',
         'app_installation',
         'automation',

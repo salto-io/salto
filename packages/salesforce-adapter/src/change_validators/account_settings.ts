@@ -16,17 +16,18 @@
 
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceElement } from '@salto-io/adapter-api'
-import { buildSelectQueries, isInstanceOfType, queryClient } from '../filters/utils'
-import { SalesforceRecord } from '../client/types'
-import SalesforceClient from '../client/client'
+import {
+  ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceElement,
+} from '@salto-io/adapter-api'
+import { isInstanceOfType } from '../filters/utils'
+import { SALESFORCE } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const isRecordTypeInvalid = (globalSharingSettings: SalesforceRecord, instance: InstanceElement): boolean => (
-  globalSharingSettings.DefaultAccountAccess !== 'Read'
+const isRecordTypeInvalid = (globalSharingSettings: InstanceElement, instance: InstanceElement): boolean => (
+  globalSharingSettings.value.defaultAccountAccess !== 'Read'
   && instance.value.enableAccountOwnerReport !== undefined
 )
 
@@ -39,13 +40,16 @@ const invalidRecordTypeError = (instance: InstanceElement): ChangeError => (
   }
 )
 
-const changeValidator = (client: SalesforceClient): ChangeValidator => async changes => {
-  const query = await buildSelectQueries('Organization', ['DefaultAccountAccess'])
-  const queryResult = await queryClient(client, query)
+const changeValidator = (): ChangeValidator => async (changes, elementsSource) => {
+  if (elementsSource === undefined) {
+    log.error('Change validator did not receive an element source.')
+    return []
+  }
 
-  if (queryResult.length !== 1) {
-    log.error(`Expected a single Organization instance. Found ${queryResult ? queryResult.length : 0} instead`)
-    log.error('Unexpected Organization instances: %o', queryResult)
+  const orgWideSettings = await elementsSource.get(new ElemID(SALESFORCE, 'Organization', 'instance'))
+
+  if (orgWideSettings === undefined || !isInstanceElement(orgWideSettings)) {
+    log.error('Expected a single Organization instance. Found %o instead', orgWideSettings)
     return []
   }
 
@@ -56,7 +60,7 @@ const changeValidator = (client: SalesforceClient): ChangeValidator => async cha
 
   return awu(changedInstances)
     .filter(isInstanceOfType('AccountSettings'))
-    .filter(accountSettingsInstance => isRecordTypeInvalid(queryResult[0], accountSettingsInstance))
+    .filter(accountSettingsInstance => isRecordTypeInvalid(orgWideSettings, accountSettingsInstance))
     .map(invalidRecordTypeError)
     .toArray()
 }

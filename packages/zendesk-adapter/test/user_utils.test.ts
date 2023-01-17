@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
 import * as usersUtilsModule from '../src/user_utils'
@@ -352,6 +353,10 @@ describe('userUtils', () => {
             field: 'follower',
             value: '1',
           },
+          {
+            field: 'status',
+            value: 'open',
+          },
         ],
         conditions: {
           all: [
@@ -400,72 +405,115 @@ describe('userUtils', () => {
       },
     )
 
+    const sectionTransUserPaths = [
+      new ElemID(ZENDESK, sectionTranslationInstance.elemID.typeName, 'instance', 'test', 'created_by_id'),
+      new ElemID(ZENDESK, sectionTranslationInstance.elemID.typeName, 'instance', 'test', 'updated_by_id'),
+    ]
+    const articleUserPaths = [
+      new ElemID(ZENDESK, articleInstance.elemID.typeName, 'instance', 'test', 'author_id'),
+    ]
+    const userSegmentUserPaths = [
+      new ElemID(ZENDESK, userSegmentType.elemID.typeName, 'instance', 'test', 'added_user_ids'),
+    ]
+    const triggerUserPaths = [
+      triggerInstance.elemID.createNestedID('actions', '1', 'value'),
+      triggerInstance.elemID.createNestedID('actions', '2', 'value'),
+      triggerInstance.elemID.createNestedID('actions', '3', 'value', '0'),
+      triggerInstance.elemID.createNestedID('actions', '4', 'value', '0'),
+      triggerInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
+      triggerInstance.elemID.createNestedID('conditions', 'all', '2', 'value'),
+      triggerInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
+      triggerInstance.elemID.createNestedID('conditions', 'any', '1', 'value'),
+    ]
+    const routingAttUserPaths = [
+      routingAttributeValueInstance.elemID.createNestedID('conditions', 'all', '1', 'value'),
+      routingAttributeValueInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
+    ]
+    const macroUserPaths = [
+      macroInstance.elemID.createNestedID('actions', '1', 'value'),
+      macroInstance.elemID.createNestedID('actions', '2', 'value'),
+      macroInstance.elemID.createNestedID('restriction', 'id'),
+    ]
+    const slaPolicyUserPaths = [
+      slaPolicyInstance.elemID.createNestedID('filter', 'all', '0', 'value'),
+      slaPolicyInstance.elemID.createNestedID('filter', 'all', '1', 'value'),
+      slaPolicyInstance.elemID.createNestedID('filter', 'any', '0', 'value'),
+      slaPolicyInstance.elemID.createNestedID('filter', 'any', '1', 'value'),
+    ]
+    const workspaceUserPaths = [
+      workspaceInstance.elemID.createNestedID('selected_macros', '1', 'restriction', 'id'),
+    ]
+    const automationUserPaths = [
+      automationInstance.elemID.createNestedID('actions', '0', 'value'),
+      automationInstance.elemID.createNestedID('actions', '1', 'value'),
+      automationInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
+      automationInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
+    ]
+    const viewUserPaths = [
+      viewInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
+      viewInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
+      viewInstance.elemID.createNestedID('restriction', 'id'),
+    ]
+
     it('should return the correct ElemIds', () => {
       expect(
         usersUtilsModule.TYPE_NAME_TO_REPLACER[sectionTranslationInstance.elemID.typeName]?.(sectionTranslationInstance)
-      ).toEqual([
-        new ElemID(ZENDESK, sectionTranslationInstance.elemID.typeName, 'instance', 'test', 'created_by_id'),
-        new ElemID(ZENDESK, sectionTranslationInstance.elemID.typeName, 'instance', 'test', 'updated_by_id'),
-      ])
+      ).toEqual(sectionTransUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[articleInstance.elemID.typeName]?.(articleInstance))
-        .toEqual(
-          [
-            new ElemID(ZENDESK, articleInstance.elemID.typeName, 'instance', 'test', 'author_id'),
-          ]
-        )
+        .toEqual(articleUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[userSegmentInstance.elemID.typeName]?.(userSegmentInstance))
-        .toEqual([
-          new ElemID(ZENDESK, userSegmentType.elemID.typeName, 'instance', 'test', 'added_user_ids'),
-        ])
+        .toEqual(userSegmentUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[triggerInstance.elemID.typeName]?.(triggerInstance))
-        .toEqual([
-          triggerInstance.elemID.createNestedID('actions', '1', 'value'),
-          triggerInstance.elemID.createNestedID('actions', '2', 'value'),
-          triggerInstance.elemID.createNestedID('actions', '3', 'value', '0'),
-          triggerInstance.elemID.createNestedID('actions', '4', 'value', '0'),
-          triggerInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
-          triggerInstance.elemID.createNestedID('conditions', 'all', '2', 'value'),
-          triggerInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
-          triggerInstance.elemID.createNestedID('conditions', 'any', '1', 'value'),
-        ])
+        .toEqual(triggerUserPaths)
       expect(
         usersUtilsModule.TYPE_NAME_TO_REPLACER[
           routingAttributeValueInstance.elemID.typeName
         ]?.(routingAttributeValueInstance)
-      ).toEqual([
-        routingAttributeValueInstance.elemID.createNestedID('conditions', 'all', '1', 'value'),
-        routingAttributeValueInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
-      ])
+      ).toEqual(routingAttUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[macroInstance.elemID.typeName]?.(macroInstance))
-        .toEqual([
-          macroInstance.elemID.createNestedID('actions', '1', 'value'),
-          macroInstance.elemID.createNestedID('actions', '2', 'value'),
-          macroInstance.elemID.createNestedID('restriction', 'id'),
-        ])
+        .toEqual(macroUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[slaPolicyInstance.elemID.typeName]?.(slaPolicyInstance))
-        .toEqual([
-          slaPolicyInstance.elemID.createNestedID('filter', 'all', '0', 'value'),
-          slaPolicyInstance.elemID.createNestedID('filter', 'all', '1', 'value'),
-          slaPolicyInstance.elemID.createNestedID('filter', 'any', '0', 'value'),
-          slaPolicyInstance.elemID.createNestedID('filter', 'any', '1', 'value'),
-        ])
+        .toEqual(slaPolicyUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[workspaceInstance.elemID.typeName]?.(workspaceInstance))
-        .toEqual([
-          workspaceInstance.elemID.createNestedID('selected_macros', '1', 'restriction', 'id'),
-        ])
+        .toEqual(workspaceUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[automationInstance.elemID.typeName]?.(automationInstance))
-        .toEqual([
-          automationInstance.elemID.createNestedID('actions', '0', 'value'),
-          automationInstance.elemID.createNestedID('actions', '1', 'value'),
-          automationInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
-          automationInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
-        ])
+        .toEqual(automationUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[viewInstance.elemID.typeName]?.(viewInstance))
-        .toEqual([
-          viewInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
-          viewInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
-          viewInstance.elemID.createNestedID('restriction', 'id'),
-        ])
+        .toEqual(viewUserPaths)
+    })
+
+    it('should replace values based on mapping', () => {
+      const usersMapping = Object.fromEntries([
+        ['1', 'a'],
+        ['2', 'b'],
+        ['3', 'c'],
+        ['4', 'd'],
+        ['5', 'e'],
+      ])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[
+        sectionTranslationInstance.elemID.typeName
+      ]?.(sectionTranslationInstance, usersMapping)
+      expect(sectionTransUserPaths.map(path => resolvePath(sectionTranslationInstance, path))).toEqual(['b', 'a'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[articleInstance.elemID.typeName]?.(articleInstance, usersMapping)
+      expect(articleUserPaths.map(path => resolvePath(articleInstance, path))).toEqual(['a'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[userSegmentInstance.elemID.typeName]?.(userSegmentInstance, usersMapping)
+      expect(userSegmentUserPaths.map(path => resolvePath(userSegmentInstance, path))).toEqual(['a'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[triggerInstance.elemID.typeName]?.(triggerInstance, usersMapping)
+      expect(triggerUserPaths.map(path => resolvePath(triggerInstance, path))).toEqual(['a', 'b', 'a', 'b', 'c', 'b', 'a', 'a'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[
+        routingAttributeValueInstance.elemID.typeName
+      ]?.(routingAttributeValueInstance, usersMapping)
+      expect(routingAttUserPaths.map(path => resolvePath(routingAttributeValueInstance, path))).toEqual(['b', 'a'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[macroInstance.elemID.typeName]?.(macroInstance, usersMapping)
+      expect(macroUserPaths.map(path => resolvePath(macroInstance, path))).toEqual(['b', 'a', 'c'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[slaPolicyInstance.elemID.typeName]?.(slaPolicyInstance, usersMapping)
+      expect(slaPolicyUserPaths.map(path => resolvePath(slaPolicyInstance, path))).toEqual(['c', 'b', 'a', 'a'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[workspaceInstance.elemID.typeName]?.(workspaceInstance, usersMapping)
+      expect(workspaceUserPaths.map(path => resolvePath(workspaceInstance, path))).toEqual(['c'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[automationInstance.elemID.typeName]?.(automationInstance, usersMapping)
+      expect(automationUserPaths.map(path => resolvePath(automationInstance, path))).toEqual(['current_user', 'a', 'a', '10'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[viewInstance.elemID.typeName]?.(viewInstance, usersMapping)
+      expect(viewUserPaths.map(path => resolvePath(viewInstance, path))).toEqual(['a', '10', 'c'])
     })
   })
 })

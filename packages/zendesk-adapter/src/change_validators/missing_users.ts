@@ -62,7 +62,7 @@ export const missingUsersValidator: (client: ZendeskClient) =>
 
     return relevantInstances
       .flatMap(instance => {
-        const missingUsers = getMissingUsers(instance, users)
+        const missingUsers = _.uniq(getMissingUsers(instance, users))
         if (_.isEmpty(missingUsers)) {
           return []
         }

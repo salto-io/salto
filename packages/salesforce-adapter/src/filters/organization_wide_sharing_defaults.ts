@@ -65,7 +65,7 @@ const ORGANIZATION_OBJECT_TYPE = new ObjectType({
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
     const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])
-    if (queryResult.length > 1) {
+    if (queryResult.length !== 1) {
       log.warn(`Expected Organization object to be a singleton. Got ${queryResult.length} elements`)
       return
     }

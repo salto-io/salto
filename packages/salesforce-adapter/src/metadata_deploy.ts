@@ -360,6 +360,11 @@ export const quickDeploy = async (
   const deployRes = await client.quickDeploy(quickDeployParams.requestId)
   log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
 
+  // we are not expecting any deploy error after a successful validation
+  if (!_.isEmpty(makeArray(deployRes.details)
+    .flatMap(detail => makeArray(detail.componentFailures)))) {
+    log.error('There were unexpected component failures in the quick deploy, id: %s', quickDeployParams.requestId)
+  }
   const deploymentUrl = await getDeployStatusUrl(deployRes, client)
   return {
     appliedChanges: validChanges,

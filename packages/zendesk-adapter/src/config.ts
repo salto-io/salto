@@ -832,7 +832,17 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        {
+          fieldName: 'value',
+          fieldType: 'string',
+          restrictions: {
+            enforce_value: true,
+            regex: '^[^&%$#@\\! \\{\\}\\[\\]=\\+\\(\\)\\*\\?<>,"\'`;\\\\]+$',
+          },
+        },
+      ],
     },
   },
   user_field: {

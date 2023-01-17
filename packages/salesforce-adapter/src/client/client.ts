@@ -731,6 +731,23 @@ export default class SalesforceClient {
     return deployResult
   }
 
+  /**
+   * preform quick deploy to salesforce metadata
+   * @param validationId The package zip
+   * @returns The save result of the requested update
+   */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
+  @logDecorator()
+  @requiresLogin()
+  public async quickDeploy(validationId: string): Promise<DeployResult> {
+    this.setDeployPollingTimeout()
+    const deployResult = flatValues(await this.conn.metadata.deployRecentValidation(
+      validationId
+    ).complete(true))
+    this.setFetchPollingTimeout()
+    return deployResult
+  }
+
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()

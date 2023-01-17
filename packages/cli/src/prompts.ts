@@ -381,4 +381,11 @@ ${Prompts.LIST_IDS(ids)}
 
   public static readonly FETCH_PROGRESSING_MESSAGES =
     (adapterName: string, progressMessage: string): string => `- ${adapterName} adapter: ${progressMessage}`
+
+  public static readonly VALIDATION_PARAMETERS = 'Validation parameters: '
+
+  public static readonly QUICK_DEPLOY_PARAMETERS = (requestId: string, hash: string): string => `requestId = ${requestId}, hash = ${hash}\n`
+
+  public static readonly DEPLOYMENT_URLS = (checkOnly: boolean, deploymentUrls: string[]): string =>
+    `You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`
 }

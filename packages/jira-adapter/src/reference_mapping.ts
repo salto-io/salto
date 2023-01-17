@@ -568,6 +568,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
+  {
+    src: { field: 'roleIds', parentTypes: ['UserFilter'] },
+    serializationStrategy: 'id',
+    target: { type: 'ProjectRole' },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

@@ -17,7 +17,7 @@ import {
   Change, ChangeDataType, ChangeError, getChangeData, SeverityLevel,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { findDependingElementsFromRefs } from '../reference_dependencies'
+import { findDependingElementsFromRefs, getRequiredReferencedElements } from '../reference_dependencies'
 
 const { awu } = collections.asynciterable
 
@@ -27,6 +27,9 @@ export const validateDependsOnInvalidElement = async (
   inputInvalidElementIds: readonly string[],
   changes: ReadonlyArray<Change>,
 ): Promise<ReadonlyArray<ChangeError>> => {
+  const additionalElemIds = new Set(changes
+    .filter(change => change.action === 'add')
+    .map(change => getChangeData(change).elemID.getFullName()))
   const elemValidity = new Map<string, ValidityStatus>(
     inputInvalidElementIds.map(id => [id, 'invalid'])
   )
@@ -38,7 +41,13 @@ export const validateDependsOnInvalidElement = async (
     }
     // Mark validity unknown to avoid reference loops
     elemValidity.set(element.elemID.getFullName(), 'unknown')
-    const elemIsInvalid = await awu((await findDependingElementsFromRefs(element)))
+
+    const requiredReferences = (await findDependingElementsFromRefs(element))
+      // only additional changes considers required references
+      .filter(refElem => additionalElemIds.has(refElem.elemID.getFullName()))
+      // also references to required elements
+      .concat(await getRequiredReferencedElements([element]))
+    const elemIsInvalid = await awu(requiredReferences)
       .some(isInvalid)
     // Remember final validity decision to avoid checking this instance again
     elemValidity.set(element.elemID.getFullName(), elemIsInvalid ? 'invalid' : 'valid')

@@ -27,6 +27,8 @@ export type ReverseRecord<T extends Record<keyof T, keyof never>> = {
   }[keyof T]
 }
 
+export type NonEmptyArray<T> = [T, ...T[]]
+
 export const hasMember = <T, M extends keyof T>(
   m: M,
   o: T,
@@ -90,6 +92,10 @@ export const isArrayOfType = <T>(
 ): array is T[] => (
     array.every(typeGuard)
   )
+
+export const isNonEmptyArray = <T> (array: T[]): array is NonEmptyArray<T> => (
+  array.length > 0
+)
 
 export type AllowOnly<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 export type OneOf<T, K = keyof T> = K extends keyof T ? AllowOnly<T, K> : never

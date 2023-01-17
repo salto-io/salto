@@ -99,14 +99,16 @@ const registerCommand = <T>(
   cliArgs: CliArgs,
 ): void => {
   const {
-    properties: { name, description, keyedOptions = [], positionalOptions = [] },
+    properties: { name, description, summary, keyedOptions = [], positionalOptions = [] },
     action,
   } = commandDef
   const command = new commander.Command()
     .command(`${name} ${positionalOptionsStr(positionalOptions)}`)
     .exitOverride()
   command.description(description)
-  if (description.includes('\n')) {
+  if (summary) {
+    command.summary(summary)
+  } else if (description.includes('\n')) {
     command.summary(description.split('\n')[0])
   }
   positionalOptions.forEach(positionalOption =>

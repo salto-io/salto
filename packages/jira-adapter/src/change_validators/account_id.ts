@@ -110,6 +110,7 @@ const checkAndAddChangeErrors = (
     }))
     return
   }
+  // in DC we don't save User's displayName
   if (isDataCenter) {
     return
   }

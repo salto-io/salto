@@ -144,9 +144,15 @@ const replaceRestriction: UserReplacer = (instance, mapping) => {
 
 const workspaceReplacer: UserReplacer = (instance, mapping) => {
   const selectedMacros = instance.value.selected_macros
+<<<<<<< Updated upstream
   return (selectedMacros ?? []).flatMap((macro: Values) => {
     const relativePath = replaceRestrictionImpl(macro, mapping)
     return _.isEmpty(relativePath) ? [] : [instance.elemID.createNestedID(...relativePath)]
+=======
+  return (selectedMacros ?? []).flatMap((macro: Values, index: number) => {
+    const relativePath = replaceRestrictionImpl(macro, mapping)
+    return _.isEmpty(relativePath) ? [] : [instance.elemID.createNestedID('selected_macros', index.toString(), ...relativePath)]
+>>>>>>> Stashed changes
   })
 }
 

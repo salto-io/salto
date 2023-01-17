@@ -24,6 +24,8 @@ import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { DAG } from '@salto-io/dag'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
@@ -45,6 +47,8 @@ import {
 
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
+const { awu } = collections.asynciterable
+
 
 export const UNSORTED = 'unsorted'
 export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
@@ -206,6 +210,7 @@ const pathForOtherLevels = ({
 }
 
 const getId = (instance: InstanceElement): number => instance.value.id
+const getElemName = (instance: InstanceElement): string => instance.elemID.getFullName()
 
 
 const getFullName = (instance: InstanceElement): string =>
@@ -225,6 +230,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => PARENTS.includes(instance.elemID.typeName))
       .filter(parent => getId(parent) !== undefined)
     const parentsById = _.keyBy(parents, getId)
+    const parentByName = _.keyBy(parents, getElemName)
     const nameByIdParents = _.mapValues(_.keyBy(parents, getFullName), getId)
 
     const brands = elements
@@ -273,8 +279,27 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    // sections under section
+    const sectionParentNames = new Set(sectionParent.map(section => section.elemID.getFullName()))
+
+    // sort sections by dependencies
+    const graph = new DAG<InstanceElement>()
     sectionParent
+      .forEach(section => {
+        graph.addNode(
+          section.elemID.getFullName(),
+          (section.value.direct_parent_id !== undefined)
+            ? [section.value.direct_parent_id.elemID.getFullName()]
+            : [],
+          section,
+        )
+      })
+    const sortedSections = await awu(graph.evaluationOrder())
+      .map(name => parentByName[name])
+      .filter(section => sectionParentNames.has(section.elemID.getFullName())) // as the graph also adds the parents
+      .toArray()
+
+    // sections under section
+    sortedSections
       .forEach(instance => {
         const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
         const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined

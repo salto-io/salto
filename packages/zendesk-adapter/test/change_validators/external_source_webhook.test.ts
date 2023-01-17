@@ -72,19 +72,7 @@ describe('Webhooks with external_source', () => {
         elemID: webhook.elemID,
         severity: 'Error',
         message: 'Illegal webhook modification',
-        detailedMessage: 'Cannot modify \'external_source\' or \'signing_secret\' fields of a webhook',
-      }])
-    })
-    it('modification of signing_secret', async () => {
-      const changedWebhook = webhook.clone()
-      changedWebhook.value.signing_secret = 'changed'
-      const errors = await externalSourceWebhook([toChange({ before: webhook, after: changedWebhook })])
-
-      expect(errors).toMatchObject([{
-        elemID: webhook.elemID,
-        severity: 'Error',
-        message: 'Illegal webhook modification',
-        detailedMessage: 'Cannot modify \'external_source\' or \'signing_secret\' fields of a webhook',
+        detailedMessage: 'Cannot modify \'external_source\' field of a webhook',
       }])
     })
     it('deactivation of the webhook', async () => {

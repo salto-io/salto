@@ -42,7 +42,7 @@ const createExternalSourceChangeError = (webhook: InstanceElement): ChangeError 
   elemID: webhook.elemID,
   severity: 'Error',
   message: 'Illegal webhook modification',
-  detailedMessage: 'Cannot modify \'external_source\' or \'signing_secret\' fields of a webhook',
+  detailedMessage: 'Cannot modify \'external_source\' field of a webhook',
 })
 
 const handleModificationChanges = (changes: ModificationChange<InstanceElement>[]): ChangeError[] => {
@@ -51,8 +51,7 @@ const handleModificationChanges = (changes: ModificationChange<InstanceElement>[
     const detailedChanges = detailedCompare(change.data.before, change.data.after)
 
     // It's impossible to change some fields of a webhook using Zendesk's api
-    if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')
-        || detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'signing_secret')) {
+    if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')) {
       errors.push(createExternalSourceChangeError(change.data.after))
     }
 

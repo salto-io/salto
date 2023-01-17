@@ -181,8 +181,8 @@ export type Workspace = {
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: () => Promise<ReadOnlyRemoteMap<ElemID[]>>
   getReferenceTargetsIndex: () =>Promise<ReadOnlyRemoteMap<ElemID[]>>
-  getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
-  getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
+  getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
+  getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
   getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
@@ -1103,18 +1103,18 @@ export const loadWorkspace = async (
       .states[currentEnv()].referenceSources,
     getReferenceTargetsIndex: async () => (await getWorkspaceState())
       .states[currentEnv()].referenceTargets,
-    getElementOutgoingReferences: async id => {
+    getElementOutgoingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
       }
-      return await (await getWorkspaceState()).states[currentEnv()]
+      return await (await getWorkspaceState()).states[envName]
         .referenceTargets.get(id.getFullName()) ?? []
     },
-    getElementIncomingReferences: async id => {
+    getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
       }
-      return await (await getWorkspaceState()).states[currentEnv()]
+      return await (await getWorkspaceState()).states[envName]
         .referenceSources.get(id.getFullName()) ?? []
     },
     getAllChangedByAuthors,

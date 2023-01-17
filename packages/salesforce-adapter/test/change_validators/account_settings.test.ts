@@ -14,70 +14,61 @@
 * limitations under the License.
 */
 
-import { toChange } from '@salto-io/adapter-api'
-import * as filterUtilsModule from '../../src/filters/utils'
-import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { ElemID, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import { SALESFORCE } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import changeValidatorCreator from '../../src/change_validators/account_settings'
-import mockAdapter from '../adapter'
+import { ORGANIZATION_OBJECT_TYPE } from '../../src/transformers/salesforce_types'
 
-jest.mock('../../src/filters/utils', () => ({
-  ...jest.requireActual('../../src/filters/utils'),
-  queryClient: jest.fn(),
-}))
-
-const mockedFilterUtils = jest.mocked(filterUtilsModule)
-
-const setMockQueryResult = (defaultAccountAccess: string): void => {
-  mockedFilterUtils.queryClient.mockResolvedValue([{
-    [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
-    DefaultAccountAccess: defaultAccountAccess,
-  }])
+const mockElementsSource = (defaultAccountAccess: string): ReadOnlyElementsSource => {
+  const element = createInstanceElement(
+    {
+      fullName: new ElemID(SALESFORCE, 'Organization', 'instance').getFullName(),
+      defaultAccountAccess,
+    },
+    ORGANIZATION_OBJECT_TYPE
+  )
+  return buildElementsSourceFromElements([element])
 }
 
 describe('Account settings validator', () => {
   const instanceBefore = createInstanceElement({ fullName: 'whatever' }, mockTypes.AccountSettings)
-  const { client } = mockAdapter({})
-  const changeValidator = changeValidatorCreator(client)
+  const changeValidator = changeValidatorCreator()
 
   describe('When the global setting is \'Private\'', () => {
-    beforeEach(() => {
-      setMockQueryResult('Read')
-    })
-
+    const elementsSource = mockElementsSource('Read')
     it('Should pass validation if enableAccountOwnerReport exists', async () => {
       const instanceAfter = instanceBefore.clone()
       instanceAfter.value.enableAccountOwnerReport = true
       const change = toChange({ before: instanceBefore, after: instanceAfter })
-      const errors = await changeValidator([change])
+      const errors = await changeValidator([change], elementsSource)
       expect(errors).toBeEmpty()
     })
     it('Should pass validation if enableAccountOwnerReport does not exist', async () => {
       const instanceAfter = instanceBefore.clone()
       const change = toChange({ before: instanceBefore, after: instanceAfter })
-      const errors = await changeValidator([change])
+      const errors = await changeValidator([change], elementsSource)
       expect(errors).toBeEmpty()
     })
   })
 
   describe('When the global setting is not \'Private\'', () => {
-    beforeEach(() => {
-      setMockQueryResult('Edit')
-    })
+    const elementsSource = mockElementsSource('Edit')
 
     it('Should fail validation if enableAccountOwnerReport exists', async () => {
       const instanceAfter = instanceBefore.clone()
       instanceAfter.value.enableAccountOwnerReport = true
       const change = toChange({ before: instanceBefore, after: instanceAfter })
-      const errors = await changeValidator([change])
+      const errors = await changeValidator([change], elementsSource)
       expect(errors).toHaveLength(1)
       expect(errors).toIncludeAllPartialMembers([{ elemID: instanceBefore.elemID }])
     })
     it('Should pass validation if enableAccountOwnerReport does not exist', async () => {
       const instanceAfter = instanceBefore.clone()
       const change = toChange({ before: instanceBefore, after: instanceAfter })
-      const errors = await changeValidator([change])
+      const errors = await changeValidator([change], elementsSource)
       expect(errors).toBeEmpty()
     })
   })

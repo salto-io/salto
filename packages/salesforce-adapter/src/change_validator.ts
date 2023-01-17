@@ -73,7 +73,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
-  accountSettings: { creator: (_config, _isSandbox, client) => accountSettings(client), ...defaultAlwaysRun },
+  accountSettings: { creator: accountSettings, ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

@@ -197,3 +197,42 @@ export const allMissingSubTypes = [
   lightningComponentBundleSupportedFormFactorsType,
   lightningComponentBundleSupportedFormFactorType,
 ]
+
+export const ORGANIZATION_OBJECT_TYPE = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'Organization'),
+  fields: {
+    fullName: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultAccountAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultCalendarAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultCampaignAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultCaseAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultContactAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultLeadAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultOpportunityAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+    DefaultPricebookAccess: {
+      refType: BuiltinTypes.STRING,
+    },
+  },
+  annotations: {
+    // [CORE_ANNOTATIONS.HIDDEN]: true,
+    [CORE_ANNOTATIONS.UPDATABLE]: false,
+  },
+  isSettings: true,
+  path: [...subTypesPath, 'Organization'],
+})

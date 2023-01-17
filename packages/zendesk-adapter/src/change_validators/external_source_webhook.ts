@@ -18,11 +18,22 @@ import {
   ChangeValidator,
   getChangeData, InstanceElement,
   isAdditionChange,
-  isInstanceChange, isModificationChange,
-  isRemovalChange, ModificationChange,
+  isInstanceChange, isModificationChange, isReferenceExpression,
+  isRemovalChange, ModificationChange, ReferenceExpression, Value,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { WEBHOOK_TYPE_NAME } from '../constants'
+
+
+type ExternalSourceWithApp = {
+    data: {
+      // eslint-disable-next-line camelcase
+        installation_id: ReferenceExpression
+    }
+}
+
+const isExternalSourceWithApp = (externalSource: Value): externalSource is ExternalSourceWithApp =>
+  isReferenceExpression(externalSource.data?.installation_id)
 
 const createExternalSourceWebhookChangeWarning = (webhook: InstanceElement): ChangeError => ({
   elemID: webhook.elemID,
@@ -50,7 +61,7 @@ const handleModificationChanges = (changes: ModificationChange<InstanceElement>[
   changes.forEach(change => {
     const detailedChanges = detailedCompare(change.data.before, change.data.after)
 
-    // It's impossible to change some fields of a webhook using Zendesk's api
+    // It's impossible to change external_source field in a webhook using Zendesk's api
     if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')) {
       errors.push(createExternalSourceChangeError(change.data.after))
     }
@@ -60,9 +71,9 @@ const handleModificationChanges = (changes: ModificationChange<InstanceElement>[
       errors.push(createDeactivationWarning(change.data.after))
     }
 
-    // Filter all the changes we already handled, if there are ny other - we have a different warning for them
+    // Filter all the changes we already handled, if there are any other - we have a different warning for them
     const otherChanges = detailedChanges.filter(detailedChange =>
-      ['external_source', 'signing_secret', 'status'].every(field => !detailedChange.id.createTopLevelParentID().path.includes(field)))
+      ['external_source', 'status'].every(field => !detailedChange.id.createTopLevelParentID().path[0].includes(field)))
     if (otherChanges.length > 0) {
       errors.push(createExternalSourceWebhookChangeWarning(change.data.after))
     }
@@ -70,10 +81,18 @@ const handleModificationChanges = (changes: ModificationChange<InstanceElement>[
   return errors
 }
 
+const getAppName = (webhook: InstanceElement): string | undefined => {
+  const externalSource = webhook.value.external_source
+  // If the external_source contains an installation_id, we can get the app name from it
+  return isExternalSourceWithApp(externalSource)
+    ? externalSource.data.installation_id.elemID.name
+    : undefined
+}
+
 const createAdditionError = (webhooks: InstanceElement[]): ChangeError[] =>
   webhooks.map(webhook => {
     // If we know the app that installed the webhook, we can give a more specific error message
-    const appName = webhook.value.external_source.data.installation_id?.elemID?.name
+    const appName = getAppName(webhook)
     const appNameMessage = appName ? ` '${appName}'` : ''
     return {
       elemID: webhook.elemID,
@@ -86,7 +105,7 @@ const createAdditionError = (webhooks: InstanceElement[]): ChangeError[] =>
 const createRemovalErrorMessage = (webhooks: InstanceElement[]): ChangeError[] =>
   webhooks.map(webhook => {
     // If we know the app that installed the webhook, we can give a more specific error message
-    const appName = webhook.value.external_source.data.installation_id?.elemID?.name
+    const appName = getAppName(webhook)
     const appNameMessage = appName ? ` '${appName}'` : ''
     return {
       elemID: webhook.elemID,
@@ -100,7 +119,7 @@ const createRemovalErrorMessage = (webhooks: InstanceElement[]): ChangeError[] =
  * Validated everything related to webhooks that were installed by an external app
  *  * They can't be created
  *  * They can't be removed
- *  * external_source and signing_secret fields can't be changed
+ *  * external_source field can't be changed
  *  * If they are deactivated, a warning is added
  *  * If they are modified, a warning is added
  */

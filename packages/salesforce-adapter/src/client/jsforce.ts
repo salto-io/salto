@@ -113,14 +113,17 @@ export interface CodeCoverageWarning {
 }
 
 export interface genericErrorMessage {
+  id: string
   message: string
+  name?: string
+  namespace?: string
 }
 
 export interface RunTestsResult {
   apexLogId?: string
   codeCoverage?: ArrayOrSingle<object> // CodeCoverageResult[]
   codeCoverageWarnings?: ArrayOrSingle<CodeCoverageWarning>
-  errorMessage: ArrayOrSingle<genericErrorMessage>
+  errorMessage?: ArrayOrSingle<genericErrorMessage>
   failures?: ArrayOrSingle<RunTestFailure>
   flowCoverage?: ArrayOrSingle<object> // FlowCoverageResult[]
   flowCoverageWarnings?: ArrayOrSingle<object> // FlowCoverageWarning[]

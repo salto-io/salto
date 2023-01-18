@@ -1050,6 +1050,7 @@ describe('SalesforceAdapter CRUD', () => {
             }],
             runTestResult: {
               errorMessage: [{
+                id: '1',
                 message: 'UNKNOWN_EXCEPTION: An unexpected error occurred',
               }],
             },
@@ -1064,7 +1065,6 @@ describe('SalesforceAdapter CRUD', () => {
         it('should produce a deploy error', () => {
           expect(result.errors).toHaveLength(1)
         })
-
       })
 
       describe('when the request fails because fullNames are not the same', () => {

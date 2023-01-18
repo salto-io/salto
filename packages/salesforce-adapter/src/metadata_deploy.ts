@@ -195,17 +195,14 @@ const processDeployResponse = (
     .map(failure => new Error(
       `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
-
-  const runTestResultMap = makeArray(result.details)
+  const codeCoverageWarningErrors = makeArray(result.details)
     .map(detail => detail.runTestResult as RunTestsResult | undefined)
-  const codeCoverageWarningErrors = runTestResultMap
     .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))
     .map(codeCoverageWarning => codeCoverageWarning.message)
     .map(message => new Error(message))
-  const genericErrorMessage = runTestResultMap
-    .flatMap(runTestResult => makeArray(runTestResult?.errorMessage))
-    .map(errorMessage => errorMessage.message)
-    .map(message => new Error(message))
+
+  const genericErrorMessage = makeArray(result.errorMessage)
+    .map(message => Error(message))
 
   const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors, ...genericErrorMessage]
 

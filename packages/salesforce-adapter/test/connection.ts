@@ -164,10 +164,12 @@ type GetDeployResultParams = {
   checkOnly?: boolean
   testCompleted?: number
   testErrors?: number
+  errorMessage?: string
 }
 export const mockDeployResultComplete = ({
   id = _.uniqueId(),
   success = true,
+  errorMessage,
   componentSuccess = [],
   componentFailure = [],
   runTestResult = undefined,
@@ -199,6 +201,7 @@ export const mockDeployResultComplete = ({
   startDate: '2020-05-01T14:21:36.000Z',
   status: success ? 'Succeeded' : 'Failed',
   success,
+  errorMessage,
 })
 
 export const mockDeployResult = (

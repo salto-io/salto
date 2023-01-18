@@ -1044,16 +1044,11 @@ describe('SalesforceAdapter CRUD', () => {
           connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             id: 'DeploymentWithErrorMessageErrors',
             success: false,
+            errorMessage: 'UNKNOWN_EXCEPTION: An unexpected error occurred',
             componentSuccess: [{
               fullName: mockDefaultValues.Profile.fullName,
               componentType: constants.PROFILE_METADATA_TYPE,
             }],
-            runTestResult: {
-              errorMessage: [{
-                id: '1',
-                message: 'UNKNOWN_EXCEPTION: An unexpected error occurred',
-              }],
-            },
           }))
           result = await adapter.deploy({
             changeGroup: {

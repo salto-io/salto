@@ -210,11 +210,7 @@ const pathForOtherLevels = ({
 }
 
 const getId = (instance: InstanceElement): number => instance.value.id
-const getElemName = (instance: InstanceElement): string => instance.elemID.getFullName()
-
-
-const getFullName = (instance: InstanceElement): string =>
-  instance.elemID.getFullName()
+const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
 
 /**
  * This filter arranges the paths for guide elements.
@@ -230,7 +226,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => PARENTS.includes(instance.elemID.typeName))
       .filter(parent => getId(parent) !== undefined)
     const parentsById = _.keyBy(parents, getId)
-    const parentByName = _.keyBy(parents, getElemName)
+    const instanceByName = _.keyBy(parents, getFullName)
     const nameByIdParents = _.mapValues(_.keyBy(parents, getFullName), getId)
 
     const brands = elements
@@ -263,11 +259,11 @@ const filterCreator: FilterCreator = () => ({
       })
 
     // sections under category
-    const [categoryParent, sectionParent] = _.partition(
+    const [sectionWithCategoryParent, sectionsWithSectionParent] = _.partition(
       guideGrouped[SECTION_TYPE_NAME] ?? [],
       inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME
     )
-    categoryParent
+    sectionWithCategoryParent
       .forEach(instance => {
         const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
         const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
@@ -279,23 +275,23 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    const sectionParentNames = new Set(sectionParent.map(section => section.elemID.getFullName()))
+    const sectionsWithSectionParentNames = new Set(sectionsWithSectionParent
+      .map(section => section.elemID.getFullName()))
 
     // sort sections by dependencies
     const graph = new DAG<InstanceElement>()
-    sectionParent
+    sectionsWithSectionParent
       .forEach(section => {
         graph.addNode(
           section.elemID.getFullName(),
-          (section.value.direct_parent_id !== undefined)
+          (sectionsWithSectionParentNames.has(section.value.direct_parent_id?.elemID.getFullName()))
             ? [section.value.direct_parent_id.elemID.getFullName()]
             : [],
           section,
         )
       })
     const sortedSections = await awu(graph.evaluationOrder())
-      .map(name => parentByName[name])
-      .filter(section => sectionParentNames.has(section.elemID.getFullName())) // as the graph also adds the parents
+      .map(name => instanceByName[name])
       .toArray()
 
     // sections under section

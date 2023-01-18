@@ -748,5 +748,24 @@ describe('securitySchemeFilter', () => {
       expect(appliedChanges.length).toEqual(0)
       expect(leftoverChanges.length).toEqual(0)
     })
+    it('Should not throw when delete request fail and the instance is already deleted', async () => {
+      connection.delete.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {},
+      }))
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy(
+        [toChange({ before: securityLevelInstance })]
+      )
+      expect(errors).toHaveLength(0)
+      expect(appliedChanges).toHaveLength(1)
+    })
+    it('Should throw when the request fail with 500', async () => {
+      connection.delete.mockRejectedValueOnce(new Error('Name already exists'))
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy(
+        [toChange({ before: securityLevelInstance })]
+      )
+      expect(errors).toHaveLength(1)
+      expect(appliedChanges).toHaveLength(0)
+    })
   })
 })

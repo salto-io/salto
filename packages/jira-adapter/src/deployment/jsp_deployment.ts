@@ -78,7 +78,13 @@ const deployChange = async (
         },
       })
     } catch (err) {
-      log.debug(`Received error ${err.message} for ${instance.elemID.getFullName()}. Could be because the element is already removed`)
+      if (err instanceof clientUtils.HTTPError
+        && err.response.status === 404
+        && isRemovalChange(change)) {
+        log.debug(`Received error ${err.message} for ${instance.elemID.getFullName()}. The element is already removed`)
+        return
+      }
+      throw err
     }
   }
 }

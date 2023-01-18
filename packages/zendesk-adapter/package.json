@@ -34,6 +34,7 @@
     "@salto-io/adapter-api": "0.3.29",
     "@salto-io/adapter-components": "0.3.29",
     "@salto-io/adapter-utils": "0.3.29",
+    "@salto-io/dag": "0.3.29",
     "@salto-io/logging": "0.3.29",
     "@salto-io/lowerdash": "0.3.29",
     "form-data": "^4.0.0",

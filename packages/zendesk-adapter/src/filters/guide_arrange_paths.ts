@@ -24,6 +24,8 @@ import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { DAG } from '@salto-io/dag'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
@@ -45,6 +47,8 @@ import {
 
 const { RECORDS_PATH } = elementsUtils
 const log = logger(module)
+const { awu } = collections.asynciterable
+
 
 export const UNSORTED = 'unsorted'
 export const GUIDE_PATH = [ZENDESK, RECORDS_PATH, GUIDE]
@@ -206,10 +210,7 @@ const pathForOtherLevels = ({
 }
 
 const getId = (instance: InstanceElement): number => instance.value.id
-
-
-const getFullName = (instance: InstanceElement): string =>
-  instance.elemID.getFullName()
+const getFullName = (instance: InstanceElement): string => instance.elemID.getFullName()
 
 /**
  * This filter arranges the paths for guide elements.
@@ -225,6 +226,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(instance => PARENTS.includes(instance.elemID.typeName))
       .filter(parent => getId(parent) !== undefined)
     const parentsById = _.keyBy(parents, getId)
+    const instanceByName = _.keyBy(parents, getFullName)
     const nameByIdParents = _.mapValues(_.keyBy(parents, getFullName), getId)
 
     const brands = elements
@@ -257,11 +259,11 @@ const filterCreator: FilterCreator = () => ({
       })
 
     // sections under category
-    const [categoryParent, sectionParent] = _.partition(
+    const [sectionWithCategoryParent, sectionsWithSectionParent] = _.partition(
       guideGrouped[SECTION_TYPE_NAME] ?? [],
       inst => inst.value.direct_parent_type === CATEGORY_TYPE_NAME
     )
-    categoryParent
+    sectionWithCategoryParent
       .forEach(instance => {
         const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
         const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined
@@ -273,8 +275,27 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
+    const sectionsWithSectionParentNames = new Set(sectionsWithSectionParent
+      .map(section => section.elemID.getFullName()))
+
+    // sort sections by dependencies
+    const graph = new DAG<InstanceElement>()
+    sectionsWithSectionParent
+      .forEach(section => {
+        graph.addNode(
+          section.elemID.getFullName(),
+          (sectionsWithSectionParentNames.has(section.value.direct_parent_id?.elemID.getFullName()))
+            ? [section.value.direct_parent_id.elemID.getFullName()]
+            : [],
+          section,
+        )
+      })
+    const sortedSections = await awu(graph.evaluationOrder())
+      .map(name => instanceByName[name])
+      .toArray()
+
     // sections under section
-    sectionParent
+    sortedSections
       .forEach(instance => {
         const nameLookup = instance.value.direct_parent_id?.elemID.getFullName()
         const parent = nameLookup ? parentsById[nameByIdParents[nameLookup]] : undefined

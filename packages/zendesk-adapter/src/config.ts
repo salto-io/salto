@@ -839,6 +839,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
           fieldType: 'string',
           restrictions: {
             enforce_value: true,
+            // this regex will not allow the following characters to be in the string:
+            // & % $ # @ ! { } [ ] = + ( ) * ? < > , " ' ` ; \
             regex: '^[^&%$#@\\! \\{\\}\\[\\]=\\+\\(\\)\\*\\?<>,"\'`;\\\\]+$',
           },
         },

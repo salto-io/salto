@@ -95,7 +95,6 @@ import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
-import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
@@ -179,7 +178,6 @@ export const DEFAULT_FILTERS = [
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appsFilter,
-  customFieldOptionsFilter,
   appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,

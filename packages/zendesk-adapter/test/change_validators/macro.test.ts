@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { ZENDESK } from '../../src/constants'
+import { ZENDESK, MACRO_TYPE_NAME } from '../../src/constants'
 import { maxAttachmentsInMacroValidator } from '../../src/change_validators/macro'
-import { MACRO_TYPE_NAME, MACRO_ATTACHMENT_TYPE_NAME, ATTACHMENTS_FIELD_NAME } from '../../src/filters/macro_attachments'
+import { MACRO_ATTACHMENT_TYPE_NAME, ATTACHMENTS_FIELD_NAME } from '../../src/filters/macro_attachments'
 
 describe('macro', () => {
   const attachment = new InstanceElement(

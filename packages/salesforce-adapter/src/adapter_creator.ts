@@ -86,6 +86,12 @@ SalesforceConfig => {
         }
       }
     }
+    if (clientConfig?.deploy?.quickDeployParams !== undefined) {
+      if (clientConfig.deploy.quickDeployParams.requestId === undefined
+          || clientConfig.deploy.quickDeployParams.hash === undefined) {
+        throw new ConfigValidationError([CLIENT_CONFIG, 'deploy', 'quickDeployParams'], 'quickDeployParams must include requestId and hash')
+      }
+    }
   }
 
   const validateValidatorsConfig = (validators: ChangeValidatorConfig | undefined): void => {

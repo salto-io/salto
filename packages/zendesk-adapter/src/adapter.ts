@@ -95,7 +95,6 @@ import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
-import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
@@ -179,7 +178,6 @@ export const DEFAULT_FILTERS = [
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appsFilter,
-  customFieldOptionsFilter,
   appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,
@@ -298,7 +296,7 @@ const getGuideElements = async ({
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-}): Promise<elementUtils.ducktype.FetchElements<Element[]>> => {
+}): Promise<elementUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
 
@@ -348,7 +346,8 @@ const getGuideElements = async ({
     getElemIdFunc,
   })
 
-  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.configChanges)
+  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes
+    .flatMap(fetchResult => fetchResult.configChanges ?? [])
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
     elements: zendeskGuideElements,
@@ -527,8 +526,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
 
     return {
-      configChanges: defaultSubdomainElements.configChanges
-        .concat(zendeskGuideElements.configChanges),
+      configChanges: (defaultSubdomainElements.configChanges ?? [])
+        .concat(zendeskGuideElements.configChanges ?? []),
       elements: zendeskElements,
       errors: (defaultSubdomainElements.errors ?? [])
         .concat(zendeskGuideElements.errors ?? []),
@@ -560,7 +559,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     // This exposes different subdomain clients for Guide related types filters
     const result = await (await this.createFiltersRunner({ brandIdToClient }))
       .onFetch(elements) as FilterResult
-    const updatedConfig = this.configInstance
+    const updatedConfig = this.configInstance && configChanges
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
 

@@ -14,9 +14,22 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes,
-  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, createRefToElmWithValue, ReferenceExpression, isAdditionChange } from '@salto-io/adapter-api'
-import { detailedCompare, applyDetailedChanges } from '../src/compare'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  DetailedChange,
+  PrimitiveType,
+  BuiltinTypes,
+  PrimitiveTypes,
+  Field,
+  INSTANCE_ANNOTATIONS,
+  createRefToElmWithValue,
+  ReferenceExpression,
+  isAdditionChange,
+  toChange,
+} from '@salto-io/adapter-api'
+import { detailedCompare, applyDetailedChanges, calculateChangesHash } from '../src/compare'
 
 describe('detailedCompare', () => {
   const hasChange = (changes: DetailedChange[], action: string, id: ElemID): boolean => (
@@ -948,5 +961,40 @@ describe('applyDetailedChanges', () => {
         expect(updatedObj.annotations.val1).toEqual(afterObj.annotations.val1)
       })
     })
+  })
+})
+
+describe('calculateChangesHash', () => {
+  const HASH_VALUE = '5d3c813c4f8bbd2620139772a1b9ac05a7c5e946'
+  const instType = new ObjectType({
+    elemID: new ElemID('salto', 'obj'),
+  })
+  const instance1 = new InstanceElement(
+    'inst1',
+    instType,
+    {
+      field: 'value',
+    },
+    undefined,
+  )
+  const instance2 = new InstanceElement(
+    'inst2',
+    instType,
+    {
+      field: 'value',
+    },
+    undefined,
+  )
+  const changes = [toChange({ after: instance1 }), toChange({ before: instance2 })]
+  it('should calculate the changes hash', () => {
+    expect(calculateChangesHash(changes)).toEqual(HASH_VALUE)
+  })
+  it('should calculate same hash for the same changes in different order', () => {
+    expect(calculateChangesHash(changes)).toEqual(
+      calculateChangesHash([toChange({ before: instance2 }), toChange({ after: instance1 })])
+    )
+  })
+  it('should calculate different hash for the different changes', () => {
+    expect(calculateChangesHash(changes)).not.toEqual(calculateChangesHash([toChange({ after: instance1 })]))
   })
 })

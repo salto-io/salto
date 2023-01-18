@@ -21,7 +21,7 @@ import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, ACCOUNT_IDS_FIELDS_NAMES } from '../../../src/constants'
-import accountIdFilter, { ACCOUNT_ID_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
+import accountIdFilter, { ACCOUNT_ID_TYPES } from '../../../src/filters/account_id/account_id_filter'
 import * as common from './account_id_common'
 
 const { awu } = collections.asynciterable
@@ -41,6 +41,7 @@ describe('account_id_filter', () => {
   let filterInstance: InstanceElement
   let dashboardInstance: InstanceElement
   let boardInstance: InstanceElement
+  let fieldContextInstance: InstanceElement
 
   beforeEach(() => {
     elemIdGetter = mockFunction<ElemIdGetter>()
@@ -89,6 +90,15 @@ describe('account_id_filter', () => {
         },
       }
     )
+    fieldContextInstance = new InstanceElement(
+      'instance',
+      common.createFieldContextType(),
+      {
+        defaultValue: {
+          accountId: 'acc5',
+        },
+      }
+    )
 
     displayChanges = [
       toChange({ after: displayNamesInstances[0] }),
@@ -97,19 +107,20 @@ describe('account_id_filter', () => {
   })
   describe('fetch', () => {
     it('changes instance element structures for all 5 types', async () => {
-      await filter.onFetch([simpleInstances[1], filterInstance, dashboardInstance, boardInstance])
+      await filter.onFetch([simpleInstances[1], filterInstance, dashboardInstance, boardInstance, fieldContextInstance])
       common.checkObjectedInstanceIds(simpleInstances[1], '1')
       expect(filterInstance.value.owner.id).toEqual('acc2')
       expect(boardInstance.value.admins.users[0].id).toEqual('acc3')
       expect(boardInstance.value.admins.users[1].id).toEqual('acc31')
       expect(dashboardInstance.value.inner.owner.id).toEqual('acc4')
+      expect(fieldContextInstance.value.defaultValue.accountId.id).toEqual('acc5')
     })
     it('should change account ids in all defined types', async () => {
       await awu(ACCOUNT_ID_TYPES).forEach(async typeName => {
         const type = common.createType(typeName)
         const instance = common.createInstance('1', type)
         await filter.onFetch([instance])
-        common.checkObjectedInstanceIds(instance, '1', PARAMETER_STYLE_TYPES.includes(typeName))
+        common.checkObjectedInstanceIds(instance, '1')
       })
     })
     it('should not change account ids for undefined types', async () => {
@@ -120,7 +131,7 @@ describe('account_id_filter', () => {
     })
     it('should enhance types with relevant account ids', async () => {
       const currentObjectType = new ObjectType({
-        elemID: new ElemID(JIRA, 'test'),
+        elemID: new ElemID(JIRA, 'CustomFieldContext'),
       })
       ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
         currentObjectType.fields[fieldName] = new Field(
@@ -139,7 +150,7 @@ describe('account_id_filter', () => {
     })
     it('should not enhance types with account ids that are not part of the known types', async () => {
       const currentObjectType = new ObjectType({
-        elemID: new ElemID(JIRA, 'test'),
+        elemID: new ElemID(JIRA, 'CustomFieldContext'),
         fields: {
           fakeAccountId: { refType: BuiltinTypes.STRING },
         },

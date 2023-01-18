@@ -162,6 +162,8 @@ type GetDeployResultParams = {
   rollbackOnError?: boolean
   ignoreWarnings?: boolean
   checkOnly?: boolean
+  testCompleted?: number
+  testErrors?: number
 }
 export const mockDeployResultComplete = ({
   id = _.uniqueId(),
@@ -172,6 +174,8 @@ export const mockDeployResultComplete = ({
   ignoreWarnings = true,
   rollbackOnError = true,
   checkOnly = false,
+  testCompleted = 0,
+  testErrors = 0,
 }: GetDeployResultParams): DeployResult => ({
   id,
   checkOnly,
@@ -188,9 +192,9 @@ export const mockDeployResultComplete = ({
   numberComponentErrors: componentFailure.length,
   numberComponentsDeployed: componentSuccess.length,
   numberComponentsTotal: componentFailure.length + componentSuccess.length,
-  numberTestErrors: 0,
-  numberTestsCompleted: 0,
-  numberTestsTotal: 0,
+  numberTestErrors: testErrors,
+  numberTestsCompleted: testCompleted,
+  numberTestsTotal: testCompleted + testErrors,
   rollbackOnError,
   startDate: '2020-05-01T14:21:36.000Z',
   status: success ? 'Succeeded' : 'Failed',
@@ -415,6 +419,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     update: mockFunction<Metadata['update']>().mockResolvedValue([]),
     retrieve: mockFunction<Metadata['retrieve']>().mockReturnValue(mockRetrieveLocator({})),
     deploy: mockFunction<Metadata['deploy']>().mockReturnValue(mockDeployResult({})),
+    deployRecentValidation: mockFunction<Metadata['deployRecentValidation']>().mockReturnValue(mockDeployResult({})),
   },
   soap: {
     describeSObjects: mockFunction<Soap['describeSObjects']>().mockResolvedValue([]),

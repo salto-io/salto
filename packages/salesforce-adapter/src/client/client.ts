@@ -61,7 +61,7 @@ import {
   UsernamePasswordCredentials,
 } from '../types'
 import Connection from './jsforce'
-import { mapToUserFriendlyErrorMessages } from './decorators'
+import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
 
 const { makeArray } = collections.array
@@ -726,6 +726,23 @@ export default class SalesforceClient {
         },
       ).complete(true)
     )
+    this.setFetchPollingTimeout()
+    return deployResult
+  }
+
+  /**
+   * preform quick deploy to salesforce metadata
+   * @param validationId The package zip
+   * @returns The save result of the requested update
+   */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
+  @logDecorator()
+  @requiresLogin()
+  public async quickDeploy(validationId: string): Promise<DeployResult> {
+    this.setDeployPollingTimeout()
+    const deployResult = flatValues(await this.conn.metadata.deployRecentValidation(
+      validationId
+    ).complete(true))
     this.setFetchPollingTimeout()
     return deployResult
   }

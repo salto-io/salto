@@ -167,4 +167,106 @@ describe('PlanItem', () => {
       expect(isListType(await _.get(fromListChange.data, 'after').getType())).toBeFalsy()
     })
   })
+
+  describe('changes method', () => {
+    it('should break field modification to specific value changes', async () => {
+      const [plan, newElement] = await planWithTypeChanges()
+      const planItem = getFirstPlanItem(plan)
+      const changes = [...planItem.changes()]
+      expect(changes).toHaveLength(1)
+      const detailedChanges = changes[0].detailedChanges()
+      expect(detailedChanges).toHaveLength(2)
+
+      expect(detailedChanges[0].id).toEqual(newElement.elemID.createNestedID('attr', 'label'))
+      expect(detailedChanges[0].action).toEqual('add')
+      expect(_.get(detailedChanges[0].data, 'after')).toEqual(newElement.annotations.label)
+
+      expect(detailedChanges[1].id).toEqual(newElement.elemID.createNestedID('attr', 'new'))
+      expect(detailedChanges[1].action).toEqual('add')
+      expect(_.get(detailedChanges[1].data, 'after')).toEqual(newElement.annotations.new)
+    })
+    it('should return field changes with the correct id', async () => {
+      const [plan, newElement] = await planWithFieldChanges()
+      const planItem = getFirstPlanItem(plan)
+      const changes = [...planItem.changes()]
+      expect(changes).toHaveLength(2)
+
+      const detailedChanges1 = changes[0].detailedChanges()
+      expect(detailedChanges1).toHaveLength(1)
+      expect(detailedChanges1[0].id).toEqual(newElement.fields.new.elemID)
+      expect(detailedChanges1[0].action).toEqual('add')
+
+      const detailedChanges2 = changes[1].detailedChanges()
+      expect(detailedChanges2).toHaveLength(1)
+      expect(detailedChanges2[0].id).toEqual(newElement.fields.location.elemID.createNestedID('label'))
+      expect(detailedChanges2[0].action).toEqual('modify')
+      expect(_.get(detailedChanges2[0].data, 'after')).toEqual(newElement.fields.location.annotations.label)
+    })
+    it('should return add / remove changes at the appropriate level', async () => {
+      const [plan, newElement] = await planWithNewType()
+      const planItem = getFirstPlanItem(plan)
+      const changes = [...planItem.changes()]
+      expect(changes).toHaveLength(1)
+      const detailedChanges = changes[0].detailedChanges()
+      expect(detailedChanges).toHaveLength(1)
+      expect(detailedChanges[0].id).toEqual(newElement.elemID)
+    })
+    it('should return deep nested changes', async () => {
+      const [plan, updatedInst] = await planWithInstanceChange()
+      const planItem = getFirstPlanItem(plan)
+      const changes = [...planItem.changes()]
+      expect(changes).toHaveLength(1)
+      const detailedChanges = changes[0].detailedChanges()
+      expect(detailedChanges).toHaveLength(2)
+      const [listChange, nameRemove] = detailedChanges
+      expect(listChange.action).toEqual('modify')
+      expect(listChange.id).toEqual(updatedInst.elemID.createNestedID('nicknames', '1'))
+      expect(nameRemove.action).toEqual('remove')
+      expect(nameRemove.id).toEqual(updatedInst.elemID.createNestedID('office', 'name'))
+    })
+    it('should return list modification when a value is added', async () => {
+      const [plan, updatedInst] = await planWithListChange()
+      const planItem = getFirstPlanItem(plan)
+      const changes = [...planItem.changes()]
+      expect(changes).toHaveLength(1)
+      const detailedChanges = changes[0].detailedChanges()
+      expect(detailedChanges).toHaveLength(1)
+      const [listChange] = detailedChanges
+      expect(listChange.action).toEqual('modify')
+      expect(listChange.id).toEqual(updatedInst.elemID.createNestedID('nicknames'))
+    })
+
+    it('should return list of annotationType changes in case of annotationType change', async () => {
+      const [plan, obj] = await planWithAnnotationTypesChanges()
+      const planItem = getFirstPlanItem(plan)
+      const changes = [...planItem.changes()]
+      expect(changes).toHaveLength(1)
+      const detailedChanges = changes[0].detailedChanges()
+      expect(detailedChanges).toHaveLength(1)
+      const [annoChange] = detailedChanges
+      expect(annoChange.action).toEqual('add')
+      expect(annoChange.id).toEqual(obj.elemID.createNestedID('annotation', 'new'))
+    })
+
+    it('should return is list value modification when a field is changed to list', async () => {
+      const [plan, changedElem] = await planWithFieldIsListChanges()
+      const planItem = getFirstPlanItem(plan)
+      const changes = [...planItem.changes()]
+      expect(changes).toHaveLength(2)
+
+      const detailedChanges1 = changes[0].detailedChanges()
+      expect(detailedChanges1).toHaveLength(1)
+      const [toListChange] = detailedChanges1
+      expect(toListChange.action).toEqual('modify')
+      expect(toListChange.id).toEqual(changedElem.fields.name.elemID)
+      expect(isListType(await _.get(toListChange.data, 'after').getType())).toBeTruthy()
+
+      const detailedChanges2 = changes[1].detailedChanges()
+      expect(detailedChanges2).toHaveLength(1)
+      const [fromListChange] = detailedChanges2
+      expect(fromListChange.action).toEqual('modify')
+      expect(fromListChange.id).toEqual(changedElem.fields.rooms.elemID)
+      expect(isListType(await _.get(fromListChange.data, 'after').getType())).toBeFalsy()
+    })
+  })
 })

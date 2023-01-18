@@ -140,10 +140,10 @@ export default class ZuoraAdapter implements AdapterOperations {
       supportedTypes: { ...SUPPORTED_TYPES, [LIST_ALL_SETTINGS_TYPE]: [LIST_ALL_SETTINGS_TYPE] },
       fetchQuery: { isTypeMatch: typeName => typeName === LIST_ALL_SETTINGS_TYPE },
     })
-    if (_.isEmpty(settingsOpInfoInstances)) {
+    if (_.isEmpty(settingsOpInfoInstances.elements)) {
       throw new Error('could not find any settings definitions - remove settingsFetchTypes and fetch again')
     }
-    return generateBillingSettingsTypes(settingsOpInfoInstances, apiDefs)
+    return generateBillingSettingsTypes(settingsOpInfoInstances.elements, apiDefs)
   }
 
   @logDuration('generating type and instances for standard objects')
@@ -176,7 +176,7 @@ export default class ZuoraAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
-  ): Promise<InstanceElement[]> {
+  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     // standard objects are not included in the swagger and need special handling - done in a filter
     const standardObjectTypeName = getStandardObjectTypeName(this.apiDefinitions(parsedConfigs))
 
@@ -212,7 +212,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     }
     progressReporter.reportProgress({ message: 'Fetching instances' })
 
-    const instances = await this.getInstances(allTypes, parsedConfigs)
+    const { elements: instances } = await this.getInstances(allTypes, parsedConfigs)
     const standardObjectElements = await this.getStandardObjectElements({ allTypes, parsedConfigs })
 
     const elements = [

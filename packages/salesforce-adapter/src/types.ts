@@ -195,6 +195,11 @@ export type ClientPollingConfig = Partial<{
   fetchTimeout: number
 }>
 
+export type QuickDeployParams = {
+  requestId: string
+  hash: string
+}
+
 type ClientDeployConfig = Partial<{
   rollbackOnError: boolean
   ignoreWarnings: boolean
@@ -203,6 +208,7 @@ type ClientDeployConfig = Partial<{
   testLevel: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg'
   runTests: string[]
   deleteBeforeUpdate: boolean
+  quickDeployParams: QuickDeployParams
 }>
 
 export enum RetryStrategyName {
@@ -413,6 +419,17 @@ const clientPollingConfigType = new ObjectType({
   },
 })
 
+const QuickDeployParamsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'quickDeployParams'),
+  fields: {
+    requestId: { refType: BuiltinTypes.STRING },
+    hash: { refType: BuiltinTypes.STRING },
+  } as Record<keyof QuickDeployParams, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const clientDeployConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientDeployConfig'),
   fields: {
@@ -430,6 +447,7 @@ const clientDeployConfigType = new ObjectType({
     },
     runTests: { refType: new ListType(BuiltinTypes.STRING) },
     deleteBeforeUpdate: { refType: BuiltinTypes.BOOLEAN },
+    quickDeployParams: { refType: QuickDeployParamsType },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

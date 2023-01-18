@@ -16,21 +16,21 @@
 import _ from 'lodash'
 import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
-  isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter,
+  isListType, isMapType, TypeElement, PrimitiveType, MapType, ElemIdGetter, SaltoError,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
 import { InstanceCreationParams, shouldRecurseIntoEntry, toBasicInstance } from '../instance_elements'
-import { UnauthorizedError, Paginator, PageEntriesExtractor } from '../../client'
+import { UnauthorizedError, Paginator, PageEntriesExtractor, HTTPError } from '../../client'
 import {
   TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, getTransformationConfigByType,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
-import { getElementsWithContext } from '../element_getter'
+import { FetchElements, getElementsWithContext } from '../element_getter'
 import { TimeoutError } from '../../client/http_client'
 import { ElementQuery } from '../query'
 
@@ -38,6 +38,7 @@ const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
 const { isPlainRecord } = lowerdashValues
 const log = logger(module)
+
 
 class InvalidTypeConfig extends Error {}
 
@@ -447,7 +448,8 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
     log.warn(`Could not fetch ${typeName}: ${e}. %s`, e.stack)
     if (e instanceof UnauthorizedError
       || e instanceof InvalidTypeConfig
-      || e instanceof TimeoutError) {
+      || e instanceof TimeoutError
+      || (e instanceof HTTPError && e.response.status === 403)) {
       throw e
     }
     return []
@@ -475,7 +477,7 @@ export const getAllInstances = async ({
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
   getElemIdFunc?: ElemIdGetter
-}): Promise<InstanceElement[]> => {
+}): Promise<FetchElements<InstanceElement[]>> => {
   const { types, typeDefaults } = apiConfig
 
   const elementGenerationParams = {
@@ -488,13 +490,26 @@ export const getAllInstances = async ({
     getElemIdFunc,
   }
 
-  return getElementsWithContext({
+  return getElementsWithContext<InstanceElement>({
     fetchQuery,
     types: apiConfig.types,
     supportedTypes,
-    typeElementGetter: args => getInstancesForType({
-      ...elementGenerationParams,
-      ...args,
-    }),
+    typeElementGetter: async args => {
+      try {
+        return {
+          elements: (await getInstancesForType({ ...elementGenerationParams, ...args })),
+          errors: [],
+        }
+      } catch (e) {
+        if (e.response?.status === 403) {
+          const newError: SaltoError = {
+            message: `Salto was forbidden from accessing the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access`,
+            severity: 'Warning',
+          }
+          return { elements: [], errors: [newError] }
+        }
+        throw e
+      }
+    },
   })
 }

@@ -24,7 +24,9 @@ export const createAutomationValues = (name: string): Values => ({
   authorAccountId: {
     id: 'salto',
   },
-  actorAccountId: 'JIRAUSER10000',
+  actorAccountId: {
+    id: 'salto',
+  },
   trigger: {
     component: 'TRIGGER',
     schemaVersion: 1,

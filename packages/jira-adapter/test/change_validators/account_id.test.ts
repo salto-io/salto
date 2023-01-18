@@ -82,6 +82,12 @@ describe('accountIdValidator', () => {
     }, {
       accountId: '1list2',
       displayName: 'disp1list2',
+    }, {
+      accountId: '0owner',
+      displayName: 'disp0owner',
+    }, {
+      accountId: '1list2',
+      displayName: 'disp1list2',
     }],
   })
 
@@ -260,7 +266,7 @@ Go to ${url} to see valid users and account IDs.`,
     ])).toEqual([])
   })
   it('should not raise errors when the type is not deployable', async () => {
-    const objectType = common.createObjectedType('Filter')
+    const objectType = common.createObjectedType('Board')
     instances = common.createInstanceElementArrayWithDisplayNames(2, objectType)
     const changeErrors = await validator([
       toChange({
@@ -271,5 +277,81 @@ Go to ${url} to see valid users and account IDs.`,
       }),
     ])
     expect(changeErrors).toEqual([])
+  })
+
+  describe('Using Jira DC', () => {
+    const { client: clientDC, connection: connectionDC, getIdMapFunc: getIdMapFuncDC } = mockClient(true)
+    const configDC = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
+    const validatorDC = accountIdValidator(clientDC, configDC, getIdMapFuncDC)
+    let validUserInstance: InstanceElement
+    let invalidUserInstance: InstanceElement
+    const objectType = common.createObjectedType('NotificationScheme') // passes all conditions
+    connectionDC.get.mockResolvedValue({
+      status: 200,
+      data: [{
+        key: 'JIRAUSER10000',
+        name: 'firstAccount',
+      }],
+    })
+
+    beforeEach(() => {
+      validUserInstance = new InstanceElement(
+        'instance',
+        objectType,
+        {
+          notificationSchemeEvents: [
+            {
+              event: {
+                id: '1',
+              },
+              notifications: [{
+                id: '2',
+                notificationType: 'type',
+                parameter: { id: 'firstAccount' },
+                type: 'User',
+              }],
+            },
+          ],
+        },
+      )
+      invalidUserInstance = new InstanceElement(
+        'instance',
+        objectType,
+        {
+          notificationSchemeEvents: [
+            {
+              event: {
+                id: '1',
+              },
+              notifications: [{
+                id: '2',
+                notificationType: 'type',
+                parameter: { id: 'notExistsAccount' },
+                type: 'User',
+              }],
+            },
+          ],
+        },
+      )
+    })
+    it('should not raise an error when instance does not have DisplayName', async () => {
+      const changeErrors = await validatorDC([
+        toChange({
+          after: validUserInstance,
+        }),
+      ])
+      expect(changeErrors).toEqual([])
+    })
+    it('should raise an error when accountId does not in the target environment', async () => {
+      const field = ['notificationSchemeEvents', '0', 'notifications', '0', 'parameter']
+      const elemId = invalidUserInstance.elemID.createNestedID(...field)
+      const { parent } = elemId.createTopLevelParentID()
+      const changeErrors = await validatorDC([
+        toChange({
+          after: invalidUserInstance,
+        }),
+      ])
+      expect(changeErrors).toEqual([createError(elemId, parent, 'parameter', 'notExistsAccount')])
+    })
   })
 })

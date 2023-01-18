@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 
+import _ from 'lodash'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
 import { queryClient } from './utils'
-import { createInstanceElement, getTypePath } from '../transformers/transformer'
-import { SALESFORCE } from '../constants'
+import { createInstanceElement, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
+import { API_NAME, SALESFORCE } from '../constants'
+import SalesforceClient from '../client/client'
 
 const log = logger(module)
 
@@ -29,63 +31,78 @@ const ORGANIZATION_OBJECT_TYPE = new ObjectType({
     fullName: {
       refType: BuiltinTypes.STRING,
     },
-    DefaultAccountAccess: {
-      refType: BuiltinTypes.STRING,
-    },
-    DefaultCalendarAccess: {
-      refType: BuiltinTypes.STRING,
-    },
-    DefaultCampaignAccess: {
-      refType: BuiltinTypes.STRING,
-    },
-    DefaultCaseAccess: {
-      refType: BuiltinTypes.STRING,
-    },
-    DefaultContactAccess: {
-      refType: BuiltinTypes.STRING,
-    },
-    DefaultLeadAccess: {
-      refType: BuiltinTypes.STRING,
-    },
-    DefaultOpportunityAccess: {
-      refType: BuiltinTypes.STRING,
-    },
-    DefaultPricebookAccess: {
-      refType: BuiltinTypes.STRING,
-    },
   },
   annotations: {
-    // [CORE_ANNOTATIONS.HIDDEN]: true,
+    [CORE_ANNOTATIONS.HIDDEN]: true,
     [CORE_ANNOTATIONS.UPDATABLE]: false,
   },
   isSettings: true,
   path: getTypePath('Organization'),
 })
 
+const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
+  const apiName = type.elemID.typeName // TODO
+  const typeDescriptions = await client.describeSObjects([apiName])
+  if (typeDescriptions.length !== 1) {
+    log.warn(`Expected an Organization type to exist. Got ${typeDescriptions.length} results.`)
+  }
+
+  const typeDescription = typeDescriptions[0]
+
+  const [topLevelFields, nestedFields] = _.partition(typeDescription.fields,
+    field => field.compoundFieldName === undefined)
+
+  const objCompoundFieldNames = _.mapValues(
+    _.groupBy(nestedFields, field => field.compoundFieldName),
+    (_nestedFields, compoundName) => compoundName,
+  )
+
+  const fields = topLevelFields
+    .map(field => getSObjectFieldElement(type, field, { [API_NAME]: apiName }, objCompoundFieldNames))
+
+  fields.forEach(field => {
+    type.fields[field.name] = field
+  })
+}
+
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])
+    const objectType = ORGANIZATION_OBJECT_TYPE
+    await enrichTypeWithFields(client, objectType)
+
+    const queryResult = await queryClient(client, ['SELECT FIELDS(STANDARD) FROM Organization LIMIT 200'])
     if (queryResult.length !== 1) {
       log.warn(`Expected Organization object to be a singleton. Got ${queryResult.length} elements`)
       return
     }
     const organizationObject = queryResult[0]
-    const relevantFields = Object.entries(organizationObject)
-      .filter(([key]) => (Object.keys(ORGANIZATION_OBJECT_TYPE.fields).includes(key)))
     const organizationInstance = createInstanceElement(
       {
         fullName: 'Organization', // Note: Query results don't have a fullName field
-        ...Object.fromEntries(relevantFields),
       },
-      ORGANIZATION_OBJECT_TYPE,
+      objectType,
       undefined,
       {
-        // [CORE_ANNOTATIONS.HIDDEN]: true,
+        [CORE_ANNOTATIONS.HIDDEN]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: false,
-        // [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
       }
     )
-    elements.push(ORGANIZATION_OBJECT_TYPE, organizationInstance)
+
+    Object.entries(organizationObject)
+      .filter(([fieldName]) => Object.keys(objectType.fields).includes(fieldName))
+      .forEach(([fieldName, fieldValue]) => {
+        if (fieldValue === null) {
+          return
+        }
+        let actualValue = fieldValue
+        if (_.isPlainObject(fieldValue)) {
+          actualValue = Object.fromEntries(Object.entries(fieldValue).filter(([, value]) => value !== null))
+        }
+        organizationInstance.value[fieldName] = actualValue
+      })
+
+    elements.push(objectType, organizationInstance)
   },
 })
 

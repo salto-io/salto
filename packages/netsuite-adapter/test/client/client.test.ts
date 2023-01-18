@@ -23,7 +23,7 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../sr
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { AdditionalDependencies } from '../../src/client/types'
 
@@ -130,6 +130,52 @@ describe('NetsuiteClient', () => {
           ...deployParams
         )).toEqual({
           errors: [settingsDeployError],
+          appliedChanges: [],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
+      })
+
+      it('should try to deploy again after ManifestValidationError', async () => {
+        const successType = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const failType = new ObjectType({ elemID: new ElemID(NETSUITE, 'failType') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', successType, { scriptid: 'someObject' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement(ElemID.CONFIG_NAME, failType, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange],
+          SDF_CHANGE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [manifestValidationError],
+          appliedChanges: [successChange],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+
+      it('should fail deployment if failed scriptid cant be extracted from error message', async () => {
+        const successType = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const failType = new ObjectType({ elemID: new ElemID(NETSUITE, 'failType') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on some_id'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['some_id'])
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', successType, { scriptid: 'someObject' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement(ElemID.CONFIG_NAME, failType, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange],
+          SDF_CHANGE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [manifestValidationError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)

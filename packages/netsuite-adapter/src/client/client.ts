@@ -17,7 +17,7 @@
 import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
-import { resolveValues } from '@salto-io/adapter-utils'
+import { resolveValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { NetsuiteQuery } from '../query'
@@ -41,6 +41,8 @@ import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+const scriptidReferenceIdRegex = RegExp('scriptid=[a-z0-9_]+', 'gm')
 
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
@@ -203,6 +205,47 @@ export default class NetsuiteClient {
       .toArray()
   }
 
+  private static createDependencyMap(
+    changesData: ReadonlyArray<ChangeDataType>
+  ):Record<string, string[]> {
+    const dependencyMap: Record<string, string[]> = {}
+    changesData
+      .filter(isInstanceElement)
+      .forEach(instance => walkOnElement({
+        element: instance,
+        func: ({ value }) => {
+          if (scriptidReferenceIdRegex.test(value)) {
+            const currentScriptId = value.split('=')[1].slice(0, -1)
+            const currentElement = instance.elemID.getFullName()
+            if (!(currentElement in dependencyMap)) {
+              dependencyMap[currentElement] = [currentScriptId]
+            } else {
+              dependencyMap[currentElement].push(currentScriptId)
+            }
+          }
+          return WALK_NEXT_STEP.RECURSE
+        },
+      }))
+    return dependencyMap
+  }
+
+  private static getManifestErrorElemIdName(
+    error: ManifestValidationError,
+    dependencyMap: Record<string, string[]>,
+    changes: ReadonlyArray<Change>
+  ): Set<string> {
+    const changeData = changes.map(getChangeData)
+    const elementsToRemoveElemIDs = new Set<string>()
+    Object.keys(dependencyMap).forEach(key => {
+      if (error.errorScriptIds?.some(scriptid => dependencyMap[key].includes(scriptid))) {
+        elementsToRemoveElemIDs.add(key)
+      }
+    })
+    return elementsToRemoveElemIDs.size === 0
+      ? new Set(changeData.map(elem => elem.elemID.getFullName()))
+      : elementsToRemoveElemIDs
+  }
+
   private async sdfDeploy({
     changes,
     deployReferencedElements,
@@ -231,6 +274,7 @@ export default class NetsuiteClient {
         deployReferencedElements,
         elementsSourceIndex,
       )
+      const dependencyMap = NetsuiteClient.createDependencyMap(changedInstances)
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
@@ -246,15 +290,18 @@ export default class NetsuiteClient {
       } catch (error) {
         errors.push(error)
         if (error instanceof ManifestValidationError) {
-          log.debug('manifest validation errror: sdf deploy failed')
-        }
-        if (error instanceof FeaturesDeployError) {
+          const elemIdNamesToRemove = NetsuiteClient.getManifestErrorElemIdName(error, dependencyMap, changesToDeploy)
+          log.debug('manifest validation error: sdf failed to deploy: %o', Array.from(elemIdNamesToRemove))
+          _.remove(
+            changesToDeploy,
+            change => elemIdNamesToRemove.has(getChangeData(change).elemID.getFullName())
+          )
+        } else if (error instanceof FeaturesDeployError) {
           const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
             error, changesToDeploy
           )
           return { errors, appliedChanges: successfullyDeployedChanges }
-        }
-        if (error instanceof ObjectsDeployError) {
+        } else if (error instanceof ObjectsDeployError) {
           const failedElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
             error, changesToDeploy
           )

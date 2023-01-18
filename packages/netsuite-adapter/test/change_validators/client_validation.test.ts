@@ -128,7 +128,7 @@ File: ~/Objects/customrecord1.xml`
   })
   it('should have SDF Manifest Validation Error', async () => {
     const detailedMessage = 'manifest error'
-    mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage)])
+    mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage, [])])
     const changeErrors = await clientValidation(
       changes,
       client,

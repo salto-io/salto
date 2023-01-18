@@ -112,15 +112,24 @@ const changeValidator: ClientChangeValidator = async (
                 detailedMessage: error.message,
               }))
           }
-          const message = error instanceof ManifestValidationError
-            ? 'SDF Manifest Validation Error'
-            : `Validation Error on ${groupId}`
-          return groupChanges.map(change => ({
-            message,
-            severity: 'Error' as const,
-            elemID: getChangeData(change).elemID,
-            detailedMessage: error.message,
-          }))
+          if (error instanceof ManifestValidationError) {
+            const failedChanges = groupChanges
+              .filter(element => error.errorScriptIds.includes(getChangeData(element).elemID.getFullName()))
+            return (failedChanges.length > 0 ? failedChanges : groupChanges)
+              .map(change => ({
+                message: 'SDF Manifest Validation Error',
+                severity: 'Error' as const,
+                elemID: getChangeData(change).elemID,
+                detailedMessage: error.message,
+              }))
+          }
+          return groupChanges
+            .map(change => ({
+              message: `Validation Error on ${groupId}`,
+              severity: 'Error' as const,
+              elemID: getChangeData(change).elemID,
+              detailedMessage: error.message,
+            }))
         })
       }
       return []

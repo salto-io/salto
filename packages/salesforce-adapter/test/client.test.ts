@@ -240,7 +240,12 @@ describe('salesforce client', () => {
         .times(1)
         .reply(500, 'server error')
       expect(await client.readMetadata('FakeType', 'FakeName', _err => false))
-        .toEqual({ result: [], errors: ['FakeName'] })
+        .toEqual({
+          result: [],
+          errors: [
+            { input: 'FakeName', error: expect.objectContaining({ name: 'ERROR_HTTP_500' }) },
+          ],
+        })
       expect(dodoScope.isDone()).toBeTruthy()
     })
 
@@ -254,7 +259,12 @@ describe('salesforce client', () => {
           headers,
         )
       expect(await client.readMetadata('FakeType', 'FakeName'))
-        .toEqual({ result: [], errors: ['FakeName'] })
+        .toEqual({
+          result: [],
+          errors: [
+            { input: 'FakeName', error: expect.objectContaining({ name: 'sf:INVALID_TYPE' }) },
+          ],
+        })
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })

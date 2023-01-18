@@ -16,12 +16,13 @@
 import _ from 'lodash'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import { collections, values } from '@salto-io/lowerdash'
-import { ObjectType, isInstanceElement, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, isInstanceElement, ElemID, InstanceElement, Element } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS } from '../constants'
-import { RemoteFilterCreator } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../filter'
 import { getSObjectFieldElement, apiName, toCustomField } from '../transformers/transformer'
 import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
 import { CustomField } from '../client/types'
+import { createSkippedListConfigChangeFromError } from '../config_change'
 
 const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -124,14 +125,14 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     filterName: 'describeSObjects',
     warningMessage: WARNING_MESSAGE,
     config,
-    fetchFilterFunc: async elements => {
+    fetchFilterFunc: async (elements: Element[]): Promise<FilterResult> => {
       const customObjectInstances = await keyByAsync(
         awu(elements).filter(isInstanceElement).filter(isInstanceOfType(CUSTOM_OBJECT)),
         instance => apiName(instance),
       )
       if (_.isEmpty(customObjectInstances)) {
         // Not fetching custom objects, no need to do anything
-        return
+        return {}
       }
 
       const availableObjects = await client.listSObjects()
@@ -140,7 +141,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         .map(objDesc => objDesc.name)
         .filter(name => potentialObjectNames.has(name))
 
-      const sObjects = await client.describeSObjects(objectNamesToDescribe)
+      const { result: sObjects, errors } = await client.describeSObjects(objectNamesToDescribe)
 
       await Promise.all(
         sObjects.map(
@@ -151,6 +152,14 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
           )
         )
       )
+      return {
+        configSuggestions:
+          errors
+            .map(({ input, error }) => createSkippedListConfigChangeFromError({
+              creatorInput: { metadataType: CUSTOM_OBJECT, name: input },
+              error,
+            })),
+      }
     },
   }),
 })

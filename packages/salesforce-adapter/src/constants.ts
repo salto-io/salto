@@ -436,8 +436,14 @@ export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
-
 // Errors
+export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
+export const INVALID_CROSS_REFERENCE_KEY = 'sf:INVALID_CROSS_REFERENCE_KEY'
+export const DUPLICATE_VALUE = 'sf:DUPLICATE_VALUE'
+export const INVALID_ID_FIELD = 'sf:INVALID_ID_FIELD'
+export const INVALID_FIELD = 'sf:INVALID_FIELD'
+export const INVALID_TYPE = 'sf:INVALID_TYPE'
+export const UNKNOWN_EXCEPTION = 'sf:UNKNOWN_EXCEPTION'
 export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
 export const SF_REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
 export const INVALID_GRANT = 'invalid_grant'

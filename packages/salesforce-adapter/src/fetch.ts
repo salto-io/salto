@@ -32,7 +32,12 @@ import {
   FOLDER_CONTENT_TYPE,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
-import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
+import {
+  createListMetadataObjectsConfigChange,
+  createRetrieveConfigChange,
+  createSkippedListConfigChange,
+  createSkippedListConfigChangeFromError,
+} from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
@@ -107,7 +112,9 @@ export const listMetadataObjects = async (
   )
   return {
     elements: result,
-    configChanges: (errors ?? []).map(createListMetadataObjectsConfigChange),
+    configChanges: errors
+      .map(e => e.input)
+      .map(createListMetadataObjectsConfigChange),
   }
 }
 
@@ -146,7 +153,9 @@ const listMetadataObjectsWithinFolders = async (
   const elements = result
     .map(props => withFullPath(props, folderPathByName))
     .concat(includedFolderElements)
-  const configChanges = (errors?.map(createListMetadataObjectsConfigChange) ?? [])
+  const configChanges = errors
+    .map(e => e.input)
+    .map(createListMetadataObjectsConfigChange)
     .concat(folders.configChanges)
   return { elements, configChanges }
 }
@@ -244,7 +253,10 @@ export const fetchMetadataInstances = async ({
   return {
     elements,
     configChanges: makeArray(errors)
-      .map(e => createSkippedListConfigChange({ type: metadataTypeName, instance: e })),
+      .map(({ input, error }) => createSkippedListConfigChangeFromError({
+        creatorInput: { metadataType: metadataTypeName, name: input },
+        error,
+      })),
   }
 }
 

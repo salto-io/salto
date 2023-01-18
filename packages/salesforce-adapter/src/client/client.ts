@@ -62,6 +62,7 @@ import {
 } from '../types'
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
+import { HANDLED_ERROR_PREDICATES } from '../config_change'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -138,16 +139,8 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 
 export type ErrorFilter = (error: Error) => boolean
 
-const NON_TRANSIENT_ERROR_TYPES = [
-  'sf:DUPLICATE_VALUE',
-  'sf:INVALID_CROSS_REFERENCE_KEY',
-  'sf:INVALID_ID_FIELD',
-  'sf:INVALID_FIELD',
-  'sf:INVALID_TYPE',
-  'sf:UNKNOWN_EXCEPTION',
-]
 const isSFDCUnhandledException = (error: Error): boolean => (
-  !NON_TRANSIENT_ERROR_TYPES.includes(error.name)
+  !HANDLED_ERROR_PREDICATES.some(predicate => predicate(error))
 )
 
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
@@ -272,9 +265,15 @@ type SendChunkedArgs<TIn, TOut> = {
   isSuppressedError?: ErrorFilter
   isUnhandledError?: ErrorFilter
 }
+
+type SendChunkedError<TIn> = {
+  input: TIn
+  error: Error
+}
+
 export type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
-  errors: TIn[]
+  errors: SendChunkedError<TIn>[]
 }
 const sendChunked = async <TIn, TOut>({
   input,
@@ -316,7 +315,7 @@ const sendChunked = async <TIn, TOut>({
       }
       log.warn('chunked %s unknown error on %o: %o',
         operationInfo, chunkInput[0], error)
-      return { result: [], errors: chunkInput }
+      return { result: [], errors: chunkInput.map(i => ({ input: i, error })) }
     }
   }
   const result = await Promise.all(_.chunk(makeArray(input), chunkSize)
@@ -641,13 +640,13 @@ export default class SalesforceClient {
   @requiresLogin()
   @mapToUserFriendlyErrorMessages
   public async describeSObjects(objectNames: string[]):
-  Promise<DescribeSObjectResult[]> {
-    return (await sendChunked({
+  Promise<SendChunkedResult<string, DescribeSObjectResult>> {
+    return sendChunked({
       operationInfo: 'describeSObjects',
       input: objectNames,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.soap.describeSObjects(chunk)),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
-    })).result
+    })
   }
 
   /**

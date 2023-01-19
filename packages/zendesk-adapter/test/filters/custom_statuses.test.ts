@@ -77,9 +77,6 @@ describe('custom statuses filter', () => {
   const holdDefault = createStatus('hold', true, 7)
   const hold = createStatus('hold', false, 8)
 
-  const initialDefaultCustomStatusType = new ObjectType(
-    { elemID: new ElemID(ZENDESK, DEFAULT_CUSTOM_STATUSES_TYPE_NAME) }
-  )
   const defaultCustomStatusesType = new ObjectType(
     {
       elemID: new ElemID(ZENDESK, DEFAULT_CUSTOM_STATUSES_TYPE_NAME),
@@ -130,7 +127,6 @@ describe('custom statuses filter', () => {
   describe('onFetch', () => {
     it('should create default_custom_statuses instance and object', async () => {
       const elements = [
-        initialDefaultCustomStatusType,
         pendingDefault,
         pending,
         solvedDefault,
@@ -156,7 +152,6 @@ describe('custom statuses filter', () => {
     })
     it('should do nothing if default does not exist', async () => {
       const elements = [
-        initialDefaultCustomStatusType,
         pending,
         solved,
         open,
@@ -164,7 +159,6 @@ describe('custom statuses filter', () => {
       ]
       await filter.onFetch(elements)
       expect(elements).toEqual([
-        initialDefaultCustomStatusType,
         pending,
         solved,
         open,

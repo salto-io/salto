@@ -64,6 +64,7 @@ const filter: FilterCreator = () => ({
             .toArray()
         )
       })
+    elements.push(accountIdInfoType)
   }, 'user_filter'),
 })
 

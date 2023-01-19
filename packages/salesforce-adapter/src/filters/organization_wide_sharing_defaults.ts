@@ -20,10 +20,22 @@ import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
 import { queryClient } from './utils'
 import { createInstanceElement, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
-import { API_NAME, SALESFORCE } from '../constants'
+import { API_NAME, METADATA_TYPE, SALESFORCE } from '../constants'
 import SalesforceClient from '../client/client'
 
 const log = logger(module)
+
+const toJsCase = (key: string): string => (
+  key[0].toLocaleLowerCase() + key.slice(1)
+)
+
+const mapKeys = <T>(obj: Record<string, T>, fn: (key: string) => string): Record<string, T> => (
+  Object.fromEntries(Object.entries(obj).map(([key, value]) => [fn(key), value]))
+)
+
+const filterValues = <T>(obj: Record<string, T>, fn: (value: T) => boolean): Record<string, T> => (
+  Object.fromEntries(Object.entries(obj).filter(([key, value]) => [key, fn(value)]))
+)
 
 const ORGANIZATION_OBJECT_TYPE = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'Organization'),
@@ -35,6 +47,7 @@ const ORGANIZATION_OBJECT_TYPE = new ObjectType({
   annotations: {
     [CORE_ANNOTATIONS.HIDDEN]: true,
     [CORE_ANNOTATIONS.UPDATABLE]: false,
+    [METADATA_TYPE]: 'Organization',
   },
   isSettings: true,
   path: getTypePath('Organization'),
@@ -43,11 +56,14 @@ const ORGANIZATION_OBJECT_TYPE = new ObjectType({
 const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
   const apiName = type.elemID.typeName // TODO
   const typeDescriptions = await client.describeSObjects([apiName])
-  if (typeDescriptions.length !== 1) {
-    log.warn(`Expected an Organization type to exist. Got ${typeDescriptions.length} results.`)
+  if (typeDescriptions.errors.length !== 0 || typeDescriptions.result.length !== 1) {
+    log.warn(`Unexpected response when querying type info for 'Organization'. 
+    Errors: %o
+    # results: ${typeDescriptions.result.length}`, typeDescriptions.errors)
+    return
   }
 
-  const typeDescription = typeDescriptions[0]
+  const typeDescription = typeDescriptions.result[0]
 
   const [topLevelFields, nestedFields] = _.partition(typeDescription.fields,
     field => field.compoundFieldName === undefined)
@@ -61,21 +77,22 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
     .map(field => getSObjectFieldElement(type, field, { [API_NAME]: apiName }, objCompoundFieldNames))
 
   fields.forEach(field => {
-    type.fields[field.name] = field
+    type.fields[toJsCase(field.name)] = field
   })
 }
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    const objectType = ORGANIZATION_OBJECT_TYPE
+    const objectType = ORGANIZATION_OBJECT_TYPE.clone()
     await enrichTypeWithFields(client, objectType)
 
     const queryResult = await queryClient(client, ['SELECT FIELDS(STANDARD) FROM Organization LIMIT 200'])
     if (queryResult.length !== 1) {
-      log.warn(`Expected Organization object to be a singleton. Got ${queryResult.length} elements`)
+      log.error(`Expected Organization object to be a singleton. Got ${queryResult.length} elements`)
       return
     }
-    const organizationObject = queryResult[0]
+
+    const organizationObject = mapKeys(queryResult[0], toJsCase)
     const organizationInstance = createInstanceElement(
       {
         fullName: 'Organization', // Note: Query results don't have a fullName field
@@ -97,7 +114,7 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
         }
         let actualValue = fieldValue
         if (_.isPlainObject(fieldValue)) {
-          actualValue = Object.fromEntries(Object.entries(fieldValue).filter(([, value]) => value !== null))
+          actualValue = filterValues(fieldValue, value => value !== null)
         }
         organizationInstance.value[fieldName] = actualValue
       })

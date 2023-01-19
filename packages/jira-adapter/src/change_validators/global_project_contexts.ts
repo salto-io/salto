@@ -26,22 +26,27 @@ const log = logger(module)
 
 
 const getGlobalContextsUsedInProjectErrors = (
-  contexts: InstanceElement[],
-  projectContexts: Set<string>,
-): ChangeError[] => {
-  const referencedContexts = contexts.filter(
-    context => projectContexts.has(context.elemID.getFullName())
-  )
-
-  return referencedContexts
+  globalContexts: InstanceElement[],
+  projects: InstanceElement[],
+): ChangeError[] =>
+  globalContexts
     .filter(context => context.value.isGlobalContext)
-    .map(instance => ({
-      elemID: instance.elemID,
+    .map(context => {
+      const referencingProjects = projects.filter(project => {
+        const projectContexts = project.value[PROJECT_CONTEXTS_FIELD]
+        return projectContexts && projectContexts.includes(context.elemID.getFullName())
+      })
+      return {
+        context,
+        referencingProjects,
+      }
+    }).filter(({ referencingProjects }) => referencingProjects.length > 0)
+    .map(({ context, referencingProjects }) => ({
+      elemID: context.elemID,
       severity: 'Error' as const,
-      message: 'Global context cannot be used in individual projects',
-      detailedMessage: `The context ${instance.elemID.getFullName()} is set as global context, and therefore cannot be referenced from individual projects.`,
+      message: 'Global field context can’t be referenced by a project.',
+      detailedMessage: `This field context is global, but the following projects still reference it: ${referencingProjects.map(project => project.elemID.name)} Global field contexts can’t be referenced by projects. Please change this context to a non-global one, or add the projects without the reference to this deployment`,
     }))
-}
 
 const getContextsNotUsedInProjectErrors = (
   contexts: InstanceElement[],
@@ -150,7 +155,7 @@ export const globalProjectContextsValidator: ChangeValidator = async (changes, e
   const idToChange = _.keyBy(changes, change => getChangeData(change).elemID.getFullName())
 
   return [
-    ...getGlobalContextsUsedInProjectErrors(contexts, projectContexts),
+    ...getGlobalContextsUsedInProjectErrors(contexts, projects),
     ...getContextsNotUsedInProjectErrors(contexts, projectContexts, idToChange),
     ...getProjectRemovedContextsErrors(contexts, projectContexts, idToChange),
   ]

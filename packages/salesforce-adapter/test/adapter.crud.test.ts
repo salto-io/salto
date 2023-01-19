@@ -1039,6 +1039,29 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
 
+      describe('when the DeployResult contains errorMessage', () => {
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            id: 'DeploymentWithErrorMessageErrors',
+            success: false,
+            errorMessage: 'UNKNOWN_EXCEPTION: An unexpected error occurred',
+            componentSuccess: [{
+              fullName: mockDefaultValues.Profile.fullName,
+              componentType: constants.PROFILE_METADATA_TYPE,
+            }],
+          }))
+          result = await adapter.deploy({
+            changeGroup: {
+              groupID: afterInstance.elemID.getFullName(),
+              changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
+            },
+          })
+        })
+        it('should produce a deploy error', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+      })
+
       describe('when the request fails because fullNames are not the same', () => {
         beforeEach(async () => {
           afterInstance = beforeInstance.clone()

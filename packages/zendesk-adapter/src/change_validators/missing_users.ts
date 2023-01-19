@@ -26,6 +26,7 @@ import { lookupFunc } from '../filters/field_references'
 
 const { awu } = collections.asynciterable
 const { createPaginator } = clientUtils
+// system options that does not contain a specific user value
 const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs']
 
 const getMissingUsers = (instance: InstanceElement, existingUsers: User[]): string[] => {
@@ -69,8 +70,8 @@ export const missingUsersValidator: (client: ZendeskClient) =>
         return [{
           elemID: instance.elemID,
           severity: 'Warning',
-          message: 'Can not change instance with user fields of users that does not exist in the target environment',
-          detailedMessage: `Can not change ${instance.elemID.name} of type ${instance.elemID.typeName}, because the instance contains the following users that doesn't exist in the target environment: ${missingUsers.join(', ')}`,
+          message: 'Can not change instance with user emails of users that does not exist in the target environment',
+          detailedMessage: `${instance.elemID.typeName} ${instance.elemID.name} includes references to users that does not exist in the target environment (partial list limited to 10): ${missingUsers.slice(0, 10).join(', ')}.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
         }]
       })
   }

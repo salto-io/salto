@@ -83,14 +83,14 @@ describe('missingUsersValidator', () => {
       {
         elemID: articleInstance.elemID,
         severity: 'Warning',
-        message: 'Can not change instance with user fields of users that does not exist in the target environment',
-        detailedMessage: `Can not change ${articleInstance.elemID.name} of type ${articleInstance.elemID.typeName}, because the instance contains the following users that doesn't exist in the target environment: article@salto.com`,
+        message: 'Can not change instance with user emails of users that does not exist in the target environment',
+        detailedMessage: `${articleInstance.elemID.typeName} ${articleInstance.elemID.name} includes references to users that does not exist in the target environment (partial list limited to 10): article@salto.com.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
       },
       {
         elemID: macroInstance.elemID,
         severity: 'Warning',
-        message: 'Can not change instance with user fields of users that does not exist in the target environment',
-        detailedMessage: `Can not change ${macroInstance.elemID.name} of type ${macroInstance.elemID.typeName}, because the instance contains the following users that doesn't exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com`,
+        message: 'Can not change instance with user emails of users that does not exist in the target environment',
+        detailedMessage: `${macroInstance.elemID.typeName} ${macroInstance.elemID.name} includes references to users that does not exist in the target environment (partial list limited to 10): thisuserismissing@salto.com, thisuserismissing2@salto.com.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
       },
     ])
   })

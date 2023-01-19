@@ -109,32 +109,24 @@ describe('userUtils', () => {
     const sectionTranslationType = new ObjectType(
       { elemID: new ElemID(ZENDESK, SECTION_TRANSLATION_TYPE_NAME) }
     )
+    const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, 'ticket_field') })
 
     const sectionTranslationInstance = new InstanceElement(
       'test',
       sectionTranslationType,
-      {
-        updated_by_id: 1,
-        created_by_id: 2,
-      }
+      { updated_by_id: 1, created_by_id: 2 }
     )
 
     const userSegmentInstance = new InstanceElement(
       'test',
       userSegmentType,
-      {
-        title: 'test',
-        added_user_ids: 1,
-      }
+      { title: 'test', added_user_ids: 1 }
     )
 
     const articleInstance = new InstanceElement(
       'test',
       articleType,
-      {
-        title: 'test',
-        author_id: 1,
-      }
+      { title: 'test', author_id: 1 }
     )
 
     const triggerInstance = new InstanceElement(
@@ -143,34 +135,11 @@ describe('userUtils', () => {
       {
         title: 'test',
         actions: [
-          {
-            field: 'status',
-            value: 'closed',
-          },
-          {
-            field: 'assignee_id',
-            value: '1',
-          },
-          {
-            field: 'follower',
-            value: '2',
-          },
-          {
-            field: 'notification_user',
-            value: [
-              '1',
-              'test',
-              'test',
-            ],
-          },
-          {
-            field: 'notification_sms_user',
-            value: [
-              '2',
-              123,
-              'test',
-            ],
-          },
+          { field: 'status', value: 'closed' },
+          { field: 'assignee_id', value: '1' },
+          { field: 'follower', value: '2' },
+          { field: 'notification_user', value: ['1', 'test', 'test'] },
+          { field: 'notification_sms_user', value: ['2', 123, 'test'] },
         ],
         conditions: {
           all: [
@@ -275,28 +244,12 @@ describe('userUtils', () => {
         title: 'test',
         filter: {
           all: [
-            {
-              field: 'assignee_id',
-              operator: 'is',
-              value: 3,
-            },
-            {
-              field: 'requester_id',
-              operator: 'is',
-              value: 2,
-            },
+            { field: 'assignee_id', operator: 'is', value: 3 },
+            { field: 'requester_id', operator: 'is', value: 2 },
           ],
           any: [
-            {
-              field: 'assignee_id',
-              operator: 'is',
-              value: 1,
-            },
-            {
-              field: 'requester_id',
-              operator: 'is',
-              value: 1,
-            },
+            { field: 'assignee_id', operator: 'is', value: 1 },
+            { field: 'requester_id', operator: 'is', value: 1 },
           ],
         },
         policy_metrics: [
@@ -314,6 +267,22 @@ describe('userUtils', () => {
       workspaceType,
       {
         title: 'test',
+        conditions: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: '2',
+            },
+          ],
+          any: [
+            {
+              field: 'assignee_id',
+              operator: 'is not',
+              value: '2',
+            },
+          ],
+        },
         selected_macros: [
           {
             id: 1234,
@@ -404,6 +373,29 @@ describe('userUtils', () => {
         },
       },
     )
+    const ticketFieldInstance = new InstanceElement(
+      'test',
+      ticketFieldType,
+      {
+        type: 'bla',
+        relationship_filter: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: '2',
+            },
+          ],
+          any: [
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: '1',
+            },
+          ],
+        },
+      },
+    )
 
     const sectionTransUserPaths = [
       new ElemID(ZENDESK, sectionTranslationInstance.elemID.typeName, 'instance', 'test', 'created_by_id'),
@@ -441,6 +433,8 @@ describe('userUtils', () => {
       slaPolicyInstance.elemID.createNestedID('filter', 'any', '1', 'value'),
     ]
     const workspaceUserPaths = [
+      workspaceInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
+      workspaceInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
       workspaceInstance.elemID.createNestedID('selected_macros', '1', 'restriction', 'id'),
     ]
     const automationUserPaths = [
@@ -453,6 +447,10 @@ describe('userUtils', () => {
       viewInstance.elemID.createNestedID('conditions', 'all', '0', 'value'),
       viewInstance.elemID.createNestedID('conditions', 'any', '0', 'value'),
       viewInstance.elemID.createNestedID('restriction', 'id'),
+    ]
+    const ticketFieldUserPaths = [
+      ticketFieldInstance.elemID.createNestedID('relationship_filter', 'all', '0', 'value'),
+      ticketFieldInstance.elemID.createNestedID('relationship_filter', 'any', '0', 'value'),
     ]
 
     it('should return the correct ElemIds', () => {
@@ -480,6 +478,8 @@ describe('userUtils', () => {
         .toEqual(automationUserPaths)
       expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[viewInstance.elemID.typeName]?.(viewInstance))
         .toEqual(viewUserPaths)
+      expect(usersUtilsModule.TYPE_NAME_TO_REPLACER[ticketFieldInstance.elemID.typeName]?.(ticketFieldInstance))
+        .toEqual(ticketFieldUserPaths)
     })
 
     it('should replace values based on mapping', () => {
@@ -509,11 +509,100 @@ describe('userUtils', () => {
       usersUtilsModule.TYPE_NAME_TO_REPLACER[slaPolicyInstance.elemID.typeName]?.(slaPolicyInstance, usersMapping)
       expect(slaPolicyUserPaths.map(path => resolvePath(slaPolicyInstance, path))).toEqual(['c', 'b', 'a', 'a'])
       usersUtilsModule.TYPE_NAME_TO_REPLACER[workspaceInstance.elemID.typeName]?.(workspaceInstance, usersMapping)
-      expect(workspaceUserPaths.map(path => resolvePath(workspaceInstance, path))).toEqual(['c'])
+      expect(workspaceUserPaths.map(path => resolvePath(workspaceInstance, path))).toEqual(['b', 'b', 'c'])
       usersUtilsModule.TYPE_NAME_TO_REPLACER[automationInstance.elemID.typeName]?.(automationInstance, usersMapping)
       expect(automationUserPaths.map(path => resolvePath(automationInstance, path))).toEqual(['current_user', 'a', 'a', '10'])
       usersUtilsModule.TYPE_NAME_TO_REPLACER[viewInstance.elemID.typeName]?.(viewInstance, usersMapping)
       expect(viewUserPaths.map(path => resolvePath(viewInstance, path))).toEqual(['a', '10', 'c'])
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[ticketFieldInstance.elemID.typeName]?.(ticketFieldInstance, usersMapping)
+      expect(ticketFieldUserPaths.map(path => resolvePath(ticketFieldInstance, path))).toEqual(['b', 'a'])
+    })
+
+    it('should not replace anything if the field is not exist', () => {
+      const usersMapping = Object.fromEntries([
+        ['1', 'a'],
+        ['2', 'b'],
+        ['3', 'c'],
+      ])
+      const macroNoFields = new InstanceElement(
+        'test',
+        macroType,
+        {
+          title: 'test',
+          test1: [
+            { field: 'status', value: 'closed' },
+            { field: 'assignee_id', value: '2' },
+            { field: 'follower', value: '1' },
+          ],
+          test2: { type: 'User', id: 3 },
+          restriction: { type: 'User', id: 3 },
+        },
+      )
+      const userSegmentNoFields = new InstanceElement(
+        'test',
+        userSegmentType,
+        {
+          title: 'test',
+        },
+      )
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[macroNoFields.elemID.typeName]?.(macroNoFields, usersMapping)
+      expect(macroNoFields?.value).toEqual({
+        title: 'test',
+        test1: [
+          { field: 'status', value: 'closed' },
+          { field: 'assignee_id', value: '2' },
+          { field: 'follower', value: '1' },
+        ],
+        test2: { type: 'User', id: 3 },
+        restriction: { type: 'User', id: 'c' },
+      })
+
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[userSegmentNoFields.elemID.typeName]?.(userSegmentNoFields, usersMapping)
+      expect(userSegmentNoFields?.value).toEqual({
+        title: 'test',
+      })
+    })
+
+    it('should not replace values that are missing from mapping', () => {
+      const usersMapping = Object.fromEntries([
+        ['2', 'b'],
+        ['4', 'd'],
+      ])
+      const slaPolicyMissingValues = new InstanceElement(
+        'test',
+        slaPolicyType,
+        {
+          title: 'sla',
+          filter: {
+            all: [
+              { field: 'assignee_id', operator: 'is', value: 3 },
+              { field: 'requester_id', operator: 'is', value: 2 },
+            ],
+            any: [
+              { field: 'assignee_id', operator: 'is', value: 1 },
+            ],
+          },
+          policy_metrics: [],
+        },
+      )
+      usersUtilsModule.TYPE_NAME_TO_REPLACER[
+        slaPolicyMissingValues.elemID.typeName
+      ]?.(slaPolicyMissingValues, usersMapping)
+      expect(slaPolicyMissingValues.value).toEqual(
+        {
+          title: 'sla',
+          filter: {
+            all: [
+              { field: 'assignee_id', operator: 'is', value: 3 },
+              { field: 'requester_id', operator: 'is', value: 'b' },
+            ],
+            any: [
+              { field: 'assignee_id', operator: 'is', value: 1 },
+            ],
+          },
+          policy_metrics: [],
+        },
+      )
     })
   })
 })

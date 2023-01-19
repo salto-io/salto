@@ -38,6 +38,7 @@ describe('Webhooks with external_source', () => {
   )
   const regularWebhook = webhook.clone()
   delete regularWebhook.value.external_source
+  const appInstallationMessage = `This webhook was installed by the external app '${appInstallation.elemID.name}', `
 
   it('webhook removal', async () => {
     const changes = [toChange({ before: webhook }), toChange({ before: regularWebhook })]
@@ -47,7 +48,7 @@ describe('Webhooks with external_source', () => {
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Removing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by an external app '${appInstallation.elemID.name}'. In order to remove it, please uninstall that app.`,
+      detailedMessage: `${appInstallationMessage}In order to remove it, please uninstall that app.`,
     }])
   })
   it('webhook addition', async () => {
@@ -58,7 +59,7 @@ describe('Webhooks with external_source', () => {
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Installing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by an external app '${appInstallation.elemID.name}'. In order to add it, please install that app.`,
+      detailedMessage: `${appInstallationMessage}In order to add it, please install that app.`,
     }])
   })
 
@@ -72,7 +73,7 @@ describe('Webhooks with external_source', () => {
         elemID: webhook.elemID,
         severity: 'Error',
         message: 'Illegal webhook modification',
-        detailedMessage: 'Cannot modify \'external_source\' field of a webhook',
+        detailedMessage: `Cannot modify 'external_source' field of a webhook (${changedWebhook.elemID.name})`,
       }])
     })
     it('deactivation of the webhook', async () => {
@@ -84,20 +85,23 @@ describe('Webhooks with external_source', () => {
         elemID: webhook.elemID,
         severity: 'Warning',
         message: 'Deactivating a webhook that was installed by an external app',
-        detailedMessage: `If you deactivate this webhook (${changedWebhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
+        detailedMessage: `${appInstallationMessage}If you deactivate this webhook (${changedWebhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
       }])
     })
     it('regular change of the webhook', async () => {
-      const changedWebhook = webhook.clone()
-      changedWebhook.value.name = 'changed'
-      changedWebhook.value.not_relevant_field.external_source = 'changed'
-      const errors = await externalSourceWebhook([toChange({ before: webhook, after: changedWebhook })])
+      const beforeWebhook = webhook.clone()
+      const afterWebhook = webhook.clone()
+      afterWebhook.value.name = 'changed'
+      afterWebhook.value.not_relevant_field.external_source = 'changed'
+      afterWebhook.value.external_source.data.installation_id = 123 // To check the detailedMessage without an app name
+      beforeWebhook.value.external_source.data.installation_id = 123
+      const errors = await externalSourceWebhook([toChange({ before: beforeWebhook, after: afterWebhook })])
 
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
         severity: 'Warning',
         message: 'Changing a webhook that was installed by an external app',
-        detailedMessage: `If you edit this webhook (${changedWebhook.elemID.name}), the app that created it might not work as intended.`,
+        detailedMessage: `This webhook was installed an external app, If you edit this webhook (${afterWebhook.elemID.name}), the app that created it might not work as intended.`,
       }])
     })
   })

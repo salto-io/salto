@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 import {
+  AdditionChange,
+  Change,
   ChangeError,
   ChangeValidator,
   getChangeData, InstanceElement,
   isAdditionChange,
   isInstanceChange, isModificationChange, isReferenceExpression,
-  isRemovalChange, ModificationChange, ReferenceExpression, Value,
+  isRemovalChange, ModificationChange, ReferenceExpression, RemovalChange, Value,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { WEBHOOK_TYPE_NAME } from '../constants'
@@ -35,85 +37,81 @@ type ExternalSourceWithApp = {
 const isExternalSourceWithApp = (externalSource: Value): externalSource is ExternalSourceWithApp =>
   isReferenceExpression(externalSource.data?.installation_id)
 
-const createExternalSourceWebhookChangeWarning = (webhook: InstanceElement): ChangeError => ({
+const createExternalSourceWebhookChangeWarning = (webhook: InstanceElement, appMessage: string): ChangeError => ({
   elemID: webhook.elemID,
   severity: 'Warning',
   message: 'Changing a webhook that was installed by an external app',
-  detailedMessage: `If you edit this webhook (${webhook.elemID.name}), the app that created it might not work as intended.`,
+  detailedMessage: `${appMessage}If you edit this webhook (${webhook.elemID.name}), the app that created it might not work as intended.`,
 })
 
-const createDeactivationWarning = (webhook: InstanceElement): ChangeError => ({
+const createDeactivationWarning = (webhook: InstanceElement, appMessage: string): ChangeError => ({
   elemID: webhook.elemID,
   severity: 'Warning',
   message: 'Deactivating a webhook that was installed by an external app',
-  detailedMessage: `If you deactivate this webhook (${webhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
+  detailedMessage: `${appMessage}If you deactivate this webhook (${webhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
 })
 
 const createExternalSourceChangeError = (webhook: InstanceElement): ChangeError => ({
   elemID: webhook.elemID,
   severity: 'Error',
   message: 'Illegal webhook modification',
-  detailedMessage: 'Cannot modify \'external_source\' field of a webhook',
+  detailedMessage: `Cannot modify 'external_source' field of a webhook (${webhook.elemID.name})`,
 })
 
-const handleModificationChanges = (changes: ModificationChange<InstanceElement>[]): ChangeError[] => {
+const handleModificationChanges = ([change, appMessage]: [ModificationChange<InstanceElement>, string])
+    : ChangeError[] => {
   const errors: ChangeError[] = []
-  changes.forEach(change => {
-    const detailedChanges = detailedCompare(change.data.before, change.data.after)
+  const detailedChanges = detailedCompare(change.data.before, change.data.after)
 
-    // It's impossible to change external_source field in a webhook using Zendesk's api
-    if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')) {
-      errors.push(createExternalSourceChangeError(change.data.after))
-    }
+  // It's impossible to change external_source field in a webhook using Zendesk's api
+  if (detailedChanges.some(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'external_source')) {
+    errors.push(createExternalSourceChangeError(change.data.after))
+  }
 
-    const wasDeactivated = change.data.before.value.status === 'active' && change.data.after.value.status === 'inactive'
-    if (wasDeactivated) {
-      errors.push(createDeactivationWarning(change.data.after))
-    }
+  const wasDeactivated = change.data.before.value.status === 'active' && change.data.after.value.status === 'inactive'
+  if (wasDeactivated) {
+    errors.push(createDeactivationWarning(change.data.after, appMessage))
+  }
 
-    // Filter all the changes we already handled, if there are any other - we have a different warning for them
-    const otherChanges = detailedChanges.filter(detailedChange =>
-      ['external_source', 'status'].every(field => !detailedChange.id.createTopLevelParentID().path[0].includes(field)))
-    if (otherChanges.length > 0) {
-      errors.push(createExternalSourceWebhookChangeWarning(change.data.after))
-    }
-  })
+  // Filter all the changes we already handled, if there are any other - we have a different warning for them
+  const otherChanges = detailedChanges.filter(detailedChange =>
+    ['external_source', 'status'].every(field => detailedChange.id.createTopLevelParentID().path[0] !== field))
+  if (otherChanges.length > 0) {
+    errors.push(createExternalSourceWebhookChangeWarning(change.data.after, appMessage))
+  }
+
   return errors
 }
 
-const getAppName = (webhook: InstanceElement): string | undefined => {
+const getAppMessageFromChange = <T extends Change<InstanceElement>>(change: T): [T, string] => {
+  const webhook = getChangeData(change)
   const externalSource = webhook.value.external_source
   // If the external_source contains an installation_id, we can get the app name from it
-  return isExternalSourceWithApp(externalSource)
-    ? externalSource.data.installation_id.elemID.name
-    : undefined
+  const appMessage = isExternalSourceWithApp(externalSource)
+    ? `This webhook was installed by the external app '${externalSource.data.installation_id.elemID.name}', `
+    : 'This webhook was installed an external app, '
+  return [change, appMessage]
 }
 
-const createAdditionError = (webhooks: InstanceElement[]): ChangeError[] =>
-  webhooks.map(webhook => {
-    // If we know the app that installed the webhook, we can give a more specific error message
-    const appName = getAppName(webhook)
-    const appNameMessage = appName ? ` '${appName}'` : ''
-    return {
-      elemID: webhook.elemID,
-      severity: 'Error',
-      message: 'Installing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by an external app${appNameMessage}. In order to add it, please install that app.`,
-    }
-  })
+const createAdditionError = ([change, appMessage]: [AdditionChange<InstanceElement>, string]): ChangeError => {
+  const webhook = getChangeData(change)
+  return {
+    elemID: webhook.elemID,
+    severity: 'Error',
+    message: 'Installing a webhook that was installed by an external app',
+    detailedMessage: `${appMessage}In order to add it, please install that app.`,
+  }
+}
 
-const createRemovalErrorMessage = (webhooks: InstanceElement[]): ChangeError[] =>
-  webhooks.map(webhook => {
-    // If we know the app that installed the webhook, we can give a more specific error message
-    const appName = getAppName(webhook)
-    const appNameMessage = appName ? ` '${appName}'` : ''
-    return {
-      elemID: webhook.elemID,
-      severity: 'Error',
-      message: 'Removing a webhook that was installed by an external app',
-      detailedMessage: `This webhook was installed by an external app${appNameMessage}. In order to remove it, please uninstall that app.`,
-    }
-  })
+const createRemovalErrorMessage = ([change, appMessage]: [RemovalChange<InstanceElement>, string]): ChangeError => {
+  const webhook = getChangeData(change)
+  return {
+    elemID: webhook.elemID,
+    severity: 'Error',
+    message: 'Removing a webhook that was installed by an external app',
+    detailedMessage: `${appMessage}In order to remove it, please uninstall that app.`,
+  }
+}
 
 /**
  * Validated everything related to webhooks that were installed by an external app
@@ -129,8 +127,9 @@ export const externalSourceWebhook: ChangeValidator = async changes => {
     .filter(change => getChangeData(change).value.external_source !== undefined)
 
   return [
-    createAdditionError(externalSourceWebhookChanges.filter(isAdditionChange).map(getChangeData)),
-    createRemovalErrorMessage(externalSourceWebhookChanges.filter(isRemovalChange).map(getChangeData)),
-    handleModificationChanges(externalSourceWebhookChanges.filter(isModificationChange)),
+    externalSourceWebhookChanges.filter(isAdditionChange).map(getAppMessageFromChange).map(createAdditionError),
+    externalSourceWebhookChanges.filter(isRemovalChange).map(getAppMessageFromChange).map(createRemovalErrorMessage),
+    externalSourceWebhookChanges.filter(isModificationChange).map(getAppMessageFromChange)
+      .map(handleModificationChanges).flat(),
   ].flat()
 }

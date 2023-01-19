@@ -1039,9 +1039,9 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
 
-      describe('when the request has errorMessage', () => {
+      describe('when the DeployResult contains errorMessage', () => {
         beforeEach(async () => {
-          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             id: 'DeploymentWithErrorMessageErrors',
             success: false,
             errorMessage: 'UNKNOWN_EXCEPTION: An unexpected error occurred',

@@ -39,6 +39,7 @@ import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { QuickDeployParams } from './types'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -201,10 +202,11 @@ const processDeployResponse = (
     .map(codeCoverageWarning => codeCoverageWarning.message)
     .map(message => new Error(message))
 
-  const genericErrorMessage = makeArray(result.errorMessage)
-    .map(message => Error(message))
+  const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
-  const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors, ...genericErrorMessage]
+  if (isDefined(result.errorMessage)) {
+    errors.push(Error(result.errorMessage))
+  }
 
   // In checkOnly none of the changes are actually applied
   if (!result.checkOnly && result.rollbackOnError && !result.success) {
@@ -220,7 +222,7 @@ const processDeployResponse = (
   // so we have to look for these messages in both lists
   const unFoundDeleteNames = [...allSuccessMessages, ...allFailureMessages]
     .map(message => getUnFoundDeleteName(message, deletionsPackageName))
-    .filter(values.isDefined)
+    .filter(isDefined)
 
   const successfulFullNames = allSuccessMessages
     .map(success => ({ type: success.componentType, fullName: success.fullName }))
@@ -259,7 +261,7 @@ const validateChanges = async (
 
   const [invalidChanges, validChanges] = _.partition(
     changesAndValidation,
-    ({ error }) => values.isDefined(error)
+    ({ error }) => isDefined(error)
   )
 
   const errors = invalidChanges

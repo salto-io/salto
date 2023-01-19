@@ -20,7 +20,7 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceChange,
-  isInstanceElement, isObjectType, ObjectType,
+  isInstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -43,10 +43,11 @@ const log = logger(module)
  * non-raw fields need to be updated to have the same value of the raw fields.
  */
 const alignNonRawWithRaw = (change: Change<InstanceElement>): void => {
-  getChangeData(change).value.end_user_label = getChangeData(change).value.raw_end_user_label
-  getChangeData(change).value.agent_label = getChangeData(change).value.raw_agent_label
-  getChangeData(change).value.description = getChangeData(change).value.raw_description
-  getChangeData(change).value.end_user_description = getChangeData(change).value.raw_end_user_description
+  const { value } = getChangeData(change)
+  value.end_user_label = value.raw_end_user_label
+  value.agent_label = value.raw_agent_label
+  value.description = value.raw_description
+  value.end_user_description = value.raw_end_user_description
 }
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
@@ -62,12 +63,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const hold = defaultCustomStatuses.find(inst => inst.value.status_category === HOLD_CATEGORY)
 
     if (pending === undefined || solved === undefined || open === undefined || hold === undefined) {
-      log.error('could not find default status for one of the status categories ')
+      log.error('could not find default status for one or more of the status categories')
       return
     }
-
-    _.remove(elements, element =>
-      isObjectType(element) && element.elemID.typeName === DEFAULT_CUSTOM_STATUSES_TYPE_NAME)
 
     const defaultCustomStatusesType = new ObjectType(
       {
@@ -117,6 +115,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       firstLeftoverChanges,
       change => DEFAULT_CUSTOM_STATUSES_TYPE_NAME === getChangeData(change).elemID.typeName,
     )
+    if (_.isEmpty(defaultCustomStatusChanges)) {
+      // since the custom statuses and the default are in different change groups
+      return { deployResult: CustomStatusesDeployResult, leftoverChanges: firstLeftoverChanges }
+    }
     const defaultCustomStatusChange = defaultCustomStatusChanges
       .map(getChangeData)
       .find(inst => DEFAULT_CUSTOM_STATUSES_TYPE_NAME === inst.elemID.typeName)

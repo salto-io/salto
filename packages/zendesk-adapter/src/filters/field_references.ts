@@ -788,11 +788,6 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'section' },
   },
   {
-    src: { field: 'parent_section_id', parentTypes: ['section'] },
-    serializationStrategy: 'id',
-    target: { type: 'section' },
-  },
-  {
     src: { field: PENDING_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: CUSTOM_STATUS_TYPE_NAME },

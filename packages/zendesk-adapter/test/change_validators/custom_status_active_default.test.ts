@@ -31,6 +31,7 @@ describe('customStatusActiveDefaultValidator', () => {
     {
       id,
       active: isActive,
+      status_category: category,
     }
   )
   const pendingActive = createStatus('pending', true, 1)
@@ -68,6 +69,17 @@ describe('customStatusActiveDefaultValidator', () => {
     ])
     const errors = await customStatusActiveDefaultValidator([
       toChange({ before: pendingActive, after: pendingActive }),
+    ], elementSource)
+    expect(errors).toEqual([])
+  })
+  it('should not return an error when default status for hold is inactive', async () => {
+    const inactiveHold = holdActive.clone()
+    inactiveHold.value.active = false
+    const elementSource = buildElementsSourceFromElements([
+      pendingActive, solvedActive, openActive, inactiveHold, defaultCustomStatusesInstance,
+    ])
+    const errors = await customStatusActiveDefaultValidator([
+      toChange({ before: holdActive, after: inactiveHold }),
     ], elementSource)
     expect(errors).toEqual([])
   })

@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { DEFAULT_CUSTOM_STATUSES_TYPE_NAME } from '../constants'
+import { DEFAULT_CUSTOM_STATUSES_TYPE_NAME, HOLD_CATEGORY } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -54,7 +54,8 @@ export const defaultCustomStatusesValidator: ChangeValidator = async (
           log.error(`could not find status ${defaultInstance.value[key].elemID.getFullName()}`)
           return undefined
         }
-        return !statusInstance.value.active ? statusInstance : undefined
+        return statusInstance.value.active !== true && statusInstance.value.status_category !== HOLD_CATEGORY
+          ? statusInstance : undefined
       }
       return undefined // if it is not a reference expression
     })

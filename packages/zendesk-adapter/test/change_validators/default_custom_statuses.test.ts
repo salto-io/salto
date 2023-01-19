@@ -71,6 +71,25 @@ describe('defaultCustomStatusesValidator', () => {
     ], elementSource)
     expect(errors).toEqual([])
   })
+  it('should not return an error when hold is inactive', async () => {
+    const inactiveHold = holdActive.clone()
+    inactiveHold.value.active = false
+    const validDefaultCustomStatusesInstance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      defaultCustomStatusesType,
+      {
+        [PENDING_CATEGORY]: new ReferenceExpression(pendingActive.elemID, pendingActive),
+        [SOLVED_CATEGORY]: new ReferenceExpression(solvedActive.elemID, solvedActive),
+        [OPEN_CATEGORY]: new ReferenceExpression(openActive.elemID, openActive),
+        [HOLD_CATEGORY]: new ReferenceExpression(inactiveHold.elemID, inactiveHold),
+      },
+    )
+    const elementSource = buildElementsSourceFromElements([pendingActive, solvedActive, openActive, inactiveHold])
+    const errors = await defaultCustomStatusesValidator([
+      toChange({ before: validDefaultCustomStatusesInstance, after: validDefaultCustomStatusesInstance }),
+    ], elementSource)
+    expect(errors).toEqual([])
+  })
 
   it('should return an error when default is not valid because of an inactive status', async () => {
     const invalidDefaultCustomStatusesInstance = new InstanceElement(

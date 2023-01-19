@@ -54,11 +54,9 @@ export const customStatusUniqueAgentLabelValidator: ChangeValidator = async (
   // {name , agent_label}
   const agentLabelsByName = _.mapValues(statusByName, getAgentLabel)
 
-  /**
-   * checks that no other statuses besides inst have its raw_agent_label
-   */
+  // checks that no other statuses besides inst have its raw_agent_label
   const isAgentLabelTaken = (inst: InstanceElement): boolean => !_.isEmpty(Object.keys(agentLabelsByName)
-    .filter(key => key !== inst.elemID.name && agentLabelsByName[key] === inst.value.raw_agent_label))
+    .filter(key => key !== inst.elemID.name && agentLabelsByName[key] === getAgentLabel(inst)))
 
   return changes
     .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)

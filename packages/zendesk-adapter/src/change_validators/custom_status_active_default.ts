@@ -14,16 +14,15 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator,
+  ChangeValidator, ElemID,
   getChangeData,
   isInstanceChange,
-  isInstanceElement, isReferenceExpression,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import { CUSTOM_STATUS_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME } from '../constants'
+import _ from 'lodash'
+import { CUSTOM_STATUS_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, HOLD_CATEGORY, ZENDESK } from '../constants'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 
@@ -33,14 +32,21 @@ const log = logger(module)
 export const customStatusActiveDefaultValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
+  const customStatusChanges = changes
+    .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)
+    .filter(isInstanceChange)
+  if (_.isEmpty(customStatusChanges)) {
+    return []
+  }
+
   if (elementSource === undefined) {
     log.error('Failed to run customStatusActiveDefaultValidator because no element source was provided')
     return []
   }
 
-  const defaultCustomStatuses = await awu(await elementSource.getAll())
-    .filter(isInstanceElement)
-    .find(elem => elem.elemID.typeName === DEFAULT_CUSTOM_STATUSES_TYPE_NAME)
+  const defaultCustomStatuses = await elementSource.get(
+    new ElemID(ZENDESK, DEFAULT_CUSTOM_STATUSES_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
+  )
 
   if (defaultCustomStatuses === undefined) {
     log.error('Failed to find default custom statuses in the elementSource')
@@ -54,17 +60,17 @@ export const customStatusActiveDefaultValidator: ChangeValidator = async (
         : undefined))
     .filter(name => name !== undefined)
 
-  return changes
-    .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)
-    .filter(isInstanceChange)
+  return customStatusChanges
     .map(getChangeData)
-    .filter(status => !status.value.active && defaultsNames.includes(status.elemID.name))
-    .flatMap(instance => (
-      [{
+    .filter(status => !status.value.active
+      && defaultsNames.includes(status.elemID.name)
+      && status.value.status_category !== HOLD_CATEGORY)
+    .map(instance => (
+      {
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Default custom statuses must be active.',
         detailedMessage: `Please set the default custom status ${instance.elemID.name} as active or choose a different default custom status`,
-      }]
+      }
     ))
 }

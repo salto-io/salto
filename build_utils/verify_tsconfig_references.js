@@ -60,7 +60,8 @@ const main = async () => {
   const tsConfigs = readTsConfigs(workspaces)
 
   const referenceToWorkspacePackage = ({ path: refPath }, { location: packageLocation }) => {
-    const refLocation = path.join(packageLocation, refPath)
+    const pathSepRegEx = new RegExp(path.sep, 'g')
+    const refLocation = path.join(packageLocation, refPath).replace(pathSepRegEx, '/')
     return findKey(workspaces, ({ location }) => location === refLocation)
   }
 

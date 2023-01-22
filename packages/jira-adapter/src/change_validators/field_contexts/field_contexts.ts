@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, InstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
@@ -52,18 +52,23 @@ export const fieldContextValidator: ChangeValidator = async (_changes, elementSo
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .toArray()
-  const fieldsToContexts = Object.fromEntries(fields
-    .filter(field => field.value.contexts !== undefined)
-    .map(field => [
-      field.elemID.getFullName(),
-      field.value.contexts.filter((ref: ReferenceExpression) => {
+  const getFieldContexts = async (field: InstanceElement): Promise<InstanceElement[]> =>
+    awu(field.value.contexts)
+      .filter((ref): ref is ReferenceExpression => {
         if (!isReferenceExpression(ref)) {
           log.warn(`Found a non reference expression in field ${field.elemID.getFullName()}`)
           return false
         }
         return true
-      }).map((context: ReferenceExpression) => context.elemID),
-    ]))
+      })
+      .map((ref: ReferenceExpression) => ref.getResolvedValue(elementSource))
+      .toArray()
+  const fieldsToContexts = await Object.fromEntries(await awu(fields
+    .filter(field => field.value.contexts !== undefined))
+    .map(async field => [
+      field.elemID.getFullName(),
+      await getFieldContexts(field),
+    ]).toArray())
   const projectNamesToContexts: Record<string, string[]> = Object.fromEntries(projects
     .filter(project => project.value[PROJECT_CONTEXTS_FIELD] !== undefined)
     .map(project => [
@@ -78,7 +83,7 @@ export const fieldContextValidator: ChangeValidator = async (_changes, elementSo
     ]))
 
   return [
-    ...getUnreferencedContextErrors(contexts, fieldsToContexts, Object.values(projectNamesToContexts).flat()),
+    ...getUnreferencedContextErrors(fieldsToContexts, Object.values(projectNamesToContexts).flat()),
     ...getGlobalContextsUsedInProjectErrors(contexts, projectNamesToContexts),
   ]
 }

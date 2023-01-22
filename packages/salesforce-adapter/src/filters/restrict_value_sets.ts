@@ -109,13 +109,7 @@ const restrictValueSet = (field: ValueSetField): void => {
   })
 }
 
-/**
- * Create filter that adds global value set references where needed
- */
 const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
-  /**
-   * @param elements the already fetched elements
-   */
   onFetch: async (elements: Element[]): Promise<void> => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const globalValueSetInstances = await awu((await referenceElements.getAll()))

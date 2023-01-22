@@ -15,9 +15,13 @@
 */
 import {
   Change,
-  Element, getChangeData,
-  InstanceElement, isAdditionOrModificationChange, isInstanceChange,
+  Element,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
   isInstanceElement,
+  isReferenceExpression, isTemplateExpression,
   ReferenceExpression,
   TemplateExpression,
   TemplatePart,
@@ -92,12 +96,22 @@ const turnEmailToTemplateExpression = (
 ): void => {
   supportAddressInstances
     .forEach(supportInstance => {
-      const newEmail = getTemplateEmail({
+      supportInstance.value.email = getTemplateEmail({
         supportAddressInstance: supportInstance,
         brandList: brandBySubdomains,
       })
-      supportInstance.value.email = newEmail
     })
+}
+
+const replaceIfReferenceExpression = (part: TemplatePart): string =>
+  (isReferenceExpression(part) ? part.value : part)
+
+const templateToEmail = (change: Change<InstanceElement>): void => {
+  const inst = getChangeData(change)
+  const { email } = inst.value
+  if (isTemplateExpression(email)) {
+    inst.value.email = email.parts.map(replaceIfReferenceExpression).join('')
+  }
 }
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
@@ -113,6 +127,12 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       (inst: InstanceElement): string => inst.value.subdomain
     )
     turnEmailToTemplateExpression(supportAddressInstances, brandBySubdomains)
+  },
+  preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+    changes
+      .filter(change => getChangeData(change).elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
+      .filter(isInstanceChange)
+      .forEach(templateToEmail)
   },
   onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     const supportAddressInstances = changes

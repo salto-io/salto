@@ -21,10 +21,9 @@ import {
 } from '@salto-io/adapter-api'
 
 import { FilterWith } from '../filter'
-import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
+import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE, VALUE_SET_FIELDS } from '../constants'
 import { PicklistValue } from '../client/types'
 import { Types, metadataType } from '../transformers/transformer'
-import { GLOBAL_VALUE_SET, CUSTOM_VALUE } from './global_value_sets'
 
 const { awu } = collections.asynciterable
 
@@ -59,7 +58,7 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
     const isGlobalValueSetInstanceChange = async (
       change: ModificationChange<ChangeDataType>
     ): Promise<boolean> => (
-      isInstanceChange(change) && await metadataType(getChangeData(change)) === GLOBAL_VALUE_SET
+      isInstanceChange(change) && await metadataType(getChangeData(change)) === GLOBAL_VALUE_SET_METADATA_TYPE
     )
 
     const withRemovedCustomValues = (beforeValues: PicklistValue[], afterValues: PicklistValue[]):
@@ -83,9 +82,9 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
       .filter(isGlobalValueSetInstanceChange)
       .forEach(change => {
         const instChange = change as ModificationChange<InstanceElement>
-        const beforeCustomValues = makeArray(instChange.data.before.value[CUSTOM_VALUE])
-        const afterCustomValues = makeArray(instChange.data.after.value[CUSTOM_VALUE])
-        instChange.data.after.value[CUSTOM_VALUE] = withRemovedCustomValues(
+        const beforeCustomValues = makeArray(instChange.data.before.value[FIELD_ANNOTATIONS.CUSTOM_VALUE])
+        const afterCustomValues = makeArray(instChange.data.after.value[FIELD_ANNOTATIONS.CUSTOM_VALUE])
+        instChange.data.after.value[FIELD_ANNOTATIONS.CUSTOM_VALUE] = withRemovedCustomValues(
           beforeCustomValues, afterCustomValues
         )
       })

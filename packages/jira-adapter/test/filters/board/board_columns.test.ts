@@ -188,6 +188,13 @@ describe('boardColumnsFilter', () => {
       })
     })
 
+    it('should do nothing if board does not have config', async () => {
+      delete instance.value.config
+
+      await filter.onFetch([instance])
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toBeUndefined()
+    })
+
     it('should add deployment annotations', async () => {
       await filter.onFetch([type, columnConfigType])
       expect(type.fields[COLUMNS_CONFIG_FIELD].annotations).toEqual({

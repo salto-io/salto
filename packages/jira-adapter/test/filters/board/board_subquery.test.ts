@@ -74,6 +74,12 @@ describe('boardSubqueryFilter', () => {
       expect(instance.value.subQuery).toBeUndefined()
     })
 
+    it('should do nothing when there is no config', async () => {
+      delete instance.value.config
+      await filter.onFetch([instance])
+      expect(instance.value.subQuery).toBeUndefined()
+    })
+
     it('should add deployment annotations', async () => {
       await filter.onFetch([type])
 

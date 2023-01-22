@@ -15,6 +15,7 @@
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import sharePermissionFilter from '../../src/filters/share_permission'
 import { getFilterParams } from '../utils'
@@ -25,8 +26,6 @@ describe('sharePermissionFilter', () => {
   let type: ObjectType
   let sharePermissionType: ObjectType
   beforeEach(async () => {
-    filter = sharePermissionFilter(getFilterParams()) as typeof filter
-
     sharePermissionType = new ObjectType({
       elemID: new ElemID(JIRA, 'SharePermission'),
       fields: {
@@ -49,6 +48,9 @@ describe('sharePermissionFilter', () => {
         },
       }
     )
+
+    const elementsSource = buildElementsSourceFromElements([type])
+    filter = sharePermissionFilter(getFilterParams({ elementsSource })) as typeof filter
   })
 
   it('should replace SharePermission.type from "loggedin" to "authenticated"', async () => {
@@ -120,6 +122,23 @@ describe('sharePermissionFilter', () => {
   })
 
   it('if there is role should change type to projectRole', async () => {
+    instance.value.permissions.type = 'project'
+    instance.value.permissions.role = {
+      id: 1,
+    }
+    await filter.preDeploy([toChange({ after: instance })])
+    expect(instance.value).toEqual({
+      permissions: {
+        type: 'projectRole',
+        role: {
+          id: 1,
+        },
+      },
+    })
+  })
+
+  it('Should work for unresolved type', async () => {
+    delete instance.refType.type
     instance.value.permissions.type = 'project'
     instance.value.permissions.role = {
       id: 1,

@@ -32,7 +32,6 @@ import { permissionTypeValidator } from './permission_type'
 import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
-import { globalProjectContextsValidator } from './global_project_contexts'
 import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
@@ -42,6 +41,7 @@ import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflow_scheme_dups'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
+import { fieldContextValidator } from './field_contexts/field_contexts'
 
 const {
   deployTypesNotSupportedValidator,
@@ -68,7 +68,7 @@ export default (
     automationsValidator,
     maskingValidator(client),
     lockedFieldsValidator,
-    globalProjectContextsValidator,
+    fieldContextValidator,
     systemFieldsValidator,
     workflowPropertiesValidator,
     permissionSchemeValidator,

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, InstanceElement, isReferenceExpression, ElemID } from '@salto-io/adapter-api'
+import { ChangeError, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { isDefined } from '@salto-io/lowerdash/src/values'
 
 export const getUnreferencedContextErrors = (
@@ -23,7 +23,7 @@ export const getUnreferencedContextErrors = (
 ): ChangeError[] =>
   Object.entries(fieldsToContexts).map(([_field, fieldContexts]) => {
     const fieldContextsIds = contexts
-      .filter(context => isReferenceExpression(context))
+      .filter(context => !context.value.isGlobalContext)
       .map(context => context.elemID)
     const notFoundContexts = fieldContextsIds.filter(context => !projectContexts.has(context.getFullName()))
     if (notFoundContexts.length === 0) {

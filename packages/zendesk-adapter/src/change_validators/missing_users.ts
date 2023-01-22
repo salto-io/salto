@@ -69,9 +69,9 @@ export const missingUsersValidator: (client: ZendeskClient) =>
         }
         return [{
           elemID: instance.elemID,
-          severity: 'Warning',
-          message: 'Can not change instance with user emails of users that does not exist in the target environment',
-          detailedMessage: `${instance.elemID.typeName} ${instance.elemID.name} includes references to users that does not exist in the target environment (partial list limited to 10): ${missingUsers.slice(0, 10).join(', ')}.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
+          severity: 'Error',
+          message: `${missingUsers.length} references to users that don't exist in the target environment.`,
+          detailedMessage: `The following users don't exist in the target environment: ${missingUsers.join(', ')}.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
         }]
       })
   }

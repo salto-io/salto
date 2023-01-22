@@ -82,15 +82,15 @@ describe('missingUsersValidator', () => {
     expect(errors).toEqual([
       {
         elemID: articleInstance.elemID,
-        severity: 'Warning',
-        message: 'Can not change instance with user emails of users that does not exist in the target environment',
-        detailedMessage: `${articleInstance.elemID.typeName} ${articleInstance.elemID.name} includes references to users that does not exist in the target environment (partial list limited to 10): article@salto.com.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
+        severity: 'Error',
+        message: '1 references to users that don\'t exist in the target environment.',
+        detailedMessage: 'The following users don\'t exist in the target environment: article@salto.com.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.',
       },
       {
         elemID: macroInstance.elemID,
-        severity: 'Warning',
-        message: 'Can not change instance with user emails of users that does not exist in the target environment',
-        detailedMessage: `${macroInstance.elemID.typeName} ${macroInstance.elemID.name} includes references to users that does not exist in the target environment (partial list limited to 10): thisuserismissing@salto.com, thisuserismissing2@salto.com.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
+        severity: 'Error',
+        message: '2 references to users that don\'t exist in the target environment.',
+        detailedMessage: 'The following users don\'t exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.',
       },
     ])
   })

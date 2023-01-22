@@ -34,22 +34,23 @@ const getUnreferencedContextErrors = (
       .filter(context => isReferenceExpression(context))
       .map(context => context.elemID)
     const notFoundContexts = fieldContextsIds.filter(context => !projectContexts.has(context.getFullName()))
-    if (notFoundContexts.length > 0) {
-      if (notFoundContexts.length !== fieldContexts.length) {
-        return notFoundContexts.map(context => ({
-          elemID: context,
-          severity: 'Error' as const,
-          message: 'Non-global field context not referenced by any project. There are other valid contexts.',
-          detailedMessage: 'This field context is not global and isn’t referenced by any project, and can’t be deployed. However, the field has other valid contexts, so it’s probably safe to continue without this context. Learn more: https://docs.salto.io/docs/non-global-field-context-not-referenced-by-any-project-and-cant-be-deployed',
-        }))
-      }
+    if (notFoundContexts.length === 0) {
+      return undefined
+    }
+    if (notFoundContexts.length !== fieldContexts.length) {
       return notFoundContexts.map(context => ({
         elemID: context,
         severity: 'Error' as const,
-        message: 'Non-global field context not referenced by any project.',
-        detailedMessage: 'This field context is not global and isn’t referenced by any project, and can’t be deployed. In order to deploy this context, either make it global, or include the Project which references it in your deployment. Learn more: https://docs.salto.io/docs/non-global-field-context-not-referenced-by-any-project-and-cant-be-deployed',
+        message: 'Non-global field context not referenced by any project. There are other valid contexts.',
+        detailedMessage: 'This field context is not global and isn’t referenced by any project, and can’t be deployed. However, the field has other valid contexts, so it’s probably safe to continue without this context. Learn more: https://docs.salto.io/docs/non-global-field-context-not-referenced-by-any-project-and-cant-be-deployed',
       }))
     }
+    return notFoundContexts.map(context => ({
+      elemID: context,
+      severity: 'Error' as const,
+      message: 'Non-global field context not referenced by any project.',
+      detailedMessage: 'This field context is not global and isn’t referenced by any project, and can’t be deployed. In order to deploy this context, either make it global, or include the Project which references it in your deployment. Learn more: https://docs.salto.io/docs/non-global-field-context-not-referenced-by-any-project-and-cant-be-deployed',
+    }))
   }).filter(isDefined).flat()
 
 /**

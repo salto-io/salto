@@ -97,14 +97,14 @@ const setRefAndRestrict = (
   }
   field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(globalValueSetInstance.elemID)
   field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-    enforce_value: false,
+    enforce_value: true,
     values: globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
   })
 }
 
 const restrictValueSet = (field: ValueSetField): void => {
   field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-    enforce_value: false,
+    enforce_value: true,
     values: field.annotations[FIELD_ANNOTATIONS.VALUE_SET].map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
   })
 }

@@ -124,9 +124,10 @@ describe('Global Value Sets filter', () => {
           expect(annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
             expect.objectContaining({ elemID: globalValueSetInstance.elemID })
           )
-          expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual(
-            expect.objectContaining({ values: GLOBAL_VALUE_SET_VALUES })
-          )
+          expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+            enforce_value: true,
+            values: GLOBAL_VALUE_SET_VALUES,
+          })
         })
       })
       it('should not replace value set with references if value set name does not exist', () => {
@@ -139,9 +140,10 @@ describe('Global Value Sets filter', () => {
     describe('ValueSet', () => {
       it('should restrict values', () => {
         const { annotations } = objectType.fields[PICKLIST_FIELD_NAME]
-        expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual(
-          expect.objectContaining({ values: PICKLIST_VALUES })
-        )
+        expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+          enforce_value: true,
+          values: PICKLIST_VALUES,
+        })
       })
     })
   })

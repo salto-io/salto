@@ -31,6 +31,7 @@ export const getUnreferencedContextErrors = (
       return undefined
     }
     if (notFoundContexts.length !== contexts.length) {
+      // Either one of the contexts is global, or there are other valid contexts
       return notFoundContexts.map(context => ({
         elemID: context,
         severity: 'Error' as const,

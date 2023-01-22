@@ -14,18 +14,20 @@
 * limitations under the License.
 */
 import { ChangeError, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { isDefined } from '@salto-io/lowerdash/src/values'
+import { values } from '@salto-io/lowerdash/'
+
+const { isDefined } = values
 
 export const getUnreferencedContextErrors = (
   contexts: InstanceElement[],
   fieldsToContexts: Record<string, ElemID[]>,
-  projectContexts: Set<string>,
+  projectContexts: string[],
 ): ChangeError[] =>
   Object.entries(fieldsToContexts).map(([_field, fieldContexts]) => {
     const fieldContextsIds = contexts
       .filter(context => !context.value.isGlobalContext)
       .map(context => context.elemID)
-    const notFoundContexts = fieldContextsIds.filter(context => !projectContexts.has(context.getFullName()))
+    const notFoundContexts = fieldContextsIds.filter(context => !projectContexts.includes(context.getFullName()))
     if (notFoundContexts.length === 0) {
       return undefined
     }

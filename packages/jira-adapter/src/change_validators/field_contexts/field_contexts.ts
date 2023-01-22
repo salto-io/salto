@@ -28,7 +28,7 @@ const log = logger(module)
 /**
  * Verify that the field context is referenced by a project.
  */
-export const globalProjectContextsValidator: ChangeValidator = async (_changes, elementSource) => {
+export const fieldContextValidator: ChangeValidator = async (_changes, elementSource) => {
   if (elementSource === undefined) {
     return []
   }
@@ -53,6 +53,7 @@ export const globalProjectContextsValidator: ChangeValidator = async (_changes, 
     .map(id => elementSource.get(id))
     .toArray()
   const fieldsToContexts = Object.fromEntries(fields
+    .filter(field => field.value.contexts !== undefined)
     .map(field => [
       field.elemID.getFullName(),
       field.value.contexts.filter((ref: ReferenceExpression) => {
@@ -63,19 +64,21 @@ export const globalProjectContextsValidator: ChangeValidator = async (_changes, 
         return true
       }).map((context: ReferenceExpression) => context.elemID),
     ]))
-  const projectContexts = new Set(projects
-    .flatMap(proj => proj.value[PROJECT_CONTEXTS_FIELD] ?? [])
-    .filter(ref => {
-      if (!isReferenceExpression(ref)) {
-        log.warn(`Found a non reference expression in ${PROJECT_CONTEXTS_FIELD}`)
-        return false
-      }
-      return true
-    })
-    .map(ref => ref.elemID.getFullName()))
+  const projectNamesToContexts: Record<string, string[]> = Object.fromEntries(projects
+    .filter(project => project.value[PROJECT_CONTEXTS_FIELD] !== undefined)
+    .map(project => [
+      project.elemID.name,
+      project.value[PROJECT_CONTEXTS_FIELD].filter((ref: ReferenceExpression) => {
+        if (!isReferenceExpression(ref)) {
+          log.warn(`Found a non reference expression in project ${project.elemID.getFullName()}`)
+          return false
+        }
+        return true
+      }).map((context: ReferenceExpression) => context.elemID.getFullName()),
+    ]))
 
   return [
-    ...getUnreferencedContextErrors(contexts, fieldsToContexts, projectContexts),
-    ...getGlobalContextsUsedInProjectErrors(contexts, projects),
+    ...getUnreferencedContextErrors(contexts, fieldsToContexts, Object.values(projectNamesToContexts).flat()),
+    ...getGlobalContextsUsedInProjectErrors(contexts, projectNamesToContexts),
   ]
 }

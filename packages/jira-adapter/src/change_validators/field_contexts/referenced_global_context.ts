@@ -14,27 +14,33 @@
 * limitations under the License.
 */
 import { ChangeError, InstanceElement } from '@salto-io/adapter-api'
-import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
+import { values } from '@salto-io/lowerdash'
+// import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
+
+const { isDefined } = values
+
+// const isProjectReferencingContext = (context: InstanceElement, project: InstanceElement): boolean => {
+//   const projectContexts = project.value[PROJECT_CONTEXTS_FIELD]
+//   return projectContexts && projectContexts.map().includes(context.elemID.getFullName())
+// }
 
 export const getGlobalContextsUsedInProjectErrors = (
   contexts: InstanceElement[],
-  projects: InstanceElement[],
+  projectsToContexts: Record<string, string[]>,
 ): ChangeError[] =>
   contexts
     .filter(context => context.value.isGlobalContext)
     .map(context => {
-      const referencingProjects = projects.filter(project => {
-        const projectContexts = project.value[PROJECT_CONTEXTS_FIELD]
-        return projectContexts && projectContexts.includes(context.elemID.getFullName())
-      })
-      return {
-        context,
-        referencingProjects,
+      const referencingProjects = Object.entries(projectsToContexts)
+        .filter(([_project, projectContexts]) => projectContexts.includes(context.elemID.getFullName()))
+        .map(([project, _projectContexts]) => project)
+      if (referencingProjects.length > 0) {
+        return {
+          elemID: context.elemID,
+          severity: 'Error' as const,
+          message: 'Global field context can’t be referenced by a project.',
+          detailedMessage: `This field context is global, but the following projects still reference it: ${referencingProjects.join(', ')} Global field contexts can’t be referenced by projects. Please change this context to a non-global one, or add the projects without the reference to this deployment`,
+        }
       }
-    }).filter(({ referencingProjects }) => referencingProjects.length > 0)
-    .map(({ context, referencingProjects }) => ({
-      elemID: context.elemID,
-      severity: 'Error' as const,
-      message: 'Global field context can’t be referenced by a project.',
-      detailedMessage: `This field context is global, but the following projects still reference it: ${referencingProjects.map(project => project.elemID.name)} Global field contexts can’t be referenced by projects. Please change this context to a non-global one, or add the projects without the reference to this deployment`,
-    }))
+      return undefined
+    }).filter(isDefined).flat()

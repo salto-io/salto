@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
 import { PROJECT_TYPE } from '../../constants'

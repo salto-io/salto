@@ -78,20 +78,20 @@ const replaceConditionsAndActionsCreator = (
         const valueRelativePath = replacerParams.fieldsToReplace
           .find(f => f.name === conditionValue)?.valuePath ?? ['value']
         const value = _.get(condition, valueRelativePath)?.toString()
-        if (value !== undefined) {
-          const valuePath = instance.elemID
-            .createNestedID(...replacerParams.fieldName, i.toString(), ...valueRelativePath)
-          if (mapping !== undefined) {
-            const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
-            if (newValue !== undefined) {
-              _.set(condition, valueRelativePath, (isIdNumber && Number.isInteger(Number(newValue)))
-                ? Number(newValue)
-                : newValue)
-            }
-          }
-          return [valuePath]
+        if (value === undefined) {
+          return []
         }
-        return []
+        const valuePath = instance.elemID
+          .createNestedID(...replacerParams.fieldName, i.toString(), ...valueRelativePath)
+        if (mapping !== undefined) {
+          const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
+          if (newValue !== undefined) {
+            _.set(condition, valueRelativePath, (isIdNumber && Number.isInteger(Number(newValue)))
+              ? Number(newValue)
+              : newValue)
+          }
+        }
+        return [valuePath]
       })
   })
 )
@@ -123,18 +123,18 @@ const fieldReplacer = (fields: string[]): UserReplacer => (instance, mapping) =>
 const replaceRestrictionImpl = (values: Values, mapping?: Record<string, string>): string[] => {
   const restrictionRelativePath = ['restriction', 'id']
   const id = _.get(values, restrictionRelativePath)
-  if ((values.restriction?.type === 'User') && (id !== undefined)) {
-    if (mapping !== undefined) {
-      const newValue = Object.prototype.hasOwnProperty.call(mapping, id)
-        ? mapping[id]
-        : undefined
-      if (newValue !== undefined) {
-        values.restriction.id = newValue
-      }
-    }
-    return restrictionRelativePath
+  if ((values.restriction?.type !== 'User') || id === undefined) {
+    return []
   }
-  return []
+  if (mapping !== undefined) {
+    const newValue = Object.prototype.hasOwnProperty.call(mapping, id)
+      ? mapping[id]
+      : undefined
+    if (newValue !== undefined) {
+      values.restriction.id = newValue
+    }
+  }
+  return restrictionRelativePath
 }
 
 const replaceRestriction: UserReplacer = (instance, mapping) => {

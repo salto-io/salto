@@ -18,7 +18,7 @@ import { resolvePath, resolveValues } from '@salto-io/adapter-utils'
 import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { getUsers, User, TYPE_NAME_TO_REPLACER } from '../user_utils'
+import { getUsers, TYPE_NAME_TO_REPLACER } from '../user_utils'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { lookupFunc } from '../filters/field_references'
@@ -29,13 +29,13 @@ const { createPaginator } = clientUtils
 // system options that does not contain a specific user value
 const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs']
 
-const getMissingUsers = (instance: InstanceElement, existingUsers: User[]): string[] => {
+const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>): string[] => {
   const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
   const missingUsers = userPaths
     .map(path => resolvePath(instance, path))
     .filter(userValue => !VALID_USER_VALUES.includes(userValue))
-    .filter(userValue => !(existingUsers.map(user => user.email)).includes(userValue))
-  return missingUsers
+    .filter(userValue => !existingUsers.has(userValue))
+  return _.uniq(missingUsers)
 }
 
 /**
@@ -59,11 +59,11 @@ export const missingUsersValidator: (client: ZendeskClient) =>
       client,
       paginationFuncCreator: paginate,
     })
-    const users = await getUsers(paginator)
+    const usersEmails = new Set((await getUsers(paginator)).map(user => user.email))
 
     return relevantInstances
       .flatMap(instance => {
-        const missingUsers = _.uniq(getMissingUsers(instance, users))
+        const missingUsers = getMissingUsers(instance, usersEmails)
         if (_.isEmpty(missingUsers)) {
           return []
         }

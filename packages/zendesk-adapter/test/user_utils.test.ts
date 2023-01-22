@@ -490,9 +490,8 @@ describe('userUtils', () => {
         ['4', 'd'],
         ['5', 'e'],
       ])
-      usersUtilsModule.TYPE_NAME_TO_REPLACER[
-        sectionTranslationInstance.elemID.typeName
-      ]?.(sectionTranslationInstance, usersMapping)
+      usersUtilsModule
+        .TYPE_NAME_TO_REPLACER[sectionTranslationInstance.elemID.typeName]?.(sectionTranslationInstance, usersMapping)
       expect(sectionTransUserPaths.map(path => resolvePath(sectionTranslationInstance, path))).toEqual(['b', 'a'])
       usersUtilsModule.TYPE_NAME_TO_REPLACER[articleInstance.elemID.typeName]?.(articleInstance, usersMapping)
       expect(articleUserPaths.map(path => resolvePath(articleInstance, path))).toEqual(['a'])
@@ -518,7 +517,7 @@ describe('userUtils', () => {
       expect(ticketFieldUserPaths.map(path => resolvePath(ticketFieldInstance, path))).toEqual(['b', 'a'])
     })
 
-    it('should not replace anything if the field is not exist', () => {
+    it('should not replace anything if the field does not exist', () => {
       const usersMapping = Object.fromEntries([
         ['1', 'a'],
         ['2', 'b'],
@@ -557,7 +556,8 @@ describe('userUtils', () => {
         restriction: { type: 'User', id: 'c' },
       })
 
-      usersUtilsModule.TYPE_NAME_TO_REPLACER[userSegmentNoFields.elemID.typeName]?.(userSegmentNoFields, usersMapping)
+      usersUtilsModule
+        .TYPE_NAME_TO_REPLACER[userSegmentNoFields.elemID.typeName]?.(userSegmentNoFields, usersMapping)
       expect(userSegmentNoFields?.value).toEqual({
         title: 'test',
       })
@@ -585,9 +585,8 @@ describe('userUtils', () => {
           policy_metrics: [],
         },
       )
-      usersUtilsModule.TYPE_NAME_TO_REPLACER[
-        slaPolicyMissingValues.elemID.typeName
-      ]?.(slaPolicyMissingValues, usersMapping)
+      usersUtilsModule
+        .TYPE_NAME_TO_REPLACER[slaPolicyMissingValues.elemID.typeName]?.(slaPolicyMissingValues, usersMapping)
       expect(slaPolicyMissingValues.value).toEqual(
         {
           title: 'sla',

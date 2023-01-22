@@ -15,14 +15,8 @@
 */
 import { ChangeError, InstanceElement } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-// import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
 
 const { isDefined } = values
-
-// const isProjectReferencingContext = (context: InstanceElement, project: InstanceElement): boolean => {
-//   const projectContexts = project.value[PROJECT_CONTEXTS_FIELD]
-//   return projectContexts && projectContexts.map().includes(context.elemID.getFullName())
-// }
 
 export const getGlobalContextsUsedInProjectErrors = (
   contexts: InstanceElement[],

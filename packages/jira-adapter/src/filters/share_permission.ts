@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, Element, ElemID, Field, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, Element, ElemID, Field, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -77,15 +77,17 @@ const transformSharePermissionValues = (sharePermissionValues: Values): void => 
 
 const transformSharedPermissions = async (
   instance: InstanceElement,
-  func: (sharedPermission: Values) => void
+  func: (sharedPermission: Values) => void,
+  elementsSource: ReadOnlyElementsSource,
 ): Promise<void> => {
   await transformValues({
     values: instance.value,
-    type: await instance.getType(),
+    type: await instance.getType(elementsSource),
     strict: false,
     allowEmpty: true,
+    elementsSource,
     transformFunc: async ({ value, field }) => {
-      if ((await field?.getType())?.elemID.typeName === 'SharePermission') {
+      if ((await field?.getType(elementsSource))?.elemID.typeName === 'SharePermission') {
         func(value)
         return undefined
       }
@@ -97,14 +99,14 @@ const transformSharedPermissions = async (
 /**
  * Change SharePermission structure to fit the deployment endpoint
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ elementsSource }) => ({
   onFetch: async (elements: Element[]) => {
     transformType(elements)
 
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async instance => {
-        await transformSharedPermissions(instance, transformSharePermissionValues)
+        await transformSharedPermissions(instance, transformSharePermissionValues, elementsSource)
       })
   },
 
@@ -122,6 +124,7 @@ const filter: FilterCreator = () => ({
                   sharedPermission.type = 'projectRole'
                 }
               },
+              elementsSource,
             )
             return instance
           }
@@ -141,6 +144,7 @@ const filter: FilterCreator = () => ({
                   sharedPermission.type = 'project'
                 }
               },
+              elementsSource
             )
             return instance
           }

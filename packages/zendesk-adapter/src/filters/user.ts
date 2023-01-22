@@ -14,20 +14,43 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { getUsers, TYPE_NAME_TO_REPLACER } from '../user_utils'
+import { getUsers, TYPE_NAME_TO_REPLACER, User, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
 import { deployModificationFunc } from '../replacers_utils'
+import { DEPLOY_CONFIG } from '../config'
+import { paginate } from '../client/pagination'
 
+const { createPaginator } = clientUtils
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean => (
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
 )
 
+// Replace missing user values with user fallback value provided in deploy config
+const replaceMissingUsers = (
+  changes: Change<InstanceElement>[],
+  users: User[],
+  fallbackUser: string
+): void => {
+  const instances = changes.map(change => getChangeData(change))
+  instances.forEach(instance => {
+    const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
+    userPaths.forEach(path => {
+      const userValue = resolvePath(instance, path)
+      if (!VALID_USER_VALUES.includes(userValue) && !users.includes(userValue)) {
+        setPath(instance, path, fallbackUser)
+      }
+    })
+  })
+}
+
 /**
  * Replaces the user ids with emails
  */
-const filterCreator: FilterCreator = ({ paginator }) => {
+const filterCreator: FilterCreator = ({ client, config }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
     name: 'usersFilter',
@@ -49,10 +72,24 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       if (_.isEmpty(relevantChanges)) {
         return
       }
+      const paginator = createPaginator({
+        client,
+        paginationFuncCreator: paginate,
+      })
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         return
       }
+
+      const { value } = await getUserFallbackValue(
+        config[DEPLOY_CONFIG],
+        new Set(users.map(user => user.email)),
+        client
+      )
+      if (value !== undefined) {
+        replaceMissingUsers(relevantChanges, users, value)
+      }
+
       userIdToEmail = Object.fromEntries(
         users.map(user => [user.id.toString(), user.email])
       ) as Record<string, string>

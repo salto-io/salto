@@ -29,6 +29,7 @@ import {
 const { createClientConfigType } = clientUtils
 const {
   createUserFetchConfigType,
+  createUserDeployConfigType,
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
 } = configUtils
@@ -56,6 +57,7 @@ export const CURSOR_BASED_PAGINATION_FIELD = 'links.next'
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
+export const DEPLOY_CONFIG = 'deploy'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
@@ -78,6 +80,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   appReferenceLocators?: IdLocator[]
   guide?: Guide
 }
+export type ZedneskDeployConfig = configUtils.UserDeployConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
   >
@@ -85,6 +88,7 @@ export type ZendeskApiConfig = configUtils.AdapterApiConfig<
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
   [FETCH_CONFIG]: ZendeskFetchConfig
+  [DEPLOY_CONFIG]: ZedneskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
@@ -2505,6 +2509,9 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     hideTypes: true,
     enableMissingReferences: true,
   },
+  [DEPLOY_CONFIG]: {
+    fallbackToDeployerOnMissingUsers: true,
+  },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
       request: {
@@ -2582,6 +2589,9 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         },
       ),
     },
+    [DEPLOY_CONFIG]: {
+      refType: createUserDeployConfigType(ZENDESK),
+    },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: ZENDESK }),
     },
@@ -2600,6 +2610,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
 
 export type FilterContext = {
   [FETCH_CONFIG]: ZendeskFetchConfig
+  [DEPLOY_CONFIG]: ZedneskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 

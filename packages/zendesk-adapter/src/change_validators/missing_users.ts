@@ -15,19 +15,21 @@
 */
 import _ from 'lodash'
 import { resolvePath, resolveValues } from '@salto-io/adapter-utils'
-import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { collections } from '@salto-io/lowerdash'
-import { getUsers, TYPE_NAME_TO_REPLACER } from '../user_utils'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { getUsers, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { lookupFunc } from '../filters/field_references'
-
+import { ZedneskDeployConfig } from '../config'
 
 const { awu } = collections.asynciterable
 const { createPaginator } = clientUtils
-// system options that does not contain a specific user value
-const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
+const { isDefined } = lowerdashValues
+
+const MISSING_USERS_DOC_LINK = 'https://docs.salto.io/docs/username-not-found-in-target-environment'
+const MISSING_USERS_GENERIC_MSG = 'The following users are referenced by this element, but do not exist in the target environment:'
 
 const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>): string[] => {
   const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
@@ -38,11 +40,44 @@ const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>):
   return _.uniq(missingUsers)
 }
 
+const getChangeError = (
+  instance: InstanceElement,
+  userEmails: Set<string>,
+  userFallbackResult: { value: string | undefined; configUserMissing: boolean}
+): ChangeError | undefined => {
+  const missingUsers = getMissingUsers(instance, userEmails)
+  if (_.isEmpty(missingUsers)) {
+    return undefined
+  }
+  const { value, configUserMissing } = userFallbackResult
+  if (value !== undefined) {
+    const detailedMessage = configUserMissing
+      ? `${MISSING_USERS_GENERIC_MSG} ${missingUsers.join(', ')}.\nSalto tried to fallback to the user specified, but could not find that username as well. If you continue, they will be set to deployer's username ${value} according to the environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`
+      : `${MISSING_USERS_GENERIC_MSG} ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${value} according to the environment's user fallback options. Learn more: Learn more: ${MISSING_USERS_DOC_LINK}`
+    return {
+      elemID: instance.elemID,
+      severity: 'Warning',
+      message: `Usernames will be overridden to ${value}`,
+      detailedMessage,
+    }
+  }
+  // we did not find a user fallback value
+  const detailedMessage = configUserMissing
+    ? `${MISSING_USERS_GENERIC_MSG} ${missingUsers.join(', ')}.\nIn addition, the defined fallback user was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`
+    : `${MISSING_USERS_GENERIC_MSG} ${missingUsers.join(', ')}.\nIn order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`
+  return {
+    elemID: instance.elemID,
+    severity: 'Error',
+    message: 'Element references users which don\'t exist in target environment',
+    detailedMessage,
+  }
+}
+
 /**
  * Verifies users exists before deployment of an element with user fields
  */
-export const missingUsersValidator: (client: ZendeskClient) =>
-  ChangeValidator = client => async changes => {
+export const missingUsersValidator: (client: ZendeskClient, deployConfig: ZedneskDeployConfig) =>
+  ChangeValidator = (client, deployConfig) => async changes => {
     const relevantInstances = await awu(changes)
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
@@ -60,18 +95,8 @@ export const missingUsersValidator: (client: ZendeskClient) =>
       paginationFuncCreator: paginate,
     })
     const usersEmails = new Set((await getUsers(paginator)).map(user => user.email))
-
+    const userFallbackResult = await getUserFallbackValue(deployConfig, usersEmails, client)
     return relevantInstances
-      .flatMap(instance => {
-        const missingUsers = getMissingUsers(instance, usersEmails)
-        if (_.isEmpty(missingUsers)) {
-          return []
-        }
-        return [{
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: `${missingUsers.length} references to users that don't exist in the target environment.`,
-          detailedMessage: `The following users don't exist in the target environment: ${missingUsers.join(', ')}.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
-        }]
-      })
+      .map(instance => getChangeError(instance, usersEmails, userFallbackResult))
+      .filter(isDefined)
   }

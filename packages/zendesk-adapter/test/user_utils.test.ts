@@ -17,6 +17,8 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
+import ZendeskClient from '../src/client/client'
+import { ZedneskDeployConfig } from '../src/config'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
 import * as usersUtilsModule from '../src/user_utils'
 
@@ -602,6 +604,67 @@ describe('userUtils', () => {
           policy_metrics: [],
         },
       )
+    })
+  })
+
+  describe('getUserFallbackValue', () => {
+    let deployConfig: ZedneskDeployConfig
+    let client: ZendeskClient
+    let mockGet: jest.SpyInstance
+    const { getUserFallbackValue } = usersUtilsModule
+    const existingUsers = new Set(['salto@io', 'saltoo@io', 'saltooo@io'])
+
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      client = new ZendeskClient({
+        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+      })
+      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet.mockResolvedValue({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' } } })
+    })
+
+    it('should return specific user value in case both user config options exist', async () => {
+      deployConfig = {
+        fallbackToDeployerOnMissingUsers: true,
+        fallbackToSpecificUserOnMissingUser: 'salto@io',
+      }
+      const { value, configUserMissing } = await getUserFallbackValue(deployConfig, existingUsers, client)
+      expect(value).toEqual('salto@io')
+      expect(configUserMissing).toEqual(false)
+    })
+
+    it('should return deployer user value in case it is true and there is no user specific value', async () => {
+      deployConfig = {
+        fallbackToDeployerOnMissingUsers: true,
+      }
+      const { value, configUserMissing } = await getUserFallbackValue(deployConfig, existingUsers, client)
+      expect(value).toEqual('saltoo@io')
+      expect(configUserMissing).toEqual(false)
+    })
+
+    it('should return deployer user value in case it is true and the specific user value is missing from target env', async () => {
+      deployConfig = {
+        fallbackToDeployerOnMissingUsers: true,
+        fallbackToSpecificUserOnMissingUser: 'missingUser@io',
+      }
+      const { value, configUserMissing } = await getUserFallbackValue(deployConfig, existingUsers, client)
+      expect(value).toEqual('saltoo@io')
+      expect(configUserMissing).toEqual(true)
+    })
+
+    it('configUserMissing should be true when fallbackToSpecificUserOnMissingUser does not exist in the target env', async () => {
+      deployConfig = {
+        fallbackToSpecificUserOnMissingUser: 'missingUser@io',
+      }
+      const { value, configUserMissing } = await getUserFallbackValue(deployConfig, existingUsers, client)
+      expect(value).toBeUndefined()
+      expect(configUserMissing).toEqual(true)
+    })
+
+    it('should return undefined in case there is no deployConfig', async () => {
+      const { value, configUserMissing } = await getUserFallbackValue({}, existingUsers, client)
+      expect(value).toBeUndefined()
+      expect(configUserMissing).toEqual(false)
     })
   })
 })

@@ -18,12 +18,18 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { Values } from '@salto-io/adapter-api'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { ElemID, InstanceElement, Values } from '@salto-io/adapter-api'
+import { ZedneskDeployConfig } from './config'
+import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
+
+// system options that does not contain a specific user value
+export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
 export type User = {
   id: number
@@ -33,15 +39,34 @@ export type User = {
   custom_role_id: number
 }
 
-const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
+type CurrentUserResponse = {
+  user: User
+}
+
+type UserReplacer = (instance: InstanceElement, mapping?: Record<string, string>) => ElemID[]
+
+type UserFieldsParams = {
+  fieldName: string[]
+  fieldsToReplace: { name: string; valuePath?: string[] }[]
+}
+
+const EXPECTED_USER_SCHEMA = Joi.object({
   id: Joi.number().required(),
   email: Joi.string().required(),
   role: Joi.string(),
   custom_role_id: Joi.number(),
-}).unknown(true)).required()
+}).unknown(true)
+
+const EXPECTED_USERS_SCHEMA = Joi.array().items(EXPECTED_USER_SCHEMA).required()
+
+const CURRENT_USER_RESPONSE_SCHEME = Joi.object({
+  user: EXPECTED_USER_SCHEMA,
+}).required()
+
+const isCurrentUserResponse = createSchemeGuard<CurrentUserResponse>(CURRENT_USER_RESPONSE_SCHEME, 'Received an invalid current user response')
 
 const areUsers = (values: unknown): values is User[] => {
-  const { error } = EXPECTED_USER_SCHEMA.validate(values)
+  const { error } = EXPECTED_USERS_SCHEMA.validate(values)
   if (error !== undefined) {
     log.warn(`Received an invalid response for the users values: ${error.message}`)
     return false
@@ -170,3 +195,37 @@ const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> =>
 }
 
 export const getUsers = getUsersFunc()
+
+/**
+ * Get user fallback value base on user's deploy config
+ */
+export const getUserFallbackValue = async (
+  deployConfig: ZedneskDeployConfig,
+  existingUsers: Set<string>,
+  client: ZendeskClient
+): Promise<{value: string | undefined; configUserMissing: boolean}> => {
+  const { fallbackToDeployerOnMissingUsers, fallbackToSpecificUserOnMissingUser } = deployConfig
+  if (fallbackToSpecificUserOnMissingUser !== undefined) {
+    if (existingUsers.has(fallbackToSpecificUserOnMissingUser)) {
+      return { value: fallbackToSpecificUserOnMissingUser, configUserMissing: false }
+    }
+    log.warn('User provided in fallbackToSpecificUserOnMissingUser does not exist in the target environemt')
+    if (!fallbackToDeployerOnMissingUsers) {
+      return { value: undefined, configUserMissing: true }
+    }
+  }
+  if (fallbackToDeployerOnMissingUsers) {
+    try {
+      const response = (await client.getSinglePage({
+        url: '/api/v2/users/me',
+      })).data
+      if (isCurrentUserResponse(response)) {
+        const deployer = response.user?.email
+        return { value: deployer, configUserMissing: fallbackToSpecificUserOnMissingUser !== undefined }
+      }
+    } catch (e) {
+      log.error('Attempt to get current user details has failed with error: %o', e)
+    }
+  }
+  return { value: undefined, configUserMissing: false }
+}

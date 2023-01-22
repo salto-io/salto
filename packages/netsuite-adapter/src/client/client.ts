@@ -17,9 +17,11 @@
 import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
-import { resolveValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { resolveValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { lookupValue } from '@salto-io/lowerdash/src/values'
+import { captureServiceIdInfo } from '../service_id_info'
 import { NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
@@ -41,8 +43,6 @@ import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-
-const scriptidReferenceIdRegex = RegExp('scriptid=[a-z0-9_]+', 'gm')
 
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
@@ -205,42 +205,51 @@ export default class NetsuiteClient {
       .toArray()
   }
 
-  private static createDependencyMap(
-    changesData: ReadonlyArray<ChangeDataType>
-  ):Record<string, string[]> {
-    const dependencyMap: Record<string, string[]> = {}
-    changesData
-      .filter(isInstanceElement)
-      .forEach(instance => walkOnElement({
-        element: instance,
-        func: ({ value }) => {
-          if (scriptidReferenceIdRegex.test(value)) {
-            const currentScriptId = value.split('=')[1].slice(0, -1)
-            const currentElement = instance.elemID.getFullName()
-            if (!(currentElement in dependencyMap)) {
-              dependencyMap[currentElement] = [currentScriptId]
-            } else {
-              dependencyMap[currentElement].push(currentScriptId)
-            }
-          }
-          return WALK_NEXT_STEP.RECURSE
-        },
-      }))
+  private static async createDependencyMap(
+    changes: ReadonlyArray<Change>,
+    deployReferencedElements: boolean,
+    elementsSourceIndex: LazyElementsSourceIndexes,
+  ):Promise<collections.map.DefaultMap<string, Set<string>>> {
+    const dependencyMap = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
+    const elemIdsAndCustInfoArr = await awu(changes)
+      .map(getChangeData)
+      .map(async instance => ({
+        elemId: instance.elemID,
+        custInfo: await NetsuiteClient.toCustomizationInfos(
+          [instance], deployReferencedElements, elementsSourceIndex
+        ),
+      })).toArray()
+
+    elemIdsAndCustInfoArr.forEach(obj => {
+      lookupValue(obj.custInfo[0].values, val => {
+        if (!_.isString(val)) {
+          return
+        }
+        const serviceIdInfoArray = captureServiceIdInfo(val)
+        if (serviceIdInfoArray.length > 0) {
+          serviceIdInfoArray
+            .map(serviceIdInfo => dependencyMap
+              .get(obj.elemId.getFullName())
+              .add(serviceIdInfo.serviceId))
+        }
+      })
+    })
     return dependencyMap
   }
 
-  private static getManifestErrorElemIdName(
+  private static getFailedManifestErrorElemIds(
     error: ManifestValidationError,
-    dependencyMap: Record<string, string[]>,
+    dependencyMap: collections.map.DefaultMap<string, Set<string>>,
     changes: ReadonlyArray<Change>
   ): Set<string> {
     const changeData = changes.map(getChangeData)
-    const elementsToRemoveElemIDs = new Set<string>()
-    Object.keys(dependencyMap).forEach(key => {
-      if (error.errorScriptIds?.some(scriptid => dependencyMap[key].includes(scriptid))) {
-        elementsToRemoveElemIDs.add(key)
-      }
-    })
+    log.debug('remove elements which contain a scriptid that doesnt exist in target account')
+    const elementsToRemoveElemIDs = new Set<string>(
+      error.errorScriptIds.length === 0
+        ? [] : Array.from(dependencyMap.keys())
+          .filter(topLevelChangedElement =>
+            error.errorScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement).has(scriptid)))
+    )
     return elementsToRemoveElemIDs.size === 0
       ? new Set(changeData.map(elem => elem.elemID.getFullName()))
       : elementsToRemoveElemIDs
@@ -265,7 +274,9 @@ export default class NetsuiteClient {
     const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
 
     const errors: Error[] = []
-
+    const dependencyMap = await NetsuiteClient.createDependencyMap(
+      changesToDeploy, deployReferencedElements, elementsSourceIndex
+    )
     while (changesToDeploy.length > 0) {
       const changedInstances = changesToDeploy.map(getChangeData)
       // eslint-disable-next-line no-await-in-loop
@@ -274,7 +285,6 @@ export default class NetsuiteClient {
         deployReferencedElements,
         elementsSourceIndex,
       )
-      const dependencyMap = NetsuiteClient.createDependencyMap(changedInstances)
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
@@ -290,7 +300,7 @@ export default class NetsuiteClient {
       } catch (error) {
         errors.push(error)
         if (error instanceof ManifestValidationError) {
-          const elemIdNamesToRemove = NetsuiteClient.getManifestErrorElemIdName(error, dependencyMap, changesToDeploy)
+          const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
           log.debug('manifest validation error: sdf failed to deploy: %o', Array.from(elemIdNamesToRemove))
           _.remove(
             changesToDeploy,

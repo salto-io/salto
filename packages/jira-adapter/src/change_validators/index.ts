@@ -42,6 +42,7 @@ import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflow_scheme_dups'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
 import { fieldContextValidator } from './field_contexts/field_contexts'
+import { permissionSchemeDeploymentValidator } from './permission_scheme'
 
 const {
   deployTypesNotSupportedValidator,
@@ -76,6 +77,7 @@ export default (
     wrongUserPermissionSchemeValidator(client, config, getIdMapFunc),
     accountIdValidator(client, config, getIdMapFunc),
     workflowSchemeDupsValidator,
+    permissionSchemeDeploymentValidator(client),
   ]
 
   return createChangeValidator(validators)

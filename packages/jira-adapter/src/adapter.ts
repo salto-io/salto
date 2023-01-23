@@ -112,6 +112,7 @@ import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/pr
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 import commonFilters from './filters/common'
+import accountInfoFilter from './filters/account_info'
 
 const {
   generateTypes,
@@ -123,6 +124,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  accountInfoFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,

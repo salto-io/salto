@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, InstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
@@ -28,8 +28,12 @@ const log = logger(module)
 /**
  * Verify that the field contexts are valid.
  */
-export const fieldContextValidator: ChangeValidator = async (_changes, elementSource) => {
+export const fieldContextValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
+    return []
+  }
+  if (!changes.find(change =>
+    [PROJECT_TYPE, FIELD_CONTEXT_TYPE_NAME].includes(getChangeData(change).elemID.typeName))) {
     return []
   }
 

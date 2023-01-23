@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, ReadOnlyElementsSource, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, ReadOnlyElementsSource, InstanceElement, ReferenceExpression, toChange, Change, ChangeDataType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
 import { PROJECT_CONTEXTS_FIELD } from '../../../src/filters/fields/contexts_projects_filter'
@@ -30,6 +30,7 @@ describe('Field contexts', () => {
   let contextInstance: InstanceElement
   let globalContextInstance: InstanceElement
   let fieldInstance: InstanceElement
+  let changes: ReadonlyArray<Change<ChangeDataType>>
 
   beforeEach(() => {
     contextType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME) })
@@ -75,6 +76,7 @@ describe('Field contexts', () => {
 
     elements = [contextInstance, projectInstance, fieldInstance, globalContextInstance]
     elementsSource = buildElementsSourceFromElements(elements)
+    changes = elements.map(element => toChange({ after: element }))
   })
 
   it('should return an error when setting a context that is used in a project to be global', async () => {
@@ -84,7 +86,7 @@ describe('Field contexts', () => {
       new ReferenceExpression(globalContextInstance.elemID, globalContextInstance),
     ]
     expect(await fieldContextValidator(
-      [],
+      changes,
       elementsSource
     )).toEqual([
       {
@@ -104,7 +106,7 @@ describe('Field contexts', () => {
       new ReferenceExpression(contextInstance.elemID, contextInstance),
     ]
     expect(await fieldContextValidator(
-      [],
+      changes,
       elementsSource
     )).toEqual([
       {
@@ -119,7 +121,7 @@ describe('Field contexts', () => {
   it('should return and error when creating a non global context with other references to its field', async () => {
     projectInstance.value[PROJECT_CONTEXTS_FIELD] = []
     expect(await fieldContextValidator(
-      [],
+      changes,
       elementsSource
     )).toEqual([
       {
@@ -133,8 +135,22 @@ describe('Field contexts', () => {
 
   it('should not return an error when all contexts have valid references', async () => {
     expect(await fieldContextValidator(
+      changes,
+      elementsSource
+    )).toEqual([])
+  })
+  it('should not return an error there are no changes', async () => {
+    projectInstance.value[PROJECT_CONTEXTS_FIELD] = []
+    expect(await fieldContextValidator(
       [],
       elementsSource
+    )).toEqual([])
+  })
+  it('should not return an error element source is not defined', async () => {
+    projectInstance.value[PROJECT_CONTEXTS_FIELD] = []
+    expect(await fieldContextValidator(
+      changes,
+      undefined,
     )).toEqual([])
   })
 })

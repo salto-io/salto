@@ -14,32 +14,33 @@
 * limitations under the License.
 */
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isRemovalOrModificationChange, SeverityLevel } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
+
+const { isDefined } = values
 
 const { awu } = collections.asynciterable
 
-type WorkflowTransitionType = {
-    rules: {
-        validators: {
-            configuration?: {
-                value: string
-            }
-        }[]
+const workflowHasEmptyValidator = (instance: InstanceElement): string | undefined => {
+  for (const transition of instance.value.transitions) {
+    for (const validator of transition.rules.validators) {
+      if (!('configuration' in validator)) {
+        return validator.type
+      }
     }
+  }
+  return undefined
 }
 
-const workflowHasEmptyValidator = (instance: InstanceElement): boolean =>
-  instance.value.transitions
-    .some((transition: WorkflowTransitionType) => transition.rules.validators
-      .some(validator => !('configuration' in validator)))
-
-const createEmptyValidatorWorkflowError = (instance: InstanceElement): ChangeError => ({
+const createEmptyValidatorWorkflowError = (
+  instance: InstanceElement,
+  typeName?: string,
+): ChangeError | undefined => (typeName ? {
   elemID: instance.elemID,
-  severity: 'Error' as SeverityLevel,
-  message: 'some message',
-  detailedMessage: `raaaaaaaaa ${instance.elemID.getFullName()}`,
-})
+  severity: 'Warning' as SeverityLevel,
+  message: 'Invalid workflow transition validator won’t be deployed',
+  detailedMessage: `This workflow has a ${typeName} transition validator, which is missing configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or add a field to it`,
+} : undefined)
 
 export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async changes => (
   awu(changes)
@@ -47,7 +48,8 @@ export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async chan
     .filter(isRemovalOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-    .filter(workflowHasEmptyValidator)
-    .map(createEmptyValidatorWorkflowError)
+    .map(instance => ({ instance, typeName: workflowHasEmptyValidator(instance) }))
+    .map(({ instance, typeName }) => createEmptyValidatorWorkflowError(instance, typeName))
+    .filter(isDefined)
     .toArray()
 )

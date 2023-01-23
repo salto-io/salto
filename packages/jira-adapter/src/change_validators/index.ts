@@ -25,7 +25,7 @@ import { JiraConfig } from '../config/config'
 import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
-import { workflowValidator } from './workflows/workflow'
+import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
@@ -61,7 +61,7 @@ export default (
     projectDeletionValidator(client, config),
     statusValidator,
     privateApiValidator(config),
-    workflowValidator,
+    readOnlyWorkflowValidator,
     dashboardGadgetsValidator,
     dashboardLayoutValidator,
     permissionTypeValidator,

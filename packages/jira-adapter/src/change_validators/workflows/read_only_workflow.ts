@@ -19,7 +19,7 @@ import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const { awu } = collections.asynciterable
 
-export const workflowValidator: ChangeValidator = async changes => (
+export const readOnlyWorkflowValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isInstanceChange)
     .filter(isRemovalOrModificationChange)

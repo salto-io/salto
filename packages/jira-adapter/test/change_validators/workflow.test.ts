@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { workflowValidator } from '../../src/change_validators/workflow'
+import { workflowValidator } from '../../src/change_validators/workflows/workflow'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../src/constants'
 
 describe('workflowValidator', () => {

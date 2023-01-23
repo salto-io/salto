@@ -33,7 +33,7 @@ export const getGlobalContextsUsedInProjectErrors = (
           elemID: context.elemID,
           severity: 'Error' as const,
           message: 'Global field context can’t be referenced by a project.',
-          detailedMessage: `This field context is global, but the following projects still reference it: ${referencingProjects.join(', ')} Global field contexts can’t be referenced by projects. Please change this context to a non-global one, or add the projects without the reference to this deployment`,
+          detailedMessage: `This field context is global, but the following projects still reference it: ${referencingProjects.join(', ')}. Global field contexts can’t be referenced by projects. Please change this context to a non-global one, or add the projects without the reference to this deployment`,
         }
       }
       return undefined

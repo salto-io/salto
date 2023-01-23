@@ -20,6 +20,15 @@ import { PROJECT_CONTEXTS_FIELD } from '../../../src/filters/fields/contexts_pro
 import { fieldContextValidator } from '../../../src/change_validators/field_contexts/field_contexts'
 import { JIRA, PROJECT_TYPE } from '../../../src/constants'
 
+const mockLogWarn = jest.fn()
+jest.mock('@salto-io/logging', () => ({
+  ...jest.requireActual<{}>('@salto-io/logging'),
+  logger: jest.fn()
+    .mockReturnValue({
+      warn: jest.fn((...args) => mockLogWarn(...args)),
+    }),
+}))
+
 describe('Field contexts', () => {
   let projectType: ObjectType
   let contextType: ObjectType
@@ -33,6 +42,7 @@ describe('Field contexts', () => {
   let changes: ReadonlyArray<Change<ChangeDataType>>
 
   beforeEach(() => {
+    jest.clearAllMocks()
     contextType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONTEXT_TYPE_NAME) })
     projectType = new ObjectType({ elemID: new ElemID(JIRA, PROJECT_TYPE) })
     fieldType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) })
@@ -64,7 +74,7 @@ describe('Field contexts', () => {
     )
 
     fieldInstance = new InstanceElement(
-      'instance',
+      'field_name',
       fieldType,
       {
         contexts: [
@@ -138,6 +148,22 @@ describe('Field contexts', () => {
       changes,
       elementsSource
     )).toEqual([])
+  })
+  it('should warn when one of the field contexts is not a reference', async () => {
+    fieldInstance.value.contexts.push('not a reference')
+    expect(await fieldContextValidator(
+      changes,
+      elementsSource
+    )).toEqual([])
+    expect(mockLogWarn).toHaveBeenCalledWith('Found a non reference expression in field jira.Field.instance.field_name')
+  })
+  it('should warn when one of the project contexts is not a reference', async () => {
+    projectInstance.value[PROJECT_CONTEXTS_FIELD].push('not a reference')
+    expect(await fieldContextValidator(
+      changes,
+      elementsSource
+    )).toEqual([])
+    expect(mockLogWarn).toHaveBeenCalledWith('Found a non reference expression in project jira.Project.instance.project_name')
   })
   it('should not return an error there are no changes', async () => {
     projectInstance.value[PROJECT_CONTEXTS_FIELD] = []

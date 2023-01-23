@@ -42,6 +42,7 @@ import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflow_scheme_dups'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
+import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 
 const {
   deployTypesNotSupportedValidator,
@@ -61,6 +62,7 @@ export default (
     projectDeletionValidator(client, config),
     statusValidator,
     privateApiValidator(config),
+    emptyValidatorWorkflowChangeValidator,
     readOnlyWorkflowValidator,
     dashboardGadgetsValidator,
     dashboardLayoutValidator,

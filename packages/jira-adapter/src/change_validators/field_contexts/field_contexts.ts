@@ -26,7 +26,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 /**
- * Verify that the field context is referenced by a project.
+ * Verify that the field contexts are valid.
  */
 export const fieldContextValidator: ChangeValidator = async (_changes, elementSource) => {
   if (elementSource === undefined) {

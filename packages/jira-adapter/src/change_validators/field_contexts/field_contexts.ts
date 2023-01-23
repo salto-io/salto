@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, InstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
@@ -24,6 +24,21 @@ import { getGlobalContextsUsedInProjectErrors } from './referenced_global_contex
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+const getFieldContexts = async (
+  field: InstanceElement,
+  elementSource: ReadOnlyElementsSource,
+): Promise<InstanceElement[]> =>
+  awu(field.value.contexts)
+    .filter((ref): ref is ReferenceExpression => {
+      if (!isReferenceExpression(ref)) {
+        log.warn(`Found a non reference expression in field ${field.elemID.getFullName()}`)
+        return false
+      }
+      return true
+    })
+    .map((ref: ReferenceExpression) => ref.getResolvedValue(elementSource))
+    .toArray()
 
 /**
  * Verify that the field contexts are valid.
@@ -56,22 +71,11 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .toArray()
-  const getFieldContexts = async (field: InstanceElement): Promise<InstanceElement[]> =>
-    awu(field.value.contexts)
-      .filter((ref): ref is ReferenceExpression => {
-        if (!isReferenceExpression(ref)) {
-          log.warn(`Found a non reference expression in field ${field.elemID.getFullName()}`)
-          return false
-        }
-        return true
-      })
-      .map((ref: ReferenceExpression) => ref.getResolvedValue(elementSource))
-      .toArray()
   const fieldsToContexts = Object.fromEntries(await awu(fields
     .filter(field => field.value.contexts !== undefined))
     .map(async field => [
       field.elemID.getFullName(),
-      await getFieldContexts(field),
+      await getFieldContexts(field, elementSource),
     ]).toArray())
   const projectNamesToContexts: Record<string, Set<string>> = Object.fromEntries(projects
     .filter(project => project.value[PROJECT_CONTEXTS_FIELD] !== undefined)

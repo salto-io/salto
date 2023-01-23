@@ -19,15 +19,14 @@ import {
   isAdditionOrModificationChange, isInstanceChange,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { DUPLICATE_RULE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { apiName } from '../transformers/transformer'
 
-const { awu, groupByAsync } = collections.asynciterable
-const { isDefined } = values
+const { awu } = collections.asynciterable
 
 export const SORT_ORDER = 'sortOrder'
 
@@ -64,17 +63,20 @@ const createSortOrderError = (
   on the type ${objectName} are not in sequential order. Order: ${order}`,
 })
 
-const isInvalidSortOrder = (sortOrder: number[]): boolean => {
-  const maxSortOrder = _.last(sortOrder)
-  return isDefined(maxSortOrder)
-    && !_.isEqual(sortOrder.sort(), _.range(1, maxSortOrder + 1))
-}
+const isInvalidSortOrder = (sortOrders: number[]): boolean => (
+  sortOrders
+    .sort()
+    .some((sortOrder, index) => sortOrder !== index + 1)
+)
 
 const changeValidator: ChangeValidator = async (changes, elementsSource) => {
+  if (elementsSource === undefined) {
+    return []
+  }
   const isInstanceOfTypeDuplicateRule = async (instance: InstanceElement): Promise<boolean> => (
     await apiName(await instance.getType(elementsSource)) === DUPLICATE_RULE_METADATA_TYPE
   )
-  const relatedChangesByObjectName = await groupByAsync(
+  const relatedChangesByObjectName = _.groupBy(
     await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
@@ -83,7 +85,7 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
       .toArray() as Change<DuplicateRuleInstance>[],
     change => getRelatedObjectName(getChangeData(change))
   )
-  if (_.isEmpty(relatedChangesByObjectName) || elementsSource === undefined) {
+  if (_.isEmpty(relatedChangesByObjectName)) {
     return []
   }
   const duplicateRuleInstances = await awu(await elementsSource.getAll())

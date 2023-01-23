@@ -20,13 +20,13 @@ const { isDefined } = values
 
 export const getUnreferencedContextErrors = (
   fieldsToContexts: Record<string, ReferenceExpression[]>,
-  projectContexts: string[],
+  projectContexts: Set<string>,
 ): ChangeError[] =>
   Object.entries(fieldsToContexts).map(([_field, contexts]) => {
     const fieldContextsIds = contexts
       .filter(context => !context.value.isGlobalContext)
       .map(context => context.elemID)
-    const notFoundContexts = fieldContextsIds.filter(context => !projectContexts.includes(context.getFullName()))
+    const notFoundContexts = fieldContextsIds.filter(context => !projectContexts.has(context.getFullName()))
     if (notFoundContexts.length === 0) {
       return undefined
     }

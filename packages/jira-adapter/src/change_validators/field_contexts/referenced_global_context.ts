@@ -20,13 +20,13 @@ const { isDefined } = values
 
 export const getGlobalContextsUsedInProjectErrors = (
   contexts: InstanceElement[],
-  projectsToContexts: Record<string, string[]>,
+  projectsToContexts: Record<string, Set<string>>,
 ): ChangeError[] =>
   contexts
     .filter(context => context.value.isGlobalContext)
     .map(context => {
       const referencingProjects = Object.entries(projectsToContexts)
-        .filter(([_project, projectContexts]) => projectContexts.includes(context.elemID.getFullName()))
+        .filter(([_project, projectContexts]) => projectContexts.has(context.elemID.getFullName()))
         .map(([project, _projectContexts]) => project)
       if (referencingProjects.length > 0) {
         return {

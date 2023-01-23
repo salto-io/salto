@@ -73,21 +73,25 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
       field.elemID.getFullName(),
       await getFieldContexts(field),
     ]).toArray())
-  const projectNamesToContexts: Record<string, string[]> = Object.fromEntries(projects
+  const projectNamesToContexts: Record<string, Set<string>> = Object.fromEntries(projects
     .filter(project => project.value[PROJECT_CONTEXTS_FIELD] !== undefined)
     .map(project => [
       project.elemID.name,
-      project.value[PROJECT_CONTEXTS_FIELD].filter((ref: ReferenceExpression) => {
+      new Set(project.value[PROJECT_CONTEXTS_FIELD].filter((ref: ReferenceExpression) => {
         if (!isReferenceExpression(ref)) {
           log.warn(`Found a non reference expression in project ${project.elemID.getFullName()}`)
           return false
         }
         return true
-      }).map((context: ReferenceExpression) => context.elemID.getFullName()),
+      }).map((context: ReferenceExpression) => context.elemID.getFullName())),
     ]))
+  const mergedContexts = Object.values(projectNamesToContexts).reduce((acc, projectContexts) => {
+    projectContexts.forEach(context => acc.add(context))
+    return acc
+  }, new Set<string>())
 
   return [
-    ...getUnreferencedContextErrors(fieldsToContexts, Object.values(projectNamesToContexts).flat()),
+    ...getUnreferencedContextErrors(fieldsToContexts, mergedContexts),
     ...getGlobalContextsUsedInProjectErrors(contexts, projectNamesToContexts),
   ]
 }

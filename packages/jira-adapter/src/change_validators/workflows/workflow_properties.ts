@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { isWorkflowInstance, Status, Transition } from '../../filters/workflow/types'
 import { Values } from '@salto-io/adapter-api/src/values'
+import { isWorkflowInstance, Status, Transition } from '../../filters/workflow/types'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 

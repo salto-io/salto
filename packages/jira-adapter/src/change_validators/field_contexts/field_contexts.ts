@@ -67,7 +67,7 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
       })
       .map((ref: ReferenceExpression) => ref.getResolvedValue(elementSource))
       .toArray()
-  const fieldsToContexts = await Object.fromEntries(await awu(fields
+  const fieldsToContexts = Object.fromEntries(await awu(fields
     .filter(field => field.value.contexts !== undefined))
     .map(async field => [
       field.elemID.getFullName(),

@@ -23,6 +23,7 @@ import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config/config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
+import localeFilter from './filters/locale'
 import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
@@ -138,6 +139,7 @@ export const DEFAULT_FILTERS = [
   duplicateIdsFilter,
   // This must run after duplicateIdsFilter
   unresolvedParentsFilter,
+  localeFilter,
   contextReferencesFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,

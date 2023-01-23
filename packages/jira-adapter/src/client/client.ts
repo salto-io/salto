@@ -36,6 +36,10 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
 
+export const FORCE_ACCEPT_LANGUAGE_HEADERS = {
+  'Accept-Language': 'en',
+  'X-Force-Accept-Language': 'true',
+}
 
 export const PRIVATE_API_HEADERS = {
   'X-Atlassian-Token': 'no-check',

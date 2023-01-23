@@ -31,7 +31,7 @@ const { makeArray } = collections.array
 // system options that does not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
-export type User = {
+type User = {
   id: number
   email: string
   role: string

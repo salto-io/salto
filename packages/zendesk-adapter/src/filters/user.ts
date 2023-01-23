@@ -18,10 +18,10 @@ import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { getUsers, TYPE_NAME_TO_REPLACER, User, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
+import { getUsers, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
 import { deployModificationFunc } from '../replacers_utils'
-import { DEPLOY_CONFIG } from '../config'
 import { paginate } from '../client/pagination'
+import { DEPLOY_CONFIG } from '../config'
 
 const { createPaginator } = clientUtils
 
@@ -32,7 +32,7 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => (
 // Replace missing user values with user fallback value provided in deploy config
 const replaceMissingUsers = (
   changes: Change<InstanceElement>[],
-  users: User[],
+  users: Set<string>,
   fallbackUser: string
 ): void => {
   const instances = changes.map(change => getChangeData(change))
@@ -40,7 +40,7 @@ const replaceMissingUsers = (
     const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
     userPaths.forEach(path => {
       const userValue = resolvePath(instance, path)
-      if (!VALID_USER_VALUES.includes(userValue) && !users.includes(userValue)) {
+      if (!VALID_USER_VALUES.includes(userValue) && !users.has(userValue)) {
         setPath(instance, path, fallbackUser)
       }
     })
@@ -80,14 +80,14 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       if (_.isEmpty(users)) {
         return
       }
-
+      const userEmails = new Set(users.map(user => user.email))
       const { value } = await getUserFallbackValue(
         config[DEPLOY_CONFIG],
-        new Set(users.map(user => user.email)),
+        userEmails,
         client
       )
       if (value !== undefined) {
-        replaceMissingUsers(relevantChanges, users, value)
+        replaceMissingUsers(relevantChanges, userEmails, value)
       }
 
       userIdToEmail = Object.fromEntries(

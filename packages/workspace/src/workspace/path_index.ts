@@ -181,15 +181,15 @@ export const overridePathIndex = async (
 export const updatePathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],
-  accountsToMaintain: string[]
+  shouldMaintain?: (elemID: ElemID) => boolean
 ): Promise<void> => {
-  if (accountsToMaintain.length === 0) {
+  if (shouldMaintain === undefined) {
     await overridePathIndex(current, unmergedElements)
     return
   }
   const entries = getElementsPathHints(unmergedElements)
   const oldPathHintsToMaintain = await awu(current.entries())
-    .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
+    .filter(e => shouldMaintain(ElemID.fromFullName(e.key)))
     .concat(entries)
     .toArray()
   await current.clear()

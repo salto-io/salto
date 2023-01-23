@@ -23,10 +23,10 @@ const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 export interface ElementsSource {
-  list(): Promise<AsyncIterable<ElemID>>
+  list(filter?: (key: string) => boolean): Promise<AsyncIterable<ElemID>>
   has(id: ElemID): Promise<boolean>
   get(id: ElemID): Promise<Value>
-  getAll(): Promise<AsyncIterable<Element>>
+  getAll(filter?: (key: string) => boolean): Promise<AsyncIterable<Element>>
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
@@ -67,12 +67,12 @@ export class RemoteElementSource implements ElementsSource {
     this.elements = elementsMap
   }
 
-  async list(): Promise<AsyncIterable<ElemID>> {
-    return awu(this.elements.keys()).map(fullname => ElemID.fromFullName(fullname))
+  async list(filter?: (key: string) => boolean): Promise<AsyncIterable<ElemID>> {
+    return awu(this.elements.keys({ filter })).map(fullname => ElemID.fromFullName(fullname))
   }
 
-  async getAll(): Promise<AsyncIterable<Element>> {
-    return this.elements.values()
+  async getAll(filter?: (key: string) => boolean): Promise<AsyncIterable<Element>> {
+    return this.elements.values({ filter })
   }
 
   async get(id: ElemID): Promise<Value | undefined> {
@@ -158,9 +158,9 @@ export const mapReadOnlyElementsSource = (
     const origValue = await source.get(id)
     return origValue !== undefined ? func(origValue) : undefined
   },
-  getAll: async () => awu(await source.getAll())
+  getAll: async (filter?: (key: string) => boolean) => awu(await source.getAll(filter))
     .map(async element => func(element))
     .filter(values.isDefined),
   has: id => source.has(id),
-  list: () => source.list(),
+  list: (filter?: (key: string) => boolean) => source.list(filter),
 })

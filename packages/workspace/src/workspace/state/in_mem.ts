@@ -67,8 +67,10 @@ export const buildInMemState = (
   }
 
   return {
-    getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
-    list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
+    getAll: async (filter?: (key: string) => boolean): Promise<AsyncIterable<Element>> =>
+      (await stateData()).elements.getAll(filter),
+    list: async (filter?: (key: string) => boolean): Promise<AsyncIterable<ElemID>> =>
+      (await stateData()).elements.list(filter),
     get: async (id: ElemID): Promise<Element | undefined> => (await stateData()).elements.get(id),
     has: async (id: ElemID): Promise<boolean> => (await stateData()).elements.has(id),
     delete: removeId,
@@ -109,11 +111,11 @@ export const buildInMemState = (
     },
     updatePathIndex: async (
       unmergedElements: Element[],
-      servicesNotToChange: string[]
+      shouldMaintain: (elemID: ElemID) => boolean,
     ): Promise<void> => {
       const currentStateData = await stateData()
       await updatePathIndex(
-        currentStateData.pathIndex, unmergedElements, servicesNotToChange
+        currentStateData.pathIndex, unmergedElements, shouldMaintain,
       )
     },
     getPathIndex: async (): Promise<PathIndex> =>

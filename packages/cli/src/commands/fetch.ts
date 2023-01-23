@@ -67,6 +67,7 @@ const createFetchFromWorkspaceCommand = (
   otherWorkspacePath: string,
   env: string,
   fromState: boolean,
+  elementsScope?: string[]
 ): FetchFunc => async (workspace, progressEmitter, accounts) => {
   let otherWorkspace: Workspace
   try {
@@ -84,6 +85,7 @@ const createFetchFromWorkspaceCommand = (
     accounts,
     env,
     fromState,
+    elementsScope,
   })
 }
 
@@ -255,6 +257,7 @@ type FetchArgs = {
   fromWorkspace?: string
   fromEnv?: string
   fromState: boolean
+  elementsScope?: string[]
 } & AccountsArg & EnvArg & UpdateModeArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
@@ -266,13 +269,19 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const {
-    force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv, fromState,
+    force, stateOnly, accounts, mode, regenerateSaltoIds,
+    fromWorkspace, fromEnv, fromState, elementsScope,
   } = input
   if (
     [fromEnv, fromWorkspace].some(values.isDefined)
     && ![fromEnv, fromWorkspace].every(values.isDefined)
   ) {
     errorOutputLine('The fromEnv and fromWorkspace arguments must both be provided.', output)
+    outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
+  if (elementsScope && !fromEnv) {
+    errorOutputLine('elementsScope can only be used together with fromEnv and fromWorkspace.', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError
   }
@@ -316,6 +325,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
       fromWorkspace,
       fromEnv,
       fromState,
+      elementsScope,
     ) : apiFetch,
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
@@ -377,6 +387,13 @@ const fetchDef = createWorkspaceCommand({
         description: 'Fetch the data from another workspace from the state',
         type: 'boolean',
         default: false,
+      },
+      {
+        name: 'elementsScope',
+        alias: 'es',
+        required: false,
+        description: 'The scope of the Fetch From workspace',
+        type: 'stringsList',
       },
     ],
   },

@@ -231,6 +231,7 @@ export type FetchFromWorkspaceFuncParams = {
   accounts?: string[]
   services?: string[]
   fromState?: boolean
+  elementsScope?: string[]
   env: string
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
@@ -239,16 +240,21 @@ const updateStateWithFetchResults = async (
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
-  fetchedAccounts: string[]
+  fetchedAccounts: string[],
+  shouldMaintain?: (elemID: ElemID) => boolean,
 ): Promise<void> => {
-  const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
+  const actualShouldMaintain = shouldMaintain
+    ?? ((elemID: ElemID): boolean =>
+      (!shouldElementBeIncluded(fetchedAccounts)(elemID)))
   const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
-    .filter(element => !fetchElementsFilter(element.elemID)).toArray()
+    .filter(element => actualShouldMaintain(element.elemID)).toArray()
   await workspace.state()
     .override(awu(mergedElements)
       .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
-  await workspace.state().updatePathIndex(unmergedElements,
-    (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
+  await workspace.state().updatePathIndex(
+    unmergedElements,
+    actualShouldMaintain,
+  )
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }
 
@@ -322,6 +328,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   services,
   fromState = false,
   env,
+  elementsScope,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
   const fetchAccounts = services ?? accounts ?? workspace.accounts()
@@ -344,10 +351,21 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     env,
     fromState,
     progressEmitter,
+    elementsScope,
   )
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
+  const shouldMaintain = (elemID: ElemID): boolean => (
+    !shouldElementBeIncluded(fetchAccounts)(elemID)
+    || (!!elementsScope && !elementsScope.includes(elemID.getFullName()))
+  )
+  await updateStateWithFetchResults(
+    workspace,
+    elements,
+    unmergedElements,
+    fetchAccounts,
+    shouldMaintain,
+  )
   return {
     changes,
     fetchErrors: errors,

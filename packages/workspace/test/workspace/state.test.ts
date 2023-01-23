@@ -166,7 +166,10 @@ describe('state', () => {
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
       const oneElement = [newElem]
-      await state.updatePathIndex(oneElement, ['salesforce'])
+      await state.updatePathIndex(
+        oneElement,
+        (e: ElemID) => (e.adapter === 'salesforce'),
+      )
       const index = await awu((await state.getPathIndex()).entries()).toArray()
       expect(index).toEqual(getElementsPathHints([newElem, elem]))
     })

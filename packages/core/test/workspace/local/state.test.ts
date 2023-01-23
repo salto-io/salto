@@ -292,7 +292,7 @@ describe('local state', () => {
     const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
     // This doesn't fully test the update functionality. That should be tested in path index test.
     // This just tests that we reach the function.
-    await state.updatePathIndex([mockElement], [])
+    await state.updatePathIndex([mockElement], () => true)
     const entries = await awu((await state.getPathIndex()).entries()).toArray()
     expect(entries).toEqual(pathIndex.getElementsPathHints([mockElement]))
   })

@@ -56,7 +56,7 @@ describe('maskingValidator', () => {
         elemID: instance.elemID,
         severity: 'Info',
         message: 'Masked data will be deployed to the service',
-        detailedMessage: '',
+        detailedMessage: DETAILED_MESSAGE,
         deployActions: {
           postAction: {
             title: 'Update deployed masked data',
@@ -85,7 +85,7 @@ describe('maskingValidator', () => {
         elemID: instance.elemID,
         severity: 'Info',
         message: 'Masked data will be deployed to the service',
-        detailedMessage: '',
+        detailedMessage: DETAILED_MESSAGE,
         deployActions: {
           postAction: {
             title: 'Update deployed masked data',

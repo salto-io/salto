@@ -33,7 +33,7 @@ export const createChangeError = (
     elemID: getChangeData(change).elemID,
     severity: isModificationChange(change) ? 'Warning' : 'Info',
     message: 'Masked data will be deployed to the service',
-    detailedMessage: isModificationChange(change) ? DETAILED_MESSAGE : '',
+    detailedMessage: DETAILED_MESSAGE,
     deployActions: {
       postAction: {
         title: 'Update deployed masked data',

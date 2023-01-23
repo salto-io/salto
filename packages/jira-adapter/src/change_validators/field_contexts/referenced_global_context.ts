@@ -13,10 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeError, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 
 const { isDefined } = values
+
+const getGlobalContextsUsedInProjectError = (id: ElemID): ChangeError => ({
+  elemID: id,
+  severity: 'Error' as const,
+  message: 'Global field context can’t be referenced by a project.',
+  detailedMessage: 'This field context is global, but the project still references it. Global field contexts can’t be referenced by projects. Please change this context to a non-global one, or add the project without the reference to this deployment',
+})
 
 export const getGlobalContextsUsedInProjectErrors = (
   contexts: InstanceElement[],
@@ -29,12 +36,7 @@ export const getGlobalContextsUsedInProjectErrors = (
         .filter(([_project, projectContexts]) => projectContexts.has(context.elemID.getFullName()))
         .map(([project, _projectContexts]) => project)
       if (referencingProjects.length > 0) {
-        return {
-          elemID: context.elemID,
-          severity: 'Error' as const,
-          message: 'Global field context can’t be referenced by a project.',
-          detailedMessage: `This field context is global, but the following projects still reference it: ${referencingProjects.join(', ')}. Global field contexts can’t be referenced by projects. Please change this context to a non-global one, or add the projects without the reference to this deployment`,
-        }
+        return getGlobalContextsUsedInProjectError(context.elemID)
       }
       return undefined
     }).filter(isDefined).flat()

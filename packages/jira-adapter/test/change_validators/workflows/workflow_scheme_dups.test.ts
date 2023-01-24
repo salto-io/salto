@@ -15,8 +15,8 @@
 */
 import { toChange, ObjectType, ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { workflowSchemeDupsValidator } from '../../src/change_validators/workflows/workflow_scheme_dups'
-import { JIRA, WORKFLOW_SCHEME_TYPE_NAME } from '../../src/constants'
+import { workflowSchemeDupsValidator } from '../../../src/change_validators/workflows/workflow_scheme_dups'
+import { JIRA, WORKFLOW_SCHEME_TYPE_NAME } from '../../../src/constants'
 
 describe('workflowSchemeDupsValidator', () => {
   let type: ObjectType

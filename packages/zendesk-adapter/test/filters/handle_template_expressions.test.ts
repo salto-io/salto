@@ -17,10 +17,11 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator, {
+  ORGANIZATION_FIELD,
   TICKET_FIELD_OPTION_TITLE,
-  TICKET_TICKET_FIELD,
+  TICKET_TICKET_FIELD, USER_FIELD,
 } from '../../src/filters/handle_template_expressions'
-import { ZENDESK } from '../../src/constants'
+import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createMissingInstance } from '../../src/filters/references/missing_references'
 import { createFilterCreatorParams } from '../utils'
 
@@ -108,12 +109,29 @@ describe('handle templates filter', () => {
     elemID: new ElemID(ZENDESK, 'ticket_field__custom_field_options'),
   })
 
+  const placeholder3Type = new ObjectType({
+    elemID: new ElemID(ZENDESK, ORG_FIELD_TYPE_NAME),
+  })
+
+  const placeholder4Type = new ObjectType({
+    elemID: new ElemID(ZENDESK, USER_FIELD_TYPE_NAME),
+  })
+
   const placeholder1 = new InstanceElement('placeholder1', placeholder1Type, { id: 1452 })
   const placeholder2 = new InstanceElement('placeholder2', placeholder1Type, { id: 1453 })
   const placeholder3 = new InstanceElement('placeholder3', placeholder1Type, { id: 1454 })
+  const placeholderOrganization1 = new InstanceElement('placeholder-org1', placeholder3Type, { key: 'org' })
+  const placeholderOrganization2 = new InstanceElement('placeholder-org2', placeholder3Type, { key: 'org_123' })
+  const placeholderUser1 = new InstanceElement('placeholder-user1', placeholder4Type, { key: 'user' })
+  const placeholderUser2 = new InstanceElement('placeholder-user2', placeholder4Type, { key: 'user_123' })
+
   const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
   const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+  const macroOrganization = new InstanceElement('macroOrg', testType, { id: 1004, actions: [{ value: 'multiple refs {{ticket.organization.custom_fields.org_123}} and {{ticket.organization.custom_fields.org}} and {{ticket.organization.custom_fields.org_123.title}}', field: 'comment_value_html' }] })
+  const macroUser = new InstanceElement('macroUser', testType, { id: 1005, actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user_123}} and {{ticket.requester.custom_fields.user}} and {{ticket.requester.custom_fields.user_123.title}}', field: 'comment_value_html' }] })
+  const macroMissingUserAndOrganization = new InstanceElement('macroMissingOrgAndUser', testType, { id: 1005, actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user1}} and {{ticket.requester.custom_fields.user1.title}} and {{ticket.organization.custom_fields.org1}} and {{ticket.organization.custom_fields.org1.title}}', field: 'comment_value_html' }] })
+
   const macroComplicated = new InstanceElement('macroComplicated', testType, { id: 1003, actions: [{ value: '{{some other irrelevancies-ticket.ticket_field_1452 | something irrelevant | dynamic content now: dc.dynamic_content_test | and done}}', field: 'comment_value_html' }] })
   const macroDifferentBracket = new InstanceElement('macroDifferentBracket', testType, { id: 1010, actions: [{ value: '{%some other irrelevancies-ticket.ticket_field_1452 | something irrelevant | dynamic content now: dc.dynamic_content_test | and done%}', field: 'comment_value_html' }] })
   const macroWithSideConversationTicketTemplate = new InstanceElement(
@@ -183,7 +201,8 @@ describe('handle templates filter', () => {
     automation, automationType, dynamicContent, dynamicContentItemType, appInstallation,
     appInstallationType, macroWithDC, macroWithHyphenDC, dynamicContentRecord,
     hyphenDynamicContentRecord, macroComplicated, macroDifferentBracket,
-    macroWithSideConversationTicketTemplate, placeholder3])
+    macroWithSideConversationTicketTemplate, placeholder3, placeholderOrganization1, placeholderOrganization2,
+    placeholderUser1, placeholderUser2, macroOrganization, macroUser, macroMissingUserAndOrganization])
     .map(element => element.clone())
 
   describe('on fetch', () => {
@@ -335,6 +354,54 @@ describe('handle templates filter', () => {
           '}}',
         ] }),
       )
+    })
+    it('should resolve organization correctly', () => {
+      const fetchedMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroOrg')
+      expect(fetchedMacro?.value.actions[0].value).toEqual(new TemplateExpression({
+        parts: [
+          `multiple refs {{${ORGANIZATION_FIELD}.`,
+          new ReferenceExpression(placeholderOrganization2.elemID, placeholderOrganization2),
+          `}} and {{${ORGANIZATION_FIELD}.`,
+          new ReferenceExpression(placeholderOrganization1.elemID, placeholderOrganization1),
+          `}} and {{${ORGANIZATION_FIELD}.`,
+          new ReferenceExpression(placeholderOrganization2.elemID, placeholderOrganization2),
+          '.title}}',
+        ],
+      }))
+    })
+    it('should resolve requester correctly', () => {
+      const fetchedMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroUser')
+      expect(fetchedMacro?.value.actions[0].value).toEqual(new TemplateExpression({
+        parts: [
+          `multiple refs {{${USER_FIELD}.`,
+          new ReferenceExpression(placeholderUser2.elemID, placeholderUser2),
+          `}} and {{${USER_FIELD}.`,
+          new ReferenceExpression(placeholderUser1.elemID, placeholderUser1),
+          `}} and {{${USER_FIELD}.`,
+          new ReferenceExpression(placeholderUser2.elemID, placeholderUser2),
+          '.title}}',
+        ],
+      }))
+    })
+    it('should resolve as missing for organization and requester', () => {
+      const fetchedMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroMissingOrgAndUser')
+      const missingOrgInstance = createMissingInstance(ZENDESK, ORG_FIELD_TYPE_NAME, 'org1')
+      const missingUserInstance = createMissingInstance(ZENDESK, USER_FIELD_TYPE_NAME, 'user1')
+      missingOrgInstance.value.key = 'org1'
+      missingUserInstance.value.key = 'user1'
+      expect(fetchedMacro?.value.actions[0].value).toEqual(new TemplateExpression({
+        parts: [
+          `multiple refs {{${USER_FIELD}.`,
+          new ReferenceExpression(missingUserInstance.elemID, missingUserInstance),
+          `}} and {{${USER_FIELD}.`,
+          new ReferenceExpression(missingUserInstance.elemID, missingUserInstance),
+          `.title}} and {{${ORGANIZATION_FIELD}.`,
+          new ReferenceExpression(missingOrgInstance.elemID, missingOrgInstance),
+          `}} and {{${ORGANIZATION_FIELD}.`,
+          new ReferenceExpression(missingOrgInstance.elemID, missingOrgInstance),
+          '.title}}',
+        ],
+      }))
     })
   })
   describe('preDeploy', () => {

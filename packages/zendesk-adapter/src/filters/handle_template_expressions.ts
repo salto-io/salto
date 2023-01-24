@@ -56,11 +56,17 @@ export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [USER_FIELD]: USER_FIELD_TYPE_NAME,
 }
 
-const ZENDESK_TYPE_TO_FIELD: Record<string, string> = {
+const ZENDESK_TYPE_FIELD_TO_FIELD: Record<string, string> = {
   [TICKET_TICKET_FIELD]: ID,
   [TICKET_FIELD_OPTION_TITLE]: ID,
   [ORGANIZATION_FIELD]: KEY,
   [USER_FIELD]: KEY,
+}
+
+const ZENDESK_TYPE_TO_FIELD: Record<string, string> = {
+  [TICKET_FIELD_TYPE_NAME]: ID,
+  [ORG_FIELD_TYPE_NAME]: KEY,
+  [USER_FIELD_TYPE_NAME]: KEY,
 }
 
 const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
@@ -175,7 +181,7 @@ const formulaToTemplate = (
     }
     const [type, innerId, title] = splitReference
     const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]] ?? [])
-      .find(instance => instance.value[ZENDESK_TYPE_TO_FIELD[type]]?.toString() === innerId)
+      .find(instance => instance.value[ZENDESK_TYPE_FIELD_TO_FIELD[type]]?.toString() === innerId)
     if (elem) {
       if (KEY_FIELDS.includes(type)) {
         return [
@@ -199,7 +205,7 @@ const formulaToTemplate = (
       ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
       innerId
     )
-    missingInstance.value[ZENDESK_TYPE_TO_FIELD[type]] = innerId
+    missingInstance.value[ZENDESK_TYPE_FIELD_TO_FIELD[type]] = innerId
     if (KEY_FIELDS.includes(type)) {
       return [
         `${type}.`,
@@ -280,7 +286,7 @@ const replaceFormulasWithTemplates = async (
 
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
   if (Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE).includes(part.elemID.typeName)) {
-    return `${part.value.value.id}`
+    return `${part.value.value[ZENDESK_TYPE_TO_FIELD[part.elemID.typeName]]}`
   }
   if (part.elemID.typeName === DYNAMIC_CONTENT_ITEM_TYPE_NAME
     && _.isString(part.value.value.placeholder)) {

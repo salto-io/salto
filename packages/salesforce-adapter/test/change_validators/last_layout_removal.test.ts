@@ -78,7 +78,19 @@ describe('lastLayoutRemoval Change Validator', () => {
         createMockElementsSource([createLayoutInstance('Account', 'remainingAccountLayout')]),
       )
     })
-    it('should create change errors', () => {
+    it('should not create change errors', () => {
+      expect(changeErrors).toBeEmpty()
+    })
+  })
+
+  describe('when Object is removed with all of its layouts', () => {
+    beforeEach(async () => {
+      changeErrors = await changeValidator(
+        [...removedLayoutChanges, toChange({ before: mockTypes.Account })],
+        createMockElementsSource([]),
+      )
+    })
+    it('should not create change errors', () => {
       expect(changeErrors).toBeEmpty()
     })
   })

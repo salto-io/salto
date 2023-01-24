@@ -18,7 +18,7 @@ import {
   ChangeValidator,
   getChangeData,
   InstanceElement,
-  isInstanceChange, isInstanceElement,
+  isInstanceChange, isInstanceElement, isObjectTypeChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -26,7 +26,7 @@ import _ from 'lodash'
 import { apiName } from '../transformers/transformer'
 import { INSTANCE_FULL_NAME_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE as LAYOUT_METADATA_TYPE } from '../constants'
 
-const { awu } = collections.asynciterable
+const { awu, keyByAsync } = collections.asynciterable
 
 const getObjectName = (layoutInstance: InstanceElement): string => (
   layoutInstance.value[INSTANCE_FULL_NAME_FIELD].split('-')[0]
@@ -51,6 +51,16 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     await apiName(await instance.getType(elementsSource)) === LAYOUT_METADATA_TYPE
   )
 
+  const removedObjectNames = Object.keys(
+    await keyByAsync(
+      await awu(changes)
+        .filter(isObjectTypeChange)
+        .filter(isRemovalChange)
+        .toArray(),
+      change => apiName(getChangeData(change))
+    )
+  )
+
   const relevantChanges = await awu(changes)
     .filter(isInstanceChange)
     .filter(isRemovalChange)
@@ -61,9 +71,13 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     return []
   }
 
-  const relevantChangesByObjectName = _.groupBy(
-    relevantChanges,
-    change => getObjectName(getChangeData(change))
+  const relevantChangesByObjectName = _.pickBy(
+    _.groupBy(
+      relevantChanges,
+      change => getObjectName(getChangeData(change))
+    ),
+    // If the Object is fully removed, it's a valid change.
+    (_value, objectName) => !removedObjectNames.includes(objectName)
   )
 
   const objectsWithRemainingLayouts = Object.keys(

@@ -20,7 +20,6 @@ import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import { lookupValue } from '@salto-io/lowerdash/src/values'
 import { captureServiceIdInfo } from '../service_id_info'
 import { NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
@@ -42,6 +41,7 @@ import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestV
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
+const { lookupValue } = values
 const log = logger(module)
 
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
@@ -205,7 +205,7 @@ export default class NetsuiteClient {
       .toArray()
   }
 
-  private static async createDependencyMap(
+  public static async createDependencyMap(
     changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
     elementsSourceIndex: LazyElementsSourceIndexes,
@@ -213,31 +213,30 @@ export default class NetsuiteClient {
     const dependencyMap = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
     const elemIdsAndCustInfoArr = await awu(changes)
       .map(getChangeData)
-      .map(async instance => ({
-        elemId: instance.elemID,
-        custInfo: await NetsuiteClient.toCustomizationInfos(
-          [instance], deployReferencedElements, elementsSourceIndex
+      .map(async element => ({
+        elemId: element.elemID,
+        custInfos: await NetsuiteClient.toCustomizationInfos(
+          [element], deployReferencedElements, elementsSourceIndex
         ),
       })).toArray()
 
-    elemIdsAndCustInfoArr.forEach(obj => {
-      lookupValue(obj.custInfo[0].values, val => {
-        if (!_.isString(val)) {
-          return
-        }
-        const serviceIdInfoArray = captureServiceIdInfo(val)
-        if (serviceIdInfoArray.length > 0) {
-          serviceIdInfoArray
-            .map(serviceIdInfo => dependencyMap
-              .get(obj.elemId.getFullName())
+    elemIdsAndCustInfoArr.forEach(elemIdAndCustInfo => {
+      elemIdAndCustInfo.custInfos.forEach(custInfo =>
+        lookupValue(custInfo.values, val => {
+          if (!_.isString(val)) {
+            return
+          }
+          const serviceIdInfoArray = captureServiceIdInfo(val)
+          serviceIdInfoArray.map(serviceIdInfo =>
+            dependencyMap
+              .get(elemIdAndCustInfo.elemId.getFullName())
               .add(serviceIdInfo.serviceId))
-        }
-      })
+        }))
     })
     return dependencyMap
   }
 
-  private static getFailedManifestErrorElemIds(
+  public static getFailedManifestErrorElemIds(
     error: ManifestValidationError,
     dependencyMap: collections.map.DefaultMap<string, Set<string>>,
     changes: ReadonlyArray<Change>
@@ -245,10 +244,10 @@ export default class NetsuiteClient {
     const changeData = changes.map(getChangeData)
     log.debug('remove elements which contain a scriptid that doesnt exist in target account')
     const elementsToRemoveElemIDs = new Set<string>(
-      error.errorScriptIds.length === 0
+      error.missingDependencyScriptIds.length === 0
         ? [] : Array.from(dependencyMap.keys())
           .filter(topLevelChangedElement =>
-            error.errorScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement).has(scriptid)))
+            error.missingDependencyScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement).has(scriptid)))
     )
     return elementsToRemoveElemIDs.size === 0
       ? new Set(changeData.map(elem => elem.elemID.getFullName()))

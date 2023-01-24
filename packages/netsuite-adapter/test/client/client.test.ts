@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
@@ -26,6 +26,7 @@ import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { AdditionalDependencies } from '../../src/client/types'
+
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -136,16 +137,15 @@ describe('NetsuiteClient', () => {
       })
 
       it('should try to deploy again after ManifestValidationError', async () => {
-        const successType = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
-        const failType = new ObjectType({ elemID: new ElemID(NETSUITE, 'failType') })
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
         const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
-          after: new InstanceElement('instance', successType, { scriptid: 'someObject' }),
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=test_scriptid]' },),
         })
         const failedChange = toChange({
-          after: new InstanceElement(ElemID.CONFIG_NAME, failType, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
         })
         expect(await client.deploy(
           [successChange, failedChange],
@@ -158,17 +158,71 @@ describe('NetsuiteClient', () => {
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
-      it('should fail deployment if failed scriptid cant be extracted from error message', async () => {
-        const successType = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
-        const failType = new ObjectType({ elemID: new ElemID(NETSUITE, 'failType') })
+      it('should try to deploy again after ManifestValidationError from inner NS ref', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on customworkflow1.workflowstate17.workflowaction33'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['customworkflow1.workflowstate17.workflowaction33'])
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=customworkflow1.workflowstate17.workflowaction33]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange],
+          SDF_CHANGE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [manifestValidationError],
+          appliedChanges: [successChange],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+
+      it('should not apply any changes if failed scriptid cant be extracted from error message', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const manifestErrorMessage = 'Details: The manifest contains a dependency on some_id'
         const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['some_id'])
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
-          after: new InstanceElement('instance', successType, { scriptid: 'someObject' }),
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
         })
         const failedChange = toChange({
-          after: new InstanceElement(ElemID.CONFIG_NAME, failType, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange],
+          SDF_CHANGE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [manifestValidationError],
+          appliedChanges: [],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
+      })
+
+      it('should not apply any changes if failed salto reference cant be extracted from error message', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'center') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on netsuite.center.instance.custcenter1.scriptid'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['netsuite.center.instance.custcenter1.scriptid'])
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        const tempInstance = new InstanceElement('name', type, { scriptid: 'custcenter1' }, [
+          'netsuite',
+          'Records',
+          'center',
+          'custcenter1',
+        ])
+        const saltoRefExp = new ReferenceExpression(
+          new ElemID(NETSUITE, 'center').createNestedID('instance', 'custcenter1', SCRIPT_ID),
+          tempInstance.value.scriptid,
+          tempInstance
+        )
+        const failedChange = toChange({
+          after: new InstanceElement('failInstance', type, { scriptid: 'otherObject', ref: saltoRefExp }),
         })
         expect(await client.deploy(
           [successChange, failedChange],

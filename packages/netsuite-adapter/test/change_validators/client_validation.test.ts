@@ -37,7 +37,9 @@ describe('client validation', () => {
     preDeploy: jest.fn(),
   } as unknown as Required<Filter>
 
-  const mockElementsSourceIndex = {} as unknown as LazyElementsSourceIndexes
+  const mockElementsSourceIndex = {
+    getIndexes: () => ({ mapKeyFieldsIndex: {} }),
+  } as unknown as LazyElementsSourceIndexes
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -46,7 +48,7 @@ describe('client validation', () => {
         after: new InstanceElement(
           'instanceName',
           workflowType().type,
-          { [SCRIPT_ID]: 'object_name' }
+          { [SCRIPT_ID]: 'object_name', manifestTest: '[scriptid=some_scriptid]' }
         ),
       }), toChange({
         after: new ObjectType({
@@ -126,9 +128,12 @@ File: ~/Objects/customrecord1.xml`
       severity: 'Error',
     })
   })
-  it('should have SDF Manifest Validation Error', async () => {
-    const detailedMessage = 'manifest error'
-    mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage, [])])
+  it('should have SDF Manifest Validation Error and remove ', async () => {
+    const detailedMessage = `Validation of account settings failed.
+    
+    An error occurred during account settings validation.
+    Details: The manifest contains a dependency on some_scriptid object, but it is not in the account.`
+    mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage, ['some_scriptid'])])
     const changeErrors = await clientValidation(
       changes,
       client,
@@ -136,11 +141,11 @@ File: ~/Objects/customrecord1.xml`
       mockFiltersRunner,
       mockElementsSourceIndex
     )
-    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: 'This element depends on the following missing elements: some_scriptid. Please try redeploying with these elements included.',
       elemID: getChangeData(changes[0]).elemID,
-      message: 'SDF Manifest Validation Error',
+      message: 'This element depends on missing elements',
       severity: 'Error',
     })
   })

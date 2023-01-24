@@ -1845,7 +1845,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
           expect(e.message).toContain(manifestErrorMessage)
-          expect(e.errorScriptIds).toContain(errorReferenceName)
+          expect(e.missingDependencyScriptIds).toContain(errorReferenceName)
         }
       })
       it('should throw error', async () => {

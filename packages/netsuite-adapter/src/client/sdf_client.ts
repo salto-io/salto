@@ -111,7 +111,7 @@ const settingsValidationErrorRegex = RegExp('^Validation of account settings fai
 export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
-const manifestErrorDetailsRegex = RegExp('Details: The manifest contains a dependency on [a-z0-9_]+', 'gm')
+const manifestErrorDetailsRegex = RegExp('Details: The manifest contains a dependency on [a-z0-9_]+(\\.[a-z0-9_]+)*', 'gm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -191,6 +191,7 @@ export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string):
     .map(r => r.groups)
     .filter(isDefined)
     .map(groups => groups[item])
+
 
 type Project = {
   projectName: string
@@ -909,7 +910,7 @@ export default class SdfClient {
     )
   }
 
-  private static getManifestErrorScriptIds(errorMessage: string): string[] {
+  public static getManifestErrorScriptIds(errorMessage: string): string[] {
     return errorMessage
       .match(manifestErrorDetailsRegex)
       ?.map(errorLine => {
@@ -928,7 +929,7 @@ export default class SdfClient {
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
     if (!deployStartMessageRegex.test(errorMessage)) {
-      // we'll get here when the deploy failed in the validation phase.
+      // we'll get here when the deploy failed in th  e validation phase.
       // in this case we're looking for validation error message lines.
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeError, changeId, getChangeData, Element } from '@salto-io/adapter-api'
+import { Change, ChangeError, changeId, getChangeData, Element, ChangeDataType } from '@salto-io/adapter-api'
 import { getGroupItemFromRegex, objectValidationErrorRegex, OBJECT_ID } from '../client/sdf_client'
 import NetsuiteClient from '../client/client'
 import { AdditionalDependencies } from '../client/types'
@@ -30,6 +30,11 @@ import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 const { awu } = collections.asynciterable
 const VALIDATION_FAIL = 'Validation failed.'
 
+type FailedChangeWithDependencies = {
+  elem: Change<ChangeDataType>
+  dependencies: string[]
+}
+
 const mapObjectDeployErrorToInstance = (error: Error): Record<string, string> => {
   const scriptIdToErrorRecord: Record<string, string> = {}
   const errorMessageChunks = error.message.split(VALIDATION_FAIL)[1]?.split('\n\n')
@@ -41,6 +46,20 @@ const mapObjectDeployErrorToInstance = (error: Error): Record<string, string> =>
   })
   return scriptIdToErrorRecord
 }
+
+const getFailedChangesWithDependencies = (
+  failedElementsIds: Set<string>,
+  groupChanges:Change<ChangeDataType>[],
+  dependencyMap: collections.map.DefaultMap<string, Set<string>>,
+  error: ManifestValidationError,
+): FailedChangeWithDependencies[] => groupChanges
+  .filter(element => failedElementsIds.has(getChangeData(element).elemID.getFullName()))
+  .map(element => ({
+    elem: element,
+    dependencies: error.missingDependencyScriptIds.filter(scriptid =>
+      dependencyMap.get(getChangeData(element).elemID.getFullName()).has(scriptid)),
+  }))
+
 
 export type ClientChangeValidator = (
   changes: ReadonlyArray<Change>,
@@ -87,7 +106,7 @@ const changeValidator: ClientChangeValidator = async (
         elementsSourceIndex,
       )
       if (errors.length > 0) {
-        return errors.flatMap(error => {
+        return awu(errors).flatMap(async error => {
           if (error instanceof ObjectsDeployError) {
             const scriptIdToErrorMap = mapObjectDeployErrorToInstance(error)
             return groupChanges.map(getChangeData)
@@ -113,14 +132,19 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof ManifestValidationError) {
-            const failedChanges = groupChanges
-              .filter(element => error.errorScriptIds.includes(getChangeData(element).elemID.getFullName()))
-            return (failedChanges.length > 0 ? failedChanges : groupChanges)
-              .map(change => ({
-                message: 'SDF Manifest Validation Error',
+            const dependencyMap = await NetsuiteClient.createDependencyMap(
+              changes, deployReferencedElements, elementsSourceIndex
+            )
+            const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
+            const failedChangesWithDependencies = getFailedChangesWithDependencies(
+              failedElementsIds, groupChanges, dependencyMap, error
+            )
+            return failedChangesWithDependencies
+              .map(changeAndMissingDependencies => ({
+                message: 'This element depends on missing elements',
                 severity: 'Error' as const,
-                elemID: getChangeData(change).elemID,
-                detailedMessage: error.message,
+                elemID: getChangeData(changeAndMissingDependencies.elem).elemID,
+                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies}. Please try redeploying with these elements included.`,
               }))
           }
           return groupChanges

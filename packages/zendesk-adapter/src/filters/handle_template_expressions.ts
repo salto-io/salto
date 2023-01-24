@@ -49,7 +49,7 @@ export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
   [TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
   [ORGANIZATION_FIELD]: ORG_FIELD_TYPE_NAME,
-  [c]: USER_FIELD_TYPE_NAME,
+  [USER_FIELD]: USER_FIELD_TYPE_NAME,
 }
 
 const ZENDESK_TYPE_TO_FIELD: Record<string, string> = {
@@ -175,7 +175,7 @@ const formulaToTemplate = (
         return [
           `${type}.`,
           new ReferenceExpression(elem.elemID, elem),
-          title !== undefined ? title : '',
+          title !== undefined ? `.${title}` : '',
         ]
       }
       return [
@@ -193,7 +193,14 @@ const formulaToTemplate = (
       ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
       innerId
     )
-    missingInstance.value.id = innerId
+    missingInstance.value[ZENDESK_TYPE_TO_FIELD[type]] = innerId
+    if (KEY_FIELDS.includes(type)) {
+      return [
+        `${type}.`,
+        new ReferenceExpression(missingInstance.elemID, missingInstance),
+        title !== undefined ? `.${title}` : '',
+      ]
+    }
     return [
       `${type}_`,
       new ReferenceExpression(missingInstance.elemID, missingInstance),

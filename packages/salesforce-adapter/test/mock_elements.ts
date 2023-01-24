@@ -26,13 +26,14 @@ import {
   API_NAME,
   METADATA_TYPE,
   CUSTOM_OBJECT,
-  CPQ_QUOTE,
+  CPQ_QUOTE, ACTIVATE_RSS,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
 import { createCustomObjectType } from './utils'
+import { INSTALLED_PACKAGE_METADATA } from '../src/change_validators/package'
 
 
 export const mockTypes = {
@@ -254,6 +255,14 @@ export const mockTypes = {
     },
     fields: {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
+    },
+  }),
+  [INSTALLED_PACKAGE_METADATA]: createMetadataObjectType({
+    annotations: {
+      metadataType: INSTALLED_PACKAGE_METADATA,
+    },
+    fields: {
+      [ACTIVATE_RSS]: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
   Product2: new ObjectType({

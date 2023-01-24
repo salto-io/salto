@@ -119,10 +119,31 @@ describe('missingUsersValidator', () => {
             field: 'requester_id',
             value: 'requester_id',
           },
+
         ],
       },
     )
-    const changes = [toChange({ after: macroWithValidUserFields })]
+    const triggerInstance = new InstanceElement(
+      'trigger',
+      new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') }),
+      {
+        conditions: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: '',
+            },
+            {
+              field: 'role',
+              operator: 'is',
+              value: 'end_user',
+            },
+          ],
+        },
+      }
+    )
+    const changes = [toChange({ after: macroWithValidUserFields }), toChange({ after: triggerInstance })]
     const changeValidator = missingUsersValidator(client)
     const errors = await changeValidator(changes)
     expect(errors).toHaveLength(0)

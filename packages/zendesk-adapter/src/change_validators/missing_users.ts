@@ -27,7 +27,7 @@ import { lookupFunc } from '../filters/field_references'
 const { awu } = collections.asynciterable
 const { createPaginator } = clientUtils
 // system options that does not contain a specific user value
-const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs']
+const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
 const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>): string[] => {
   const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)

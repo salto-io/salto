@@ -15,7 +15,7 @@
 */
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { isWorkflowInstance } from '../../filters/workflow/types'
+import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const { isDefined } = values
 
@@ -45,7 +45,7 @@ export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async chan
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(isWorkflowInstance)
+    .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
     .map(instance => ({ instance, typeName: workflowHasEmptyValidator(instance) }))
     .map(({ instance, typeName }) => createEmptyValidatorWorkflowError(instance, typeName))
     .filter(isDefined)

@@ -53,7 +53,7 @@ const convertPropertiesToMap = (instance: WorkflowInstance): void => {
   })
 }
 
-const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
+export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
   .filter(isInstanceChange)
   .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
   .filter(change => isWorkflowInstance(getChangeData(change)))

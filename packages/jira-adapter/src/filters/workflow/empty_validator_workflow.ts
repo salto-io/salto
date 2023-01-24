@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, WorkflowInstance } from './types'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
+import { getWorkflowChanges } from './workflow_properties_filter'
 
 type TransitionValidator = {
     type: string
@@ -31,12 +30,6 @@ const removeValidatorsWithoutConfiguration = (instance: InstanceElement): Instan
   }
   return instance
 }
-
-const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
-  .filter(isInstanceChange)
-  .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
-  .filter(change => isWorkflowInstance(getChangeData(change)))
-
 
 const filter: FilterCreator = () => ({
   preDeploy: async changes => {

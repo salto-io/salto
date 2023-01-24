@@ -111,7 +111,7 @@ const settingsValidationErrorRegex = RegExp('^Validation of account settings fai
 export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
-const manifestErrorDetailsRegex = RegExp('Details: The manifest contains a dependency on [a-z0-9_]+(\\.[a-z0-9_]+)*', 'gm')
+const manifestErrorDetailsRegex = RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -910,20 +910,11 @@ export default class SdfClient {
     )
   }
 
-  public static getManifestErrorScriptIds(errorMessage: string): string[] {
-    return errorMessage
-      .match(manifestErrorDetailsRegex)
-      ?.map(errorLine => {
-        const lineAsArray = errorLine.split(' ')
-        return lineAsArray[lineAsArray.length - 1]
-      }) ?? []
-  }
-
   private static customizeDeployError(error: Error): Error {
     const errorMessage = error.message
     if (settingsValidationErrorRegex.test(errorMessage)) {
-      if (manifestErrorDetailsRegex.test(errorMessage)) {
-        const manifestErrorScriptidArray = this.getManifestErrorScriptIds(errorMessage)
+      const manifestErrorScriptidArray = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
+      if (manifestErrorScriptidArray.length > 0) {
         return new ManifestValidationError(errorMessage, manifestErrorScriptidArray)
       }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))

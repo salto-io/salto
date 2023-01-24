@@ -13,13 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isRemovalOrModificationChange, SeverityLevel } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
+import { isWorkflowInstance } from '../../filters/workflow/types'
 
 const { isDefined } = values
-
-const { awu } = collections.asynciterable
 
 const workflowHasEmptyValidator = (instance: InstanceElement): string | undefined => {
   for (const transition of instance.value.transitions) {
@@ -43,13 +41,12 @@ const createEmptyValidatorWorkflowError = (
 } : undefined)
 
 export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async changes => (
-  awu(changes)
+  changes
     .filter(isInstanceChange)
-    .filter(isRemovalOrModificationChange)
+    .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+    .filter(isWorkflowInstance)
     .map(instance => ({ instance, typeName: workflowHasEmptyValidator(instance) }))
     .map(({ instance, typeName }) => createEmptyValidatorWorkflowError(instance, typeName))
     .filter(isDefined)
-    .toArray()
 )

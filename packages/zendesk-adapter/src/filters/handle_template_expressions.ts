@@ -37,6 +37,10 @@ const log = logger(module)
 const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/
 const DYNAMIC_CONTENT_REGEX = /(dc\.[\w-]+)/g
+const TICKET_FIELD_SPLIT = '(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\\d]+))'
+const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
+const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
+const SPLIT_REGEX = `${TICKET_FIELD_SPLIT}|${KEY_SPLIT}|${TITLE_SPLIT}`
 export const TICKET_TICKET_FIELD = 'ticket.ticket_field'
 export const TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
 export const ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
@@ -162,7 +166,9 @@ const formulaToTemplate = (
 ): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
-    const splitReference = reference.split(/(?:_([\d]+))|(?:([^ ]+\.custom_fields)\.)|(?:([^ ]+)\.(title))/).filter(v => !_.isEmpty(v))
+    // const splitReference = reference.split(/(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\d]+))|
+    // (?:([^ ]+\.custom_fields)\.)|(?:([^ ]+)\.(title))/).filter(v => !_.isEmpty(v))
+    const splitReference = reference.split(new RegExp(SPLIT_REGEX)).filter(v => !_.isEmpty(v))
     // should be exactly of the form TYPE_INNERID, so should contain exactly two parts
     if (splitReference.length !== 2 && splitReference.length !== 3) {
       return [expression]

@@ -70,7 +70,7 @@ describe('workflowPropertiesValidator', () => {
         elemID: instance.elemID,
         severity: 'Warning',
         message: 'Invalid workflow transition validator won’t be deployed',
-        detailedMessage: 'This workflow has a invalid_validator transition validator, which is missing configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or add a field to it',
+        detailedMessage: 'This workflow has a invalid_validator transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration',
       },
     ])
   })

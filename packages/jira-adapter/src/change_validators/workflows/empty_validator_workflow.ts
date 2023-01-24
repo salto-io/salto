@@ -37,7 +37,7 @@ const createEmptyValidatorWorkflowError = (
   elemID: instance.elemID,
   severity: 'Warning' as SeverityLevel,
   message: 'Invalid workflow transition validator won’t be deployed',
-  detailedMessage: `This workflow has a ${typeName} transition validator, which is missing configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or add a field to it`,
+  detailedMessage: `This workflow has a ${typeName} transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration`,
 } : undefined)
 
 export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async changes => (

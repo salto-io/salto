@@ -34,6 +34,7 @@ import invalidListViewFilterScope from './change_validators/invalid_listview_fil
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
+import lastLayoutRemoval from './change_validators/last_layout_removal'
 import SalesforceClient from './client/client'
 
 import { ChangeValidatorName, SalesforceConfig } from './types'
@@ -72,6 +73,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
+  lastLayoutRemoval: { creator: () => lastLayoutRemoval, ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

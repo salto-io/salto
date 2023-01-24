@@ -16,7 +16,36 @@
 /* eslint-disable camelcase */
 import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  TypeElement,
+  ObjectType,
+  ElemID,
+  PrimitiveTypes,
+  PrimitiveType,
+  Values,
+  BuiltinTypes,
+  Element,
+  isInstanceElement,
+  InstanceElement,
+  isPrimitiveType,
+  ElemIdGetter,
+  ServiceIds,
+  toServiceIdsString,
+  OBJECT_SERVICE_ID,
+  CORE_ANNOTATIONS,
+  PrimitiveValue,
+  Field,
+  TypeMap,
+  ListType,
+  isField,
+  createRestriction,
+  isPrimitiveValue,
+  Value,
+  isObjectType,
+  isContainerType,
+  TypeReference,
+  createRefToElmWithValue,
+} from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 

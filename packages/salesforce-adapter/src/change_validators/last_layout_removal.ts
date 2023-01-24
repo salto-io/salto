@@ -13,10 +13,75 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
+import {
+  ChangeError,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange, isInstanceElement,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { apiName } from '../transformers/transformer'
+import { INSTANCE_FULL_NAME_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE as LAYOUT_METADATA_TYPE } from '../constants'
+
+const { awu } = collections.asynciterable
+
+const getObjectName = (layoutInstance: InstanceElement): string => (
+  layoutInstance.value[INSTANCE_FULL_NAME_FIELD].split('-')[0]
+)
+
+const createOnlyLayoutError = (
+  instance: InstanceElement,
+  objectName: string,
+): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Error',
+  message: 'Cannot delete the only layout',
+  detailedMessage: `Could not deploy Layout instance ${instance.elemID.name} since the Object ${objectName}
+  must have at-least one remaining layout`,
+})
 
 const changeValidator: ChangeValidator = async (changes, elementsSource) => {
+  if (elementsSource === undefined) {
+    return []
+  }
+  const isInstanceOfTypeLayout = async (instance: InstanceElement): Promise<boolean> => (
+    await apiName(await instance.getType(elementsSource)) === LAYOUT_METADATA_TYPE
+  )
 
+  const relevantChanges = await awu(changes)
+    .filter(isInstanceChange)
+    .filter(isRemovalChange)
+    .filter(change => isInstanceOfTypeLayout(getChangeData(change)))
+    .toArray()
+
+  if (_.isEmpty(relevantChanges)) {
+    return []
+  }
+
+  const relevantChangesByObjectName = _.groupBy(
+    relevantChanges,
+    change => getObjectName(getChangeData(change))
+  )
+
+  const objectsWithRemainingLayouts = Object.keys(
+    _.groupBy(
+      await awu(await elementsSource.getAll())
+        .filter(isInstanceElement)
+        .filter(isInstanceOfTypeLayout)
+        .toArray(),
+      getObjectName,
+    )
+  )
+
+  return Object.entries(relevantChangesByObjectName)
+    .filter(([objectName]) => !objectsWithRemainingLayouts.includes(objectName))
+    .flatMap(([objectName, deletedLayoutChanges]) =>
+      deletedLayoutChanges
+        .map(getChangeData)
+        .map(instance => createOnlyLayoutError(instance, objectName)))
 }
 
 export default changeValidator

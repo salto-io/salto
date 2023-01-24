@@ -98,6 +98,7 @@ export type ChangeValidatorName = (
   | 'omitData'
   | 'unknownUser'
   | 'animationRuleRecordType'
+  | 'lastLayoutRemoval'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -587,6 +588,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     omitData: { refType: BuiltinTypes.BOOLEAN },
     unknownUser: { refType: BuiltinTypes.BOOLEAN },
     animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
+    lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

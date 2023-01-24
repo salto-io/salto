@@ -59,7 +59,6 @@ const filter: FilterCreator = ({ client, config }) => ({
     const failedWorkflowsIds = new Set<string>()
     await Promise.all(elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
       .filter(workflow => workflow.value.name !== undefined)
       .map(async instance => {

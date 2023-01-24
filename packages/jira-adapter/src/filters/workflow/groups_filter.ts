@@ -81,7 +81,6 @@ const filter: FilterCreator = () => ({
       .value()
 
     instances
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
       .forEach(instance => {
         fixGroupNames(instance, groups)

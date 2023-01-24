@@ -32,7 +32,6 @@ export const workflowPropertiesValidator: ChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
     .filter(isWorkflowInstance)
     .filter(instance => {
       const items = [...(instance.value.statuses ?? []), ...(instance.value.transitions ?? [])]

@@ -55,7 +55,6 @@ const convertPropertiesToMap = (instance: WorkflowInstance): void => {
 
 export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
   .filter(isInstanceChange)
-  .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
   .filter(change => isWorkflowInstance(getChangeData(change)))
 
 const filter: FilterCreator = () => {
@@ -92,7 +91,6 @@ const filter: FilterCreator = () => {
 
       elements
         .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
         .filter(isWorkflowInstance)
         .forEach(convertPropertiesToList)
     },

@@ -16,6 +16,7 @@
 import { InstanceElement, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
+import { WORKFLOW_TYPE_NAME } from 'src/constants'
 
 const log = logger(module)
 
@@ -190,7 +191,8 @@ export const isWorkflowValues = (values: unknown): values is Workflow => {
 }
 
 export const isWorkflowInstance = (instance: InstanceElement)
-: instance is WorkflowInstance => isWorkflowValues(instance.value)
+: instance is WorkflowInstance =>
+  instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowValues(instance.value)
 
 
 export type PostFetchWorkflow = Workflow & {

@@ -644,7 +644,7 @@ describe('securitySchemeFilter', () => {
           name: 'securitySchemeName',
           description: 'securitySchemeDesc',
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
     it('should deploy create scheme and level', async () => {
@@ -663,7 +663,7 @@ describe('securitySchemeFilter', () => {
           name: 'securitySchemeName',
           description: 'securitySchemeDesc',
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
       expect(connection.post).toHaveBeenNthCalledWith(
         2,
@@ -672,7 +672,7 @@ describe('securitySchemeFilter', () => {
           name: 'level10',
           description: 'desc100',
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
     it('should deploy modify scheme and level', async () => {
@@ -706,7 +706,7 @@ describe('securitySchemeFilter', () => {
             },
           ],
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
       expect(connection.put).toHaveBeenNthCalledWith(
         2,
@@ -717,7 +717,7 @@ describe('securitySchemeFilter', () => {
           description: 'securitySchemeDesc',
           defaultLevel: '2',
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
     it('should deploy level only changes', async () => {
@@ -734,7 +734,7 @@ describe('securitySchemeFilter', () => {
           name: 'level0',
           description: 'desc10',
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
     it('should return error if failed on scheme', async () => {

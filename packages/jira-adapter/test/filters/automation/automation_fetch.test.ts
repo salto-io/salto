@@ -140,7 +140,7 @@ describe('automationFetchFilter', () => {
           xc: [],
           xr: [],
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
 
       expect(connection.post).toHaveBeenCalledWith(
@@ -149,7 +149,7 @@ describe('automationFetchFilter', () => {
           offset: 0,
           limit: 100,
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 
@@ -201,7 +201,7 @@ describe('automationFetchFilter', () => {
       expect(connection.post).not.toHaveBeenCalled()
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/project/GLOBAL/rule',
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 

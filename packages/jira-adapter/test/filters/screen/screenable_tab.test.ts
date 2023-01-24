@@ -221,14 +221,14 @@ describe('screenableTab', () => {
           {
             fieldId: 'id2',
           },
-          undefined,
+          { headers: expect.any(Object) },
         )
       })
 
       it('should call endpoints to remove fields', async () => {
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/rest/api/3/screens/screenId/tabs/tabId/fields/id3',
-          undefined,
+          { headers: expect.any(Object) },
         )
       })
 
@@ -238,7 +238,7 @@ describe('screenableTab', () => {
           {
             position: 'First',
           },
-          undefined,
+          { headers: expect.any(Object) },
         )
 
         expect(mockConnection.post).toHaveBeenCalledWith(
@@ -246,7 +246,7 @@ describe('screenableTab', () => {
           {
             after: 'id2',
           },
-          undefined,
+          { headers: expect.any(Object) },
         )
       })
     })

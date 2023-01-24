@@ -20,7 +20,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import webhookFilter from '../../../src/filters/webhook/webhook'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
+import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { createWebhookTypes } from '../../../src/filters/webhook/types'
 import { JIRA, WEBHOOK_TYPE } from '../../../src/constants'
 
@@ -123,9 +123,7 @@ describe('webhookFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook',
-        {
-          headers: PRIVATE_API_HEADERS,
-        },
+        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
       )
     })
 
@@ -237,7 +235,7 @@ describe('webhookFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook',
         instance.value,
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 
@@ -257,7 +255,7 @@ describe('webhookFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook/3',
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 
@@ -271,9 +269,7 @@ describe('webhookFilter', () => {
           id: '3',
           name: 'someName',
         },
-        {
-          headers: PRIVATE_API_HEADERS,
-        }
+        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
       )
     })
   })

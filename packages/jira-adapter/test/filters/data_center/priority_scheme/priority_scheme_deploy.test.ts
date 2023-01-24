@@ -127,7 +127,7 @@ describe('prioritySchemeDeployFilter', () => {
           description: 'desc',
           optionIds: [1, 2],
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 
@@ -146,7 +146,7 @@ describe('prioritySchemeDeployFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/2/priorityschemes/2',
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 
@@ -162,7 +162,7 @@ describe('prioritySchemeDeployFilter', () => {
           description: 'desc',
           optionIds: [1, 2],
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 
@@ -193,7 +193,7 @@ describe('prioritySchemeDeployFilter', () => {
           optionIds: [1],
           defaultScheme: true,
         },
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
   })

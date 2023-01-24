@@ -103,7 +103,7 @@ describe('boardEstimationFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/greenhopper/1.0/rapidviewconfig/estimation?rapidViewId=1',
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 

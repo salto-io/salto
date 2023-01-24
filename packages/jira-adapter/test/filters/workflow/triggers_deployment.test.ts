@@ -17,7 +17,7 @@ import { AdditionChange, ElemID, InstanceElement, ObjectType, toChange } from '@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { deployTriggers } from '../../../src/filters/workflow/triggers_deployment'
-import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
+import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
 
@@ -76,7 +76,7 @@ describe('triggersDeployment', () => {
         triggerDefinitionKey: 'key',
       },
       {
-        headers: PRIVATE_API_HEADERS,
+        headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS },
         params: {
           workflowName: 'workflowName',
           actionId: '1',

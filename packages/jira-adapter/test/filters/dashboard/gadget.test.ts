@@ -22,7 +22,7 @@ import { getFilterParams, mockClient } from '../../utils'
 import gadgetFilter from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
-import JiraClient from '../../../src/client/client'
+import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS } from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
 
 jest.setTimeout(10000000)
@@ -139,17 +139,17 @@ describe('gadgetFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties',
-        undefined,
+        { headers: expect.any(Object) },
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        undefined,
+        { headers: expect.any(Object) },
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        undefined,
+        { headers: expect.any(Object) },
       )
 
       expect(instance.value.properties).toEqual({
@@ -191,12 +191,12 @@ describe('gadgetFilter', () => {
 
       expect(connection.get).not.toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        undefined,
+        { headers: expect.any(Object) },
       )
 
       expect(connection.get).not.toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        undefined,
+        { headers: expect.any(Object) },
       )
 
       expect(instance.value.properties).toEqual({})
@@ -299,21 +299,13 @@ describe('gadgetFilter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
         '"value1"',
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
+        { headers: { 'Content-Type': 'application/json', ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
       )
 
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
         '"value2"',
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
+        { headers: { 'Content-Type': 'application/json', ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
       )
     })
 

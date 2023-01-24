@@ -173,13 +173,13 @@ describe('screenFilter', () => {
       expect(mockConnection.post).toHaveBeenCalledWith(
         '/rest/api/3/screens/screenId/tabs/id2/move/0',
         {},
-        undefined,
+        { headers: expect.any(Object) },
       )
 
       expect(mockConnection.post).toHaveBeenCalledWith(
         '/rest/api/3/screens/screenId/tabs/id1/move/1',
         {},
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 

@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, isInstanceElement, ObjectType } from '@salto-i
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
-import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
+import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/client'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import triggersFilter from '../../../src/filters/workflow/triggers_filter'
@@ -87,7 +87,7 @@ describe('triggersFilter', () => {
             workflowName: 'name',
             actionId: '1',
           },
-          headers: PRIVATE_API_HEADERS,
+          headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS },
         }
       )
       expect(instance.value.transitions[0].rules.triggers).toEqual([

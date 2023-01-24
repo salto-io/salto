@@ -152,7 +152,7 @@ describe('issueTypeScreenScheme', () => {
               'issueTypeId2',
             ],
           },
-          undefined,
+          { headers: expect.any(Object) },
         )
       })
 
@@ -165,7 +165,7 @@ describe('issueTypeScreenScheme', () => {
               { issueTypeId: 'issueTypeId3', screenSchemeId: 'screenSchemeId3' },
             ],
           },
-          undefined,
+          { headers: expect.any(Object) },
         )
       })
 
@@ -175,7 +175,7 @@ describe('issueTypeScreenScheme', () => {
           {
             screenSchemeId: 'screenSchemeDefaultId2',
           },
-          undefined,
+          { headers: expect.any(Object) },
         )
       })
     })

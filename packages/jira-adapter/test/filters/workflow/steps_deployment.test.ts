@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import JiraClient, { JSP_API_HEADERS } from '../../../src/client/client'
+import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS, JSP_API_HEADERS } from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import { deploySteps } from '../../../src/filters/workflow/steps_deployment'
@@ -89,9 +89,7 @@ describe('steps_deployment', () => {
         workflowName: 'workflowName',
         workflowMode: 'live',
       }),
-      {
-        headers: JSP_API_HEADERS,
-      },
+      { headers: { ...JSP_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
     )
 
     expect(mockConnection.post).toHaveBeenCalledWith(
@@ -103,9 +101,7 @@ describe('steps_deployment', () => {
         workflowName: 'workflowName',
         workflowMode: 'live',
       }),
-      {
-        headers: JSP_API_HEADERS,
-      },
+      { headers: { ...JSP_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
     )
 
     expect(mockConnection.post).toHaveBeenCalledTimes(2)

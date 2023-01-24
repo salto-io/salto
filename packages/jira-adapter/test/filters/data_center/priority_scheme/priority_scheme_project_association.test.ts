@@ -76,7 +76,7 @@ describe('prioritySchemeProjectAssociationFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/2/project/1/priorityscheme',
-        undefined,
+        { headers: expect.any(Object) },
       )
     })
 

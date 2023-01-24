@@ -53,7 +53,7 @@ export const customStatusActiveDefaultValidator: ChangeValidator = async (
     return []
   }
 
-  const defaultsNames: string[] = Object.keys(defaultCustomStatuses.value)
+  const defaultNames: string[] = Object.keys(defaultCustomStatuses.value)
     .map(key =>
       (isReferenceExpression(defaultCustomStatuses.value[key])
         ? defaultCustomStatuses.value[key].elemID.name
@@ -63,7 +63,7 @@ export const customStatusActiveDefaultValidator: ChangeValidator = async (
   return customStatusChanges
     .map(getChangeData)
     .filter(status => !status.value.active
-      && defaultsNames.includes(status.elemID.name)
+      && defaultNames.includes(status.elemID.name)
       && status.value.status_category !== HOLD_CATEGORY)
     .map(instance => (
       {

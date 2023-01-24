@@ -16,7 +16,7 @@
 import { InstanceElement, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { WORKFLOW_TYPE_NAME } from 'src/constants'
+import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
 

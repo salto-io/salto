@@ -15,7 +15,6 @@
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { isWorkflowInstance } from './types'
 
 /**

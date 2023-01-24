@@ -20,7 +20,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { WORKFLOW_RULES_TYPE_NAME } from '../../constants'
 import { isWorkflowInstance, triggerSchema } from './types'
 import { triggerType } from './triggers_types'
 

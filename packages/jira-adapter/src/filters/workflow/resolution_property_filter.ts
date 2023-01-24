@@ -20,7 +20,6 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isWorkflowInstance, WorkflowInstance } from './types'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { RESOLUTION_KEY_PATTERN } from '../../references/workflow_properties'
 
 const { awu } = collections.asynciterable

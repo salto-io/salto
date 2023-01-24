@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { isWorkflowInstance, WorkflowInstance } from './types'
-import { GROUP_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { GROUP_TYPE_NAME } from '../../constants'
 
 const ANY_GROUP_CONDITION = 'UserInAnyGroupCondition'
 const SINGLE_GROUP_CONDITION = 'UserInGroupCondition'

@@ -44,7 +44,7 @@ const deployFieldConfigurationItems = async (
 
   await Promise.all(
     _.chunk(fields, config.client.fieldConfigurationItemsDeploymentLimit).map(async fieldsChunk =>
-      client.putPrivate({
+      client.put({
         url: `/rest/api/3/fieldconfiguration/${parentId}/fields`,
         data: {
           fieldConfigurationItems: fieldsChunk,

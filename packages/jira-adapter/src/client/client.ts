@@ -15,6 +15,7 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
@@ -141,6 +142,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     })
   }
 
+  @handleDeploymentErrors()
   public async putPrivate(
     args: clientUtils.ClientDataParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

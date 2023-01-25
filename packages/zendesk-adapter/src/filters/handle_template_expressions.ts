@@ -42,25 +42,17 @@ const KEY_SPLIT = '(?:([^ ]+\\.custom_fields)\\.)'
 const TITLE_SPLIT = '(?:([^ ]+)\\.(title))'
 const SPLIT_REGEX = `${TICKET_FIELD_SPLIT}|${KEY_SPLIT}|${TITLE_SPLIT}`
 export const TICKET_TICKET_FIELD = 'ticket.ticket_field'
-export const TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
-export const ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
-export const USER_FIELD = 'ticket.requester.custom_fields'
+export const TICKET_TICKET_FIELD_OPTION_TITLE = 'ticket.ticket_field_option_title'
+export const TICKET_ORGANIZATION_FIELD = 'ticket.organization.custom_fields'
+export const TICKET_USER_FIELD = 'ticket.requester.custom_fields'
 const ID = 'id'
 const KEY = 'key'
-const KEY_FIELDS = [ORGANIZATION_FIELD, USER_FIELD]
 
 export const ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE: Record<string, string> = {
   [TICKET_TICKET_FIELD]: TICKET_FIELD_TYPE_NAME,
-  [TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
-  [ORGANIZATION_FIELD]: ORG_FIELD_TYPE_NAME,
-  [USER_FIELD]: USER_FIELD_TYPE_NAME,
-}
-
-const ZENDESK_TYPE_FIELD_TO_FIELD: Record<string, string> = {
-  [TICKET_TICKET_FIELD]: ID,
-  [TICKET_FIELD_OPTION_TITLE]: ID,
-  [ORGANIZATION_FIELD]: KEY,
-  [USER_FIELD]: KEY,
+  [TICKET_TICKET_FIELD_OPTION_TITLE]: TICKET_FIELD_TYPE_NAME,
+  [TICKET_ORGANIZATION_FIELD]: ORG_FIELD_TYPE_NAME,
+  [TICKET_USER_FIELD]: USER_FIELD_TYPE_NAME,
 }
 
 const ZENDESK_TYPE_TO_FIELD: Record<string, string> = {
@@ -68,6 +60,10 @@ const ZENDESK_TYPE_TO_FIELD: Record<string, string> = {
   [ORG_FIELD_TYPE_NAME]: KEY,
   [USER_FIELD_TYPE_NAME]: KEY,
 }
+
+const KEY_FIELDS = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
+  .filter(zendeskReference =>
+    ZENDESK_TYPE_TO_FIELD[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[zendeskReference]] === KEY)
 
 const POTENTIAL_REFERENCE_TYPES = Object.keys(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE)
 const typeSearchRegexes: RegExp[] = []
@@ -78,6 +74,10 @@ BRACKETS.forEach(([opener, closer]) => {
   // dynamic content references look different, but can still be part of template
   typeSearchRegexes.push(new RegExp(`(${opener})([^\\$}]*dc\\.[\\w]+[^}]*)(${closer})`, 'g'))
 })
+
+// the potential references will start with one of the POTENTIAL_REFERENCE_TYPES, following either '_<number>' or
+// '.<some values that do not include space or '}'> for example:
+// ticket.ticket_field_123 and ticket.organization.custom_fields.name_123.title
 const potentialReferenceTypeRegex = new RegExp(`((?:${POTENTIAL_REFERENCE_TYPES.join('|')})(?:_[\\d]+|\\.[^ \\}]+))`, 'g')
 const potentialMacroFields = [
   'comment_value', 'comment_value_html', 'side_conversation', 'side_conversation_ticket', 'subject', 'side_conversation_slack',
@@ -172,16 +172,15 @@ const formulaToTemplate = (
 ): TemplateExpression | string => {
   const handleZendeskReference = (expression: string, ref: RegExpMatchArray): TemplatePart[] => {
     const reference = ref.pop() ?? ''
-    // const splitReference = reference.split(/(?:(ticket.ticket_field|ticket.ticket_field_option_title)_([\d]+))|
-    // (?:([^ ]+\.custom_fields)\.)|(?:([^ ]+)\.(title))/).filter(v => !_.isEmpty(v))
     const splitReference = reference.split(new RegExp(SPLIT_REGEX)).filter(v => !_.isEmpty(v))
-    // should be exactly of the form TYPE_INNERID, so should contain exactly two parts
+    // should be exactly of the form TYPE_INNERID, or TYPE.name.title so should contain exactly 2 or 3 parts
     if (splitReference.length !== 2 && splitReference.length !== 3) {
       return [expression]
     }
     const [type, innerId, title] = splitReference
     const elem = (instancesByType[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]] ?? [])
-      .find(instance => instance.value[ZENDESK_TYPE_FIELD_TO_FIELD[type]]?.toString() === innerId)
+      .find(instance =>
+        instance.value[ZENDESK_TYPE_TO_FIELD[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]]]?.toString() === innerId)
     if (elem) {
       if (KEY_FIELDS.includes(type)) {
         return [
@@ -205,7 +204,7 @@ const formulaToTemplate = (
       ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type],
       innerId
     )
-    missingInstance.value[ZENDESK_TYPE_FIELD_TO_FIELD[type]] = innerId
+    missingInstance.value[ZENDESK_TYPE_TO_FIELD[ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE[type]]] = innerId
     if (KEY_FIELDS.includes(type)) {
       return [
         `${type}.`,

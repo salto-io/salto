@@ -17,9 +17,9 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator, {
-  ORGANIZATION_FIELD,
-  TICKET_FIELD_OPTION_TITLE,
-  TICKET_TICKET_FIELD, USER_FIELD,
+  TICKET_ORGANIZATION_FIELD,
+  TICKET_TICKET_FIELD_OPTION_TITLE,
+  TICKET_TICKET_FIELD, TICKET_USER_FIELD,
 } from '../../src/filters/handle_template_expressions'
 import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createMissingInstance } from '../../src/filters/references/missing_references'
@@ -274,7 +274,7 @@ describe('handle templates filter', () => {
         new TemplateExpression({ parts: [
           'dynamic content ref {{',
           new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord),
-          `}} and {{${TICKET_FIELD_OPTION_TITLE}_`,
+          `}} and {{${TICKET_TICKET_FIELD_OPTION_TITLE}_`,
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}'] })
       )
@@ -284,7 +284,7 @@ describe('handle templates filter', () => {
         new TemplateExpression({ parts: [
           'dynamic content ref {{',
           new ReferenceExpression(hyphenDynamicContentRecord.elemID, hyphenDynamicContentRecord),
-          `}} and {{${TICKET_FIELD_OPTION_TITLE}_`,
+          `}} and {{${TICKET_TICKET_FIELD_OPTION_TITLE}_`,
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}'] })
       )
@@ -315,7 +315,7 @@ describe('handle templates filter', () => {
         parts: [
           `multiple refs {{${TICKET_TICKET_FIELD}_`,
           new ReferenceExpression(placeholder1.elemID, placeholder1),
-          `}} and {{${TICKET_FIELD_OPTION_TITLE}_`,
+          `}} and {{${TICKET_TICKET_FIELD_OPTION_TITLE}_`,
           new ReferenceExpression(placeholder2.elemID, placeholder2),
           '}}',
         ],
@@ -328,14 +328,14 @@ describe('handle templates filter', () => {
         .filter(i => i.elemID.name === 'macroSideConvTicket')[0]
       expect(macroWithSideConv).toBeDefined()
       expect(macroWithSideConv.value.actions[0].value).toEqual([
-        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
-        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
+        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
+        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
         'hello',
         'text/html',
       ])
       expect(macroWithSideConv.value.actions[1].value).toEqual([
-        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
-        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
+        new TemplateExpression({ parts: [`Improved needs for {{${TICKET_TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}}'] }),
+        new TemplateExpression({ parts: [`<p>Improved needs for {{${TICKET_TICKET_FIELD_OPTION_TITLE}_`, new ReferenceExpression(placeholder3.elemID, placeholder3), '}} due to something</p>'] }),
         'hello',
         'text/html',
       ])
@@ -359,11 +359,11 @@ describe('handle templates filter', () => {
       const fetchedMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroOrg')
       expect(fetchedMacro?.value.actions[0].value).toEqual(new TemplateExpression({
         parts: [
-          `multiple refs {{${ORGANIZATION_FIELD}.`,
+          `multiple refs {{${TICKET_ORGANIZATION_FIELD}.`,
           new ReferenceExpression(placeholderOrganization2.elemID, placeholderOrganization2),
-          `}} and {{${ORGANIZATION_FIELD}.`,
+          `}} and {{${TICKET_ORGANIZATION_FIELD}.`,
           new ReferenceExpression(placeholderOrganization1.elemID, placeholderOrganization1),
-          `}} and {{${ORGANIZATION_FIELD}.`,
+          `}} and {{${TICKET_ORGANIZATION_FIELD}.`,
           new ReferenceExpression(placeholderOrganization2.elemID, placeholderOrganization2),
           '.title}}',
         ],
@@ -373,11 +373,11 @@ describe('handle templates filter', () => {
       const fetchedMacro = elements.filter(isInstanceElement).find(i => i.elemID.name === 'macroUser')
       expect(fetchedMacro?.value.actions[0].value).toEqual(new TemplateExpression({
         parts: [
-          `multiple refs {{${USER_FIELD}.`,
+          `multiple refs {{${TICKET_USER_FIELD}.`,
           new ReferenceExpression(placeholderUser2.elemID, placeholderUser2),
-          `}} and {{${USER_FIELD}.`,
+          `}} and {{${TICKET_USER_FIELD}.`,
           new ReferenceExpression(placeholderUser1.elemID, placeholderUser1),
-          `}} and {{${USER_FIELD}.`,
+          `}} and {{${TICKET_USER_FIELD}.`,
           new ReferenceExpression(placeholderUser2.elemID, placeholderUser2),
           '.title}}',
         ],
@@ -391,13 +391,13 @@ describe('handle templates filter', () => {
       missingUserInstance.value.key = 'user1'
       expect(fetchedMacro?.value.actions[0].value).toEqual(new TemplateExpression({
         parts: [
-          `multiple refs {{${USER_FIELD}.`,
+          `multiple refs {{${TICKET_USER_FIELD}.`,
           new ReferenceExpression(missingUserInstance.elemID, missingUserInstance),
-          `}} and {{${USER_FIELD}.`,
+          `}} and {{${TICKET_USER_FIELD}.`,
           new ReferenceExpression(missingUserInstance.elemID, missingUserInstance),
-          `.title}} and {{${ORGANIZATION_FIELD}.`,
+          `.title}} and {{${TICKET_ORGANIZATION_FIELD}.`,
           new ReferenceExpression(missingOrgInstance.elemID, missingOrgInstance),
-          `}} and {{${ORGANIZATION_FIELD}.`,
+          `}} and {{${TICKET_ORGANIZATION_FIELD}.`,
           new ReferenceExpression(missingOrgInstance.elemID, missingOrgInstance),
           '.title}}',
         ],

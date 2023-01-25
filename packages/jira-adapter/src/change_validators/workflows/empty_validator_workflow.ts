@@ -32,12 +32,12 @@ const workflowHasEmptyValidator = (instance: InstanceElement): string | undefine
 
 const createEmptyValidatorWorkflowError = (
   instance: InstanceElement,
-  typeName?: string,
-): ChangeError | undefined => (typeName ? {
+  validatorType?: string,
+): ChangeError | undefined => (validatorType ? {
   elemID: instance.elemID,
   severity: 'Warning' as SeverityLevel,
   message: 'Invalid workflow transition validator won’t be deployed',
-  detailedMessage: `This workflow has a ${typeName} transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration`,
+  detailedMessage: `This workflow has a ${validatorType} transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration`,
 } : undefined)
 
 export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async changes => (
@@ -46,7 +46,7 @@ export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async chan
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isWorkflowInstance)
-    .map(instance => ({ instance, typeName: workflowHasEmptyValidator(instance) }))
-    .map(({ instance, typeName }) => createEmptyValidatorWorkflowError(instance, typeName))
+    .map(instance => ({ instance, validatorType: workflowHasEmptyValidator(instance) }))
+    .map(({ instance, validatorType }) => createEmptyValidatorWorkflowError(instance, validatorType))
     .filter(isDefined)
 )

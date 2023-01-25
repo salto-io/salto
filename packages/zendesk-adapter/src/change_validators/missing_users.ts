@@ -86,7 +86,7 @@ const getFallbackUserIsMissingError = (
     elemID: instance.elemID,
     severity: 'Error',
     message: MISSING_USERS_ERROR_MSG,
-    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${missingUsers}.\nIn addition, the defined fallback user ${userFallbackValue} was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`,
+    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn addition, the defined fallback user ${userFallbackValue} was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`,
   }
 }
 

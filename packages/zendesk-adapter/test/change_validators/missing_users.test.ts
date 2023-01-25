@@ -97,7 +97,7 @@ describe('missingUsersValidator', () => {
       },
     ])
   })
-  it('should return warning if case of missing usesrs and are gonna be overridden with user from deploy config', async () => {
+  it('should return warning in case of overriding missing users with user from deploy config', async () => {
     const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
     deployConfig = { defaultMissingUserFallback: '4@4' }
     const changeValidator = missingUsersValidator(client, deployConfig)
@@ -118,7 +118,28 @@ describe('missingUsersValidator', () => {
       },
     ])
   })
-  it('should not return a warning if user exists', async () => {
+  it('should return error in case of user provided in deploy config does not exist', async () => {
+    const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
+    deployConfig = { defaultMissingUserFallback: '9@9' }
+    const changeValidator = missingUsersValidator(client, deployConfig)
+    const errors = await changeValidator(changes)
+    expect(errors).toHaveLength(2)
+    expect(errors).toEqual([
+      {
+        elemID: articleInstance.elemID,
+        severity: 'Error',
+        message: 'Element references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: article@salto.com.\nIn addition, the defined fallback user 9@9 was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://docs.salto.io/docs/username-not-found-in-target-environment',
+      },
+      {
+        elemID: macroInstance.elemID,
+        severity: 'Error',
+        message: 'Element references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn addition, the defined fallback user 9@9 was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://docs.salto.io/docs/username-not-found-in-target-environment',
+      },
+    ])
+  })
+  it('should not return an error if user exists', async () => {
     const articleWithValidUser = new InstanceElement(
       'article',
       articleType,
@@ -129,7 +150,7 @@ describe('missingUsersValidator', () => {
     const errors = await changeValidator(changes)
     expect(errors).toHaveLength(0)
   })
-  it('should not return a warning if user field value is valid', async () => {
+  it('should not return an error if user values are valid', async () => {
     const macroWithValidUserFields = new InstanceElement(
       'macro',
       macroType,

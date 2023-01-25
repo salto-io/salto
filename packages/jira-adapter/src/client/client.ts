@@ -95,6 +95,20 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     }
   }
 
+  @handleDeploymentErrors()
+  public async sendRequest<T extends keyof clientUtils.HttpMethodToClientParams>(
+    method: T,
+    params: clientUtils.HttpMethodToClientParams[T]
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return super.sendRequest(method,
+      {
+        ...params,
+        headers: {
+          ...(params.headers ?? {}),
+        },
+      })
+  }
+
   protected async ensureLoggedIn(): Promise<void> {
     const wasLoggedIn = this.isLoggedIn
     await super.ensureLoggedIn()
@@ -142,7 +156,6 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     })
   }
 
-  @handleDeploymentErrors()
   public async putPrivate(
     args: clientUtils.ClientDataParams,
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {

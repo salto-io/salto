@@ -100,13 +100,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
     method: T,
     params: clientUtils.HttpMethodToClientParams[T]
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    return super.sendRequest(method,
-      {
-        ...params,
-        headers: {
-          ...(params.headers ?? {}),
-        },
-      })
+    return super.sendRequest(method, params)
   }
 
   protected async ensureLoggedIn(): Promise<void> {

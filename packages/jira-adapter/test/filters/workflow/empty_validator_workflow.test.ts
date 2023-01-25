@@ -39,13 +39,16 @@ describe('empty validator workflow', () => {
             rules: {
               validators: [
                 {
-                  type: 'valid_validator',
+                  type: 'FieldChangedValidator',
                   configuration: {
                     key: 'value',
                   },
                 },
                 {
-                  type: 'invalid_validator',
+                  type: 'add_on_type_with_no_configuration',
+                },
+                {
+                  type: 'FieldHasSingleValueValidator',
                 },
               ],
             },
@@ -64,14 +67,17 @@ describe('empty validator workflow', () => {
   })
 
   describe('preDeploy', () => {
-    it('should remove empty validators from workflow transitions', async () => {
+    it('should remove empty validators from workflow transitions but keep add on ones', async () => {
       await filter.preDeploy(changes)
       expect(getChangeData(changes[0]).value.transitions[0].rules.validators).toEqual([
         {
-          type: 'valid_validator',
+          type: 'FieldChangedValidator',
           configuration: {
             key: 'value',
           },
+        },
+        {
+          type: 'add_on_type_with_no_configuration',
         },
       ])
     })
@@ -80,10 +86,13 @@ describe('empty validator workflow', () => {
       workflowInstance.value.transitions[0].rules.validators.pop()
       expect(getChangeData(changes[0]).value.transitions[0].rules.validators).toEqual([
         {
-          type: 'valid_validator',
+          type: 'FieldChangedValidator',
           configuration: {
             key: 'value',
           },
+        },
+        {
+          type: 'add_on_type_with_no_configuration',
         },
       ])
     })

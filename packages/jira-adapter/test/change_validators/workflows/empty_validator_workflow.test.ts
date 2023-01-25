@@ -33,13 +33,16 @@ describe('workflowPropertiesValidator', () => {
             rules: {
               validators: [
                 {
-                  type: 'valid_validator',
+                  type: 'FieldChangedValidator',
                   configuration: {
                     key: 'value',
                   },
                 },
                 {
-                  type: 'invalid_validator',
+                  type: 'add_on_type_with_no_configuration',
+                },
+                {
+                  type: 'FieldHasSingleValueValidator',
                 },
               ],
             },
@@ -49,13 +52,13 @@ describe('workflowPropertiesValidator', () => {
     )
     changes = [toChange({ after: instance })]
   })
-  it('should return an error if there are invalid validators ', async () => {
+  it('should return an error if there are invalid validators', async () => {
     expect(await emptyValidatorWorkflowChangeValidator(changes)).toEqual([
       {
         elemID: instance.elemID,
         severity: 'Warning',
         message: 'Invalid workflow transition validator won’t be deployed',
-        detailedMessage: 'This workflow has a invalid_validator transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration',
+        detailedMessage: 'This workflow has a FieldHasSingleValueValidator transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration',
       },
     ])
   })

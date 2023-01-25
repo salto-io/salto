@@ -46,7 +46,8 @@ export const handleDeploymentErrors = (): decorators.InstanceMethodDecorator => 
       originalMethod: decorators.OriginalCall,
     ): Promise<unknown> => {
       try {
-        return originalMethod.call()
+        const result = await originalMethod.call()
+        return result
       } catch (err) {
         if (err instanceof Error) {
           throw handleDeploymentError(err)

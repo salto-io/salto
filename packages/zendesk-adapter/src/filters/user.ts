@@ -15,33 +15,16 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { getUsers, TYPE_NAME_TO_REPLACER } from '../user_utils'
+import { deployModificationFunc } from '../replacers_utils'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean => (
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
 )
-
-const deployModificationFunc = async (
-  changes: Change<InstanceElement>[],
-  mapping: Record<string, string>,
-): Promise<void> => {
-  await awu(changes).forEach(async change => {
-    await applyFunctionToChangeData<Change<InstanceElement>>(
-      change,
-      instance => {
-        TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
-        return instance
-      }
-    )
-  })
-}
 
 /**
  * Replaces the user ids with emails
@@ -77,14 +60,14 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       const emailToUserId = Object.fromEntries(
         users.map(user => [user.email, user.id.toString()])
       ) as Record<string, string>
-      await deployModificationFunc(changes, emailToUserId)
+      await deployModificationFunc(changes, emailToUserId, TYPE_NAME_TO_REPLACER)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      await deployModificationFunc(changes, userIdToEmail)
+      await deployModificationFunc(changes, userIdToEmail, TYPE_NAME_TO_REPLACER)
     },
   }
 }

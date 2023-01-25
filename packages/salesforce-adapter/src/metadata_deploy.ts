@@ -339,7 +339,7 @@ export const deployMetadata = async (
     extraProperties: {
       deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
       groups: isQuickDeployable(sfDeployRes)
-        ? [{ id: groupId, requestId: sfDeployRes.id, hash: calculateChangesHash(validChanges), url: deploymentUrl }]
+        ? [{ id: groupId, requestId: sfDeployRes.id, hash: log.time(() => calculateChangesHash(validChanges), 'calculating changes hash'), url: deploymentUrl }]
         : [{ id: groupId, url: deploymentUrl }],
     },
   }

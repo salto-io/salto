@@ -38,6 +38,7 @@
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0",
+    "stable-hash": "^0.0.3",
     "truncate-utf8-bytes": "^1.0.2",
     "wu": "^2.1.0"
   },

@@ -21,7 +21,8 @@ import {
   CompareOptions,
   isIndexPathPart, Change, getChangeData,
 } from '@salto-io/adapter-api'
-import objectHash from 'object-hash'
+import { hash as hashUtils } from '@salto-io/lowerdash'
+import stableHash from 'stable-hash'
 import { logger } from '@salto-io/logging'
 import { resolvePath, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
@@ -372,4 +373,4 @@ export const applyDetailedChanges = (
 }
 
 export const calculateChangesHash = (changes: ReadonlyArray<Change>): string =>
-  objectHash(_.keyBy(changes, change => getChangeData(change).elemID.getFullName()))
+  hashUtils.toMD5(stableHash(_.keyBy(changes, change => getChangeData(change).elemID.getFullName())))

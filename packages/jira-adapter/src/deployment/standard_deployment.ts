@@ -15,12 +15,13 @@
 */
 import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { resolveChangeElement, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
+import { resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
+import { handleDeploymentError } from './deployment_error_handling'
 
 const { awu } = collections.asynciterable
 
@@ -107,19 +108,8 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         await deployChangeFunc(change)
         return change
       } catch (err) {
-        err.message = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
-        if (err instanceof clientUtils.HTTPError && _.isPlainObject(err.response.data)) {
-          const errorMessages = [
-            ...(Array.isArray(err.response.data.errorMessages)
-              ? err.response.data.errorMessages
-              : []),
-            ...(_.isPlainObject(err.response.data.errors)
-              ? [safeJsonStringify(err.response.data.errors)]
-              : []),
-          ]
-          if (errorMessages.length > 0) {
-            err.message = `${err.message}. ${errorMessages.join(', ')}`
-          }
+        if (err instanceof Error) {
+          return handleDeploymentError(err, getChangeData(change).elemID)
         }
         return err
       }

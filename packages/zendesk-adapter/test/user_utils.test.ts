@@ -634,7 +634,7 @@ describe('userUtils', () => {
       expect(fallbackValue).toEqual('salto@io')
       expect(isValidValue).toEqual(true)
     })
-    it('should return not return specific user value if it is missing from target env', async () => {
+    it('should not return specific user value if it is missing from target env', async () => {
       deployConfig = {
         defaultMissingUserFallback: 'blabala',
       }

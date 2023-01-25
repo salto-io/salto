@@ -80,4 +80,4 @@ zendesk {
 
 | Name                                                          | Default when undefined   | Description
 |---------------------------------------------------------------|--------------------------|------------
-| [defaultMissingUserFallback]                                  | ""                       | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback o deployer's user 
+| [defaultMissingUserFallback]                                  | ""                       | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback to deployer's user 

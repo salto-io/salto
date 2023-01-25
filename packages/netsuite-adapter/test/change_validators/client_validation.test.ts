@@ -128,7 +128,7 @@ File: ~/Objects/customrecord1.xml`
       severity: 'Error',
     })
   })
-  it('should have SDF Manifest Validation Error and remove ', async () => {
+  it('should have SDF Manifest Validation Error and remove the element causing it', async () => {
     const detailedMessage = `Validation of account settings failed.
     
     An error occurred during account settings validation.

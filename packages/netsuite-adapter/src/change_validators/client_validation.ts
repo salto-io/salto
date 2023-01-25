@@ -31,7 +31,7 @@ const { awu } = collections.asynciterable
 const VALIDATION_FAIL = 'Validation failed.'
 
 type FailedChangeWithDependencies = {
-  elem: Change<ChangeDataType>
+  element: Change<ChangeDataType>
   dependencies: string[]
 }
 
@@ -50,14 +50,14 @@ const mapObjectDeployErrorToInstance = (error: Error): Record<string, string> =>
 const getFailedChangesWithDependencies = (
   failedElementsIds: Set<string>,
   groupChanges:Change<ChangeDataType>[],
-  dependencyMap: collections.map.DefaultMap<string, Set<string>>,
+  dependencyMap: Map<string, Set<string>>,
   error: ManifestValidationError,
 ): FailedChangeWithDependencies[] => groupChanges
   .filter(element => failedElementsIds.has(getChangeData(element).elemID.getFullName()))
   .map(element => ({
-    elem: element,
+    element,
     dependencies: error.missingDependencyScriptIds.filter(scriptid =>
-      dependencyMap.get(getChangeData(element).elemID.getFullName()).has(scriptid)),
+      dependencyMap.get(getChangeData(element).elemID.getFullName())?.has(scriptid)),
   }))
 
 
@@ -133,7 +133,7 @@ const changeValidator: ClientChangeValidator = async (
           }
           if (error instanceof ManifestValidationError) {
             const dependencyMap = await NetsuiteClient.createDependencyMap(
-              changes, deployReferencedElements, elementsSourceIndex
+              groupChanges, deployReferencedElements, elementsSourceIndex
             )
             const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
@@ -143,8 +143,8 @@ const changeValidator: ClientChangeValidator = async (
               .map(changeAndMissingDependencies => ({
                 message: 'This element depends on missing elements',
                 severity: 'Error' as const,
-                elemID: getChangeData(changeAndMissingDependencies.elem).elemID,
-                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies}. Please try redeploying with these elements included.`,
+                elemID: getChangeData(changeAndMissingDependencies.element).elemID,
+                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. Please make sure that all the bundles from the source account are installed and updated in the target account`,
               }))
           }
           return groupChanges

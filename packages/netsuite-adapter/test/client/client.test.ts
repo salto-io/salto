@@ -202,24 +202,19 @@ describe('NetsuiteClient', () => {
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
       })
 
-      it('should not apply any changes if failed salto reference cant be extracted from error message', async () => {
+      it('should try to deploy again after ManifestValidationError from salto reference', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'center') })
-        const manifestErrorMessage = 'Details: The manifest contains a dependency on netsuite.center.instance.custcenter1.scriptid'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['netsuite.center.instance.custcenter1.scriptid'])
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on custcenter1'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['custcenter1'])
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
-        const tempInstance = new InstanceElement('name', type, { scriptid: 'custcenter1' }, [
-          'netsuite',
-          'Records',
-          'center',
-          'custcenter1',
-        ])
+        const centerInstance = new InstanceElement('name', type, { scriptid: 'custcenter1' })
         const saltoRefExp = new ReferenceExpression(
-          new ElemID(NETSUITE, 'center').createNestedID('instance', 'custcenter1', SCRIPT_ID),
-          tempInstance.value.scriptid,
-          tempInstance
+          centerInstance.elemID.createNestedID('instance', 'custcenter1', SCRIPT_ID),
+          centerInstance.value.scriptid,
+          centerInstance
         )
         const failedChange = toChange({
           after: new InstanceElement('failInstance', type, { scriptid: 'otherObject', ref: saltoRefExp }),
@@ -230,9 +225,9 @@ describe('NetsuiteClient', () => {
           ...deployParams
         )).toEqual({
           errors: [manifestValidationError],
-          appliedChanges: [],
+          appliedChanges: [successChange],
         })
-        expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
       describe('custom record types', () => {

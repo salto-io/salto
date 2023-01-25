@@ -43,6 +43,7 @@ import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type
 const { awu } = collections.asynciterable
 const { lookupValue } = values
 const log = logger(module)
+const { DefaultMap } = collections.map
 
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
@@ -209,8 +210,8 @@ export default class NetsuiteClient {
     changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
     elementsSourceIndex: LazyElementsSourceIndexes,
-  ):Promise<collections.map.DefaultMap<string, Set<string>>> {
-    const dependencyMap = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
+  ):Promise<Map<string, Set<string>>> {
+    const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
     const elemIdsAndCustInfoArr = await awu(changes)
       .map(getChangeData)
       .map(async element => ({
@@ -238,17 +239,16 @@ export default class NetsuiteClient {
 
   public static getFailedManifestErrorElemIds(
     error: ManifestValidationError,
-    dependencyMap: collections.map.DefaultMap<string, Set<string>>,
+    dependencyMap: Map<string, Set<string>>,
     changes: ReadonlyArray<Change>
   ): Set<string> {
     const changeData = changes.map(getChangeData)
-    log.debug('remove elements which contain a scriptid that doesnt exist in target account')
     const elementsToRemoveElemIDs = new Set<string>(
-      error.missingDependencyScriptIds.length === 0
-        ? [] : Array.from(dependencyMap.keys())
-          .filter(topLevelChangedElement =>
-            error.missingDependencyScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement).has(scriptid)))
+      Array.from(dependencyMap.keys())
+        .filter(topLevelChangedElement =>
+          error.missingDependencyScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement)?.has(scriptid)))
     )
+    log.debug('remove elements which contain a scriptid that doesnt exist in target account: %o', elementsToRemoveElemIDs)
     return elementsToRemoveElemIDs.size === 0
       ? new Set(changeData.map(elem => elem.elemID.getFullName()))
       : elementsToRemoveElemIDs
@@ -274,7 +274,7 @@ export default class NetsuiteClient {
 
     const errors: Error[] = []
     const dependencyMap = await NetsuiteClient.createDependencyMap(
-      changesToDeploy, deployReferencedElements, elementsSourceIndex
+      changes, deployReferencedElements, elementsSourceIndex
     )
     while (changesToDeploy.length > 0) {
       const changedInstances = changesToDeploy.map(getChangeData)
@@ -300,7 +300,6 @@ export default class NetsuiteClient {
         errors.push(error)
         if (error instanceof ManifestValidationError) {
           const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
-          log.debug('manifest validation error: sdf failed to deploy: %o', Array.from(elemIdNamesToRemove))
           _.remove(
             changesToDeploy,
             change => elemIdNamesToRemove.has(getChangeData(change).elemID.getFullName())

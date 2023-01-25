@@ -920,7 +920,7 @@ export default class SdfClient {
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
     if (!deployStartMessageRegex.test(errorMessage)) {
-      // we'll get here when the deploy failed in th  e validation phase.
+      // we'll get here when the deploy failed in the validation phase.
       // in this case we're looking for validation error message lines.
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID

@@ -73,6 +73,7 @@ import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
+import { dependencyChanger } from './dependency_changer'
 import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames, isStandardTypeName } from './autogen/types'
@@ -470,6 +471,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         elementsSourceIndex: this.elementsSourceIndex,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
+      dependencyChanger,
     }
   }
 }

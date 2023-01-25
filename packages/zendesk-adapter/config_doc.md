@@ -27,6 +27,9 @@ zendesk {
       brands = [".*"]
     }
   }
+  deploy = {
+    defaultMissingUserFallback = "##DEPLOYER##"
+  }
 }
 ```
 
@@ -72,3 +75,9 @@ zendesk {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | type                                        | ""                                | A regex of the Salto type name to include in the entry
+
+### Deploy configuration options
+
+| Name                                                          | Default when undefined   | Description
+|---------------------------------------------------------------|--------------------------|------------
+| [defaultMissingUserFallback]                                  | ""                       | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback o deployer's user 

@@ -15,7 +15,7 @@
 */
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { DEFAULT_CONFIG, DEPLOY_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES } from '../../src/config'
+import { DEFAULT_CONFIG, FETCH_CONFIG, SUPPORTED_TYPES } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
 
 import { createFilterCreatorParams } from '../utils'
@@ -52,7 +52,6 @@ describe('referenced id fields filter', () => {
     filter = filterCreator(createFilterCreatorParams({
       config: {
         fetch: DEFAULT_CONFIG[FETCH_CONFIG],
-        deploy: DEFAULT_CONFIG[DEPLOY_CONFIG],
         apiDefinitions: {
           typeDefaults: {
             transformation: {

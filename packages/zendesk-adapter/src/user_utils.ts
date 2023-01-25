@@ -20,7 +20,6 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement, Values } from '@salto-io/adapter-api'
-import { ZedneskDeployConfig } from './config'
 import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 
@@ -28,6 +27,7 @@ const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
+const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 // system options that does not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
@@ -197,35 +197,32 @@ const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> =>
 export const getUsers = getUsersFunc()
 
 /**
- * Get user fallback value base on user's deploy config
+ * Get user fallback value that will replace missing users values
+ * based on the user's deploy config
  */
 export const getUserFallbackValue = async (
-  deployConfig: ZedneskDeployConfig,
+  defaultMissingUserFallback: string,
   existingUsers: Set<string>,
   client: ZendeskClient
-): Promise<{value: string | undefined; configUserMissing: boolean}> => {
-  const { fallbackToDeployerOnMissingUsers, fallbackToSpecificUserOnMissingUser } = deployConfig
-  if (fallbackToSpecificUserOnMissingUser !== undefined) {
-    if (existingUsers.has(fallbackToSpecificUserOnMissingUser)) {
-      return { value: fallbackToSpecificUserOnMissingUser, configUserMissing: false }
-    }
-    log.warn('User provided in fallbackToSpecificUserOnMissingUser does not exist in the target environemt')
-    if (!fallbackToDeployerOnMissingUsers) {
-      return { value: undefined, configUserMissing: true }
-    }
-  }
-  if (fallbackToDeployerOnMissingUsers) {
+): Promise<{fallbackValue: string | undefined; isValidValue: boolean}> => {
+  if (defaultMissingUserFallback === DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (await client.getSinglePage({
         url: '/api/v2/users/me',
       })).data
       if (isCurrentUserResponse(response)) {
-        const deployer = response.user?.email
-        return { value: deployer, configUserMissing: fallbackToSpecificUserOnMissingUser !== undefined }
+        return { fallbackValue: response.user.email, isValidValue: true }
       }
+      log.warn('Received invalid user reponse')
+      return { fallbackValue: undefined, isValidValue: true }
     } catch (e) {
       log.error('Attempt to get current user details has failed with error: %o', e)
+      return { fallbackValue: undefined, isValidValue: true }
     }
   }
-  return { value: undefined, configUserMissing: false }
+  if (!existingUsers.has(defaultMissingUserFallback)) {
+    log.error('User provided in defaultMissingUserFallback does not exist in the target environemt')
+    return { fallbackValue: undefined, isValidValue: false }
+  }
+  return { fallbackValue: defaultMissingUserFallback, isValidValue: true }
 }

@@ -79,7 +79,7 @@ export default ({
 }: {
   client: ZendeskClient
   apiConfig: configUtils.AdapterDuckTypeApiConfig
-  deployConfig: ZedneskDeployConfig
+  deployConfig?: ZedneskDeployConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
 }): ChangeValidator => {

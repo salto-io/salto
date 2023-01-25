@@ -88,7 +88,7 @@ export type ZendeskApiConfig = configUtils.AdapterApiConfig<
 export type ZendeskConfig = {
   [CLIENT_CONFIG]?: ZendeskClientConfig
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZedneskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 
@@ -2509,9 +2509,6 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     hideTypes: true,
     enableMissingReferences: true,
   },
-  [DEPLOY_CONFIG]: {
-    fallbackToDeployerOnMissingUsers: true,
-  },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
       request: {
@@ -2610,7 +2607,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
 
 export type FilterContext = {
   [FETCH_CONFIG]: ZendeskFetchConfig
-  [DEPLOY_CONFIG]: ZedneskDeployConfig
+  [DEPLOY_CONFIG]?: ZedneskDeployConfig
   [API_DEFINITIONS_CONFIG]: ZendeskApiConfig
 }
 

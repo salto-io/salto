@@ -80,14 +80,18 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       if (_.isEmpty(users)) {
         return
       }
-      const userEmails = new Set(users.map(user => user.email))
-      const { value } = await getUserFallbackValue(
-        config[DEPLOY_CONFIG],
-        userEmails,
-        client
-      )
-      if (value !== undefined) {
-        replaceMissingUsers(relevantChanges, userEmails, value)
+
+      const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] ?? {}
+      if (defaultMissingUserFallback !== undefined) {
+        const userEmails = new Set(users.map(user => user.email))
+        const { fallbackValue } = await getUserFallbackValue(
+          defaultMissingUserFallback,
+          userEmails,
+          client
+        )
+        if (fallbackValue !== undefined) {
+          replaceMissingUsers(relevantChanges, userEmails, fallbackValue)
+        }
       }
 
       userIdToEmail = Object.fromEntries(

@@ -29,7 +29,6 @@ import {
   ZendeskFetchConfig,
   validateGuideTypesConfig,
   GUIDE_SUPPORTED_TYPES,
-  ZedneskDeployConfig,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
@@ -105,15 +104,10 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     config?.value.fetch
   ) as ZendeskFetchConfig
 
-  const deploy = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG.deploy,
-    config?.value.deploy,
-  ) as ZedneskDeployConfig
-
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,
     fetch,
-    deploy,
+    deploy: configValue.deploy,
     apiDefinitions,
   }
 

@@ -15,7 +15,7 @@
 */
 import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from '../client/client'
@@ -31,7 +31,7 @@ export const createChangeError = (
   const serviceUrl = getChangeData(change).annotations[CORE_ANNOTATIONS.SERVICE_URL]
   return {
     elemID: getChangeData(change).elemID,
-    severity: isModificationChange(change) ? 'Warning' : 'Info',
+    severity: 'Warning',
     message: 'Masked data will be deployed to the service',
     detailedMessage: DETAILED_MESSAGE,
     deployActions: {

@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, isInstanceChange, isRemovalOrModificationChange,
+  isInstanceChange, isRemovalOrModificationChange,
 } from '@salto-io/adapter-api'
 import { IS_SUB_INSTANCE } from '../constants'
+import { NetsuiteChangeValidator } from './types'
 
-const changeValidator: ChangeValidator = async changes => (
+
+const changeValidator: NetsuiteChangeValidator = async changes => (
   changes
     .filter(isInstanceChange)
     .map(change => (isRemovalOrModificationChange(change) ? change.data.before : change.data.after))

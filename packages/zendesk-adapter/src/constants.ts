@@ -39,6 +39,7 @@ export const ACCOUNT_FEATURES_TYPE_NAME = 'account_features'
 export const EVERYONE_USER_TYPE = 'Everyone'
 export const TICKET_FORM_TYPE_NAME = 'ticket_form'
 export const TICKET_FORM_ORDER_TYPE_NAME = 'ticket_form_order'
+export const SUPPORT_ADDRESS_TYPE_NAME = 'support_address'
 
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'

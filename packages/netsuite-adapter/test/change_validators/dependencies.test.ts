@@ -95,6 +95,7 @@ describe('Required Dependencies Validator', () => {
     expect(changeErrors)
       .toEqual(expect.arrayContaining([
         expect.objectContaining({
+          severity: 'Error',
           elemID: dependsOn2Instances.elemID,
         })]))
     expect(changeErrors).toHaveLength(1)
@@ -105,9 +106,11 @@ describe('Required Dependencies Validator', () => {
     expect(changeErrors)
       .toEqual(expect.arrayContaining([
         expect.objectContaining({
+          severity: 'Error',
           elemID: customSegmentInstance.elemID,
         }),
         expect.objectContaining({
+          severity: 'Error',
           elemID: dependsOn2Instances.elemID,
         })]))
     expect(changeErrors).toHaveLength(2)

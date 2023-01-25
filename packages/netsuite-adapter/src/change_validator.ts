@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeError, ChangeValidator, getChangeData } from '@salto-io/adapter-api'
+import { ChangeError, getChangeData, ChangeValidator } from '@salto-io/adapter-api'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeStandardTypesValidator from './change_validators/remove_standard_types'
@@ -31,6 +31,7 @@ import mappedListsIndexesValidator from './change_validators/mapped_lists_indexe
 import configChangesValidator from './change_validators/config_changes'
 import suiteAppConfigElementsValidator from './change_validators/suiteapp_config_elements'
 import undeployableConfigFeaturesValidator from './change_validators/undeployable_config_features'
+import extraReferenceDependenciesValidator from './change_validators/extra_reference_dependencies'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 import notYetSupportedValuesValidator from './change_validators/not_yet_supported_values'
 import workflowAccountSpecificValuesValidator from './change_validators/workflow_account_specific_values'
@@ -40,10 +41,11 @@ import currencyUndeployableFieldsValidator from './change_validators/currency_un
 import NetsuiteClient from './client/client'
 import { AdditionalDependencies } from './client/types'
 import { Filter } from './filter'
+import { NetsuiteChangeValidator } from './change_validators/types'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
 
-const changeValidators: ChangeValidator[] = [
+const changeValidators: NetsuiteChangeValidator[] = [
   exchangeRateValidator,
   currencyUndeployableFieldsValidator,
   workflowAccountSpecificValuesValidator,
@@ -62,9 +64,10 @@ const changeValidators: ChangeValidator[] = [
   configChangesValidator,
   suiteAppConfigElementsValidator,
   undeployableConfigFeaturesValidator,
+  extraReferenceDependenciesValidator,
 ]
 
-const nonSuiteAppValidators: ChangeValidator[] = [
+const nonSuiteAppValidators: NetsuiteChangeValidator[] = [
   removeFileCabinetValidator,
 ]
 
@@ -77,7 +80,6 @@ const changeErrorsToElementIDs = (changeErrors: readonly ChangeError[]): readonl
  * This method runs all change validators and then walks recursively on all references of the valid
  * changes to detect changes that depends on invalid ones and then generate errors for them as well
  */
-
 
 const getChangeValidator: ({
   client,
@@ -117,7 +119,7 @@ const getChangeValidator: ({
         : [...changeValidators, ...nonSuiteAppValidators]
 
       const validatorChangeErrors: ChangeError[] = _.flatten(await Promise.all([
-        ...validators.map(validator => validator(changes)),
+        ...validators.map(validator => validator(changes, deployReferencedElements)),
         warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
       ]))
       const dependedChangeErrors = await validateDependsOnInvalidElement(

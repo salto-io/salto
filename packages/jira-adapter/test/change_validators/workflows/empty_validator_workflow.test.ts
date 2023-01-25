@@ -30,12 +30,6 @@ describe('workflowPropertiesValidator', () => {
       {
         transitions: [
           {
-            properties: [
-              {
-                key: 'key',
-                value: 'true',
-              },
-            ],
             rules: {
               validators: [
                 {
@@ -51,15 +45,6 @@ describe('workflowPropertiesValidator', () => {
             },
           },
         ],
-        statuses:
-        {
-          properties: [
-            {
-              key: 'key',
-              value: 'true',
-            },
-          ],
-        },
       },
     )
     changes = [toChange({ after: instance })]

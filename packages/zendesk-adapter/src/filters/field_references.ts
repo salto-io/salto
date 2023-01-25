@@ -542,6 +542,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'ticketField',
     target: { type: TICKET_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'edentest',
   },
   {
     src: {

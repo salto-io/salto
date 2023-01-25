@@ -29,7 +29,7 @@ export const handleDeploymentError = (err: Error, id?: ElemID): Error => {
       ...(Array.isArray(err.response.data.errorMessages)
         ? err.response.data.errorMessages
         : []),
-      ...(_.isPlainObject(err.response.data.errors)
+      ...(_.isPlainObject(err.response.data.errors) && !_.isEmpty(err.response.data.errors)
         ? [safeJsonStringify(err.response.data.errors)]
         : []),
     ]

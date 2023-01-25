@@ -15,7 +15,14 @@
 */
 import { loadSwagger } from '../../../src/elements/swagger'
 
-
+class ErrorWithStatus extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message)
+  }
+}
 const mockBundle = jest.fn()
 
 jest.mock('@apidevtools/swagger-parser', () =>
@@ -29,7 +36,11 @@ describe('loadSwagger', () => {
   beforeEach(() => {
     mockBundle.mockClear()
   })
-
+  it('should retry when failing with status arg', async () => {
+    mockBundle.mockRejectedValueOnce(new ErrorWithStatus('Failed to load swagger', 400))
+    await loadSwagger('url', 3, 10)
+    expect(mockBundle).toHaveBeenCalledTimes(2)
+  })
   it('should retry when failing', async () => {
     mockBundle.mockRejectedValueOnce(new Error('Failed to load swagger'))
     await loadSwagger('url', 3, 10)

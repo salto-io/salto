@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { CONFIGURATION_VALIDATOR_TYPE } from '../../change_validators/workflows/empty_validator_workflow'
 import { FilterCreator } from '../../filter'
 import { getWorkflowChanges } from './types'
 
@@ -26,8 +27,10 @@ type TransitionValidator = {
 
 const removeValidatorsWithoutConfiguration = (instance: InstanceElement): InstanceElement => {
   for (const transition of instance.value.transitions) {
-    if (transition.rules === undefined && transition.rules.validators !== undefined) {
-      transition.rules.validators = transition.rules.validators.filter((validator: TransitionValidator) => 'configuration' in validator)
+    if (transition.rules !== undefined && transition.rules.validators !== undefined) {
+      transition.rules.validators = transition.rules.validators.filter(
+        (validator: TransitionValidator) => 'configuration' in validator || !CONFIGURATION_VALIDATOR_TYPE.has(validator.type)
+      )
     }
   }
   return instance

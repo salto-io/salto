@@ -18,11 +18,24 @@ import { values } from '@salto-io/lowerdash'
 import { isWorkflowInstance } from '../../filters/workflow/types'
 
 const { isDefined } = values
+export const CONFIGURATION_VALIDATOR_TYPE = new Set([
+  'FieldChangedValidator',
+  'FieldHasSingleValueValidator',
+  'ParentStatusValidator',
+  'ProFormaFormsAttachedValidator',
+  'ProFormaFormsSubmittedValidator',
+  'DateFieldValidator',
+  'PermissionValidator',
+  'PreviousStatusValidator',
+  'RegexpFieldValidator',
+  'UserPermissionValidator',
+  'WindowsDateValidator',
+])
 
 const workflowHasEmptyValidator = (instance: InstanceElement): string | undefined => {
   for (const transition of instance.value.transitions) {
     for (const validator of transition.rules.validators) {
-      if (!('configuration' in validator)) {
+      if (CONFIGURATION_VALIDATOR_TYPE.has(validator.type) && !('configuration' in validator)) {
         return validator.type
       }
     }

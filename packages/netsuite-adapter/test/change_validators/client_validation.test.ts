@@ -143,7 +143,7 @@ File: ~/Objects/customrecord1.xml`
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage: 'This element depends on the following missing elements: some_scriptid. Please try redeploying with these elements included.',
+      detailedMessage: 'This element depends on the following missing elements: some_scriptid. Please make sure that all the bundles from the source account are installed and updated in the target account.',
       elemID: getChangeData(changes[0]).elemID,
       message: 'This element depends on missing elements',
       severity: 'Error',

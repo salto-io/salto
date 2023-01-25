@@ -144,7 +144,7 @@ const changeValidator: ClientChangeValidator = async (
                 message: 'This element depends on missing elements',
                 severity: 'Error' as const,
                 elemID: getChangeData(changeAndMissingDependencies.element).elemID,
-                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. Please make sure that all the bundles from the source account are installed and updated in the target account`,
+                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. Please make sure that all the bundles from the source account are installed and updated in the target account.`,
               }))
           }
           return groupChanges

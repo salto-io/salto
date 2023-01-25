@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { DependencyChanger, isObjectTypeChange, isFieldChange, dependencyChange, getChangeData } from '@salto-io/adapter-api'
-import { values, collections } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
 
@@ -26,14 +26,16 @@ const createDependencyBetweenTypeAndFields: DependencyChanger = async changes =>
     changesWithKeys.filter(({ change }) => isObjectTypeChange(change)),
     ({ change }) => getChangeData(change).elemID.getFullName()
   )
-  return changesWithKeys.map(({ key, change }) => {
-    const parentDependency = isFieldChange(change)
-      ? typeChanges[getChangeData(change).parent.elemID.getFullName()]
-      : undefined
+  const parentToFieldChanges = _.groupBy(
+    changesWithKeys.filter(({ change }) => isFieldChange(change)),
+    ({ change }) => getChangeData(change).elemID.createTopLevelParentID().parent.getFullName()
+  )
+  return Object.entries(parentToFieldChanges).flatMap(([parentId, fieldChanges]) => {
+    const parentDependency = typeChanges[parentId]
     return parentDependency
-      ? dependencyChange('add', parentDependency.key, key)
-      : undefined
-  }).filter(values.isDefined)
+      ? fieldChanges.map(({ key }) => dependencyChange('add', parentDependency.key, key))
+      : []
+  })
 }
 
 const changers = [

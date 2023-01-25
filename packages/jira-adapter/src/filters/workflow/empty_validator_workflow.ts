@@ -15,7 +15,7 @@
 */
 import { getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { getWorkflowChanges } from './workflow_properties_filter'
+import { getWorkflowChanges } from './types'
 
 type TransitionValidator = {
     type: string

@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, ElemID, Field, getChangeData, InstanceElement, isInstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, WorkflowInstance } from './types'
+import { getWorkflowChanges, isWorkflowInstance, WorkflowInstance } from './types'
 import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
 
@@ -52,10 +52,6 @@ const convertPropertiesToMap = (instance: WorkflowInstance): void => {
     }
   })
 }
-
-export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
-  .filter(isInstanceChange)
-  .filter(change => isWorkflowInstance(getChangeData(change)))
 
 const filter: FilterCreator = () => {
   const originalChanges: Record<string, Change<InstanceElement>> = {}

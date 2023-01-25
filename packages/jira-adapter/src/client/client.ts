@@ -36,8 +36,13 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
 
+/**
+ * These headers make sure that we're only pulling Jir in US English
+ * This makes sure that different users with different languages don't make huge diffs.
+ * This header combination only works in Jira Cloud
+ */
 export const FORCE_ACCEPT_LANGUAGE_HEADERS = {
-  'Accept-Language': 'en',
+  'Accept-Language': 'en_US',
   'X-Force-Accept-Language': 'true',
 }
 

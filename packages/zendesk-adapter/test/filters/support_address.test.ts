@@ -66,6 +66,11 @@ describe('support address filter', () => {
       email: 'support1@gmail.com',
     }
   )
+  const supportAddressUndefined = new InstanceElement(
+    'address3',
+    supportAddressType,
+    {}
+  )
 
   beforeAll(() => {
     const elementsSource = buildElementsSourceFromElements([supportAddressZendesk, supportAddressOther, brand1, brand2])
@@ -74,32 +79,48 @@ describe('support address filter', () => {
   })
   describe('onFetch', () => {
     it('should turn zendesk emails to template expression', async () => {
-      const elements = [supportAddressZendesk, supportAddressOther, brand1, brand2].map(e => e.clone())
+      const elements = [
+        supportAddressZendesk,
+        supportAddressOther,
+        supportAddressUndefined,
+        brand1,
+        brand2,
+      ].map(e => e.clone())
       await filter.onFetch(elements)
       const zendeskAddress = elements.find(e => e.elemID.name === 'address1')
       const otherAddress = elements.find(e => e.elemID.name === 'address2')
+      const undefinedAddress = elements.find(e => e.elemID.name === 'address3')
       expect(zendeskAddress).toBeDefined()
       expect(otherAddress).toBeDefined()
-      if (zendeskAddress === undefined || otherAddress === undefined) {
+      expect(undefinedAddress).toBeDefined()
+      if (zendeskAddress === undefined || otherAddress === undefined || undefinedAddress === undefined) {
         return
       }
       expect(zendeskAddress).toEqual(supportAddressZendeskAfterFetch)
       expect(otherAddress).toEqual(supportAddressOther)
+      expect(undefinedAddress).toEqual(supportAddressUndefined)
     })
   })
   describe('preDeploy', () => {
     it('should turn zendesk emails from template expression to string', async () => {
-      const elements = [supportAddressZendeskAfterFetch, supportAddressOther].map(e => e.clone())
+      const elements = [
+        supportAddressZendeskAfterFetch,
+        supportAddressOther,
+        supportAddressUndefined,
+      ].map(e => e.clone())
       await filter.preDeploy(elements.map(elem => toChange({ after: elem })))
       const zendeskAddress = elements.find(e => e.elemID.name === 'address1')
       const otherAddress = elements.find(e => e.elemID.name === 'address2')
+      const undefinedAddress = elements.find(e => e.elemID.name === 'address3')
       expect(zendeskAddress).toBeDefined()
       expect(otherAddress).toBeDefined()
-      if (zendeskAddress === undefined || otherAddress === undefined) {
+      expect(undefinedAddress).toBeDefined()
+      if (zendeskAddress === undefined || otherAddress === undefined || undefinedAddress === undefined) {
         return
       }
       expect(zendeskAddress).toEqual(supportAddressZendesk)
       expect(otherAddress).toEqual(supportAddressOther)
+      expect(undefinedAddress).toEqual(supportAddressUndefined)
     })
   })
   describe('onDeploy', () => {
@@ -107,7 +128,13 @@ describe('support address filter', () => {
     let elementsAfterOnDeploy: (InstanceElement | ObjectType)[]
 
     beforeAll(async () => {
-      const elementsBeforeFetch = [supportAddressZendesk, supportAddressOther, brand1, brand2]
+      const elementsBeforeFetch = [
+        supportAddressZendesk,
+        supportAddressOther,
+        supportAddressUndefined,
+        brand1,
+        brand2,
+      ]
       elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
       await filter.onFetch(elementsAfterFetch)
       const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
@@ -118,6 +145,19 @@ describe('support address filter', () => {
 
     it('Returns elements to after fetch state (with templates) after onDeploy', () => {
       expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
+    })
+    it('should not turn to template expression if it was not a template expression before', async () => {
+      const supportAddress = new InstanceElement(
+        'address1',
+        supportAddressType,
+        {
+          email: 'support.1@one.zendesk.com',
+        }
+      )
+      const cloned = supportAddress.clone()
+      await filter.preDeploy([toChange({ before: supportAddress, after: supportAddress })])
+      await filter.onDeploy([toChange({ before: supportAddress, after: supportAddress })])
+      expect(supportAddress).toEqual(cloned)
     })
   })
 })

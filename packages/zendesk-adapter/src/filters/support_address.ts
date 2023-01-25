@@ -41,13 +41,13 @@ const referenceEmail = ({ emailPart, brandInstances }: {
 }): TemplatePart[] => {
   // emailPart should be of the form {username}@{subdomain}.{domain} (usually zendesk.com)
   // zendesk subdomain cannot have a dot (.) in it.
-  const splitedEmail = emailPart.split(/^([^@]+)@([^.]+)\.(.+)$/).filter(v => !_.isEmpty(v))
-  if (splitedEmail.length !== 3) {
+  const splitEmail = emailPart.split(/^([^@]+)@([^.]+)\.(.+)$/).filter(v => !_.isEmpty(v))
+  if (splitEmail.length !== 3) {
     return [emailPart]
   }
-  const [username, subdomain, domain] = splitedEmail
+  const [username, subdomain, domain] = splitEmail
   const elem = brandInstances[subdomain]
-  if (elem) {
+  if (elem !== undefined) {
     return [
       username,
       '@',

@@ -16,7 +16,6 @@
 import { values } from '@salto-io/lowerdash'
 import {
   ChangeError,
-  ChangeValidator,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -24,6 +23,8 @@ import {
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { ACCOUNT_SPECIFIC_VALUE, WORKFLOW } from '../constants'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { isDefined } = values
 const SENDER = 'sender'
@@ -38,7 +39,7 @@ const toValidationError = (instance: InstanceElement, probField: string): Change
 })
 
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)

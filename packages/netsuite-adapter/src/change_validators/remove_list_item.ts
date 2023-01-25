@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeData, isModificationChange, InstanceElement, isInstanceChange,
+  getChangeData, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
   ElemID,
   ChangeError,
@@ -24,6 +24,8 @@ import {
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID } from '../constants'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 
@@ -60,7 +62,7 @@ const getRemovedListItems = async (change: ModificationChange<InstanceElement>):
   return { removedListItems, elemID: getChangeData(change).elemID }
 }
 
-const changeValidator: ChangeValidator = async changes => {
+const changeValidator: NetsuiteChangeValidator = async changes => {
   const instanceChanges = await awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)

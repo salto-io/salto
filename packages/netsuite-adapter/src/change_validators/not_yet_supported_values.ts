@@ -16,17 +16,18 @@
 import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
-  ChangeValidator,
   getChangeData,
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { isStandardInstanceOrCustomRecordType } from '../types'
 import { NOT_YET_SUPPORTED_VALUE } from '../constants'
 import { isElementContainsStringValue } from './utils'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)

@@ -13,21 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, getChangeData } from '@salto-io/adapter-api'
-import { isStandardInstanceOrCustomRecordType } from '../types'
-import { NetsuiteChangeValidator } from './types'
+import { Change, ChangeError } from '@salto-io/adapter-api'
 
 
-const changeValidator: NetsuiteChangeValidator = async changes => (
-  changes
-    .map(getChangeData)
-    .filter(elem => !isInstanceElement(elem) && !isStandardInstanceOrCustomRecordType(elem))
-    .map(({ elemID }) => ({
-      elemID,
-      severity: 'Error',
-      message: 'Type definitions are read only',
-      detailedMessage: `Changing (${elemID.name}) is not supported`,
-    }))
-)
-
-export default changeValidator
+export type NetsuiteChangeValidator = (
+    changes: ReadonlyArray<Change>,
+    deployReferencedElements?: boolean
+  ) => Promise<ReadonlyArray<ChangeError>>

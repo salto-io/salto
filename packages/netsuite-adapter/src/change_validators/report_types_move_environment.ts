@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { ChangeValidator, getChangeData, InstanceElement,
+import { getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
@@ -24,6 +24,8 @@ import { parseDefinition as parseFinancialLayoutDefinition } from '../type_parse
 import { ParsedReportDefinition } from '../type_parsers/report_definition_parsing/parsed_report_definition'
 import { ParsedFinancialLayout } from '../type_parsers/financial_layout_parsing/parsed_financial_layout'
 import { ParsedSavedSearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 
@@ -73,7 +75,7 @@ const getChangeError = async (instance: InstanceElement): Promise<ChangeError> =
 }
 
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)

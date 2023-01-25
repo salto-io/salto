@@ -29,7 +29,7 @@ import filterCreator from '../../src/filters/support_address'
 import { createFilterCreatorParams } from '../utils'
 
 
-describe('article body filter', () => {
+describe('support address filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy', FilterResult>
   let filter: FilterType
 
@@ -43,7 +43,7 @@ describe('article body filter', () => {
     'address1',
     supportAddressType,
     {
-      email: 'support1@one.zendesk.com',
+      email: 'support.1@one.zendesk.com',
     }
   )
   const supportAddressZendeskAfterFetch = new InstanceElement(
@@ -52,7 +52,7 @@ describe('article body filter', () => {
     {
       email: new TemplateExpression({
         parts: [
-          'support1@',
+          'support.1@',
           new ReferenceExpression(brand1.elemID.createNestedID('subdomain'), brand1.value.subdomain),
           '.zendesk.com',
         ],
@@ -103,18 +103,21 @@ describe('article body filter', () => {
     })
   })
   describe('onDeploy', () => {
-    it('should turn zendesk emails to template expression', async () => {
-      const elementsCloned = [supportAddressZendesk, supportAddressOther, brand1, brand2].map(e => e.clone())
-      await filter.onDeploy(elementsCloned.map(elem => toChange({ after: elem })))
-      const zendeskAddress = elementsCloned.find(e => e.elemID.name === 'address1')
-      const otherAddress = elementsCloned.find(e => e.elemID.name === 'address2')
-      expect(zendeskAddress).toBeDefined()
-      expect(otherAddress).toBeDefined()
-      if (zendeskAddress === undefined || otherAddress === undefined) {
-        return
-      }
-      expect(zendeskAddress).toEqual(supportAddressZendeskAfterFetch)
-      expect(otherAddress).toEqual(supportAddressOther)
+    let elementsAfterFetch: (InstanceElement | ObjectType)[]
+    let elementsAfterOnDeploy: (InstanceElement | ObjectType)[]
+
+    beforeAll(async () => {
+      const elementsBeforeFetch = [supportAddressZendesk, supportAddressOther, brand1, brand2]
+      elementsAfterFetch = elementsBeforeFetch.map(e => e.clone())
+      await filter.onFetch(elementsAfterFetch)
+      const elementsAfterPreDeploy = elementsAfterFetch.map(e => e.clone())
+      await filter.preDeploy(elementsAfterPreDeploy.map(e => toChange({ before: e, after: e })))
+      elementsAfterOnDeploy = elementsAfterPreDeploy.map(e => e.clone())
+      await filter.onDeploy(elementsAfterOnDeploy.map(e => toChange({ before: e, after: e })))
+    })
+
+    it('Returns elements to after fetch state (with templates) after onDeploy', () => {
+      expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
     })
   })
 })

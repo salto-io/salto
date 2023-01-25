@@ -29,58 +29,50 @@ import {
 import _ from 'lodash'
 import { extractTemplate } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { BRAND_TYPE_NAME, SUPPORT_ADDRESS_TYPE_NAME } from '../constants'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
 
 
 const referenceEmail = ({ emailPart, brandInstances }: {
   emailPart: string
   brandInstances: Record<string, InstanceElement>
 }): TemplatePart[] => {
-  // emailPart should be of the form {local-part}@{subdomain}.zendesk.com.
-  const splitLocalPart = emailPart.split(/@/).filter(v => !_.isEmpty(v))
-  if (splitLocalPart.length !== 2) {
-    return [emailPart]
-  }
-  const [localPart, rest] = splitLocalPart
+  // emailPart should be of the form {username}@{subdomain}.{domain} (usually zendesk.com)
   // zendesk subdomain cannot have a dot (.) in it.
-  const splitRest = rest.split(/\./).filter(v => !_.isEmpty(v))
-  if (splitRest.length < 1) {
+  const splitedEmail = emailPart.split(/^([^@]+)@([^.]+)\.(.+)$/).filter(v => !_.isEmpty(v))
+  if (splitedEmail.length !== 3) {
     return [emailPart]
   }
-  const subdomain = splitRest[0]
-  splitRest.shift()
+  const [username, subdomain, domain] = splitedEmail
   const elem = brandInstances[subdomain]
   if (elem) {
     return [
-      localPart,
+      username,
       '@',
       new ReferenceExpression(elem.elemID.createNestedID('subdomain'), elem.value.subdomain),
       '.',
-      splitRest.join('.'),
+      domain,
     ]
   }
   return [emailPart]
 }
 
 
-const getTemplateEmail = ({
+const turnEmailToTemplateExpression = ({
   supportAddressInstance,
   brandList,
 } : {
   supportAddressInstance: InstanceElement
   brandList: Record<string, InstanceElement>
-}): TemplateExpression | string | undefined => {
+}): void => {
   const originalEmail = supportAddressInstance.value.email
   if (!_.isString(originalEmail)) {
     log.error(`email of ${supportAddressInstance.elemID.getFullName()} is not a string`)
-    return undefined
+    return
   }
-  return extractTemplate(
+  supportAddressInstance.value.email = extractTemplate(
     originalEmail,
     [],
     emailPart => referenceEmail({
@@ -90,70 +82,61 @@ const getTemplateEmail = ({
   )
 }
 
-const turnEmailToTemplateExpression = (
-  supportAddressInstances: InstanceElement[],
-  brandBySubdomains: Record<string, InstanceElement>
-): void => {
-  supportAddressInstances
-    .forEach(supportInstance => {
-      supportInstance.value.email = getTemplateEmail({
-        supportAddressInstance: supportInstance,
-        brandList: brandBySubdomains,
-      })
-    })
-}
-
 const replaceIfReferenceExpression = (part: TemplatePart): string =>
   (isReferenceExpression(part) ? part.value : part)
 
-const templateToEmail = (change: Change<InstanceElement>): void => {
+const templateToEmail = (change: Change<InstanceElement>, deployTemplateMapping: Record<string, TemplateExpression>)
+  : void => {
   const inst = getChangeData(change)
   const { email } = inst.value
+  deployTemplateMapping[inst.elemID.getFullName()] = email
   if (isTemplateExpression(email)) {
     inst.value.email = email.parts.map(replaceIfReferenceExpression).join('')
   }
 }
 
-const filterCreator: FilterCreator = ({ elementsSource }) => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
-    const instances = elements
-      .filter(isInstanceElement)
-    const supportAddressInstances = instances
-      .filter(inst => inst.elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
-    const brandBySubdomains: Record<string, InstanceElement> = _.keyBy(
-      (instances
-        .filter(inst => inst.elemID.typeName === BRAND_TYPE_NAME)
-        .filter(inst => inst.value.subdomain !== undefined)),
-      (inst: InstanceElement): string => inst.value.subdomain
-    )
-    turnEmailToTemplateExpression(supportAddressInstances, brandBySubdomains)
-  },
-  preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-    changes
-      .filter(change => getChangeData(change).elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
-      .filter(isInstanceChange)
-      .forEach(templateToEmail)
-  },
-  onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-    const supportAddressInstances = changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
-      .map(getChangeData)
-    if (_.isEmpty(supportAddressInstances)) {
-      return
-    }
-    const brandInstances = await awu(await elementsSource.getAll())
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === BRAND_TYPE_NAME)
-      .filter(inst => inst.value.subdomain !== undefined)
-      .toArray()
-    const brandBySubdomains: Record<string, InstanceElement> = _.keyBy(
-      brandInstances,
-      (inst: InstanceElement): string => inst.value.subdomain
-    )
-    turnEmailToTemplateExpression(supportAddressInstances, brandBySubdomains)
-  },
-})
+/**
+ * OnFetch and in onDeploy this filter turns the email in support_address to a template expression with a reference
+ * to the brand's subdomain. only for zendesk emails. In preDeploy the template expressions are turned back to string.
+ */
+const filterCreator: FilterCreator = () => {
+  const deployTemplateMapping: Record<string, TemplateExpression> = {}
+  return ({
+    onFetch: async (elements: Element[]): Promise<void> => {
+      const instances = elements
+        .filter(isInstanceElement)
+      const supportAddressInstances = instances
+        .filter(inst => inst.elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
+      const brandBySubdomains: Record<string, InstanceElement> = _.keyBy(
+        (instances
+          .filter(inst => inst.elemID.typeName === BRAND_TYPE_NAME)
+          .filter(inst => inst.value.subdomain !== undefined)),
+        (inst: InstanceElement): string => inst.value.subdomain
+      )
+      supportAddressInstances.forEach(supportInstance => {
+        turnEmailToTemplateExpression({
+          supportAddressInstance: supportInstance,
+          brandList: brandBySubdomains,
+        })
+      })
+    },
+    preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+      changes
+        .filter(change => getChangeData(change).elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
+        .filter(isInstanceChange)
+        .forEach(change => templateToEmail(change, deployTemplateMapping))
+    },
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
+      changes
+        .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === SUPPORT_ADDRESS_TYPE_NAME)
+        .map(getChangeData)
+        .forEach(inst => {
+          inst.value.email = deployTemplateMapping[inst.elemID.getFullName()]
+        })
+    },
+  })
+}
 
 export default filterCreator

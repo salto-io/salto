@@ -20,7 +20,7 @@ import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import { deploySteps } from '../../../src/filters/workflow/steps_deployment'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS, JSP_API_HEADERS } from '../../../src/client/headers'
+import { JSP_API_HEADERS } from '../../../src/client/headers'
 
 describe('steps_deployment', () => {
   let workflowType: ObjectType
@@ -90,7 +90,7 @@ describe('steps_deployment', () => {
         workflowName: 'workflowName',
         workflowMode: 'live',
       }),
-      { headers: { ...JSP_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+      { headers: { ...JSP_API_HEADERS } },
     )
 
     expect(mockConnection.post).toHaveBeenCalledWith(
@@ -102,7 +102,7 @@ describe('steps_deployment', () => {
         workflowName: 'workflowName',
         workflowMode: 'live',
       }),
-      { headers: { ...JSP_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+      { headers: { ...JSP_API_HEADERS } },
     )
 
     expect(mockConnection.post).toHaveBeenCalledTimes(2)

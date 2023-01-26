@@ -167,7 +167,7 @@ describe('field_configurations_scheme', () => {
               },
             ],
           },
-          { headers: expect.any(Object) },
+          undefined,
         )
       })
 
@@ -177,7 +177,7 @@ describe('field_configurations_scheme', () => {
           {
             issueTypeIds: ['2'],
           },
-          { headers: expect.any(Object) },
+          undefined,
         )
       })
     })

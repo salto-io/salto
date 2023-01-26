@@ -113,7 +113,7 @@ describe('prioritySchemeFetchFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/2/priorityschemes',
-        { headers: expect.any(Object) },
+        undefined
       )
     })
 

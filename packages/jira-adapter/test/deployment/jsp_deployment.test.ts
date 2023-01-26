@@ -19,7 +19,7 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import _ from 'lodash'
 import { mockClient } from '../utils'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS, JSP_API_HEADERS } from '../../src/client/headers'
+import { PRIVATE_API_HEADERS, JSP_API_HEADERS } from '../../src/client/headers'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import { JspUrls } from '../../src/config/config'
@@ -82,7 +82,7 @@ describe('jsp_deployment', () => {
       })
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
 
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -90,7 +90,7 @@ describe('jsp_deployment', () => {
         new URLSearchParams({
           name: 'val',
         }),
-        { headers: { ...FORCE_ACCEPT_LANGUAGE_HEADERS, ...JSP_API_HEADERS } }
+        { headers: { ...JSP_API_HEADERS } }
       )
     })
 
@@ -238,7 +238,7 @@ describe('jsp_deployment', () => {
       })
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
 
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -247,7 +247,7 @@ describe('jsp_deployment', () => {
           name: 'val',
           id: '1',
         }),
-        { headers: { ...FORCE_ACCEPT_LANGUAGE_HEADERS, ...JSP_API_HEADERS } }
+        { headers: { ...JSP_API_HEADERS } }
       )
     })
 
@@ -321,7 +321,7 @@ describe('jsp_deployment', () => {
 
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
-        { headers: { ...FORCE_ACCEPT_LANGUAGE_HEADERS, ...PRIVATE_API_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
 
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -332,7 +332,7 @@ describe('jsp_deployment', () => {
           confirm: 'true',
           confirmed: 'true',
         }),
-        { headers: { ...JSP_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...JSP_API_HEADERS } }
       )
     })
 

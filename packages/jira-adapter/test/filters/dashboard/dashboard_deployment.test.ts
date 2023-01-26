@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import { getFilterParams, mockClient } from '../../utils'
 import dashboardDeploymentFilter from '../../../src/filters/dashboard/dashboard_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
@@ -196,7 +196,7 @@ describe('dashboardDeploymentFilter', () => {
           1: [],
           2: [],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+        { headers: { ...PRIVATE_API_HEADERS } },
       )
     })
 
@@ -214,7 +214,7 @@ describe('dashboardDeploymentFilter', () => {
           1: ['2', '3'],
           2: [],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+        { headers: { ...PRIVATE_API_HEADERS } },
       )
     })
 
@@ -233,7 +233,7 @@ describe('dashboardDeploymentFilter', () => {
           1: [],
           2: [],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+        { headers: { ...PRIVATE_API_HEADERS } },
       )
     })
 

@@ -23,7 +23,7 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import JiraClient from '../../../src/client/client'
 import { createWebhookTypes } from '../../../src/filters/webhook/types'
 import { JIRA, WEBHOOK_TYPE } from '../../../src/constants'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 
 
 describe('webhookFilter', () => {
@@ -124,7 +124,7 @@ describe('webhookFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook',
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+        { headers: { ...PRIVATE_API_HEADERS } },
       )
     })
 
@@ -236,7 +236,7 @@ describe('webhookFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook',
         instance.value,
-        { headers: expect.any(Object) },
+        undefined
       )
     })
 
@@ -256,7 +256,7 @@ describe('webhookFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook/3',
-        { headers: expect.any(Object) },
+        undefined
       )
     })
 
@@ -270,7 +270,7 @@ describe('webhookFilter', () => {
           id: '3',
           name: 'someName',
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
   })

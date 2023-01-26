@@ -116,12 +116,12 @@ describe('automationLabelFetchFilter', () => {
           xc: [],
           xr: [],
         },
-        { headers: expect.any(Object) },
+        undefined
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
-        { headers: expect.any(Object) },
+        undefined
       )
     })
 
@@ -163,7 +163,7 @@ describe('automationLabelFetchFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/rule-label',
-        { headers: expect.any(Object) },
+        undefined
       )
     })
 

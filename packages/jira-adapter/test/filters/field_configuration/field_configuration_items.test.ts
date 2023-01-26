@@ -87,7 +87,7 @@ describe('fieldConfigurationItemsFilter', () => {
           fieldConfigurationItems: changes.slice(0, 100)
             .map(change => getChangeData(change).value),
         },
-        { headers: expect.any(Object) },
+        undefined
       )
       expect(mockConnection.put).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfiguration/1/fields',
@@ -95,7 +95,7 @@ describe('fieldConfigurationItemsFilter', () => {
           fieldConfigurationItems: changes.slice(100, changes.length)
             .map(change => getChangeData(change).value),
         },
-        { headers: expect.any(Object) },
+        undefined
       )
     })
 

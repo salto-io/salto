@@ -74,7 +74,7 @@ describe('projectDeletionValidator', () => {
           jql: 'project = "KEY"',
           maxResults: '0',
         },
-        headers: expect.any(Object),
+        undefined,
       }
     )
   })

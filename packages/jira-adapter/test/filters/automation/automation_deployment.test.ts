@@ -22,7 +22,7 @@ import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
@@ -184,7 +184,7 @@ describe('automationDeploymentFilter', () => {
             },
           }],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
 
       expect(connection.put).toHaveBeenCalledWith(
@@ -207,7 +207,7 @@ describe('automationDeploymentFilter', () => {
             },
           },
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
 
@@ -270,7 +270,7 @@ describe('automationDeploymentFilter', () => {
             ],
           }],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
 
       expect(connection.put).toHaveBeenCalledWith(
@@ -286,7 +286,7 @@ describe('automationDeploymentFilter', () => {
             },
           ],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
 
@@ -314,7 +314,7 @@ describe('automationDeploymentFilter', () => {
             },
           }],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
 
       expect(connection.put).not.toHaveBeenCalled()
@@ -337,7 +337,7 @@ describe('automationDeploymentFilter', () => {
             },
           }],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
 
@@ -363,7 +363,7 @@ describe('automationDeploymentFilter', () => {
             },
           }],
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
 
@@ -453,7 +453,7 @@ describe('automationDeploymentFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/3',
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
 
@@ -471,7 +471,7 @@ describe('automationDeploymentFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/project/GLOBAL/rule/3',
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
 
@@ -500,7 +500,7 @@ describe('automationDeploymentFilter', () => {
             },
           },
         },
-        { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+        { headers: { ...PRIVATE_API_HEADERS } }
       )
     })
     describe('automation label', () => {
@@ -526,7 +526,7 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
           null,
-          { headers: { 'Content-Type': 'application/json', ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { 'Content-Type': 'application/json' } }
         )
       })
 
@@ -546,7 +546,7 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1',
           null,
-          { headers: { 'Content-Type': 'application/json', ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+          { headers: { 'Content-Type': 'application/json' } },
         )
       })
 
@@ -556,7 +556,7 @@ describe('automationDeploymentFilter', () => {
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
-          { headers: expect.any(Object) },
+          undefined,
         )
       })
 
@@ -574,7 +574,7 @@ describe('automationDeploymentFilter', () => {
         await filter.deploy([toChange({ before: instance, after: modifyInstance })])
         expect(connection.delete).toHaveBeenCalledWith(
           '/rest/cb-automation/latest/project/GLOBAL/rule/555/label/1',
-          { headers: expect.any(Object) },
+          undefined,
         )
       })
 
@@ -586,11 +586,11 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/2',
           null,
-          { headers: { 'Content-Type': 'application/json', ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+          { headers: { 'Content-Type': 'application/json' } },
         )
         expect(connection.delete).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
-          { headers: expect.any(Object) },
+          undefined,
         )
       })
     })

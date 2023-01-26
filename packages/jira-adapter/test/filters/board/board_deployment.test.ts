@@ -18,7 +18,7 @@ import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapte
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import JiraClient from '../../../src/client/client'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_LOCATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
@@ -216,7 +216,7 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledWith(
@@ -224,7 +224,7 @@ describe('boardDeploymentFilter', () => {
           {
             query: 'someQuery',
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledWith(
@@ -234,7 +234,7 @@ describe('boardDeploymentFilter', () => {
             estimateStatisticId: 'field_5',
             trackingStatisticId: 'field_6',
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
       })
 
@@ -283,7 +283,7 @@ describe('boardDeploymentFilter', () => {
             id: '1',
             name: 'newName',
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -300,7 +300,7 @@ describe('boardDeploymentFilter', () => {
             locationType: 'project',
             rapidViewId: '1',
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -316,7 +316,7 @@ describe('boardDeploymentFilter', () => {
             savedFilterId: '8',
             id: '1',
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -361,7 +361,7 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -412,7 +412,7 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -483,7 +483,7 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledTimes(3)
@@ -542,7 +542,7 @@ describe('boardDeploymentFilter', () => {
           {
             query: '',
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -561,7 +561,7 @@ describe('boardDeploymentFilter', () => {
             estimateStatisticId: 'field_9',
             trackingStatisticId: 'none_',
           },
-          { headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS } }
+          { headers: { ...PRIVATE_API_HEADERS } }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()

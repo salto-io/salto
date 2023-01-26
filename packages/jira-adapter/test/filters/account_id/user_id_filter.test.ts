@@ -178,7 +178,7 @@ describe('add_display_name_filter', () => {
     expect(mockConnection.get).toHaveBeenCalledOnce()
     expect(mockConnection.get).toHaveBeenCalledWith(
       '/rest/api/3/users/search',
-      { headers: expect.any(Object) }
+      undefined
     )
     common.checkDisplayNames(instances[2], '2')
   })
@@ -371,7 +371,6 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search',
         {
-          headers: expect.any(Object),
           params: {
             maxResults: '1000',
             username: '.',
@@ -394,7 +393,6 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search',
         {
-          headers: expect.any(Object),
           params: {
             maxResults: '1000',
             username: '.',
@@ -414,7 +412,6 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search',
         {
-          headers: expect.any(Object),
           params: {
             maxResults: '1000',
             username: '.',

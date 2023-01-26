@@ -120,14 +120,14 @@ describe('issueTypeScheme', () => {
           {
             issueTypeIds: ['6', '5'],
           },
-          { headers: expect.any(Object) },
+          undefined
         )
       })
 
       it('should call the endpoint to remove the removed issue types ids', () => {
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/rest/api/3/issuetypescheme/1/issuetype/2',
-          { headers: expect.any(Object) },
+          undefined,
         )
       })
 
@@ -138,7 +138,7 @@ describe('issueTypeScheme', () => {
             issueTypeIds: ['6', '1', '5', '3'],
             position: 'First',
           },
-          { headers: expect.any(Object) },
+          undefined
         )
       })
     })

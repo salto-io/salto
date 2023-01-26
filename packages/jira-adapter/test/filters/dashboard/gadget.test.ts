@@ -18,7 +18,6 @@ import _ from 'lodash'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS } from '../../../src/client/headers'
 import { getFilterParams, mockClient } from '../../utils'
 import gadgetFilter from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
@@ -140,17 +139,17 @@ describe('gadgetFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties',
-        { headers: expect.any(Object) },
+        undefined
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        { headers: expect.any(Object) },
+        undefined
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        { headers: expect.any(Object) },
+        undefined
       )
 
       expect(instance.value.properties).toEqual({
@@ -192,12 +191,12 @@ describe('gadgetFilter', () => {
 
       expect(connection.get).not.toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        { headers: expect.any(Object) },
+        undefined
       )
 
       expect(connection.get).not.toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        { headers: expect.any(Object) },
+        undefined
       )
 
       expect(instance.value.properties).toEqual({})
@@ -300,13 +299,13 @@ describe('gadgetFilter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
         '"value1"',
-        { headers: { 'Content-Type': 'application/json', ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+        { headers: { 'Content-Type': 'application/json' } },
       )
 
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
         '"value2"',
-        { headers: { 'Content-Type': 'application/json', ...FORCE_ACCEPT_LANGUAGE_HEADERS } },
+        { headers: { 'Content-Type': 'application/json' } },
       )
     })
 

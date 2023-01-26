@@ -20,7 +20,7 @@ import { deployTriggers } from '../../../src/filters/workflow/triggers_deploymen
 import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
-import { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 
 describe('triggersDeployment', () => {
   let workflowType: ObjectType
@@ -77,7 +77,7 @@ describe('triggersDeployment', () => {
         triggerDefinitionKey: 'key',
       },
       {
-        headers: { ...PRIVATE_API_HEADERS, ...FORCE_ACCEPT_LANGUAGE_HEADERS },
+        headers: { ...PRIVATE_API_HEADERS },
         params: {
           workflowName: 'workflowName',
           actionId: '1',

@@ -81,7 +81,7 @@ describe('dashboardLayoutFilter', () => {
       expect(instance.value.layout).toBe('AAA')
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/dashboards/1.0/1',
-        { headers: expect.any(Object) },
+        undefined
       )
     })
 

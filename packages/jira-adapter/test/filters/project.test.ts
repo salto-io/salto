@@ -242,7 +242,7 @@ describe('projectFilter', () => {
           workflowSchemeId: 1,
           projectId: 2,
         },
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
@@ -265,7 +265,7 @@ describe('projectFilter', () => {
         {
           id: 10,
         },
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
@@ -277,7 +277,7 @@ describe('projectFilter', () => {
         {
           id: 10,
         },
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
   })
@@ -321,7 +321,7 @@ describe('projectFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/3',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
@@ -330,12 +330,12 @@ describe('projectFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/1',
-        { headers: expect.any(Object) },
+        undefined,
       )
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/2',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
@@ -358,7 +358,7 @@ describe('projectFilter', () => {
         {
           id: 11,
         },
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
@@ -370,7 +370,7 @@ describe('projectFilter', () => {
         {
           id: 11,
         },
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
   })
@@ -439,40 +439,40 @@ describe('projectFilter', () => {
     it('should call the endpoint to get the projectId', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/key',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should call the endpoint to get the fieldConfigurationScheme', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should call the endpoint to delete the fieldConfigurationScheme', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/4',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should call the endpoint to get the components', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/3',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should call the endpoint to remove the components', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/1',
-        { headers: expect.any(Object) },
+        undefined,
       )
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/2',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
   })
@@ -537,40 +537,40 @@ describe('projectFilter', () => {
     it('should call the endpoint to get the projectId', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/key',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should call the endpoint to get the fieldConfigurationScheme', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/project?projectId=3',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should not call the endpoint to delete the fieldConfigurationScheme', () => {
       expect(connection.delete).not.toHaveBeenCalledWith(
         '/rest/api/3/fieldconfigurationscheme/4',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should call the endpoint to get the components', () => {
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/project/3',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
 
     it('should call the endpoint to remove the components', () => {
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/1',
-        { headers: expect.any(Object) },
+        undefined,
       )
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/api/3/component/2',
-        { headers: expect.any(Object) },
+        undefined,
       )
     })
   })
@@ -645,7 +645,7 @@ describe('projectFilter', () => {
             workflowSchemeId: 1,
             projectId: 2,
           },
-          { headers: expect.any(Object) },
+          undefined,
         )
       })
     })

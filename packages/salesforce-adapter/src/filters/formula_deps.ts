@@ -16,12 +16,14 @@
 
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { ElemID, ElemIDType, Field, isObjectType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { FORMULA, SALESFORCE } from '../constants'
 import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */
 const formulon = require('formulon')
@@ -29,6 +31,7 @@ const formulon = require('formulon')
 const { extract } = formulon
 
 const log = logger(module)
+const { awu } = collections.asynciterable
 
 const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType => (
   ({
@@ -39,7 +42,7 @@ const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType 
     [IdentifierType.STANDARD_FIELD.name]: 'field',
     [IdentifierType.CUSTOM_FIELD.name]: 'field',
     // [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'instance', //see comment in referencesFromIdentifiers
-  } as const)[identifierType.name]
+  } as Record<string, ElemIDType>)[identifierType.name]
 )
 
 const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> => (
@@ -56,9 +59,9 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
     ))
 )
 
-const addDependenciesAnnotation = async (field: Field, referrableNames: Set<string>): Promise<void> => {
+const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElementsSource): Promise<void> => {
   const isValidReference = (elemId: ElemID): boolean => (
-    referrableNames.has(elemId.getFullName())
+    allElements.get(elemId) !== undefined
   )
 
   const logInvalidReferences = (
@@ -66,12 +69,14 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
     formula: string,
     identifiersInfo: FormulaIdentifierInfo[][]
   ): void => {
+    if (invalidReferences.length > 0) {
+      log.error('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
+        formula,
+        field.elemID.getFullName(),
+        identifiersInfo.flat().map(info => info.instance))
+    }
     invalidReferences.forEach(refElemId => {
-      log.error(`Created an invalid reference from a formula identifier. This reference will be discarded.
-        Field: ${field.elemID.getFullName()}
-        Formula: ${formula}
-        Identifiers: ${identifiersInfo.flat().map(info => info.instance).join(', ')}
-        Reference: ${refElemId.getFullName()}`)
+      log.error(`Invalid reference: ${refElemId.getFullName()}`)
     })
   }
 
@@ -111,6 +116,7 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
     const [validReferences, invalidReferences] = _.partition(references, isValidReference)
     logInvalidReferences(invalidReferences, formula, identifiersInfo)
 
+    log.info(`Extracted ${validReferences.length} valid references`)
     const depsAsRefExpr = validReferences.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
     extendGeneratedDependencies(field, depsAsRefExpr)
@@ -118,11 +124,6 @@ const addDependenciesAnnotation = async (field: Field, referrableNames: Set<stri
     log.warn(`Failed to extract references from formula ${formula}: ${e}`)
   }
 }
-
-const allReferrableNames = (type: ObjectType): string[] => [
-  type.elemID.getFullName(),
-  ...Object.values(type.fields).map(field => field.elemID.getFullName()),
-]
 
 /**
  * Extract references from formulas
@@ -133,13 +134,16 @@ const allReferrableNames = (type: ObjectType): string[] => [
  * Note: Because formulas are part of the type's definition we assume they can only refer to other types/fields and to
  *       instances
  */
-const filter: LocalFilterCreator = () => ({
+const filter: LocalFilterCreator = ({ config }) => ({
   name: 'formula_deps',
-  onFetch: async elements => {
-    const objectTypes = elements.filter(isObjectType)
-    const referrableNames = new Set(objectTypes.flatMap(type => allReferrableNames(type)))
-    const formulaFields = objectTypes.flatMap(type => Object.values(type.fields)).filter(isFormulaField)
-    await Promise.all(formulaFields.map(field => addDependenciesAnnotation(field, referrableNames)))
+  onFetch: async fetchedElements => {
+    const fetchedObjectTypes = fetchedElements.filter(isObjectType)
+    const fetchedFormulaFields = await awu(fetchedObjectTypes)
+      .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
+      .filter(isFormulaField)
+      .toArray()
+    const allElements = buildElementsSourceForFetch(fetchedElements, config)
+    await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
   },
 })
 

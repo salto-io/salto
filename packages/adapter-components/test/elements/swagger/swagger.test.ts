@@ -15,9 +15,6 @@
 */
 import { loadSwagger } from '../../../src/elements/swagger'
 
-
-const mockBundle = jest.fn()
-
 class ErrorWithStatus extends Error {
   constructor(
     message: string,
@@ -26,6 +23,8 @@ class ErrorWithStatus extends Error {
     super(message)
   }
 }
+const mockBundle = jest.fn()
+
 jest.mock('@apidevtools/swagger-parser', () =>
   jest.fn().mockImplementation(
     () => ({ bundle: mockBundle })
@@ -42,15 +41,14 @@ describe('loadSwagger', () => {
     await loadSwagger('url', 3, 10)
     expect(mockBundle).toHaveBeenCalledTimes(2)
   })
-
-  it('should not retry when failing without status arg', async () => {
+  it('should retry when failing', async () => {
     mockBundle.mockRejectedValueOnce(new Error('Failed to load swagger'))
-    await expect(loadSwagger('url', 3, 10)).rejects.toThrow()
-    expect(mockBundle).toHaveBeenCalledTimes(1)
+    await loadSwagger('url', 3, 10)
+    expect(mockBundle).toHaveBeenCalledTimes(2)
   })
 
   it('should throw if failed after retries', async () => {
-    mockBundle.mockRejectedValue(new ErrorWithStatus('Failed to load swagger', 400))
+    mockBundle.mockRejectedValue(new Error('Failed to load swagger'))
     await expect(loadSwagger('url', 3, 10)).rejects.toThrow()
     expect(mockBundle).toHaveBeenCalledTimes(4)
   })

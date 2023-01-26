@@ -277,10 +277,13 @@ const generalDeserialize = async <T>(
 
     const reviveFieldDefinitions = (v: Value): Record<string, FieldDefinition> => (
       _.isPlainObject(v)
-        ? _.mapValues(v, field => ({
-          refType: reviveRefTypeOfElement(field),
-          annotations: restoreClasses(field.annotations),
-        }))
+        ? _.mapValues(
+          _.pickBy(v, val => isSerializedClass(val) && val[SALTO_CLASS_FIELD] === 'Field'),
+          val => ({
+            refType: reviveRefTypeOfElement(val),
+            annotations: restoreClasses(val.annotations),
+          })
+        )
         : {}
     )
 

@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
 import { DependencyChanger, isObjectTypeChange, isFieldChange, dependencyChange, getChangeData } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
 
 const createDependencyBetweenTypeAndFields: DependencyChanger = async changes => {
-  const changesWithKeys = Array.from(changes.entries())
-    .map(([key, change]) => ({ key, change }))
+  const changesWithKeys = wu(changes.entries()).map(([key, change]) => ({ key, change })).toArray()
   const typeChanges = _.keyBy(
     changesWithKeys.filter(({ change }) => isObjectTypeChange(change)),
     ({ change }) => getChangeData(change).elemID.getFullName()

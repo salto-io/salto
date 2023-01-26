@@ -32,25 +32,26 @@ export const CONFIGURATION_VALIDATOR_TYPE = new Set([
   'WindowsDateValidator',
 ])
 
-const workflowHasEmptyValidator = (instance: InstanceElement): string | undefined => {
+const workflowHasEmptyValidator = (instance: InstanceElement): Set<string> => {
+  const invalidValidators = new Set<string>()
   for (const transition of instance.value.transitions) {
     for (const validator of transition.rules.validators) {
       if (CONFIGURATION_VALIDATOR_TYPE.has(validator.type) && !('configuration' in validator)) {
-        return validator.type
+        invalidValidators.add(validator.type)
       }
     }
   }
-  return undefined
+  return invalidValidators
 }
 
 const createEmptyValidatorWorkflowError = (
   instance: InstanceElement,
-  validatorType?: string,
-): ChangeError | undefined => (validatorType ? {
+  validatorType: Set<string>,
+): ChangeError | undefined => (validatorType.size > 0 ? {
   elemID: instance.elemID,
   severity: 'Warning' as SeverityLevel,
   message: 'Invalid workflow transition validator won’t be deployed',
-  detailedMessage: `This workflow has a ${validatorType} transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration`,
+  detailedMessage: `This workflow has ${validatorType.size === 1 ? `a ${[...validatorType][0]} transition validator` : `the following transition validators ${[...validatorType].join(', ')}`}, which ${validatorType.size === 1 ? 'is' : 'are'} missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration`,
 } : undefined)
 
 export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async changes => (
@@ -59,7 +60,7 @@ export const emptyValidatorWorkflowChangeValidator: ChangeValidator = async chan
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isWorkflowInstance)
-    .map(instance => ({ instance, validatorType: workflowHasEmptyValidator(instance) }))
-    .map(({ instance, validatorType }) => createEmptyValidatorWorkflowError(instance, validatorType))
+    .map(instance => ({ instance, validatorTypes: workflowHasEmptyValidator(instance) }))
+    .map(({ instance, validatorTypes }) => createEmptyValidatorWorkflowError(instance, validatorTypes))
     .filter(isDefined)
 )

@@ -62,6 +62,32 @@ describe('workflowPropertiesValidator', () => {
       },
     ])
   })
+  it('should return an plural error if there are multiple invalid validators', async () => {
+    instance.value.transitions[0].rules.validators.push({
+      type: 'PreviousStatusValidator',
+    })
+    expect(await emptyValidatorWorkflowChangeValidator(changes)).toEqual([
+      {
+        elemID: instance.elemID,
+        severity: 'Warning',
+        message: 'Invalid workflow transition validator won’t be deployed',
+        detailedMessage: 'This workflow has the following transition validators FieldHasSingleValueValidator, PreviousStatusValidator, which are missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration',
+      },
+    ])
+  })
+  it('should return an plural error if there are multiple invalid validators but only once per type', async () => {
+    instance.value.transitions[0].rules.validators.push({
+      type: 'FieldHasSingleValueValidator',
+    })
+    expect(await emptyValidatorWorkflowChangeValidator(changes)).toEqual([
+      {
+        elemID: instance.elemID,
+        severity: 'Warning',
+        message: 'Invalid workflow transition validator won’t be deployed',
+        detailedMessage: 'This workflow has a FieldHasSingleValueValidator transition validator, which is missing some configuration. The workflow will be deployed without this transition validator. To fix this, go to your Jira instance and delete the validator, or fix its configuration',
+      },
+    ])
+  })
   it('should not return an error if workflow has only valid validator', async () => {
     instance.value.transitions[0].rules.validators.pop()
     expect(await emptyValidatorWorkflowChangeValidator([

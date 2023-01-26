@@ -21,7 +21,7 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isPrimitiveType, FieldDefinition, Value, TypeRefMap, TypeReference, isTypeReference,
-  isVariableExpression,
+  isVariableExpression, PlaceholderObjectType,
 } from '@salto-io/adapter-api'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
@@ -321,7 +321,9 @@ const generalDeserialize = async <T>(
       Field: v => {
         const elemId = reviveElemID(v.elemID)
         return new Field(
-          new ObjectType({ elemID: new ElemID(elemId.adapter, elemId.typeName) }),
+          // when we deserialize a single field we don't have the context of its parent.
+          // in this case we set a placeholder object type so we're able to recognize it later.
+          new PlaceholderObjectType({ elemID: new ElemID(elemId.adapter, elemId.typeName) }),
           elemId.name,
           reviveRefTypeOfElement(v),
           restoreClasses(v.annotations),

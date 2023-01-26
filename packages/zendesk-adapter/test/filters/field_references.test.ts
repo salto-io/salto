@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element,
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
-import { ZENDESK } from '../../src/constants'
+import { ROUTING_ATTRIBUTE_VALUE_TYPE, ZENDESK } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 describe('References by id filter', () => {
@@ -204,6 +204,27 @@ describe('References by id filter', () => {
       },
     },
   })
+  const routingAttributeValueType = new ObjectType({
+    elemID: new ElemID(ZENDESK, ROUTING_ATTRIBUTE_VALUE_TYPE),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+      conditions: {
+        refType: new ObjectType({
+          elemID: new ElemID(ZENDESK, 'routing_attribute_value__conditions'),
+          fields: {
+            all: { refType: new ListType(new ObjectType({
+              elemID: new ElemID(ZENDESK, 'routing_attribute_value__conditions__all'),
+              fields: {
+                subject: { refType: BuiltinTypes.STRING },
+                operator: { refType: BuiltinTypes.STRING },
+                value: { refType: BuiltinTypes.STRING },
+              },
+            })) },
+          },
+        }),
+      },
+    },
+  })
 
   const generateElements = (
   ): Element[] => ([
@@ -289,6 +310,52 @@ describe('References by id filter', () => {
     new InstanceElement('userField1', userFieldType, { id: 6002, key: 'key_uf1', type: 'dropdown' }),
     new InstanceElement('orgField1', orgFieldType, { id: 6003, key: 'key_of1', type: 'dropdown' }),
     new InstanceElement('orgField2', orgFieldType, { id: 6003, key: 'key_of2', type: 'text' }),
+    new InstanceElement(
+      'routingAttributeValue',
+      routingAttributeValueType,
+      {
+        id: 777,
+        conditions: {
+          all: [
+            {
+              subject: 'requester.custom_fields.key_uf1',
+              operator: 'is',
+              value: 9002,
+            },
+            {
+              subject: 'requester.custom_fields.key_uf11',
+              operator: 'is',
+              value: 90041,
+            },
+            {
+              subject: 'organization.custom_fields.key_of1',
+              operator: 'is',
+              value: 9004,
+            },
+            {
+              subject: 'organization.custom_fields.key_of11',
+              operator: 'is',
+              value: 90041,
+            },
+            {
+              subject: 'custom_fields_6001',
+              operator: 'is',
+              value: 'v11',
+            },
+            {
+              subject: 'custom_fields_60011',
+              operator: 'is',
+              value: 'v11',
+            },
+            {
+              subject: 'number_of_incident',
+              operator: 'greater_than',
+              value: '213',
+            },
+          ],
+        },
+      },
+    ),
     new InstanceElement(
       'trigger1',
       triggerType,
@@ -468,6 +535,39 @@ describe('References by id filter', () => {
           .toEqual('missing_someone_you_love')
         expect(brokenTrigger.value.conditions.all[5].value).not.toBeInstanceOf(ReferenceExpression)
         expect(brokenTrigger.value.conditions.all[5].value).toEqual('current_groups')
+      })
+      it('should create valid missing reference for routing_attribute_value', async () => {
+        const brokenAttribute = elements.filter(
+          e => isInstanceElement(e) && e.elemID.name === 'routingAttributeValue'
+        )[0] as InstanceElement
+        // not missing
+        expect(brokenAttribute.value.conditions.all[0].subject).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[0].subject.elemID.name).toEqual('userField1')
+        expect(brokenAttribute.value.conditions.all[0].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[0].value.elemID.name).toEqual('option2')
+        expect(brokenAttribute.value.conditions.all[2].subject).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[2].subject.elemID.name).toEqual('orgField1')
+        expect(brokenAttribute.value.conditions.all[2].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[2].value.elemID.name).toEqual('option4')
+        expect(brokenAttribute.value.conditions.all[4].subject).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[4].subject.elemID.name).toEqual('customField1')
+        expect(brokenAttribute.value.conditions.all[4].value).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[4].value.elemID.name).toEqual('option1')
+
+        // missing
+        expect(brokenAttribute.value.conditions.all[1].subject).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[1].subject.elemID.name).toEqual('missing_requester_custom_fields_key_uf11@uvuvu')
+        expect(brokenAttribute.value.conditions.all[1].value).toEqual(90041)
+        expect(brokenAttribute.value.conditions.all[3].subject).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[3].subject.elemID.name).toEqual('missing_organization_custom_fields_key_of11@uvuvu')
+        expect(brokenAttribute.value.conditions.all[3].value).toEqual(90041)
+        expect(brokenAttribute.value.conditions.all[5].subject).toBeInstanceOf(ReferenceExpression)
+        expect(brokenAttribute.value.conditions.all[5].subject.elemID.name).toEqual('missing_custom_fields_60011')
+        expect(brokenAttribute.value.conditions.all[5].value).toEqual('v11')
+
+        // shouldn't change
+        expect(brokenAttribute.value.conditions.all[6].subject).toEqual('number_of_incident')
+        expect(brokenAttribute.value.conditions.all[6].value).toEqual('213')
       })
       it('should not create missing references if enable missing references is false', async () => {
         const newFilter = filterCreator(createFilterCreatorParams({

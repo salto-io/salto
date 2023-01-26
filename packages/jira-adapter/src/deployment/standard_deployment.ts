@@ -21,7 +21,6 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
-import { handleDeploymentError } from './deployment_error_handling'
 
 const { awu } = collections.asynciterable
 
@@ -109,7 +108,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
         return change
       } catch (err) {
         if (err instanceof Error) {
-          return handleDeploymentError(err, getChangeData(change).elemID)
+          err.message = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
         }
         return err
       }

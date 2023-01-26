@@ -13,17 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { decorators } from '@salto-io/lowerdash'
 
 
-export const handleDeploymentError = (err: Error, id?: ElemID): Error => {
-  if (id !== undefined) {
-    err.message = `Deployment of ${id.getFullName()} failed: ${err}`
-  }
+export const handleDeploymentError = (err: Error): Error => {
   if (err instanceof clientUtils.HTTPError && _.isPlainObject(err.response.data)) {
     const errorMessages = [
       ...(Array.isArray(err.response.data.errorMessages)

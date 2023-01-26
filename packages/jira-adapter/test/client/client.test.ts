@@ -15,12 +15,14 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import * as clientUtils from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
 
+jest.setTimeout(3000000)
 describe('client', () => {
   let client: JiraClient
   let mockAxios: MockAdapter
+  let result: clientUtils.client.ResponseValue
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' }, isDataCenter: false })
@@ -29,8 +31,16 @@ describe('client', () => {
     mockAxios.restore()
   })
 
+  describe('sendRequest error handing', () => {
+    beforeEach(async () => {
+      mockAxios.onGet().reply(400, { response: 'asd', errorMessages: ['error message'] })
+    })
+    it('should call send request decorator', async () => {
+      await expect(async () => client.getSinglePage({ url: '/myPath' })).rejects.toThrow(new Error('Failed to get /myPath with error: Error: Request failed with status code 400. error message'))
+    })
+  })
+
   describe('getSinglePage', () => {
-    let result: clientUtils.ResponseValue
     beforeEach(async () => {
       mockAxios.onGet().reply(200, { response: 'asd' })
       result = await client.getSinglePage({ url: '/myPath' })

@@ -129,6 +129,8 @@ describe('When fetching organization-wide defaults', () => {
       DefaultCalendarAccess: 'HideDetailsInsert',
       DefaultPricebookAccess: 'ReadSelect',
       DefaultCampaignAccess: 'All',
+      SomeIrrelevantField: 'SomeIrrelevantValue',
+      FieldWithNullValue: null,
     }])
     setDescribeSObjectsReturnValue([
       'defaultAccountAccess',
@@ -138,7 +140,6 @@ describe('When fetching organization-wide defaults', () => {
       'defaultContactAccess',
       'defaultLeadAccess',
       'defaultOpportunityAccess',
-      'fullName',
     ])
   })
 
@@ -160,7 +161,7 @@ describe('When fetching organization-wide defaults', () => {
           defaultContactAccess: 'ControlledByParent',
           defaultLeadAccess: 'ReadEditTransfer',
           defaultOpportunityAccess: 'None',
-          fullName: 'Organization',
+          fullName: 'OrganizationSettings',
         },
       },
     ])

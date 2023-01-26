@@ -15,55 +15,33 @@
 */
 
 import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
 import { queryClient } from './utils'
 import { createInstanceElement, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
-import { API_NAME, METADATA_TYPE, SALESFORCE } from '../constants'
+import { API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE } from '../constants'
 import SalesforceClient from '../client/client'
 
 const log = logger(module)
-
-const toJsCase = (key: string): string => (
-  key[0].toLocaleLowerCase() + key.slice(1)
-)
-
-const mapKeys = <T>(obj: Record<string, T>, fn: (key: string) => string): Record<string, T> => (
-  Object.fromEntries(Object.entries(obj).map(([key, value]) => [fn(key), value]))
-)
 
 const filterValues = <T>(obj: Record<string, T>, fn: (value: T) => boolean): Record<string, T> => (
   Object.fromEntries(Object.entries(obj).filter(([key, value]) => [key, fn(value)]))
 )
 
-const ORGANIZATION_OBJECT_TYPE = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'Organization'),
-  fields: {
-    fullName: {
-      refType: BuiltinTypes.STRING,
-    },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.HIDDEN]: true,
-    [CORE_ANNOTATIONS.UPDATABLE]: false,
-    [METADATA_TYPE]: 'Organization',
-  },
-  isSettings: true,
-  path: getTypePath('Organization'),
-})
 
 const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
   const apiName = type.elemID.typeName // TODO
-  const typeDescriptions = await client.describeSObjects([apiName])
-  if (typeDescriptions.errors.length !== 0 || typeDescriptions.result.length !== 1) {
-    log.warn(`Unexpected response when querying type info for 'Organization'. 
-    Errors: %o
-    # results: ${typeDescriptions.result.length}`, typeDescriptions.errors)
+  const describeSObjectsResult = await client.describeSObjects([apiName])
+  if (describeSObjectsResult.errors.length !== 0 || describeSObjectsResult.result.length !== 1) {
+    log.warn('describeSObject on %o failed with errors: %o and %o results',
+      apiName,
+      describeSObjectsResult.errors,
+      describeSObjectsResult.result.length)
     return
   }
 
-  const typeDescription = typeDescriptions.result[0]
+  const [typeDescription] = describeSObjectsResult.result
 
   const [topLevelFields, nestedFields] = _.partition(typeDescription.fields,
     field => field.compoundFieldName === undefined)
@@ -76,26 +54,50 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
   const fields = topLevelFields
     .map(field => getSObjectFieldElement(type, field, { [API_NAME]: apiName }, objCompoundFieldNames))
 
-  fields.forEach(field => {
-    type.fields[toJsCase(field.name)] = field
-  })
+  type.fields = { ...type.fields, ..._.keyBy(fields, field => _.camelCase(field.name)) }
 }
+
+const createOrganizationType = (): ObjectType => (
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Organization'),
+    fields: {
+      fullName: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [METADATA_TYPE]: 'Organization',
+    },
+    isSettings: true,
+    path: getTypePath('Organization'),
+  })
+)
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    const objectType = ORGANIZATION_OBJECT_TYPE.clone()
+    const filterNulls = (obj: Values): void => {
+      filterValues(obj, value => value !== null)
+      _.mapValues(obj, value => (_.isPlainObject(value) ? filterNulls(value) : value))
+    }
+
+    const objectType = createOrganizationType()
     await enrichTypeWithFields(client, objectType)
 
-    const queryResult = await queryClient(client, ['SELECT FIELDS(STANDARD) FROM Organization LIMIT 200'])
+    const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])
     if (queryResult.length !== 1) {
       log.error(`Expected Organization object to be a singleton. Got ${queryResult.length} elements`)
       return
     }
 
-    const organizationObject = mapKeys(queryResult[0], toJsCase)
+    const organizationObject = _.mapKeys(queryResult[0], (_value, key) => _.camelCase(key))
+    filterNulls(organizationObject)
+
     const organizationInstance = createInstanceElement(
       {
-        fullName: 'Organization', // Note: Query results don't have a fullName field
+        [INSTANCE_FULL_NAME_FIELD]: 'OrganizationSettings', // Note: Query results don't have a fullName field
+        ..._.pick(organizationObject, Object.keys(objectType.fields)),
       },
       objectType,
       undefined,
@@ -105,19 +107,6 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
         [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
       }
     )
-
-    Object.entries(organizationObject)
-      .filter(([fieldName]) => Object.keys(objectType.fields).includes(fieldName))
-      .forEach(([fieldName, fieldValue]) => {
-        if (fieldValue === null) {
-          return
-        }
-        let actualValue = fieldValue
-        if (_.isPlainObject(fieldValue)) {
-          actualValue = filterValues(fieldValue, value => value !== null)
-        }
-        organizationInstance.value[fieldName] = actualValue
-      })
 
     elements.push(objectType, organizationInstance)
   },

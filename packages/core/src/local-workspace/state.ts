@@ -281,7 +281,7 @@ export const localState = (
       const contents = await awu(Object.keys(stateTextPerAccount))
         .map(async (account: string): Promise<[string, Buffer]> => [
           `${currentFilePrefix}.${account}${ZIPPED_STATE_EXTENSION}`,
-          await generateGZipBuffer(await getStream(stateTextPerAccount[account])),
+          await generateGZipBuffer(await getStream.buffer(stateTextPerAccount[account])),
         ]).toArray()
       contentsAndHash = {
         contents,

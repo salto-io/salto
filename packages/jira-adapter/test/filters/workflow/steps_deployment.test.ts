@@ -16,10 +16,11 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS, JSP_API_HEADERS } from '../../../src/client/client'
+import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import { deploySteps } from '../../../src/filters/workflow/steps_deployment'
+import { FORCE_ACCEPT_LANGUAGE_HEADERS, JSP_API_HEADERS } from '../../../src/client/headers'
 
 describe('steps_deployment', () => {
   let workflowType: ObjectType

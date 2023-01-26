@@ -16,6 +16,7 @@
 import { AccountId, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
+import { FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
 
 const isAuthorized = async (
   connection: clientUtils.APIConnection,

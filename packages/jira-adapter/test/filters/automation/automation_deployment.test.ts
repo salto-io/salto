@@ -22,7 +22,8 @@ import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
-import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/client'
+import { FORCE_ACCEPT_LANGUAGE_HEADERS, PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
 describe('automationDeploymentFilter', () => {

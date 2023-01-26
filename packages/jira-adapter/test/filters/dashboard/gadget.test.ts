@@ -18,11 +18,12 @@ import _ from 'lodash'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { FORCE_ACCEPT_LANGUAGE_HEADERS } from '../../../src/client/headers'
 import { getFilterParams, mockClient } from '../../utils'
 import gadgetFilter from '../../../src/filters/dashboard/gadget'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../../src/constants'
-import JiraClient, { FORCE_ACCEPT_LANGUAGE_HEADERS } from '../../../src/client/client'
+import JiraClient from '../../../src/client/client'
 import { getLookUpName } from '../../../src/reference_mapping'
 
 jest.setTimeout(10000000)

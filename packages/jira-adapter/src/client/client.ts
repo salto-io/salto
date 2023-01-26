@@ -19,6 +19,7 @@ import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
 import { getProductSettings } from '../product_settings'
+import { JSP_API_HEADERS, PRIVATE_API_HEADERS } from './headers'
 
 const log = logger(module)
 
@@ -35,26 +36,6 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
-
-/**
- * These headers make sure that we're only pulling Jir in US English
- * This makes sure that different users with different languages don't make huge diffs.
- * This header combination only works in Jira Cloud
- */
-export const FORCE_ACCEPT_LANGUAGE_HEADERS = {
-  'Accept-Language': 'en_US',
-  'X-Force-Accept-Language': 'true',
-}
-
-export const PRIVATE_API_HEADERS = {
-  'X-Atlassian-Token': 'no-check',
-}
-
-export const JSP_API_HEADERS = {
-  ...PRIVATE_API_HEADERS,
-  'Content-Type': 'application/x-www-form-urlencoded',
-}
-
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig

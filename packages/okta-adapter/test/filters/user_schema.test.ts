@@ -93,17 +93,17 @@ describe('fetchUserSchemaInstancesFilter', () => {
     },
   }
   beforeEach(() => {
+    jest.clearAllMocks()
     client = new OktaClient({
       credentials: { baseUrl: 'https://okta.com/', token: 'token' },
     })
     mockGet = jest.spyOn(client, 'getSinglePage')
+    mockGet.mockResolvedValueOnce(UserSchemaResponse)
+    mockGet.mockResolvedValueOnce(UserSchemaResponse2)
     filter = fetchUserSchemas(getFilterParams({ client })) as typeof filter
-    jest.clearAllMocks()
   })
 
   it('should create userSchema instances', async () => {
-    mockGet.mockResolvedValueOnce(UserSchemaResponse)
-    mockGet.mockResolvedValueOnce(UserSchemaResponse2)
     const elements = [userSchemaType, userTypeType, userTypeInstanceA, userTypeInstanceB, defaultUserTypeInstance]
     await filter.onFetch?.(elements)
     const createdInstance = elements
@@ -121,7 +121,6 @@ describe('fetchUserSchemaInstancesFilter', () => {
     ])
   })
   it('should skip userType instance if the matching userSchema id was not found', async () => {
-    mockGet.mockResolvedValueOnce(UserSchemaResponse)
     const invalidUserTypeInst = new InstanceElement(
       'test',
       userTypeType,
@@ -129,10 +128,8 @@ describe('fetchUserSchemaInstancesFilter', () => {
         id: 456,
         name: 'D',
         _links: {
-          additionalProperties: {
-            schema: {
-              href: 'https://okta.com/api/v1/meta/schemas/user/B123',
-            },
+          schema: {
+            href: 'https://okta.com/api/v1/meta/schemas/user/B123',
           },
         },
         default: false,

@@ -65,6 +65,7 @@ import workflowPropertiesFilter from './filters/workflow/workflow_properties_fil
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
+import emptyValidatorWorkflowFilter from './filters/workflow/empty_validator_workflow'
 import workflowGroupsFilter from './filters/workflow/groups_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
@@ -151,6 +152,7 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  emptyValidatorWorkflowFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,

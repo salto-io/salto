@@ -13,15 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const OKTA = 'okta'
-export const APPLICATION_TYPE_NAME = 'Application'
-export const GROUP_TYPE_NAME = 'Group'
-export const USER_TYPE_NAME = 'User'
-export const IDENTITY_PROVIDER_TYPE_NAME = 'IdentityProvider'
-export const USERTYPE_TYPE_NAME = 'UserType'
-export const FEATURE_TYPE_NAME = 'Feature'
-export const POLICY_TYPE_NAME = 'Policy'
-export const APP_USER_TYPE_NAME = 'AppUser'
-export const NETWORK_ZONE_TYPE_NAME = 'NetworkZone'
-export const ROLE_TYPE_NAME = 'Role'
-export const USER_SCHEMA_TYPE_NAME = 'UserSchema'
+import { extractIdFromUrl } from '../src/utils'
+
+describe('okta utils', () => {
+  describe('extractIdFromUrl', () => {
+    it('should return correct id', () => {
+      const link = 'https://oktaDomain.okta.com/1/2/1234567'
+      const link2 = 'https://oktaDomain.okta.com/1/2/1234567/okta/a/abc123'
+      const invalidLink = '123123'
+      expect(extractIdFromUrl(link)).toEqual('1234567')
+      expect(extractIdFromUrl(link2)).toEqual('abc123')
+      expect(extractIdFromUrl(invalidLink)).toBeUndefined()
+    })
+  })
+})

@@ -13,15 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const OKTA = 'okta'
-export const APPLICATION_TYPE_NAME = 'Application'
-export const GROUP_TYPE_NAME = 'Group'
-export const USER_TYPE_NAME = 'User'
-export const IDENTITY_PROVIDER_TYPE_NAME = 'IdentityProvider'
-export const USERTYPE_TYPE_NAME = 'UserType'
-export const FEATURE_TYPE_NAME = 'Feature'
-export const POLICY_TYPE_NAME = 'Policy'
-export const APP_USER_TYPE_NAME = 'AppUser'
-export const NETWORK_ZONE_TYPE_NAME = 'NetworkZone'
-export const ROLE_TYPE_NAME = 'Role'
-export const USER_SCHEMA_TYPE_NAME = 'UserSchema'
+
+/**
+ * Extract id from okta's _links object urls
+ * Example url: https://subdomain.okta.com/api/v1/group/abc123
+ */
+export const extractIdFromUrl = (url: string): string | undefined => {
+  if (url.includes('/')) {
+    const urlParts = url.split('/')
+    return urlParts.pop()
+  }
+  return undefined
+}

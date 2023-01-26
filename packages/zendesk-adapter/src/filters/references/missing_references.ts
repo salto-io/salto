@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { naclCase } from '@salto-io/adapter-utils'
-import { TICKET_FIELD_TYPE_NAME } from '../../constants'
+import { ORG_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../../constants'
 
 const MISSING_REF_PREFIX = 'missing_'
 
@@ -29,6 +29,8 @@ export const VALUES_TO_SKIP_BY_TYPE: Record<string, string[]> = {
 
 const VALUE_BY_TYPE: Record<string, string> = {
   [TICKET_FIELD_TYPE_NAME]: 'custom_fields_',
+  [USER_FIELD_TYPE_NAME]: 'requester.custom_fields.',
+  [ORG_FIELD_TYPE_NAME]: 'organization.custom_fields.',
 }
 
 export const createMissingInstance = (
@@ -56,14 +58,14 @@ referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStra
       return createMissingInstance(adapter, typeName, value)
     },
   },
-  edentest: {
+  startsWith: {
     create: ({ value, adapter, typeName }) => {
       if (_.isString(typeName)
         && value
         && !VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value)
         && value.startsWith(VALUE_BY_TYPE[typeName])
       ) {
-        createMissingInstance(adapter, typeName, value)
+        return createMissingInstance(adapter, typeName, value)
       }
       return undefined
     },

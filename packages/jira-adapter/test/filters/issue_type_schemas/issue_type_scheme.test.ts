@@ -120,7 +120,7 @@ describe('issueTypeScheme', () => {
           {
             issueTypeIds: ['6', '5'],
           },
-          undefined
+          undefined,
         )
       })
 
@@ -138,7 +138,7 @@ describe('issueTypeScheme', () => {
             issueTypeIds: ['6', '1', '5', '3'],
             position: 'First',
           },
-          undefined
+          undefined,
         )
       })
     })

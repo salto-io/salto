@@ -139,17 +139,17 @@ describe('gadgetFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties',
-        undefined
+        undefined,
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        undefined
+        undefined,
       )
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        undefined
+        undefined,
       )
 
       expect(instance.value.properties).toEqual({
@@ -191,12 +191,12 @@ describe('gadgetFilter', () => {
 
       expect(connection.get).not.toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        undefined
+        undefined,
       )
 
       expect(connection.get).not.toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        undefined
+        undefined,
       )
 
       expect(instance.value.properties).toEqual({})
@@ -299,13 +299,23 @@ describe('gadgetFilter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
         '"value1"',
-        { headers: { 'Content-Type': 'application/json' } },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+
       )
 
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
         '"value2"',
-        { headers: { 'Content-Type': 'application/json' } },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+
       )
     })
 

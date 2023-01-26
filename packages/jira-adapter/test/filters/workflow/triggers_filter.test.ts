@@ -88,7 +88,7 @@ describe('triggersFilter', () => {
             workflowName: 'name',
             actionId: '1',
           },
-          headers: { ...PRIVATE_API_HEADERS },
+          headers: PRIVATE_API_HEADERS,
         }
       )
       expect(instance.value.transitions[0].rules.triggers).toEqual([

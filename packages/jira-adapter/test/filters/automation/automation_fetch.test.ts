@@ -140,7 +140,7 @@ describe('automationFetchFilter', () => {
           xc: [],
           xr: [],
         },
-        undefined
+        undefined,
       )
 
       expect(connection.post).toHaveBeenCalledWith(
@@ -149,7 +149,7 @@ describe('automationFetchFilter', () => {
           offset: 0,
           limit: 100,
         },
-        undefined
+        undefined,
       )
     })
 

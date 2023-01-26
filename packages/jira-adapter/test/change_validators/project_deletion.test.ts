@@ -74,7 +74,6 @@ describe('projectDeletionValidator', () => {
           jql: 'project = "KEY"',
           maxResults: '0',
         },
-        undefined,
       }
     )
   })

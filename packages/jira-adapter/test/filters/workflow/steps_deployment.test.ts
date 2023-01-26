@@ -90,7 +90,9 @@ describe('steps_deployment', () => {
         workflowName: 'workflowName',
         workflowMode: 'live',
       }),
-      { headers: { ...JSP_API_HEADERS } },
+      {
+        headers: JSP_API_HEADERS,
+      },
     )
 
     expect(mockConnection.post).toHaveBeenCalledWith(
@@ -102,7 +104,10 @@ describe('steps_deployment', () => {
         workflowName: 'workflowName',
         workflowMode: 'live',
       }),
-      { headers: { ...JSP_API_HEADERS } },
+      {
+        headers: JSP_API_HEADERS,
+      },
+
     )
 
     expect(mockConnection.post).toHaveBeenCalledTimes(2)

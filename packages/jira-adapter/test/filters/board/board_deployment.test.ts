@@ -216,7 +216,9 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledWith(
@@ -224,7 +226,9 @@ describe('boardDeploymentFilter', () => {
           {
             query: 'someQuery',
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledWith(
@@ -234,7 +238,9 @@ describe('boardDeploymentFilter', () => {
             estimateStatisticId: 'field_5',
             trackingStatisticId: 'field_6',
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
       })
 
@@ -283,7 +289,9 @@ describe('boardDeploymentFilter', () => {
             id: '1',
             name: 'newName',
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -300,7 +308,9 @@ describe('boardDeploymentFilter', () => {
             locationType: 'project',
             rapidViewId: '1',
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -316,7 +326,9 @@ describe('boardDeploymentFilter', () => {
             savedFilterId: '8',
             id: '1',
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -361,7 +373,9 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -412,7 +426,9 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -483,7 +499,9 @@ describe('boardDeploymentFilter', () => {
               },
             ],
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledTimes(3)
@@ -542,7 +560,9 @@ describe('boardDeploymentFilter', () => {
           {
             query: '',
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
@@ -561,7 +581,9 @@ describe('boardDeploymentFilter', () => {
             estimateStatisticId: 'field_9',
             trackingStatisticId: 'none_',
           },
-          { headers: { ...PRIVATE_API_HEADERS } }
+          {
+            headers: PRIVATE_API_HEADERS,
+          }
         )
 
         expect(connection.put).toHaveBeenCalledOnce()

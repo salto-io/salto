@@ -77,7 +77,7 @@ describe('triggersDeployment', () => {
         triggerDefinitionKey: 'key',
       },
       {
-        headers: { ...PRIVATE_API_HEADERS },
+        headers: PRIVATE_API_HEADERS,
         params: {
           workflowName: 'workflowName',
           actionId: '1',

@@ -144,7 +144,7 @@ describe('automationLabelDeploymentFilter', () => {
           xc: [],
           xr: [],
         },
-        undefined
+        undefined,
       )
       expect(connection.post).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',

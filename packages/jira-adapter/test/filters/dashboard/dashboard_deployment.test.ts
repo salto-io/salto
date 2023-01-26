@@ -196,7 +196,9 @@ describe('dashboardDeploymentFilter', () => {
           1: [],
           2: [],
         },
-        { headers: { ...PRIVATE_API_HEADERS } },
+        {
+          headers: PRIVATE_API_HEADERS,
+        },
       )
     })
 
@@ -214,7 +216,9 @@ describe('dashboardDeploymentFilter', () => {
           1: ['2', '3'],
           2: [],
         },
-        { headers: { ...PRIVATE_API_HEADERS } },
+        {
+          headers: PRIVATE_API_HEADERS,
+        },
       )
     })
 
@@ -233,7 +237,9 @@ describe('dashboardDeploymentFilter', () => {
           1: [],
           2: [],
         },
-        { headers: { ...PRIVATE_API_HEADERS } },
+        {
+          headers: PRIVATE_API_HEADERS,
+        },
       )
     })
 

@@ -116,7 +116,7 @@ describe('automationLabelFetchFilter', () => {
           xc: [],
           xr: [],
         },
-        undefined
+        undefined,
       )
 
       expect(connection.get).toHaveBeenCalledWith(
@@ -163,7 +163,7 @@ describe('automationLabelFetchFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/rule-label',
-        undefined
+        undefined,
       )
     })
 

@@ -371,6 +371,7 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search',
         {
+          headers: undefined,
           params: {
             maxResults: '1000',
             username: '.',
@@ -412,6 +413,7 @@ describe('convert userId to key in Jira DC', () => {
       expect(mockConnection.get).toHaveBeenCalledWith(
         '/rest/api/2/user/search',
         {
+          headers: undefined,
           params: {
             maxResults: '1000',
             username: '.',

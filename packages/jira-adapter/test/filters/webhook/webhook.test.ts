@@ -124,7 +124,10 @@ describe('webhookFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook',
-        { headers: { ...PRIVATE_API_HEADERS } },
+        {
+          headers: PRIVATE_API_HEADERS,
+        },
+
       )
     })
 
@@ -236,7 +239,7 @@ describe('webhookFilter', () => {
       expect(connection.post).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook',
         instance.value,
-        undefined
+        undefined,
       )
     })
 
@@ -256,7 +259,7 @@ describe('webhookFilter', () => {
 
       expect(connection.delete).toHaveBeenCalledWith(
         '/rest/webhooks/1.0/webhook/3',
-        undefined
+        undefined,
       )
     })
 
@@ -270,7 +273,9 @@ describe('webhookFilter', () => {
           id: '3',
           name: 'someName',
         },
-        { headers: { ...PRIVATE_API_HEADERS } }
+        {
+          headers: PRIVATE_API_HEADERS,
+        },
       )
     })
   })

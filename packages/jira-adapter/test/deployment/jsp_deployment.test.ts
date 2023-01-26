@@ -82,7 +82,9 @@ describe('jsp_deployment', () => {
       })
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
-        { headers: { ...PRIVATE_API_HEADERS } }
+        {
+          headers: PRIVATE_API_HEADERS,
+        }
       )
 
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -90,7 +92,9 @@ describe('jsp_deployment', () => {
         new URLSearchParams({
           name: 'val',
         }),
-        { headers: { ...JSP_API_HEADERS } }
+        {
+          headers: JSP_API_HEADERS,
+        }
       )
     })
 
@@ -238,7 +242,9 @@ describe('jsp_deployment', () => {
       })
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
-        { headers: { ...PRIVATE_API_HEADERS } }
+        {
+          headers: PRIVATE_API_HEADERS,
+        }
       )
 
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -247,7 +253,9 @@ describe('jsp_deployment', () => {
           name: 'val',
           id: '1',
         }),
-        { headers: { ...JSP_API_HEADERS } }
+        {
+          headers: JSP_API_HEADERS,
+        }
       )
     })
 
@@ -321,7 +329,9 @@ describe('jsp_deployment', () => {
 
       expect(mockConnection.get).toHaveBeenCalledWith(
         'https://jira.com/rest/api/2/query',
-        { headers: { ...PRIVATE_API_HEADERS } }
+        {
+          headers: PRIVATE_API_HEADERS,
+        }
       )
 
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -332,7 +342,9 @@ describe('jsp_deployment', () => {
           confirm: 'true',
           confirmed: 'true',
         }),
-        { headers: { ...JSP_API_HEADERS } }
+        {
+          headers: JSP_API_HEADERS,
+        }
       )
     })
 

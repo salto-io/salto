@@ -542,6 +542,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'ticketField',
     target: { type: TICKET_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'startsWith',
   },
   {
     src: {
@@ -583,6 +584,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'orgField',
     target: { type: ORG_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'startsWith',
   },
   {
     src: {
@@ -622,6 +624,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'userField',
     target: { type: USER_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'startsWith',
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__columns'] },

@@ -25,7 +25,7 @@ type TransitionValidator = {
     }
 }
 
-const removeValidatorsWithoutConfiguration = (instance: InstanceElement): InstanceElement => {
+const removeValidatorsWithoutConfiguration = (instance: InstanceElement): void => {
   for (const transition of instance.value.transitions) {
     if (transition.rules !== undefined && transition.rules.validators !== undefined) {
       transition.rules.validators = transition.rules.validators.filter(
@@ -33,7 +33,6 @@ const removeValidatorsWithoutConfiguration = (instance: InstanceElement): Instan
       )
     }
   }
-  return instance
 }
 
 const filter: FilterCreator = () => ({

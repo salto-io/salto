@@ -57,6 +57,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
           username: credentials.user,
           password: credentials.token,
         },
+        headers: credentials.isDataCenter ? {} : FORCE_ACCEPT_LANGUAGE_HEADERS,
       }
     ),
     baseURLFunc: ({ baseUrl }) => baseUrl,

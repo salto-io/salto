@@ -26,6 +26,11 @@ import {
   ORG_FIELD_TYPE_NAME,
   FIELD_TYPE_NAMES,
   TICKET_FORM_TYPE_NAME,
+  PENDING_CATEGORY,
+  DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  CUSTOM_STATUS_TYPE_NAME,
+  OPEN_CATEGORY,
+  HOLD_CATEGORY, SOLVED_CATEGORY,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
@@ -781,6 +786,26 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     src: { field: 'parent_section_id', parentTypes: ['section'] },
     serializationStrategy: 'id',
     target: { type: 'section' },
+  },
+  {
+    src: { field: PENDING_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: OPEN_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: HOLD_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: SOLVED_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
   },
   {
     src: {

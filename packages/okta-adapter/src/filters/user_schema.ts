@@ -33,10 +33,13 @@ const LINK_PATH = ['_links', 'additionalProperties', 'schema', 'href']
 
 const getUserSchemaId = (instance: InstanceElement): string | undefined => {
   const url = _.get(instance.value, LINK_PATH)
-  const id = extractIdFromUrl(url)
-  if (_.isString(id)) {
-    return id
+  if (url !== undefined) {
+    const id = extractIdFromUrl(url)
+    if (_.isString(id)) {
+      return id
+    }
   }
+  log.error(`could not find id for UserSchema instance in UserType ${instance.elemID.name}`)
   return undefined
 }
 
@@ -48,7 +51,7 @@ const getUserSchema = async (
 })).data as Values[]
 
 /**
- * Fetch the non-default user_schema types
+ * Fetch the non-default userSchema instances
  */
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async elements => {
@@ -74,14 +77,14 @@ const filter: FilterCreator = ({ client, config }) => ({
       })
     )).filter(isDefined)
 
-    const userSchemaInstances = await Promise.all(userSchemaEntries.map(async entry => toBasicInstance({
+    const userSchemaInstances = await Promise.all(userSchemaEntries.map(async (entry, index) => toBasicInstance({
       entry,
       type: userSchemaType,
       transformationConfigByType: getTransformationConfigByType(config[API_DEFINITIONS_CONFIG].types),
       transformationDefaultConfig: config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       nestName: undefined,
       parent: undefined,
-      defaultName: 'userSchema',
+      defaultName: `unnamed_${index}`,
       getElemIdFunc: undefined,
     })))
     elements.push(...userSchemaInstances)

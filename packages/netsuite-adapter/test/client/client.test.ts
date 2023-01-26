@@ -164,7 +164,7 @@ describe('NetsuiteClient', () => {
         const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['customworkflow1.workflowstate17.workflowaction33'])
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
-          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=customworkflow1]' }),
         })
         const failedChange = toChange({
           after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=customworkflow1.workflowstate17.workflowaction33]' }),
@@ -212,7 +212,7 @@ describe('NetsuiteClient', () => {
         })
         const centerInstance = new InstanceElement('name', type, { scriptid: 'custcenter1' })
         const saltoRefExp = new ReferenceExpression(
-          centerInstance.elemID.createNestedID('instance', 'custcenter1', SCRIPT_ID),
+          centerInstance.elemID.createNestedID(SCRIPT_ID),
           centerInstance.value.scriptid,
           centerInstance
         )

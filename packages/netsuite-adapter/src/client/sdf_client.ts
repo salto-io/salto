@@ -913,9 +913,9 @@ export default class SdfClient {
   private static customizeDeployError(error: Error): Error {
     const errorMessage = error.message
     if (settingsValidationErrorRegex.test(errorMessage)) {
-      const manifestErrorScriptidArray = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
-      if (manifestErrorScriptidArray.length > 0) {
-        return new ManifestValidationError(errorMessage, manifestErrorScriptidArray)
+      const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
+      if (manifestErrorScriptids.length > 0) {
+        return new ManifestValidationError(errorMessage, manifestErrorScriptids)
       }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }

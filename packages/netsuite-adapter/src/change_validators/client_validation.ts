@@ -106,6 +106,9 @@ const changeValidator: ClientChangeValidator = async (
         elementsSourceIndex,
       )
       if (errors.length > 0) {
+        const dependencyMap = await NetsuiteClient.createDependencyMap(
+          groupChanges, deployReferencedElements, elementsSourceIndex
+        )
         return awu(errors).flatMap(async error => {
           if (error instanceof ObjectsDeployError) {
             const scriptIdToErrorMap = mapObjectDeployErrorToInstance(error)
@@ -132,20 +135,22 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof ManifestValidationError) {
-            const dependencyMap = await NetsuiteClient.createDependencyMap(
-              groupChanges, deployReferencedElements, elementsSourceIndex
-            )
             const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
               failedElementsIds, groupChanges, dependencyMap, error
             )
             return failedChangesWithDependencies
-              .map(changeAndMissingDependencies => ({
-                message: 'This element depends on missing elements',
-                severity: 'Error' as const,
-                elemID: getChangeData(changeAndMissingDependencies.element).elemID,
-                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. Please make sure that all the bundles from the source account are installed and updated in the target account.`,
-              }))
+              .map(changeAndMissingDependencies => {
+                const { message, detailedMessage } = changeAndMissingDependencies.dependencies.length === 0
+                  ? { message: 'Some elements in this deployment have missing dependencies', detailedMessage: `Cannot deploy elements because of missing dependencies: ${error.missingDependencyScriptIds.join(', ')}.` }
+                  : { message: 'This element depends on missing elements', detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}.` }
+                return {
+                  message,
+                  severity: 'Error' as const,
+                  elemID: getChangeData(changeAndMissingDependencies.element).elemID,
+                  detailedMessage: `${detailedMessage} Please make sure that all the bundles from the source account are installed and updated in the target account.`,
+                }
+              })
           }
           return groupChanges
             .map(change => ({

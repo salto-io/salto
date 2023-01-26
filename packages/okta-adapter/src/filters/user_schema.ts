@@ -30,7 +30,6 @@ const { toBasicInstance } = elementUtils
 const { isDefined } = values
 const LINK_PATH = ['_links', 'additionalProperties', 'schema', 'href']
 
-
 const getUserSchemaId = (instance: InstanceElement): string | undefined => {
   const url = _.get(instance.value, LINK_PATH)
   if (url !== undefined) {

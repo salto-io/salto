@@ -128,6 +128,23 @@ describe('Formula dependencies', () => {
     })
   })
 
+  describe('When referencing RecordType', () => {
+    it('should extract the correct dependencies', async () => {
+      const elements = [typeWithFormula.clone(), ...referredTypes]
+      elements[0].fields.someFormulaField__c.annotations[FORMULA] = `IF( RecordType.Name = 'New Sale', 'Onboarding - New',
+        IF( RecordType.Name = 'Upgrade', 'Onboarding - Upgrade',
+          IF( RecordType.Name = 'Add-On', 'Onboarding - Add-On', "")))`
+      await filter.onFetch(elements)
+      // eslint-disable-next-line no-underscore-dangle
+      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps).toBeDefined()
+      expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName))
+      expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'RecordTypeId'))
+      expect(deps[2]).toEqual(depNameToRefExpr('RecordType'))
+      expect(deps[3]).toEqual(depNameToRefExpr('RecordType', 'Name'))
+    })
+  })
+
   describe('Complex formulas', () => {
     const standardFormula = `IF(Owner.Contact.CreatedBy.Manager.Profile.Id = "03d3h000000khEQ",TRUE,false)
     && IF(($CustomMetadata.Trigger_Context_Status__mdt.by_handler.Enable_After_Insert__c ||

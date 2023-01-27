@@ -53,7 +53,20 @@ describe('dependency changer', () => {
         toDependencyChange('add', anotherType, anotherField),
       ])
     })
-    it('should not create dependency if the type is not a change', async () => {
+    it('should create dependency between fields of the same type', async () => {
+      const changesMap = toChangeNodesMap([
+        field,
+        secondField,
+        anotherType,
+        anotherField,
+      ])
+      await expect(dependencyChanger(changesMap, defaultDependencies)).resolves.toEqual([
+        toDependencyChange('add', field, secondField),
+        toDependencyChange('add', secondField, field),
+        toDependencyChange('add', anotherType, anotherField),
+      ])
+    })
+    it('should not create dependency for one field change', async () => {
       const changesMap = toChangeNodesMap([
         field,
         anotherType,
@@ -63,7 +76,7 @@ describe('dependency changer', () => {
         toDependencyChange('add', anotherType, anotherField),
       ])
     })
-    it('should not create dependency if the field is not a change', async () => {
+    it('should not create dependency for a type without field changes', async () => {
       const changesMap = toChangeNodesMap([
         type,
         anotherType,

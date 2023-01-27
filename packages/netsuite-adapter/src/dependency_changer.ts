@@ -31,10 +31,20 @@ const createDependencyBetweenTypeAndFields: DependencyChanger = async changes =>
     ({ change }) => getChangeData(change).elemID.createTopLevelParentID().parent.getFullName()
   )
   return Object.entries(parentToFieldChanges).flatMap(([parentId, fieldChanges]) => {
-    const parentDependency = typeChanges[parentId]
-    return parentDependency
-      ? fieldChanges.map(({ key }) => dependencyChange('add', parentDependency.key, key))
-      : []
+    const parentChange = typeChanges[parentId]
+    if (parentChange) {
+      return fieldChanges.map(({ key }) => dependencyChange('add', parentChange.key, key))
+    }
+    if (fieldChanges.length > 1) {
+      const [fieldChange, ...restOfFieldChanges] = fieldChanges
+      // in case that there's no parent change, we still want to create dependencies between all fields-
+      // by making a two-direction dependency between one field and the rest.
+      return restOfFieldChanges.flatMap(({ key }) => [
+        dependencyChange('add', fieldChange.key, key),
+        dependencyChange('add', key, fieldChange.key),
+      ])
+    }
+    return []
   })
 }
 

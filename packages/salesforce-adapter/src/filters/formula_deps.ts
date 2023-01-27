@@ -137,6 +137,10 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'formula_deps',
   onFetch: async fetchedElements => {
+    if (config.fetchProfile.isFeatureEnabled('skipParsingFormulas')) {
+      log.info('Formula parsing is disabled. Skipping formula_deps filter.')
+      return
+    }
     const fetchedObjectTypes = fetchedElements.filter(isObjectType)
     const fetchedFormulaFields = await awu(fetchedObjectTypes)
       .flatMap(extractFlatCustomObjectFields) // Get the types + their fields

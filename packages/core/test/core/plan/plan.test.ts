@@ -30,7 +30,8 @@ describe('getPlan', () => {
     planWithTypeChanges,
     planWithFieldChanges,
     planWithNewType,
-    planWithSplitElem,
+    planWithFieldDependency,
+    planWithFieldDependencyCycle,
     planWithDependencyCycle,
     planWithDependencyCycleWithinAGroup,
   } = planGenerators(allElements)
@@ -107,28 +108,35 @@ describe('getPlan', () => {
     expect(getChange(planItem, changedElem.elemID).action).toBe('modify')
     expect(planItem.items.size).toBe(1)
   })
-
-  it('should split elements on addition if their fields create a dependency cycle', async () => {
-    const [plan, splitElem] = await planWithSplitElem(true)
+  it('should create plan when field have a dependency cycle but its in a custom change group', async () => {
+    const [plan, field] = await planWithFieldDependency(true)
     const planItems = [...plan.itemsByEvalOrder()]
     expect(planItems).toHaveLength(7)
-    const splitElemChanges = planItems
-      .filter(item => item.groupKey === splitElem.elemID.getFullName())
-    expect(splitElemChanges).toHaveLength(2)
-    expect(splitElemChanges[0].action).toEqual('add')
-    expect(splitElemChanges[1].action).toEqual('modify')
+    const fieldPlanItem = planItems.find(item => wu(item.changes())
+      .some(change => getChangeData(change).elemID.isEqual(field.elemID)))
+    expect(fieldPlanItem?.action).toEqual('modify')
+    expect(fieldPlanItem?.items.size).toEqual(1)
+    const parentPlanItems = planItems
+      .filter(item => item.groupKey === field.parent.elemID.getFullName())
+    expect(parentPlanItems).toHaveLength(1)
+    expect(parentPlanItems[0].action).toEqual('add')
   })
-
-  it('should split elements on removal if their fields create a dependency cycle', async () => {
-    const [plan, splitElem] = await planWithSplitElem(false)
-
+  it('should create plan when field have a dependency cycle but its a modification of the type', async () => {
+    const [plan, field] = await planWithFieldDependency(false)
     const planItems = [...plan.itemsByEvalOrder()]
     expect(planItems).toHaveLength(7)
     const splitElemChanges = planItems
-      .filter(item => item.groupKey === splitElem.elemID.getFullName())
+      .filter(item => item.groupKey === field.parent.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
     expect(splitElemChanges[0].action).toEqual('modify')
-    expect(splitElemChanges[1].action).toEqual('remove')
+    expect(splitElemChanges[1].action).toEqual('modify')
+  })
+  it('should fail on addition if fields create a dependency cycle', async () => {
+    await expect(planWithFieldDependencyCycle(true)).rejects.toThrow()
+  })
+
+  it('should fail on removal if fields create a dependency cycle', async () => {
+    await expect(planWithFieldDependencyCycle(false)).rejects.toThrow()
   })
 
   it('should fail when plan has dependency cycle', async () => {

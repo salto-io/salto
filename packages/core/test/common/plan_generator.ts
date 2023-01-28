@@ -27,7 +27,8 @@ export type PlanGenerators = {
   planWithListChange: () => Promise<[Plan, InstanceElement]>
   planWithAnnotationTypesChanges: () => Promise<[Plan, ObjectType]>
   planWithFieldIsListChanges: () => Promise<[Plan, ObjectType]>
-  planWithSplitElem: (isAdd: boolean) => Promise<[Plan, ObjectType]>
+  planWithFieldDependency: (isAdd: boolean) => Promise<[Plan, Field]>
+  planWithFieldDependencyCycle: (isAdd: boolean) => Promise<Plan>
   planWithDependencyCycle: (withValidator: boolean) => Promise<Plan>
   planWithDependencyCycleWithinAGroup: (withValidator: boolean) => Promise<Plan>
 }
@@ -124,7 +125,54 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     return [plan, saltoOffice]
   },
 
-  planWithSplitElem: async isAdd => {
+  planWithFieldDependency: async isAdd => {
+    const afterElements = mock.getAllElements()
+    const [,, saltoOffice, saltoEmployee] = afterElements
+    const afterSaltoOffice = saltoOffice.clone()
+    afterSaltoOffice.annotations.label = 'updated'
+    afterSaltoOffice.fields.test = new Field(afterSaltoOffice, 'test', BuiltinTypes.STRING)
+    const depChanger: DependencyChanger = async changes => {
+      const changeByElem = new Map(
+        wu(changes).map(([id, change]) => [getChangeData(change).elemID.getFullName(), id]),
+      )
+      const officeChange = changeByElem.get(afterSaltoOffice.elemID.getFullName())
+      const officeFieldChange = changeByElem.get(afterSaltoOffice.fields.test.elemID.getFullName())
+      const employeeChange = changeByElem.get(saltoEmployee.elemID.getFullName())
+      if (officeChange && officeFieldChange && employeeChange) {
+        return [
+          dependencyChange('add', employeeChange, officeChange),
+          dependencyChange('add', officeFieldChange, employeeChange),
+        ]
+      }
+      return []
+    }
+    const afterElementsForPlan = afterElements
+      .filter(elem => !elem.elemID.isEqual(saltoOffice.elemID))
+      .concat(afterSaltoOffice)
+    const plan = isAdd
+      ? await getPlan({
+        before: createElementSource([]),
+        after: createElementSource(afterElementsForPlan),
+        dependencyChangers: [depChanger],
+        customGroupIdFunctions: {
+          salto: async changes => ({
+            changeGroupIdMap: new Map(
+              wu(changes.entries())
+                .filter(([_id, change]) => getChangeData(change).elemID.isEqual(afterSaltoOffice.fields.test.elemID))
+                .map(([id]) => [id, 'separated group'])
+            ),
+          }),
+        },
+      })
+      : await getPlan({
+        before: createElementSource([saltoOffice]),
+        after: createElementSource(afterElementsForPlan),
+        dependencyChangers: [depChanger],
+      })
+    return [plan, afterSaltoOffice.fields.test]
+  },
+
+  planWithFieldDependencyCycle: async isAdd => {
     const afterElements = mock.getAllElements()
     const [,, saltoOffice, saltoEmployee] = afterElements
     saltoOffice.fields.test = new Field(saltoOffice, 'test', BuiltinTypes.STRING)
@@ -148,18 +196,17 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       }
       return []
     }
-    const plan = isAdd
-      ? await getPlan({
+    return isAdd
+      ? getPlan({
         before: createElementSource([]),
         after: createElementSource(afterElements),
         dependencyChangers: [depChanger],
       })
-      : await getPlan({
+      : getPlan({
         before: createElementSource(afterElements),
         after: createElementSource([]),
         dependencyChangers: [depChanger],
       })
-    return [plan, saltoOffice]
   },
 
   planWithDependencyCycleWithinAGroup: async withValidator => {

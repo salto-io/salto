@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 import wu from 'wu'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { DataNodeMap, NodeId, buildAcyclicGroupedGraph, GroupDAG } from '@salto-io/dag'
-import { Change, getChangeData, isField, ChangeGroupIdFunction, ChangeId, ChangeGroupId, ChangeGroupIdFunctionReturn } from '@salto-io/adapter-api'
+import { DataNodeMap, NodeId, buildAcyclicGroupedGraph, GroupDAG, GroupKeyFunc } from '@salto-io/dag'
+import { Change, getChangeData, isField, ChangeGroupIdFunction, ChangeId, ChangeGroupId, ChangeGroupIdFunctionReturn, isAdditionOrRemovalChange, isObjectTypeChange, isFieldChange } from '@salto-io/adapter-api'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
+const { DefaultMap } = collections.map
 
 export const mergeChangeGroupInfo = (
   changeGroupInfoPerAdapter: ChangeGroupIdFunctionReturn[]
@@ -61,6 +64,49 @@ export const getCustomGroupIds = async (
   return mergeChangeGroupInfo(changeGroupInfoPerAdapter)
 }
 
+const removeRedundantFieldNodes = (
+  graph: DataNodeMap<Change>,
+  groupKey: GroupKeyFunc
+): DataNodeMap<Change> => log.time(() => {
+  // If we add / remove an object type, we can omit all the field add / remove
+  // changes from the same group since they are included in the parent change
+  const groupIdToAddedOrRemovedTypesMap = new DefaultMap<string, Map<string, collections.set.SetId>>(() => new Map())
+  wu(graph.keys()).forEach(nodeId => {
+    const change = graph.getData(nodeId)
+    if (isAdditionOrRemovalChange(change) && isObjectTypeChange(change)) {
+      groupIdToAddedOrRemovedTypesMap.get(groupKey(nodeId)).set(getChangeData(change).elemID.getFullName(), nodeId)
+    }
+  })
+  const getNodeIdOrParent = (nodeId: collections.set.SetId): collections.set.SetId => {
+    const change = graph.getData(nodeId)
+    if (!isAdditionOrRemovalChange(change) || !isFieldChange(change)) {
+      return nodeId
+    }
+    const parentNodeId = groupIdToAddedOrRemovedTypesMap
+      .get(groupKey(nodeId))
+      .get(getChangeData(change).parent.elemID.getFullName())
+    return parentNodeId ?? nodeId
+  }
+
+  const graphWithoutRedundantFieldNodes = new DataNodeMap<Change>()
+  wu(graph.keys()).forEach(nodeId => {
+    const nodeIdOrParent = getNodeIdOrParent(nodeId)
+    if (!graphWithoutRedundantFieldNodes.nodeData.has(nodeIdOrParent)) {
+      graphWithoutRedundantFieldNodes.addNode(
+        nodeIdOrParent,
+        wu(graph.get(nodeIdOrParent)).map(getNodeIdOrParent).filter(id => id !== nodeIdOrParent),
+        graph.getData(nodeIdOrParent)
+      )
+    }
+    if (nodeId !== nodeIdOrParent) {
+      wu(graph.get(nodeId)).map(getNodeIdOrParent).filter(id => id !== nodeIdOrParent).forEach(id => {
+        graphWithoutRedundantFieldNodes.addEdge(nodeIdOrParent, id)
+      })
+    }
+  })
+
+  return graphWithoutRedundantFieldNodes
+}, 'removeRedundantFieldNodes')
 
 export const buildGroupedGraphFromDiffGraph = (
   diffGraph: DataNodeMap<Change>,
@@ -78,5 +124,9 @@ export const buildGroupedGraphFromDiffGraph = (
     return groupElement.elemID.getFullName()
   }
 
-  return buildAcyclicGroupedGraph(diffGraph, groupKey, disjointGroups)
+  return buildAcyclicGroupedGraph(
+    removeRedundantFieldNodes(diffGraph, groupKey),
+    groupKey,
+    disjointGroups
+  )
 }

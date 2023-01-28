@@ -53,20 +53,20 @@ describe('dependency changer', () => {
         toDependencyChange('add', anotherType, anotherField),
       ])
     })
-    it('should create dependency between fields of the same type', async () => {
+    it('should not create dependency when type is modified', async () => {
       const changesMap = toChangeNodesMap([
         field,
-        secondField,
         anotherType,
         anotherField,
       ])
+      const afterType = type.clone()
+      afterType.annotate({ anno: 'test' })
+      changesMap.set(type.elemID.getFullName(), toChange({ before: type, after: afterType }))
       await expect(dependencyChanger(changesMap, defaultDependencies)).resolves.toEqual([
-        toDependencyChange('add', field, secondField),
-        toDependencyChange('add', secondField, field),
         toDependencyChange('add', anotherType, anotherField),
       ])
     })
-    it('should not create dependency for one field change', async () => {
+    it('should not create dependency for a field without type change', async () => {
       const changesMap = toChangeNodesMap([
         field,
         anotherType,

@@ -15,15 +15,15 @@
 */
 import _ from 'lodash'
 import wu from 'wu'
-import { DependencyChanger, isObjectTypeChange, isFieldChange, dependencyChange, getChangeData } from '@salto-io/adapter-api'
+import { DependencyChanger, isObjectTypeChange, isFieldChange, dependencyChange, getChangeData, isAdditionOrRemovalChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
 
-const createDependencyBetweenTypeAndFields: DependencyChanger = async changes => {
+const typeToFieldsDependencyOnTypeAdditionOrRemoval: DependencyChanger = async changes => {
   const changesWithKeys = wu(changes.entries()).map(([key, change]) => ({ key, change })).toArray()
-  const typeChanges = _.keyBy(
-    changesWithKeys.filter(({ change }) => isObjectTypeChange(change)),
+  const addOrRemoveTypeChanges = _.keyBy(
+    changesWithKeys.filter(({ change }) => isObjectTypeChange(change) && isAdditionOrRemovalChange(change)),
     ({ change }) => getChangeData(change).elemID.getFullName()
   )
   const parentToFieldChanges = _.groupBy(
@@ -31,25 +31,15 @@ const createDependencyBetweenTypeAndFields: DependencyChanger = async changes =>
     ({ change }) => getChangeData(change).elemID.createTopLevelParentID().parent.getFullName()
   )
   return Object.entries(parentToFieldChanges).flatMap(([parentId, fieldChanges]) => {
-    const parentChange = typeChanges[parentId]
-    if (parentChange) {
-      return fieldChanges.map(({ key }) => dependencyChange('add', parentChange.key, key))
-    }
-    if (fieldChanges.length > 1) {
-      const [fieldChange, ...restOfFieldChanges] = fieldChanges
-      // in case that there's no parent change, we still want to create dependencies between all fields-
-      // by making a two-direction dependency between one field and the rest.
-      return restOfFieldChanges.flatMap(({ key }) => [
-        dependencyChange('add', fieldChange.key, key),
-        dependencyChange('add', key, fieldChange.key),
-      ])
-    }
-    return []
+    const parentChange = addOrRemoveTypeChanges[parentId]
+    return parentChange
+      ? fieldChanges.map(({ key }) => dependencyChange('add', parentChange.key, key))
+      : []
   })
 }
 
 const changers = [
-  createDependencyBetweenTypeAndFields,
+  typeToFieldsDependencyOnTypeAdditionOrRemoval,
 ]
 
 export const dependencyChanger: DependencyChanger = (changes, dependencies) =>

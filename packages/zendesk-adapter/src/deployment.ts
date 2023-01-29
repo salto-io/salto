@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2023 Salto Labs Ltd.
+*                      Copyright 2022 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -34,7 +34,7 @@ const { awu } = collections.asynciterable
 const DEPLOYMENT_BUFFER_TIME = 500 // This seems to be about the optimal wait time (the least errors and shortest time)
 const MAX_RETRIES = 5
 // Those error codes are not related to the deployment data, and a retry should work
-const RESPONSES_TO_RETRY = [409, 429, 503]
+const RESPONSES_TO_RETRY = [409, 503]
 
 export const addId = ({
   change, apiDefinitions, response, dataField, addAlsoOnModification = false,
@@ -162,15 +162,9 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
-  let additionBufferCount = 0
   const result = await Promise.all(
     changes.map(async change => {
       try {
-        if (isAdditionChange(change)) {
-          // Zendesk may have conflicts with parallel creations, so we put a buffer between requests (SALTO-2961)
-          await sleep(DEPLOYMENT_BUFFER_TIME * additionBufferCount)
-          additionBufferCount += 1
-        }
         const res = await deployChangeFunc(change)
         return res !== undefined ? res : change
       } catch (err) {

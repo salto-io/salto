@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,19 @@ import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { DescribeSObjectResult } from 'jsforce'
 import Connection from '../../src/client/jsforce'
-import { FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, LOOKUP_FILTER_FIELDS, FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS, CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS } from '../../src/constants'
+import {
+  FIELD_ANNOTATIONS,
+  FILTER_ITEM_FIELDS,
+  CUSTOM_OBJECT,
+  INSTANCE_FULL_NAME_FIELD,
+  LABEL,
+  LOOKUP_FILTER_FIELDS,
+  FIELD_DEPENDENCY_FIELDS,
+  VALUE_SETTINGS_FIELDS,
+  VALUE_SET_FIELDS,
+  CUSTOM_VALUE,
+  VALUE_SET_DEFINITION_FIELDS,
+} from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, defaultFilterContext } from '../utils'
 import filterCreator from '../../src/filters/custom_objects_from_soap_describe'

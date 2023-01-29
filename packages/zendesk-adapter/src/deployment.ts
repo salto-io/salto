@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -154,7 +154,7 @@ export const deployChange = async (
       await sleep(timeToWait ?? DEPLOYMENT_BUFFER_TIME)
       return deployChange(change, client, apiDefinitions, fieldsToIgnore, retryNumber + 1)
     }
-    throw getZendeskError(getChangeData(change).elemID.getFullName(), err)
+    throw getZendeskError(getChangeData(change).elemID, err)
   }
 }
 

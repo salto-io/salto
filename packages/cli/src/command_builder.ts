@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -31,7 +31,10 @@ const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 
 type BasicCommandProperties = {
   name: string
+  // full description shown when running -h on command
   description: string
+  // short description shown when running -h on parent command (if needed)
+  summary?: string
 }
 
 export type CommandOptions<T> = BasicCommandProperties & {
@@ -161,7 +164,7 @@ const validateCommandOptionDefinitions = <T>(
 
 export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T> => {
   const {
-    properties: { name, description, keyedOptions = [], positionalOptions = [] },
+    properties: { name, description, summary, keyedOptions = [], positionalOptions = [] },
     action,
   } = def
   const commanderAction: CommandAction = async ({
@@ -200,7 +203,7 @@ export const createPublicCommandDef = <T>(def: CommandInnerDef<T>): CommandDef<T
 
   // Add verbose to all commands
   const properties = {
-    ...{ name, description, positionalOptions },
+    ...{ name, description, summary, positionalOptions },
     keyedOptions: [
       ...keyedOptions,
       VERBOSE_OPTION as KeyedOption<T>,

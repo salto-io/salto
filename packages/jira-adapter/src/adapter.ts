@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -57,6 +57,7 @@ import gadgetFilter from './filters/dashboard/gadget'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
+import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
@@ -64,6 +65,7 @@ import workflowPropertiesFilter from './filters/workflow/workflow_properties_fil
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
+import emptyValidatorWorkflowFilter from './filters/workflow/empty_validator_workflow'
 import workflowGroupsFilter from './filters/workflow/groups_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
@@ -92,6 +94,7 @@ import wrongUserPermissionSchemeFilter from './filters/permission_scheme/wrong_u
 import maskingFilter from './filters/masking'
 import avatarsFilter from './filters/avatars'
 import iconUrlFilter from './filters/icon_url'
+import filtersFilter from './filters/filter'
 import removeEmptyValuesFilter from './filters/remove_empty_values'
 import jqlReferencesFilter from './filters/jql/jql_references'
 import userFilter from './filters/user'
@@ -105,7 +108,6 @@ import allowedPermissionsSchemeFilter from './filters/permission_scheme/allowed_
 import automationLabelFetchFilter from './filters/automation/automation_label/label_fetch'
 import automationLabelDeployFilter from './filters/automation/automation_label/label_deployment'
 import deployDcIssueEventsFilter from './filters/data_center/issue_events'
-import deployDcSecuritySchemeFilter from './filters/data_center/security_scheme'
 import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
@@ -118,7 +120,6 @@ const {
   loadSwagger,
   addDeploymentAnnotations,
 } = elementUtils.swagger
-
 const { createPaginator } = clientUtils
 const log = logger(module)
 
@@ -151,6 +152,7 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  emptyValidatorWorkflowFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
@@ -171,6 +173,7 @@ export const DEFAULT_FILTERS = [
   gadgetFilter,
   projectFilter,
   projectComponentFilter,
+  archivedProjectComponentsFilter,
   screenFilter,
   priorityFilter,
   statusDeploymentFilter,
@@ -202,12 +205,12 @@ export const DEFAULT_FILTERS = [
   sortListsFilter,
   serviceUrlInformationFilter,
   serviceUrlFilter,
+  filtersFilter,
   hiddenValuesInListsFilter,
   queryFilter,
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
-  deployDcSecuritySchemeFilter,
   allowedPermissionsSchemeFilter,
   // Must run after user filter
   accountIdFilter,
@@ -321,7 +324,7 @@ export default class JiraAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  ): Promise<InstanceElement[]> {
+  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {
@@ -349,7 +352,7 @@ export default class JiraAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     progressReporter.reportProgress({ message: 'Fetching instances' })
-    const instances = await this.getInstances(allTypes, parsedConfigs)
+    const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
 
     const elements = [
       ...Object.values(allTypes),
@@ -368,9 +371,7 @@ export default class JiraAdapter implements AdapterOperations {
       this.userConfig.apiDefinitions,
     )
 
-    return filterResult.errors !== undefined
-      ? { elements, errors: filterResult.errors }
-      : { elements }
+    return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []) }
   }
 
   /**

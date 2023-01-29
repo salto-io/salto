@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import nock from 'nock'
 import { Bulk, FileProperties, Metadata, RetrieveResult } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import SalesforceClient, {
@@ -30,13 +30,25 @@ import SalesforceClient, {
 import mockClient from './client'
 import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
-import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import {
+  ENOTFOUND,
+  ERROR_HTTP_502, INVALID_GRANT,
+  RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  SF_REQUEST_LIMIT_EXCEEDED,
+} from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
+import {
+  ENOTFOUND_MESSAGE, ERROR_HTTP_502_MESSAGE, INVALID_GRANT_MESSAGE, MAPPABLE_ERROR_PROPERTIES,
+  MappableErrorProperty,
+  MAX_CONCURRENT_REQUESTS_MESSAGE,
+  REQUEST_LIMIT_EXCEEDED_MESSAGE,
+} from '../src/client/user_facing_errors'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
 const { mapAsync, toArrayAsync } = asynciterable
 const logging = logger('salesforce-adapter/src/client/client')
+
 
 describe('salesforce client', () => {
   beforeEach(() => {
@@ -228,7 +240,12 @@ describe('salesforce client', () => {
         .times(1)
         .reply(500, 'server error')
       expect(await client.readMetadata('FakeType', 'FakeName', _err => false))
-        .toEqual({ result: [], errors: ['FakeName'] })
+        .toEqual({
+          result: [],
+          errors: [
+            { input: 'FakeName', error: expect.objectContaining({ name: 'ERROR_HTTP_500' }) },
+          ],
+        })
       expect(dodoScope.isDone()).toBeTruthy()
     })
 
@@ -242,7 +259,12 @@ describe('salesforce client', () => {
           headers,
         )
       expect(await client.readMetadata('FakeType', 'FakeName'))
-        .toEqual({ result: [], errors: ['FakeName'] })
+        .toEqual({
+          result: [],
+          errors: [
+            { input: 'FakeName', error: expect.objectContaining({ name: 'sf:INVALID_TYPE' }) },
+          ],
+        })
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })
@@ -305,6 +327,51 @@ describe('salesforce client', () => {
       const { result } = await client.readMetadata('TopicsForObjects', ['aaa', 'bbb'])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+
+  describe('when client throws mappable error', () => {
+    const NON_IMPORTANT_FAULT = 'test non important fault'
+
+    type TestInput = {
+      expectedMessage: string
+      responseCode?: number
+      faultString?: string
+    }
+    const mappableErrorToTestInputs: Record<MappableErrorProperty, types.NonEmptyArray<TestInput> | TestInput> = {
+      [SF_REQUEST_LIMIT_EXCEEDED]: [
+        { faultString: 'ConcurrentRequests (Concurrent API Requests) Limit exceeded.', expectedMessage: MAX_CONCURRENT_REQUESTS_MESSAGE },
+        { faultString: 'TotalRequests Limit exceeded.', expectedMessage: REQUEST_LIMIT_EXCEEDED_MESSAGE },
+      ],
+      [ENOTFOUND]: { expectedMessage: ENOTFOUND_MESSAGE },
+      [ERROR_HTTP_502]: { expectedMessage: ERROR_HTTP_502_MESSAGE, responseCode: 502 },
+      [INVALID_GRANT]: { expectedMessage: INVALID_GRANT_MESSAGE },
+    }
+
+    describe.each(MAPPABLE_ERROR_PROPERTIES)('%p', mappableError => {
+      const testInputs = mappableErrorToTestInputs[mappableError]
+      const withTestName = (testInput: TestInput): TestInput & {name: string} => ({
+        name: testInput.faultString ?? 'should replace error message',
+        ...testInput,
+      })
+      it.each(makeArray(testInputs).map(withTestName))('$name',
+        async ({
+          expectedMessage,
+          responseCode = 500,
+          faultString = NON_IMPORTANT_FAULT,
+        }) => {
+          const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
+            .post(/.*/)
+            .times(1)
+            .reply(
+              responseCode,
+              { 'a:Envelope': { 'a:Body': { 'a:Fault': { faultcode: mappableError, faultstring: faultString } } } },
+              headers,
+            )
+          await expect(client.listMetadataTypes())
+            .rejects.toThrow(expectedMessage)
+          expect(dodoScope.isDone()).toBeTrue()
+        })
     })
   })
 
@@ -933,6 +1000,21 @@ describe('salesforce client', () => {
           await Promise.all(retrieveReqs)
         })
       })
+    })
+  })
+  describe('isSandbox', () => {
+    const nonSandBoxClient = new SalesforceClient({
+      credentials: new UsernamePasswordCredentials({
+        username: '',
+        password: '',
+        isSandbox: false,
+      }),
+    })
+    it('should return true when sandbox true', () => {
+      expect(client.isSandbox()).toBeTruthy()
+    })
+    it('should return false when sandbox false', () => {
+      expect(nonSandBoxClient.isSandbox()).toBeFalsy()
     })
   })
 })

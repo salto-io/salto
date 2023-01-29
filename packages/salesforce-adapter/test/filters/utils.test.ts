@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,9 +14,14 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { addDefaults } from '../../src/filters/utils'
+import {
+  addDefaults,
+  isCustomMetadataRecordInstance,
+  isCustomMetadataRecordType,
+  isMetadataValues,
+} from '../../src/filters/utils'
 import { SALESFORCE, LABEL, API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
-import { Types } from '../../src/transformers/transformer'
+import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
@@ -199,6 +204,43 @@ describe('addDefaults', () => {
     it('should not add custom object annotations', () => {
       expect(object.annotations).not.toHaveProperty('sharingModel')
       expect(object.annotations).not.toHaveProperty('deploymentStatus')
+    })
+  })
+  describe('isCustomMetadataRecordType', () => {
+    it('should return true for customMetadataRecordType', async () => {
+      expect(await isCustomMetadataRecordType(mockTypes.CustomMetadataRecordType)).toBeTrue()
+    })
+    it('should return false for non customMetadataRecordType', async () => {
+      expect(await isCustomMetadataRecordType(mockTypes.Profile)).toBeFalse()
+    })
+  })
+  describe('isCustomMetadataRecordInstance', () => {
+    const customMetadataRecordInstance = createInstanceElement(
+      { [INSTANCE_FULL_NAME_FIELD]: 'MDType.MDTypeInstance' },
+      mockTypes.CustomMetadataRecordType
+    )
+    const profileInstance = createInstanceElement(
+      { [INSTANCE_FULL_NAME_FIELD]: 'profileInstance' },
+      mockTypes.Profile
+    )
+    it('should return true for customMetadataRecordType instance', async () => {
+      expect(await isCustomMetadataRecordInstance(customMetadataRecordInstance)).toBeTrue()
+    })
+    it('should return false for non customMetadataRecordType', async () => {
+      expect(await isCustomMetadataRecordInstance(profileInstance)).toBeFalse()
+    })
+  })
+  describe('isMetadataValues', () => {
+    it('should return true when values contain a fullName field', () => {
+      expect(isMetadataValues({
+        [INSTANCE_FULL_NAME_FIELD]: 'TestFullName',
+        anotherProperty: 'anotherProperty',
+      })).toBeTrue()
+    })
+    it('should return false when values does not contain a fullName field', () => {
+      expect(isMetadataValues({
+        anotherProperty: 'anotherProperty',
+      })).toBeFalse()
     })
   })
 })

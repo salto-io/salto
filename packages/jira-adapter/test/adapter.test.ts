@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -219,7 +219,7 @@ describe('adapter', () => {
         });
 
       (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
-        .mockResolvedValue([testInstance]);
+        .mockResolvedValue({ elements: [testInstance] });
       (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
         .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
 

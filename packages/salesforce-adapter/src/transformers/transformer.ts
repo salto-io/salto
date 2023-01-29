@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -45,6 +45,20 @@ const { mapValuesAsync, pickAsync } = promises.object
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
+
+const xsdTypes = [
+  'xsd:boolean',
+  'xsd:date',
+  'xsd:dateTime',
+  'xsd:picklist',
+  'xsd:string',
+  'xsd:int',
+  'xsd:double',
+  'xsd:long',
+] as const
+
+export type XsdType = typeof xsdTypes[number]
+type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
 
 export const metadataType = async (element: Readonly<Element>): Promise<string> => {
   if (isInstanceElement(element)) {
@@ -1089,14 +1103,25 @@ export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeFie
   return new Field(parent, field.name, naclFieldType, annotations)
 }
 
-type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
-const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
+const convertXsdTypeFuncMap: Record<XsdType, ConvertXsdTypeFunc> = {
   'xsd:string': String,
   'xsd:boolean': v => v === 'true',
   'xsd:double': Number,
   'xsd:int': Number,
   'xsd:long': Number,
+  'xsd:date': String,
+  'xsd:dateTime': String,
+  'xsd:picklist': String,
 }
+
+const isXsdType = (xsdType: string): xsdType is XsdType => (
+  (xsdTypes as ReadonlyArray<string>).includes(xsdType)
+)
+
+const getXsdConvertFunc = (xsdType: string): ConvertXsdTypeFunc => (
+  isXsdType(xsdType) ? convertXsdTypeFuncMap[xsdType] : (v => v)
+)
+
 
 // Salesforce returns nulls in metadata API as objects like { $: { 'xsi:nil': 'true' } }
 // and in retrieve API like <activateRSS xsi:nil="true"/>
@@ -1116,7 +1141,7 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
   // (Salto-394) Salesforce returns objects like:
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
   if (_.isObject(value) && Object.keys(value).includes('_')) {
-    const convertFunc = convertXsdTypeFuncMap[_.get(value, ['$', 'xsi:type'])] || (v => v)
+    const convertFunc = getXsdConvertFunc(_.get(value, ['$', 'xsi:type']))
     return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
   }
   const fieldType = await field?.getType()
@@ -1149,7 +1174,7 @@ const isDefaultWithType = (val: PrimitiveValue | DefaultValueWithType):
   val is DefaultValueWithType => new Set(_.keys(val)).has('_')
 
 const valueFromXsdType = (val: DefaultValueWithType): PrimitiveValue => {
-  const convertFunc = convertXsdTypeFuncMap[val.$['xsi:type']] || (v => v)
+  const convertFunc = getXsdConvertFunc(val.$['xsi:type'])
   return convertFunc(val._)
 }
 

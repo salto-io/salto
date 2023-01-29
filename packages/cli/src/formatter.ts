@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import {
   Element, isInstanceElement, Values, Change, Value, getChangeData, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
-  isStaticFile,
+  isStaticFile, Group,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
@@ -30,6 +30,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import Prompts from './prompts'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
 
 export const header = (txt: string): string => chalk.bold(txt)
 
@@ -335,19 +336,19 @@ export const formatExecutionPlan = async (
 const deployPhaseIndent = 2
 const formatItemName = (itemName: string): string => indent(header(`${itemName}:`), deployPhaseIndent)
 
-export const deployPhaseHeader = header([
+export const deployPhaseHeader = (checkOnly: boolean): string => header([
   emptyLine(),
-  Prompts.START_DEPLOY_EXEC,
+  Prompts.START_DEPLOY_EXEC(checkOnly),
   emptyLine(),
 ].join('\n'))
 
-export const cancelDeployOutput = [
+export const cancelDeployOutput = (checkOnly: boolean): string => [
   emptyLine(),
-  Prompts.CANCEL_DEPLOY,
+  Prompts.CANCEL_DEPLOY(checkOnly),
   emptyLine(),
 ].join('\n')
 
-export const deployPhaseEpilogue = (numChanges: number, numErrors: number): string => {
+export const deployPhaseEpilogue = (numChanges: number, numErrors: number, checkOnly: boolean): string => {
   const hadChanges = numChanges > 0
   const hadErrors = numErrors > 0
   if (hadChanges || hadErrors) {
@@ -357,9 +358,9 @@ export const deployPhaseEpilogue = (numChanges: number, numErrors: number): stri
     if (hadChanges && hadErrors) {
       epilogueLines.push(Prompts.FULL_DEPLOY_SUMMARY(numChanges, numErrors))
     } else if (hadChanges) {
-      epilogueLines.push(Prompts.CHANGES_DEPLOY_SUMMARY(numChanges))
+      epilogueLines.push(Prompts.CHANGES_DEPLOY_SUMMARY(numChanges, checkOnly))
     } else {
-      epilogueLines.push(Prompts.ERRORS_DEPLOY_SUMMARY(numErrors))
+      epilogueLines.push(Prompts.ERRORS_DEPLOY_SUMMARY(numErrors, checkOnly))
     }
     return epilogueLines.join('\n')
   }
@@ -766,3 +767,30 @@ export const formatStateRecencies = (stateRecencies: StateRecency[]): string => 
 export const formatAdapterProgress = (adapterName: string, progressMessage: string): string => (
   subHeader(indent(Prompts.FETCH_PROGRESSING_MESSAGES(adapterName, progressMessage), 4))
 )
+
+type QuickDeployableGroup = Group & {
+  requestId: string
+  hash: string
+}
+
+const isQuickDeployableGroup = (group: Group): group is QuickDeployableGroup => (
+  group.requestId !== undefined && group.hash !== undefined
+)
+
+export const formatGroups = (groups: Group[], checkOnly: boolean): string => {
+  const quickDeployableGroups = groups.filter(isQuickDeployableGroup)
+  const deploymentUrls = groups
+    .map(group => group.url)
+    .filter(isDefined)
+  const res: string[] = []
+  if (!_.isEmpty(quickDeployableGroups)) {
+    res.push(Prompts.VALIDATION_PARAMETERS)
+    quickDeployableGroups.forEach(group =>
+      res.push(Prompts.QUICK_DEPLOY_PARAMETERS(group.requestId, group.hash)))
+  }
+
+  if (!_.isEmpty(deploymentUrls)) {
+    res.push(Prompts.DEPLOYMENT_URLS(checkOnly, deploymentUrls))
+  }
+  return res.join('\n')
+}

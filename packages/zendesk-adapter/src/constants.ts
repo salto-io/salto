@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -33,7 +33,20 @@ export const TICKET_FIELD_TYPE_NAME = 'ticket_field'
 export const ORG_FIELD_TYPE_NAME = 'organization_field'
 export const USER_FIELD_TYPE_NAME = 'user_field'
 export const FIELD_TYPE_NAMES = [TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME]
+export const CUSTOM_ROLE_TYPE_NAME = 'custom_role'
+export const MACRO_TYPE_NAME = 'macro'
+export const ACCOUNT_FEATURES_TYPE_NAME = 'account_features'
 export const EVERYONE_USER_TYPE = 'Everyone'
+export const TICKET_FORM_TYPE_NAME = 'ticket_form'
+export const TICKET_FORM_ORDER_TYPE_NAME = 'ticket_form_order'
+export const SUPPORT_ADDRESS_TYPE_NAME = 'support_address'
+export const CUSTOM_STATUS_TYPE_NAME = 'custom_status'
+export const DEFAULT_CUSTOM_STATUSES_TYPE_NAME = 'default_custom_statuses'
+export const PENDING_CATEGORY = 'pending'
+export const SOLVED_CATEGORY = 'solved'
+export const HOLD_CATEGORY = 'hold'
+export const OPEN_CATEGORY = 'open'
+export const ROUTING_ATTRIBUTE_VALUE_TYPE = 'routing_attribute_value'
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'

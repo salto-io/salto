@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -51,7 +51,7 @@ const getInvalidPermissions = (
   permissionScheme: InstanceElement,
   allowedPermissions: Set<string>,
 ): string[] =>
-  permissionScheme.value.permissions
+  (permissionScheme.value.permissions ?? [])
     .map((permission: { permission: string }) => permission.permission)
     .filter((permission: string) => !allowedPermissions.has(permission))
 

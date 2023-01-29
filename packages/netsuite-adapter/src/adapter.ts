@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,10 +27,10 @@ import {
   createInstanceElement,
 } from './transformer'
 import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from './types'
-import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE } from './constants'
+import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
-import parseSavedSearch from './filters/parse_saved_searchs'
+import parseReportTypes from './filters/parse_report_types'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
@@ -135,7 +135,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
-      parseSavedSearch,
+      parseReportTypes,
       convertLists,
       consistentValues,
       // convertListsToMaps must run after convertLists and consistentValues
@@ -340,11 +340,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
 
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+    const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
+      .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
-      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
+      types: Object.fromEntries(this.typesToSkip.concat(explicitIncludeTypeList).map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
-
     const fetchQuery = [
       this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),

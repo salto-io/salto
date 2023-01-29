@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -65,7 +65,7 @@ Promise<void> => {
           data: { workweek: { intervals } },
         })
       } catch (e) {
-        throw getZendeskError(`${changedElement.elemID.getFullName()}.intervals`, e)
+        throw getZendeskError(changedElement.elemID.createNestedID('intervals'), e)
       }
     } else {
       log.error(`Failed to deploy intervals on ${changedElement.elemID.getFullName()} since the intervals were in invalid format`)

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,11 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, isRemovalChange, getChangeData } from '@salto-io/adapter-api'
+import { isRemovalChange, getChangeData } from '@salto-io/adapter-api'
 import { isStandardTypeName } from '../autogen/types'
 import { isStandardInstanceOrCustomRecordType } from '../types'
+import { NetsuiteChangeValidator } from './types'
 
-const changeValidator: ChangeValidator = async changes => (
+
+const changeValidator: NetsuiteChangeValidator = async changes => (
   changes
     .filter(isRemovalChange)
     .map(getChangeData)

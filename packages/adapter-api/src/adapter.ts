@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -30,8 +30,16 @@ export interface FetchResult {
   isPartial?: boolean
 }
 
+export type Group = {
+  id?: string
+  requestId?: string
+  hash?: string
+  url?: string
+}
+
 export type DeployExtraProperties = {
   deploymentUrls?: string[]
+  groups?: Group[]
 }
 
 export type DeployResult = {

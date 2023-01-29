@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { objects } from '@salto-io/lowerdash'
 import { getParents } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { findObject, getFilledJspUrls, setFieldDeploymentAnnotations, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
@@ -25,7 +26,7 @@ import { SECURITY_LEVEL_MEMBER_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE }
 import { JiraConfig } from '../../config/config'
 import JiraClient from '../../client/client'
 import { deployMembers, getMemberKey } from './members_deployment'
-import { deployChanges } from '../../deployment/standard_deployment'
+import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 
 const log = logger(module)
 
@@ -223,15 +224,45 @@ const filter: FilterCreator = ({ client, config }) => ({
   },
 
   deploy: async changes => {
-    if (client.isDataCenter) {
-      return {
-        leftoverChanges: changes,
-        deployResult: {
-          appliedChanges: [],
-          errors: [],
-        },
+    const deployFunction = client.isDataCenter
+      ? {
+        deployScheme: (schemeChange: Change<InstanceElement>) => deployChanges(
+          [schemeChange] as Change<InstanceElement>[],
+          async change => {
+            await defaultDeployChange({
+              change,
+              client,
+              apiDefinitions: config.apiDefinitions,
+            })
+          },
+        ),
+        deployLevels: (levelsChanges: Change<InstanceElement>[]) => deployChanges(
+          levelsChanges as Change<InstanceElement>[],
+          async change => {
+            try {
+              await defaultDeployChange({
+                change,
+                client,
+                apiDefinitions: config.apiDefinitions,
+              })
+            } catch (err) {
+              if (err instanceof clientUtils.HTTPError
+                && err.response.status === 404
+                && isRemovalChange(change)) {
+                // if delete fails on 404 it can be considered a success
+                log.debug(`Received 404 error ${err.message} for ${getChangeData(change).elemID.getFullName()}. The element is already removed`)
+                return
+              }
+              throw err
+            }
+          }
+        ),
       }
-    }
+      : {
+        deployScheme: (change: Change<InstanceElement>) => deploySecurityScheme(change, config, client),
+        deployLevels: (levelChanges: Change<InstanceElement>[]) =>
+          deploySecurityLevels(levelChanges, config, client),
+      }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
@@ -247,7 +278,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const schemesDeployResult = securitySchemeChange !== undefined
       && isAdditionChange(securitySchemeChange)
-      ? await deploySecurityScheme(securitySchemeChange, config, client)
+      ? await deployFunction.deployScheme(securitySchemeChange)
       : {
         appliedChanges: [],
         errors: [],
@@ -270,11 +301,7 @@ const filter: FilterCreator = ({ client, config }) => ({
         : getParents(getChangeData(change))[0].value.value.id
     })
 
-    const levelsDeployResult = await deploySecurityLevels(
-      levelsChanges,
-      config,
-      client,
-    )
+    const levelsDeployResult = await deployFunction.deployLevels(levelsChanges)
 
     if (
       securitySchemeChange === undefined
@@ -303,14 +330,19 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     securitySchemeInstance.value.schemeId = securitySchemeInstance.value.id
 
-    const schemesDefaultLevelDeployResult = await deploySecurityScheme(
-      isAdditionChange(securitySchemeChange) ? toChange({
-        before: securitySchemeInstance,
+    const createNoDefaultLevelDuplicate = (): Change<InstanceElement> => {
+      const securitySchemeInstanceNoDefaultLevel: InstanceElement = securitySchemeInstance.clone() as InstanceElement
+      delete securitySchemeInstanceNoDefaultLevel.value.defaultLevel
+      return toChange({
+        before: securitySchemeInstanceNoDefaultLevel,
         after: securitySchemeInstance,
-      }) : securitySchemeChange,
-      config,
-      client
-    )
+      })
+    }
+    const deploySecurityChange: Change<InstanceElement> = isAdditionChange(securitySchemeChange)
+      ? createNoDefaultLevelDuplicate()
+      : securitySchemeChange
+
+    const schemesDefaultLevelDeployResult = await deployFunction.deployScheme(deploySecurityChange)
 
     const schemesResults = {
       // If schemesDeployResult contains the change and both calls to deploySecurityScheme

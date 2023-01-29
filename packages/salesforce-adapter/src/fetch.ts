@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -32,7 +32,12 @@ import {
   FOLDER_CONTENT_TYPE,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
-import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
+import {
+  createListMetadataObjectsConfigChange,
+  createRetrieveConfigChange,
+  createSkippedListConfigChange,
+  createSkippedListConfigChangeFromError,
+} from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
@@ -107,7 +112,9 @@ export const listMetadataObjects = async (
   )
   return {
     elements: result,
-    configChanges: (errors ?? []).map(createListMetadataObjectsConfigChange),
+    configChanges: errors
+      .map(e => e.input)
+      .map(createListMetadataObjectsConfigChange),
   }
 }
 
@@ -145,9 +152,10 @@ const listMetadataObjectsWithinFolders = async (
   )
   const elements = result
     .map(props => withFullPath(props, folderPathByName))
-    .filter(props => notInSkipList(metadataQuery, props, false))
     .concat(includedFolderElements)
-  const configChanges = (errors?.map(createListMetadataObjectsConfigChange) ?? [])
+  const configChanges = errors
+    .map(e => e.input)
+    .map(createListMetadataObjectsConfigChange)
     .concat(folders.configChanges)
   return { elements, configChanges }
 }
@@ -155,21 +163,28 @@ const listMetadataObjectsWithinFolders = async (
 const getFullName = (obj: FileProperties): string => {
   const namePrefix = obj.namespacePrefix
     ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  // Ensure fullName starts with the namespace prefix if there is one
-  // needed due to a SF quirk where sometimes metadata instances return without a namespace
-  // in the fullName even when they should have it
-  const fullNameWithCorrectedObjectName = obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
   if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE && obj.namespacePrefix) {
   // Ensure layout name starts with the namespace prefix if there is one.
   // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
   // <namespace>__<objectName>-<layoutName> where it should be
   // <namespace>__<objectName>-<namespace>__<layoutName>
-    const [objectName, ...layoutName] = fullNameWithCorrectedObjectName.split('-')
+    const [objectName, ...layoutName] = obj.fullName.split('-')
     if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
       return `${objectName}-${namePrefix}${layoutName.join('-')}`
     }
   }
-  return fullNameWithCorrectedObjectName
+  return obj.fullName
+}
+
+const getPropsWithFullName = (obj: FileProperties): FileProperties => {
+  const correctFullName = getFullName(obj)
+  return {
+    ...obj,
+    fullName: correctFullName,
+    fileName: obj.fileName.includes(correctFullName)
+      ? obj.fileName
+      : obj.fileName.replace(obj.fullName, correctFullName),
+  }
 }
 
 const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
@@ -238,7 +253,10 @@ export const fetchMetadataInstances = async ({
   return {
     elements,
     configChanges: makeArray(errors)
-      .map(e => createSkippedListConfigChange({ type: metadataTypeName, instance: e })),
+      .map(({ input, error }) => createSkippedListConfigChangeFromError({
+        creatorInput: { metadataType: metadataTypeName, name: input },
+        error,
+      })),
   }
 }
 
@@ -282,7 +300,10 @@ export const retrieveMetadataInstances = async ({
       ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
-    return _.uniqBy(res, file => file.fullName)
+    return _(res)
+      .uniqBy(file => file.fullName)
+      .map(getPropsWithFullName)
+      .value()
   }
 
   const typesByName = await keyByAsync(types, t => apiName(t))
@@ -346,7 +367,7 @@ export const retrieveMetadataInstances = async ({
       // We get folders as part of getting the records inside them
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
-  ))
+  )).filter(props => notInSkipList(metadataQuery, props, false))
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

@@ -1,6 +1,6 @@
 
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,13 +14,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, isAdditionOrModificationChange, isInstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
 import { IdMap } from '../../users_map'
+import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -72,6 +73,7 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
+      .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
         walkOnElement({ element, func: walkOnUsers(convertId(reversedIdMap)) }))
   },
@@ -85,6 +87,7 @@ const filter: FilterCreator = ({ client, config, getIdMapFunc }) => ({
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
+      .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
         walkOnElement({ element, func: walkOnUsers(convertId(idMap)) }))
   }, 'user_id_filter deploy'),

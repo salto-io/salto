@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,6 @@
 import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
-  ChangeValidator,
   getChangeData,
   InstanceElement,
   isAdditionChange,
@@ -29,6 +28,8 @@ import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID } from '../constants'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 
@@ -48,7 +49,7 @@ const hasUnresolvedAccountSpecificValue = (instance: InstanceElement): boolean =
   return foundAccountSpecificValue
 }
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)

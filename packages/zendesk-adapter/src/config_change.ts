@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,7 @@ const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
 + 'Salto needs to stop managing these items by applying the following configuration change:'
 
 export const getConfigFromConfigChanges = (
-  configChanges: elementsUtils.ducktype.ConfigChangeSuggestion[],
+  configChanges: elementsUtils.ConfigChangeSuggestion[],
   currentConfig: InstanceElement,
 ): { config: InstanceElement[]; message: string } | undefined => {
   const typesToRemove = makeArray(configChanges).map(e => e.typeToExclude)

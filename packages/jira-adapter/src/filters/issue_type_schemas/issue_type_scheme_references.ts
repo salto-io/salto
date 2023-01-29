@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,7 @@ const filter: FilterCreator = () => ({
     const setReferences = (scheme: InstanceElement): void => {
       type IssueTypeMapping = { issueTypeId: ReferenceExpression }
       scheme.value.issueTypeIds = scheme.value.issueTypeIds
-        .map((issueTypeMapping: IssueTypeMapping) => issueTypeMapping.issueTypeId)
+        ?.map((issueTypeMapping: IssueTypeMapping) => issueTypeMapping.issueTypeId)
     }
     elements
       .filter(isInstanceElement)

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -84,10 +84,10 @@ export const getDefaultAdapterConfig = async (): Promise<JiraConfig> => {
   return defaultConfigInstance.value as JiraConfig
 }
 
-export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>)
+export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>, isDataCenter = false)
 : Parameters<FilterCreator>[0] => ({
-  ...mockClient(),
-  config: getDefaultConfig({ isDataCenter: false }),
+  ...mockClient(isDataCenter),
+  config: getDefaultConfig({ isDataCenter }),
   elementsSource: buildElementsSourceFromElements([]),
   fetchQuery: elementUtils.query.createMockQuery(),
   adapterContext: {},

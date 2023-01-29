@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,7 +17,7 @@ import 'jest-extended'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { BuiltinTypes, Element, ElemID, ObjectType } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/custom_object_split'
+import filterCreator from '../../src/filters/custom_type_split'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
 import { FilterWith } from '../../src/filter'
 import {
@@ -27,9 +27,10 @@ import {
   METADATA_TYPE,
   OBJECTS_PATH,
   SALESFORCE,
-  OBJECT_FIELDS_PATH,
+  OBJECT_FIELDS_PATH, CUSTOM_METADATA,
 } from '../../src/constants'
 import { defaultFilterContext, createCustomObjectType } from '../utils'
+import { Types } from '../../src/transformers/transformer'
 
 type FilterType = FilterWith<'onFetch'>
 
@@ -40,6 +41,7 @@ const getElementPaths = (elements: Element[]): string[] => elements
 
 describe('Custom Object Split filter', () => {
   describe('when using default file split', () => {
+    const CUSTOM_METADATA_RECORD_TYPE_NAME = 'MDType__mdt'
     const filter = (): FilterType => filterCreator({
       config: defaultFilterContext,
     }) as FilterType
@@ -93,6 +95,17 @@ describe('Custom Object Split filter', () => {
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
         [API_NAME]: 'namespace__objectRandom__c',
+      },
+    })
+    const customMetadataRecordType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, CUSTOM_METADATA_RECORD_TYPE_NAME),
+      fields: {
+        customField__c: { refType: Types.primitiveDataTypes.Picklist },
+        standardField: { refType: Types.primitiveDataTypes.Number },
+      },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_METADATA,
+        [API_NAME]: CUSTOM_METADATA_RECORD_TYPE_NAME,
       },
     })
 
@@ -228,6 +241,45 @@ describe('Custom Object Split filter', () => {
           [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectStandardFields'],
           [SALESFORCE, OBJECTS_PATH, 'CustomObject', 'CustomObjectAnnotations'],
         ])
+      })
+    })
+
+    describe('should split CustomMetadataRecordType to elements', () => {
+      let elements: Element[]
+      beforeEach(async () => {
+        elements = await runFilter(customMetadataRecordType)
+      })
+
+      it('should create annotations object', () => {
+        const annotationsObj = elements.find(obj =>
+          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+            'MDType__mdt', 'MDType__mdtAnnotations'])) as ObjectType
+        expect(annotationsObj).toBeDefined()
+        expect(Object.values(annotationsObj.fields).length).toEqual(0)
+        expect(annotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_METADATA)
+        expect(annotationsObj.annotations[API_NAME]).toEqual(CUSTOM_METADATA_RECORD_TYPE_NAME)
+      })
+
+      it('should create standard fields object', () => {
+        const standardFieldsObj = elements.find(obj =>
+          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+            'MDType__mdt', 'MDType__mdtStandardFields'])) as ObjectType
+        expect(standardFieldsObj).toBeDefined()
+        expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
+        expect(standardFieldsObj.fields.standardField).toBeDefined()
+        expect(standardFieldsObj.fields.standardField
+          .isEqual(customMetadataRecordType.fields.standardField)).toBeTruthy()
+      })
+
+      it('should create custom fields object with all custom fields', () => {
+        const customFieldsObj = elements.find(obj =>
+          _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+            'MDType__mdt', 'MDType__mdtCustomFields'])) as ObjectType
+        expect(customFieldsObj).toBeDefined()
+        expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
+        expect(customFieldsObj.fields.customField__c).toBeDefined()
+        expect(customFieldsObj.fields.customField__c
+          .isEqual(customMetadataRecordType.fields.customField__c)).toBeTruthy()
       })
     })
 

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,9 +21,12 @@ import { values } from '@salto-io/lowerdash'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
+import { PAGE_SIZE } from '../config'
 
-const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  throttle, logDecorator, requiresLogin } = clientUtils
+const {
+  DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  throttle, logDecorator, requiresLogin,
+} = clientUtils
 const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
@@ -34,19 +37,17 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
-  get: 20,
+  get: PAGE_SIZE,
 }
 
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
-> {
+  > {
   // These properties create another connection and client for Zendesk resources API
   protected readonly resourceConn: clientUtils.Connection<Credentials>
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
-  protected resourceClient?: clientUtils.APIConnection<
-    clientUtils.ResponseValue | clientUtils.ResponseValue[]
-  >
+  protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
 
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
@@ -71,7 +72,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   }
 
   public getUrl(): URL {
-    return new URL(instanceUrl(this.credentials.subdomain))
+    return new URL(instanceUrl(this.credentials.subdomain, this.credentials.domain))
   }
 
   public async getSinglePage(
@@ -83,13 +84,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       const status = e.response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)
       // Specifically for workspaces and custom statuses, it returns 403
-      if (
-        status === 404
-        || (status === 403 && [
-          '/api/v2/workspaces',
-          '/api/v2/custom_statuses',
-        ].includes(args.url))
-      ) {
+      if (status === 404) {
         log.warn('Suppressing %d error %o', status, e)
         return { data: [], status }
       }

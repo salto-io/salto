@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -42,9 +42,17 @@ export { brandFieldForBrandBasedElementsValidator } from './brand_field_for_bran
 export { translationForDefaultLocaleValidator } from './translation_for_default_locale'
 export { helpCenterActivationValidator } from './guide_activation'
 export { helpCenterCreationOrRemovalValidator } from './guide_creation_or_removal'
-export { categoryOrderValidator } from './guide_order/category_order_validator'
-export { sectionOrderValidator } from './guide_order/section_order_validator'
-export { articleOrderValidator } from './guide_order/article_order_validator'
-export { guideOrderValidator } from './guide_order/order_deletion_validator'
+export { orderChildrenParentValidator } from './guide_order/order_children_parent_validator'
+export { childrenReferencesValidator } from './guide_order/children_references_validator'
+export { childInOrderValidator } from './guide_order/child_in_order_validator'
+export { guideOrderDeletionValidator } from './guide_order/order_deletion_validator'
 export { articleAttachmentSizeValidator } from './article_attachment_size'
 export { macroActionsTicketFieldDeactivationValidator } from './macro_actions'
+export { customRoleRemovalValidator } from './custom_role_removal'
+export { sideConversationsValidator } from './side_conversation'
+export { missingUsersValidator } from './missing_users'
+export { customStatusCategoryValidator } from './custom_status_valid_category'
+export { customStatusCategoryChangeValidator } from './custom_status_change_category'
+export { customStatusUniqueAgentLabelValidator } from './custom_statuses_unique_agent_label'
+export { defaultCustomStatusesValidator } from './default_custom_statuses'
+export { customStatusActiveDefaultValidator } from './custom_status_active_default'

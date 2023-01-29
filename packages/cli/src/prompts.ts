@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,17 +16,28 @@
 import chalk from 'chalk'
 import moment from 'moment'
 import os from 'os'
+import _ from 'lodash'
+
+export const deployOrValidate = ({ checkOnly, capitalize, noun }:
+ { checkOnly: boolean; capitalize: boolean; noun: boolean }): string => {
+  if (checkOnly) {
+    const validate = noun ? 'validation' : 'validate'
+    return capitalize ? _.capitalize(validate) : validate
+  }
+  const deploy = noun ? 'deployment' : 'deploy'
+  return capitalize ? _.capitalize(deploy) : deploy
+}
 
 export default class Prompts {
   public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to perform these actions?'
-  public static readonly SHOULD_EXECUTE_DEPLOY_PLAN = 'Do you want to deploy?'
+  public static readonly SHOULD_EXECUTE_DEPLOY_PLAN = (checkOnly: boolean): string => `Do you want to ${deployOrValidate({ checkOnly, capitalize: false, noun: false })}?`
 
   public static readonly CANCEL_DEPLOY_ACTION = 'Cancelled: Due to an erroneous dependency -'
-  public static readonly START_DEPLOY_EXEC = 'Starting the deployment plan'
+  public static readonly START_DEPLOY_EXEC = (checkOnly: boolean): string => `Starting the ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} plan`
   public static readonly FULL_DEPLOY_SUMMARY = (numChanges: number, numErrors: number): string => `Deployment partially succeeded with ${numChanges} applied change(s) and ${numErrors} error(s).`
-  public static readonly CHANGES_DEPLOY_SUMMARY = (numChanges: number): string => `Deployment succeeded - ${numChanges} applied change(s).`
-  public static readonly ERRORS_DEPLOY_SUMMARY = (numErrors: number): string => `Deployment failed with ${numErrors} error(s).`
-  public static readonly CANCEL_DEPLOY = 'Cancelling deploy'
+  public static readonly CHANGES_DEPLOY_SUMMARY = (numChanges: number, checkOnly: boolean): string => `${deployOrValidate({ checkOnly, capitalize: true, noun: true })} succeeded - ${numChanges} applied change(s).`
+  public static readonly ERRORS_DEPLOY_SUMMARY = (numErrors: number, checkOnly: boolean): string => `${deployOrValidate({ checkOnly, capitalize: true, noun: true })} failed with ${numErrors} error(s).`
+  public static readonly CANCEL_DEPLOY = (checkOnly: boolean): string => `Cancelling ${deployOrValidate({ checkOnly, capitalize: false, noun: true })}`
   public static readonly MODIFIERS = {
     modify: chalk.yellow('M'),
     add: chalk.green('+'),
@@ -370,4 +381,11 @@ ${Prompts.LIST_IDS(ids)}
 
   public static readonly FETCH_PROGRESSING_MESSAGES =
     (adapterName: string, progressMessage: string): string => `- ${adapterName} adapter: ${progressMessage}`
+
+  public static readonly VALIDATION_PARAMETERS = 'Validation parameters: '
+
+  public static readonly QUICK_DEPLOY_PARAMETERS = (requestId: string, hash: string): string => `requestId = ${requestId}, hash = ${hash}\n`
+
+  public static readonly DEPLOYMENT_URLS = (checkOnly: boolean, deploymentUrls: string[]): string =>
+    `You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`
 }

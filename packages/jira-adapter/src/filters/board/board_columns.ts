@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isInstanceElement, isModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isModificationChange, ModificationChange, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard, resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -81,6 +81,11 @@ export const deployColumns = async (
     resolvedChange.data.before.value[COLUMNS_CONFIG_FIELD],
     resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD]
   )) {
+    return
+  }
+
+  if (isAdditionChange(resolvedChange)
+    && resolvedChange.data.after.value[COLUMNS_CONFIG_FIELD] === undefined) {
     return
   }
 
@@ -159,6 +164,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     await awu(elements)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
+      .filter(instance => instance.value.config?.[COLUMNS_CONFIG_FIELD] !== undefined)
       .forEach(async instance => {
         instance.value[COLUMNS_CONFIG_FIELD] = instance.value.config[COLUMNS_CONFIG_FIELD]
         delete instance.value.config[COLUMNS_CONFIG_FIELD]

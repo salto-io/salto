@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import { GUIDE_ORDER_TYPES } from '../../filters/guide_order/guide_order_utils'
 /**
  * Validates that if an order element was removed, its parent was also removed
  * */
-export const guideOrderValidator: ChangeValidator = async changes => {
+export const guideOrderDeletionValidator: ChangeValidator = async changes => {
   const removalChanges = changes.filter(isRemovalChange).map(getChangeData)
   const orderRemovals = removalChanges.filter(
     instance => GUIDE_ORDER_TYPES.includes(instance.elemID.typeName)
@@ -31,12 +31,12 @@ export const guideOrderValidator: ChangeValidator = async changes => {
   return orderRemovals
     .filter(orderInstance => !removedElements.has(getParent(orderInstance).elemID.getFullName()))
     .map(orderInstance => {
-      const instanceName = orderInstance.elemID.getFullName()
+      const instanceName = orderInstance.elemID.name
       const parentName = getParent(orderInstance).elemID.getFullName()
       return {
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide order elements removed without their parent',
+        message: 'Guide elements order list removed without its parent',
         detailedMessage: `Deleting ${instanceName} requires deleting its parent (${parentName})`,
       }
     })

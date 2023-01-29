@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -26,6 +26,8 @@ export type ReverseRecord<T extends Record<keyof T, keyof never>> = {
     [K in keyof T]: T[K] extends P ? K : never
   }[keyof T]
 }
+
+export type NonEmptyArray<T> = [T, ...T[]]
 
 export const hasMember = <T, M extends keyof T>(
   m: M,
@@ -90,6 +92,10 @@ export const isArrayOfType = <T>(
 ): array is T[] => (
     array.every(typeGuard)
   )
+
+export const isNonEmptyArray = <T> (array: T[]): array is NonEmptyArray<T> => (
+  array.length > 0
+)
 
 export type AllowOnly<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 export type OneOf<T, K = keyof T> = K extends keyof T ? AllowOnly<T, K> : never

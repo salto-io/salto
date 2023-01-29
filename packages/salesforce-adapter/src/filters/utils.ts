@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,28 +22,42 @@ import {
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { getParents, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH,
+  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
-import { metadataType, apiName, defaultApiName, Types, isCustomObject } from '../transformers/transformer'
+import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
 
-export const isCustomMetadataType = async (elem: ObjectType): Promise<boolean> => {
+const METADATA_VALUES_SCHEME = Joi.object({
+  [INSTANCE_FULL_NAME_FIELD]: Joi.string().required(),
+}).unknown(true)
+
+export const isMetadataValues = createSchemeGuard<MetadataValues>(METADATA_VALUES_SCHEME)
+
+export const isCustomMetadataRecordType = async (elem: Element): Promise<boolean> => {
   const elementApiName = await apiName(elem)
-  return elementApiName?.endsWith('__mdt') ?? false
+  return isObjectType(elem) && (elementApiName?.endsWith(CUSTOM_METADATA_SUFFIX) ?? false)
+}
+
+export const isCustomMetadataRecordInstance = async (
+  instance: InstanceElement
+): Promise<boolean> => {
+  const instanceType = await instance.getType()
+  return isCustomMetadataRecordType(instanceType)
 }
 
 export const boolValue = (val: JSONBool):
@@ -245,6 +259,35 @@ export const conditionQueries = (query: string, conditionSets: Record<string,
   const selectWhereStr = `${query} WHERE `
   const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
   return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
+}
+
+
+export const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
+  await isNameField(field)
+    ? Object.keys((await field.getType() as ObjectType).fields)
+    : [await apiName(field, true)]
+)
+
+/**
+ * Build a set of queries that select records.
+ *
+ * @param typeName The name of the table to query from
+ * @param fields The names of the fields to query
+ * @param conditionSets Each entry specifies field values used to match a specific record
+ * @param maxQueryLen returned queries will be split such that no single query exceeds this length
+ */
+export const buildSelectQueries = async (
+  typeName: string,
+  fields: string[],
+  conditionSets?: Record<string, string>[],
+  maxQueryLen = MAX_QUERY_LENGTH,
+): Promise<string[]> => {
+  const fieldsNameQuery = fields.join(',')
+  const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
+  if (conditionSets === undefined || conditionSets.length === 0) {
+    return [selectStr]
+  }
+  return conditionQueries(selectStr, conditionSets, maxQueryLen)
 }
 
 export const queryClient = async (client: SalesforceClient,

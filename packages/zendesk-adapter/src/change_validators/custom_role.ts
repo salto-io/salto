@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,13 +18,13 @@ import { Change, ChangeValidator, getChangeData, InstanceElement, isAdditionChan
   isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 const SYSTEM_ROLE_NAMES = [
   'agen', 'agent', 'administrator', 'admin', 'billing admin', 'light agent',
 ]
-export const CUSTOM_ROLE_TYPE_NAME = 'custom_role'
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (getChangeData(change).elemID.typeName === CUSTOM_ROLE_TYPE_NAME)

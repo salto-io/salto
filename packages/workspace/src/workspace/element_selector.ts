@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -107,6 +107,24 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
   }
 }
 
+// this function is a synchronous version for selectElementsBySelectors below that allows better performance
+// for use cases where there is no need to get referenced elements.
+export const selectElementsBySelectorsWithoutReferences = (
+  { elementIds, selectors, includeNested = false }: {
+    elementIds: ElemID[]
+    selectors: ElementSelector[]
+    includeNested?: boolean
+  }
+): ElemID[] => {
+  if (selectors.length === 0) {
+    return elementIds
+  }
+  return elementIds.filter(elementId =>
+    (selectors.some(selector =>
+      match(elementId, selector, includeNested))
+    ))
+}
+
 export const selectElementsBySelectors = (
   {
     elementIds, selectors, referenceSourcesIndex, includeNested = false,
@@ -117,21 +135,17 @@ export const selectElementsBySelectors = (
     includeNested?: boolean
   }
 ): AsyncIterable<ElemID> => {
-  const matches: Record<string, boolean> = { }
   if (selectors.length === 0) {
     return elementIds
   }
   return awu(elementIds).filter(obj => awu(selectors).some(
-    async selector => {
-      const result = await matchWithReferenceBy(
+    selector =>
+      (matchWithReferenceBy(
         isElementContainer(obj) ? obj.elemID : obj as ElemID,
         selector,
         referenceSourcesIndex,
         includeNested
-      )
-      matches[selector.origin] = matches[selector.origin] || result
-      return result
-    }
+      ))
   ))
 }
 

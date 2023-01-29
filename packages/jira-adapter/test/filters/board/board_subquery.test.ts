@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -70,6 +70,12 @@ describe('boardSubqueryFilter', () => {
 
     it('should do nothing when there is no subQuery', async () => {
       delete instance.value.config.subQuery
+      await filter.onFetch([instance])
+      expect(instance.value.subQuery).toBeUndefined()
+    })
+
+    it('should do nothing when there is no config', async () => {
+      delete instance.value.config
       await filter.onFetch([instance])
       expect(instance.value.subQuery).toBeUndefined()
     })

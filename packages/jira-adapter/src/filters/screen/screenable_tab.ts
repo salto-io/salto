@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -47,9 +47,10 @@ const deployTabFieldsRemoval = async (
   const { removedIds } = getDiffIds(fieldsBefore, fieldsAfter)
   const tabId = getChangeData(resolvedChange).value.id
 
-  await Promise.all(removedIds.map(id => client.delete({
+  // Running this in parallel might cause a bug later when reoordering the fields. See SALTO-3357
+  await awu(removedIds).forEach(id => client.delete({
     url: `/rest/api/3/screens/${parentScreenId}/tabs/${tabId}/fields/${id}`,
-  })))
+  }))
 }
 
 const deployTabFieldsAdditionsAndOrder = async (
@@ -68,12 +69,13 @@ const deployTabFieldsAdditionsAndOrder = async (
   const { addedIds } = getDiffIds(fieldsBefore, fieldsAfter)
   const tabId = getChangeData(resolvedChange).value.id
 
-  await Promise.all(addedIds.map(id => client.post({
+  // Running this in parallel might cause a bug later when reoordering the fields. See SALTO-3357
+  await awu(addedIds).forEach(id => client.post({
     url: `/rest/api/3/screens/${parentScreenId}/tabs/${tabId}/fields`,
     data: {
       fieldId: id,
     },
-  })))
+  }))
 
   if (!_.isEqual(fieldsBefore, fieldsAfter) && fieldsAfter.length > 1) {
     await client.post({

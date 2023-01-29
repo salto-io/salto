@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,7 +21,7 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isPrimitiveType, FieldDefinition, Value, TypeRefMap, TypeReference, isTypeReference,
-  isVariableExpression,
+  isVariableExpression, PlaceholderObjectType,
 } from '@salto-io/adapter-api'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
@@ -127,7 +127,7 @@ const ctorNameToSerializedName: Record<string, SerializedName> = _(NameToType).e
 
 type ReviverMap = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [K in SerializedName]: (v: any) => InstanceType<(typeof NameToType)[K]> | FieldDefinition
+  [K in SerializedName]: (v: any) => InstanceType<(typeof NameToType)[K]>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -275,6 +275,18 @@ const generalDeserialize = async <T>(
       return restoreClasses(v.innerType)
     }
 
+    const reviveFieldDefinitions = (v: Value): Record<string, FieldDefinition> => (
+      _.isPlainObject(v)
+        ? _.mapValues(
+          _.pickBy(v, val => isSerializedClass(val) && val[SALTO_CLASS_FIELD] === 'Field'),
+          val => ({
+            refType: reviveRefTypeOfElement(val),
+            annotations: restoreClasses(val.annotations),
+          })
+        )
+        : {}
+    )
+
     const revivers: ReviverMap = {
       InstanceElement: v => new InstanceElement(
         v.elemID.nameParts[0],
@@ -286,7 +298,7 @@ const generalDeserialize = async <T>(
       ObjectType: v => {
         const r = new ObjectType({
           elemID: reviveElemID(v.elemID),
-          fields: restoreClasses(v.fields),
+          fields: reviveFieldDefinitions(v.fields),
           annotationRefsOrTypes: reviveAnnotationRefTypes(v),
           annotations: restoreClasses(v.annotations),
           isSettings: v.isSettings,
@@ -306,10 +318,17 @@ const generalDeserialize = async <T>(
       }),
       ListType: v => new ListType(reviveRefInnerType(v)),
       MapType: v => new MapType(reviveRefInnerType(v)),
-      Field: v => ({
-        refType: reviveRefTypeOfElement(v),
-        annotations: restoreClasses(v.annotations),
-      }),
+      Field: v => {
+        const elemId = reviveElemID(v.elemID)
+        return new Field(
+          // when we deserialize a single field we don't have the context of its parent.
+          // in this case we set a placeholder object type so we're able to recognize it later.
+          new PlaceholderObjectType({ elemID: new ElemID(elemId.adapter, elemId.typeName) }),
+          elemId.name,
+          reviveRefTypeOfElement(v),
+          restoreClasses(v.annotations),
+        )
+      },
       TemplateExpression: v => (
         new TemplateExpression({ parts: restoreClasses(v.parts) })
       ),

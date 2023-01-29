@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -69,8 +69,8 @@ describe('article utility functions', () => {
     'testAttachment',
     new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) }),
     {
-      filename: 'attachmentFileName.png',
-      contentType: 'image/png',
+      file_name: 'attachmentFileName.png',
+      content_type: 'image/png',
       content: new StaticFile({
         filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
       }),
@@ -133,15 +133,15 @@ describe('article utility functions', () => {
         if (
           params.url === '/api/v2/help_center/articles/attachments'
           // eslint-disable-next-line no-underscore-dangle
-          && params.data._streams[3].includes(`filename="${articleAttachmentInstance.value.filename}"`)
+          && params.data._streams[3].includes(`filename="${articleAttachmentInstance.value.file_name}"`)
         ) {
           return {
             status: 200,
             data: {
               article_attachment: {
                 id: 20222022,
-                file_name: articleAttachmentInstance.value.filename,
-                content_type: articleAttachmentInstance.value.contentType,
+                file_name: articleAttachmentInstance.value.file_name,
+                content_type: articleAttachmentInstance.value.content_type,
                 inline: articleAttachmentInstance.value.inline,
                 content_url: 'https://yo.com',
               },

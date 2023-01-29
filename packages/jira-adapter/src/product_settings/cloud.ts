@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -113,6 +113,29 @@ const CLOUD_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
             isSingle: true,
           },
         ],
+      },
+    },
+    NotificationScheme: {
+      request: {
+        url: '/rest/api/3/project/{projectId}/notificationscheme',
+      },
+      jspRequests: {
+        add: '/secure/admin/AddNotificationScheme.jspa',
+        modify: '/secure/admin/EditNotificationScheme.jspa',
+        remove: '/secure/admin/DeleteNotificationScheme.jspa',
+      },
+    },
+    NotificationSchemeEvent: {
+      transformation: {
+        fieldTypeOverrides: [
+          { fieldName: 'eventType', fieldType: 'number' },
+          { fieldName: 'notifications', fieldType: 'List<PermissionHolder>' },
+        ],
+      },
+      jspRequests: {
+        add: '/secure/admin/AddNotification.jspa',
+        remove: '/secure/admin/DeleteNotification.jspa',
+        query: '/rest/api/3/notificationscheme/{id}?expand=all',
       },
     },
   },

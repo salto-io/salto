@@ -14,7 +14,7 @@ from pathlib import Path
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
 SCRIPT_DIR = os.path.dirname(__file__)
-SRC_DIR = os.path.join(SCRIPT_DIR, '../src/autogen/')
+SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 TYPES_DIR = os.path.join(SRC_DIR, 'types/')
 CUSTOM_TYPES_DIR = os.path.join(TYPES_DIR, 'standard_types/')
 
@@ -35,7 +35,7 @@ INNER_TYPE_NAMES_ORDER = 'inner_type_names_order'
 TYPE_DEF = 'type_def'
 
 LICENSE_HEADER = '''/*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -170,22 +170,22 @@ custom_types_name_template = '''  '{type_name}',
 types_file_template = LICENSE_HEADER + '''import {{ TypesMap }} from '../types/object_types'
 {import_types_statements}
 
-const customTypesNamesList = [
+const standardTypesNamesList = [
 {custom_types_names}] as const
 
-export type CustomType = typeof customTypesNamesList[number]
+export type StandardType = typeof standardTypesNamesList[number]
 
-const customTypesNamesSet: ReadonlySet<CustomType> = new Set(customTypesNamesList)
-export const isCustomTypeName = (name: string): name is CustomType =>
-  customTypesNamesSet.has(name as CustomType)
+const standardTypesNamesSet: ReadonlySet<StandardType> = new Set(standardTypesNamesList)
+export const isStandardTypeName = (name: string): name is StandardType =>
+  standardTypesNamesSet.has(name as StandardType)
 
-export const getCustomTypesNames = (): CustomType[] =>
-  Array.from(customTypesNamesList)
+export const getStandardTypesNames = (): StandardType[] =>
+  Array.from(standardTypesNamesList)
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
-export const getCustomTypes = (): TypesMap<CustomType> => {{
+export const getStandardTypes = (): TypesMap<StandardType> => {{
 {custom_types_inits}
   return {{
 {custom_types_map_entries}  }}
@@ -381,8 +381,7 @@ def login(username, password, secret_key_2fa):
     time.sleep(2)
 
     # generate 2FA token and submit
-    token2fa = pyotp.TOTP(secret_key_2fa).now()
-    webpage.find_element(By.XPATH, '//*[@id="uif42"]').send_keys(token2fa)
+    webpage.find_element(By.XPATH, '//*[@id="uif42"]').send_keys(secret_key_2fa)
     webpage.find_element(By.XPATH, '//*[@id="uif111"]').click()
     time.sleep(1)
 
@@ -577,14 +576,11 @@ def generate_file_per_type(type_name_to_types_defs):
             enums_import = enums_import if 'enums.' in file_data else '',
             field_types_import = field_types_import if 'fieldTypes.' in file_data else '')
         type_def_file_content = HEADER_FOR_DEFS + import_statements + file_data
-        Path(CUSTOM_TYPES_DIR).mkdir(parents=True, exist_ok=True)
-        with open(CUSTOM_TYPES_DIR + type_name + '.ts', 'w') as file:
+        Path(STANDARD_TYPES_DIR).mkdir(parents=True, exist_ok=True)
+        with open(STANDARD_TYPES_DIR + type_name + '.ts', 'w') as file:
             file.write(type_def_file_content)
 
-types_to_skip_their_generation = {
-    'financiallayout', # SALTO-1720
-    'reportdefinition', # SALTO-1720
-}
+types_to_skip_their_generation = {}
 
 inner_types_to_export = {
     'dataset_dependencies',

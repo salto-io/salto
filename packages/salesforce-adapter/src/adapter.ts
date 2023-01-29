@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -30,7 +30,7 @@ import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
 import customSettingsFilter from './filters/custom_settings_filter'
-import customObjectsSplitFilter from './filters/custom_object_split'
+import customTypeSplit from './filters/custom_type_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
 import dataInstancesAuthorFilter from './filters/author_information/data_instances'
 import sharingRulesAuthorFilter from './filters/author_information/sharing_rules'
@@ -75,8 +75,8 @@ import customMetadataRecordsFilter from './filters/custom_metadata'
 import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
-import customMetadataTypeFilter from './filters/custom_metadata_type'
 import fetchFlowsFilter from './filters/fetch_flows'
+import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -84,7 +84,7 @@ import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
-import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
+import { deployMetadata, NestedMetadataTypeInfo, quickDeploy } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
@@ -100,6 +100,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: workflowFilter },
   // fetchFlowsFilter should run before flowFilter
   { creator: fetchFlowsFilter, addsNewInformation: true },
+  // customMetadataToObjectTypeFilter should run before customObjectsFromDescribeFilter
+  { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
@@ -142,7 +144,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: hideReadOnlyValuesFilter },
   { creator: currencyIsoCodeFilter },
   { creator: splitCustomLabels },
-  { creator: customMetadataTypeFilter },
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
   // The following filters should remain last in order to make sure they fix all elements
@@ -160,7 +161,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
-  { creator: customObjectsSplitFilter },
+  { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
 ]
 
@@ -236,6 +237,7 @@ const METADATA_TO_RETRIEVE = [
   'Territory2Model', // All Territory2 types do not support CRUD
   'Territory2Rule', // All Territory2 types do not support CRUD
   'Territory2Type', // All Territory2 types do not support CRUD
+  'Layout', // retrieve returns more information about relatedLists
 ]
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
@@ -428,10 +430,14 @@ export default class SalesforceAdapter implements AdapterOperations {
       deployResult = await deployCustomObjectInstancesGroup(
         resolvedChanges as Change<InstanceElement>[],
         this.client,
-        this.fetchProfile.dataManagement
+        changeGroup.groupID,
+        this.fetchProfile.dataManagement,
       )
+    } else if (this.userConfig.client?.deploy?.quickDeployParams !== undefined) {
+      deployResult = await quickDeploy(resolvedChanges, this.client,
+        changeGroup.groupID, this.userConfig.client?.deploy?.quickDeployParams)
     } else {
-      deployResult = await deployMetadata(resolvedChanges, this.client,
+      deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
     }
     // onDeploy can change the change list in place, so we need to give it a list it can modify

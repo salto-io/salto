@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,10 +22,12 @@ import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials
 
 const log = logger(module)
 
-export const instanceUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com`
+export const instanceUrl = (subdomain: string, domain?: string): string => (
+  domain === undefined ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}`
+)
 const baseUrl = instanceUrl
 // A URL for resource files
-const resourceUrl = (subdomain: string): string => (new URL('/', instanceUrl(subdomain))).href
+const resourceUrl = (subdomain: string, domain?: string): string => (new URL('/', instanceUrl(subdomain, domain))).href
 
 const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
@@ -47,8 +49,7 @@ export const validateCredentials = async ({ credentials, connection }: {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)
   }
-
-  return credentials.subdomain
+  return instanceUrl(credentials.subdomain, credentials.domain)
 }
 
 const usernamePasswordAuthParamsFunc = (
@@ -80,7 +81,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
         ? accessTokenAuthParamsFunc(creds)
         : usernamePasswordAuthParamsFunc(creds)
     ),
-    baseURLFunc: ({ subdomain }) => baseUrl(subdomain),
+    baseURLFunc: ({ subdomain, domain }) => baseUrl(subdomain, domain),
     credValidateFunc: validateCredentials,
   })
 )
@@ -91,7 +92,7 @@ export const createResourceConnection:
       creds: Credentials,
     ): Promise<clientUtils.AuthenticatedAPIConnection> => {
       const httpClient = axios.create({
-        baseURL: resourceUrl(creds.subdomain),
+        baseURL: resourceUrl(creds.subdomain, creds.domain),
         headers: APP_MARKETPLACE_HEADERS,
       })
       axiosRetry(httpClient, retryOptions)

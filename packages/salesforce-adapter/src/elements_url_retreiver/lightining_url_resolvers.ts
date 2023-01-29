@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,11 +27,13 @@ export type ElementIDResolver = (id: ElemID) => Promise<Element | undefined>
 export type UrlResolver = (element: Element, baseUrl: URL, elementIDResolver: ElementIDResolver) =>
   Promise<URL | undefined>
 
+export const FLOW_URL_SUFFIX = 'lightning/setup/Flows/home'
+
 const GENERAL_URLS_MAP: Record<string, string> = {
   PermissionSet: 'lightning/setup/PermSets/home',
   PermissionSetGroup: 'lightning/setup/PermSetGroups/home',
   ApexClass: 'lightning/setup/ApexClasses/home',
-  Flow: 'lightning/setup/Flows/home',
+  Flow: FLOW_URL_SUFFIX,
   Profile: 'lightning/setup/EnhancedProfiles/home',
   CustomMetadata: 'lightning/setup/CustomMetadata/home',
   CustomPermission: 'lightning/setup/CustomPermissions/home',
@@ -116,7 +118,7 @@ const fieldResolver: UrlResolver = async (element, baseUrl) => {
 const flowResolver: UrlResolver = async (element, baseUrl) => {
   const internalId = getInternalId(element)
   if (isInstanceElement(element) && await isInstanceOfType('Flow')(element)
-    && element.value.processType === 'Flow'
+    && (element.value.processType === 'Flow' || element.value.processType === 'AutoLaunchedFlow')
     && internalId !== undefined) {
     return (new URL(`${baseUrl}builder_platform_interaction/flowBuilder.app?flowId=${internalId}`))
   }

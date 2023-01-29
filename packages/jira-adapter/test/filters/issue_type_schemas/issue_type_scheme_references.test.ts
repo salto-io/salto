@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,10 +15,10 @@
 */
 import 'jest-extended'
 import { filterUtils } from '@salto-io/adapter-components'
-import { Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { getFilterParams, mockClient } from '../../utils'
 import issueTypeSchemeReferences from '../../../src/filters/issue_type_schemas/issue_type_scheme_references'
-import { instanceCreators } from '../../mock_elements'
+import { instanceCreators, mockTypes } from '../../mock_elements'
 
 describe('issueTypeSchemeReferences', () => {
   const ISSUE_TYPES_REFERENCES = [
@@ -44,5 +44,19 @@ describe('issueTypeSchemeReferences', () => {
     const elements = await runFilter(issueTypeScheme)
     expect(elements).toEqual([issueTypeScheme])
     expect(issueTypeScheme.value.issueTypeIds).toIncludeSameMembers(ISSUE_TYPES_REFERENCES)
+  })
+
+  it('should do nothing if there are no issue types', async () => {
+    const issueTypeScheme = new InstanceElement(
+      'instance',
+      mockTypes.IssueTypeScheme,
+      {
+        name: 'inst',
+      }
+    )
+
+    const afterInstance = issueTypeScheme.clone()
+    await runFilter(afterInstance)
+    expect(issueTypeScheme.value).toEqual(afterInstance.value)
   })
 })

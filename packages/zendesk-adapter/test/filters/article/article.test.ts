@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -127,19 +127,18 @@ describe('article filter', () => {
       title: 'title',
     }
   )
+  const attachmentType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) })
   const content = Buffer.from('test')
   const articleAttachmentInstance = new InstanceElement(
-    'testAttachment',
-    new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) }),
+    'title_12345__attachmentFileName_png_false@uuuvu',
+    attachmentType,
     {
       id: 20222022,
-      filename: 'attachmentFileName.png',
-      contentType: 'image/png',
-      content: new StaticFile({
-        filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
-      }),
+      file_name: 'attachmentFileName.png',
+      content_type: 'image/png',
       inline: 'false',
       brand: brandInstance.value.id,
+      content_url: 'https://someURL.com',
     },
     undefined,
     { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
@@ -147,6 +146,9 @@ describe('article filter', () => {
       articleWithAttachmentInstance,
     )] },
   )
+  articleWithAttachmentInstance.value.attachments = [
+    new ReferenceExpression(articleAttachmentInstance.elemID, articleAttachmentInstance),
+  ]
   const articleTranslationInstance = new InstanceElement(
     'testArticleTranslation',
     new ObjectType({ elemID: new ElemID(ZENDESK, 'article_translation') }),
@@ -284,7 +286,8 @@ describe('article filter', () => {
       expect(fetchedArticle?.value).toEqual(anotherArticleInstance.value)
     })
     it('should create article_attachment instance', async () => {
-      const clonedElements = [articleWithAttachmentInstance].map(e => e.clone())
+      const clonedElements = [articleWithAttachmentInstance, attachmentType, articleAttachmentInstance]
+        .map(e => e.clone())
       await filter.onFetch(clonedElements)
       expect(clonedElements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
@@ -295,12 +298,9 @@ describe('article filter', () => {
       const fetchedAttachment = clonedElements
         .filter(isInstanceElement)
         .find(i => i.elemID.name === 'title_12345__attachmentFileName_png_false@uuuvu')
-      expect(fetchedAttachment?.value).toEqual(articleAttachmentInstance.value)
-      const fetchedArticle = clonedElements
-        .filter(isInstanceElement)
-        .find(i => i.elemID.name === 'articleWithAttachment')
-      expect(fetchedArticle?.value.attachments).toHaveLength(1)
-      expect(fetchedArticle?.value.attachments[0].elemID.name).toBe('title_12345__attachmentFileName_png_false@uuuvu')
+      expect(fetchedAttachment?.value.content).toEqual(new StaticFile({
+        filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
+      }))
     })
   })
 
@@ -514,6 +514,51 @@ describe('article filter', () => {
         .toEqual([
           { action: 'add', data: { after: clonedArticle } },
           { action: 'add', data: { after: clonedAttachment } },
+        ])
+    })
+    it('should not associate attachments to articles if attachment was not modified', async () => {
+      const clonedArticle = new InstanceElement(
+        'articleWithAttachment',
+        new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) }),
+        {
+          id: 333333,
+          author_id: 'author@salto.io',
+          comments_disabled: false,
+          draft: false,
+          promoted: false,
+          position: 0,
+          section_id: '12345',
+          source_locale: 'en-us',
+          locale: 'en-us',
+          outdated: false,
+          permission_group_id: '666',
+          brand: brandInstance.value.id,
+          title: 'title',
+          attachments: [{
+            id: 20222022,
+            filename: 'attachmentFileName.png',
+            contentType: 'image/png',
+            content: new StaticFile({
+              filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
+            }),
+            inline: 'false',
+            brand: brandInstance.value.id,
+          }],
+        }
+      )
+      const id = 2
+      mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
+      const res = await filter.deploy([
+        { action: 'modify', data: { before: clonedArticle, after: clonedArticle } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockPost).toHaveBeenCalledTimes(0)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([
+          { action: 'modify', data: { before: clonedArticle, after: clonedArticle } },
         ])
     })
   })

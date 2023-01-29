@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -140,15 +140,31 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         dataField: '.',
       },
     },
+    NotificationScheme: {
+      deployRequests: {
+        add: {
+          url: '/rest/api/3/notificationscheme',
+          method: 'post',
+        },
+        modify: {
+          url: '/rest/api/3/notificationscheme/{id}',
+          method: 'put',
+        },
+        remove: {
+          url: '/rest/api/3/notificationscheme/{id}',
+          method: 'delete',
+        },
+      },
+    },
     SecurityLevel: {
       deployRequests: {
         add: {
-          url: '/rest/api/3/securitylevel/?securitySchemeId={schemeId}',
+          url: '/rest/api/3/securitylevel?securitySchemeId={schemeId}',
           method: 'post',
           fieldsToIgnore: ['schemeId'],
         },
         modify: {
-          url: '/rest/api/3/securitylevel/?securitySchemeId={schemeId}',
+          url: '/rest/api/3/securitylevel?securitySchemeId={schemeId}',
           method: 'put',
           fieldsToIgnore: ['schemeId', 'levelId'],
         },
@@ -168,7 +184,7 @@ export const DC_DEFAULT_API_DEFINITIONS: Partial<JiraApiConfig> = {
         modify: {
           url: '/rest/api/3/issuesecurityschemes',
           method: 'put',
-          fieldsToIgnore: ['levels'],
+          fieldsToIgnore: ['schemeId', 'levels'],
         },
         remove: {
           url: '/rest/api/3/issuesecurityschemes/{id}',

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,27 +17,44 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
-import { naclCase, normalizeFilePathPart, pathNaclCase, replaceTemplatesWithValues, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, isReferenceExpression, isStaticFile,
+  normalizeFilePathPart,
+  replaceTemplatesWithValues,
+  safeJsonStringify,
+  elementExpressionStringifyReplacer,
+  getParent,
+} from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+import {
+  InstanceElement, isReferenceExpression, isStaticFile,
   isTemplateExpression, ObjectType, ReferenceExpression, StaticFile, Values,
 } from '@salto-io/adapter-api'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../client/client'
-import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, ZENDESK } from '../../constants'
+import { ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
 import { ZendeskApiConfig } from '../../config'
 import { prepRef } from './article_body'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH, generateInstanceNameFromConfig } = elementsUtils
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
 export const ATTACHMENTS_FIELD_NAME = 'attachments'
 
-type Attachment = {
+type Attachment = InstanceElement & {
+  value: {
+    id: number
+    // eslint-disable-next-line camelcase
+    file_name: string
+    // eslint-disable-next-line camelcase
+    content_type: string
+    // eslint-disable-next-line camelcase
+    content_url: string
+    inline: boolean
+  }
+}
+
+type AttachmentResponse = {
   id: number
   // eslint-disable-next-line camelcase
   file_name: string
@@ -49,14 +66,16 @@ type Attachment = {
 }
 
 const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
-  id: Joi.number().required(),
-  file_name: Joi.string().required(),
-  content_type: Joi.string().required(),
-  content_url: Joi.string().required(),
-  inline: Joi.boolean().required(),
+  value: Joi.object({
+    id: Joi.number().required(),
+    file_name: Joi.string().required(),
+    content_type: Joi.string().required(),
+    content_url: Joi.string().required(),
+    inline: Joi.boolean().required(),
+  }).unknown(true).required(),
 }).unknown(true)).required()
 
-const isAttachments = (value: unknown): value is Attachment[] => {
+export const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
     log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
@@ -65,83 +84,38 @@ const isAttachments = (value: unknown): value is Attachment[] => {
   return true
 }
 
-const createAttachmentInstance = ({
-  attachment, attachmentType, article, content, apiDefinitions,
-}: {
-  attachment: Attachment
-  attachmentType: ObjectType
-  article: InstanceElement
-  content: Buffer
-  apiDefinitions: ZendeskApiConfig
-}): InstanceElement => {
-  const resourcePathName = `${normalizeFilePathPart(article.value.title)}/${normalizeFilePathPart(attachment.file_name)}`
-  const attachmentValues = {
-    id: attachment.id,
-    filename: attachment.file_name,
-    contentType: attachment.content_type,
-    content: new StaticFile({
-      filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
-      content,
-    }),
-    inline: attachment.inline,
-    brand: article.value.brand,
-  }
+const EXPECTED_ATTACHMENT_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
+  id: Joi.number().required(),
+  file_name: Joi.string().required(),
+  content_type: Joi.string().required(),
+  content_url: Joi.string().required(),
+  inline: Joi.boolean().required(),
+}).unknown(true)).required()
 
-  const articleRef = new ReferenceExpression(article.elemID, article)
-  const configInstanceName = generateInstanceNameFromConfig(
-    attachmentValues,
-    ARTICLE_ATTACHMENT_TYPE_NAME,
-    apiDefinitions,
-  )
-  const parentConfigInstanceName = generateInstanceNameFromConfig(
-    article.value,
-    ARTICLE_TYPE_NAME,
-    apiDefinitions,
-  )
-  // Eventually the element name and path of article_attachment is changed due to it extends the parend id
-  const tempName = (parentConfigInstanceName
-    && apiDefinitions.types[ARTICLE_ATTACHMENT_TYPE_NAME].transformation?.extendsParentId)
-    ? parentConfigInstanceName.concat(`__${configInstanceName}`)
-    : configInstanceName
-  const tempNaclName = naclCase(tempName)
-  const tempPathName = pathNaclCase(tempNaclName)
-  return new InstanceElement(
-    tempNaclName,
-    attachmentType,
-    attachmentValues,
-    [ZENDESK, RECORDS_PATH, ARTICLE_ATTACHMENT_TYPE_NAME, tempPathName],
-    { [CORE_ANNOTATIONS.PARENT]: [articleRef] },
-  )
+export const isAttachmentsResponse = (value: unknown): value is AttachmentResponse[] => {
+  const { error } = EXPECTED_ATTACHMENT_RESPONSE_SCHEMA.validate(value)
+  if (error !== undefined) {
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
+    return false
+  }
+  return true
 }
 
-export const createAttachmentType = (): ObjectType =>
-  new ObjectType({
-    elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME),
-    fields: {
-      id: {
-        refType: BuiltinTypes.SERVICE_ID_NUMBER,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
-      filename: { refType: BuiltinTypes.STRING },
-      contentType: { refType: BuiltinTypes.STRING },
-      content: { refType: BuiltinTypes.STRING },
-      inline: { refType: BuiltinTypes.BOOLEAN },
-      brand: { refType: BuiltinTypes.NUMBER },
-    },
-    path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, ARTICLE_ATTACHMENT_TYPE_NAME],
-  })
-
 const getAttachmentContent = async ({
-  client, attachment, article, attachmentType, apiDefinitions,
+  brandIdToClient, attachment, article, attachmentType,
 }: {
-  client: ZendeskClient
+  brandIdToClient: Record<string, ZendeskClient>
   attachment: Attachment
-  article: InstanceElement
+  article: InstanceElement | undefined
   attachmentType: ObjectType
-  apiDefinitions: ZendeskApiConfig
-}): Promise<InstanceElement | undefined> => {
+}): Promise<void> => {
+  if (article === undefined) {
+    log.error(`could not add attachment ${attachment.elemID.getFullName()}, as could not find article for article_id ${attachment.value.article_id}`)
+    return
+  }
+  const client = brandIdToClient[attachment.value.brand]
   const res = await client.getSinglePage({
-    url: `/hc/article_attachments/${attachment.id}/${attachment.file_name}`,
+    url: `/hc/article_attachments/${attachment.value.id}/${attachment.value.file_name}`,
     responseType: 'arraybuffer',
   })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
@@ -149,41 +123,26 @@ const getAttachmentContent = async ({
     log.error(`Received invalid response from Zendesk API for attachment content, ${
       Buffer.from(safeJsonStringify(res.data, undefined, 2)).toString('base64').slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)
     }. Not adding article attachments`)
-    return undefined
+    return
   }
-  return createAttachmentInstance({ attachment, attachmentType, article, content, apiDefinitions })
+  const resourcePathName = `${normalizeFilePathPart(article.value.title)}/${normalizeFilePathPart(attachment.value.file_name)}`
+  attachment.value.content = new StaticFile({
+    filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
+    content,
+  })
 }
 
-export const getArticleAttachments = async ({ client, article, attachmentType, apiDefinitions }: {
-  client: ZendeskClient
-  article: InstanceElement
+export const getArticleAttachments = async ({ brandIdToClient, articleById, attachmentType, attachments }: {
+  brandIdToClient: Record<string, ZendeskClient>
+  articleById: Record<string, InstanceElement>
   attachmentType: ObjectType
   apiDefinitions: ZendeskApiConfig
-}): Promise<InstanceElement[]> => {
-  const listAttachmentsResponse = await client.getSinglePage({
-    url: `/api/v2/help_center/articles/${article.value.id}/attachments`,
+  attachments: Attachment[]
+}): Promise<void> => {
+  await awu(attachments).forEach(async attachment => {
+    const article = articleById[getParent(attachment).value.id]
+    await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
   })
-  if (listAttachmentsResponse === undefined) {
-    log.error('Received an empty response from Zendesk API. Not adding article attachments')
-    return []
-  }
-  if (Array.isArray(listAttachmentsResponse.data)) {
-    log.error(`Received an invalid response from Zendesk API, ${safeJsonStringify(listAttachmentsResponse.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`)
-    return []
-  }
-  const attachments = listAttachmentsResponse.data.article_attachments
-  if (!isAttachments(attachments)) {
-    return []
-  }
-  const attachmentInstances = (await Promise.all(
-    _.orderBy(attachments, ['file_name', 'content_type', 'inline']).map(async attachment =>
-      getAttachmentContent({ client, attachment, article, attachmentType, apiDefinitions }))
-  )).filter(values.isDefined)
-  if (attachmentInstances.length > 0) {
-    article.value[ATTACHMENTS_FIELD_NAME] = attachmentInstances
-      .map(instance => new ReferenceExpression(instance.elemID, instance))
-  }
-  return attachmentInstances
 }
 
 export const createUnassociatedAttachment = async (
@@ -191,13 +150,13 @@ export const createUnassociatedAttachment = async (
   attachmentInstance: InstanceElement,
 ): Promise<void> => {
   try {
-    log.info(`Creating unassociated article attachment: ${attachmentInstance.value.filename}`)
+    log.info(`Creating unassociated article attachment: ${attachmentInstance.value.file_name}`)
     const fileContent = isStaticFile(attachmentInstance.value.content)
       ? await attachmentInstance.value.content.getContent()
       : attachmentInstance.value.content
     const form = new FormData()
     form.append('inline', attachmentInstance.value.inline.toString())
-    form.append('file', fileContent, attachmentInstance.value.filename)
+    form.append('file', fileContent, attachmentInstance.value.file_name)
     const res = await client.post({
       url: '/api/v2/help_center/articles/attachments',
       data: form,
@@ -212,12 +171,12 @@ export const createUnassociatedAttachment = async (
       return
     }
     const createdAttachment = [res.data.article_attachment]
-    if (!isAttachments(createdAttachment)) {
+    if (!isAttachmentsResponse(createdAttachment)) {
       return
     }
     attachmentInstance.value.id = createdAttachment[0].id
   } catch (err) {
-    throw getZendeskError(attachmentInstance.elemID.getFullName(), err)
+    throw getZendeskError(attachmentInstance.elemID, err)
   }
 }
 

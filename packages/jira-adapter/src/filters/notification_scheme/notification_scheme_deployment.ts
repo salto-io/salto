@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -54,6 +54,15 @@ const filter: FilterCreator = ({ client, config, paginator }) => ({
   },
 
   deploy: async changes => {
+    if (client.isDataCenter) {
+      return {
+        leftoverChanges: changes,
+        deployResult: {
+          appliedChanges: [],
+          errors: [],
+        },
+      }
+    }
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
@@ -115,6 +124,9 @@ const filter: FilterCreator = ({ client, config, paginator }) => ({
   },
 
   preDeploy: async changes => {
+    if (client.isDataCenter) {
+      return
+    }
     changes
       .filter(isInstanceChange)
       .filter(isRemovalOrModificationChange)
@@ -126,6 +138,9 @@ const filter: FilterCreator = ({ client, config, paginator }) => ({
   },
 
   onDeploy: async changes => {
+    if (client.isDataCenter) {
+      return
+    }
     changes
       .filter(isInstanceChange)
       .filter(isRemovalOrModificationChange)

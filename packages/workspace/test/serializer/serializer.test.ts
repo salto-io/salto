@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,6 +21,7 @@ import {
   Element,
   isReferenceExpression,
   TypeReference,
+  Field,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -204,9 +205,16 @@ describe('State/cache serialization', () => {
   }
   innerRefsInstance.value.a = new ReferenceExpression(innerRefsInstance.elemID.createNestedID('b'), innerRefsInstance.value.b, innerRefsInstance)
 
+  const standaloneField = new Field(
+    new ObjectType({ elemID: new ElemID('salesforce', 'test') }),
+    'field',
+    BuiltinTypes.BOOLEAN,
+    { anno: 'test' },
+  )
+
   const elements = [strType, numType, boolType, model, strListType, strMapType, variable,
     instance, subInstance, refInstance, refInstance2, refInstance3, templateRefInstance,
-    functionRefInstance, settings, config, innerRefsInstance]
+    functionRefInstance, settings, config, innerRefsInstance, standaloneField]
 
   it('should serialize and deserialize without relying on the constructor name', async () => {
     const serialized = await serialize([subInstance])
@@ -283,6 +291,25 @@ describe('State/cache serialization', () => {
     const shuffledDeserializedElements = await deserialize(await serialize(shuffledElements))
     expect(shuffledDeserializedElements.map(e => e.elemID.getFullName()))
       .toEqual(shuffledElements.map(e => e.elemID.getFullName()))
+  })
+
+  describe('validate deserialization', () => {
+    let deserializedElements: Element[]
+    beforeAll(async () => {
+      deserializedElements = await deserialize(await serialize(elements))
+    })
+    it('should deserialize type correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model))
+        .toBeTruthy()
+    })
+    it('should deserialize field correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField))
+        .toBeTruthy()
+    })
+    it('should deserialize instance correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance))
+        .toBeTruthy()
+    })
   })
 
   it('should throw error if trying to deserialize a non element object', async () => {

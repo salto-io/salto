@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -95,10 +95,10 @@ export type ChangeValidatorName = (
   | 'fullNameChangedValidator'
   | 'invalidListViewFilterScope'
   | 'caseAssignmentRulesValidator'
+  | 'omitData'
+  | 'unknownUser'
+  | 'animationRuleRecordType'
 )
-
-export type CheckOnlyChangeValidatorName = 'checkOnlyDeploy'
-
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
@@ -195,6 +195,11 @@ export type ClientPollingConfig = Partial<{
   fetchTimeout: number
 }>
 
+export type QuickDeployParams = {
+  requestId: string
+  hash: string
+}
+
 type ClientDeployConfig = Partial<{
   rollbackOnError: boolean
   ignoreWarnings: boolean
@@ -203,6 +208,7 @@ type ClientDeployConfig = Partial<{
   testLevel: 'NoTestRun' | 'RunSpecifiedTests' | 'RunLocalTests' | 'RunAllTestsInOrg'
   runTests: string[]
   deleteBeforeUpdate: boolean
+  quickDeployParams: QuickDeployParams
 }>
 
 export enum RetryStrategyName {
@@ -294,7 +300,10 @@ export const usernamePasswordCredentialsType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { message: 'Token (empty if your org uses IP whitelisting)' },
     },
-    sandbox: { refType: BuiltinTypes.BOOLEAN },
+    sandbox: {
+      refType: BuiltinTypes.BOOLEAN,
+      annotations: { message: 'Is Sandbox/Scratch Org' },
+    },
   },
 })
 
@@ -410,6 +419,17 @@ const clientPollingConfigType = new ObjectType({
   },
 })
 
+const QuickDeployParamsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'quickDeployParams'),
+  fields: {
+    requestId: { refType: BuiltinTypes.STRING },
+    hash: { refType: BuiltinTypes.STRING },
+  } as Record<keyof QuickDeployParams, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const clientDeployConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientDeployConfig'),
   fields: {
@@ -427,6 +447,7 @@ const clientDeployConfigType = new ObjectType({
     },
     runTests: { refType: new ListType(BuiltinTypes.STRING) },
     deleteBeforeUpdate: { refType: BuiltinTypes.BOOLEAN },
+    quickDeployParams: { refType: QuickDeployParamsType },
   } as Record<keyof ClientDeployConfig, FieldDefinition>,
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -563,6 +584,9 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
     invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
     caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
+    omitData: { refType: BuiltinTypes.BOOLEAN },
+    unknownUser: { refType: BuiltinTypes.BOOLEAN },
+    animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

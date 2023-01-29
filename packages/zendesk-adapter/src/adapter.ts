@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -42,7 +42,7 @@ import {
   ZENDESK,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
@@ -95,7 +95,6 @@ import articleFilter from './filters/article/article'
 import articleBodyFilter from './filters/article/article_body'
 import { getConfigFromConfigChanges } from './config_change'
 import { dependencyChanger } from './dependency_changers'
-import customFieldOptionsFilter from './filters/add_restriction'
 import deployBrandedGuideTypesFilter from './filters/deploy_branded_guide_types'
 import { Credentials } from './auth'
 import guideSectionCategoryFilter from './filters/guide_section_and_category'
@@ -112,6 +111,9 @@ import everyoneUserSegmentFilter from './filters/everyone_user_segment'
 import guideArrangePaths from './filters/guide_arrange_paths'
 import guideDefaultLanguage from './filters/guide_default_language_settings'
 import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_translation'
+import ticketFormDeploy from './filters/ticket_form'
+import supportAddress from './filters/support_address'
+import customStatus from './filters/custom_statuses'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -154,8 +156,11 @@ export const DEFAULT_FILTERS = [
   removeDefinitionInstancesFilter,
   usersFilter,
   tagsFilter,
+  supportAddress,
+  customStatus,
   guideAddBrandToArticleTranslation,
   macroAttachmentsFilter,
+  ticketFormDeploy,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
   removeBrandLogoFilter,
@@ -177,7 +182,6 @@ export const DEFAULT_FILTERS = [
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appsFilter,
-  customFieldOptionsFilter,
   appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,
@@ -296,7 +300,7 @@ const getGuideElements = async ({
   apiDefinitions: configUtils.AdapterDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
-}): Promise<elementUtils.ducktype.FetchElements<Element[]>> => {
+}): Promise<elementUtils.FetchElements<Element[]>> => {
   const transformationDefaultConfig = apiDefinitions.typeDefaults.transformation
   const transformationConfigByType = configUtils.getTransformationConfigByType(apiDefinitions.types)
 
@@ -346,7 +350,8 @@ const getGuideElements = async ({
     getElemIdFunc,
   })
 
-  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.configChanges)
+  const allConfigChangeSuggestions = fetchResultWithDuplicateTypes
+    .flatMap(fetchResult => fetchResult.configChanges ?? [])
   const guideErrors = fetchResultWithDuplicateTypes.flatMap(fetchResult => fetchResult.errors ?? [])
   return {
     elements: zendeskGuideElements,
@@ -374,7 +379,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private configInstance?: InstanceElement
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
-  private createClientBySubdomain: (subdomain: string) => ZendeskClient
+  private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -404,12 +409,20 @@ export default class ZendeskAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
 
-    this.createClientBySubdomain = (subdomain: string): ZendeskClient => (
-      new ZendeskClient({
-        credentials: { ...credentials, subdomain },
-        config: this.userConfig[CLIENT_CONFIG],
-      })
-    )
+    this.createClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
+      const clientConfig = { ...this.userConfig[CLIENT_CONFIG] }
+      if (deployRateLimit) {
+        // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
+        Object.assign(clientConfig, { rateLimit: { deploy: 1 } })
+      }
+      return new ZendeskClient(
+        {
+          credentials: { ...credentials, subdomain },
+          config: clientConfig,
+        },
+      )
+    }
+
 
     this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
 
@@ -517,8 +530,8 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
 
     return {
-      configChanges: defaultSubdomainElements.configChanges
-        .concat(zendeskGuideElements.configChanges),
+      configChanges: (defaultSubdomainElements.configChanges ?? [])
+        .concat(zendeskGuideElements.configChanges ?? []),
       elements: zendeskElements,
       errors: (defaultSubdomainElements.errors ?? [])
         .concat(zendeskGuideElements.errors ?? []),
@@ -550,7 +563,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     // This exposes different subdomain clients for Guide related types filters
     const result = await (await this.createFiltersRunner({ brandIdToClient }))
       .onFetch(elements) as FilterResult
-    const updatedConfig = this.configInstance
+    const updatedConfig = this.configInstance && configChanges
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
 
@@ -615,7 +628,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       .filter(isString)
     const subdomainToClient = Object.fromEntries(subdomainsList
       .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain)])))
+      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain, true)])))
     const guideDeployResults = await awu(Object.entries(subdomainToClient))
       .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({
@@ -672,7 +685,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         // article_attachment additions supported in a filter
-        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES],
+        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
       }),
       dependencyChanger,
       getChangeGroupIds,

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -34,14 +34,16 @@ export const wrongUserPermissionSchemePredicateCreator = (idMap: IdMap): OmitCha
  * pre deploy removes permissions within a permission scheme that contain a wrong account id.
  * on deploy adds those permissions back
  */
-const filter: FilterCreator = ({ config, getIdMapFunc }) => {
+const filter: FilterCreator = ({ config, client, getIdMapFunc }) => {
   let erroneousPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
       if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
-      const idMap = await getIdMapFunc()
+      const idMap = client.isDataCenter
+        ? Object.fromEntries(Object.entries(await getIdMapFunc()).map(([key, mapValue]) => [mapValue, key]))
+        : await getIdMapFunc()
       erroneousPermissionSchemes = omitChanges(
         changes,
         wrongUserPermissionSchemePredicateCreator(idMap)

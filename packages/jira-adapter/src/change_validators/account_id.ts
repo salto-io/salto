@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -85,7 +85,8 @@ Go to ${url} to see valid users and account IDs.`,
 const checkAndAddChangeErrors = (
   idMap: IdMap,
   baseUrl: string,
-  changeErrors: ChangeError[]
+  changeErrors: ChangeError[],
+  isDataCenter: boolean
 ): WalkOnUsersCallback => (
   { value, path, fieldName }
 ): void => {
@@ -107,7 +108,13 @@ const checkAndAddChangeErrors = (
       baseUrl,
       accountId,
     }))
-  } else if (currentDisplayName === undefined) {
+    return
+  }
+  // in DC we don't save User's displayName
+  if (isDataCenter) {
+    return
+  }
+  if (currentDisplayName === undefined) {
     changeErrors.push(noDisplayNameChangeError(path.createNestedID(fieldName)))
   } else if (realDisplayName !== currentDisplayName) {
     changeErrors.push(displayNameMismatchChangeError(
@@ -123,11 +130,12 @@ const checkAndAddChangeErrors = (
 const createChangeErrorsForAccountIdIssues = (
   element: InstanceElement,
   idMap: IdMap,
-  baseUrl : string
+  baseUrl : string,
+  isDataCenter: boolean
 ): ChangeError[] => {
   const changeErrors: ChangeError[] = []
   walkOnElement({ element,
-    func: walkOnUsers(checkAndAddChangeErrors(idMap, baseUrl, changeErrors)) })
+    func: walkOnUsers(checkAndAddChangeErrors(idMap, baseUrl, changeErrors, isDataCenter)) })
   return changeErrors
 }
 
@@ -141,13 +149,13 @@ export const accountIdValidator: (
 ) =>
   ChangeValidator = (client, config, getIdMapFunc) => async changes =>
     log.time(async () => {
-      if (!(config.fetch.convertUsersIds ?? true)
-        // Temporary until we support it in DC
-        || client.isDataCenter) {
+      if (!(config.fetch.convertUsersIds ?? true)) {
         return []
       }
-      const idMap = await getIdMapFunc()
-      const { baseUrl } = client
+      const { baseUrl, isDataCenter } = client
+      const idMap = isDataCenter
+        ? Object.fromEntries(Object.entries(await getIdMapFunc()).map(([key, mapValue]) => [mapValue, key]))
+        : await getIdMapFunc()
       return changes
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
@@ -155,7 +163,7 @@ export const accountIdValidator: (
         .filter(isDeployableAccountIdType)
         .map(
           element => createChangeErrorsForAccountIdIssues(
-            element, idMap, baseUrl
+            element, idMap, baseUrl, isDataCenter
           )
         )
         .flat()

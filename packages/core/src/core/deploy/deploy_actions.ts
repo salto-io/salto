@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   AdapterOperations, getChangeData, Change,
-  isAdditionOrModificationChange, DeployResult, DeployExtraProperties, DeployOptions,
+  isAdditionOrModificationChange, DeployResult, DeployExtraProperties, DeployOptions, Group,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -103,6 +103,7 @@ export const deployActions = async (
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const deploymentUrls: string[] = []
+  const groups: Group[] = []
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
@@ -112,6 +113,9 @@ export const deployActions = async (
         result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         if (result.extraProperties?.deploymentUrls !== undefined) {
           deploymentUrls.push(...result.extraProperties.deploymentUrls)
+        }
+        if (result.extraProperties?.groups !== undefined) {
+          groups.push(...result.extraProperties.groups)
         }
         // Update element with changes so references to it
         // will have an updated version throughout the deploy plan
@@ -124,7 +128,7 @@ export const deployActions = async (
             result.errors.map(err => err.stack ?? err.message).join('\n\n'),
           )
           throw new Error(
-            `Failed to deploy ${item.groupKey} with errors:\n${result.errors.join('\n')}`
+            `Failed to ${checkOnly ? 'validate' : 'deploy'} ${item.groupKey} with errors:\n${result.errors.join('\n')}`
           )
         }
         reportProgress(item, 'finished')
@@ -134,7 +138,7 @@ export const deployActions = async (
         throw error
       }
     })
-    return { errors: [], appliedChanges, extraProperties: { deploymentUrls } }
+    return { errors: [], appliedChanges, extraProperties: { groups, deploymentUrls } }
   } catch (error) {
     const deployErrors: DeployError[] = []
     if (error instanceof WalkError) {
@@ -142,8 +146,10 @@ export const deployActions = async (
         const item = deployPlan.getItem(key) as PlanItem
         if (nodeError instanceof NodeSkippedError) {
           reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
+          deployErrors.push(new DeployError(item.groupKey, `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`))
+        } else {
+          deployErrors.push(new DeployError(item.groupKey, nodeError.message))
         }
-        deployErrors.push(new DeployError(item.groupKey, nodeError.message))
       })
       if (error.circularDependencyError) {
         error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {
@@ -153,6 +159,6 @@ export const deployActions = async (
         })
       }
     }
-    return { errors: deployErrors, appliedChanges, extraProperties: { deploymentUrls } }
+    return { errors: deployErrors, appliedChanges, extraProperties: { groups, deploymentUrls } }
   }
 }

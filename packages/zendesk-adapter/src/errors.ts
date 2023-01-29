@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -17,14 +17,85 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { ElemID } from '@salto-io/adapter-api'
 
-export const getZendeskError = (fullName: string, error: Error): Error => {
+const log = logger(module)
+
+type Error403 = {
+  errors: { title: string; detail: string }[]
+}
+
+type Error422 = {
+  description: string
+  details: Record<string, { description: string }[]>
+}
+
+type Error400 = {
+  error: {
+    title: string
+    message: string
+  }
+}
+
+const is403Error = (error: Record<string, unknown>): error is Error403 =>
+  (_.isArray(error.errors)
+    && (error.errors.every(val => 'title' in val && 'detail' in val)))
+
+const is422Error = (error: Record<string, unknown>): error is Error422 =>
+  ((error.description !== undefined)
+    && (_.isObject(error.details))
+    && Object.values(error.details).every(val => _.isArray(val) && (val[0].description !== undefined)))
+
+const is400Error = (error: Record<string, unknown>): error is Error400 =>
+  ((_.isObject(error.error))
+    && (error.error !== undefined)
+    && ('title' in error.error)
+    && ('message' in error.error))
+
+const error403ToString = (error: Error403): string[] => {
+  const errorArray = ['', 'Error details:']
+  const errorStrings = error.errors.flatMap(err => ([`* Title: ${err.title}`, `  Detail: ${err.detail}`, '']))
+  return [...errorArray, ...errorStrings]
+}
+
+const error422ToString = (error: Error422): string[] => {
+  const errorArray = ['', `${error.description}`, '', 'Error details:']
+  const errorStrings = Object.values(error.details).flatMap(value => value.map(val => `* ${val.description}`))
+  return [...errorArray, ...errorStrings]
+}
+
+const error400ToString = (error: Error400): string[] =>
+  ['', 'Error details:', `* Title: ${error.error.title}`, `  Detail: ${error.error.message}`, '']
+
+const generateErrorMessage = (errorData: Record<string, unknown>): string[] => {
+  if (is403Error(errorData)) {
+    return error403ToString(errorData)
+  }
+  if (is422Error(errorData)) {
+    return error422ToString(errorData)
+  }
+  if (is400Error(errorData)) {
+    return error400ToString(errorData)
+  }
+  return []
+}
+
+export const getZendeskError = (elemID: ElemID, error: Error): Error => {
   if (!(error instanceof clientUtils.HTTPError)) {
     return error
   }
-  const baseErrorMessage = `Deployment of ${fullName} failed: ${error}`
-  const errorMessage = (!_.isPlainObject(error.response.data))
-    ? baseErrorMessage
-    : [baseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
-  return new Error(errorMessage)
+  const baseErrorMessage = `Deployment of ${elemID.typeName} instance ${elemID.name} failed:`
+  const logBaseErrorMessage = `Deployment of ${elemID.getFullName()} failed:`
+  const errorData = error.response.data
+  if (!_.isPlainObject(errorData)) {
+    return new Error(`${baseErrorMessage} ${error}`)
+  }
+  log.error([logBaseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(' '))
+  const errorGenerated = generateErrorMessage(errorData)
+  if (!_.isEmpty(errorGenerated)) {
+    return new Error([baseErrorMessage, ...errorGenerated].join(EOL))
+  }
+  const errorMessage = [`${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
+  return new Error([baseErrorMessage, errorMessage].join(EOL))
 }

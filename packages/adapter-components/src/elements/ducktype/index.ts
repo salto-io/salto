@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,6 +16,6 @@
 export { toInstance } from './instance_elements'
 export { replaceInstanceTypeForDeploy, restoreInstanceTypeFromDeploy } from './deployment_placeholder_types'
 export { extractStandaloneFields } from './standalone_field_extractor'
-export { getAllElements, getTypeAndInstances, ConfigChangeSuggestion, FetchElements, EntriesRequester, getEntriesResponseValues, getNewElementsFromInstances, getUniqueConfigSuggestions } from './transformer'
+export { getAllElements, getTypeAndInstances, EntriesRequester, getEntriesResponseValues, getNewElementsFromInstances, getUniqueConfigSuggestions } from './transformer'
 export { generateType, toNestedTypeName } from './type_elements'
 export { addRemainingTypes } from './add_remaining_types'

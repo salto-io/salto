@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -492,7 +492,14 @@ const toPlanItem = (
     [parent, ...subChanges].map(c => [_.uniqueId(), c])
   ),
   action: parent.action,
-  changes: () => [parent, ...subChanges],
+  changes: () => {
+    const changes = [parent, ...subChanges]
+    const detailedChangesByChange = _.groupBy(detailed, change => change.id.createBaseID().parent.getFullName())
+    return changes.map(change => ({
+      ...change,
+      detailedChanges: () => detailedChangesByChange[getChangeData(change).elemID.getFullName()],
+    }))
+  },
   detailedChanges: () => detailed,
 })
 

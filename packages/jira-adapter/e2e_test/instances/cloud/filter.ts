@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -39,5 +39,14 @@ export const createFilterValues = (name: string, allElements: Element[]): Values
       group: {
         name: createReference(new ElemID(JIRA, GROUP_TYPE_NAME, 'instance', 'site_admins@b'), allElements),
       } },
+  ],
+  editPermissions: [
+    {
+      type: 'user',
+      user: {
+        id: '557058:f58131cb-b67d-43c7-b30d-6b58d40bd077',
+        displayName: 'Automation for Jira',
+      },
+    },
   ],
 })

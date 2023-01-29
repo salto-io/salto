@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,6 @@
 import {
   AdditionChange,
   ChangeError,
-  ChangeValidator,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -26,6 +25,8 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { CURRENCY } from '../constants'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { isDefined } = values
 const DISPLAY_SYMBOL = 'display symbol'
@@ -87,7 +88,7 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
   }
 }
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)

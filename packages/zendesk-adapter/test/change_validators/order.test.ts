@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -122,8 +122,8 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: automation3.elemID,
       severity: 'Warning',
-      message: `Instance order not specified in ${orderTypeName}`,
-      detailedMessage: `Instance ${automation3.elemID.name} of type ${automation3.elemID.typeName} not listed in ${automation3.elemID.typeName} sort order, and will be added at the end by default. If order is important, please include it in ${orderTypeName} under the inactive list`,
+      message: `${automation3.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
+      detailedMessage: `Instance ${automation3.elemID.name} of type ${automation3.elemID.typeName} not listed in ${automation3.elemID.typeName} sort order, and will be added last by default. If order is important, please include it in ${orderTypeName} under the inactive list`,
     }])
   })
   it('should return an error if the instance exist on the other activity list', async () => {

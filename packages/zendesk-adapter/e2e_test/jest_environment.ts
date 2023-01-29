@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ import { UsernamePasswordCredentials } from '../src/auth'
 const log = logger(module)
 
 export const credsSpec = (envName?: string):
-CredsSpec<Required<UsernamePasswordCredentials>> => {
+CredsSpec<UsernamePasswordCredentials> => {
   const addEnvName = (varName: string): string => (envName === undefined
     ? varName
     : [varName, envName].join('_'))

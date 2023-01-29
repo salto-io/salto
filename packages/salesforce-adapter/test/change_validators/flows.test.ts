@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,10 +18,13 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import flowsChangeValidator from '../../src/change_validators/flows'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
+import mockClient from '../client'
 
 describe('flows change validator', () => {
   let flowChanges: Change
   let changeValidator: ChangeValidator
+  const { client } = mockClient()
+
   describe('deactivate a flow', () => {
     let beforeRecord: InstanceElement
     let statusChange: InstanceElement
@@ -37,7 +40,7 @@ describe('flows change validator', () => {
     it('should have error when trying to deactivate a flow', async () => {
       flowChanges = toChange({ before: beforeRecord, after: statusChange })
       changeValidator = flowsChangeValidator(
-        { }, true
+        { }, true, client
       )
       const changeErrors = await changeValidator([flowChanges])
       expect(changeErrors).toHaveLength(1)
@@ -48,7 +51,7 @@ describe('flows change validator', () => {
     it('should inform that a new inactive flow version will be created', async () => {
       flowChanges = toChange({ before: beforeRecord, after: otherModifications })
       changeValidator = flowsChangeValidator(
-        { fetch: { preferActiveFlowVersions: true } }, true
+        { fetch: { preferActiveFlowVersions: true } }, true, client
       )
       const changeErrors = await changeValidator([flowChanges])
       const [changeError] = changeErrors
@@ -66,7 +69,7 @@ describe('flows change validator', () => {
     describe('sandbox env', () => {
       beforeEach(() => {
         changeValidator = flowsChangeValidator(
-          { }, true
+          { }, true, client
         )
       })
       it('should have info message regarding the new flow version', async () => {
@@ -83,7 +86,7 @@ describe('flows change validator', () => {
       // const elementsSources = elementSource.createInMemoryElementSource([flowSettings])
       beforeEach(() => {
         changeValidator = flowsChangeValidator(
-          { }, false
+          { }, false, client
         )
       })
       describe('active flow modifications', () => {
@@ -94,7 +97,7 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
-          expect(changeError.message).toEqual('Deploying these changes will create a new active version of this flow') // add string
+          expect(changeError.deployActions?.postAction?.title).toEqual('Flows test coverage')
         })
         it('should have info message regarding the new flow version', async () => {
           const changeErrors = await changeValidator(
@@ -103,7 +106,7 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
-          expect(changeError.message).toEqual('Your salesforce org is configured to disallow modifications to active flows') // add string
+          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying as inactive')
         })
       })
       describe('activating a flow', () => {
@@ -142,14 +145,16 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
+          expect(changeError.deployActions?.postAction?.title).toEqual('Flows test coverage')
         })
-        it('should have error message regarding the new flow version', async () => {
+        it('should have info message regarding the new flow version', async () => {
           const changeErrors = await changeValidator(
             [flowChanges]
           ) // enableActiveDeploy setting is false
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
-          expect(changeError.severity).toEqual('Error')
+          expect(changeError.severity).toEqual('Info')
+          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying as inactive')
         })
       })
     })
@@ -157,7 +162,7 @@ describe('flows change validator', () => {
   describe('deleting a flow', () => {
     beforeEach(() => {
       changeValidator = flowsChangeValidator(
-        { }, false
+        { }, false, client
       )
       const beforeRecord = createInstanceElement({ fullName: 'flow', status: 'Active' }, mockTypes.Flow)
       flowChanges = toChange({ before: beforeRecord })
@@ -175,7 +180,7 @@ describe('flows change validator', () => {
   describe('adding and editing a draft flow', () => {
     beforeEach(() => {
       changeValidator = flowsChangeValidator(
-        { }, false
+        { }, false, client
       )
     })
     describe('add a new draft flow', () => {

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,7 @@ import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
-import { SCRIPT_ID, WORKFLOW } from '../constants'
+import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo } from '../service_id_info'
 import { AdditionalDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
@@ -66,6 +66,14 @@ const REQUIRED_FEATURES: RequiredDependencyWithCondition[] = [
       type: 'fullLookup',
       value: 'STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP',
     },
+  },
+  {
+    typeName: REPORT_DEFINITION,
+    dependency: 'SERVERSIDESCRIPTING',
+  },
+  {
+    typeName: FINANCIAL_LAYOUT,
+    dependency: 'SERVERSIDESCRIPTING',
   },
 ]
 

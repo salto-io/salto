@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -298,7 +298,7 @@ describe('gadgetFilter', () => {
       await filter.deploy([change])
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key1',
-        'value1',
+        '"value1"',
         {
           headers: {
             'Content-Type': 'application/json',
@@ -308,7 +308,7 @@ describe('gadgetFilter', () => {
 
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/api/3/dashboard/0/items/1/properties/key2',
-        'value2',
+        '"value2"',
         {
           headers: {
             'Content-Type': 'application/json',

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -71,6 +71,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'exclude', parentTypes: ['GroupRuleUserCondition'] },
     serializationStrategy: 'id',
     target: { type: USER_TYPE_NAME },
+  },
+  {
+    src: { field: 'include', parentTypes: ['UserTypePolicyRuleCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USERTYPE_TYPE_NAME },
+  },
+  {
+    src: { field: 'exclude', parentTypes: ['UserTypePolicyRuleCondition'] },
+    serializationStrategy: 'id',
+    target: { type: USERTYPE_TYPE_NAME },
   },
   {
     src: { field: 'createdBy', parentTypes: [USERTYPE_TYPE_NAME, 'EventHook', 'TrustedOrigin'] },

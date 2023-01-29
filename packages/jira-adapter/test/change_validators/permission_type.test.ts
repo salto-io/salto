@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -48,6 +48,8 @@ describe('permissionType change validator', () => {
       },
     ],
   })
+  const noFieldPermissionScheme = new InstanceElement('instance2', permissionSchemeObject, {
+  })
 
   beforeEach(() => {
     elements = [invalidPermissionScheme, permissionsInstance, validPermissionScheme]
@@ -79,6 +81,14 @@ describe('permissionType change validator', () => {
     elementsSource = buildElementsSourceFromElements([])
     expect(await permissionTypeValidator(
       [toChange({ after: invalidPermissionScheme })],
+      elementsSource
+    )).toBeEmpty()
+  })
+  it('should not crash if there are no permissions field', async () => {
+    elements = [noFieldPermissionScheme, permissionsInstance]
+    elementsSource = buildElementsSourceFromElements(elements)
+    expect(await permissionTypeValidator(
+      [toChange({ after: noFieldPermissionScheme })],
       elementsSource
     )).toBeEmpty()
   })

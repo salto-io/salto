@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -262,7 +262,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['put', 'delete'],
     url: '/rest/api/3/dashboard/\\d+/gadget/\\d+',
   },
-
+  {
+    httpMethods: ['put'],
+    url: '/rest/api/3/dashboard/.+/items/.+/properties/.+',
+  },
   {
     httpMethods: ['post'],
     url: '/rest/api/3/priority',
@@ -290,6 +293,14 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   {
     httpMethods: ['get'],
     url: '/rest/api/3/issuetypescheme/project.+',
+  },
+  {
+    httpMethods: ['post'],
+    url: '/rest/api/3/notificationscheme',
+  },
+  {
+    httpMethods: ['put', 'delete'],
+    url: '/rest/api/3/notificationscheme/.+',
   },
   {
     httpMethods: ['post'],
@@ -325,7 +336,7 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
   },
   {
     httpMethods: ['post', 'put'],
-    url: '/rest/api/3/securitylevel/.+',
+    url: '/rest/api/3/securitylevel.+',
   },
   {
     httpMethods: ['delete'],

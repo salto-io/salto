@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,8 +21,8 @@ import {
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
-import { ZENDESK } from '../../src/constants'
-import filterCreator, { ATTACHMENTS_FIELD_NAME, MACRO_ATTACHMENT_TYPE_NAME, MACRO_TYPE_NAME } from '../../src/filters/macro_attachments'
+import { ZENDESK, MACRO_TYPE_NAME } from '../../src/constants'
+import filterCreator, { ATTACHMENTS_FIELD_NAME, MACRO_ATTACHMENT_TYPE_NAME } from '../../src/filters/macro_attachments'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {

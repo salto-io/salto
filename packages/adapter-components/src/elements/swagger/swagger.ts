@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -43,15 +43,11 @@ export const loadSwagger = async (
       parser,
     }
   } catch (err) {
-    if (err.status !== undefined) {
-      log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}. Retries left: ${numberOfRetries} (retrying in %ds)`, retryDelayMs / 1000)
-      if (numberOfRetries <= 0) {
-        throw err
-      }
-      await sleep(retryDelayMs)
-      return loadSwagger(swaggerPath, numberOfRetries - 1)
+    log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}. Retries left: ${numberOfRetries} (retrying in %ds)`, retryDelayMs / 1000)
+    if (numberOfRetries <= 0) {
+      throw err
     }
-    log.warn(`Failed to load swagger file ${swaggerPath} with error: ${err}`)
-    throw err
+    await sleep(retryDelayMs)
+    return loadSwagger(swaggerPath, numberOfRetries - 1)
   }
 }

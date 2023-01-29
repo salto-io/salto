@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,6 +27,7 @@ import {
   removedFromParentValidatorCreator,
   parentAnnotationToHaveSingleValueValidatorCreator,
   customRoleNameValidator,
+  customRoleRemovalValidator,
   invalidActionsValidator,
   orderInstanceContainsAllTheInstancesValidator,
   triggerOrderInstanceContainsAllTheInstancesValidator,
@@ -45,10 +46,18 @@ import {
   helpCenterActivationValidator,
   helpCenterCreationOrRemovalValidator,
   everyoneUserSegmentModificationValidator,
-  categoryOrderValidator,
-  sectionOrderValidator,
-  articleOrderValidator,
-  guideOrderValidator, macroActionsTicketFieldDeactivationValidator,
+  guideOrderDeletionValidator,
+  childrenReferencesValidator,
+  childInOrderValidator,
+  orderChildrenParentValidator,
+  macroActionsTicketFieldDeactivationValidator,
+  sideConversationsValidator,
+  missingUsersValidator,
+  customStatusUniqueAgentLabelValidator,
+  customStatusCategoryChangeValidator,
+  customStatusCategoryValidator,
+  defaultCustomStatusesValidator,
+  customStatusActiveDefaultValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -88,11 +97,20 @@ export default ({
     invalidActionsValidator,
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
-    brandCreationValidator,
+    brandCreationValidator(client),
     webhookAuthDataValidator(client),
     targetAuthDataValidator(client, apiConfig),
     phoneNumbersValidator,
     automationAllConditionsValidator,
+    macroActionsTicketFieldDeactivationValidator,
+    customStatusUniqueAgentLabelValidator,
+    customStatusCategoryChangeValidator,
+    customStatusCategoryValidator,
+    customStatusActiveDefaultValidator,
+    defaultCustomStatusesValidator,
+    customRoleRemovalValidator(client),
+    sideConversationsValidator,
+    missingUsersValidator(client),
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
@@ -103,11 +121,12 @@ export default ({
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,
     helpCenterCreationOrRemovalValidator(client, apiConfig),
-    categoryOrderValidator,
-    sectionOrderValidator,
-    articleOrderValidator,
-    guideOrderValidator,
-    macroActionsTicketFieldDeactivationValidator,
+    // *** Guide Order Validators ***
+    childInOrderValidator,
+    childrenReferencesValidator,
+    orderChildrenParentValidator,
+    guideOrderDeletionValidator,
+    // ******************************
   ]
   return createSkipParentsOfSkippedInstancesValidator(validators)
 }

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,6 +20,7 @@ import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { captureServiceIdInfo } from '../service_id_info'
 import { NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
@@ -40,7 +41,9 @@ import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestV
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
+const { lookupValue } = values
 const log = logger(module)
+const { DefaultMap } = collections.map
 
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
@@ -203,6 +206,54 @@ export default class NetsuiteClient {
       .toArray()
   }
 
+  public static async createDependencyMap(
+    changes: ReadonlyArray<Change>,
+    deployReferencedElements: boolean,
+    elementsSourceIndex: LazyElementsSourceIndexes,
+  ):Promise<Map<string, Set<string>>> {
+    const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
+    const elemIdsAndCustInfoArr = await awu(changes)
+      .map(getChangeData)
+      .map(async element => ({
+        elemId: element.elemID,
+        custInfos: await NetsuiteClient.toCustomizationInfos(
+          [element], deployReferencedElements, elementsSourceIndex
+        ),
+      })).toArray()
+
+    elemIdsAndCustInfoArr.forEach(elemIdAndCustInfo => {
+      elemIdAndCustInfo.custInfos.forEach(custInfo =>
+        lookupValue(custInfo.values, val => {
+          if (!_.isString(val)) {
+            return
+          }
+          const serviceIdInfoArray = captureServiceIdInfo(val)
+          serviceIdInfoArray.map(serviceIdInfo =>
+            dependencyMap
+              .get(elemIdAndCustInfo.elemId.getFullName())
+              .add(serviceIdInfo.serviceId))
+        }))
+    })
+    return dependencyMap
+  }
+
+  public static getFailedManifestErrorElemIds(
+    error: ManifestValidationError,
+    dependencyMap: Map<string, Set<string>>,
+    changes: ReadonlyArray<Change>
+  ): Set<string> {
+    const changeData = changes.map(getChangeData)
+    const elementsToRemoveElemIDs = new Set<string>(
+      Array.from(dependencyMap.keys())
+        .filter(topLevelChangedElement =>
+          error.missingDependencyScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement)?.has(scriptid)))
+    )
+    log.debug('remove elements which contain a scriptid that doesnt exist in target account: %o', elementsToRemoveElemIDs)
+    return elementsToRemoveElemIDs.size === 0
+      ? new Set(changeData.map(elem => elem.elemID.getFullName()))
+      : elementsToRemoveElemIDs
+  }
+
   private async sdfDeploy({
     changes,
     deployReferencedElements,
@@ -222,7 +273,9 @@ export default class NetsuiteClient {
     const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
 
     const errors: Error[] = []
-
+    const dependencyMap = await NetsuiteClient.createDependencyMap(
+      changes, deployReferencedElements, elementsSourceIndex
+    )
     while (changesToDeploy.length > 0) {
       const changedInstances = changesToDeploy.map(getChangeData)
       // eslint-disable-next-line no-await-in-loop
@@ -246,15 +299,17 @@ export default class NetsuiteClient {
       } catch (error) {
         errors.push(error)
         if (error instanceof ManifestValidationError) {
-          log.debug('manifest validation errror: sdf deploy failed')
-        }
-        if (error instanceof FeaturesDeployError) {
+          const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
+          _.remove(
+            changesToDeploy,
+            change => elemIdNamesToRemove.has(getChangeData(change).elemID.getFullName())
+          )
+        } else if (error instanceof FeaturesDeployError) {
           const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
             error, changesToDeploy
           )
           return { errors, appliedChanges: successfullyDeployedChanges }
-        }
-        if (error instanceof ObjectsDeployError) {
+        } else if (error instanceof ObjectsDeployError) {
           const failedElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
             error, changesToDeploy
           )

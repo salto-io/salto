@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,19 +14,25 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TypeElement, BuiltinTypes, ListType, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import {
+  SALESFORCE,
   INSTANCE_FULL_NAME_FIELD,
   ASSIGNMENT_RULES_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE,
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
   SETTINGS_METADATA_TYPE,
-  SALESFORCE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CPQ_QUOTE,
+  CUSTOM_METADATA,
+  API_NAME,
+  METADATA_TYPE,
+  CUSTOM_OBJECT,
+  CPQ_QUOTE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
+import { createCustomObjectType } from './utils'
 
 
 export const mockTypes = {
@@ -305,6 +311,14 @@ export const mockTypes = {
       filter: { refType: BuiltinTypes.STRING },
     },
   }),
+  // CustomMetadataRecordType with name MDType__mdt
+  CustomMetadataRecordType: new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'MDType__mdt'),
+    annotations: {
+      [API_NAME]: 'MDType__mdt',
+      [METADATA_TYPE]: CUSTOM_METADATA,
+    },
+  }),
   [CPQ_QUOTE]: new ObjectType({
     elemID: new ElemID(SALESFORCE, CPQ_QUOTE),
     fields: {
@@ -331,6 +345,35 @@ export const mockTypes = {
       metadataType: 'CustomLabel',
     },
   }),
+  CaseSettings: createCustomObjectType(
+    'CaseSettings',
+    {
+      fields: {
+        defaultCaseOwner: {
+          refType: BuiltinTypes.STRING,
+        },
+        defaultCaseUser: {
+          refType: BuiltinTypes.STRING,
+        },
+        defaultCaseOwnerType: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    }
+  ),
+  FolderShare: createCustomObjectType(
+    'FolderShare',
+    {
+      fields: {
+        sharedTo: {
+          refType: BuiltinTypes.STRING,
+        },
+        sharedToType: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    }
+  ),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

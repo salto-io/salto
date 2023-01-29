@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -28,7 +28,7 @@ export const dashboardLayoutValidator: ChangeValidator = async changes =>
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
     .map(instance => {
-      const invalidGadgets = instance.value.gadgets
+      const invalidGadgets = (instance.value.gadgets ?? [])
         .filter(isReferenceExpression)
         .filter((gadget: ReferenceExpression) =>
           gadget.value.value.position.column >= instance.value.layout.length)

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeValidator, getChangeData, InstanceElement,
+import {
+  Change, ChangeError, ChangeValidator, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange, isInstanceElement,
-  isReferenceExpression } from '@salto-io/adapter-api'
+  isReferenceExpression,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { createOrderTypeName } from '../filters/reorder/creator'
-import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../constants'
+import { ORG_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../constants'
 import { TYPE_NAME as AUTOMATION_TYPE_NAME } from '../filters/reorder/automation'
 import { TYPE_NAME as SLA_POLICY_TYPE_NAME } from '../filters/reorder/sla_policy'
-import { TYPE_NAME as TICKET_FORM_TYPE_NAME } from '../filters/reorder/ticket_form'
 import { TYPE_NAME as VIEW_TYPE_NAME } from '../filters/reorder/view'
 import { TYPE_NAME as WORKSPACE_TYPE_NAME } from '../filters/reorder/workspace'
 
@@ -52,6 +53,19 @@ const isInstanceInOrderList = (orderList: unknown, instance: InstanceElement): b
     && (orderList
       .filter(isReferenceExpression)
       .find(ref => ref.elemID.isEqual(instance.elemID))) !== undefined
+
+export const notInOrderError = ({ instance, orderTypeName, defaultLocation = 'last', messageExtra = '' }
+:{
+    instance: InstanceElement
+    orderTypeName: string
+    defaultLocation?: string
+    messageExtra?: string
+}): ChangeError => ({
+  elemID: instance.elemID,
+  severity: 'Warning',
+  message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
+  detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added ${defaultLocation} by default. If order is important, please include it in ${orderTypeName}${messageExtra}`,
+})
 
 export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
   changes, elementSource
@@ -95,12 +109,11 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
         ? [orderInstance.value.active ?? [], orderInstance.value.inactive ?? []]
         : [orderInstance.value.inactive ?? [], orderInstance.value.active ?? []]
       if (!isInstanceInOrderList(orderListOfInstanceActivity, instance)) {
-        return [{
-          elemID: instance.elemID,
-          severity: 'Warning',
-          message: `Instance order not specified in ${orderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added at the end by default. If order is important, please include it in ${orderTypeName} under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
-        }]
+        return [notInOrderError({
+          instance,
+          orderTypeName,
+          messageExtra: ` under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+        })]
       }
       if (isInstanceInOrderList(orderListOfTheOtherInstanceActivity, instance)) {
         return [{

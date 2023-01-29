@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,8 +16,8 @@
 import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isObjectType, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { resolveChangeElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { getLookUpName } from '../../reference_mapping'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
@@ -26,7 +26,7 @@ import { FilterCreator } from '../../filter'
 import { getDiffIds } from '../../diff'
 import { ISSUE_TYPE_SCHEMA_NAME } from '../../constants'
 
-const MAX_CONCURRENT_PROMISES = 20
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -53,13 +53,12 @@ const deployNewAndDeletedIssueTypeIds = async (
     }
   }
 
-  await promises.array.withLimitedConcurrency(
-    Array.from(removedIds).map(id => () =>
-      client.delete({
-        url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,
-      })),
-    MAX_CONCURRENT_PROMISES,
-  )
+  // We run this sequentially and not in parallel because there is a bug in Jira which lets you
+  // create an invalid issue type scheme (an issue type scheme without any issues) if you delete the issues in parallel
+  await awu(Array.from(removedIds)).forEach(id =>
+    client.delete({
+      url: `/rest/api/3/issuetypescheme/${instance.value.id}/issuetype/${id}`,
+    }))
 }
 
 const deployIssueTypeIdsOrder = async (

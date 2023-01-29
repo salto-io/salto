@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { createConnection } from '../../src/client/connection'
+import { createConnection, instanceUrl } from '../../src/client/connection'
 
 describe('client connection', () => {
   describe('createConnection', () => {
@@ -34,7 +34,7 @@ describe('client connection', () => {
         .onGet('/api/v2/account/settings').reply(200, { settings: {} })
         .onGet('/api/v2/a/b').reply(200, { something: 'bla' })
       const apiConn = await conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })
-      expect(apiConn.accountId).toEqual('abc')
+      expect(apiConn.accountId).toEqual('https://abc.zendesk.com')
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
       const getRes = apiConn.get('/api/v2/a/b')
@@ -54,6 +54,15 @@ describe('client connection', () => {
       mockAxiosAdapter
         .onGet('/api/v2/account/settings').reply(403)
       await expect(() => conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })).rejects.toThrow('Unauthorized - update credentials and try again')
+    })
+  })
+
+  describe('instanceUrl', () => {
+    it('should return the correct url', () => {
+      const domain = 'zenzen.org'
+      const subdomain = 'zendesk'
+      expect(instanceUrl(subdomain, domain)).toEqual('https://zendesk.zenzen.org')
+      expect(instanceUrl(subdomain)).toEqual('https://zendesk.zendesk.com')
     })
   })
 })

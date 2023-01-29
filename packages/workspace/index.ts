@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -34,7 +34,8 @@ import * as serialization from './src/serializer/elements'
 import * as pathIndex from './src/workspace/path_index'
 import { Author } from './src/workspace/changed_by_index'
 import { createElementSelector, ElementSelector, validateSelectorsMatches, createTopLevelSelector,
-  selectElementsBySelectors, selectElementIdsByTraversal, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
+  selectElementsBySelectorsWithoutReferences, selectElementsBySelectors,
+  selectElementIdsByTraversal, createElementSelectors, ElementIDToValue } from './src/workspace/element_selector'
 import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
@@ -78,6 +79,7 @@ export {
   createElementSelector,
   ElementSelector,
   validateSelectorsMatches,
+  selectElementsBySelectorsWithoutReferences,
   selectElementsBySelectors,
   createElementSelectors,
   createTopLevelSelector,

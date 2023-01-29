@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
 import { WORKATO } from '../constants'
 import { Credentials } from '../auth'
 
 const { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
+const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -48,5 +50,25 @@ export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
+  }
+
+  public async getSinglePage(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    try {
+      return await super.getSinglePage(args)
+    } catch (e) {
+      const status = e.response?.status
+      // Workato returns 400 when asking to get pages from non-Dev Workato-Environments (Production/test)
+      if (
+        (status === 400 && [
+          '/roles',
+        ].includes(args.url))
+      ) {
+        log.warn('Suppressing %d error %o', status, e)
+        return { data: [], status }
+      }
+      throw e
+    }
   }
 }

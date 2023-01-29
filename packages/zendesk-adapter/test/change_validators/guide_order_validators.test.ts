@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,6 +15,7 @@
 */
 
 import {
+  ChangeError,
   ChangeValidator,
   CORE_ANNOTATIONS,
   ElemID, getChangeData,
@@ -22,7 +23,7 @@ import {
   ObjectType,
   ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   BRAND_TYPE_NAME,
   CATEGORY_TYPE_NAME,
@@ -36,10 +37,8 @@ import {
 } from '../../src/constants'
 import { createOrderType } from '../../src/filters/guide_order/guide_order_utils'
 import {
-  categoryOrderValidator,
-  sectionOrderValidator,
-  articleOrderValidator,
-  guideOrderValidator,
+  childInOrderValidator, childrenReferencesValidator,
+  guideOrderDeletionValidator, orderChildrenParentValidator,
 } from '../../src/change_validators'
 
 const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) })
@@ -57,15 +56,14 @@ const createOrderElement = (
   orderElementType: string,
   orderField: string,
   childInstance: InstanceElement
-) : InstanceElement =>
-  new InstanceElement(
-    `${parent.elemID.name}_${orderField}`,
-    createOrderType(orderElementType),
-    {
-      [orderField]: [new ReferenceExpression(childInstance.elemID, childInstance)],
-    }, [],
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
-  )
+) : InstanceElement => new InstanceElement(
+  `${parent.elemID.name}_${orderField}`,
+  createOrderType(orderElementType),
+  {
+    [orderField]: [new ReferenceExpression(childInstance.elemID, childInstance)],
+  }, [],
+  { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(parent.elemID, parent) }
+)
 
 const categoryOrderInstance = createOrderElement(
   brandInstance, CATEGORY_TYPE_NAME, CATEGORIES_FIELD, categoryInstance
@@ -81,6 +79,13 @@ const articleOrderInstance = createOrderElement(
 )
 
 describe('GuideOrdersValidator', () => {
+  const orderInstances = [
+    categoryOrderInstance,
+    categorySectionsOrderInstance,
+    sectionSectionsOrderInstance,
+    articleOrderInstance,
+  ]
+  const childrenInstances = [categoryInstance, sectionInstance, articleInstance]
   describe('Are all children a reference', () => {
     const testValidator = async (
       orderInstance: InstanceElement,
@@ -99,29 +104,29 @@ describe('GuideOrdersValidator', () => {
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide elements order list includes an invalid Salto reference',
-        detailedMessage: `One or more elements in ${orderInstance.elemID.getFullName()}'s ${orderField} field are not a valid Salto reference`,
+        message: `${orderInstance.elemID.typeName}'s field '${orderField}' includes an invalid Salto reference`,
+        detailedMessage: `${orderInstance.elemID.typeName} instance ${orderInstance.elemID.name}'s field ${orderField} includes one or more invalid Salto references`,
       })
     }
 
     it('Categories order', async () => {
-      await testValidator(categoryOrderInstance, CATEGORIES_FIELD, categoryOrderValidator)
+      await testValidator(categoryOrderInstance, CATEGORIES_FIELD, childrenReferencesValidator)
     })
     it('Category sections order', async () => {
       await testValidator(
-        categorySectionsOrderInstance, SECTIONS_FIELD, sectionOrderValidator
+        categorySectionsOrderInstance, SECTIONS_FIELD, childrenReferencesValidator
       )
     })
     it('Section sections order', async () => {
       await testValidator(
-        sectionSectionsOrderInstance, SECTIONS_FIELD, sectionOrderValidator
+        sectionSectionsOrderInstance, SECTIONS_FIELD, childrenReferencesValidator
       )
     })
     it('Articles order', async () => {
-      await testValidator(articleOrderInstance, ARTICLES_FIELD, articleOrderValidator)
+      await testValidator(articleOrderInstance, ARTICLES_FIELD, childrenReferencesValidator)
     })
   })
-  describe('Order element removal', () => {
+  describe('Order element deletion', () => {
     const testValidator = async (orderInstance: InstanceElement) : Promise<void> => {
       const orderWithoutParent = orderInstance.clone()
       const fakeParent = new InstanceElement('test', new ObjectType({ elemID: new ElemID(ZENDESK, 'test') }))
@@ -132,15 +137,15 @@ describe('GuideOrdersValidator', () => {
         toChange({ before: orderWithoutParent }),
         toChange({ before: getParent(orderInstance) }),
       ]
-      const instanceName = orderInstance.elemID.getFullName()
+      const instanceName = orderInstance.elemID.name
       const parentName = fakeParent.elemID.getFullName()
 
-      const errors = await guideOrderValidator(changes)
+      const errors = await guideOrderDeletionValidator(changes)
       expect(errors.length).toBe(1)
       expect(errors[0]).toMatchObject({
         elemID: orderInstance.elemID,
         severity: 'Error',
-        message: 'Guide order elements removed without their parent',
+        message: 'Guide elements order list removed without its parent',
         detailedMessage: `Deleting ${instanceName} requires deleting its parent (${parentName})`,
       })
     }
@@ -157,51 +162,119 @@ describe('GuideOrdersValidator', () => {
       await testValidator(articleOrderInstance)
     })
   })
-  describe('Children elements added with and without order element', () => {
-    const orderInstances = [
-      categoryOrderInstance,
-      categorySectionsOrderInstance,
-      sectionSectionsOrderInstance,
-      articleOrderInstance,
-    ]
-    const childrenInstances = [categoryInstance, sectionInstance, articleInstance]
-    const childChanges = [
-      ...childrenInstances.map(child => toChange({ after: child })),
-      ...childrenInstances.map(child => toChange({ before: child })),
-      ...childrenInstances.map(child => toChange({ before: child, after: child })),
-    ]
-    const orderChanges = orderInstances.map(order => toChange({ after: order }))
+  describe('Children in order', () => {
+    describe('Children elements added with and without order element', () => {
+      const childChanges = [
+        ...childrenInstances.map(child => toChange({ after: child })),
+        ...childrenInstances.map(child => toChange({ before: child })),
+        ...childrenInstances.map(child => toChange({ before: child, after: child })),
+      ]
+      const orderChanges = orderInstances.map(order => toChange({ after: order }))
 
-    const testValidatorWithOrderInstances = async (validator: ChangeValidator): Promise<void> => {
-      const errors = await validator([...childChanges, ...orderChanges])
-      expect(errors).toMatchObject([])
-    }
-
-    const testValidatorWithoutOrderInstances = async (
-      validator: ChangeValidator,
-      instance: InstanceElement,
-      orderTypeName: string,
-    ): Promise<void> => {
+      const testWithoutOrderInstances = async (
+        validator: ChangeValidator,
+        instance: InstanceElement,
+        orderTypeName: string,
+      ): Promise<void> => {
       // Remove the order change that has the tested element
-      const otherOrderChanges = orderChanges.filter(change => getChangeData(change).elemID.typeName !== orderTypeName)
-      const errors = await validator([...childChanges, ...otherOrderChanges])
-      expect(errors).toMatchObject([{
-        elemID: instance.elemID,
-        severity: 'Warning',
-        message: `Instance element not specified in ${orderTypeName}`,
-        detailedMessage: `Instance ${instance.elemID.name} of type '${instance.elemID.typeName}' is not listed in ${orderTypeName}, and will be added to be first by default. If order is important, please include it under the ${orderTypeName}`,
-      }])
-    }
+        const otherOrderChanges = orderChanges.filter(change => getChangeData(change).elemID.typeName !== orderTypeName)
+        const errors = await validator([...childChanges, ...otherOrderChanges])
+        expect(errors).toMatchObject([{
+          elemID: instance.elemID,
+          severity: 'Warning',
+          message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
+          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added first by default. If order is important, please include it in ${orderTypeName}`,
+        }])
+      }
 
-    it('With order element', async () => {
-      await testValidatorWithOrderInstances(categoryOrderValidator)
-      await testValidatorWithOrderInstances(sectionOrderValidator)
-      await testValidatorWithOrderInstances(articleOrderValidator)
+      it('With order element', async () => {
+        const errors = await childInOrderValidator([...childChanges, ...orderChanges])
+        expect(errors).toMatchObject([])
+      })
+      it('Without order element', async () => {
+        await testWithoutOrderInstances(childInOrderValidator, categoryInstance, CATEGORY_ORDER_TYPE_NAME)
+        await testWithoutOrderInstances(childInOrderValidator, sectionInstance, SECTION_ORDER_TYPE_NAME)
+        await testWithoutOrderInstances(childInOrderValidator, articleInstance, ARTICLE_ORDER_TYPE_NAME)
+      })
     })
-    it('Without order element', async () => {
-      await testValidatorWithoutOrderInstances(categoryOrderValidator, categoryInstance, CATEGORY_ORDER_TYPE_NAME)
-      await testValidatorWithoutOrderInstances(sectionOrderValidator, sectionInstance, SECTION_ORDER_TYPE_NAME)
-      await testValidatorWithoutOrderInstances(articleOrderValidator, articleInstance, ARTICLE_ORDER_TYPE_NAME)
+    describe('Duplicate child in same order', () => {
+      const createDuplicateChildError = (orderInstance: InstanceElement, child: ReferenceExpression): ChangeError => ({
+        elemID: orderInstance.elemID,
+        severity: 'Warning',
+        message: 'Guide elements order list includes the same element more than once',
+        detailedMessage: `${orderInstance.elemID.typeName} ${orderInstance.elemID.name} has the same element more than once, order will be determined by the last occurrence of the element, elements: '${child.elemID.getFullName()}'`,
+      })
+
+      it('Same child twice', async () => {
+        const testOrderInstances = orderInstances.map(instance => instance.clone())
+        const errorsToCheck: string[] = []
+        // Fill the same child again
+        testOrderInstances.forEach(instance => [ARTICLES_FIELD, SECTIONS_FIELD, CATEGORIES_FIELD].forEach(field => {
+          if (instance.value[field] !== undefined) {
+            // stringify to sort later
+            errorsToCheck.push(safeJsonStringify(createDuplicateChildError(instance, instance.value[field][0])))
+            instance.value[field].push(instance.value[field][0])
+          }
+        }))
+        const changes = testOrderInstances.map(instance => toChange({ after: instance }))
+
+        const errors = (await childInOrderValidator(changes)).map(error => safeJsonStringify(error))
+        expect(errors.length).toBe(errorsToCheck.length)
+        // Make sure all warnings were created
+        expect(errors.sort()).toMatchObject(errorsToCheck.sort())
+      })
+    })
+  })
+  describe('Order and children parent tests', () => {
+    const changeChildrenParent = (parent: ReferenceExpression): void =>
+      childrenInstances.forEach(child => {
+        child.value.section_id = parent
+        child.value.brand = parent
+        child.value.parent_section_id = parent
+        child.value.category_id = parent
+      })
+
+    const changes = [
+      toChange({ before: articleOrderInstance }),
+      toChange({ before: sectionSectionsOrderInstance }),
+      toChange({ before: categorySectionsOrderInstance }),
+      toChange({ before: categoryOrderInstance }),
+      toChange({ before: articleOrderInstance, after: articleOrderInstance }),
+      toChange({ before: sectionSectionsOrderInstance, after: sectionSectionsOrderInstance }),
+      toChange({ before: categorySectionsOrderInstance, after: categorySectionsOrderInstance }),
+      toChange({ before: categoryOrderInstance, after: categoryOrderInstance }),
+      toChange({ after: articleOrderInstance }),
+      toChange({ after: sectionSectionsOrderInstance }),
+      toChange({ after: categorySectionsOrderInstance }),
+      toChange({ after: categoryOrderInstance }),
+    ]
+
+    const createError = (orderInstance: InstanceElement, wrongParentChildren: InstanceElement[]): ChangeError => ({
+      elemID: orderInstance.elemID,
+      severity: 'Error',
+      message: 'Guide elements order list includes instances that are not of the same parent',
+      detailedMessage: `${wrongParentChildren.map(child => child.elemID.getFullName()).join(', ')} are not of the same ${getParent(orderInstance).elemID.typeName} as ${orderInstance.elemID.name}`,
+    })
+
+    it('children with same parent as order', async () => {
+      const brandRef = new ReferenceExpression(brandInstance.elemID, brandInstance)
+      orderInstances.forEach(order => { order.annotations[CORE_ANNOTATIONS.PARENT] = brandRef })
+      changeChildrenParent(brandRef)
+      const errors = await orderChildrenParentValidator(changes)
+      expect(errors.length).toBe(0)
+    })
+    it('children with different parent from order', async () => {
+      changeChildrenParent(new ReferenceExpression(articleInstance.elemID, articleInstance))
+      const errors = await orderChildrenParentValidator(changes)
+      expect(errors.length).toBe(8)
+      expect(errors[0]).toMatchObject(createError(articleOrderInstance, [articleInstance]))
+      expect(errors[1]).toMatchObject(createError(articleOrderInstance, [articleInstance]))
+      expect(errors[2]).toMatchObject(createError(sectionSectionsOrderInstance, [sectionInstance]))
+      expect(errors[4]).toMatchObject(createError(sectionSectionsOrderInstance, [sectionInstance]))
+      expect(errors[3]).toMatchObject(createError(categorySectionsOrderInstance, [sectionInstance]))
+      expect(errors[5]).toMatchObject(createError(categorySectionsOrderInstance, [sectionInstance]))
+      expect(errors[6]).toMatchObject(createError(categoryOrderInstance, [categoryInstance]))
+      expect(errors[7]).toMatchObject(createError(categoryOrderInstance, [categoryInstance]))
     })
   })
 })

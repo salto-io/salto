@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -111,7 +111,7 @@ const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) 
           }
         } catch (err) {
           // If changing the default failed, don't continue
-          return { errors: [getZendeskError(getChangeData(change).elemID.getFullName(), err)] }
+          return { errors: [getZendeskError(getChangeData(change).elemID, err)] }
         }
       }
 

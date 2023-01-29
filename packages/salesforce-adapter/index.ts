@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,4 @@ export { adapter } from './src/adapter_creator'
 export { default as SalesforceClient } from './src/client/client'
 export { UsernamePasswordCredentials, OauthAccessTokenCredentials } from './src/types'
 export { getAllInstances } from './src/filters/custom_objects_instances'
-export { testTypes } from './e2e_test/jest_environment'
-export { testHelpers } from './e2e_test/jest_environment'
-export { TestHelpers } from './e2e_test/jest_environment'
 export { loadElementsFromFolder } from './src/sfdx_parser/sfdx_parser'

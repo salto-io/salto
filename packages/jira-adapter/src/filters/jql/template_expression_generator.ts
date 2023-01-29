@@ -50,8 +50,8 @@ type FieldInfo = {
 }
 
 export type JqlContext = {
-  typeToInstances: Record<string, Record<string, InstanceElement[]>>
-  fieldsById: Record<string, InstanceElement>
+  typeToInstancesByField: Record<string, Record<string, InstanceElement[]>>
+  typeToInstanceById: Record<string, Record<string, InstanceElement>>
 }
 
 const CONTEXT_TYPE_TO_FIELD: Record<string, string> = {
@@ -71,7 +71,7 @@ export const removeCustomFieldPrefix = (id: string): string => (
 export const generateJqlContext = (
   instances: InstanceElement[],
 ): JqlContext => ({
-  typeToInstances: _(instances)
+  typeToInstancesByField: _(instances)
     .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
     .groupBy(instance => instance.elemID.typeName)
     .mapValues(
@@ -82,10 +82,16 @@ export const generateJqlContext = (
     )
     .value(),
 
-  fieldsById: _(instances)
-    .filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
-    .filter(instance => _.isString(instance.value.id))
-    .keyBy(instance => removeCustomFieldPrefix(instance.value.id))
+  typeToInstanceById: _(instances)
+    .filter(instance => instance.elemID.typeName in CONTEXT_TYPE_TO_FIELD)
+    .groupBy(instance => instance.elemID.typeName)
+    .mapValues(
+      instanceGroup =>
+        _.keyBy(
+          instanceGroup.filter(instance => instance.value.id !== undefined),
+          instance => removeCustomFieldPrefix(instance.value.id.toString())
+        )
+    )
     .value(),
 })
 
@@ -167,10 +173,10 @@ const getFieldInfo = (
     position.end = position.start + fieldIdentifier.length
   }
 
-  if (Object.prototype.hasOwnProperty.call(jqlContext.fieldsById, fieldIdentifier)) {
+  if (Object.prototype.hasOwnProperty.call(jqlContext.typeToInstanceById[FIELD_TYPE_NAME], fieldIdentifier)) {
     return {
       fieldInfo: {
-        instance: jqlContext.fieldsById[fieldIdentifier],
+        instance: jqlContext.typeToInstanceById[FIELD_TYPE_NAME][fieldIdentifier],
         position,
         identifier: 'id',
       },
@@ -178,23 +184,51 @@ const getFieldInfo = (
   }
 
   if (!Object.prototype.hasOwnProperty.call(
-    jqlContext.typeToInstances[FIELD_TYPE_NAME],
+    jqlContext.typeToInstancesByField[FIELD_TYPE_NAME],
     fieldIdentifier
   )) {
     return { fieldInfo: undefined }
   }
 
-  if (jqlContext.typeToInstances[FIELD_TYPE_NAME][fieldIdentifier].length > 1) {
+  if (jqlContext.typeToInstancesByField[FIELD_TYPE_NAME][fieldIdentifier].length > 1) {
     return { fieldInfo: undefined, error: 'ambiguous' }
   }
 
   return {
     fieldInfo: {
-      instance: jqlContext.typeToInstances[FIELD_TYPE_NAME][fieldIdentifier][0],
+      instance: jqlContext.typeToInstancesByField[FIELD_TYPE_NAME][fieldIdentifier][0],
       position,
       identifier: 'name',
     },
   }
+}
+
+const getValueInfo = (
+  fieldToInstances: Record<string, InstanceElement[]>,
+  idToInstance: Record<string, InstanceElement>,
+  typeName: string,
+  operand: ValueOperand
+): undefined | {
+  identifier: string
+  instances: InstanceElement[]
+} => {
+  const valueIdentifier = operand.value.toLowerCase()
+
+  if (Object.prototype.hasOwnProperty.call(idToInstance, valueIdentifier)) {
+    return {
+      identifier: 'id',
+      instances: [idToInstance[valueIdentifier]],
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(fieldToInstances, valueIdentifier)) {
+    return {
+      identifier: CONTEXT_TYPE_TO_FIELD[typeName],
+      instances: fieldToInstances[valueIdentifier],
+    }
+  }
+
+  return undefined
 }
 
 const getValueTokens = (
@@ -213,38 +247,40 @@ const getValueTokens = (
   // A heuristic that works for the types in CONTEXT_TYPE_TO_FIELD
   // to convert a field name to its values' type
   const typeName = fieldInstance.value.name.replace(/\s+/g, '')
-  const identifierToInstance = Object.prototype.hasOwnProperty.call(
-    jqlContext.typeToInstances, typeName
-  ) ? jqlContext.typeToInstances[typeName]
-    : undefined
+  const fieldToInstances = Object.prototype.hasOwnProperty.call(
+    jqlContext.typeToInstancesByField, typeName
+  ) ? jqlContext.typeToInstancesByField[typeName]
+    : {}
+
+  const idToInstance = Object.prototype.hasOwnProperty.call(
+    jqlContext.typeToInstanceById, typeName
+  ) ? jqlContext.typeToInstanceById[typeName]
+    : {}
 
   const tokens = getValueOperands(clause.operand)
     .map(operand => {
-      const valueInstances = Object.prototype.hasOwnProperty
-        .call(identifierToInstance ?? {}, operand.value.toLowerCase())
-        ? identifierToInstance?.[operand.value.toLowerCase()]
-        : undefined
-
-      const identifier = Object.prototype.hasOwnProperty
-        .call(CONTEXT_TYPE_TO_FIELD, typeName)
-        ? CONTEXT_TYPE_TO_FIELD[typeName]
-        : undefined
+      const valueInfo = getValueInfo(fieldToInstances, idToInstance, typeName, operand)
 
       const position = getValuePosition(operand)
-      if (valueInstances === undefined || identifier === undefined || position === undefined) {
+      if (valueInfo === undefined || position === undefined) {
         return undefined
       }
 
-      if (valueInstances.length > 1) {
+      if (valueInfo.instances.length > 1) {
         ambiguousTokens.add(operand.value)
         return undefined
       }
 
       return {
-        reference: new ReferenceExpression(
-          valueInstances[0].elemID.createNestedID(identifier),
-          valueInstances[0].value[identifier]
-        ),
+        reference: valueInfo.identifier !== 'id'
+          ? new ReferenceExpression(
+            valueInfo.instances[0].elemID.createNestedID(valueInfo.identifier),
+            valueInfo.instances[0].value[valueInfo.identifier]
+          )
+          : new ReferenceExpression(
+            valueInfo.instances[0].elemID,
+            valueInfo.instances[0]
+          ),
         position,
       }
     })

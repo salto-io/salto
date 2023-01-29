@@ -150,8 +150,9 @@ export const deployChange = async (
   } catch (err) {
     // Retry requests that failed on Zendesk's side and are not related to our data
     if (RESPONSES_TO_RETRY.includes(err.response?.status) && retryNumber < MAX_RETRIES) {
-      const timeToWait = getRetryDelayFromHeaders(err.response.headers)
-      await sleep(timeToWait ?? DEPLOYMENT_BUFFER_TIME)
+      const retryDelayMs = getRetryDelayFromHeaders(err.response.headers) ?? DEPLOYMENT_BUFFER_TIME
+      log.warn(`Failed to deploy change of ${getChangeData(change).elemID.name} with error ${err.response?.status}. Retries left: ${MAX_RETRIES - retryNumber} (retrying in %ds)`, retryDelayMs / 1000)
+      await sleep(retryDelayMs)
       return deployChange(change, client, apiDefinitions, fieldsToIgnore, retryNumber + 1)
     }
     throw getZendeskError(getChangeData(change).elemID, err)

@@ -29,6 +29,7 @@ import * as types from './types'
 import * as validators from './validators'
 import * as values from './values'
 import * as objects from './objects'
+import * as serialize from './serialize'
 
 export {
   collections,
@@ -41,6 +42,7 @@ export {
   regex,
   retry,
   stack,
+  serialize,
   streams,
   strings,
   types,

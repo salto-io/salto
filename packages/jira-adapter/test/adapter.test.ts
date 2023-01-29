@@ -237,7 +237,7 @@ describe('adapter', () => {
           }),
         }),
         undefined,
-        expect.any(Object)
+        expect.any(Object),
       )
       expect(generateTypes).toHaveBeenCalledWith(
         JIRA,
@@ -247,7 +247,7 @@ describe('adapter', () => {
           }),
         }),
         undefined,
-        expect.any(Object)
+        expect.any(Object),
       )
     })
 

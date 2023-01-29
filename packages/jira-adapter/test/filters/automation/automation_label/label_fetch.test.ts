@@ -121,7 +121,7 @@ describe('automationLabelFetchFilter', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
-        undefined,
+        undefined
       )
     })
 

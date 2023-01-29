@@ -22,7 +22,8 @@ import { getFilterParams, mockClient } from '../../utils'
 import automationDeploymentFilter from '../../../src/filters/automation/automation_deployment'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { AUTOMATION_TYPE, JIRA } from '../../../src/constants'
-import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
 describe('automationDeploymentFilter', () => {
@@ -545,11 +546,7 @@ describe('automationDeploymentFilter', () => {
         expect(connection.put).toHaveBeenCalledWith(
           '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules/555/labels/1',
           null,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
+          { headers: { 'Content-Type': 'application/json' } }
         )
       })
 

@@ -149,6 +149,7 @@ export const deployChange = async (
     return response
   } catch (err) {
     // Retry requests that failed on Zendesk's side and are not related to our data
+    // TODO - should we use the config's retry mechanism? this is a general retry and not user specific
     if (RESPONSES_TO_RETRY.includes(err.response?.status) && retryNumber < MAX_RETRIES) {
       const retryDelayMs = getRetryDelayFromHeaders(err.response.headers) ?? DEPLOYMENT_BUFFER_TIME
       log.warn(`Failed to deploy change of ${getChangeData(change).elemID.name} with error ${err.response?.status}. Retries left: ${MAX_RETRIES - retryNumber} (retrying in %ds)`, retryDelayMs / 1000)

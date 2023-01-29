@@ -15,34 +15,44 @@
 */
 import _, { isString } from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
-  DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
-  isInstanceElement, Element,
-  ReadOnlyElementsSource, isReferenceExpression,
+  AdapterOperations,
+  Change,
+  DeployModifiers,
+  DeployOptions,
+  DeployResult,
+  Element,
+  ElemIdGetter,
+  FetchOptions,
+  FetchResult,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isReferenceExpression,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import {
-  client as clientUtils,
-  config as configUtils,
-  elements as elementUtils,
-} from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { FilterCreator, Filter, filtersRunner, FilterResult, BrandIdToClient } from './filter'
+import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } from './filter'
 import {
   API_DEFINITIONS_CONFIG,
-  FETCH_CONFIG,
-  ZendeskConfig,
   CLIENT_CONFIG,
+  FETCH_CONFIG,
+  GUIDE_BRAND_SPECIFIC_TYPES,
+  GUIDE_SUPPORTED_TYPES,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, isGuideEnabled,
+  isGuideEnabled,
+  ZendeskConfig,
 } from './config'
 import {
-  ZENDESK,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  ZENDESK,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
@@ -440,8 +450,9 @@ export default class ZendeskAdapter implements AdapterOperations {
           client: filterRunnerClient ?? this.client,
           paginator: paginator ?? this.paginator,
           config: {
-            fetch: config.fetch,
-            apiDefinitions: config.apiDefinitions,
+            fetch: config[FETCH_CONFIG],
+            apiDefinitions: config[API_DEFINITIONS_CONFIG],
+            client: config[CLIENT_CONFIG],
           },
           getElemIdFunc,
           fetchQuery: this.fetchQuery,

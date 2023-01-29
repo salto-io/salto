@@ -96,7 +96,10 @@ jest.mock('@salto-io/file', () => ({
       return Readable.from('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "netsuite":"2020-04-21T09:44:20.824Z"}')
     }
     if (filename === 'on-delete.jsonl.zip') {
-      return '[]\n{ "salto" :"2020-04-21T09:44:20.824Z"}'
+      return Readable.from('[]\n{ "salto" :"2020-04-21T09:44:20.824Z"}')
+    }
+    if (filename === 'too_long.jsonl.zip') {
+      return Readable.from('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"}]\n{ "salto" :"2020-04-21T09:44:20.824Z"}\n[]\n"0.1.2"\n"extra"\n')
     }
     return Readable.from('[]')
   }),
@@ -269,6 +272,13 @@ describe('local state', () => {
     const elements = await awu(await state.getAll()).toArray()
     expect(elements).toHaveLength(2)
     expect(await state.getStateSaltoVersion()).toBe('0.0.1')
+  })
+
+  it('should ignore extra lines', async () => {
+    const state = localState('too_long', '', remoteMapCreator, mockStaticFilesSource())
+    const elements = await awu(await state.getAll()).toArray()
+    expect(elements).toHaveLength(1)
+    expect(await state.getStateSaltoVersion()).toBe('0.1.2')
   })
 
   it('should override path index when asked to', async () => {

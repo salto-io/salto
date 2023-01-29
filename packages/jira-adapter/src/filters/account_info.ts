@@ -21,39 +21,6 @@ import { JIRA, LICENSED_APPLICATION_TYPE, LICENSE_TYPE, ACCOUNT_INFO_TYPE } from
 import { FilterCreator } from '../filter'
 
 const log = logger(module)
-export const licensedApplications = new ObjectType({
-  elemID: new ElemID(JIRA, LICENSED_APPLICATION_TYPE),
-  isSettings: true,
-  fields: {
-    id: { refType: BuiltinTypes.STRING },
-    plan: { refType: BuiltinTypes.STRING },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.HIDDEN]: true,
-  },
-})
-
-const licenseType = new ObjectType({
-  elemID: new ElemID(JIRA, LICENSE_TYPE),
-  isSettings: true,
-  fields: {
-    applications: { refType: new ListType(licensedApplications) },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.HIDDEN]: true,
-  },
-})
-
-const accountInfoType = new ObjectType({
-  elemID: new ElemID(JIRA, ACCOUNT_INFO_TYPE),
-  isSettings: true,
-  fields: {
-    license: { refType: new ListType(licenseType) },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.HIDDEN]: true,
-  },
-})
 
 type LicenseResponse = {
   applications: [{
@@ -81,6 +48,37 @@ const filter: FilterCreator = ({ client }) => ({
       // Add here data center license info in the future
       return
     }
+    const licensedApplications = new ObjectType({
+      elemID: new ElemID(JIRA, LICENSED_APPLICATION_TYPE),
+      isSettings: true,
+      fields: {
+        id: { refType: BuiltinTypes.STRING },
+        plan: { refType: BuiltinTypes.STRING },
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+    })
+    const licenseType = new ObjectType({
+      elemID: new ElemID(JIRA, LICENSE_TYPE),
+      isSettings: true,
+      fields: {
+        applications: { refType: new ListType(licensedApplications) },
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+    })
+    const accountInfoType = new ObjectType({
+      elemID: new ElemID(JIRA, ACCOUNT_INFO_TYPE),
+      isSettings: true,
+      fields: {
+        license: { refType: new ListType(licenseType) },
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+    })
     try {
       const response = await client.getSinglePage({
         url: '/rest/api/3/instance/license',

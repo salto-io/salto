@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isRemovalChange, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
+import { AdditionChange, Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
+  isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { isFreeLicense } from '../utils'
@@ -40,15 +41,15 @@ const projectWarning = (elemID: ElemID, schemeName: string): ChangeError => ({
 const schemeError = (elemID: ElemID): ChangeError => ({
   elemID,
   severity: 'Error' as SeverityLevel,
-  message: 'Can’t deploy permission schemes to a free Jira instance',
-  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This permission scheme won’t be deployed.',
+  message: 'Can’t modify permission schemes in a free Jira instance',
+  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This change won’t be deployed.',
 })
 
 const schemeWarning = (elemID: ElemID): ChangeError => ({
   elemID,
   severity: 'Warning' as SeverityLevel,
-  message: 'Can’t deploy permission schemes to a free Jira instance',
-  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This permission scheme won’t be deployed.',
+  message: 'Can’t deploy new permission schemes to a free Jira instance',
+  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This change won’t be deployed. The project will use a default change permission scheme instead.',
 })
 
 const wasSchemeAssociatedToAnyProjectBefore = (
@@ -58,19 +59,22 @@ const wasSchemeAssociatedToAnyProjectBefore = (
   .filter(isInstanceChange)
   .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
   .filter(isModificationChange)
-  .some(change => change.data.before.value.permissionScheme?.elemID.getFullName()
+  .filter(change => isReferenceExpression(change.data.before.value.permissionScheme))
+  .some(change => change.data.before.value.permissionScheme.elemID.getFullName()
     === getChangeData(schemeChange).elemID.getFullName()
-      && change.data.after.value.permissionScheme?.elemID.getFullName()
-      !== getChangeData(schemeChange).elemID.getFullName())
-
+      && (isReferenceExpression(change.data.after.value.permissionScheme)
+        ? change.data.after.value.permissionScheme.elemID.getFullName()
+        : undefined) !== getChangeData(schemeChange).elemID.getFullName())
 
 const isPermissionSchemeAssociationChange = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
 ): boolean => {
-  const elemBefore = isModificationChange(change)
-    ? change.data.before.value.permissionScheme?.elemID?.getFullName()
+  const elemBefore = isModificationChange(change) && isReferenceExpression(change.data.before.value.permissionScheme)
+    ? change.data.before.value.permissionScheme.elemID.getFullName()
     : undefined
-  const elemAfter = change.data.after.value.permissionScheme?.elemID?.getFullName()
+  const elemAfter = isReferenceExpression(change.data.after.value.permissionScheme)
+    ? change.data.after.value.permissionScheme.elemID.getFullName()
+    : undefined
   return (elemBefore !== elemAfter)
 }
 
@@ -82,36 +86,36 @@ const isSameChangeForProject = (
   .filter(change => change.action === schemeChange.action)
   .map(getChangeData)
   .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
-  .some(instance => instance.value.permissionScheme?.elemID.getFullName()
+  .filter(instance => isReferenceExpression(instance.value.permissionScheme))
+  .some(instance => instance.value.permissionScheme.elemID.getFullName()
     === getChangeData(schemeChange).elemID.getFullName())
 
 /**
  * Validates that a permission scheme deployment fits the license type
  * In cloud free tier you cannot create a new one
  */
-export const permissionSchemeDeploymentValidator: (
-  client: JiraClient,
-) =>
-  ChangeValidator = client => async (changes, elementsSource) =>
+export const permissionSchemeDeploymentValidator = (client: JiraClient): ChangeValidator =>
+  async (changes, elementsSource) =>
     log.time(async () => {
-      if (client.isDataCenter || elementsSource === undefined) {
+      if (client.isDataCenter || elementsSource === undefined
+        || (!await isFreeLicense(elementsSource))
+        || !changes
+          .filter(isInstanceChange)
+          .some(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME
+                || getChangeData(change).elemID.typeName === PROJECT_TYPE)) {
         return []
       }
-      if (!await isFreeLicense(elementsSource)) {
-        return []
-      }
-      const associatedPermissionSchemes = await awu(await elementsSource.list())
+      const associatedPermissionSchemes = new Set(await awu(await elementsSource.list())
         .filter(id => id.idType === 'instance' && id.typeName === PROJECT_TYPE)
         .filter(async id => (await elementsSource.get(id)).value.permissionScheme !== undefined)
         .map(async id => (await elementsSource.get(id)).value.permissionScheme.elemID.getFullName())
-        .toArray()
+        .toArray())
       // removal should not cause a warning if the project is also removed
       // addition changes should only cause a warning
       const associatedSchemeChangeErrors = changes
         .filter(isInstanceChange)
         .filter(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
-        .filter(change => associatedPermissionSchemes.includes(getChangeData(change).elemID.getFullName()))
-        .filter(change => !(isRemovalChange(change) && isSameChangeForProject(change, changes)))
+        .filter(change => associatedPermissionSchemes.has(getChangeData(change).elemID.getFullName()))
         .map(change => ((isAdditionChange(change) && isSameChangeForProject(change, changes))
           ? schemeWarning(getChangeData(change).elemID)
           : schemeError(getChangeData(change).elemID)))
@@ -121,7 +125,7 @@ export const permissionSchemeDeploymentValidator: (
       const unassociatedSchemeChangeErrors = changes
         .filter(isInstanceChange)
         .filter(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
-        .filter(change => !associatedPermissionSchemes.includes(getChangeData(change).elemID.getFullName()))
+        .filter(change => !associatedPermissionSchemes.has(getChangeData(change).elemID.getFullName()))
         .filter(change => isAdditionChange(change)
           || wasSchemeAssociatedToAnyProjectBefore(change, changes))
         .map(change => schemeError(getChangeData(change).elemID))

@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID } from '@salto-io/adapter-api'
+
 export const JIRA = 'jira'
 export const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
 export const ISSUE_TYPE_NAME = 'IssueType'
@@ -74,5 +76,5 @@ export const SCREEN_SCHEME_TYPE = 'ScreenScheme'
 export const ACCOUNT_INFO_TYPE = 'AccountInfo'
 export const LICENSE_TYPE = 'License'
 export const LICENSED_APPLICATION_TYPE = 'LicensedApplication'
-export const ACCOUNT_INFO_ELEM_ID = `${JIRA}.${ACCOUNT_INFO_TYPE}.instance._config`
+export const ACCOUNT_INFO_ELEM_ID = new ElemID(JIRA, ACCOUNT_INFO_TYPE, 'instance', ElemID.CONFIG_NAME).getFullName()
 export const JIRA_FREE_PLAN = 'FREE'

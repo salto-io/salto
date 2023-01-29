@@ -16,7 +16,7 @@
 import { toChange, InstanceElement, ElemID, ObjectType, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel, ChangeError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getAccountInfoInstance, mockClient } from '../utils'
+import { getAccountInfoInstance, getLicenseElementSource, mockClient } from '../utils'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME, PROJECT_TYPE } from '../../src/constants'
 import { permissionSchemeDeploymentValidator } from '../../src/change_validators/permission_scheme'
 
@@ -37,15 +37,15 @@ const projectWarning = (elemID: ElemID, schemeName: string): ChangeError => ({
 const schemeError = (elemID: ElemID): ChangeError => ({
   elemID,
   severity: 'Error' as SeverityLevel,
-  message: 'Can’t deploy permission schemes to a free Jira instance',
-  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This permission scheme won’t be deployed.',
+  message: 'Can’t modify permission schemes in a free Jira instance',
+  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This change won’t be deployed.',
 })
 
 const schemeWarning = (elemID: ElemID): ChangeError => ({
   elemID,
   severity: 'Warning' as SeverityLevel,
-  message: 'Can’t deploy permission schemes to a free Jira instance',
-  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This permission scheme won’t be deployed.',
+  message: 'Can’t deploy new permission schemes to a free Jira instance',
+  detailedMessage: 'The target Jira instance is a free one, which doesn’t support permission schemes. This change won’t be deployed. The project will use a default change permission scheme instead.',
 })
 describe('permissionSchemeDeploymentValidator', () => {
   const { client } = mockClient()
@@ -90,7 +90,7 @@ describe('permissionSchemeDeploymentValidator', () => {
         description: 'test',
       }
     )
-    elementsSource = buildElementsSourceFromElements([getAccountInfoInstance(true)])
+    elementsSource = getLicenseElementSource(true)
   })
   describe('projects', () => {
     it('should create a warning for project creation', async () => {
@@ -134,6 +134,7 @@ describe('permissionSchemeDeploymentValidator', () => {
         ])
       })
       it('should not return a warning for removal of project and scheme', async () => {
+        elementsSource = getLicenseElementSource(true)
         expect(await validator(
           [toChange({ before: permissionInstances[0] }),
             toChange({ before: projectInstances[0] })],

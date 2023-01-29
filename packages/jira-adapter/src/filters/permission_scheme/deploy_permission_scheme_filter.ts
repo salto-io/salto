@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceChange, getChangeData, Change, ChangeDataType, DeployResult, isAdditionChange } from '@salto-io/adapter-api'
-import { objects } from '@salto-io/lowerdash'
+import { isInstanceChange, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { isFreeLicense } from '../../utils'
 import { PERMISSION_SCHEME_TYPE_NAME } from '../../constants'
@@ -22,6 +21,9 @@ import { FilterCreator } from '../../filter'
 
 /**
  * prevents deployment of permission schemes if cloud free plan.
+ * Permission schemes that should not be deployed are blocked in the change validator.
+ * Permissions schemes that arrived here have a connected project,
+ * so issuing an error in the the change validator would fail the deployment of the project as well.
  */
 const filter: FilterCreator = ({ client, elementsSource }) => ({
   deploy: async changes => {
@@ -43,18 +45,12 @@ const filter: FilterCreator = ({ client, elementsSource }) => ({
         && isAdditionChange(change)
         && getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME
     )
-    const deployResult = relevantChanges
-      .reduce((acc: Omit<DeployResult, 'extraProperties'>, change: Change<ChangeDataType>) => {
-        const newDeploy = { appliedChanges: [change], errors: [] }
-        return objects.concatObjects([acc, newDeploy])
-      }, {
-        appliedChanges: [],
-        errors: [],
-      },)
-
     return {
       leftoverChanges,
-      deployResult,
+      deployResult: {
+        errors: [],
+        appliedChanges: relevantChanges,
+      },
     }
   },
 })

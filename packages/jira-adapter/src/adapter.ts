@@ -113,6 +113,7 @@ import prioritySchemeProjectAssociationFilter from './filters/data_center/priori
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
+import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 
 const {
   generateTypes,
@@ -212,6 +213,7 @@ export const DEFAULT_FILTERS = [
   smartValueReferenceFilter,
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
+  deployPermissionSchemeFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

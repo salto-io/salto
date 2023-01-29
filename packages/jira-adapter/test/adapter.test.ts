@@ -225,7 +225,7 @@ describe('adapter', () => {
         .mockResolvedValue({ elements: [testInstance] });
       (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
         .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
-      mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
+      mockAxiosAdapter = new MockAdapter(axios)
       // mock as there are gets of license during fetch
       mockAxiosAdapter.onGet().reply(200, { })
       result = await adapter.fetch({ progressReporter })

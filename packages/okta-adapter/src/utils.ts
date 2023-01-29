@@ -14,6 +14,10 @@
 * limitations under the License.
 */
 
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
+
 /**
  * Extract id from okta's _links object urls
  * Example url: https://subdomain.okta.com/api/v1/group/abc123
@@ -23,5 +27,6 @@ export const extractIdFromUrl = (url: string): string | undefined => {
     const urlParts = url.split('/')
     return urlParts.pop()
   }
+  log.warn(`Failed to extract id from url: ${url}`)
   return undefined
 }

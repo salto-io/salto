@@ -76,7 +76,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
     },
   )
 
-  const UserSchemaResponse = {
+  const userSchemaResponse = {
     status: 200,
     data: {
       id: 'A123',
@@ -84,7 +84,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
       description: 'user schema',
     },
   }
-  const UserSchemaResponse2 = {
+  const userSchemaResponse2 = {
     status: 200,
     data: {
       id: 'B123',
@@ -98,14 +98,14 @@ describe('fetchUserSchemaInstancesFilter', () => {
       credentials: { baseUrl: 'https://okta.com/', token: 'token' },
     })
     mockGet = jest.spyOn(client, 'getSinglePage')
-    mockGet.mockResolvedValueOnce(UserSchemaResponse)
-    mockGet.mockResolvedValueOnce(UserSchemaResponse2)
     filter = fetchUserSchemas(getFilterParams({ client })) as typeof filter
   })
 
   it('should create userSchema instances', async () => {
+    mockGet.mockResolvedValueOnce(userSchemaResponse)
+    mockGet.mockResolvedValueOnce(userSchemaResponse2)
     const elements = [userSchemaType, userTypeType, userTypeInstanceA, userTypeInstanceB, defaultUserTypeInstance]
-    await filter.onFetch?.(elements)
+    await filter.onFetch(elements)
     const createdInstance = elements
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
@@ -121,12 +121,14 @@ describe('fetchUserSchemaInstancesFilter', () => {
     ])
   })
   it('should skip userType instance if the matching userSchema id was not found', async () => {
+    mockGet.mockResolvedValue(userSchemaResponse)
     const invalidUserTypeInst = new InstanceElement(
       'test',
       userTypeType,
       {
         id: 456,
         name: 'D',
+        // incorrect path to href
         _links: {
           schema: {
             href: 'https://okta.com/api/v1/meta/schemas/user/B123',
@@ -136,7 +138,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
       },
     )
     const elements = [userSchemaType, userTypeType, userTypeInstanceA, invalidUserTypeInst, defaultUserTypeInstance]
-    await filter.onFetch?.(elements)
+    await filter.onFetch(elements)
     const createdInstance = elements
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
@@ -146,7 +148,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
   })
   it('should do nothing if userSchema type is missing', async () => {
     const elements = [userTypeType, userTypeInstanceA, userTypeInstanceB, defaultUserTypeInstance]
-    await filter.onFetch?.(elements)
+    await filter.onFetch(elements)
     const createdInstance = elements
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
@@ -156,7 +158,20 @@ describe('fetchUserSchemaInstancesFilter', () => {
 
   it('should do nothing if there are no UserType instances except for the default user type', async () => {
     const elements = [userSchemaType, userTypeType, defaultUserTypeInstance]
-    await filter.onFetch?.(elements)
+    await filter.onFetch(elements)
+    const createdInstance = elements
+      .filter(isInstanceElement)
+      .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
+      .sort()
+    expect(createdInstance.length).toEqual(0)
+  })
+
+  it('should skip UserSchema instance if the response is invalid', async () => {
+    mockGet.mockRejectedValue({
+      response: { status: 404, data: {} },
+    })
+    const elements = [userSchemaType, userTypeType, userTypeInstanceA, defaultUserTypeInstance]
+    await filter.onFetch(elements)
     const createdInstance = elements
       .filter(isInstanceElement)
       .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)

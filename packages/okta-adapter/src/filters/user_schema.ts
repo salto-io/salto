@@ -57,14 +57,14 @@ const filter: FilterCreator = ({ client, config }) => ({
     const userTypeInstances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === USERTYPE_TYPE_NAME)
-      // filter out the default user type because we already have it
+      // filter out the default user type because we already have the matching user schema
       .filter(instance => instance.value.default === false)
     const userSchemaType = elements.filter(isObjectType).find(type => type.elemID.name === USER_SCHEMA_TYPE_NAME)
     if (userSchemaType === undefined || _.isEmpty(userTypeInstances)) {
       return
     }
 
-    const userSchemaIds = userTypeInstances.map(userType => getUserSchemaId(userType)).filter(isDefined)
+    const userSchemaIds = userTypeInstances.map(getUserSchemaId).filter(isDefined)
     const userSchemaEntries = (await Promise.all(
       userSchemaIds.map(async userSchemaId => {
         try {

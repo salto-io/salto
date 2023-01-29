@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isEmpty } from 'lodash'
 import {
   InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS, ElemID,
   ElemIdGetter, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
@@ -162,9 +162,9 @@ export const getInstanceNaclName = ({
   typeElemId: ElemID
   nameMapping?: NameMappingOptions
 }): string => {
-  // Strip underline from the end of the new name, in case name is empty
-  const separatorSuffixRegex = new RegExp(`${ID_SEPARATOR}$`)
-  const newName = parentName ? `${parentName}${ID_SEPARATOR}${name}`.replace(separatorSuffixRegex, '') : String(name)
+  // If the nme is empty, there is no reason to add the ID_SEPARATOR
+  const parentNameSuffix = !isEmpty(name) ? `${ID_SEPARATOR}${name}` : ''
+  const newName = parentName ? `${parentName}${parentNameSuffix}` : String(name)
   const naclName = naclCase(newName)
 
   const desiredName = nameMapping

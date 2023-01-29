@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import fs from 'fs'
-import { promisify } from 'util'
 import pako from 'pako'
 import { Readable } from 'stream'
-import { createGunzip, gzip } from 'zlib'
+import { createGunzip, createGzip } from 'zlib'
 import { chain } from 'stream-chain'
 import getStream from 'get-stream'
 import { logger } from '@salto-io/logging'
@@ -25,14 +24,18 @@ import { readFile } from './file'
 
 const log = logger(module)
 
-export const generateGZipBuffer = async (contents: string | Buffer): Promise<Buffer> =>
-  promisify(gzip)(contents)
-
 export const createGZipReadStream = (
   zipFilename: string,
 ): Readable => chain([
   fs.createReadStream(zipFilename),
   createGunzip(),
+])
+
+export const createGZipWriteStream = (
+  contents: Readable,
+): Readable => chain([
+  contents,
+  createGzip(),
 ])
 
 

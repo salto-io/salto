@@ -15,7 +15,9 @@
 */
 import { EOL } from 'os'
 import { Readable } from 'stream'
-import { replaceContents, exists, createGZipReadStream, rm, rename, generateGZipBuffer, readOldFormatGZipFile } from '@salto-io/file'
+import { gzip as zlibGzip } from 'zlib'
+import getStream from 'get-stream'
+import { replaceContents, exists, createGZipReadStream, rm, rename, readOldFormatGZipFile, createGZipWriteStream } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization, pathIndex, remoteMap, staticFiles } from '@salto-io/workspace'
@@ -296,7 +298,7 @@ describe('local state', () => {
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush.salto.jsonl.zip')
     expect(onFlush).toBeDefined()
-    expect(onFlush[1]).toEqual(await generateGZipBuffer([
+    expect(onFlush[1]).toEqual(await promisify(zlibGzip)([
       await serialize([mockElement]),
       safeJsonStringify({}),
       safeJsonStringify([]),
@@ -430,7 +432,7 @@ describe('local state', () => {
       ].join(EOL)
       const inner = safeJsonStringify(
         [
-          toMD5((await generateGZipBuffer(val)).toString()),
+          toMD5((await getStream.buffer(createGZipWriteStream(Readable.from(val)))).toString()),
         ]
       )
       expect(stateHash)

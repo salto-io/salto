@@ -16,6 +16,9 @@
 import fs from 'fs'
 import tmp from 'tmp-promise'
 import pako from 'pako'
+import { gzip as zlibGzip } from 'zlib'
+import { promisify } from 'util'
+import { Readable } from 'stream'
 import getStream from 'get-stream'
 import * as file from '../src/file'
 import * as gzip from '../src/gzip'
@@ -54,7 +57,7 @@ describe('gzip', () => {
 
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', async () => {
-        await expectRejectWithErrnoException(() => gzip.readOldFormatGZipFile('nosuchfile'))
+        await expectRejectWithErrnoException(() => getStream(gzip.createGZipReadStream('nosuchfile')))
       })
     })
 
@@ -63,7 +66,7 @@ describe('gzip', () => {
       beforeEach(async () => {
         destTmp = await tmp.file()
         dest = destTmp.path
-        await file.writeFile(dest, await gzip.generateGZipBuffer(content))
+        await file.writeFile(dest, await promisify(zlibGzip)((content)))
       })
 
       afterEach(async () => {
@@ -131,8 +134,7 @@ describe('gzip', () => {
       beforeEach(async () => {
         destTmp = await tmp.file()
         dest = destTmp.path
-        // generate in the old way using pako
-        await file.writeFile(dest, await gzip.generateGZipBuffer(content))
+        await file.writeFile(dest, await getStream(gzip.createGZipWriteStream(Readable.from(content))))
       })
 
       afterEach(async () => {
@@ -299,7 +301,7 @@ describe('gzip', () => {
     })
   })
 
-  describe('generateGZipBuffer', () => {
+  describe('createGZipWriteStream', () => {
     let destTmp: tmp.FileResult
     let dest: string
 
@@ -316,7 +318,7 @@ describe('gzip', () => {
     describe('when writing to file and reading as zip', () => {
       const contents = 'arbitraryText'
       beforeEach(async () => {
-        const data = (await gzip.generateGZipBuffer(contents))
+        const data = await getStream.buffer(gzip.createGZipWriteStream(Readable.from(contents)))
         fs.writeFileSync(dest, data)
       })
 

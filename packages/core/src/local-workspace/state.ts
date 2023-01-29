@@ -24,7 +24,7 @@ import { parser } from 'stream-json/jsonl/Parser'
 import getStream from 'get-stream'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, mkdirp, rm, rename, replaceContents, generateGZipBuffer, isOldFormatStateZipFile, readOldFormatGZipFile, createGZipReadStream } from '@salto-io/file'
+import { exists, readTextFile, mkdirp, rm, rename, replaceContents, createGZipWriteStream, isOldFormatStateZipFile, readOldFormatGZipFile, createGZipReadStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state, remoteMap, staticFiles } from '@salto-io/workspace'
 import { hash, collections, promises, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -281,7 +281,7 @@ export const localState = (
       const contents = await awu(Object.keys(stateTextPerAccount))
         .map(async (account: string): Promise<[string, Buffer]> => [
           `${currentFilePrefix}.${account}${ZIPPED_STATE_EXTENSION}`,
-          await generateGZipBuffer(await getStream.buffer(stateTextPerAccount[account])),
+          await getStream.buffer(createGZipWriteStream(stateTextPerAccount[account])),
         ]).toArray()
       contentsAndHash = {
         contents,

@@ -30,7 +30,6 @@ describe('Webhooks with external_source', () => {
     new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }),
     {
       status: 'active',
-      signing_secret: '123',
       name: 'test',
       not_relevant_field: { external_source: 'test' },
       external_source: { data: { installation_id: new ReferenceExpression(appInstallation.elemID, appInstallation) } },
@@ -38,7 +37,7 @@ describe('Webhooks with external_source', () => {
   )
   const regularWebhook = webhook.clone()
   delete regularWebhook.value.external_source
-  const appInstallationMessage = `This webhook was installed by the external app '${appInstallation.elemID.name}', `
+  const appInstallationMessage = `This webhook was installed by the external app '${appInstallation.elemID.name}'`
 
   it('webhook removal', async () => {
     const changes = [toChange({ before: webhook }), toChange({ before: regularWebhook })]
@@ -48,7 +47,7 @@ describe('Webhooks with external_source', () => {
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Removing a webhook that was installed by an external app',
-      detailedMessage: `${appInstallationMessage}In order to remove it, please uninstall that app.`,
+      detailedMessage: `${appInstallationMessage}, In order to remove it, please uninstall that app.`,
     }])
   })
   it('webhook addition', async () => {
@@ -59,7 +58,7 @@ describe('Webhooks with external_source', () => {
       elemID: webhook.elemID,
       severity: 'Error',
       message: 'Installing a webhook that was installed by an external app',
-      detailedMessage: `${appInstallationMessage}In order to add it, please install that app.`,
+      detailedMessage: `${appInstallationMessage}, In order to add it, please install that app.`,
     }])
   })
 
@@ -85,7 +84,7 @@ describe('Webhooks with external_source', () => {
         elemID: webhook.elemID,
         severity: 'Warning',
         message: 'Deactivating a webhook that was installed by an external app',
-        detailedMessage: `${appInstallationMessage}If you deactivate this webhook (${changedWebhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
+        detailedMessage: `${appInstallationMessage}, If you deactivate this webhook (${changedWebhook.elemID.name}), the app that created it might not work as intended. You'll need to reactivate it to use it again.`,
       }])
     })
     it('regular change of the webhook', async () => {

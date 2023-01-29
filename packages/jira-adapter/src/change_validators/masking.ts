@@ -22,8 +22,8 @@ import JiraClient from '../client/client'
 import { MASK_VALUE } from '../filters/masking'
 
 const log = logger(module)
-export const DETAILED_MESSAGE = 'This element will be deployed with masked values instead of the intended values. It will not operate correctly until manually fixing this after deployment. Learn more at https://docs.salto.io/docs/masked-data-will-be-deployed-to-the-service'
-export const DOCUMENTATION_URL = 'https://docs.salto.io/docs/masked-data-will-be-deployed-to-the-service'
+export const DETAILED_MESSAGE = 'This element will be deployed with masked values instead of the intended values. It will not operate correctly until manually fixing this after deployment. Learn more at https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
+export const DOCUMENTATION_URL = 'https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
 export const createChangeError = (
   change: Change<InstanceElement>,
   client: JiraClient,

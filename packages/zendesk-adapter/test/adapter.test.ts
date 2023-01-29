@@ -673,7 +673,7 @@ describe('adapter', () => {
         expect(errors).toEqual([
           {
             severity: 'Warning',
-            message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access',
+            message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
           },
         ])
         const elementsNames = elements.map(e => e.elemID.getFullName())

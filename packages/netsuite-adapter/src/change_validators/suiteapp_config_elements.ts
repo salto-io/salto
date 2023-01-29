@@ -15,7 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import {
-  ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange,
+  ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange,
   ChangeError,
   ModificationChange,
   isEqualValues,
@@ -25,6 +25,8 @@ import {
 } from '@salto-io/adapter-api'
 import { isSuiteAppConfigInstance } from '../types'
 import { SELECT_OPTION } from '../constants'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -70,7 +72,7 @@ const getSelectOptionChangesElemIDs = async (
     .toArray()
 }
 
-const changeValidator: ChangeValidator = async changes =>
+const changeValidator: NetsuiteChangeValidator = async changes =>
   awu(changes)
     .filter(isInstanceChange)
     .filter(isModificationChange)

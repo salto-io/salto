@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 
-import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeError } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { EXCHANGE_RATE } from '../constants'
 import { DEFAULT_EXCHANGE_RATE, getCurrencyAdditionsWithoutExchangeRate } from '../filters/currency_exchange_rate'
-
+import { NetsuiteChangeValidator } from './types'
 
 const { isDefined } = values
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   getCurrencyAdditionsWithoutExchangeRate(changes)
     .map(instance => ({
       elemID: instance.elemID,

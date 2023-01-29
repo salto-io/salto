@@ -53,6 +53,12 @@ import {
   macroActionsTicketFieldDeactivationValidator,
   sideConversationsValidator,
   externalSourceWebhook,
+  missingUsersValidator,
+  customStatusUniqueAgentLabelValidator,
+  customStatusCategoryChangeValidator,
+  customStatusCategoryValidator,
+  defaultCustomStatusesValidator,
+  customStatusActiveDefaultValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -98,8 +104,14 @@ export default ({
     phoneNumbersValidator,
     automationAllConditionsValidator,
     macroActionsTicketFieldDeactivationValidator,
+    customStatusUniqueAgentLabelValidator,
+    customStatusCategoryChangeValidator,
+    customStatusCategoryValidator,
+    customStatusActiveDefaultValidator,
+    defaultCustomStatusesValidator,
     customRoleRemovalValidator(client),
     sideConversationsValidator,
+    missingUsersValidator(client),
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,

@@ -419,7 +419,10 @@ describe('jsp_deployment', () => {
     })
 
     it('Should not throw when the request fail and the instance is already deleted', async () => {
-      mockConnection.post.mockRejectedValue(new Error('some error'))
+      mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {},
+      }))
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
         data: [],
@@ -431,6 +434,23 @@ describe('jsp_deployment', () => {
       })
       expect(results.errors).toHaveLength(0)
       expect(results.appliedChanges).toHaveLength(1)
+    })
+    it('Should throw when the request fail with 500', async () => {
+      mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
+        status: 500,
+        data: {},
+      }))
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: [],
+      })
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
+        client,
+        urls,
+      })
+      expect(results.errors).toHaveLength(1)
+      expect(results.appliedChanges).toHaveLength(0)
     })
   })
 })

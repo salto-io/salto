@@ -15,7 +15,7 @@
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
+import { WORKFLOW_SCHEME_TYPE_NAME } from '../../constants'
 
 const { awu } = collections.asynciterable
 

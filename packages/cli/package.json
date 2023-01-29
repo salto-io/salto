@@ -46,7 +46,7 @@
     "@salto-io/salesforce-adapter": "0.3.29",
     "@salto-io/workspace": "0.3.29",
     "chalk": "^2.4.2",
-    "commander": "^6.2.1",
+    "commander": "^10.0.0",
     "express": "^4.17.1",
     "figlet": "^1.2.4",
     "glob": "^7.1.6",

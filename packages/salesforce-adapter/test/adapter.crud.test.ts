@@ -215,16 +215,42 @@ describe('SalesforceAdapter CRUD', () => {
           }))
         })
         describe('when attempting to deploy non CustomObjects', () => {
-          beforeEach(async () => {
-            result = await adapter.validate({
-              changeGroup: {
-                groupID: instance.elemID.getFullName(),
-                changes: [{ action: 'add', data: { after: instance } }],
-              },
+          describe('when quick deploy is disable', () => {
+            beforeEach(async () => {
+              result = await adapter.validate({
+                changeGroup: {
+                  groupID: instance.elemID.getFullName(),
+                  changes: [{ action: 'add', data: { after: instance } }],
+                },
+              })
+            })
+            it('should return applied changes', () => {
+              expect(result.appliedChanges).toHaveLength(1)
+              if (result.extraProperties?.groups !== undefined) {
+                expect(result.extraProperties?.groups[0].requestId).toBeUndefined()
+              }
             })
           })
-          it('should return applied changes', () => {
-            expect(result.appliedChanges).toHaveLength(1)
+          describe('when quick deploy is enable', () => {
+            beforeEach(async () => {
+              connection.metadata.deploy.mockReturnValue(mockDeployResult({
+                checkOnly: true,
+                componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+                testCompleted: 1,
+              }))
+              result = await adapter.validate({
+                changeGroup: {
+                  groupID: instance.elemID.getFullName(),
+                  changes: [{ action: 'add', data: { after: instance } }],
+                },
+              })
+            })
+            it('should return applied changes', () => {
+              expect(result.appliedChanges).toHaveLength(1)
+              if (result.extraProperties?.groups !== undefined) {
+                expect(result.extraProperties?.groups[0].requestId).toBeDefined()
+              }
+            })
           })
         })
         describe('when attempting to deploy CustomObjects', () => {
@@ -304,6 +330,67 @@ describe('SalesforceAdapter CRUD', () => {
           })
           it('should return error', () => {
             expect(result.errors).toHaveLength(1)
+            expect(result.appliedChanges).toBeEmpty()
+          })
+        })
+      })
+
+      describe('when preforming quick deploy', () => {
+        let result: DeployResult
+        describe('when the received hash is corresponding with the calculated hash', () => {
+          beforeEach(async () => {
+            ({ connection, adapter } = mockAdapter({
+              adapterParams: {
+                config: {
+                  client: {
+                    deploy: {
+                      quickDeployParams: {
+                        requestId: '1',
+                        hash: 'ae603ec5f43ad6e8d4aaae0b44996ebd',
+                      },
+                    },
+                  },
+                },
+              },
+            }))
+            connection.metadata.deployRecentValidation.mockReturnValue(mockDeployResult({}))
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: instance } }],
+              },
+            })
+          })
+          it('should deploy', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+          })
+        })
+
+        describe('when the received hash is not corresponding with the calculated hash', () => {
+          beforeEach(async () => {
+            ({ connection, adapter } = mockAdapter({
+              adapterParams: {
+                config: {
+                  client: {
+                    deploy: {
+                      quickDeployParams: {
+                        requestId: '1',
+                        hash: '1',
+                      },
+                    },
+                  },
+                },
+              },
+            }))
+            connection.metadata.deployRecentValidation.mockReturnValue(mockDeployResult({}))
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: instance } }],
+              },
+            })
+          })
+          it('should fail the deploy', () => {
             expect(result.appliedChanges).toBeEmpty()
           })
         })
@@ -939,6 +1026,29 @@ describe('SalesforceAdapter CRUD', () => {
                 message: 'Code Coverage Went Down',
               }],
             },
+          }))
+          result = await adapter.deploy({
+            changeGroup: {
+              groupID: afterInstance.elemID.getFullName(),
+              changes: [{ action: 'modify', data: { before: beforeInstance, after: afterInstance } }],
+            },
+          })
+        })
+        it('should produce a deploy error', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+      })
+
+      describe('when the DeployResult contains errorMessage', () => {
+        beforeEach(async () => {
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            id: 'DeploymentWithErrorMessageErrors',
+            success: false,
+            errorMessage: 'UNKNOWN_EXCEPTION: An unexpected error occurred',
+            componentSuccess: [{
+              fullName: mockDefaultValues.Profile.fullName,
+              componentType: constants.PROFILE_METADATA_TYPE,
+            }],
           }))
           result = await adapter.deploy({
             changeGroup: {

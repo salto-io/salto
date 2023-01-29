@@ -306,7 +306,8 @@ const cloneWithoutNulls = (val: Values): Values =>
 const deployAddInstances = async (
   instances: InstanceElement[],
   idFields: Field[],
-  client: SalesforceClient
+  client: SalesforceClient,
+  groupId: string
 ): Promise<DeployResult> => {
   const type = await instances[0].getType()
   const typeName = await apiName(type)
@@ -358,12 +359,16 @@ const deployAddInstances = async (
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
     errors: [...insertErrorMessages, ...updateErrorMessages].map(error => new Error(error)),
+    extraProperties: {
+      groups: [{ id: groupId }],
+    },
   }
 }
 
 const deployRemoveInstances = async (
   instances: InstanceElement[],
-  client: SalesforceClient
+  client: SalesforceClient,
+  groupId: string
 ): Promise<DeployResult> => {
   const { successInstances, errorMessages } = await retryFlow(
     deleteInstances,
@@ -373,12 +378,16 @@ const deployRemoveInstances = async (
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
     errors: errorMessages.map(error => new Error(error)),
+    extraProperties: {
+      groups: [{ id: groupId }],
+    },
   }
 }
 
 const deployModifyChanges = async (
   changes: Readonly<ModificationChange<InstanceElement>[]>,
   client: SalesforceClient,
+  groupId: string
 ): Promise<DeployResult> => {
   const changesData = changes
     .map(change => change.data)
@@ -403,6 +412,9 @@ const deployModifyChanges = async (
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
+    extraProperties: {
+      groups: [{ id: groupId }],
+    },
   }
 }
 
@@ -426,6 +438,7 @@ const isModificationChangeList = <T>(
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
+  groupId: string,
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
   try {
@@ -447,13 +460,13 @@ export const deployCustomObjectInstancesGroup = async (
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }
-      return await deployAddInstances(instances, idFields, client)
+      return await deployAddInstances(instances, idFields, client, groupId)
     }
     if (changes.every(isRemovalChange)) {
-      return await deployRemoveInstances(instances, client)
+      return await deployRemoveInstances(instances, client, groupId)
     }
     if (isModificationChangeList(changes)) {
-      return await deployModifyChanges(changes, client)
+      return await deployModifyChanges(changes, client, groupId)
     }
     throw new Error('Custom Object Instances change group must have one action')
   } catch (error) {

@@ -242,6 +242,34 @@ describe('boardDeploymentFilter', () => {
           }
         )
       })
+
+      it('deploy should not call config endpoints if config not defined', async () => {
+        delete instance.value[COLUMNS_CONFIG_FIELD]
+        delete instance.value.estimation
+        delete instance.value.subQuery
+
+        await filter.deploy([change])
+
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change,
+          client,
+          endpointDetails: getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
+          fieldsToIgnore: [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
+        })
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/columns',
+          expect.anything(),
+          expect.anything(),
+        )
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/estimation',
+          expect.anything(),
+          expect.anything(),
+        )
+      })
     })
 
     describe('modification', () => {
@@ -558,6 +586,36 @@ describe('boardDeploymentFilter', () => {
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
+      })
+
+      it('should not call config endpoints if config not defined', async () => {
+        delete instance.value[COLUMNS_CONFIG_FIELD]
+        delete instance.value.estimation
+        delete instance.value.subQuery
+
+        delete instanceBefore.value[COLUMNS_CONFIG_FIELD]
+        delete instanceBefore.value.estimation
+        delete instanceBefore.value.subQuery
+
+        await filter.deploy([change])
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/columns',
+          expect.anything(),
+          expect.anything(),
+        )
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          expect.stringContaining('/rest/greenhopper/1.0/subqueries'),
+          expect.anything(),
+          expect.anything(),
+        )
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/estimation',
+          expect.anything(),
+          expect.anything(),
+        )
       })
     })
   })

@@ -233,6 +233,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
         { fieldName: 'contextIssueTypes', fieldType: 'list<IssueTypeToContextMapping>' },
         { fieldName: 'contextProjects', fieldType: 'list<CustomFieldContextProjectMapping>' },
       ],
+      fileNameFields: [
+        'name',
+      ],
     },
     deployRequests: {
       add: {
@@ -443,7 +446,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/filter/search',
       queryParams: {
-        expand: 'description,owner,jql,sharePermissions',
+        expand: 'description,owner,jql,sharePermissions,editPermissions',
       },
       paginationField: 'startAt',
       recurseInto: [

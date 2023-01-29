@@ -101,7 +101,7 @@ ReferenceSourceTransformation
 export type MissingReferenceStrategy = {
   create: CreateMissingRefFunc
 }
-export type MissingReferenceStrategyName = 'typeAndValue'
+export type MissingReferenceStrategyName = 'typeAndValue' | 'startsWith'
 
 type MetadataTypeArgs<T extends string> = {
   type: string

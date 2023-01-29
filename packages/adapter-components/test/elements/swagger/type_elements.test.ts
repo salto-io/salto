@@ -19,6 +19,20 @@ import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from
 import { generateTypes, toPrimitiveType } from '../../../src/elements/swagger'
 import { RequestableTypeSwaggerConfig } from '../../../src/config'
 
+jest.mock('@salto-io/lowerdash', () => {
+  const actual = jest.requireActual('@salto-io/lowerdash')
+  return {
+    ...actual,
+    promises: {
+      ...actual.promises,
+      timeout: {
+        ...actual.promises.timeout,
+        sleep: () => undefined,
+      },
+    },
+  }
+})
+
 const ADAPTER_NAME = 'myAdapter'
 const BASE_DIR = __dirname.replace('/dist', '')
 

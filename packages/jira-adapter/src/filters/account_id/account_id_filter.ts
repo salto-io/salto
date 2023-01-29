@@ -31,7 +31,7 @@ export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
 export const NON_DEPLOYABLE_TYPES = ['Board']
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
 export const DEPLOYABLE_TYPES = [...PARAMETER_STYLE_TYPES,
-  'Automation', 'Project', 'ProjectComponent', 'ProjectRole', 'Filter', 'Dashboard']
+  'Automation', 'Project', 'ProjectComponent', 'ProjectRole', 'Filter', 'Dashboard', 'CustomFieldContext', 'ProjectRoleUser', 'CustomFieldContextDefaultValue']
 export const ACCOUNT_ID_TYPES = [...NON_DEPLOYABLE_TYPES, ...DEPLOYABLE_TYPES]
 
 const USER_TYPE = 'user'
@@ -225,6 +225,7 @@ const filter: FilterCreator = () => {
         })
       await awu(elements)
         .filter(isObjectType)
+        .filter(object => ACCOUNT_ID_TYPES.includes(object.elemID.typeName))
         .forEach(async objectType => {
           await convertType(objectType)
         })

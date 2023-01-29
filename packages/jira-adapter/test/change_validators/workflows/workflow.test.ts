@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { workflowValidator } from '../../src/change_validators/workflow'
-import { JIRA, WORKFLOW_TYPE_NAME } from '../../src/constants'
+import { readOnlyWorkflowValidator } from '../../../src/change_validators/workflows/read_only_workflow'
+import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 
 describe('workflowValidator', () => {
   let type: ObjectType
@@ -33,7 +33,7 @@ describe('workflowValidator', () => {
   })
   it('should return an error if can edit is false', async () => {
     instance.value.operations.canEdit = false
-    expect(await workflowValidator([
+    expect(await readOnlyWorkflowValidator([
       toChange({
         before: instance,
         after: instance,
@@ -51,7 +51,7 @@ describe('workflowValidator', () => {
   it('should not return an error if canEdit is true', async () => {
     instance.value.operations.canEdit = true
 
-    expect(await workflowValidator([
+    expect(await readOnlyWorkflowValidator([
       toChange({
         before: instance,
         after: instance,

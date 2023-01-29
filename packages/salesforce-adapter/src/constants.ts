@@ -63,6 +63,18 @@ export enum FIELD_TYPE_NAMES {
   FILE = 'File',
 }
 
+const RELATIONSHIP_FIELD_NAMES = [
+  'MetadataRelationship',
+  'Lookup',
+  'MasterDetail',
+] as const
+
+type RelationshipFieldName = typeof RELATIONSHIP_FIELD_NAMES[number]
+
+export const isRelationshipFieldName = (fieldName: string): fieldName is RelationshipFieldName => (
+  (RELATIONSHIP_FIELD_NAMES as ReadonlyArray<string>).includes(fieldName)
+)
+
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',
@@ -436,3 +448,15 @@ export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
+// Errors
+export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
+export const INVALID_CROSS_REFERENCE_KEY = 'sf:INVALID_CROSS_REFERENCE_KEY'
+export const DUPLICATE_VALUE = 'sf:DUPLICATE_VALUE'
+export const INVALID_ID_FIELD = 'sf:INVALID_ID_FIELD'
+export const INVALID_FIELD = 'sf:INVALID_FIELD'
+export const INVALID_TYPE = 'sf:INVALID_TYPE'
+export const UNKNOWN_EXCEPTION = 'sf:UNKNOWN_EXCEPTION'
+export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
+export const SF_REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
+export const INVALID_GRANT = 'invalid_grant'
+export const ENOTFOUND = 'ENOTFOUND'

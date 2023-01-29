@@ -107,6 +107,12 @@ describe('boardEstimationFilter', () => {
       )
     })
 
+    it('should do nothing if there is no config', async () => {
+      delete instance.value.config
+      await filter.onFetch([instance])
+      expect(instance.value.estimation).toBeUndefined()
+    })
+
     it('should add deployment annotations', async () => {
       await filter.onFetch([type, estimationType])
 

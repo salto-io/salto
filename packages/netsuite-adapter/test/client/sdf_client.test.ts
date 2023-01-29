@@ -1805,7 +1805,7 @@ File: ~/AccountConfiguration/features.xml`
       })
       it('should throw ManifestValidationError', async () => {
         let errorMessage: string
-        const errorReferenceName = 'someRefName'
+        const errorReferenceName = 'some_scriptid'
         const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
@@ -1845,6 +1845,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
           expect(e.message).toContain(manifestErrorMessage)
+          expect(e.missingDependencyScriptIds).toContain(errorReferenceName)
         }
       })
       it('should throw error', async () => {

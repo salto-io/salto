@@ -40,4 +40,13 @@ export const createFilterValues = (name: string, allElements: Element[]): Values
         name: createReference(new ElemID(JIRA, GROUP_TYPE_NAME, 'instance', 'site_admins@b'), allElements),
       } },
   ],
+  editPermissions: [
+    {
+      type: 'user',
+      user: {
+        id: '557058:f58131cb-b67d-43c7-b30d-6b58d40bd077',
+        displayName: 'Automation for Jira',
+      },
+    },
+  ],
 })

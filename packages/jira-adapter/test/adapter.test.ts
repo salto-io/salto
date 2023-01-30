@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression, ElemIdGetter, ServiceIds } from '@salto-io/adapter-api'
-import { deployment, elements, client } from '@salto-io/adapter-components'
+import { deployment, elements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'

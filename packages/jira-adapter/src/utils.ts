@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, ElemID, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
@@ -86,10 +86,10 @@ export const getFilledJspUrls = (
 export const isFreeLicense = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<boolean> => {
-  if (!await elementsSource.has(ElemID.fromFullName(ACCOUNT_INFO_ELEM_ID))) {
+  if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
     return false
   }
-  const accountInfo = await elementsSource.get(ElemID.fromFullName(ACCOUNT_INFO_ELEM_ID))
+  const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
   if (!isInstanceElement(accountInfo)
   || accountInfo.value.license?.applications === undefined) {
     log.error('account info instance or its license not found in elements source, treating the account as paid one')

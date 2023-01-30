@@ -55,6 +55,10 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = unde
   hideTypes?: boolean
 }
 
+export type UserDeployConfig = {
+  defaultMissingUserFallback?: string
+}
+
 export const createAdapterApiConfigType = ({
   adapter,
   additionalFields,
@@ -168,6 +172,22 @@ export const createUserFetchConfigType = (
     },
   })
 }
+
+export const createUserDeployConfigType = (
+  adapter: string,
+  additionalFields?: Record<string, FieldDefinition>,
+): ObjectType => (
+  createMatchingObjectType<UserDeployConfig>({
+    elemID: new ElemID(adapter, 'userDeployConfig'),
+    fields: {
+      defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
+      ...additionalFields,
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
+  })
+)
 
 export const getConfigWithDefault = <
   T extends TransformationConfig | FetchRequestConfig | undefined,

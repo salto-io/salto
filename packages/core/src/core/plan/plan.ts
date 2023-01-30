@@ -543,7 +543,7 @@ export const getPlan = async ({
       addNodeDependencies(dependencyChangers),
     )
     const filterResult = await filterInvalidChanges(
-      before, after, diffGraph, changeValidators,
+      before, after, diffGraph, changeValidators, compareOptions
     )
 
     // If the graph was replaced during filtering we need to resolve the graph again to account

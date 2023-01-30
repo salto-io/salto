@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 
 import { DataNodeMap, DiffGraph, DiffNode, NodeId } from '@salto-io/dag'
-import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeData, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SeverityLevel, DependencyError } from '@salto-io/adapter-api'
+import { ChangeError, TypeElement, ChangeValidator, getChangeData, ElemID, ObjectType, ChangeDataType, isField, isObjectType, ReadOnlyElementsSource, SeverityLevel, DependencyError, Change, isAdditionChange, isRemovalChange, toChange, isType, isInstanceChange, CompareOptions, isEqualElements, isModificationChange, isFieldChange } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
@@ -30,101 +30,121 @@ type FilterResult = {
   replacedGraph: boolean
 }
 
-type TopLevelElement = InstanceElement | TypeElement
-
 export const filterInvalidChanges = (
   beforeElements: ReadOnlyElementsSource,
   afterElements: ReadOnlyElementsSource,
   diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
+  compareOptions: CompareOptions | undefined
 ): Promise<FilterResult> => log.time(async () => {
-  const createValidTopLevelElem = (beforeTopLevelElem: TopLevelElement,
-    afterTopLevelElem: TopLevelElement, elemIdsToOmit: ElemID[]): Element | undefined => {
-    const elemIdFullNamesToOmit = new Set(elemIdsToOmit.map(id => id.getFullName()))
-    if (_.isUndefined(beforeTopLevelElem)
-      && elemIdFullNamesToOmit.has(afterTopLevelElem.elemID.getFullName())) {
-      // revert the invalid creation of a new top-level element
+  const createValidTypeElement = (
+    typeElementChange: Change<TypeElement>,
+    elemIdsToOmit: ElemID[]
+  ): TypeElement | undefined => {
+    const onlyInvalidFields = !elemIdsToOmit.some(elemId => elemId.createBaseID().parent
+      .isEqual(getChangeData(typeElementChange).elemID))
+    if (isAdditionChange(typeElementChange) && !onlyInvalidFields) {
+      // revert the invalid creation of a new type element
       return undefined
     }
-    if (_.isUndefined(afterTopLevelElem)
-      || elemIdFullNamesToOmit.has(afterTopLevelElem.elemID.getFullName())) {
-      // revert the invalid deletion of a top-level element OR
-      // modification of a top level element that should be reverted as a whole
-      return beforeTopLevelElem.clone()
+    if (isRemovalChange(typeElementChange) || (isModificationChange(typeElementChange)
+    && elemIdsToOmit.some(elemId => typeElementChange.data.after.elemID.isEqual(elemId)))) {
+      // revert the invalid deletion of a type element OR
+      // modification of a type element that should be reverted as a whole
+      return typeElementChange.data.before.clone()
     }
-    if (
-      (beforeTopLevelElem && !isObjectType(beforeTopLevelElem))
-      || (afterTopLevelElem && !isObjectType(afterTopLevelElem))
-    ) {
-      // use the real top-level element (for example, the top-level instance for field changes)
-      return afterTopLevelElem.clone()
+    const beforeObj = isAdditionChange(typeElementChange) ? undefined : typeElementChange.data.before
+    const afterObj = typeElementChange.data.after
+    if ((beforeObj && !isObjectType(beforeObj)) || !isObjectType(afterObj)) {
+      return afterObj.clone()
     }
     // ObjectType's fields changes
-    const beforeObj = beforeTopLevelElem
-    const afterObj = afterTopLevelElem
-    const afterFieldNames = afterObj ? Object.keys(afterObj.fields) : []
-    const beforeFieldNames = beforeObj ? Object.keys(beforeObj.fields) : []
-    const allFieldNames = [...new Set([...beforeFieldNames, ...afterFieldNames])]
+    const allFieldNames = _.uniq(Object.keys(afterObj.fields).concat(Object.keys(beforeObj?.fields ?? {})))
+    const fieldsElemIdsToOmit = new Set(elemIdsToOmit
+      .filter(elemId => elemId.idType === 'field')
+      .map(elemId => elemId.createBaseID().parent.getFullName()))
     const validFields = allFieldNames
       .map(name => {
         const beforeField = beforeObj?.fields[name]
-        const afterField = afterObj?.fields[name]
+        const afterField = afterObj.fields[name]
         const { elemID } = afterField ?? beforeField
-        const validField = elemIdFullNamesToOmit.has(elemID.getFullName())
+        const validField = fieldsElemIdsToOmit.has(elemID.getFullName())
           ? beforeField
           : afterField
         return validField === undefined ? undefined : validField.clone()
       })
       .filter(values.isDefined)
 
+    if (beforeObj === undefined && !onlyInvalidFields) {
+      // should not happen
+      throw new Error(`invalid creation of new type ${afterObj.elemID.getFullName()} should be reverted`)
+    }
+    // revert the invalid changes in type annotations if there are.
+    const typeToClone = beforeObj === undefined || onlyInvalidFields ? afterObj : beforeObj
     return new ObjectType({
-      elemID: afterObj.elemID,
+      elemID: typeToClone.elemID,
       fields: _.keyBy(validFields, field => field.name),
-      annotationRefsOrTypes: _.clone(afterObj.annotationRefTypes),
-      annotations: _.cloneDeep(afterObj.annotations),
-      isSettings: afterObj.isSettings,
+      annotationRefsOrTypes: _.clone(typeToClone.annotationRefTypes),
+      annotations: _.cloneDeep(typeToClone.annotations),
+      isSettings: typeToClone.isSettings,
     })
   }
 
-  const createValidAfterElementsMap = async (
+  const createValidAfterTypeElementsMap = async (
     invalidChanges: ChangeError[]
-  ): Promise<ElementMap> => {
-    const topLevelNodeIdToInvalidElemIds = _(invalidChanges)
-      .map(c => c.elemID)
-      .groupBy(elemId => elemId.createTopLevelParentID().parent.getFullName())
-
-    const validChangeElements = await awu(invalidChanges)
+  ): Promise<Record<string, TypeElement>> => {
+    const topLevelNodeIdToInvalidElemIds = _.groupBy(
+      invalidChanges.map(c => c.elemID),
+      elemId => elemId.createTopLevelParentID().parent.getFullName()
+    )
+    return awu(invalidChanges)
       .map(async change => {
         const elemID = change.elemID.createTopLevelParentID().parent
         const beforeElem = await beforeElements.get(elemID)
         const afterElem = await afterElements.get(elemID)
-        const validElement = topLevelNodeIdToInvalidElemIds.has(elemID.getFullName())
-          ? createValidTopLevelElem(beforeElem as TopLevelElement, afterElem as TopLevelElement,
-            topLevelNodeIdToInvalidElemIds.get(elemID.getFullName()))
-          : afterElem
-        return validElement
+        if (!isType(beforeElem) && !isType(afterElem)) {
+          return undefined
+        }
+        const typeElementChange = toChange({
+          before: isType(beforeElem) ? beforeElem : undefined,
+          after: isType(afterElem) ? afterElem : undefined,
+        })
+        if (topLevelNodeIdToInvalidElemIds[elemID.getFullName()]) {
+          return createValidTypeElement(typeElementChange, topLevelNodeIdToInvalidElemIds[elemID.getFullName()])
+        }
+        return isType(afterElem) ? afterElem : undefined
       })
       .filter(values.isDefined)
-      .toArray()
-
-    return _.keyBy(validChangeElements, e => e.elemID.getFullName())
+      .keyBy(e => e.elemID.getFullName())
   }
 
-  const buildValidDiffGraph = (nodeElemIdsToOmit: Set<NodeId>, validAfterElementsMap: ElementMap):
-    { validDiffGraph: DiffGraph<ChangeDataType>; dependencyErrors: DependencyError[] } => {
-    const getValidAfter = (elem: Element): Element | undefined => {
+  const buildValidDiffGraph = (
+    nodeElemIdsToOmit: Set<NodeId>,
+    validAfterElementsMap: Record<string, TypeElement>
+  ): {
+    validDiffGraph: DiffGraph<ChangeDataType>
+    dependencyErrors: DependencyError[]
+  } => {
+    const getValidAfter = (elem: ChangeDataType): ChangeDataType | undefined => {
       if (isField(elem)) {
-        const validParent = validAfterElementsMap[elem.parent.elemID.getFullName()] as ObjectType
-        return validParent?.fields?.[elem.name]
+        const validParent = validAfterElementsMap[elem.parent.elemID.getFullName()]
+        return isObjectType(validParent) ? validParent.fields[elem.name] : undefined
       }
       return validAfterElementsMap[elem.elemID.getFullName()]
     }
-    const replaceAfterElement = <T extends DiffNode<ChangeDataType>>(change: T): T => {
-      if (isAdditionOrModificationChange(change)) {
-        const after = getValidAfter(change.data.after) ?? change.data.after
-        return { ...change, data: { ...change.data, after } }
+    const replaceAfter = (
+      { originalId, ...change }: DiffNode<ChangeDataType>
+    ): DiffNode<ChangeDataType> | undefined => {
+      if (isInstanceChange(change)) {
+        return { originalId, ...change }
       }
-      return change
+      const before = isAdditionChange(change) ? undefined : change.data.before
+      // In case of a type/field change we want to take only the valid changes in the after element
+      const after = isRemovalChange(change) ? undefined : getValidAfter(change.data.after)
+      if (isEqualElements(before, after, compareOptions)) {
+        return undefined
+      }
+      return { originalId, ...toChange({ before, after }) }
     }
 
     const nodeIdToElemId = (nodeId: NodeId): ElemID => (
@@ -178,12 +198,21 @@ export const filterInvalidChanges = (
 
     wu(nodesToInclude.keys()).forEach(nodeId => {
       const change = diffGraph.getData(nodeId)
-      const validChange = replaceAfterElement(change)
-      validDiffGraph.addNode(
-        nodeId,
-        wu(diffGraph.get(nodeId)).filter(id => nodesToInclude.has(id)),
-        validChange
-      )
+      const validChange = replaceAfter(change)
+      if (validChange) {
+        validDiffGraph.addNode(
+          nodeId,
+          wu(diffGraph.get(nodeId)).filter(id => nodesToInclude.has(id)),
+          validChange
+        )
+      } else if (isFieldChange(change)) {
+        const changeElemId = getChangeData(change).elemID
+        const { parent } = changeElemId.createTopLevelParentID()
+        dependencyErrors.push(createDependencyErr(parent, changeElemId))
+      } else {
+        // should not happen
+        throw new Error(`change ${nodeId} should be a field change`)
+      }
     })
 
     return { validDiffGraph, dependencyErrors }
@@ -212,10 +241,10 @@ export const filterInvalidChanges = (
   const nodeElemIdsToOmit = new Set(
     invalidChanges.map(change => change.elemID.createBaseID().parent.getFullName())
   )
-  const validAfterElementsMap = await createValidAfterElementsMap(invalidChanges)
+  const validAfterTypeElementsMap = await createValidAfterTypeElementsMap(invalidChanges)
   const { validDiffGraph, dependencyErrors } = buildValidDiffGraph(
     nodeElemIdsToOmit,
-    validAfterElementsMap
+    validAfterTypeElementsMap
   )
   return {
     changeErrors: [...changeErrors, ...dependencyErrors],

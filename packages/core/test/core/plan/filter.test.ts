@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue, isDependencyError } from '@salto-io/adapter-api'
+import { getChangeData, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue, isDependencyError, isType, isField } from '@salto-io/adapter-api'
 import wu, { WuIterable } from 'wu'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
@@ -24,18 +24,20 @@ import { createElementSource } from '../../common/helpers'
 describe('filterInvalidChanges', () => {
   const allElements = mock.getAllElements()
 
-  const mockChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
-    async changes => changes
-      .map(getChangeData)
-      .filter(elem => elem.elemID.name.includes('invalid'))
-      .map(({ elemID }) => ({ elemID, severity: 'Error', message: 'msg', detailedMessage: '' }))
-  )
+  const mockChangeValidator = (wholeTypeError = true): ChangeValidator =>
+    mockFunction<ChangeValidator>().mockImplementation(
+      async changes => changes
+        .map(getChangeData)
+        .filter(elem => elem.elemID.name.includes('invalid'))
+        .map(elem => (isType(elem) && !wholeTypeError ? elem.elemID.createNestedID('attr', 'invalid') : elem.elemID))
+        .map(elemID => ({ elemID, severity: 'Error', message: 'msg', detailedMessage: '' }))
+    )
 
   it('should have no change errors when having no diffs', async () => {
     const planResult = await getPlan({
       before: createElementSource(allElements),
       after: createElementSource(allElements),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors).toHaveLength(0)
     expect(planResult.size).toBe(0)
@@ -52,7 +54,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource(allElements),
       after: createElementSource([...allElements, ...newElements]),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors).toHaveLength(0)
     expect(planResult.size).toBe(2)
@@ -79,7 +81,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource(allElements),
       after: createElementSource([...allElements, newInvalidObj, newInvalidInst]),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(3)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(4)
@@ -105,7 +107,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource(allElements),
       after: createElementSource([...allElements, newValidObj]),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
@@ -128,7 +130,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource(allElements),
       after: createElementSource(afterElements),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
@@ -146,7 +148,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource(allElements),
       after: createElementSource(afterElements),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
@@ -174,18 +176,44 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource([...allElements, beforeInvalidObj]),
       after: createElementSource([...allElements, afterInvalidObj]),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator(false) },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
-    expect(planResult.changeErrors[0].elemID.isEqual(afterInvalidObj.elemID)).toBeTruthy()
+    expect(afterInvalidObj.elemID.isParentOf(planResult.changeErrors[0].elemID)).toBeTruthy()
     expect(planResult.size).toBe(1)
     const planItem = getFirstPlanItem(planResult)
     expect(planItem.items.size).toBe(1)
     const [change] = planItem.changes()
     expect(change.action).toEqual('add')
-    expect(getChangeData(change)).toEqual(afterInvalidObj.fields.valid)
+    const afterValidObj = beforeInvalidObj.clone()
+    afterValidObj.fields.valid = new Field(afterValidObj, 'valid', BuiltinTypes.STRING)
+    const changeData = getChangeData(change)
+    expect(isField(changeData) && changeData.parent.isEqual(afterValidObj)).toBeTruthy()
+  })
+
+  it('should have onUpdate change error when modifying invalid object as a whole and dependency errors for the creation of valid field', async () => {
+    const invalidObjElemId = new ElemID('salto', 'invalid')
+    const beforeInvalidObj = new ObjectType({ elemID: invalidObjElemId })
+    const afterInvalidObj = beforeInvalidObj.clone()
+    afterInvalidObj.annotations.new = 'value'
+    afterInvalidObj.annotationRefTypes.new = createRefToElmWithValue(BuiltinTypes.STRING)
+    afterInvalidObj.fields.valid = new Field(afterInvalidObj, 'valid', BuiltinTypes.STRING)
+    const planResult = await getPlan({
+      before: createElementSource([...allElements, beforeInvalidObj]),
+      after: createElementSource([...allElements, afterInvalidObj]),
+      changeValidators: { salto: mockChangeValidator() },
+    })
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors[0].severity).toEqual('Error')
+    expect(afterInvalidObj.elemID.isEqual(planResult.changeErrors[0].elemID)).toBeTruthy()
+    const depErr = planResult.changeErrors.find(isDependencyError)
+    expect(depErr?.severity).toEqual('Error')
+    expect(depErr && afterInvalidObj.fields.valid.elemID.isEqual(depErr.elemID)).toBeTruthy()
+    expect(depErr && afterInvalidObj.elemID.isEqual(depErr.causeID)).toBeTruthy()
+    expect(planResult.size).toBe(0)
   })
 
   it('should have onUpdate change errors when only some field removals are invalid', async () => {
@@ -196,7 +224,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource(beforeElements),
       after: createElementSource(allElements),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
@@ -223,7 +251,7 @@ describe('filterInvalidChanges', () => {
     const planResult = await getPlan({
       before: createElementSource(beforeElements),
       after: createElementSource(afterElements),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
@@ -276,7 +304,7 @@ describe('filterInvalidChanges', () => {
         [...allElements, beforeInvalidObj, beforeInvalidInst]
       ),
       after: createElementSource(allElements),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator() },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(3)
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(3)
@@ -291,8 +319,10 @@ describe('filterInvalidChanges', () => {
   })
 
   it('should include nodes that were dropped due to a dependency to an error node', async () => {
+    const invalidObjElemId = new ElemID('salto', 'new_invalid_obj')
+    const beforeInvalidObj = new ObjectType({ elemID: invalidObjElemId })
     const newInvalidObj = new ObjectType({
-      elemID: new ElemID('salto', 'new_invalid_obj'),
+      elemID: invalidObjElemId,
       fields: {
         valid: { refType: BuiltinTypes.STRING },
       },
@@ -300,15 +330,15 @@ describe('filterInvalidChanges', () => {
     })
     const newDependentInst = new InstanceElement('valid', newInvalidObj, {})
     const planResult = await getPlan({
-      before: createElementSource(allElements),
+      before: createElementSource([...allElements, beforeInvalidObj]),
       after: createElementSource([...allElements, newInvalidObj, newDependentInst]),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator(false) },
       dependencyChangers: [async () => wu([
         {
           action: 'add',
           dependency: {
             source: `${newDependentInst.elemID.getFullName()}/add`,
-            target: `${newInvalidObj.elemID.getFullName()}/add`,
+            target: `${newInvalidObj.elemID.getFullName()}/modify`,
           },
         },
       ])],
@@ -317,7 +347,7 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(1)
     const objErr = planResult.changeErrors.filter(err => !isDependencyError(err))[0]
     const depErr = planResult.changeErrors.filter(err => isDependencyError(err))[0]
-    expect(objErr.elemID.isEqual(newInvalidObj.elemID))
+    expect(newInvalidObj.elemID.isParentOf(objErr.elemID))
       .toBeTruthy()
     expect(depErr.severity === 'Error').toBeTruthy()
     expect(depErr.elemID.isEqual(newDependentInst.elemID))
@@ -330,8 +360,10 @@ describe('filterInvalidChanges', () => {
   })
 
   it('should include dependency error and actual error if a change has both', async () => {
+    const invalidObjElemId = new ElemID('salto', 'new_invalid_obj')
+    const beforeInvalidObj = new ObjectType({ elemID: invalidObjElemId })
     const newInvalidObj = new ObjectType({
-      elemID: new ElemID('salto', 'new_invalid_obj'),
+      elemID: invalidObjElemId,
       fields: {
         valid: { refType: BuiltinTypes.STRING },
       },
@@ -339,15 +371,15 @@ describe('filterInvalidChanges', () => {
     })
     const newInvalidDependentInst = new InstanceElement('invalid', newInvalidObj, {})
     const planResult = await getPlan({
-      before: createElementSource(allElements),
+      before: createElementSource([...allElements, beforeInvalidObj]),
       after: createElementSource([...allElements, newInvalidObj, newInvalidDependentInst]),
-      changeValidators: { salto: mockChangeValidator },
+      changeValidators: { salto: mockChangeValidator(false) },
       dependencyChangers: [async () => wu([
         {
           action: 'add',
           dependency: {
             source: `${newInvalidDependentInst.elemID.getFullName()}/add`,
-            target: `${newInvalidObj.elemID.getFullName()}/add`,
+            target: `${newInvalidObj.elemID.getFullName()}/modify`,
           },
         },
       ])],
@@ -356,7 +388,7 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(1)
     const [objErr, instErr] = planResult.changeErrors.filter(err => !isDependencyError(err))
     const depErr = planResult.changeErrors.filter(err => isDependencyError(err))[0]
-    expect(objErr.elemID.isEqual(newInvalidObj.elemID))
+    expect(newInvalidObj.elemID.isParentOf(objErr.elemID))
       .toBeTruthy()
     expect(instErr.elemID.isEqual(newInvalidDependentInst.elemID))
       .toBeTruthy()

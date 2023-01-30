@@ -22,6 +22,7 @@ import { Readable } from 'stream'
 import getStream from 'get-stream'
 import * as file from '../src/file'
 import * as gzip from '../src/gzip'
+import { log } from '../index'
 
 describe('gzip', () => {
   const expectRejectWithErrnoException = async <TResult>(
@@ -326,5 +327,9 @@ describe('gzip', () => {
         expect(contents).toEqual(await getStream(gzip.createGZipReadStream(dest)))
       })
     })
+  })
+
+  it('should have an exported log', () => {
+    expect(log.info).toBeDefined()
   })
 })

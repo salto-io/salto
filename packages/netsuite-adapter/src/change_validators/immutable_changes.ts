@@ -44,7 +44,7 @@ const toTypeErrors = async (change: ModificationChange<ObjectType>): Promise<Cha
     modifiedImmutableAnnotations.push(APPLICATION_ID)
   }
   return modifiedImmutableAnnotations.map(modifiedAnno => ({
-    elemID: after.elemID,
+    elemID: after.elemID.createNestedID('attr', modifiedAnno),
     severity: 'Error',
     message: 'Attempting to modify an immutable annotation',
     detailedMessage: `Annotation '${modifiedAnno}' is immutable`,

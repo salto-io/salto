@@ -57,7 +57,7 @@ describe('customization type change validator', () => {
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(type.elemID)
+    expect(changeErrors[0].elemID).toEqual(type.elemID.createNestedID('attr', SCRIPT_ID))
   })
 
   it('should have change error if field SCRIPT_ID annotation has been modified', async () => {
@@ -199,6 +199,6 @@ describe('customization type change validator', () => {
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(after.elemID)
+    expect(changeErrors[0].elemID).toEqual(after.elemID.createNestedID('attr', 'application_id'))
   })
 })

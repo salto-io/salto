@@ -1,6 +1,6 @@
-# Netsuite adapter
+# NetSuite adapter
 
-Netsuite adapter for salto.io
+NetSuite adapter for salto.io
 
 ### Prerequisites
 ###### taken from https://github.com/oracle/netsuite-suitecloud-sdk/tree/master/packages/node-cli
@@ -21,7 +21,7 @@ yarn
 yarn build
 ```
 
-## Configure your Netsuite account to work with Salto
+## Configure your NetSuite account to work with Salto
 * Enable SDF in Your NetSuite Account (Admin Only) - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=section_4724921034.html
 * Setup Your Role (prefer Administrator) for SDF Development - follow the instructions under https://<ACCOUNT_ID>.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1539287603.html
 

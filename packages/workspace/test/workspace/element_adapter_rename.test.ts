@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, StaticFile, TemplateExpression, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, StaticFile, TemplateExpression, TypeReference, UnresolvedReference } from '@salto-io/adapter-api'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../../src/element_adapter_rename'
-import { UnresolvedReference } from '../../src/expressions'
 
 describe('when replacing id adapter', () => {
   it('creates a new elemID with different id', () => {

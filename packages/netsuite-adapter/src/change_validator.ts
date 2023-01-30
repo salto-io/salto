@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ChangeError, getChangeData, ChangeValidator } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeStandardTypesValidator from './change_validators/remove_standard_types'
@@ -45,7 +46,11 @@ import { NetsuiteChangeValidator } from './change_validators/types'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
 
-const changeValidators: NetsuiteChangeValidator[] = [
+const changeValidators = [
+  deployment.changeValidators.createUnresolvedReferencesValidator(),
+]
+
+const netsuiteChangeValidators: NetsuiteChangeValidator[] = [
   exchangeRateValidator,
   currencyUndeployableFieldsValidator,
   workflowAccountSpecificValuesValidator,
@@ -113,12 +118,13 @@ const getChangeValidator: ({
       elementsSourceIndex,
     }
   ) =>
-    async changes => {
+    async (changes, elementSource) => {
       const validators = withSuiteApp
-        ? [...changeValidators]
-        : [...changeValidators, ...nonSuiteAppValidators]
+        ? [...netsuiteChangeValidators]
+        : [...netsuiteChangeValidators, ...nonSuiteAppValidators]
 
       const validatorChangeErrors: ChangeError[] = _.flatten(await Promise.all([
+        ...changeValidators.map(validator => validator(changes, elementSource)),
         ...validators.map(validator => validator(changes, deployReferencedElements)),
         warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
       ]))

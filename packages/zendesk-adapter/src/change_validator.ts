@@ -65,6 +65,7 @@ const {
   deployTypesNotSupportedValidator,
   createCheckDeploymentBasedOnConfigValidator,
   createSkipParentsOfSkippedInstancesValidator,
+  createUnresolvedReferencesValidator,
 } = deployment.changeValidators
 
 export default ({
@@ -79,6 +80,7 @@ export default ({
   typesWithNoDeploy: string[]
 }): ChangeValidator => {
   const validators: ChangeValidator[] = [
+    createUnresolvedReferencesValidator(),
     deployTypesNotSupportedValidator,
     createCheckDeploymentBasedOnConfigValidator(
       { apiConfig, typesDeployedViaParent, typesWithNoDeploy }

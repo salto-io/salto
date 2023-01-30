@@ -79,7 +79,8 @@ export type OptionalFeatures = {
 }
 
 export type ChangeValidatorName = (
-  'managedPackage'
+  'unresolvedReferencesValidator'
+  | 'managedPackage'
   | 'picklistStandardField'
   | 'customObjectInstances'
   | 'unknownField'
@@ -568,6 +569,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
   fields: {
+    unresolvedReferencesValidator: { refType: BuiltinTypes.BOOLEAN },
     managedPackage: { refType: BuiltinTypes.BOOLEAN },
     picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
     customObjectInstances: { refType: BuiltinTypes.BOOLEAN },

@@ -15,6 +15,7 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
+import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
@@ -35,7 +36,6 @@ import caseAssignmentRulesValidator from './change_validators/case_assignmentRul
 import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
 import SalesforceClient from './client/client'
-
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
 
@@ -52,6 +52,10 @@ type ChangeValidatorDefinition = {
 const defaultAlwaysRun = { defaultInDeploy: true, defaultInValidate: true }
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefinition> = {
+  unresolvedReferencesValidator: {
+    creator: () => deployment.changeValidators.createUnresolvedReferencesValidator(),
+    ...defaultAlwaysRun,
+  },
   managedPackage: { creator: () => packageValidator, ...defaultAlwaysRun },
   picklistStandardField: { creator: () => picklistStandardFieldValidator, ...defaultAlwaysRun },
   customObjectInstances: { creator: () => customObjectInstancesValidator, ...defaultAlwaysRun },

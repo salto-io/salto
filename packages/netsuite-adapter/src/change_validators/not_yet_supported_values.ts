@@ -37,7 +37,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
       elemID: element.elemID,
       severity: 'Error',
       message: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed',
-      detailedMessage: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. Please see https://docs.salto.io/docs/deploying-elements-containing-not-yet-supported-values for more details.',
+      detailedMessage: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. Please see https://help.salto.io/en/articles/6845063-deploying-elements-containing-not-yet-supported-values for more details.',
     } as ChangeError))
     .toArray()
 )

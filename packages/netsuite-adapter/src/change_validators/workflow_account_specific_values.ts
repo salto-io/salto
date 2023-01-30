@@ -35,7 +35,7 @@ const toValidationError = (instance: InstanceElement, probField: string): Change
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Workflow contains fields which cannot be deployed',
-  detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://docs.salto.io/docs/deploying-workflows-actions-with-account-specific-value for more information.`,
+  detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://help.salto.io/en/articles/6845061-deploying-workflows-actions-with-account-specific-value for more information.`,
 })
 
 

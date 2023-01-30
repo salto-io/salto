@@ -112,9 +112,12 @@ const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosEr
   return retryDelay
 }
 
+const shouldRetryStatusCode = (statusCode?: number, additionalStatusCodesToRetry: number[] = []): boolean =>
+  statusCode !== undefined && [429, ...additionalStatusCodesToRetry].includes(statusCode)
+
 export const createRetryOptions = (
   retryOptions: Required<ClientRetryConfig>,
-  additionalStatusesToRetry: number[] = []
+  additionalStatusCodesToRetry: number[] = []
 ): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
@@ -129,7 +132,7 @@ export const createRetryOptions = (
     return retryDelay
   },
   retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
-    || (err.response?.status !== undefined && [429, ...additionalStatusesToRetry].includes(err.response.status)),
+    || shouldRetryStatusCode(err.response?.status, additionalStatusCodesToRetry),
 })
 
 type ConnectionParams<TCredentials> = {

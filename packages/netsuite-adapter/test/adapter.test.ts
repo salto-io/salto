@@ -35,7 +35,7 @@ import * as changesDetector from '../src/changes_detector/changes_detector'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import * as suiteAppFileCabinet from '../src/suiteapp_file_cabinet'
-import { SDF_CHANGE_GROUP_ID } from '../src/group_changes'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
@@ -588,7 +588,7 @@ describe('Adapter', () => {
 
     const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => netsuiteAdapter.deploy({
       changeGroup: {
-        groupID: SDF_CHANGE_GROUP_ID,
+        groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
         changes: [{ action: 'add', data: { after } }],
       },
     })
@@ -640,7 +640,7 @@ describe('Adapter', () => {
       it('should support deploying multiple changes at once', async () => {
         const result = await netsuiteAdapter.deploy({
           changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [
               { action: 'add', data: { after: fileInstance } },
               { action: 'add', data: { after: folderInstance } },
@@ -663,7 +663,7 @@ describe('Adapter', () => {
         client.deploy = jest.fn().mockRejectedValue(clientError)
         const result = await netsuiteAdapter.deploy({
           changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [
               { action: 'add', data: { after: fileInstance } },
               { action: 'add', data: { after: folderInstance } },
@@ -688,7 +688,7 @@ describe('Adapter', () => {
         before: ChangeDataType, after: ChangeDataType
       ): Promise<DeployResult> => netsuiteAdapter.deploy({
         changeGroup: {
-          groupID: SDF_CHANGE_GROUP_ID,
+          groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
           changes: [{ action: 'modify', data: { before, after } }],
         },
       })
@@ -778,7 +778,7 @@ describe('Adapter', () => {
 
         await netsuiteAdapterWithDeployReferencedElements.deploy({
           changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [{ action: 'add', data: { after: instance } }],
           },
         })
@@ -821,7 +821,7 @@ describe('Adapter', () => {
 
         await netsuiteAdapterWithAdditionalSdfDependencies.deploy({
           changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [{ action: 'add', data: { after: instance } }],
           },
         })

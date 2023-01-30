@@ -21,6 +21,8 @@ import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 
 describe('organizations filter', () => {
+  let client: ZendeskClient
+  let mockGet: jest.SpyInstance
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
@@ -56,16 +58,19 @@ describe('organizations filter', () => {
     },
   )
 
+  beforeEach(async () => {
+    jest.clearAllMocks()
+    client = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+    })
+    mockGet = jest.spyOn(client, 'getSinglePage')
+    filter = filterCreator(
+      createFilterCreatorParams({ client })
+    ) as FilterType
+  })
   describe('onFetch', () => {
-    let client: ZendeskClient
-    let mockGet: jest.SpyInstance
-
     beforeEach(async () => {
       jest.clearAllMocks()
-      client = new ZendeskClient({
-        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-      })
-      mockGet = jest.spyOn(client, 'getSinglePage')
       mockGet.mockResolvedValue({
         status: 200,
         data: {
@@ -78,9 +83,6 @@ describe('organizations filter', () => {
           ],
         },
       })
-      filter = filterCreator(
-        createFilterCreatorParams({ client })
-      ) as FilterType
     })
     it('should replace all organization ids with names', async () => {
       const elements = [userSegmentType, userSegmentInstance, triggerType, triggerInstance]
@@ -112,18 +114,6 @@ describe('organizations filter', () => {
     })
   })
   describe('preDeploy', () => {
-    let client: ZendeskClient
-    let mockGet: jest.SpyInstance
-    beforeEach(async () => {
-      jest.clearAllMocks()
-      client = new ZendeskClient({
-        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-      })
-      mockGet = jest.spyOn(client, 'getSinglePage')
-      filter = filterCreator(
-        createFilterCreatorParams({ client })
-      ) as FilterType
-    })
     it('should repalce organizaion names with emails', async () => {
       mockGet
         .mockResolvedValueOnce({
@@ -154,6 +144,7 @@ describe('organizations filter', () => {
         }
       )
       await filter.preDeploy([toChange({ after: userSegAfterFetch })])
+      expect(mockGet).toHaveBeenCalledTimes(2)
       expect(userSegAfterFetch.value).toEqual({
         title: 'test',
         organization_ids: [1, 2],
@@ -161,18 +152,6 @@ describe('organizations filter', () => {
     })
   })
   describe('onDeploy', () => {
-    let client: ZendeskClient
-    let mockGet: jest.SpyInstance
-    beforeEach(async () => {
-      jest.clearAllMocks()
-      client = new ZendeskClient({
-        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-      })
-      mockGet = jest.spyOn(client, 'getSinglePage')
-      filter = filterCreator(
-        createFilterCreatorParams({ client })
-      ) as FilterType
-    })
     it('should change back organization ids to names', async () => {
       mockGet
         .mockResolvedValueOnce({

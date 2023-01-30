@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { resolvePath, setPath } from '@salto-io/adapter-utils'
+import { resolvePath, setPath, createSchemeGuard } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
@@ -50,23 +50,9 @@ const EXPECTED_ORGANIZATION_RESPONSE_SCHEMA = Joi.object({
   organizations: ORGANIZATIONS_SCHEMA,
 }).unknown(true)
 
-const isOrganizationsResponse = (response: unknown): response is OrganizationResponse => {
-  const { error } = EXPECTED_ORGANIZATION_RESPONSE_SCHEMA.validate(response)
-  if (error !== undefined) {
-    log.warn(`Received an invalid response for the organization request: ${error.message}`)
-    return false
-  }
-  return true
-}
+const isOrganizationsResponse = createSchemeGuard<OrganizationResponse>(EXPECTED_ORGANIZATION_RESPONSE_SCHEMA, 'Received an invalid response from organization request')
 
-const areOrganizations = (values: unknown): values is Organization[] => {
-  const { error } = ORGANIZATIONS_SCHEMA.validate(values)
-  if (error !== undefined) {
-    log.warn(`Received invalid organizations: ${error.message}`)
-    return false
-  }
-  return true
-}
+const areOrganizations = createSchemeGuard<Organization[]>(ORGANIZATIONS_SCHEMA, 'Received invalid organizations')
 
 const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
   automation: replaceConditionsAndActionsCreator([
@@ -172,7 +158,7 @@ const filterCreator: FilterCreator = ({ client }) => {
             return { id: stringOrgId, instance, path }
           })
       })
-        .filter(entry => entry.id !== '') // organization id value might be an empty string
+        .filter(entry => !_.isEmpty(entry.id)) // organization id value might be an empty string
 
       const pathEntriesByOrgId = _.groupBy(organizationPathsEntries, entry => entry.id)
       const organizationIds = _.uniq(Object.keys(pathEntriesByOrgId))
@@ -196,7 +182,7 @@ const filterCreator: FilterCreator = ({ client }) => {
         const instance = getChangeData(change)
         const organizationPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
         return organizationPaths.map(path => resolvePath(instance, path))
-      })).filter(name => name !== '') // filter out empty strings
+      })).filter(name => !_.isEmpty(name)) // filter out empty strings
       if (_.isEmpty(organizationNames)) {
         return
       }

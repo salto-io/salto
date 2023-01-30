@@ -89,7 +89,7 @@ salesforce {
         },
         {
           metadataType = "EmailTemplate"
-          name = "^MarketoEmailTemplates/*"
+          name = "MarketoEmailTemplates/.*"
         },
         {
           metadataType = "ContentAsset"

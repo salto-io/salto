@@ -22,7 +22,7 @@ import getStream from 'get-stream'
 import { logger } from '@salto-io/logging'
 import { readFile } from './file'
 
-const log = logger(module)
+export const log = logger(module)
 
 export const createGZipReadStream = (
   zipFilename: string,

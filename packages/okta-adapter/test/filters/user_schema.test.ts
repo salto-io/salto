@@ -28,7 +28,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
   const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
   const userTypeType = new ObjectType({ elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME) })
   const userTypeInstanceA = new InstanceElement(
-    'test',
+    'test1',
     userTypeType,
     {
       id: 123,
@@ -44,7 +44,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
     },
   )
   const userTypeInstanceB = new InstanceElement(
-    'test',
+    'test2',
     userTypeType,
     {
       id: 234,
@@ -60,7 +60,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
     },
   )
   const defaultUserTypeInstance = new InstanceElement(
-    'test',
+    'test3',
     userTypeType,
     {
       id: 345,
@@ -118,6 +118,16 @@ describe('fetchUserSchemaInstancesFilter', () => {
     expect(createdInstance.map(i => i.value)).toEqual([
       { id: 'A123', name: 'userSchema123', description: 'user schema' },
       { id: 'B123', name: 'userSchema234', description: 'user schema' },
+    ])
+    const userTypeInstances = elements
+      .filter(isInstanceElement)
+      .filter(inst => inst.elemID.typeName === USERTYPE_TYPE_NAME)
+      .sort()
+    expect(userTypeInstances.length).toEqual(3)
+    expect(userTypeInstances.map(i => i.elemID.getFullName())).toEqual([
+      'okta.UserType.instance.test1',
+      'okta.UserType.instance.test2',
+      'okta.UserType.instance.test3',
     ])
   })
   it('should skip userType instance if the matching userSchema id was not found', async () => {

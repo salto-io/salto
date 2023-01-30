@@ -65,7 +65,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     )
     this.resourceConn = clientUtils.createClientConnection({
       retryOptions: clientUtils.createRetryOptions(
-        _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS)
+        _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS),
+        [409, 503] // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
       ),
       createConnection: createResourceConnection,
     })

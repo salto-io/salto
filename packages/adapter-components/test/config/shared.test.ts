@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createUserFetchConfigType, getConfigWithDefault } from '../../src/config'
+import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault } from '../../src/config'
 
 describe('config_shared', () => {
   describe('createUserFetchConfigType', () => {
@@ -23,6 +23,13 @@ describe('config_shared', () => {
       expect(type.fields.include).toBeDefined()
       expect(type.fields.exclude).toBeDefined()
       expect(type.fields.hideTypes).toBeDefined()
+    })
+  })
+  describe('createUserDeployConfigType', () => {
+    it('should return default type when no custom fields were added', () => {
+      const type = createUserDeployConfigType('myAdapter')
+      expect(Object.keys(type.fields)).toHaveLength(1)
+      expect(type.fields.defaultMissingUserFallback).toBeDefined()
     })
   })
   describe('getConfigWithDefault', () => {

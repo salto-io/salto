@@ -24,7 +24,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { DUPLICATE_RULE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../constants'
-import { apiName } from '../transformers/transformer'
+import { isInstanceOfType, isInstanceOfTypeChange } from '../filters/utils'
 
 const { awu } = collections.asynciterable
 
@@ -45,7 +45,7 @@ const DUPLICATE_RULE_INSTANCE_SCHEMA = Joi.object({
 }).unknown(true).required()
 
 
-const isDuplicateRuleInstance = createSchemeGuard<DuplicateRuleInstance>(DUPLICATE_RULE_INSTANCE_SCHEMA)
+const isValidDuplicateRuleInstance = createSchemeGuard<DuplicateRuleInstance>(DUPLICATE_RULE_INSTANCE_SCHEMA)
 
 const getRelatedObjectName = (instance: DuplicateRuleInstance): string => (
   instance.value[INSTANCE_FULL_NAME_FIELD].split('.')[0]
@@ -58,11 +58,13 @@ const createSortOrderError = (
 ): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
-  message: 'DuplicateRule instances must be in sequential order',
-  detailedMessage: `Could not deploy DuplicateRule instance ${instance.elemID.name} since the DuplicateRule instances
-  on the type ${objectName} are not in sequential order. Order: ${order}`,
+  message: `Duplicate rule instances for ${objectName} must be in sequential order.`,
+  detailedMessage: `Please set or update the order of the instances while making sure it starts from 1 and always increases by 1 (gaps are not allowed). Order is: ${order}`,
 })
 
+/**
+ * Validates the values in the array are in sequential order starting from 1.
+ */
 const isInvalidSortOrder = (sortOrders: number[]): boolean => (
   sortOrders
     .sort()
@@ -73,25 +75,24 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
     return []
   }
-  const isInstanceOfTypeDuplicateRule = async (instance: InstanceElement): Promise<boolean> => (
-    await apiName(await instance.getType(elementsSource)) === DUPLICATE_RULE_METADATA_TYPE
-  )
   const relatedChangesByObjectName = _.groupBy(
     await awu(changes)
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
-      .filter(change => isInstanceOfTypeDuplicateRule(getChangeData(change)))
-      .filter(change => isDuplicateRuleInstance(getChangeData(change)))
+      .filter(isInstanceOfTypeChange(DUPLICATE_RULE_METADATA_TYPE))
+      .filter(change => isValidDuplicateRuleInstance(getChangeData(change)))
       .toArray() as Change<DuplicateRuleInstance>[],
     change => getRelatedObjectName(getChangeData(change))
   )
   if (_.isEmpty(relatedChangesByObjectName)) {
     return []
   }
-  const duplicateRuleInstances = await awu(await elementsSource.getAll())
+  const x = await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
-    .filter(isInstanceOfTypeDuplicateRule)
-    .filter(isDuplicateRuleInstance)
+    .toArray()
+  const duplicateRuleInstances = await awu(x)
+    .filter(isInstanceOfType(DUPLICATE_RULE_METADATA_TYPE))
+    .filter(isValidDuplicateRuleInstance)
     .toArray()
 
   const relevantDuplicateRuleInstancesByObjectName = _.pick(

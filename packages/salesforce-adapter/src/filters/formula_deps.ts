@@ -33,29 +33,29 @@ const { extract } = formulon
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const identifierTypeToElemIdType = (identifierType: IdentifierType): ElemIDType => (
-  ({
+const identifierTypeToElemIdType = (typeInfo: FormulaIdentifierInfo): ElemIDType => {
+  if ((typeInfo.instance.match(/\./g) || []).length > 0) {
+    return 'field'
+  }
+
+  return ({
     [IdentifierType.STANDARD_OBJECT.name]: 'type',
     [IdentifierType.CUSTOM_METADATA_TYPE.name]: 'type',
     [IdentifierType.CUSTOM_OBJECT.name]: 'type',
     [IdentifierType.CUSTOM_SETTING.name]: 'type', // TODO is this right?
     [IdentifierType.STANDARD_FIELD.name]: 'field',
     [IdentifierType.CUSTOM_FIELD.name]: 'field',
-    // [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'instance', //see comment in referencesFromIdentifiers
-  } as Record<string, ElemIDType>)[identifierType.name]
-)
+    [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'type',
+  } as Record<string, ElemIDType>)[typeInfo.type.name]
+}
 
 const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> => (
-  // TODO CUSTOM_METADATA_TYPE_RECORD entries have these weird .by_class/.by_handler suffixes that I don't know how to
-  // handle, and the actual field refs already exist in CUSTOM_METADATA_TYPE and CUSTOM_FIELD.
-  // see https://github.com/pgonzaleznetwork/forcemula#custom-metadata-types
   typeInfos
-    .filter(({ type }) => (type !== IdentifierType.CUSTOM_METADATA_TYPE_RECORD))
-    .map(({ type, instance }) => (
+    .map(identifierInfo => (
       new ElemID(SALESFORCE,
-        instance.split('.')[0],
-        identifierTypeToElemIdType(type),
-        ...instance.split('.').slice(1))
+        identifierInfo.instance.split('.')[0],
+        identifierTypeToElemIdType(identifierInfo),
+        ...identifierInfo.instance.split('.').slice(1))
     ))
 )
 

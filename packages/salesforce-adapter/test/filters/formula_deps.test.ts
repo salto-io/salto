@@ -194,15 +194,17 @@ describe('Formula dependencies', () => {
       'salesforce.SRM_API_Metadata_Client_Setting__mdt',
       'salesforce.SRM_API_Metadata_Client_Setting__mdt.field.CreatedDate', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.DeveloperName',
-      'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Insert__c', 'salesforce.User',
-      'salesforce.User.field.CompanyName', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
-      'salesforce.User.field.ProfileId']
+      'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Insert__c',
+      'salesforce.Trigger_Context_Status__mdt.field.by_class',
+      'salesforce.Trigger_Context_Status__mdt.field.by_handler', 'salesforce.User', 'salesforce.User.field.CompanyName',
+      'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId', 'salesforce.User.field.ProfileId']
     const processBuilderFormulaExpectedRefs = ['salesforce.Account', 'salesforce.Account.field.AccountNumber',
       'salesforce.Account.field.OwnerId', 'salesforce.Account.field.original_lead__c', 'salesforce.Contact',
       'salesforce.Contact.field.AccountId', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Delete__c',
-      'salesforce.User', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
-      'salesforce.original_lead__r', 'salesforce.original_lead__r.field.ConvertedAccountId']
+      'salesforce.Trigger_Context_Status__mdt.field.by_class', 'salesforce.User', 'salesforce.User.field.ContactId',
+      'salesforce.User.field.ManagerId', 'salesforce.original_lead__r',
+      'salesforce.original_lead__r.field.ConvertedAccountId']
     it('Should extract the correct references from a complex standard formula', async () => {
       const elements = [typeWithFormula.clone(), ...referredTypes]
       elements[0].fields.someFormulaField__c.annotations[FORMULA] = standardFormula

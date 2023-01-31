@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType, isAdditionChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType, isAdditionChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -62,7 +62,6 @@ const getScriptIdFromChange = (change: Change): string => {
 
 const ADDITION = 'addition'
 const MODIFICATION = 'modification'
-
 
 type ManifestErrorNode = {
   elemIdFullName: string
@@ -235,21 +234,24 @@ export default class NetsuiteClient {
     changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
     elementsSourceIndex: LazyElementsSourceIndexes,
-  ):Promise<Map<string, Set<string>>> {
-    const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
-    const elements = changes.map(getChangeData)
-    const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
-    const elemIdsAndCustInfoArr = await awu(elements)
-      .filter(element => !isField(element) || !elemIdSet.has(element.parent.elemID.getFullName()))
-      .map(async element => ({
-        elemId: element.elemID,
-        custInfos: await NetsuiteClient.toCustomizationInfos(
-          [element], deployReferencedElements, elementsSourceIndex
-        ),
-      }
-      dependencyGraph.addNodes(new GraphNode(currNodeValue))
-      elemIdsAndCustInfos.push(currNodeValue)
-    })
+    dependencyGraph: Graph<ManifestErrorNode>,
+  ): Promise<ManifestErrorNode[]> {
+    const elemIdsAndCustInfos: ManifestErrorNode[] = []
+    await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .forEach(async change => {
+        const element = getChangeData(change)
+        const currNodeValue = {
+          elemIdFullName: element.elemID.getFullName(),
+          scriptid: getScriptIdFromChange(change),
+          changeType: isAdditionChange(change) ? ADDITION : MODIFICATION,
+          customizationInfos: await NetsuiteClient.toCustomizationInfos(
+            [element], deployReferencedElements, elementsSourceIndex
+          ),
+        }
+        dependencyGraph.addNodes(new GraphNode(currNodeValue))
+        elemIdsAndCustInfos.push(currNodeValue)
+      })
     return elemIdsAndCustInfos
   }
 
@@ -274,7 +276,7 @@ export default class NetsuiteClient {
           const serviceIdInfoArray = captureServiceIdInfo(val)
           serviceIdInfoArray.forEach(serviceIdInfo => {
             currSet.add(serviceIdInfo.serviceId)
-            const startNode = dependencyGraph.findNodeByfield(SCRIPT_ID, serviceIdInfo.serviceId)
+            const startNode = dependencyGraph.findNodeByField(SCRIPT_ID, serviceIdInfo.serviceId)
             if (startNode && endNode && startNode.value.changeType === ADDITION) {
               startNode.addEdge(endNode)
             }
@@ -295,7 +297,7 @@ export default class NetsuiteClient {
       Array.from(dependencyMap.keys())
         .filter(topLevelChangedElement =>
           error.missingDependencyScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement)?.has(scriptid)))
-        .map(elementName => dependencyGraph.findNodeByfield('elemIdFullName', elementName))
+        .map(elementName => dependencyGraph.findNodeByField('elemIdFullName', elementName))
         .filter(values.isDefined)
         .flatMap(node => dependencyGraph.getNodeDependencies(node))
         .map(node => node.value.elemIdFullName)

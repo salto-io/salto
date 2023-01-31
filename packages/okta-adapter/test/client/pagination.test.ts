@@ -15,7 +15,7 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { getWithCursorHeaderPagination } from '../src/client/pagination'
+import { getWithCursorHeaderPagination } from '../../src/client/pagination'
 
 describe('okta pagination', () => {
   describe('getWithCursorHeaderPagination', () => {

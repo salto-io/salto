@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import {
   Field,
   getChangeData,
@@ -42,8 +42,8 @@ import { PicklistValue } from '../client/types'
 import { Types, metadataType, isCustomObject } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
-
 const { makeArray } = collections.array
+const { isDefined } = values
 
 export const isPicklistField = (changedElement: ChangeDataType): changedElement is Field =>
   isField(changedElement)
@@ -68,10 +68,11 @@ type ValueSetField = Field & {
   annotations: ValueSetFieldAnnotations
 }
 
-const isValueSetField = (field: Field): field is ValueSetField => (
-  makeArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+const isValueSetField = (field: Field): field is ValueSetField => {
+  const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  return isDefined(valueSet) && makeArray(valueSet)
     .every(entry => _.isString(_.get(entry, INSTANCE_FULL_NAME_FIELD)))
-)
+}
 
 const restrictValueSet = (field: ValueSetField): void => {
   field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({

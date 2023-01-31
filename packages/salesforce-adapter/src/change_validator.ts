@@ -58,7 +58,12 @@ const defaultAlwaysRun = { defaultInDeploy: true, defaultInValidate: true }
 const safeResolveTypeShallow = async (
   element: Element,
   elementsSource: ReadOnlyElementsSource
-): Promise<void> => resolveTypeShallow(element, elementsSource).catch()
+): Promise<void> => {
+  try {
+    await resolveTypeShallow(element, elementsSource)
+    // eslint-disable-next-line no-empty
+  } catch (_e) {}
+}
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefinition> = {
   managedPackage: { creator: () => packageValidator, ...defaultAlwaysRun },

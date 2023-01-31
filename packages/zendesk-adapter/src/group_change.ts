@@ -18,7 +18,7 @@ import { Change, ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId,
   isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { SECTION_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME } from './constants'
+  ORG_FIELD_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME } from './constants'
 
 
 const { awu } = collections.asynciterable
@@ -31,7 +31,6 @@ const PARENT_GROUPED_WITH_INNER_TYPE = [
   'dynamic_content_item',
   ORG_FIELD_TYPE_NAME,
   'macro',
-  ARTICLE_TYPE_NAME,
 ]
 const INNER_TYPE_GROUPED_WITH_PARENT = [
   'ticket_field__custom_field_options',
@@ -39,6 +38,9 @@ const INNER_TYPE_GROUPED_WITH_PARENT = [
   'dynamic_content_item__variants',
   'organization_field__custom_field_options',
   'macro_attachment',
+]
+
+const INNER_TYPE_GROUPED_WITH_PARENT_TYPE = [
   ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
 
@@ -66,10 +68,15 @@ const sectionChangeGroupId: ChangeIdFunction = async change =>
     ? getChangeData(change).elemID.getFullName()
     : undefined)
 
+const parentTypeNameChangeGroupId: ChangeIdFunction = async change =>
+  (INNER_TYPE_GROUPED_WITH_PARENT_TYPE.includes(getChangeData(change).elemID.typeName)
+    ? getParents(getChangeData(change))?.[0].elemID.typeName
+    : undefined)
 
 const changeIdProviders: ChangeIdFunction[] = [
   recurseIntoInstanceChangeToGroupId,
   sectionChangeGroupId,
+  parentTypeNameChangeGroupId,
   typeNameChangeGroupId,
 ]
 

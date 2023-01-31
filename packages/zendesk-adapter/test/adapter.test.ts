@@ -27,7 +27,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   isRemovalChange,
-  getChangeData,
+  getChangeData, TemplateExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -622,12 +622,23 @@ describe('adapter', () => {
         ])
 
         const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand'))
+        const brand = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
+        expect(brand).toBeDefined()
+        if (brand === undefined) {
+          return
+        }
         expect(supportAddress).toBeDefined()
         expect(supportAddress?.value).toMatchObject({
           id: 1500000743022,
           default: true,
           name: 'myBrand',
-          email: 'support@myBrand.zendesk.com',
+          email: new TemplateExpression({
+            parts: [
+              'support@',
+              new ReferenceExpression(brand.elemID.createNestedID('subdomain'), brand.value.subdomain),
+              '.zendesk.com',
+            ],
+          }),
           // eslint-disable-next-line camelcase
           brand_id: expect.any(ReferenceExpression),
         })
@@ -662,7 +673,7 @@ describe('adapter', () => {
         expect(errors).toEqual([
           {
             severity: 'Warning',
-            message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://docs.salto.io/docs/fetch-error-forbidden-access',
+            message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
           },
         ])
         const elementsNames = elements.map(e => e.elemID.getFullName())

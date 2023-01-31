@@ -15,14 +15,15 @@
 */
 import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData,
   InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import JiraClient from '../client/client'
 import { MASK_VALUE } from '../filters/masking'
 
 const log = logger(module)
-
+export const DETAILED_MESSAGE = 'This element will be deployed with masked values instead of the intended values. It will not operate correctly until manually fixing this after deployment. Learn more at https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
+export const DOCUMENTATION_URL = 'https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
 export const createChangeError = (
   change: Change<InstanceElement>,
   client: JiraClient,
@@ -30,11 +31,9 @@ export const createChangeError = (
   const serviceUrl = getChangeData(change).annotations[CORE_ANNOTATIONS.SERVICE_URL]
   return {
     elemID: getChangeData(change).elemID,
-    severity: isModificationChange(change) ? 'Warning' : 'Info',
+    severity: 'Warning',
     message: 'Masked data will be deployed to the service',
-    detailedMessage: isModificationChange(change)
-      ? `${getChangeData(change).elemID.getFullName()} contains masked values which will override the real values in the service when deploying and may prevent it from operating correctly`
-      : '',
+    detailedMessage: DETAILED_MESSAGE,
     deployActions: {
       postAction: {
         title: 'Update deployed masked data',
@@ -46,6 +45,7 @@ export const createChangeError = (
           'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
           'Save the page',
         ],
+        documentationURL: DOCUMENTATION_URL,
       },
     },
   }

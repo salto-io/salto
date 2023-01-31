@@ -26,6 +26,11 @@ import {
   ORG_FIELD_TYPE_NAME,
   FIELD_TYPE_NAMES,
   TICKET_FORM_TYPE_NAME,
+  PENDING_CATEGORY,
+  DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  CUSTOM_STATUS_TYPE_NAME,
+  OPEN_CATEGORY,
+  HOLD_CATEGORY, SOLVED_CATEGORY,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
 import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
@@ -537,6 +542,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'ticketField',
     target: { type: TICKET_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'startsWith',
   },
   {
     src: {
@@ -578,6 +584,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'orgField',
     target: { type: ORG_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'startsWith',
   },
   {
     src: {
@@ -617,6 +624,7 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     zendeskSerializationStrategy: 'userField',
     target: { type: USER_FIELD_TYPE_NAME },
+    zendeskMissingRefStrategy: 'startsWith',
   },
   {
     src: { field: 'id', parentTypes: ['view__execution__columns'] },
@@ -783,6 +791,26 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     target: { type: 'section' },
   },
   {
+    src: { field: PENDING_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: OPEN_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: HOLD_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: SOLVED_CATEGORY, parentTypes: [DEFAULT_CUSTOM_STATUSES_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: CUSTOM_STATUS_TYPE_NAME },
+  },
+  {
     src: {
       field: 'direct_parent_id',
       parentTypes: [
@@ -791,6 +819,11 @@ const firstIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborParentType' },
+  },
+  {
+    src: { field: 'installation_id', parentTypes: ['webhook__external_source__data'] },
+    serializationStrategy: 'id',
+    target: { type: 'app_installation' },
   },
 ]
 

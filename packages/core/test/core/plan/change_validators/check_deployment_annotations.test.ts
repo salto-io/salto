@@ -71,7 +71,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Operation not supported',
-      detailedMessage: `Salto does not support "add" of ${instance.elemID.getFullName()}. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.`,
+      detailedMessage: `Salto does not support "add" of ${instance.elemID.getFullName()}. Please see your business app FAQ at https://help.salto.io/en/articles/6927118-supported-business-applications for a list of supported elements.`,
     }])
   })
 

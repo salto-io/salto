@@ -15,7 +15,7 @@
 */
 import { toChange, ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { MASK_VALUE } from '../../src/filters/masking'
-import { maskingValidator } from '../../src/change_validators/masking'
+import { DETAILED_MESSAGE, DOCUMENTATION_URL, maskingValidator } from '../../src/change_validators/masking'
 import { AUTOMATION_TYPE, JIRA } from '../../src/constants'
 import { mockClient } from '../utils'
 import JiraClient from '../../src/client/client'
@@ -46,32 +46,6 @@ describe('maskingValidator', () => {
     )
   })
 
-  it('should return an info have a masked value', async () => {
-    expect(await maskingValidator(client)([
-      toChange({
-        after: instance,
-      }),
-    ])).toEqual([
-      {
-        elemID: instance.elemID,
-        severity: 'Info',
-        message: 'Masked data will be deployed to the service',
-        detailedMessage: '',
-        deployActions: {
-          postAction: {
-            title: 'Update deployed masked data',
-            description: 'Please update the masked values that were deployed to Jira in jira.Automation.instance.instance',
-            subActions: [
-              'Go to https://ori-salto-test.atlassian.net/ and open the relevant page for jira.Automation.instance.instance',
-              'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
-              'Save the page',
-            ],
-          },
-        },
-      },
-    ])
-  })
-
   it('should return the service URL when have one', async () => {
     instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = 'http://url'
 
@@ -82,9 +56,9 @@ describe('maskingValidator', () => {
     ])).toEqual([
       {
         elemID: instance.elemID,
-        severity: 'Info',
+        severity: 'Warning',
         message: 'Masked data will be deployed to the service',
-        detailedMessage: '',
+        detailedMessage: DETAILED_MESSAGE,
         deployActions: {
           postAction: {
             title: 'Update deployed masked data',
@@ -94,13 +68,14 @@ describe('maskingValidator', () => {
               'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
               'Save the page',
             ],
+            documentationURL: DOCUMENTATION_URL,
           },
         },
       },
     ])
   })
 
-  it('should return a warning on modification if have a masked value', async () => {
+  it('should return a warning if have a masked value', async () => {
     expect(await maskingValidator(client)([
       toChange({
         before: instance,
@@ -111,7 +86,7 @@ describe('maskingValidator', () => {
         elemID: instance.elemID,
         severity: 'Warning',
         message: 'Masked data will be deployed to the service',
-        detailedMessage: 'jira.Automation.instance.instance contains masked values which will override the real values in the service when deploying and may prevent it from operating correctly',
+        detailedMessage: DETAILED_MESSAGE,
         deployActions: {
           postAction: {
             title: 'Update deployed masked data',
@@ -121,6 +96,7 @@ describe('maskingValidator', () => {
               'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
               'Save the page',
             ],
+            documentationURL: DOCUMENTATION_URL,
           },
         },
       },

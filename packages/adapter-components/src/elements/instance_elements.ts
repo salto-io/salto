@@ -58,11 +58,12 @@ export const joinInstanceNameParts = (
 export const getInstanceName = (
   instanceValues: Values,
   idFields: string[],
+  typeName: string,
 ): string | undefined => {
   const nameParts = idFields
     .map(fieldName => _.get(instanceValues, dereferenceFieldName(fieldName)))
   if (nameParts.includes(undefined)) {
-    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(instanceValues)}`)
+    log.warn(`could not find id for entry in type ${typeName} - expected id fields ${idFields}, available fields ${Object.keys(instanceValues)}`)
   }
   return joinInstanceNameParts(nameParts)
 }
@@ -116,7 +117,7 @@ export const generateInstanceNameFromConfig = (
     apiDefinitions.types[typeName]?.transformation ?? {},
     apiDefinitions.typeDefaults.transformation
   )
-  const instanceName = getInstanceName(values, idFields)
+  const instanceName = getInstanceName(values, idFields, typeName)
   return instanceName !== undefined
     ? getNameMapping(instanceName, nameMapping) : instanceName
 }
@@ -223,7 +224,7 @@ export const toBasicInstance = async ({
     transformationDefaultConfig,
   )
 
-  const name = getInstanceName(entry, idFields) ?? defaultName
+  const name = getInstanceName(entry, idFields, type.elemID.typeName) ?? defaultName
   const parentName = parent && nestName ? parent.elemID.name : undefined
   const adapterName = type.elemID.adapter
   const naclName = getInstanceNaclName({

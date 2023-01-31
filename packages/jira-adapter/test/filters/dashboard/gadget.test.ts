@@ -304,6 +304,7 @@ describe('gadgetFilter', () => {
             'Content-Type': 'application/json',
           },
         },
+
       )
 
       expect(connection.put).toHaveBeenCalledWith(
@@ -314,6 +315,7 @@ describe('gadgetFilter', () => {
             'Content-Type': 'application/json',
           },
         },
+
       )
     })
 

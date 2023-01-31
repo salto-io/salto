@@ -92,7 +92,7 @@ const filter: FilterCreator = ({ config, client }) => ({
     const boardInstances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BOARD_TYPE_NAME)
-      .filter(instance => instance.value.config.estimation !== undefined)
+      .filter(instance => instance.value.config?.estimation !== undefined)
 
     boardInstances.forEach(instance => {
       instance.value.estimation = instance.value.config.estimation

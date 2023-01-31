@@ -18,7 +18,8 @@ import { filterUtils, client as clientUtils, deployment } from '@salto-io/adapte
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { COLUMNS_CONFIG_FIELD } from '../../../src/filters/board/board_columns'
-import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import JiraClient from '../../../src/client/client'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { BOARD_LOCATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import boardDeploymentFilter from '../../../src/filters/board/board_deployment'
@@ -240,6 +241,34 @@ describe('boardDeploymentFilter', () => {
           {
             headers: PRIVATE_API_HEADERS,
           }
+        )
+      })
+
+      it('deploy should not call config endpoints if config not defined', async () => {
+        delete instance.value[COLUMNS_CONFIG_FIELD]
+        delete instance.value.estimation
+        delete instance.value.subQuery
+
+        await filter.deploy([change])
+
+        expect(deployChangeMock).toHaveBeenCalledWith({
+          change,
+          client,
+          endpointDetails: getDefaultConfig({ isDataCenter: false })
+            .apiDefinitions.types[BOARD_TYPE_NAME].deployRequests,
+          fieldsToIgnore: [COLUMNS_CONFIG_FIELD, 'subQuery', 'estimation'],
+        })
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/columns',
+          expect.anything(),
+          expect.anything(),
+        )
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/estimation',
+          expect.anything(),
+          expect.anything(),
         )
       })
     })
@@ -558,6 +587,36 @@ describe('boardDeploymentFilter', () => {
         )
 
         expect(connection.put).toHaveBeenCalledOnce()
+      })
+
+      it('should not call config endpoints if config not defined', async () => {
+        delete instance.value[COLUMNS_CONFIG_FIELD]
+        delete instance.value.estimation
+        delete instance.value.subQuery
+
+        delete instanceBefore.value[COLUMNS_CONFIG_FIELD]
+        delete instanceBefore.value.estimation
+        delete instanceBefore.value.subQuery
+
+        await filter.deploy([change])
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/columns',
+          expect.anything(),
+          expect.anything(),
+        )
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          expect.stringContaining('/rest/greenhopper/1.0/subqueries'),
+          expect.anything(),
+          expect.anything(),
+        )
+
+        expect(connection.put).not.toHaveBeenCalledWith(
+          '/rest/greenhopper/1.0/rapidviewconfig/estimation',
+          expect.anything(),
+          expect.anything(),
+        )
       })
     })
   })

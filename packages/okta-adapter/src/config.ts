@@ -733,6 +733,19 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
+  ProfileMapping: {
+    transformation: {
+      idFields: ['source.name', 'target.name'],
+      serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
+  ProfileMappingSource: {
+    transformation: {
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {

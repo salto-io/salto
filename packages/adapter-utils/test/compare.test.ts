@@ -965,7 +965,7 @@ describe('applyDetailedChanges', () => {
 })
 
 describe('calculateChangesHash', () => {
-  const HASH_VALUE = '5d3c813c4f8bbd2620139772a1b9ac05a7c5e946'
+  const HASH_VALUE = '797c4b04aec0e7a2605a7a76eea686a4'
   const instType = new ObjectType({
     elemID: new ElemID('salto', 'obj'),
   })

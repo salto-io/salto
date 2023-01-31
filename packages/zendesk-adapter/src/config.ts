@@ -747,19 +747,34 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'custom_statuses__custom_statuses',
       idFields: ['status_category', 'raw_agent_label'],
       fileNameFields: ['status_category', 'raw_agent_label'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'end_user_label', fieldType: 'string' },
         { fieldName: 'agent_label', fieldType: 'string' },
         { fieldName: 'description', fieldType: 'string' },
         { fieldName: 'end_user_description', fieldType: 'string' },
-        { fieldName: 'end_user_label', fieldType: 'string' },
+        { fieldName: 'default', fieldType: 'boolean' },
       ),
+      fieldsToOmit: FIELDS_TO_OMIT,
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/tickets/ticket_statuses/edit/{id}',
     },
-    // TODO add deploy SALTO-2895
+    deployRequests: {
+      add: {
+        url: '/api/v2/custom_statuses',
+        deployAsField: 'custom_status',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v2/custom_statuses/{custom_status_id}',
+        method: 'put',
+        deployAsField: 'custom_status',
+        urlParamsToFields: {
+          custom_status_id: 'id',
+        },
+      },
+    },
   },
-
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',

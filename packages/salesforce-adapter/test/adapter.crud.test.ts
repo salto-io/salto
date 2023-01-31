@@ -346,7 +346,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: '05b65a169f36f640981b2ca17996ccc6195f7634',
+                        hash: 'ae603ec5f43ad6e8d4aaae0b44996ebd',
                       },
                     },
                   },
@@ -361,7 +361,7 @@ describe('SalesforceAdapter CRUD', () => {
               },
             })
           })
-          it('should fail the deploy', () => {
+          it('should deploy', () => {
             expect(result.appliedChanges).toHaveLength(1)
           })
         })

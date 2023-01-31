@@ -13,16 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
+import { Values } from '@salto-io/adapter-api'
+import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-type User = {
+export type User = {
   id: number
   email: string
   role: string
@@ -44,6 +47,93 @@ const areUsers = (values: unknown): values is User[] => {
     return false
   }
   return true
+}
+
+const replaceRestrictionImpl = (values: Values, mapping?: Record<string, string>): string[] => {
+  const restrictionRelativePath = ['restriction', 'id']
+  const id = _.get(values, restrictionRelativePath)
+  if ((values.restriction?.type !== 'User') || id === undefined) {
+    return []
+  }
+  if (mapping !== undefined) {
+    const newValue = Object.prototype.hasOwnProperty.call(mapping, id)
+      ? mapping[id]
+      : undefined
+    if (newValue !== undefined) {
+      values.restriction.id = newValue
+    }
+  }
+  return restrictionRelativePath
+}
+
+const replaceRestriction: ValueReplacer = (instance, mapping) => {
+  const relativePath = replaceRestrictionImpl(instance.value, mapping)
+  return _.isEmpty(relativePath) ? [] : [instance.elemID.createNestedID(...relativePath)]
+}
+
+const workspaceReplacer: ValueReplacer = (instance, mapping) => {
+  const selectedMacros = instance.value.selected_macros
+  return (selectedMacros ?? []).flatMap((macro: Values, index: number) => {
+    const relativePath = replaceRestrictionImpl(macro, mapping)
+    return _.isEmpty(relativePath) ? [] : [instance.elemID.createNestedID('selected_macros', index.toString(), ...relativePath)]
+  })
+}
+
+const mergeUserReplacers = (replacers: ValueReplacer[]): ValueReplacer => (instance, mapping) => (
+  replacers.flatMap(replacer => replacer(instance, mapping))
+)
+
+const DEFAULT_REPLACER_PARAMS_FOR_ACTIONS = [{ fieldName: ['actions'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'follower' }] }]
+const DEFAULT_REPLACER_PARAMS_FOR_CONDITIONS = [
+  { fieldName: ['conditions', 'all'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+  { fieldName: ['conditions', 'any'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+]
+
+export const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
+  automation: replaceConditionsAndActionsCreator([
+    ...[{ fieldName: ['actions'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'follower' }, { name: 'notification_user', valuePath: ['value', '0'] }] }],
+    ...DEFAULT_REPLACER_PARAMS_FOR_CONDITIONS,
+  ]),
+  macro: mergeUserReplacers([
+    replaceConditionsAndActionsCreator(DEFAULT_REPLACER_PARAMS_FOR_ACTIONS),
+    replaceRestriction,
+  ]),
+  routing_attribute_value: replaceConditionsAndActionsCreator([
+    { fieldName: ['conditions', 'all'], fieldsToReplace: [{ name: 'requester_id' }] },
+    { fieldName: ['conditions', 'any'], fieldsToReplace: [{ name: 'requester_id' }] },
+  ]),
+  sla_policy: replaceConditionsAndActionsCreator([
+    { fieldName: ['filter', 'all'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+    { fieldName: ['filter', 'any'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+  ], true),
+  trigger: replaceConditionsAndActionsCreator([
+    ...[{ fieldName: ['actions'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'follower' }, { name: 'notification_user', valuePath: ['value', '0'] }, { name: 'notification_sms_user', valuePath: ['value', '0'] }] }],
+    ...[
+      { fieldName: ['conditions', 'all'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }, { name: 'role' }] },
+      { fieldName: ['conditions', 'any'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }, { name: 'role' }] },
+    ],
+  ]),
+  view: mergeUserReplacers([
+    replaceConditionsAndActionsCreator(DEFAULT_REPLACER_PARAMS_FOR_CONDITIONS),
+    replaceRestriction,
+  ]),
+  workspace: mergeUserReplacers([
+    replaceConditionsAndActionsCreator([
+      { fieldName: ['conditions', 'all'], fieldsToReplace: [{ name: 'assignee_id' }] },
+      { fieldName: ['conditions', 'any'], fieldsToReplace: [{ name: 'assignee_id' }] },
+    ]),
+    workspaceReplacer,
+  ]),
+  ticket_field: replaceConditionsAndActionsCreator([
+    { fieldName: ['relationship_filter', 'all'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+    { fieldName: ['relationship_filter', 'any'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
+  ]),
+  oauth_token: fieldReplacer(['user_id']),
+  user_segment: fieldReplacer(['added_user_ids']),
+  article: fieldReplacer(['author_id']),
+  section_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
+  category_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
+  article_translation: fieldReplacer(['created_by_id', 'updated_by_id']),
 }
 
 /*

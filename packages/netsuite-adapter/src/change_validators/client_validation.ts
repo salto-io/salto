@@ -115,8 +115,8 @@ const changeValidator: ClientChangeValidator = async (
         const topLevelChanges = changes.filter(
           change => isInstanceChange(change) || isObjectTypeChange(change)
         ) as Change<InstanceElement | ObjectType>[]
-        const dependencyMap = await NetsuiteClient.createDependencyMap(
-          topLevelChanges, elementsSourceIndex
+        const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(
+          groupChanges, deployReferencedElements, elementsSourceIndex
         )
         return awu(errors).flatMap(async error => {
           if (error instanceof ObjectsDeployError) {
@@ -142,8 +142,13 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof ManifestValidationError) {
+<<<<<<< HEAD
             const failedTopLevelElemIds = NetsuiteClient.getFailedManifestErrorTopLevelElemIds(
               error, dependencyMap, topLevelChanges
+=======
+            const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(
+              error, dependencyMap, dependencyGraph, changes
+>>>>>>> 33331408c (graph utils added, client updated to use graph for removing dependencies, client covers missing manifest features)
             )
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
               failedTopLevelElemIds, groupChanges, dependencyMap, error

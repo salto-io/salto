@@ -23,7 +23,7 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../sr
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { AdditionalDependencies } from '../../src/client/types'
 
@@ -226,6 +226,82 @@ describe('NetsuiteClient', () => {
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
+
+      it('should try to deploy again after removing instance and its dependencies due to ManifestValidationError', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
+        })
+        const failedChangeDependency = toChange({
+          after: new InstanceElement('failedChangedDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange, failedChangeDependency],
+          SDF_CHANGE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [manifestValidationError],
+          appliedChanges: [successChange],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+
+      it('should try to deploy again without removing dependencies when the failed changeType is modification', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]', changeField: 'after' }),
+          before: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]', changeField: 'before' }),
+        })
+        const failedChangeDependency = toChange({
+          after: new InstanceElement('failedChangedDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange, failedChangeDependency],
+          SDF_CHANGE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [manifestValidationError],
+          appliedChanges: [successChange, failedChangeDependency],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+
+      it('should try to deploy again MissingManifestFeaturesError', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const missingManifestFeatureMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
+Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
+File: ~/Objects/custimport_xepi_subscriptionimport.xml`
+        const missingManifestFeaturesError = new MissingManifestFeaturesError(missingManifestFeatureMessage, ['SUBSCRIPTIONBILLING'])
+        mockSdfDeploy.mockRejectedValueOnce(missingManifestFeaturesError)
+        const change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        expect(await client.deploy(
+          [change],
+          SDF_CHANGE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [missingManifestFeaturesError],
+          appliedChanges: [change],
+        })
+        expect(deployParams[1].include.features).toContain('SUBSCRIPTIONBILLING')
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+        // clear AdditionalParameters for next test suite
+        deployParams[1].include.features = []
+      })
+
 
       describe('custom record types', () => {
         it('should transform type to customrecordtype instance', async () => {

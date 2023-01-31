@@ -58,6 +58,7 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = unde
 }
 
 export type UserDeployConfig = {
+  // Replace references for missing users during deploy with defaultMissingUserFallback value
   defaultMissingUserFallback?: string
 }
 

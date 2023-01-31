@@ -162,7 +162,7 @@ export const getInstanceNaclName = ({
   typeElemId: ElemID
   nameMapping?: NameMappingOptions
 }): string => {
-  // If the nme is empty, there is no reason to add the ID_SEPARATOR
+  // If the name is empty, there is no reason to add the ID_SEPARATOR
   const parentNameSuffix = !isEmpty(name) ? `${ID_SEPARATOR}${name}` : ''
   const newName = parentName ? `${parentName}${parentNameSuffix}` : String(name)
   const naclName = naclCase(newName)

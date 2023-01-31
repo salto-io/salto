@@ -23,7 +23,10 @@ describe('client', () => {
     let client: ZendeskClient
     beforeEach(() => {
       mockAxios = new MockAdapter(axios)
-      client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+      client = new ZendeskClient({
+        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+        config: { retry: { retryDelay: 0 } },
+      })
     })
 
     afterEach(() => {
@@ -48,6 +51,20 @@ describe('client', () => {
       await expect(
         client.getSinglePage({ url: '/api/v2/routing/attributes' })
       ).rejects.toThrow()
+    })
+    it('should retry on 409, 429 and 503', async () => {
+      // The first replyOnce with 200 is for the client authentication
+      mockAxios.onGet().replyOnce(200)
+        .onPost()
+        .replyOnce(429)
+        .onPost()
+        .replyOnce(409)
+        .onPost()
+        .replyOnce(503)
+        .onPost()
+        .replyOnce(200)
+      await client.post({ url: '/api/v2/routing/attributes' })
+      expect(mockAxios.history.post.length).toEqual(4)
     })
   })
 })

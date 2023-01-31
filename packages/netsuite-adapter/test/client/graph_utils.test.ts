@@ -46,6 +46,6 @@ describe('graph utils tests', () => {
   })
 
   it('should find node by field', async () => {
-    expect(testGraph.findNodeByfield('name', 'node3')).toEqual(testNode3)
+    expect(testGraph.findNodeByField('name', 'node3')).toEqual(testNode3)
   })
 })

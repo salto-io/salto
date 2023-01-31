@@ -60,7 +60,7 @@ export class Graph<T> {
     return this.nodes.find(node => _.isEqual(node.value, value))
   }
 
-  findNodeByfield(field: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
+  findNodeByField(field: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
     return this.nodes.find(node => _.isEqual(node.value[field], value))
   }
 }

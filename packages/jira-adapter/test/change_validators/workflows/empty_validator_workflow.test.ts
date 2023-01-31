@@ -97,7 +97,7 @@ describe('workflowPropertiesValidator', () => {
     ])).toEqual([])
   })
 
-  it('should not return an error if when there are no validators', async () => {
+  it('should not return an error when there are no validators', async () => {
     delete instance.value.transitions[0].rules
     expect(await emptyValidatorWorkflowChangeValidator([
       toChange({
@@ -106,7 +106,7 @@ describe('workflowPropertiesValidator', () => {
     ])).toEqual([])
   })
 
-  it('should not return an error if when there are no rules', async () => {
+  it('should not return an error when there are no rules', async () => {
     delete instance.value.transitions[0]
     expect(await emptyValidatorWorkflowChangeValidator([
       toChange({

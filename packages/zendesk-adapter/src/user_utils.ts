@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { ElemID, InstanceElement, Values } from '@salto-io/adapter-api'
+import { Values } from '@salto-io/adapter-api'
 import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 
@@ -27,7 +27,6 @@ const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 // system options that does not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
@@ -41,13 +40,6 @@ type User = {
 
 type CurrentUserResponse = {
   user: User
-}
-
-type UserReplacer = (instance: InstanceElement, mapping?: Record<string, string>) => ElemID[]
-
-type UserFieldsParams = {
-  fieldName: string[]
-  fieldsToReplace: { name: string; valuePath?: string[] }[]
 }
 
 const EXPECTED_USER_SCHEMA = Joi.object({
@@ -205,7 +197,7 @@ export const getUserFallbackValue = async (
   existingUsers: Set<string>,
   client: ZendeskClient
 ): Promise<{fallbackValue: string | undefined; isValidValue: boolean}> => {
-  if (defaultMissingUserFallback === DEPLOYER_FALLBACK_VALUE) {
+  if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (await client.getSinglePage({
         url: '/api/v2/users/me',

@@ -113,7 +113,7 @@ const changeValidator: ClientChangeValidator = async (
         elementsSourceIndex,
       )
       if (errors.length > 0) {
-        const dependencyMap = await NetsuiteClient.createDependencyMap(
+        const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(
           groupChanges, deployReferencedElements, elementsSourceIndex
         )
         return awu(errors).flatMap(async error => {
@@ -140,7 +140,9 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof ManifestValidationError) {
-            const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
+            const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(
+              error, dependencyMap, dependencyGraph, changes
+            )
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
               failedElementsIds, groupChanges, dependencyMap, error
             )

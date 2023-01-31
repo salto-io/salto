@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType, isAdditionChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -37,8 +37,9 @@ import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError } from '../errors'
+import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError, MissingManifestFeaturesError } from '../errors'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
+import { Graph, GraphNode } from './graph_utils'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -49,6 +50,30 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
   [SUITEAPP_UPDATING_FILES_GROUP_ID]: 'update',
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
+}
+
+const getScriptIdFromChange = (change: Change): string => {
+  const changeData = getChangeData(change)
+  if (isField(changeData)) {
+    return changeData.parent.annotations[SCRIPT_ID]
+  }
+  return getElementValueOrAnnotations(changeData)[SCRIPT_ID]
+}
+
+const ADDITION = 'addition'
+const MODIFICATION = 'modification'
+
+
+type ManifestErrorNode = {
+  elemIdFullName: string
+  scriptid: string
+  changeType: string
+  customizationInfos: CustomizationInfo[]
+}
+
+type DependencyInfo = {
+  dependencyMap: collections.map.DefaultMap<string, Set<string>>
+  dependencyGraph: Graph<ManifestErrorNode>
 }
 
 export default class NetsuiteClient {
@@ -206,7 +231,7 @@ export default class NetsuiteClient {
       .toArray()
   }
 
-  public static async createDependencyMap(
+  private static async getElemIdsAndCustInfos(
     changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
     elementsSourceIndex: LazyElementsSourceIndexes,
@@ -221,35 +246,61 @@ export default class NetsuiteClient {
         custInfos: await NetsuiteClient.toCustomizationInfos(
           [element], deployReferencedElements, elementsSourceIndex
         ),
-      })).toArray()
+      }
+      dependencyGraph.addNodes(new GraphNode(currNodeValue))
+      elemIdsAndCustInfos.push(currNodeValue)
+    })
+    return elemIdsAndCustInfos
+  }
 
-    elemIdsAndCustInfoArr.forEach(elemIdAndCustInfo => {
-      elemIdAndCustInfo.custInfos.forEach(custInfo =>
+  public static async createDependencyMapAndGraph(
+    changes: ReadonlyArray<Change>,
+    deployReferencedElements: boolean,
+    elementsSourceIndex: LazyElementsSourceIndexes,
+  ):Promise<DependencyInfo> {
+    const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
+    const dependencyGraph = new Graph<ManifestErrorNode>()
+    const elemIdsAndCustInfos = await NetsuiteClient.getElemIdsAndCustInfos(
+      changes, deployReferencedElements, elementsSourceIndex, dependencyGraph
+    )
+    elemIdsAndCustInfos.forEach(elemIdAndCustInfo => {
+      const currSet = dependencyMap.get(elemIdAndCustInfo.elemIdFullName)
+      const endNode = dependencyGraph.findNode(elemIdAndCustInfo)
+      elemIdAndCustInfo.customizationInfos.forEach(custInfo =>
         lookupValue(custInfo.values, val => {
           if (!_.isString(val)) {
             return
           }
           const serviceIdInfoArray = captureServiceIdInfo(val)
-          serviceIdInfoArray.map(serviceIdInfo =>
-            dependencyMap
-              .get(elemIdAndCustInfo.elemId.getFullName())
-              .add(serviceIdInfo.serviceId))
+          serviceIdInfoArray.forEach(serviceIdInfo => {
+            currSet.add(serviceIdInfo.serviceId)
+            const startNode = dependencyGraph.findNodeByfield(SCRIPT_ID, serviceIdInfo.serviceId)
+            if (startNode && endNode && startNode.value.changeType === ADDITION) {
+              startNode.addEdge(endNode)
+            }
+          })
         }))
     })
-    return dependencyMap
+    return { dependencyMap, dependencyGraph }
   }
 
   public static getFailedManifestErrorElemIds(
     error: ManifestValidationError,
     dependencyMap: Map<string, Set<string>>,
+    dependencyGraph: Graph<ManifestErrorNode>,
     changes: ReadonlyArray<Change>
   ): Set<string> {
     const changeData = changes.map(getChangeData)
-    const elementsToRemoveElemIDs = new Set<string>(
+    const elementsToRemoveElemIDs = new Set(
       Array.from(dependencyMap.keys())
         .filter(topLevelChangedElement =>
           error.missingDependencyScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement)?.has(scriptid)))
+        .map(elementName => dependencyGraph.findNodeByfield('elemIdFullName', elementName))
+        .filter(values.isDefined)
+        .flatMap(node => dependencyGraph.getNodeDependencies(node))
+        .map(node => node.value.elemIdFullName)
     )
+
     log.debug('remove elements which contain a scriptid that doesnt exist in target account: %o', elementsToRemoveElemIDs)
     return elementsToRemoveElemIDs.size === 0
       ? new Set(changeData.map(elem => elem.elemID.getFullName()))
@@ -275,7 +326,7 @@ export default class NetsuiteClient {
     const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
 
     const errors: Error[] = []
-    const dependencyMap = await NetsuiteClient.createDependencyMap(
+    const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(
       changes, deployReferencedElements, elementsSourceIndex
     )
     while (changesToDeploy.length > 0) {
@@ -301,11 +352,15 @@ export default class NetsuiteClient {
       } catch (error) {
         errors.push(error)
         if (error instanceof ManifestValidationError) {
-          const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
+          const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(
+            error, dependencyMap, dependencyGraph, changes
+          )
           _.remove(
             changesToDeploy,
             change => elemIdNamesToRemove.has(getChangeData(change).elemID.getFullName())
           )
+        } else if (error instanceof MissingManifestFeaturesError) {
+          additionalDependencies.include.features.push(...error.missingFeatures)
         } else if (error instanceof FeaturesDeployError) {
           const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
             error, changesToDeploy

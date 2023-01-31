@@ -20,7 +20,7 @@ import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import projectFilter from '../../src/filters/project'
-import { getFilterParams, mockClient } from '../utils'
+import { getFilterParams, getLicenseElementSource, mockClient } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from '../../src/filters/fields/contexts_projects_filter'
 
 jest.mock('@salto-io/adapter-components', () => {
@@ -50,10 +50,11 @@ describe('projectFilter', () => {
     connection = conn
 
     deployChangeMock.mockClear()
-
+    const elementsSource = getLicenseElementSource(true)
     filter = projectFilter(getFilterParams({
       client,
       paginator,
+      elementsSource,
     })) as typeof filter
 
     type = new ObjectType({
@@ -229,8 +230,8 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'workflowScheme', 'issueTypeScreenScheme',
-          'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
+          'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme', 'permissionScheme'],
       })
     })
 
@@ -252,10 +253,11 @@ describe('projectFilter', () => {
       connection = conn
 
       deployChangeMock.mockClear()
-
+      const elementsSource = getLicenseElementSource(false)
       filter = projectFilter(getFilterParams({
         client,
         paginator,
+        elementsSource,
       })) as typeof filter
 
       await filter.deploy([change])
@@ -312,7 +314,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
       })
     })
 
@@ -345,10 +347,11 @@ describe('projectFilter', () => {
       connection = conn
 
       deployChangeMock.mockClear()
-
+      const elementsSource = getLicenseElementSource(false)
       filter = projectFilter(getFilterParams({
         client,
         paginator,
+        elementsSource,
       })) as typeof filter
 
       await filter.deploy([change])
@@ -432,7 +435,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
       })
     })
 
@@ -530,7 +533,7 @@ describe('projectFilter', () => {
         client,
         endpointDetails: getDefaultConfig({ isDataCenter: false })
           .apiDefinitions.types.Project.deployRequests,
-        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
+        fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme', 'permissionScheme'],
       })
     })
 
@@ -634,8 +637,8 @@ describe('projectFilter', () => {
           client,
           endpointDetails: getDefaultConfig({ isDataCenter: true })
             .apiDefinitions.types.Project.deployRequests,
-          fieldsToIgnore: ['components', 'workflowScheme', 'issueTypeScreenScheme',
-            'fieldConfigurationScheme', 'issueTypeScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme'],
+          fieldsToIgnore: ['components', 'fieldConfigurationScheme', PROJECT_CONTEXTS_FIELD, 'priorityScheme',
+            'workflowScheme', 'issueTypeScreenScheme', 'issueTypeScheme'],
         })
       })
       it('should call the endpoint to set the scheme', () => {

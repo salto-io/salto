@@ -16,10 +16,12 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  ChangeError, ChangeValidator, getChangeData, isInstanceChange, isMapType, isObjectType,
+  ChangeError, getChangeData, isInstanceChange, isMapType, isObjectType,
 } from '@salto-io/adapter-api'
 import { INDEX } from '../constants'
 import { getMappedLists, MappedList } from '../mapped_lists/utils'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { isDefined } = values
 
@@ -62,7 +64,7 @@ const toChangeErrors = async (
     }))
 }
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(isInstanceChange)
     .map(getChangeData)

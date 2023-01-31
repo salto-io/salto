@@ -54,7 +54,7 @@ To resolve these collisions please take one of the following actions and fetch a
 
 Alternatively, you can exclude obj from the service configuration in zendesk.nacl
 
-Learn more at: https://docs.salto.io/docs/zendesk#zendesk-duplicate-names`,
+Learn more at: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
       })
     })
     it('should return no errors if there were no collisions', async () => {

@@ -33,6 +33,7 @@ import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import appStructureFilter from './filters/app_structure'
 import standardRolesFilter from './filters/standard_roles'
+import fetchUserSchemaFilter from './filters/user_schema'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -48,6 +49,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   standardRolesFilter,
+  fetchUserSchemaFilter,
   appStructureFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,

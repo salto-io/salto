@@ -65,7 +65,7 @@ const filter: FilterCreator = ({ config }) => ({
         errors: [
           {
             message: `The following elements had duplicate names in Jira: ${Array.from(duplicateIds).join(', ')}. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch.
-If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://docs.salto.io/docs/jira-faq`,
+If changing the names is not possible, you can add the fetch.fallbackToInternalId option to the configuration file; that will add their internal ID to their names and fetch them. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions`,
             severity: 'Warning',
           },
         ],
@@ -92,7 +92,7 @@ If changing the names is not possible, you can add the fetch.fallbackToInternalI
     return {
       errors: [
         {
-          message: `The following elements had duplicate names in Jira and therefore their internal id was added to their names: ${newNames.join(', ')}. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://docs.salto.io/docs/jira-faq.`,
+          message: `The following elements had duplicate names in Jira and therefore their internal id was added to their names: ${newNames.join(', ')}. It is strongly recommended to rename these instances so they are unique in Jira, then re-fetch with the "Regenerate Salto IDs" fetch option. Read more here: https://help.salto.io/en/articles/6927157-salto-id-collisions.`,
           severity: 'Warning',
         },
       ],

@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { replaceContents, exists, readZipFile, rm, rename, generateZipString } from '@salto-io/file'
+import { Readable } from 'stream'
+import { gzip as zlibGzip } from 'zlib'
+import getStream from 'get-stream'
+import { replaceContents, exists, createGZipReadStream, rm, rename, readOldFormatGZipFile, createGZipWriteStream } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization, pathIndex, remoteMap, staticFiles } from '@salto-io/workspace'
@@ -61,7 +64,7 @@ jest.mock('@salto-io/file', () => ({
     }
     return Promise.resolve('[]')
   }),
-  readZipFile: jest.fn().mockImplementation((filename: string) => {
+  readOldFormatGZipFile: jest.fn().mockImplementation((filename: string) => {
     if (filename === 'error.jsonl.zip') {
       return Promise.resolve('blabl{,.')
     }
@@ -79,6 +82,29 @@ jest.mock('@salto-io/file', () => ({
     }
     return Promise.resolve('[]')
   }),
+  createGZipReadStream: jest.fn().mockImplementation((filename: string) => {
+    if (filename === 'error.jsonl.zip') {
+      return Readable.from('blabl{,.')
+    }
+    if (['full.jsonl.zip', 'multiple_files.salesforce.jsonl.zip', 'multiple_files_extra.salesforce.jsonl.zip', 'deprecated_file_zip.jsonl.zip'].includes(filename)) {
+      return Readable.from('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "salesforce" :"2020-04-21T09:44:20.824Z"}\n[]\n"0.0.1"')
+    }
+    if (filename === 'multiple_files.netsuite.jsonl.zip') {
+      return Readable.from('[{"elemID":{"adapter":"netsuite","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"netsuite","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"netsuite","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"netsuite","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"netsuite","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]\n{ "netsuite" :"2020-04-21T09:44:20.824Z"}')
+    }
+    if (filename === 'multiple_adapters.jsonl.zip') {
+      return Readable.from('[{"annotationRefTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"netsuite","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "netsuite":"2020-04-21T09:44:20.824Z"}')
+    }
+    if (filename === 'on-delete.jsonl.zip') {
+      return Readable.from('[]\n{ "salto" :"2020-04-21T09:44:20.824Z"}')
+    }
+    if (filename === 'too_long.jsonl.zip') {
+      return Readable.from('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"refType":{"annotationRefTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"}]\n{ "salto" :"2020-04-21T09:44:20.824Z"}\n[]\n"0.1.2"\n"extra"\n')
+    }
+    return Readable.from('[]')
+  }),
+  // keep one file in the old format for testing
+  isOldFormatStateZipFile: jest.fn().mockImplementation((filename: string) => filename === 'multiple_files.salesforce.jsonl.zip'),
   rm: jest.fn().mockImplementation(),
   rename: jest.fn().mockImplementation(),
   mkdirp: jest.fn().mockImplementation(),
@@ -99,13 +125,17 @@ jest.mock('@salto-io/file', () => ({
 describe('local state', () => {
   const mockElement = getAllElements().find(isObjectType) as ObjectType
   const replaceContentMock = replaceContents as jest.Mock
-  const readZipFileMock = readZipFile as unknown as jest.Mock
+  const createGZipReadStreamMock = createGZipReadStream as unknown as jest.Mock
+  const readOldFormatGZipFileMock = readOldFormatGZipFile as unknown as jest.Mock
 
   const findReplaceContentCall = (filename: string): unknown[] =>
     replaceContentMock.mock.calls.find(c => c[0] === filename)
 
-  const findReadZipFileCall = (filename: string): unknown[] =>
-    readZipFileMock.mock.calls.find(c => c[0] === filename)
+  const findCreateGZipReadStreamCall = (filename: string): unknown[] =>
+    createGZipReadStreamMock.mock.calls.find(c => c[0] === filename)
+
+  const findReadOldFormatGZipFileCall = (filename: string): unknown[] =>
+    readOldFormatGZipFileMock.mock.calls.find(c => c[0] === filename)
 
   const remoteMapCreator = async <T, K extends string = string>():
     Promise<remoteMap.RemoteMap<T, K>> => new remoteMap.InMemoryRemoteMap<T, K>()
@@ -121,9 +151,9 @@ describe('local state', () => {
     it('reads all from both files but not from files with an additional suffix', async () => {
       const elements = await awu(await state.getAll()).toArray()
       expect(elements).toHaveLength(4)
-      const salesforceState = findReadZipFileCall('multiple_files.salesforce.jsonl.zip')
-      const netsuiteState = findReadZipFileCall('multiple_files.netsuite.jsonl.zip')
-      const multiExtra = findReadZipFileCall('multiple_files_extra.salesforce.jsonl.zip')
+      const salesforceState = findReadOldFormatGZipFileCall('multiple_files.salesforce.jsonl.zip') // using old format
+      const netsuiteState = findCreateGZipReadStreamCall('multiple_files.netsuite.jsonl.zip')
+      const multiExtra = findCreateGZipReadStreamCall('multiple_files_extra.salesforce.jsonl.zip')
       expect(salesforceState).toBeDefined()
       expect(netsuiteState).toBeDefined()
       expect(multiExtra).toBeUndefined()
@@ -244,6 +274,13 @@ describe('local state', () => {
     expect(await state.getStateSaltoVersion()).toBe('0.0.1')
   })
 
+  it('should ignore extra lines', async () => {
+    const state = localState('too_long', '', remoteMapCreator, mockStaticFilesSource())
+    const elements = await awu(await state.getAll()).toArray()
+    expect(elements).toHaveLength(1)
+    expect(await state.getStateSaltoVersion()).toBe('0.1.2')
+  })
+
   it('should override path index when asked to', async () => {
     const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
     await state.overridePathIndex([mockElement])
@@ -271,11 +308,12 @@ describe('local state', () => {
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush.salto.jsonl.zip')
     expect(onFlush).toBeDefined()
-    expect(onFlush[1]).toEqual(await generateZipString([
+    expect(onFlush[1]).toEqual(await promisify(zlibGzip)([
       await serialize([mockElement]),
       safeJsonStringify({}),
       safeJsonStringify([]),
-      version,
+      `"${version}"`,
+      '',
     ].join(EOL)))
   })
 
@@ -333,7 +371,7 @@ describe('local state', () => {
     })
     it('should return the modification date of the state', async () => {
       mockExists.mockResolvedValueOnce(true)
-      readZipFileMock.mockResolvedValueOnce(mockStateStr)
+      createGZipReadStreamMock.mockResolvedValueOnce(Readable.from(mockStateStr))
       const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
       const date = await state.getAccountsUpdateDates()
       expect(date.salto).toEqual(saltoModificationDate)
@@ -341,7 +379,7 @@ describe('local state', () => {
     })
     it('should update modification date on override', async () => {
       mockExists.mockResolvedValueOnce(true)
-      readZipFileMock.mockResolvedValueOnce(mockStateStr)
+      createGZipReadStreamMock.mockResolvedValueOnce(Readable.from(mockStateStr))
       const now = new Date(2013, 6, 4).getTime()
       jest.spyOn(Date, 'now').mockImplementation(() => now)
       const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
@@ -356,7 +394,7 @@ describe('local state', () => {
     })
     it('should not update modification date on set/remove', async () => {
       mockExists.mockResolvedValueOnce(true)
-      readZipFileMock.mockResolvedValueOnce(mockStateStr)
+      createGZipReadStreamMock.mockResolvedValueOnce(Readable.from(mockStateStr))
       const state = localState('filename', '', remoteMapCreator, mockStaticFilesSource())
 
       await state.set(mockElement)
@@ -395,17 +433,20 @@ describe('local state', () => {
       await state.set(mockElement)
       await state.flush()
       const stateHash = await state.getHash()
+      const val = [
+        await serialize([mockElement]),
+        safeJsonStringify({}),
+        safeJsonStringify([]),
+        `"${version}"`,
+        '',
+      ].join(EOL)
+      const inner = safeJsonStringify(
+        [
+          toMD5((await getStream.buffer(createGZipWriteStream(Readable.from(val)))).toString()),
+        ]
+      )
       expect(stateHash)
-        .toEqual(toMD5(safeJsonStringify(
-          [
-            toMD5(await generateZipString([
-              await serialize([mockElement]),
-              safeJsonStringify({}),
-              safeJsonStringify([]),
-              version,
-            ].join(EOL))),
-          ]
-        )))
+        .toEqual(toMD5(inner))
     })
   })
 

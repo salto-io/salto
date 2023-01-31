@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Values } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, Values, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
+import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
 
@@ -190,7 +191,8 @@ export const isWorkflowValues = (values: unknown): values is Workflow => {
 }
 
 export const isWorkflowInstance = (instance: InstanceElement)
-: instance is WorkflowInstance => isWorkflowValues(instance.value)
+: instance is WorkflowInstance =>
+  instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowValues(instance.value)
 
 
 export type PostFetchWorkflow = Workflow & {
@@ -202,3 +204,7 @@ export type PostFetchWorkflowInstance = WorkflowInstance & { value: WorkflowInst
 export const isPostFetchWorkflowInstance = (instance: InstanceElement)
 : instance is PostFetchWorkflowInstance => isWorkflowValues(instance.value)
   && instance.value.name !== undefined
+
+export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
+  .filter(isInstanceChange)
+  .filter(change => isWorkflowInstance(getChangeData(change)))

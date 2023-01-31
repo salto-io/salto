@@ -150,7 +150,7 @@ describe('automationLabelDeploymentFilter', () => {
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels',
         { name: automationLabelInstance.value.name,
           color: automationLabelInstance.value.color },
-        undefined
+        undefined,
       )
     })
 
@@ -186,7 +186,7 @@ describe('automationLabelDeploymentFilter', () => {
           name: automationLabelInstance.value.name,
           color: automationLabelInstance.value.color,
         },
-        undefined
+        undefined,
       )
     })
 
@@ -229,7 +229,7 @@ describe('automationLabelDeploymentFilter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels/555',
         { ...changedInstance.value },
-        undefined
+        undefined,
       )
     })
 
@@ -251,7 +251,7 @@ describe('automationLabelDeploymentFilter', () => {
       expect(connection.put).toHaveBeenCalledWith(
         '/rest/cb-automation/latest/rule-label/555',
         { ...changedInstance.value },
-        undefined
+        undefined,
       )
     })
   })

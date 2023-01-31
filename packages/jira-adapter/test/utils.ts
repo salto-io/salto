@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -24,6 +24,7 @@ import JiraClient from '../src/client/client'
 import { FilterCreator } from '../src/filter'
 import { paginate } from '../src/client/pagination'
 import { GetIdMapFunc, getIdMapFuncCreator } from '../src/users_map'
+import { JIRA } from '../src/constants'
 
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
@@ -93,3 +94,25 @@ export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>, 
   adapterContext: {},
   ...params ?? {},
 })
+
+export const getAccountInfoInstance = (isFree: boolean): InstanceElement => (
+  new InstanceElement(
+    '_config',
+    new ObjectType({
+      elemID: new ElemID(JIRA, 'AccountInfo'),
+    }),
+    {
+      license: {
+        applications: [
+          {
+            id: 'jira-software',
+            plan: isFree ? 'FREE' : 'BUSINESS',
+          },
+        ],
+      },
+    }
+  )
+)
+
+export const getLicenseElementSource = (isFree: boolean): ReadOnlyElementsSource =>
+  buildElementsSourceFromElements([getAccountInfoInstance(isFree)])

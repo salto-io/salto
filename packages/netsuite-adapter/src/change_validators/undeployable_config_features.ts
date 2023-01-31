@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isModificationChange,
+  getChangeData, InstanceElement, isInstanceChange, isModificationChange,
   ModificationChange,
 } from '@salto-io/adapter-api'
 import { CONFIG_FEATURES } from '../constants'
+import { NetsuiteChangeValidator } from './types'
+
 
 // These features cannot be configure using SDF
 // because they require a Terms of Service user agreement
@@ -60,7 +62,7 @@ const getDiffFeatureNames = (change: ModificationChange<InstanceElement>): strin
   Object.keys(change.data.after.value)
     .filter(fieldName => change.data.after.value[fieldName] !== change.data.before.value[fieldName])
 
-const changeValidator: ChangeValidator = async changes => {
+const changeValidator: NetsuiteChangeValidator = async changes => {
   const featuresChange = changes
     .filter(isInstanceChange)
     .filter(isModificationChange)

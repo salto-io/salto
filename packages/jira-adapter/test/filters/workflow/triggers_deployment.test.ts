@@ -17,9 +17,10 @@ import { AdditionChange, ElemID, InstanceElement, ObjectType, toChange } from '@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import { deployTriggers } from '../../../src/filters/workflow/triggers_deployment'
-import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
+import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 
 describe('triggersDeployment', () => {
   let workflowType: ObjectType

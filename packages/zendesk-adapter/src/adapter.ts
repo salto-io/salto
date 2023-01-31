@@ -375,6 +375,7 @@ export interface ZendeskAdapterParams {
 
 export default class ZendeskAdapter implements AdapterOperations {
   private client: ZendeskClient
+  private clientsBySubdomain: Record<string, ZendeskClient>
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
@@ -382,6 +383,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
+  private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -405,6 +407,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
+    this.clientsBySubdomain = {}
     this.elementsSource = elementsSource
     this.paginator = createPaginator({
       client: this.client,
@@ -423,6 +426,13 @@ export default class ZendeskAdapter implements AdapterOperations {
           config: clientConfig,
         },
       )
+    }
+
+    this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
+      if (!this.clientsBySubdomain[subdomain]) {
+        this.clientsBySubdomain[subdomain] = this.createClientBySubdomain(subdomain, deployRateLimit)
+      }
+      return this.clientsBySubdomain[subdomain]
     }
 
 
@@ -630,7 +640,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       .filter(isString)
     const subdomainToClient = Object.fromEntries(subdomainsList
       .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain, true)])))
+      .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
     const guideDeployResults = await awu(Object.entries(subdomainToClient))
       .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({

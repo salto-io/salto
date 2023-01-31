@@ -15,16 +15,13 @@
 */
 import { promisify } from 'util'
 import fs from 'fs'
-import pako from 'pako'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
 import path from 'path'
-import { logger } from '@salto-io/logging'
 import { strings } from '@salto-io/lowerdash'
 
 export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
-export const log = logger(module)
 
 export const { copyFile, writeFile, readFile, readdir: readDir } = fs.promises
 export const { statSync, existsSync, readFileSync } = fs
@@ -81,30 +78,8 @@ export const readTextFile = (
   filename: string,
 ): Promise<string> => readFile(filename, { encoding: 'utf8' })
 
-export const readZipFile = async (
-  zipFilename: string,
-): Promise<string | undefined> => {
-  const data = await readFile(zipFilename, { encoding: 'utf8' })
-  try {
-    return pako.ungzip(data, { to: 'string' })
-  } catch {
-    log.error(`Couldn't unzip file: ${zipFilename}`)
-    return undefined
-  }
-}
 
 readTextFile.notFoundAsUndefined = notFoundAsUndefined(readTextFile)
-
-export const generateZipString = async (contents: string | Buffer):
-  Promise<string> => pako.gzip(contents, { to: 'string' })
-
-export const writeZipFile = async (
-  zipFilename: string,
-  contents: Buffer | string,
-): Promise<void> => {
-  const zipContent = await generateZipString(contents)
-  await writeFile(zipFilename, zipContent)
-}
 
 export const appendTextFile = (
   filename: string,

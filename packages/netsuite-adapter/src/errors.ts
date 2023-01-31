@@ -41,8 +41,10 @@ export class SettingsDeployError extends Error {
 }
 
 export class ManifestValidationError extends Error {
-  constructor(message: string) {
+  missingDependencyScriptIds: string[]
+  constructor(message: string, missingDependencyScriptIds: string[]) {
     super(message)
     this.name = 'ManifestValidationError'
+    this.missingDependencyScriptIds = missingDependencyScriptIds
   }
 }

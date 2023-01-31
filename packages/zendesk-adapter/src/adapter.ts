@@ -42,7 +42,7 @@ import {
   ZENDESK,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
@@ -112,6 +112,9 @@ import guideArrangePaths from './filters/guide_arrange_paths'
 import guideDefaultLanguage from './filters/guide_default_language_settings'
 import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_translation'
 import ticketFormDeploy from './filters/ticket_form'
+import supportAddress from './filters/support_address'
+import customStatus from './filters/custom_statuses'
+import organizationsFilter from './filters/organizations'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -153,7 +156,10 @@ export const DEFAULT_FILTERS = [
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   usersFilter,
+  organizationsFilter,
   tagsFilter,
+  supportAddress,
+  customStatus,
   guideAddBrandToArticleTranslation,
   macroAttachmentsFilter,
   ticketFormDeploy,
@@ -681,7 +687,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         // article_attachment additions supported in a filter
-        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES],
+        typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],
       }),
       dependencyChanger,
       getChangeGroupIds,

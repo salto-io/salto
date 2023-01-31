@@ -27,7 +27,7 @@ describe('deployTypesNotSupportedValidator', () => {
       elemID: type.elemID,
       severity: 'Error',
       message: `Deployment of non-instance elements is not supported in adapter ${type.elemID.adapter}`,
-      detailedMessage: `Deployment of non-instance elements is not supported in adapter ${type.elemID.adapter}. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.`,
+      detailedMessage: `Deployment of non-instance elements is not supported in adapter ${type.elemID.adapter}. Please see your business app FAQ at https://help.salto.io/en/articles/6927118-supported-business-applications for a list of supported elements.`,
     }])
   })
 })

@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ObjectType, Element, isObjectType, getDeepInnerType, InstanceElement, ReadOnlyElementsSource, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { JiraConfig, JspUrls } from './config/config'
+import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN } from './constants'
 
 const log = logger(module)
 
@@ -80,4 +81,25 @@ export const getFilledJspUrls = (
       baseUrl: jspRequests.query,
     }),
   }
+}
+
+export const isFreeLicense = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<boolean> => {
+  if (!await elementsSource.has(ACCOUNT_INFO_ELEM_ID)) {
+    return false
+  }
+  const accountInfo = await elementsSource.get(ACCOUNT_INFO_ELEM_ID)
+  if (!isInstanceElement(accountInfo)
+  || accountInfo.value.license?.applications === undefined) {
+    log.error('account info instance or its license not found in elements source, treating the account as paid one')
+    return false
+  }
+  const mainApplication = accountInfo.value.license.applications.find((app: Value) => app.id === 'jira-software')
+
+  if (mainApplication?.plan === undefined) {
+    log.error('could not find license of jira-software, treating the account as paid one')
+    return false
+  }
+  return mainApplication.plan === JIRA_FREE_PLAN
 }

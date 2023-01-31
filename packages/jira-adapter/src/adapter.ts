@@ -23,6 +23,7 @@ import JiraClient from './client/client'
 import changeValidator from './change_validators'
 import { JiraConfig, getApiDefinitions } from './config/config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
+import localeFilter from './filters/locale'
 import fieldReferencesFilter from './filters/field_references'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import removeSelfFilter from './filters/remove_self'
@@ -65,6 +66,7 @@ import workflowPropertiesFilter from './filters/workflow/workflow_properties_fil
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
 import workflowDeployFilter from './filters/workflow/workflow_deploy_filter'
 import workflowModificationFilter from './filters/workflow/workflow_modification_filter'
+import emptyValidatorWorkflowFilter from './filters/workflow/empty_validator_workflow'
 import workflowGroupsFilter from './filters/workflow/groups_filter'
 import triggersFilter from './filters/workflow/triggers_filter'
 import workflowSchemeFilter from './filters/workflow_scheme'
@@ -112,6 +114,8 @@ import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/pr
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 import commonFilters from './filters/common'
+import accountInfoFilter from './filters/account_info'
+import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 
 const {
   generateTypes,
@@ -123,6 +127,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  accountInfoFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
@@ -138,6 +143,7 @@ export const DEFAULT_FILTERS = [
   duplicateIdsFilter,
   // This must run after duplicateIdsFilter
   unresolvedParentsFilter,
+  localeFilter,
   contextReferencesFilter,
   fieldTypeReferencesFilter,
   fieldDeploymentFilter,
@@ -151,6 +157,7 @@ export const DEFAULT_FILTERS = [
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
+  emptyValidatorWorkflowFilter,
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
@@ -210,6 +217,7 @@ export const DEFAULT_FILTERS = [
   smartValueReferenceFilter,
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
+  deployPermissionSchemeFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

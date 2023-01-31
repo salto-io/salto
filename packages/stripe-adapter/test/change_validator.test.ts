@@ -32,13 +32,13 @@ describe('change validator creator', () => {
           elemID: new ElemID(STRIPE, 'obj'),
           severity: 'Error',
           message: 'Salto does not support stripe deployments.',
-          detailedMessage: 'Salto does not support stripe deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
+          detailedMessage: 'Salto does not support stripe deployments. Please see https://help.salto.io/en/articles/6927118-supported-business-applications for more details.',
         },
         {
           elemID: new ElemID(STRIPE, 'obj2'),
           severity: 'Error',
           message: 'Salto does not support stripe deployments.',
-          detailedMessage: 'Salto does not support stripe deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.',
+          detailedMessage: 'Salto does not support stripe deployments. Please see https://help.salto.io/en/articles/6927118-supported-business-applications for more details.',
         },
       ])
     })

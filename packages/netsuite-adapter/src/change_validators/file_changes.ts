@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, getChangeData, Change, ChangeError,
+  getChangeData, Change, ChangeError,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { fileCabinetTopLevelFolders } from '../client/constants'
 import { isFileCabinetInstance } from '../types'
 import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 
@@ -33,7 +35,7 @@ const isChangeSupported = async (change: Change): Promise<boolean> => {
 }
 
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(async change => !await isChangeSupported(change))
     .map(getChangeData)

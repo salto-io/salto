@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, CORE_ANNOTATIONS, Field, InstanceElement, isFieldChange, isInstanceChange, isModificationChange, isObjectTypeChange, isReferenceExpression, isServiceId, ModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { ChangeError, CORE_ANNOTATIONS, Field, InstanceElement, isFieldChange, isInstanceChange, isModificationChange, isObjectTypeChange, isReferenceExpression, isServiceId, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/types'
 import { isDataObjectType, isFileCabinetType } from '../types'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 
@@ -104,7 +106,7 @@ const toInstanceErrors = async (
   } as ChangeError))
 }
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes).filter(isModificationChange).flatMap(async change => {
     if (isObjectTypeChange(change)) {
       return toTypeErrors(change)

@@ -13,10 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, ChangeValidator, getChangeData } from '@salto-io/adapter-api'
+import { isInstanceElement, getChangeData } from '@salto-io/adapter-api'
 import { isStandardInstanceOrCustomRecordType } from '../types'
+import { NetsuiteChangeValidator } from './types'
 
-const changeValidator: ChangeValidator = async changes => (
+
+const changeValidator: NetsuiteChangeValidator = async changes => (
   changes
     .map(getChangeData)
     .filter(elem => !isInstanceElement(elem) && !isStandardInstanceOrCustomRecordType(elem))

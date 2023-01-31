@@ -84,7 +84,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('Cannot deploy currency - override currency format is disabled. Please see https://docs.salto.io/docs/deploying-a-currency-between-environments for instructions')
+      expect(changeErrors[0].detailedMessage).toContain('Cannot deploy currency - override currency format is disabled. Please see https://help.salto.io/en/articles/6845062-deploying-a-currency-between-environments for instructions')
     })
 
     it('shoud have changeError when deploying a new currency with \'overrideCurrencyFormat\' enabled.', async () => {
@@ -129,7 +129,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('Cannot deploy currency - field display symbol cannot be edited. To enable editing this field, enable override currency format and try again. Please see https://docs.salto.io/docs/deploying-a-currency-between-environments for instructions')
+      expect(changeErrors[0].detailedMessage).toContain('Cannot deploy currency - field display symbol cannot be edited. To enable editing this field, enable override currency format and try again. Please see https://help.salto.io/en/articles/6845062-deploying-a-currency-between-environments for instructions')
     })
 
     it('should have changeError when modifying currencyPrecision', async () => {
@@ -141,7 +141,7 @@ describe('Currency changes change  validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain('Cannot deploy currency - currency precision is a read-only field in NetSuite. Please see https://docs.salto.io/docs/deploying-a-currency-between-environments for instructions')
+      expect(changeErrors[0].detailedMessage).toContain('Cannot deploy currency - currency precision is a read-only field in NetSuite. Please see https://help.salto.io/en/articles/6845062-deploying-a-currency-between-environments for instructions')
     })
   })
 })

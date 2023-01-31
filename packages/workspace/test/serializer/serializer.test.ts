@@ -21,12 +21,13 @@ import {
   Element,
   isReferenceExpression,
   TypeReference,
+  Field,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
-import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors } from '../../src/serializer/elements'
+import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors, deserializeParsed } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { AbsoluteStaticFile, LazyStaticFile } from '../../src/workspace/static_files/source'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
@@ -204,9 +205,16 @@ describe('State/cache serialization', () => {
   }
   innerRefsInstance.value.a = new ReferenceExpression(innerRefsInstance.elemID.createNestedID('b'), innerRefsInstance.value.b, innerRefsInstance)
 
+  const standaloneField = new Field(
+    new ObjectType({ elemID: new ElemID('salesforce', 'test') }),
+    'field',
+    BuiltinTypes.BOOLEAN,
+    { anno: 'test' },
+  )
+
   const elements = [strType, numType, boolType, model, strListType, strMapType, variable,
     instance, subInstance, refInstance, refInstance2, refInstance3, templateRefInstance,
-    functionRefInstance, settings, config, innerRefsInstance]
+    functionRefInstance, settings, config, innerRefsInstance, standaloneField]
 
   it('should serialize and deserialize without relying on the constructor name', async () => {
     const serialized = await serialize([subInstance])
@@ -285,8 +293,50 @@ describe('State/cache serialization', () => {
       .toEqual(shuffledElements.map(e => e.elemID.getFullName()))
   })
 
+  describe('validate deserialization', () => {
+    let deserializedElements: Element[]
+    beforeAll(async () => {
+      deserializedElements = await deserialize(await serialize(elements))
+    })
+    it('should deserialize type correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model))
+        .toBeTruthy()
+    })
+    it('should deserialize field correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField))
+        .toBeTruthy()
+    })
+    it('should deserialize instance correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance))
+        .toBeTruthy()
+    })
+  })
+  describe('validate deserialization of parsed json objects', () => {
+    let deserializedElements: Element[]
+    beforeAll(async () => {
+      deserializedElements = await deserializeParsed(JSON.parse(await serialize(elements)))
+    })
+    it('should deserialize type correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(model.elemID))?.isEqual(model))
+        .toBeTruthy()
+    })
+    it('should deserialize field correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(standaloneField.elemID))?.isEqual(standaloneField))
+        .toBeTruthy()
+    })
+    it('should deserialize instance correctly', async () => {
+      expect(deserializedElements.find(elem => elem.elemID.isEqual(instance.elemID))?.isEqual(instance))
+        .toBeTruthy()
+    })
+  })
+
   it('should throw error if trying to deserialize a non element object', async () => {
-    await expect(deserialize(safeJsonStringify([{ test }]))).rejects.toThrow()
+    await expect(deserialize(safeJsonStringify([{ test }]))).rejects.toThrow('Deserialization failed. At least one element did not deserialize to an Element')
+    await expect(deserializeParsed([{ test }])).rejects.toThrow('Deserialization failed. At least one element did not deserialize to an Element')
+  })
+  it('should throw error if trying to deserialize a non array', async () => {
+    await expect(deserialize(safeJsonStringify({ test }))).rejects.toThrow('got non-array JSON data')
+    await expect(deserializeParsed({ test })).rejects.toThrow('got non-array JSON data')
   })
 
   it('should not serialize redundant values in StaticFile sub classes', async () => {

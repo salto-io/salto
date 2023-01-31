@@ -22,7 +22,7 @@ import { computeGetArgs, simpleGetArgs, createUrl, replaceUrlParams } from './re
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { findDataField, returnFullEntry, FindNestedFieldFunc } from './field_finder'
 import { filterTypes } from './type_elements'
-import { getInstanceName, generateInstanceNameFromConfig, createServiceIds, removeNullValues } from './instance_elements'
+import { getInstanceName, generateInstanceNameFromConfig, createServiceIds, removeNullValues, toBasicInstance } from './instance_elements'
 import { FetchElements, ConfigChangeSuggestion } from './element_getter'
 
 export {
@@ -42,4 +42,5 @@ export {
   removeNullValues,
   query,
   FetchElements, ConfigChangeSuggestion,
+  toBasicInstance,
 }

@@ -20,9 +20,10 @@ import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import webhookFilter from '../../../src/filters/webhook/webhook'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
-import JiraClient, { PRIVATE_API_HEADERS } from '../../../src/client/client'
+import JiraClient from '../../../src/client/client'
 import { createWebhookTypes } from '../../../src/filters/webhook/types'
 import { JIRA, WEBHOOK_TYPE } from '../../../src/constants'
+import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 
 
 describe('webhookFilter', () => {
@@ -126,6 +127,7 @@ describe('webhookFilter', () => {
         {
           headers: PRIVATE_API_HEADERS,
         },
+
       )
     })
 
@@ -273,7 +275,7 @@ describe('webhookFilter', () => {
         },
         {
           headers: PRIVATE_API_HEADERS,
-        }
+        },
       )
     })
   })

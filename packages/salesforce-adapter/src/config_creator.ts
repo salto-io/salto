@@ -79,7 +79,7 @@ export const configWithCPQ = new InstanceElement(
           },
           {
             metadataType: 'EmailTemplate',
-            name: '^MarketoEmailTemplates/*',
+            name: 'MarketoEmailTemplates/.*',
           },
           {
             metadataType: 'ContentAsset',

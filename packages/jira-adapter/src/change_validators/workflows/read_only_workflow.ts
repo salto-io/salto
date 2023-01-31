@@ -15,11 +15,11 @@
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isRemovalOrModificationChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { WORKFLOW_TYPE_NAME } from '../constants'
+import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const { awu } = collections.asynciterable
 
-export const workflowValidator: ChangeValidator = async changes => (
+export const readOnlyWorkflowValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isInstanceChange)
     .filter(isRemovalOrModificationChange)

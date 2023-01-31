@@ -647,7 +647,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
               { metadataType: 'SiteDotCom' },
               {
                 metadataType: 'EmailTemplate',
-                name: '^MarketoEmailTemplates/*',
+                name: 'MarketoEmailTemplates/.*',
               },
               { metadataType: 'ContentAsset' },
               { metadataType: 'CustomObjectTranslation' },

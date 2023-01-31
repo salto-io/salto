@@ -24,7 +24,6 @@ import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, IdLocator } from '../config'
 import { APP_INSTALLATION_TYPE_NAME } from './app'
 import { TICKET_FIELD_TYPE_NAME } from '../constants'
-import { ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE } from './handle_template_expressions'
 
 const log = logger(module)
 
@@ -109,7 +108,7 @@ const filterCreator: FilterCreator = ({ config }) => {
     onFetch: async (elements: InstanceElement[]): Promise<void> => log.time(async () =>
       getAppInstallations(elements)
         .forEach(app => replaceFieldsWithTemplates(app, _.groupBy(elements.filter(
-          e => [...Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE),
+          e => [TICKET_FIELD_TYPE_NAME, // before it was the values of ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE
             ...APP_INSTLLATION_SPECIFIC_TYPES]
             .includes((e.elemID.typeName))
         ), e => e.elemID.typeName), locators)),

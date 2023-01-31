@@ -127,7 +127,7 @@ describe('issueTypeScheme', () => {
       it('should call the endpoint to remove the removed issue types ids', () => {
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/rest/api/3/issuetypescheme/1/issuetype/2',
-          undefined
+          undefined,
         )
       })
 

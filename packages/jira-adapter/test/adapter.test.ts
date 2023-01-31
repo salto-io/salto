@@ -16,6 +16,8 @@
 import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression, ElemIdGetter, ServiceIds } from '@salto-io/adapter-api'
 import { deployment, elements, client } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import MockAdapter from 'axios-mock-adapter'
+import axios from 'axios'
 import { mockFunction } from '@salto-io/test-utils'
 import JiraClient from '../src/client/client'
 import { adapter as adapterCreator } from '../src/adapter_creator'
@@ -196,6 +198,7 @@ describe('adapter', () => {
     let platformTestType: ObjectType
     let jiraTestType: ObjectType
     let testInstance: InstanceElement
+    let mockAxiosAdapter: MockAdapter
     beforeEach(async () => {
       progressReporter = {
         reportProgress: mockFunction<ProgressReporter['reportProgress']>(),
@@ -222,8 +225,13 @@ describe('adapter', () => {
         .mockResolvedValue({ elements: [testInstance] });
       (loadSwagger as jest.MockedFunction<typeof loadSwagger>)
         .mockResolvedValue({ document: {}, parser: {} } as elements.swagger.LoadedSwagger)
-
+      mockAxiosAdapter = new MockAdapter(axios)
+      // mock as there are gets of license during fetch
+      mockAxiosAdapter.onGet().reply(200, { })
       result = await adapter.fetch({ progressReporter })
+    })
+    afterEach(() => {
+      mockAxiosAdapter.restore()
     })
     it('should generate types for the platform and the jira apis', () => {
       expect(loadSwagger).toHaveBeenCalledTimes(2)
@@ -237,7 +245,7 @@ describe('adapter', () => {
           }),
         }),
         undefined,
-        expect.any(Object)
+        expect.any(Object),
       )
       expect(generateTypes).toHaveBeenCalledWith(
         JIRA,
@@ -247,7 +255,7 @@ describe('adapter', () => {
           }),
         }),
         undefined,
-        expect.any(Object)
+        expect.any(Object),
       )
     })
 

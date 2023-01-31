@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 const ERROR_MESSAGE = 'Operation not supported'
 
 const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
-  `Salto does not support "${action}" of ${path.getFullName()}. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.`
+  `Salto does not support "${action}" of ${path.getFullName()}. Please see your business app FAQ at https://help.salto.io/en/articles/6927118-supported-business-applications for a list of supported elements.`
 
 const isDeploymentSupported = (
   action: Change['action'], config: DeploymentRequestsByAction

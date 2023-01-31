@@ -14,26 +14,26 @@
 * limitations under the License.
 */
 import {
-  Element,
-  getChangeData,
-  InstanceElement,
-  isModificationChange,
-  isRemovalChange,
+  ActionName,
+  Change,
   ChangeError,
   ChangeValidator,
-  ActionName,
-  isInstanceChange,
-  isFieldChange,
-  isObjectType,
+  Element,
   getAllChangeData,
-  Change,
+  getChangeData,
+  InstanceElement,
   isAdditionOrRemovalChange,
+  isFieldChange,
+  isInstanceChange,
+  isModificationChange,
+  isObjectType,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
-import { NAMESPACE_SEPARATOR } from '../constants'
+import { INSTALLED_PACKAGE_METADATA, NAMESPACE_SEPARATOR } from '../constants'
 import { INSTANCE_SUFFIXES } from '../types'
 
 const { awu } = collections.asynciterable
@@ -60,7 +60,6 @@ export const getNamespace = async (customElement: Element): Promise<string> =>
   (await apiName(customElement, true)).split(NAMESPACE_SEPARATOR)[0]
 
 export const PACKAGE_VERSION_FIELD_NAME = 'version_number'
-export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 
 const packageChangeError = async (
   action: ActionName,

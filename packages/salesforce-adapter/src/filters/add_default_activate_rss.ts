@@ -17,10 +17,7 @@ import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-a
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../filter'
 import { isInstanceOfType } from './utils'
-import { INSTALLED_PACKAGE_METADATA } from '../change_validators/package'
-import { ACTIVATE_RSS } from '../constants'
-
-const isInstanceOfTypeInstalledPackage = isInstanceOfType(INSTALLED_PACKAGE_METADATA)
+import { ACTIVATE_RSS, INSTALLED_PACKAGE_METADATA } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -36,7 +33,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(isInstanceOfTypeInstalledPackage)
+      .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
       .forEach(setDefaultActivateRSSValue)
   },
 })

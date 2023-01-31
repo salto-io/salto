@@ -43,6 +43,7 @@ import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
 import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 import { fieldContextValidator } from './field_contexts/field_contexts'
+import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
 
 const {
   deployTypesNotSupportedValidator,
@@ -68,6 +69,7 @@ export default (
     dashboardLayoutValidator,
     permissionTypeValidator,
     automationsValidator,
+    workflowSchemeMigrationValidator,
     maskingValidator(client),
     lockedFieldsValidator,
     fieldContextValidator,

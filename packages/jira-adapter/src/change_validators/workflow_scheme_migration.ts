@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME, PROJECT_TYPE } from '../constants'
@@ -27,45 +27,11 @@ type WorkflowSchemeItem = {
     issueType: ReferenceExpression
 }
 
-type ChangedItem = {
-    before: WorkflowSchemeItem
-    after?: WorkflowSchemeItem
-}
-
 type StatusMigration = {
   issueTypeId: ReferenceExpression
   statusId: ReferenceExpression
   newStatusId?: ReferenceExpression
 }
-
-const isWorkflowSchemeInstance = (instance: InstanceElement): boolean =>
-  instance.elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME
-
-const createWorkflowSchemeMigrationError = (
-  instance: InstanceElement,
-  validatorType: Set<string>,
-): ChangeError | undefined => (validatorType.size > 0 ? {
-  elemID: instance.elemID,
-  severity: 'Warning' as SeverityLevel,
-  message: 'Workflow scheme migration has unresolved statuses',
-  detailedMessage: 'something',
-} : undefined)
-
-const getChangedItems = (
-  change: ModificationChange<InstanceElement>,
-): ChangedItem[] =>
-  change.data.before.value.items.filter((item: WorkflowSchemeItem) => {
-    const sameIssueItem = change.data.after.value.items
-      .find((afterItem: WorkflowSchemeItem) => afterItem.issueType.elemID.isEqual(item.issueType.elemID))
-    return sameIssueItem === undefined || !sameIssueItem.workflow.elemID.isEqual(item.workflow.elemID)
-  }).map(
-    (item: WorkflowSchemeItem) => ({
-      before: item,
-      after: change.data.after.value.items.find(
-        (afterItem: WorkflowSchemeItem) => afterItem.issueType.elemID.isEqual(item.issueType.elemID)
-      ),
-    })
-  )
 
 const getRelevantChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
@@ -75,52 +41,7 @@ const getRelevantChanges = (
     .filter(isModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
 
-const getMissingStatuses = (workflow1: InstanceElement, workflows2: InstanceElement): ReferenceExpression[] => {
-  const beforeStatus = workflow1.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
-  const afterStatus = workflows2.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
-  return beforeStatus.filter((status: ReferenceExpression) => !afterStatus.find(
-    (innerAfterStatus: ReferenceExpression) => innerAfterStatus.elemID.isEqual(status.elemID)
-  ))
-}
 
-// const getWorkflowsFromChangedItem = (
-//   changedItem: ChangedItem,
-//   workflows: InstanceElement[],
-// ): { beforeWorkflow: InstanceElement; afterWorkflow?: InstanceElement } => {
-//   const { before: beforeItem, after: afterItem } = changedItem
-//   const beforeWorkflow = workflows.find(workflow => workflow.elemID.isEqual(beforeItem.workflow.elemID))
-//   if (beforeWorkflow === undefined) {
-//     throw new Error('before workflow is undefined')
-//   }
-//   const afterWorkflow = afterItem
-//     ? workflows.find(workflow => workflow.elemID.isEqual(afterItem.workflow.elemID)) : undefined
-//   return { beforeWorkflow, afterWorkflow }
-// }
-
-const shouldMigrateStatuses = (
-  change: ModificationChange<InstanceElement>,
-  workflows: InstanceElement[]
-): boolean => {
-  const changedItems = getChangedItems(change)
-  if (changedItems.length === 0) {
-    return false
-  }
-  const itemsToReport = changedItems.filter(changedItem => {
-    if (changedItem.after === undefined) {
-      return true
-    }
-    const { before: beforeItem, after: afterItem } = changedItem
-    const beforeWorkflow = workflows.find(workflow => workflow.elemID.isEqual(beforeItem.workflow.elemID))
-    const afterWorkflow = workflows.find(workflow => workflow.elemID.isEqual(afterItem.workflow.elemID))
-    if (beforeWorkflow === undefined || afterWorkflow === undefined) {
-      // maybe log something like, was not able to find workflow with element id
-      return false
-    }
-    const missingStatuses = getMissingStatuses(beforeWorkflow, afterWorkflow)
-    return missingStatuses.length > 0
-  })
-  return itemsToReport.length > 0
-}
 const getWorkflowFromId = (workflowId: ElemID, workflows: InstanceElement[]): InstanceElement => {
   const workflow = workflows.find(instance => instance.elemID.isEqual(workflowId))
   if (workflow === undefined) {
@@ -179,7 +100,6 @@ const getIssueTypeSchemeForWorkflowSchemeID = async (
   return awu(assignedProjects)
     .map(project => elementSource.get(project.value.issueTypeScheme.elemID))
     .toArray()
-//   return bla
 }
 
 const getUniqIssueTypesFromSchemes = (issueTypeSchemes: InstanceElement[]): ElemID[] => {
@@ -213,7 +133,6 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
     return []
   }
   const relevantChanges = getRelevantChanges(changes)
-  const changedWorkflowSchemeItems = relevantChanges.flatMap(getChangedItems)
 
   const ids = await awu(await elementSource.list()).toArray()
 
@@ -222,7 +141,6 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .toArray()
-  const bla = relevantChanges.filter(change => shouldMigrateStatuses(change, workflows))
   const projects = await awu(ids)
     .filter(id => id.typeName === PROJECT_TYPE)
     .filter(id => id.idType === 'instance')
@@ -233,15 +151,5 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
   ).filter(isDefined).toArray()
   // eslint-disable-next-line no-console
   console.log(bla2)
-  // eslint-disable-next-line no-console
-  console.log(workflows)
-  // eslint-disable-next-line no-console
-  console.log(isWorkflowSchemeInstance)
-  // eslint-disable-next-line no-console
-  console.log(createWorkflowSchemeMigrationError)
-  // eslint-disable-next-line no-console
-  console.log(changedWorkflowSchemeItems)
-  // eslint-disable-next-line no-console
-  console.log(bla)
   return []
 }

@@ -390,5 +390,19 @@ describe('referenced instances', () => {
       expect(Object.values(res).map(n => n.length))
         .toEqual([4, 3, 6, 2, 1])
     })
+    it('should not have different results on the second fetch', async () => {
+      elements = generateElements()
+      const result = await addReferencesToInstanceNames(
+        elements,
+        transformationConfigByType,
+        transformationDefaultConfig
+      )
+      const result2 = await addReferencesToInstanceNames(
+        result,
+        transformationConfigByType,
+        transformationDefaultConfig
+      )
+      expect(result).toEqual(result2)
+    })
   })
 })

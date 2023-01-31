@@ -317,7 +317,14 @@ export const deployMetadata = async (
 
   const sfDeployRes = await client.deploy(pkgData, { checkOnly })
 
-  log.debug('deploy result: %s', safeJsonStringify(sfDeployRes, undefined, 2))
+  log.debug('deploy result: %s', safeJsonStringify({
+    ...sfDeployRes,
+    details: sfDeployRes.details?.map(detail => ({
+      ...detail,
+      // The test result can be VERY long
+      runTestResult: safeJsonStringify(detail.runTestResult, undefined, 2).slice(100),
+    })),
+  }, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
     sfDeployRes, pkg.getDeletionsPackageName(), checkOnly ?? false

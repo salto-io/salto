@@ -63,7 +63,7 @@ describe('client', () => {
         .replyOnce(503)
         .onPost()
         .replyOnce(200)
-      await client.post({ url: '/api/v2/routing/attributes' })
+      await client.post({ url: '/api/v2/routing/attributes', data: {} })
       expect(mockAxios.history.post.length).toEqual(4)
     })
   })

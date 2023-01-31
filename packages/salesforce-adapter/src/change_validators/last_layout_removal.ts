@@ -24,32 +24,39 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { apiName } from '../transformers/transformer'
-import { INSTANCE_FULL_NAME_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE as LAYOUT_METADATA_TYPE } from '../constants'
+import { LAYOUT_TYPE_ID_METADATA_TYPE } from '../constants'
+import { isInstanceOfType, isInstanceOfTypeChange } from '../filters/utils'
 
-const { awu, keyByAsync } = collections.asynciterable
+const { awu, keyByAsync, groupByAsync } = collections.asynciterable
 
-const getObjectName = (layoutInstance: InstanceElement): string => (
-  layoutInstance.value[INSTANCE_FULL_NAME_FIELD].split('-')[0]
+const getObjectName = async (layoutInstance: InstanceElement): Promise<string> => (
+  (await apiName(layoutInstance)).split('-')[0]
 )
 
-const createOnlyLayoutError = (
-  instance: InstanceElement,
+const createLastLayoutDeletionError = (
+  { elemID }: InstanceElement,
   objectName: string,
 ): ChangeError => ({
-  elemID: instance.elemID,
+  elemID,
   severity: 'Error',
-  message: 'Cannot delete the only layout',
-  detailedMessage: `Could not deploy Layout instance ${instance.elemID.name} since the Object ${objectName}
-  must have at-least one remaining layout`,
+  message: 'Custom objects must have at least one layout',
+  detailedMessage: `Current deployment plan attempts to delete all custom object ${objectName} layouts. Please make sure to have at least one layout in order to deploy.`,
 })
 
 const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
     return []
   }
-  const isInstanceOfTypeLayout = async (instance: InstanceElement): Promise<boolean> => (
-    await apiName(await instance.getType(elementsSource)) === LAYOUT_METADATA_TYPE
-  )
+
+  const relevantChanges = await awu(changes)
+    .filter(isInstanceChange)
+    .filter(isRemovalChange)
+    .filter(isInstanceOfTypeChange(LAYOUT_TYPE_ID_METADATA_TYPE))
+    .toArray()
+
+  if (_.isEmpty(relevantChanges)) {
+    return []
+  }
 
   const removedObjectNames = Object.keys(
     await keyByAsync(
@@ -61,18 +68,8 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     )
   )
 
-  const relevantChanges = await awu(changes)
-    .filter(isInstanceChange)
-    .filter(isRemovalChange)
-    .filter(change => isInstanceOfTypeLayout(getChangeData(change)))
-    .toArray()
-
-  if (_.isEmpty(relevantChanges)) {
-    return []
-  }
-
   const relevantChangesByObjectName = _.pickBy(
-    _.groupBy(
+    await groupByAsync(
       relevantChanges,
       change => getObjectName(getChangeData(change))
     ),
@@ -81,10 +78,10 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   )
 
   const objectsWithRemainingLayouts = Object.keys(
-    _.groupBy(
+    await groupByAsync(
       await awu(await elementsSource.getAll())
         .filter(isInstanceElement)
-        .filter(isInstanceOfTypeLayout)
+        .filter(isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE))
         .toArray(),
       getObjectName,
     )
@@ -95,7 +92,7 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     .flatMap(([objectName, deletedLayoutChanges]) =>
       deletedLayoutChanges
         .map(getChangeData)
-        .map(instance => createOnlyLayoutError(instance, objectName)))
+        .map(instance => createLastLayoutDeletionError(instance, objectName)))
 }
 
 export default changeValidator

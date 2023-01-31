@@ -105,7 +105,7 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     const elements = await awu(await elementSource.getAll()).toArray()
     await awu(elements)
       .forEach(element => resolveTypeShallow(element, elementSource))
-    return changeValidator(changes, buildElementsSourceFromElements(elements))
+    return changeValidator(changes, buildElementsSourceFromElements(elements, elementSource))
   }
 }
 

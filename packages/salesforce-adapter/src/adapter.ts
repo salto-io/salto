@@ -52,7 +52,7 @@ import samlInitMethodFilter from './filters/saml_initiation_method'
 import settingsFilter from './filters/settings_type'
 import workflowFilter, { WORKFLOW_FIELD_TO_TYPE } from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
-import restrictValueSetsFilter from './filters/restrict_value_sets'
+import globalValueSetFilter from './filters/global_value_sets'
 import referenceAnnotationsFilter from './filters/reference_annotations'
 import fieldReferencesFilter from './filters/field_references'
 import customObjectInstanceReferencesFilter from './filters/custom_object_instances_references'
@@ -132,7 +132,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
   { creator: valueSetFilter },
-  { creator: restrictValueSetsFilter },
+  { creator: globalValueSetFilter },
   { creator: staticResourceFileExtFilter },
   { creator: profilePathsFilter, addsNewInformation: true },
   { creator: territoryFilter },

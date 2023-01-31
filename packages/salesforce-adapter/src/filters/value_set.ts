@@ -16,14 +16,30 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Field, getChangeData, isField, isModificationChange, ChangeDataType,
-  InstanceElement, isInstanceChange, ModificationChange, isFieldChange, isReferenceExpression,
+  Field,
+  getChangeData,
+  isField,
+  isModificationChange,
+  ChangeDataType,
+  InstanceElement,
+  isInstanceChange,
+  ModificationChange,
+  isFieldChange,
+  isReferenceExpression,
+  Element,
+  isObjectType,
+  CORE_ANNOTATIONS, createRestriction,
 } from '@salto-io/adapter-api'
 
 import { FilterWith } from '../filter'
-import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE, VALUE_SET_FIELDS } from '../constants'
+import {
+  FIELD_ANNOTATIONS,
+  GLOBAL_VALUE_SET_METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  VALUE_SET_FIELDS,
+} from '../constants'
 import { PicklistValue } from '../client/types'
-import { Types, metadataType } from '../transformers/transformer'
+import { Types, metadataType, isCustomObject } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
@@ -42,12 +58,42 @@ export const isValueSetReference = (field: Field): boolean =>
 export const hasValueSetNameAnnotation = (field: Field): boolean =>
   !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
 
+type ValueSetFieldAnnotations = Field['annotations'] & {
+  [FIELD_ANNOTATIONS.VALUE_SET]: {
+    [INSTANCE_FULL_NAME_FIELD]: string
+  }[]
+}
+
+type ValueSetField = Field & {
+  annotations: ValueSetFieldAnnotations
+}
+
+const isValueSetField = (field: Field): field is ValueSetField => (
+  makeArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+    .every(entry => _.isString(_.get(entry, INSTANCE_FULL_NAME_FIELD)))
+)
+
+const restrictValueSet = (field: ValueSetField): void => {
+  field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
+    enforce_value: true,
+    values: field.annotations[FIELD_ANNOTATIONS.VALUE_SET].map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
+  })
+}
+
 /**
  * Adds inactive values after the deletion of the values in the following cases:
  *  - Global value set
  *  - Restricted custom value set
  */
-const filterCreator = (): FilterWith<'onDeploy'> => ({
+const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
+  onFetch: async (elements: Element[]): Promise<void> => {
+    elements
+      .filter(isObjectType)
+      .filter(isCustomObject)
+      .flatMap(customObject => Object.values(customObject.fields))
+      .filter(isValueSetField)
+      .forEach(restrictValueSet)
+  },
   onDeploy: async changes => {
     const isRestrictedPicklistField = (
       changedElement: ChangeDataType

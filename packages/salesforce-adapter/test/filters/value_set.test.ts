@@ -21,7 +21,56 @@ import { Types } from '../../src/transformers/transformer'
 import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE } from '../../src/constants'
 
 describe('value set filter', () => {
-  const filter = filterCreator() as FilterWith<'onDeploy'>
+  const filter = filterCreator() as FilterWith<'onFetch' | 'onDeploy'>
+
+  const customObjectName = 'PicklistTest'
+  const fieldName = 'picklist_field'
+
+  const mockElemID = new ElemID(constants.SALESFORCE, customObjectName)
+  const createObjectWithPicklistField = (values?: string[], restricted = true): ObjectType =>
+    new ObjectType({
+      elemID: mockElemID,
+      fields: { [fieldName]: {
+        refType: Types.primitiveDataTypes.Picklist,
+        annotations: {
+          [constants.API_NAME]: `${customObjectName}.${fieldName}`,
+          [constants.LABEL]: 'label',
+          [CORE_ANNOTATIONS.REQUIRED]: false,
+          [constants.FIELD_ANNOTATIONS.RESTRICTED]: restricted,
+          ...values === undefined
+            ? {}
+            : { [constants.FIELD_ANNOTATIONS.VALUE_SET]: values.map(v => ({
+              [constants.CUSTOM_VALUE.FULL_NAME]: v,
+              [constants.CUSTOM_VALUE.DEFAULT]: false,
+              [constants.CUSTOM_VALUE.LABEL]: v,
+              [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
+            })) },
+        },
+      } },
+      annotations: {
+        [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        [constants.API_NAME]: customObjectName,
+        [constants.LABEL]: 'object label',
+      },
+    })
+
+  describe('on fetch', () => {
+    const PICKLIST_VALUES = ['val1', 'val2', 'val3']
+    let objectWithPicklistField: ObjectType
+
+    beforeEach(async () => {
+      objectWithPicklistField = createObjectWithPicklistField(PICKLIST_VALUES)
+      await filter.onFetch([objectWithPicklistField])
+    })
+
+    it('should add restriction on value set values', () => {
+      const { annotations } = objectWithPicklistField.fields[fieldName]
+      expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+        enforce_value: true,
+        values: PICKLIST_VALUES,
+      })
+    })
+  })
 
   describe('on deploy', () => {
     describe('Global value set', () => {
@@ -84,36 +133,6 @@ describe('value set filter', () => {
     })
 
     describe('Custom picklist', () => {
-      const customObjectName = 'PicklistTest'
-      const fieldName = 'picklist_field'
-      const mockElemID = new ElemID(constants.SALESFORCE, customObjectName)
-      const createObjectWithPicklistField = (values?: string[], restricted = true): ObjectType =>
-        new ObjectType({
-          elemID: mockElemID,
-          fields: { [fieldName]: {
-            refType: Types.primitiveDataTypes.Picklist,
-            annotations: {
-              [constants.API_NAME]: `${customObjectName}.${fieldName}`,
-              [constants.LABEL]: 'label',
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.FIELD_ANNOTATIONS.RESTRICTED]: restricted,
-              ...values === undefined
-                ? {}
-                : { [constants.FIELD_ANNOTATIONS.VALUE_SET]: values.map(v => ({
-                  [constants.CUSTOM_VALUE.FULL_NAME]: v,
-                  [constants.CUSTOM_VALUE.DEFAULT]: false,
-                  [constants.CUSTOM_VALUE.LABEL]: v,
-                  [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
-                })) },
-            },
-          } },
-          annotations: {
-            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-            [constants.API_NAME]: customObjectName,
-            [constants.LABEL]: 'object label',
-          },
-        })
-
       it('should add inactive values to custom picklist', async () => {
         const before = createObjectWithPicklistField(['val1']).fields[fieldName]
         const after = createObjectWithPicklistField(['val2']).fields[fieldName]

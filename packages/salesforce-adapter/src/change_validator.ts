@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createChangeValidator, resolveTypeShallow } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
@@ -34,10 +35,13 @@ import invalidListViewFilterScope from './change_validators/invalid_listview_fil
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
+import duplicateRulesSortOrder from './change_validators/duplicate_rules_sort_order'
 import lastLayoutRemoval from './change_validators/last_layout_removal'
 import SalesforceClient from './client/client'
 
 import { ChangeValidatorName, SalesforceConfig } from './types'
+
+const { awu } = collections.asynciterable
 
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
@@ -73,6 +77,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
+  duplicateRulesSortOrder: { creator: () => duplicateRulesSortOrder, ...defaultAlwaysRun },
   lastLayoutRemoval: { creator: () => lastLayoutRemoval, ...defaultAlwaysRun },
 }
 
@@ -90,10 +95,20 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   const disabledValidators = Object.entries(changeValidators).filter(
     ([name]) => config.validators?.[name as ChangeValidatorName] === false
   )
-  return createChangeValidator(
+  const changeValidator = createChangeValidator(
     activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
+  // Resolve the types of all the elements before the ChangeValidator runs.
+  return async (changes, elementSource) => {
+    if (elementSource === undefined) {
+      return changeValidator(changes, elementSource)
+    }
+    const elements = await awu(await elementSource.getAll()).toArray()
+    await awu(elements)
+      .forEach(element => resolveTypeShallow(element, elementSource))
+    return changeValidator(changes, buildElementsSourceFromElements(elements))
+  }
 }
 
 export default createSalesforceChangeValidator

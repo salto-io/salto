@@ -286,7 +286,7 @@ describe('NetsuiteClient', () => {
         const missingManifestFeatureMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
 Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
 File: ~/Objects/custimport_xepi_subscriptionimport.xml`
-        const missingManifestFeaturesError = new MissingManifestFeaturesError(missingManifestFeatureMessage, ['SUBSCRIPTIONBILLING'])
+        const missingManifestFeaturesError = new MissingManifestFeaturesError(missingManifestFeatureMessage, new Set(['SUBSCRIPTIONBILLING']))
         mockSdfDeploy.mockRejectedValueOnce(missingManifestFeaturesError)
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),

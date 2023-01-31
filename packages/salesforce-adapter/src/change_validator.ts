@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeValidator, ReadOnlyElementsSource, Element } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createChangeValidator, resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import packageValidator from './change_validators/package'
@@ -54,6 +54,11 @@ type ChangeValidatorDefinition = {
 }
 
 const defaultAlwaysRun = { defaultInDeploy: true, defaultInValidate: true }
+
+const safeResolveTypeShallow = async (
+  element: Element,
+  elementsSource: ReadOnlyElementsSource
+): Promise<void> => resolveTypeShallow(element, elementsSource).catch()
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefinition> = {
   managedPackage: { creator: () => packageValidator, ...defaultAlwaysRun },
@@ -104,7 +109,7 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     }
     const elements = await awu(await elementSource.getAll()).toArray()
     await awu(elements)
-      .forEach(element => resolveTypeShallow(element, elementSource))
+      .forEach(element => safeResolveTypeShallow(element, elementSource))
     return changeValidator(changes, buildElementsSourceFromElements(elements, elementSource))
   }
 }

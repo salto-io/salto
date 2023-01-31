@@ -25,10 +25,6 @@ import SalesforceClient from '../client/client'
 
 const log = logger(module)
 
-const filterValues = <T>(obj: Record<string, T>, fn: (value: T) => boolean): Record<string, T> => (
-  Object.fromEntries(Object.entries(obj).filter(([key, value]) => [key, fn(value)]))
-)
-
 
 const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
   const apiName = type.elemID.typeName // TODO
@@ -78,7 +74,7 @@ const createOrganizationType = (): ObjectType => (
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
     const filterNulls = (obj: Values): void => {
-      filterValues(obj, value => value !== null)
+      _.pickBy(obj, value => value !== null)
       _.mapValues(obj, value => (_.isPlainObject(value) ? filterNulls(value) : value))
     }
 

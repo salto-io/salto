@@ -21,6 +21,8 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
 
+export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
+
 export type TypeConfig<T extends TransformationConfig = TransformationConfig> = {
   request?: FetchRequestConfig
   deployRequests?: DeploymentRequestsByAction

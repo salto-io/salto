@@ -115,9 +115,7 @@ const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosEr
 const shouldRetryStatusCode = (statusCode?: number, additionalStatusesToRetry: number[] = []): boolean =>
   statusCode !== undefined && [429, ...additionalStatusesToRetry].includes(statusCode)
 
-export const createRetryOptions = (
-  retryOptions: Required<ClientRetryConfig>,
-): RetryOptions => ({
+export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
     const retryDelay = getRetryDelay(retryOptions, err)

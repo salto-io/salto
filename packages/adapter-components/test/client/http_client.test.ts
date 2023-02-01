@@ -21,6 +21,8 @@ import { AdapterHTTPClient, APIConnection, ClientOpts, ConnectionCreator, HTTPEr
 import { createConnection, Credentials } from './common'
 import { TimeoutError } from '../../src/client/http_client'
 
+const STATUSES_TO_RETRY = [1, 2, 3]
+
 describe('client_http_client', () => {
   let mockAxiosAdapter: MockAdapter
   let mockCreateConnection: jest.MockedFunction<ConnectionCreator<Credentials>>
@@ -48,7 +50,7 @@ describe('client_http_client', () => {
           pageSize: { get: 123 },
           rateLimit: { total: -1, get: 3, deploy: 4 },
           maxRequestsPerMinute: -1,
-          retry: { maxAttempts: 3, retryDelay: 123, additionalStatusCodesToRetry: [] },
+          retry: { maxAttempts: 3, retryDelay: 123, additionalStatusCodesToRetry: STATUSES_TO_RETRY },
         }
       )
     }
@@ -124,6 +126,16 @@ describe('client_http_client', () => {
 
       const postRes = await client.post({ url: '/ep', data: 'someData' })
       expect(postRes).toEqual({ data: { a: 'b' }, status: 200 })
+    })
+    it('should retry on given status codes', async () => {
+      // The first replyOnce with 200 is for the client authentication
+      mockAxiosAdapter.onGet('/users/me').reply(200, { accountId: 'ACCOUNT_ID' })
+      STATUSES_TO_RETRY.forEach(status => mockAxiosAdapter.onPost().replyOnce(status))
+      mockAxiosAdapter.onPost().replyOnce(200)
+
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      await client.post({ url: '/ep', data: '' })
+      expect(mockAxiosAdapter.history.post.length).toEqual(STATUSES_TO_RETRY.length + 1)
     })
   })
 

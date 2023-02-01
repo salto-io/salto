@@ -56,7 +56,7 @@ const isInstanceWithCurrencyIsoCode = (instance: InstanceElement): instance is I
   _.isString(instance.value[CURRENCY_ISO_CODE])
 )
 
-const isValidCurrencyIsoCodesInstance = (instance: InstanceElement): instance is CurrencyIsoCodesInstance => {
+const isCurrencyIsoCodesInstance = (instance: InstanceElement): instance is CurrencyIsoCodesInstance => {
   const valueSet = instance.value[FIELD_ANNOTATIONS.VALUE_SET]
   return isDefined(valueSet) && makeArray(valueSet)
     .every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
@@ -102,7 +102,7 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
       .map(createOrgHasNoMultiCurrencyEnabledError)
   }
 
-  if (!isValidCurrencyIsoCodesInstance(currencyIsoCodesInstance)) {
+  if (!isCurrencyIsoCodesInstance(currencyIsoCodesInstance)) {
     log.warn('CurrencyIsoCodes instance is invalid. Received: %o', currencyIsoCodesInstance)
     return []
   }

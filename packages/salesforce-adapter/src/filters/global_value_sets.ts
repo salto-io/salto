@@ -28,7 +28,12 @@ import { collections, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterWith, LocalFilterCreator } from '../filter'
-import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../constants'
+import {
+  FIELD_ANNOTATIONS,
+  GLOBAL_VALUE_SET_METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  VALUE_SET_FIELDS,
+} from '../constants'
 import { isCustomObject, apiName } from '../transformers/transformer'
 import { isInstanceOfType, buildElementsSourceForFetch } from './utils'
 
@@ -36,7 +41,6 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-export const GLOBAL_VALUE_SET = 'GlobalValueSet'
 export const CUSTOM_VALUE = 'customValue'
 export const MASTER_LABEL = 'master_label'
 
@@ -92,11 +96,10 @@ const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> =>
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
-    const globalValueSetInstances = awu(await referenceElements.getAll())
-      .filter(isInstanceElement)
-      .filter(isInstanceOfType(GLOBAL_VALUE_SET))
     const valueSetNameToRef = await multiIndex.keyByAsync({
-      iter: globalValueSetInstances,
+      iter: awu(await referenceElements.getAll())
+        .filter(isInstanceElement)
+        .filter(isInstanceOfType(GLOBAL_VALUE_SET_METADATA_TYPE)),
       key: async inst => [await apiName(inst)],
       map: inst => inst,
     })

@@ -68,7 +68,7 @@ type ValueSetField = Field & {
   annotations: ValueSetFieldAnnotations
 }
 
-const isValueSetField = (field: Field): field is ValueSetField => {
+const isFieldWithValueSet = (field: Field): field is ValueSetField => {
   const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
   return isDefined(valueSet) && makeArray(valueSet)
     .every(entry => _.isString(_.get(entry, INSTANCE_FULL_NAME_FIELD)))
@@ -92,7 +92,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
       .filter(isObjectType)
       .filter(isCustomObject)
       .flatMap(customObject => Object.values(customObject.fields))
-      .filter(isValueSetField)
+      .filter(isFieldWithValueSet)
       .forEach(restrictValueSet)
   },
   onDeploy: async changes => {

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../utils'
@@ -27,6 +28,8 @@ describe('expression language filter', () => {
       const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
       const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
       const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, POLICY_RULE_TYPE_NAME) })
+      const customPath = ['definitions', 'custom', 'properties', 'additionalProperties', 'saltoDepartment']
+      const basePath = ['definitions', 'base', 'properties', 'department']
       const groupRuleWithTemplate = new InstanceElement(
         'groupRuleTest',
         groupRuleType,
@@ -78,7 +81,7 @@ describe('expression language filter', () => {
           conditions: {
             additionalProperties: {
               elCondition: {
-                condition: 'user.profile.department == \'salto\' AND user.isMemberOf({\'group.id\': {"345", \'123\'}})',
+                condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345", \'123\'}})',
               },
             },
           },
@@ -101,8 +104,15 @@ describe('expression language filter', () => {
           expect(groupRule?.value?.conditions?.expression?.value).toEqual(new TemplateExpression({
             parts: [
               '(String.stringContains(',
-              new ReferenceExpression(userSchemaInstance.elemID, userSchemaInstance),
-              ', "salto")',
+              new ReferenceExpression(
+                userSchemaInstance.elemID.createNestedID(...basePath),
+                _.get(userSchemaInstance.value, customPath)
+              ),
+              ', "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup(',
+              ') AND !isMemberOfAnyGroup(',
+              new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
+              new ReferenceExpression(groupInstances[1].elemID, groupInstances[1]),
+              ')',
             ],
           }))
           const policyRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'policyRuleTest')
@@ -110,7 +120,10 @@ describe('expression language filter', () => {
           expect(policyRule?.value?.conditions?.additionalProperties?.elCondition?.condition)
             .toEqual(new TemplateExpression({
               parts: [
-                new ReferenceExpression(userSchemaInstance.elemID, userSchemaInstance),
+                new ReferenceExpression(
+                  userSchemaInstance.elemID.createNestedID(...customPath),
+                  _.get(userSchemaInstance.value, basePath)
+                ),
                 ' == "salto" AND user.isMemberOf({',
                 '"group.id": {"',
                 new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),

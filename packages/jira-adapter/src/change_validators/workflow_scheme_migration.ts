@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
@@ -94,9 +94,11 @@ const getMissingStatuses = (before: InstanceElement, after: InstanceElement): Re
 const getMigrationForChangedItem = (changedItem: ChangedItem): StatusMigration[] => {
   const { before, after, issueType } = changedItem
   const missingStatuses = getMissingStatuses(before.value, after.value)
+  const defaultStatus: ReferenceExpression | undefined = after.value.value.statuses[0]?.id
   return missingStatuses.map((status: ReferenceExpression) => ({
     issueTypeId: issueType,
     statusId: status,
+    newStatusId: defaultStatus,
   }))
 }
 
@@ -110,12 +112,33 @@ const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => 
   return `statusMigrations = [\n${formattedStatusMigrations.join(',\n')}\n]`
 }
 
-const getErrorMessageForStatusMigration = (id: ElemID, statusMigrations: StatusMigration[]): ChangeError | undefined =>
+const getErrorMessageForStatusMigration = (
+  id: ElemID,
+  statusMigrations: StatusMigration[],
+  serviceUrl?: string
+): ChangeError | undefined =>
   (statusMigrations.length > 0 ? {
     elemID: id,
     severity: 'Warning',
-    message: `Deployment of workflow scheme ${id.name} will require migrating statuses`,
-    detailedMessage: `${id.getFullName()} require the following status migration:\n${formatStatusMigrations(statusMigrations)}\n to be added to the nacl file.`,
+    message: `Deployment of workflow scheme ${id.name} will require migrating ${statusMigrations.length === 1 ? 'one status' : `${statusMigrations.length} statuses`}`,
+    detailedMessage: '',
+    deployActions: {
+      preAction: {
+        title: `Status migration for workflow scheme ${id.name}`,
+        description: `Add the following field to migrate statuses in Jira: \n${formatStatusMigrations(statusMigrations)}\n`,
+        subActions: [],
+      },
+      postAction: serviceUrl ? {
+        title: `Status migration for workflow scheme ${id.name}`,
+        description: 'finish the migration in Jira by following the steps below:',
+        subActions: [
+          `Open workflow scheme page in jira ${serviceUrl}`,
+          'Press on publish',
+          '???',
+          'Click "Submit"',
+        ],
+      } : undefined,
+    },
   } : undefined)
 
 export const workflowSchemeMigrationValidator: ChangeValidator = async (changes, elementSource) => {
@@ -123,10 +146,9 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
     return []
   }
   const relevantChanges = getRelevantChanges(changes)
-
   const errors = relevantChanges.map(change =>
     getErrorMessageForStatusMigration(getChangeData(change).elemID, getChangedItemsFromChange(change)
-      .flatMap(changedItem => getMigrationForChangedItem(changedItem))
-      .flat())).filter(isDefined)
+      .flatMap(changedItem => getMigrationForChangedItem(changedItem)).flat(),
+    getChangeData(change).annotations[CORE_ANNOTATIONS.SERVICE_URL])).filter(isDefined)
   return errors
 }

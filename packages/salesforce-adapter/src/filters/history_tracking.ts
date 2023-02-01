@@ -118,6 +118,7 @@ const filter: LocalFilterCreator = () => ({
           removed: _.difference(trackedFields(change.data.before), trackedFields(change.data.after)),
         }
       ))
+      .filter(({ added, removed }) => (added.length > 0 || removed.length > 0))
       .flatMap(({ type, added, removed }) => createFieldChanges(type, added, removed, changedFieldNames))
 
     changes.push(...additionalChanges)

@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Change, ChangeDataType, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME, PROJECT_TYPE } from '../constants'
+import { WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 
-const { awu } = collections.asynciterable
 const { isDefined } = values
 
 type WorkflowSchemeItem = {
@@ -46,15 +45,6 @@ const getRelevantChanges = (
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
-
-
-const getWorkflowFromId = (workflowId: ElemID, workflows: InstanceElement[]): InstanceElement => {
-  const workflow = workflows.find(instance => instance.elemID.isEqual(workflowId))
-  if (workflow === undefined) {
-    throw new Error('workflow is undefined')
-  }
-  return workflow
-}
 
 const isItemEquals = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): boolean =>
   item1.issueType.elemID.isEqual(item2.issueType.elemID)
@@ -84,11 +74,11 @@ const getChangedItemsFromChange = (change: ModificationChange<InstanceElement>):
       after: afterItem.workflow,
       issueType: beforeItem.issueType,
     }
-  })
+  }).filter(isDefined)
   return [
     ...addedItems,
     ...removedItems,
-    ...modifiedItems.filter(isDefined),
+    ...modifiedItems,
   ]
 }
 
@@ -101,94 +91,32 @@ const getMissingStatuses = (before: InstanceElement, after: InstanceElement): Re
   return _.differenceWith(beforeStatuses, afterStatuses, areStatusesEquals)
 }
 
-const getMigrationForChangedItem = (changedItem: ChangedItem, workflows: InstanceElement[]): StatusMigration[] => {
+const getMigrationForChangedItem = (changedItem: ChangedItem): StatusMigration[] => {
   const { before, after, issueType } = changedItem
-  const beforeWorkflow = getWorkflowFromId(before.elemID, workflows)
-  const afterWorkflow = getWorkflowFromId(after.elemID, workflows)
-  const missingStatuses = getMissingStatuses(beforeWorkflow, afterWorkflow)
+  const missingStatuses = getMissingStatuses(before.value, after.value)
   return missingStatuses.map((status: ReferenceExpression) => ({
     issueTypeId: issueType,
     statusId: status,
   }))
 }
 
-const getDefaultWorkflowItems = (
-  workflowScheme: InstanceElement,
-  workflows: InstanceElement[],
-  defaultIssueTypes: ElemID[]
-): StatusMigration[] => {
-  const defaultWorkflow = workflowScheme.value.defaultWorkflow.elemID
-  const defaultWorkflowInstance = getWorkflowFromId(defaultWorkflow, workflows)
-  return defaultIssueTypes.flatMap(issueType => defaultWorkflowInstance.value.statuses
-    .map((status: {id: ReferenceExpression}) => ({
-      issueTypeId: issueType,
-      statusId: status.id,
-    })))
+const formatStatusMigration = (statusMigration: StatusMigration): string => {
+  const { issueTypeId, statusId, newStatusId } = statusMigration
+  return `{\n issueTypeId = ${issueTypeId.elemID.getFullName()}\n statusId = ${statusId.elemID.getFullName()}\n newStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<ENTER_STATUS_HERE>'}\n}`
 }
 
-const getAllStatusItems = (workflowScheme: InstanceElement, workflows: InstanceElement[]): StatusMigration[] => {
-  const statusItems = workflowScheme.value.items
-    .flatMap((item: WorkflowSchemeItem) => getWorkflowFromId(item.workflow.elemID, workflows).value.statuses
-      .map((status: {id: ReferenceExpression}) => ({
-        issueTypeId: item.issueType,
-        statusId: status.id,
-      })))
-  return statusItems
+const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => {
+  const formattedStatusMigrations = statusMigrations.map(formatStatusMigration)
+  return `statusMigrations = [\n${formattedStatusMigrations.join(',\n')}\n]`
 }
 
-const getAllStatusItemsFromChange = (
-  change: ModificationChange<InstanceElement>,
-  workflows: InstanceElement[],
-  defaultIssueTypes: ElemID[],
-): { before: StatusMigration[]; after: StatusMigration[] } => {
-  const { before: beforeWorkflowScheme, after: afterWorkflowScheme } = change.data
-  const beforeStatusItems = [
-    ...getAllStatusItems(beforeWorkflowScheme, workflows),
-    ...getDefaultWorkflowItems(beforeWorkflowScheme, workflows, defaultIssueTypes),
-  ]
-  const afterStatusItems = [
-    ...getAllStatusItems(afterWorkflowScheme, workflows),
-    ...getDefaultWorkflowItems(afterWorkflowScheme, workflows, defaultIssueTypes),
-  ]
-  return { before: beforeStatusItems, after: afterStatusItems }
-}
-
-const getIssueTypeSchemeForWorkflowSchemeID = async (
-  workflowSchemeID: ElemID,
-  projects: InstanceElement[],
-  elementSource: ReadOnlyElementsSource
-): Promise<InstanceElement[]> => {
-  const assignedProjects = projects.filter(instance => instance.value.workflowScheme?.elemID.isEqual(workflowSchemeID))
-  return awu(assignedProjects)
-    .map(project => elementSource.get(project.value.issueTypeScheme.elemID))
-    .toArray()
-}
-
-const getUniqIssueTypesFromSchemes = (issueTypeSchemes: InstanceElement[]): ElemID[] => {
-  const issueTypes = issueTypeSchemes.flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
-  return _.uniqBy(issueTypes, issueType => issueType.elemID.getFullName())
-}
-
-const compareMigrationItems = (status1: StatusMigration, status2: StatusMigration): boolean =>
-  status1.issueTypeId.elemID.isEqual(status2.issueTypeId.elemID)
-  && status1.statusId.elemID.isEqual(status2.statusId.elemID)
-
-const getStatusMigrationsForChange = async (
-  change: ModificationChange<InstanceElement>,
-  projects: InstanceElement[],
-  workflows: InstanceElement[],
-  elementSource: ReadOnlyElementsSource
-): Promise<StatusMigration[]> => {
-  const issueIds = await getIssueTypeSchemeForWorkflowSchemeID(
-    getChangeData(change).elemID, projects, elementSource
-  )
-  if (issueIds === undefined) {
-    // maybe log something like, was not able to find issue type scheme for workflow scheme
-    return []
-  }
-  const { before, after } = getAllStatusItemsFromChange(change, workflows, getUniqIssueTypesFromSchemes(issueIds))
-  return _.differenceWith(before, after, compareMigrationItems)
-}
+const getErrorMessageForStatusMigration = (id: ElemID, statusMigrations: StatusMigration[]): ChangeError | undefined =>
+  (statusMigrations.length > 0 ? {
+    elemID: id,
+    severity: 'Warning',
+    message: `Deployment of workflow scheme ${id.name} will require migrating statuses`,
+    detailedMessage: `${id.getFullName()} require the following status migration:\n${formatStatusMigrations(statusMigrations)}\n to be added to the nacl file.`,
+  } : undefined)
 
 export const workflowSchemeMigrationValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
@@ -196,29 +124,9 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
   }
   const relevantChanges = getRelevantChanges(changes)
 
-  const ids = await awu(await elementSource.list()).toArray()
-
-  const workflows = await awu(ids)
-    .filter(id => id.typeName === WORKFLOW_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
-  const projects = await awu(ids)
-    .filter(id => id.typeName === PROJECT_TYPE)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
-  const bla = relevantChanges.map(change => [
-    getChangeData(change).elemID.getFullName(),
-    getChangedItemsFromChange(change)
-      .map(changedItem => getMigrationForChangedItem(changedItem, workflows)),
-  ])
-  // eslint-disable-next-line no-console
-  console.log(bla)
-  const bla2 = await awu(relevantChanges).map(
-    async change => getStatusMigrationsForChange(change, projects, workflows, elementSource)
-  ).filter(isDefined).toArray()
-  // eslint-disable-next-line no-console
-  console.log(bla2)
-  return []
+  const errors = relevantChanges.map(change =>
+    getErrorMessageForStatusMigration(getChangeData(change).elemID, getChangedItemsFromChange(change)
+      .flatMap(changedItem => getMigrationForChangedItem(changedItem))
+      .flat())).filter(isDefined)
+  return errors
 }

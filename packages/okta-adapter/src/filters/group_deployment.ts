@@ -65,6 +65,7 @@ const deployGroup = async (
  * Group type is deployed separately to update groups's users and group's roles
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'groupDeploymentFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

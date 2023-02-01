@@ -73,7 +73,7 @@ export interface OktaAdapterParams {
 }
 
 export default class OktaAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => Required<Omit<Filter, 'name'>>
   private client: OktaClient
   private userConfig: OktaConfig
   private paginator: clientUtils.Paginator

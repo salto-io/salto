@@ -47,8 +47,8 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
         // TODO SALTO-2649: add better handling for rate limits
+        maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
         retry: { ...DEFAULT_RETRY_OPTS, retryDelay: 10000 },
       }
     )

@@ -17,10 +17,10 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 
-const { deployNotSupportedValidator, createUnresolvedReferencesValidator } = deployment.changeValidators
+const { deployNotSupportedValidator, getDefaultChangeValidators } = deployment.changeValidators
 
 const validators: ChangeValidator[] = [
-  createUnresolvedReferencesValidator(),
+  ...getDefaultChangeValidators(),
   deployNotSupportedValidator,
 ]
 

@@ -52,10 +52,6 @@ type ChangeValidatorDefinition = {
 const defaultAlwaysRun = { defaultInDeploy: true, defaultInValidate: true }
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefinition> = {
-  unresolvedReferencesValidator: {
-    creator: () => deployment.changeValidators.createUnresolvedReferencesValidator(),
-    ...defaultAlwaysRun,
-  },
   managedPackage: { creator: () => packageValidator, ...defaultAlwaysRun },
   picklistStandardField: { creator: () => picklistStandardFieldValidator, ...defaultAlwaysRun },
   customObjectInstances: { creator: () => customObjectInstancesValidator, ...defaultAlwaysRun },
@@ -93,7 +89,10 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     ([name]) => config.validators?.[name as ChangeValidatorName] === false
   )
   return createChangeValidator(
-    activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
+    [
+      ...deployment.changeValidators.getDefaultChangeValidators(),
+      ...activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
+    ],
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
 }

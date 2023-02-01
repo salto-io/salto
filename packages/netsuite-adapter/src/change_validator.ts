@@ -46,9 +46,7 @@ import { NetsuiteChangeValidator } from './change_validators/types'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
 
-const changeValidators = [
-  deployment.changeValidators.createUnresolvedReferencesValidator(),
-]
+const changeValidators = deployment.changeValidators.getDefaultChangeValidators()
 
 const netsuiteChangeValidators: NetsuiteChangeValidator[] = [
   exchangeRateValidator,

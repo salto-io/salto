@@ -13,19 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
-import { createChangeValidator } from '@salto-io/adapter-utils'
-import { applicationValidator } from './application'
-import { applicationFieldsValidator } from './application_addition_fields'
+import { values } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { createUnresolvedReferencesValidator } from './unresolved_references'
 
-export default (
-): ChangeValidator => {
-  const validators: ChangeValidator[] = [
-    ...deployment.changeValidators.getDefaultChangeValidators(),
-    applicationValidator,
-    applicationFieldsValidator,
-  ]
 
-  return createChangeValidator(validators)
+const DEFAULT_CHANGE_VALIDATORS = {
+  unresolvedReferencesValidator: createUnresolvedReferencesValidator(),
 }
+
+type ValidatorName = keyof typeof DEFAULT_CHANGE_VALIDATORS
+
+export const getDefaultChangeValidators = (
+  validatorsToOmit: Array<ValidatorName> = []
+): ChangeValidator[] => _(DEFAULT_CHANGE_VALIDATORS)
+  .pickBy((_val, key) => !validatorsToOmit.includes(key as ValidatorName))
+  .values()
+  .filter(values.isDefined)
+  .value()

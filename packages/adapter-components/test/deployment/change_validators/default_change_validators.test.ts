@@ -13,9 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { deployTypesNotSupportedValidator } from './deploy_types_not_supported'
-export { deployNotSupportedValidator } from './deploy_not_supported'
-export { createCheckDeploymentBasedOnConfigValidator } from './check_deployment_based_on_config'
-export { createSkipParentsOfSkippedInstancesValidator } from './skip_parents_of_skipped_instances'
-export { createUnresolvedReferencesValidator } from './unresolved_references'
-export { getDefaultChangeValidators } from './default_change_validators'
+import { getDefaultChangeValidators } from '../../../src/deployment/change_validators'
+
+describe('default_change_validators', () => {
+  it('should omit validators in validatorsToOmit', () => {
+    const allValidators = getDefaultChangeValidators()
+    const validators = getDefaultChangeValidators(['unresolvedReferencesValidator'])
+    expect(validators).toHaveLength(allValidators.length - 1)
+  })
+})

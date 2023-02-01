@@ -82,7 +82,7 @@ export const buildLazyShallowTypeResolverElementsSource = (
   const resolved: Set<ElemID> = new Set()
   const getElementWithResolvedShallowType = async (id: ElemID): ReturnType<ReadOnlyElementsSource['get']> => {
     const element = await elementsSource.get(id)
-    if (resolved.has(id)) {
+    if (element === undefined || resolved.has(id)) {
       return element
     }
     await resolveTypeShallow(element, elementsSource)

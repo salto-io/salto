@@ -26,6 +26,7 @@ const REDUNDANT_TYPES = ['NullField', 'CustomFieldList', 'CustomFieldRef']
 const REDUNDANT_FIELDS = ['lastModifiedDate', 'dateCreated', 'createdDate', 'daysOverdue']
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'redundantFields',
   onFetch: async elements => {
     await awu(elements)
       .filter(isObjectType)

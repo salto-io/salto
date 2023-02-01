@@ -19,6 +19,8 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { resolveTypeShallow } from './utils'
 
+const { awu } = collections.asynciterable
+
 const { findDuplicates } = collections.array
 const log = logger(module)
 
@@ -72,4 +74,26 @@ export const buildElementsSourceFromElements = (
     has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
   }
   return self
+}
+
+export const buildLazyShallowTypeResolverElementsSource = (
+  elementsSource: ReadOnlyElementsSource
+): ReadOnlyElementsSource => {
+  const resolved: Set<ElemID> = new Set()
+  const getElementWithResolvedShallowType = async (id: ElemID): ReturnType<ReadOnlyElementsSource['get']> => {
+    const element = await elementsSource.get(id)
+    if (resolved.has(id)) {
+      return element
+    }
+    await resolveTypeShallow(element, elementsSource)
+    resolved.add(id)
+    return element
+  }
+  return {
+    get: async (id: ElemID) => getElementWithResolvedShallowType(id),
+    getAll: async () => awu(await elementsSource.list())
+      .map(getElementWithResolvedShallowType),
+    list: async () => elementsSource.list(),
+    has: async (id: ElemID) => elementsSource.has(id),
+  }
 }

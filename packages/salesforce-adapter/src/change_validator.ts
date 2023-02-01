@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ReadOnlyElementsSource, Element } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createChangeValidator, resolveTypeShallow } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { ChangeValidator } from '@salto-io/adapter-api'
+import {
+  buildLazyShallowTypeResolverElementsSource,
+  createChangeValidator,
+} from '@salto-io/adapter-utils'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
@@ -40,9 +42,6 @@ import SalesforceClient from './client/client'
 
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
-const { awu } = collections.asynciterable
-
-
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
                                client: SalesforceClient) => ChangeValidator
@@ -54,16 +53,6 @@ type ChangeValidatorDefinition = {
 }
 
 const defaultAlwaysRun = { defaultInDeploy: true, defaultInValidate: true }
-
-const safeResolveTypeShallow = async (
-  element: Element,
-  elementsSource: ReadOnlyElementsSource
-): Promise<void> => {
-  try {
-    await resolveTypeShallow(element, elementsSource)
-    // eslint-disable-next-line no-empty
-  } catch (_e) {}
-}
 
 export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefinition> = {
   managedPackage: { creator: () => packageValidator, ...defaultAlwaysRun },
@@ -108,15 +97,9 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
   // Resolve the types of all the elements before the ChangeValidator runs.
-  return async (changes, elementSource) => {
-    if (elementSource === undefined) {
-      return changeValidator(changes, elementSource)
-    }
-    const elements = await awu(await elementSource.getAll()).toArray()
-    await awu(elements)
-      .forEach(element => safeResolveTypeShallow(element, elementSource))
-    return changeValidator(changes, buildElementsSourceFromElements(elements, elementSource))
-  }
+  return async (changes, elementSource) => ((elementSource === undefined)
+    ? changeValidator(changes, elementSource)
+    : changeValidator(changes, buildLazyShallowTypeResolverElementsSource(elementSource)))
 }
 
 export default createSalesforceChangeValidator

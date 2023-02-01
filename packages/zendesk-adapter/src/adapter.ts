@@ -375,7 +375,6 @@ export interface ZendeskAdapterParams {
 
 export default class ZendeskAdapter implements AdapterOperations {
   private client: ZendeskClient
-  private clientsBySubdomain: Record<string, ZendeskClient>
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
   private getElemIdFunc?: ElemIdGetter
@@ -407,7 +406,6 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.configInstance = configInstance
     this.getElemIdFunc = getElemIdFunc
     this.client = client
-    this.clientsBySubdomain = {}
     this.elementsSource = elementsSource
     this.paginator = createPaginator({
       client: this.client,
@@ -428,11 +426,12 @@ export default class ZendeskAdapter implements AdapterOperations {
       )
     }
 
+    const clientsBySubdomain: Record<string, ZendeskClient> = {}
     this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
-      if (!this.clientsBySubdomain[subdomain]) {
-        this.clientsBySubdomain[subdomain] = this.createClientBySubdomain(subdomain, deployRateLimit)
+      if (clientsBySubdomain[subdomain] === undefined) {
+        clientsBySubdomain[subdomain] = this.createClientBySubdomain(subdomain, deployRateLimit)
       }
-      return this.clientsBySubdomain[subdomain]
+      return clientsBySubdomain[subdomain]
     }
 
 

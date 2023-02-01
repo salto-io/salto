@@ -26,7 +26,7 @@ import {
   API_NAME,
   METADATA_TYPE,
   CUSTOM_OBJECT,
-  CPQ_QUOTE,
+  CPQ_QUOTE, ACTIVATE_RSS, INSTALLED_PACKAGE_METADATA,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -254,6 +254,14 @@ export const mockTypes = {
     },
     fields: {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
+    },
+  }),
+  [INSTALLED_PACKAGE_METADATA]: createMetadataObjectType({
+    annotations: {
+      metadataType: INSTALLED_PACKAGE_METADATA,
+    },
+    fields: {
+      [ACTIVATE_RSS]: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
   Product2: new ObjectType({

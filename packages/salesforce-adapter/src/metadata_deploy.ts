@@ -322,7 +322,9 @@ export const deployMetadata = async (
     details: sfDeployRes.details?.map(detail => ({
       ...detail,
       // The test result can be VERY long
-      runTestResult: safeJsonStringify(detail.runTestResult, undefined, 2).slice(100),
+      runTestResult: detail.runTestResult
+        ? safeJsonStringify(detail.runTestResult, undefined, 2).slice(100)
+        : undefined,
     })),
   }, undefined, 2))
 

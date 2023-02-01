@@ -15,7 +15,7 @@
 */
 
 import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
 import { queryClient } from './utils'
@@ -73,11 +73,6 @@ const createOrganizationType = (): ObjectType => (
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    const filterNulls = (obj: Values): Values => (
-      _.mapValues(_.pickBy(obj, value => value !== null),
-        value => (_.isPlainObject(value) ? filterNulls(value) : value))
-    )
-
     const objectType = createOrganizationType()
     await enrichTypeWithFields(client, objectType)
 
@@ -87,7 +82,7 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
 
-    const organizationObject = filterNulls(_.mapKeys(queryResult[0], (_value, key) => _.camelCase(key)))
+    const organizationObject = _.mapKeys(queryResult[0], (_value, key) => _.camelCase(key))
 
     const organizationInstance = createInstanceElement(
       {

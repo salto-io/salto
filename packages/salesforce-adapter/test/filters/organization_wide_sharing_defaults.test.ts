@@ -130,7 +130,6 @@ describe('When fetching organization-wide defaults', () => {
       DefaultPricebookAccess: 'ReadSelect',
       DefaultCampaignAccess: 'All',
       SomeIrrelevantField: 'SomeIrrelevantValue',
-      FieldWithNullValue: null,
     }])
     setDescribeSObjectsReturnValue([
       'defaultAccountAccess',

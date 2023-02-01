@@ -27,6 +27,7 @@ const log = logger(module)
  * Adds collision warnings
  */
 const filterCreator: FilterCreator = ({ config }) => ({
+  name: 'collisionErrorsFilter',
   onFetch: async (elements: Element[]) => log.time(async () => {
     const collistionWarnings = await getAndLogCollisionWarnings({
       adapterName: ZENDESK,

@@ -216,6 +216,7 @@ const getFullName = (instance: InstanceElement): string => instance.elemID.getFu
  * This filter arranges the paths for guide elements.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'guideArrangePaths',
   onFetch: async (elements: Element[]): Promise<void> => {
     const guideInstances = elements
       .filter(isInstanceElement)

@@ -35,6 +35,7 @@ export type DeployFuncType = (
 ) => Promise<void>
 
 type ReorderFilterCreatorParams = {
+  filterName: string
   typeName: string
   orderFieldName: string
   iterateesToSortBy?: Array<_.Many<_.ListIteratee<InstanceElement>>>

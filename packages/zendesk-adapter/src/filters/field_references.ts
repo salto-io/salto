@@ -1044,6 +1044,7 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
  * Convert field values into references, based on predefined rules.
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => log.time(async () => {
     const addReferences = async (refDefs: ZendeskFieldReferenceDefinition[]):
     Promise<void> => {

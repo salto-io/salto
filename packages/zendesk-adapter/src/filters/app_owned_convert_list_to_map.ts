@@ -58,6 +58,7 @@ const turnParametersFieldToMap = (
  * There is no deploy support, because there is no suitable API for it.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'appOwnedConvertListToMapFilter',
   onFetch: async elements => log.time(async () => {
     elements
       .filter(isInstanceElement)

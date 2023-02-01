@@ -35,6 +35,7 @@ const DEFINITION_TYPE_NAMES = [
  * Removes the definition instances
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'removeDefinitionInstancesFilter',
   onFetch: async elements => log.time(async () => {
     _.remove(elements,
       element =>

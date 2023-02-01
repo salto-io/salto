@@ -60,6 +60,7 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'unorderedListsFilter',
   onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
     const instances = elements.filter(isInstanceElement)
     orderDynamicContentItems(instances)

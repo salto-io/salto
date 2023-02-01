@@ -203,6 +203,7 @@ const getMacroAttachments = async ({
  * Adds the macro attachments instances
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'macroAttachmentsFilter',
   onFetch: async elements => log.time(async () => {
     const macrosWithAttachments = elements
       .filter(isInstanceElement)

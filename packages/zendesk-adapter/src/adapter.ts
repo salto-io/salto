@@ -391,7 +391,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     filterRunnerClient?: ZendeskClient
     paginator?: clientUtils.Paginator
     brandIdToClient?: BrandIdToClient
-  }) => Promise<Required<Filter>>
+  }) => Promise<Required<Omit<Filter, 'name'>>>
 
   public constructor({
     filterCreators = DEFAULT_FILTERS as FilterCreator[],

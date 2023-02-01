@@ -105,6 +105,7 @@ const filterCreator: FilterCreator = ({ config }) => {
   const locators = fetchConfig.greedyAppReferences ? [ALL_LOCATOR]
     : (fetchConfig.appReferenceLocators ?? LOCATORS)
   return ({
+    name: 'handleAppInstallationsFilter',
     onFetch: async (elements: InstanceElement[]): Promise<void> => log.time(async () =>
       getAppInstallations(elements)
         .forEach(app => replaceFieldsWithTemplates(app, _.groupBy(elements.filter(

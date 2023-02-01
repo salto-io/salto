@@ -248,6 +248,7 @@ const getInline = (attachment: InstanceElement | undefined): boolean => attachme
 const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdToClient = {} }) => {
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
+    name: 'articleFilter',
     onFetch: async (elements: Element[]) => log.time(async () => {
       const articleInstances = elements
         .filter(isInstanceElement)

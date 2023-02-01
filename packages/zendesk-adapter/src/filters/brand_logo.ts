@@ -197,6 +197,7 @@ const deployBrandLogo = async (
  * Supports brands' logo type and instances
  */
 const filterCreator: FilterCreator = ({ client }) => ({
+  name: 'brandLogoFilter',
   onFetch: async elements => {
     const brandsWithLogos = elements
       .filter(isInstanceElement)

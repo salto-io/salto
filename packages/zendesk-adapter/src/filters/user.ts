@@ -32,6 +32,7 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => (
 const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
+    name: 'usersFilter',
     onFetch: async elements => log.time(async () => {
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {

@@ -126,6 +126,7 @@ const serializeReferencesToTags = (instance: InstanceElement): void => {
  * Extract tags references from business rules that refers to them
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'tagsFilter',
   onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
     const instances = elements
       .filter(isInstanceElement)

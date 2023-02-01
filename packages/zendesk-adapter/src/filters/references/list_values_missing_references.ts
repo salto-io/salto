@@ -63,6 +63,7 @@ const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
  * Convert field list values into references, based on predefined configuration.
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: 'listValuesMissingReferencesFilter',
   onFetch: async (elements: Element[]) => log.time(async () => {
     if (!config[FETCH_CONFIG].enableMissingReferences) {
       return

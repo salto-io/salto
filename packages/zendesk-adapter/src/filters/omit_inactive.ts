@@ -31,6 +31,7 @@ const CAN_NOT_OMIT_INACTIVE_TYPE_NAMES = [
  * Omit inactive instances
  */
 const filterCreator: FilterCreator = ({ config }) => ({
+  name: 'omitInactiveFilter',
   onFetch: async (elements: Element[]) => {
     const shouldRemoveElement = (element: Element): boolean =>
       (isInstanceElement(element)

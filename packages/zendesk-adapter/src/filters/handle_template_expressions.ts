@@ -301,6 +301,7 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
 const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
+    name: 'handleTemplateExpressionFilter',
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
       replaceFormulasWithTemplates(elements.filter(isInstanceElement), config[FETCH_CONFIG].enableMissingReferences), 'Create template creation filter'),
     preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {

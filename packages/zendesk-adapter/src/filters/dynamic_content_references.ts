@@ -138,6 +138,7 @@ const returnDynamicContentsToApiValue = async (
 const filterCreator: FilterCreator = ({ config }) => {
   const templateMapping: Record<string, TemplateExpression> = {}
   return ({
+    name: 'dynamicContentReferencesFilter',
     onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
       const instances = elements.filter(isInstanceElement)
 

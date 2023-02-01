@@ -47,7 +47,7 @@ export interface StripeAdapterParams {
 }
 
 export default class StripeAdapter implements AdapterOperations {
-  private filtersRunner: Required<Filter>
+  private filtersRunner: Required<Omit<Filter, 'name'>>
   private client: StripeClient
   private paginator: clientUtils.Paginator
   private userConfig: StripeConfig

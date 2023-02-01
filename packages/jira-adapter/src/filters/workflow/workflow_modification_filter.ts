@@ -76,6 +76,7 @@ const deployWorkflowModification = async ({
   const originalInstance = getChangeData(change)
   const tempInstance = originalInstance.clone()
   tempInstance.value.name = `${tempInstance.value.name}-${uuidv4()}`
+  delete tempInstance.value.entityId
 
   const idToWorkflowSchemes = _.keyBy(
     workflowSchemes,
@@ -93,22 +94,24 @@ const deployWorkflowModification = async ({
     .filter(values.isDefined)
     .toArray()
 
-  const cleanTempInstance = async (): Promise<void> => {
-    await awu(workflowSchemesWithTemp).forEach(async schemeWithTemp => {
-      const scheme = idToWorkflowSchemes[schemeWithTemp.elemID.getFullName()]
-      await preDeployWorkflowScheme(scheme, 'modify', elementsSource)
-      try {
-        await deployWorkflowScheme(
-          toChange({ before: schemeWithTemp, after: scheme }),
-          client,
-          paginator,
-          config,
-          elementsSource,
-        )
-      } catch (err) {
-        log.error(`Error while cleaning up temp workflow ${tempInstance.elemID.getFullName()} from workflow scheme ${scheme.elemID.getFullName()}: ${err}`)
-      }
-    })
+  const cleanTempInstance = async (cleanSchemes = true): Promise<void> => {
+    if (cleanSchemes) {
+      await awu(workflowSchemesWithTemp).forEach(async schemeWithTemp => {
+        const scheme = idToWorkflowSchemes[schemeWithTemp.elemID.getFullName()]
+        await preDeployWorkflowScheme(scheme, 'modify', elementsSource)
+        try {
+          await deployWorkflowScheme(
+            toChange({ before: schemeWithTemp, after: scheme }),
+            client,
+            paginator,
+            config,
+            elementsSource,
+          )
+        } catch (err) {
+          log.error(`Error while cleaning up temp workflow ${tempInstance.elemID.getFullName()} from workflow scheme ${scheme.elemID.getFullName()}: ${err}`)
+        }
+      })
+    }
 
     try {
       await deployWorkflow(
@@ -121,11 +124,17 @@ const deployWorkflowModification = async ({
     }
   }
 
-  await deployWorkflow(
-    toChange({ after: tempInstance }) as AdditionChange<InstanceElement>,
-    client,
-    config
-  )
+  try {
+    await deployWorkflow(
+      toChange({ after: tempInstance }) as AdditionChange<InstanceElement>,
+      client,
+      config
+    )
+  } catch (err) {
+    // adding a temp workflow can fail in the deploy triggers stage, after the workflow was created
+    await cleanTempInstance(false)
+    throw err
+  }
 
   try {
     await awu(workflowSchemesWithTemp).forEach(async schemeWithTemp => {
@@ -147,11 +156,20 @@ const deployWorkflowModification = async ({
     throw err
   }
 
-  await deployWorkflow(
-    toChange({ before: change.data.before }) as RemovalChange<InstanceElement>,
-    client,
-    config
-  )
+  try {
+    await deployWorkflow(
+      toChange({ before: change.data.before }) as RemovalChange<InstanceElement>,
+      client,
+      config
+    )
+  } catch (err) {
+    await cleanTempInstance()
+    // if the workflow is active it means the env is not updated, as we remove known active associations
+    if (err.response?.data?.errorMessages?.some((message: string) => message.includes('Cannot delete an active workflow'))) {
+      throw new Error(`The environment is not synced to the Jira Service for ${getChangeData(change).elemID.getFullName()}, run fetch and try again`)
+    }
+    throw err
+  }
 
   await deployWorkflow(
     toChange({ after: change.data.after }) as AdditionChange<InstanceElement>,

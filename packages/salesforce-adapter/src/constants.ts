@@ -364,6 +364,8 @@ export const FLOW_METADATA_TYPE = 'Flow'
 export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 export const CUSTOM_METADATA = 'CustomMetadata'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
+export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
+export const ACTIVATE_RSS = 'activateRSS'
 export const GLOBAL_VALUE_SET_METADATA_TYPE = 'GlobalValueSet'
 
 // Artifitial Types

@@ -21,7 +21,13 @@ import {
   ObjectType, ReadOnlyElementsSource, toChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { CURRENCY_ISO_CODE, FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
+import {
+  CURRENCY_CODE_TYPE_NAME,
+  CURRENCY_ISO_CODE,
+  FIELD_ANNOTATIONS,
+  INSTANCE_FULL_NAME_FIELD,
+  SALESFORCE,
+} from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import changeValidator from '../../src/change_validators/currency_iso_codes'
 
@@ -49,9 +55,9 @@ describe('currencyIsoCodes ChangeValidator', () => {
 
   const createCurrencyIsoCodesInstance = (supportedIsoCodes: string[]): InstanceElement => (
     new InstanceElement(
-      'CurrencyIsoCodes',
+      CURRENCY_CODE_TYPE_NAME,
       new ObjectType({
-        elemID: new ElemID(SALESFORCE, 'CurrencyIsoCodes'),
+        elemID: new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME),
         fields: {
           [FIELD_ANNOTATIONS.VALUE_SET]: { refType: new ListType(Types.valueSetType) },
         },

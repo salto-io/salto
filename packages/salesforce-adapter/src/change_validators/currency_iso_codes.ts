@@ -24,7 +24,13 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { CURRENCY_ISO_CODE, FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
+import {
+  CURRENCY_CODE_TYPE_NAME,
+  CURRENCY_ISO_CODE,
+  FIELD_ANNOTATIONS,
+  INSTANCE_FULL_NAME_FIELD,
+  SALESFORCE,
+} from '../constants'
 
 const log = logger(module)
 
@@ -89,7 +95,7 @@ const changeValidator: ChangeValidator = async (changes, elementsSource) => {
     return []
   }
 
-  const currencyIsoCodesInstance = await elementsSource.get(new ElemID(SALESFORCE, 'CurrencyIsoCodes', 'instance'))
+  const currencyIsoCodesInstance = await elementsSource.get(new ElemID(SALESFORCE, CURRENCY_CODE_TYPE_NAME, 'instance'))
   if (currencyIsoCodesInstance === undefined || !isInstanceElement(currencyIsoCodesInstance)) {
     return changesWithCurrencyIsoCode
       .map(getChangeData)

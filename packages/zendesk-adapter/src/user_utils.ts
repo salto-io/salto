@@ -18,8 +18,8 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import { ElemID, InstanceElement, Values } from '@salto-io/adapter-api'
-import { conditionFieldValue, isCorrectConditions } from './filters/utils'
+import { Values } from '@salto-io/adapter-api'
+import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
@@ -31,13 +31,6 @@ export type User = {
   role: string
   // eslint-disable-next-line camelcase
   custom_role_id: number
-}
-
-type UserReplacer = (instance: InstanceElement, mapping?: Record<string, string>) => ElemID[]
-
-type UserFieldsParams = {
-  fieldName: string[]
-  fieldsToReplace: { name: string; valuePath?: string[] }[]
 }
 
 const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
@@ -56,70 +49,6 @@ const areUsers = (values: unknown): values is User[] => {
   return true
 }
 
-const replaceConditionsAndActionsCreator = (
-  params: UserFieldsParams[],
-  isIdNumber = false,
-): UserReplacer => (instance, mapping) => (
-  params.flatMap(replacerParams => {
-    const conditions = _.get(instance.value, replacerParams.fieldName)
-    const { typeName } = instance.elemID
-    // Coditions can be undefined - in that case, we don't want to log a warning
-    if (conditions === undefined
-      || !isCorrectConditions(conditions, typeName)) {
-      return []
-    }
-    return conditions
-      .flatMap((condition, i) => {
-        const fieldNamesToReplace = replacerParams.fieldsToReplace.map(f => f.name)
-        const conditionValue = conditionFieldValue(condition, typeName)
-        if (!fieldNamesToReplace.includes(conditionValue)) {
-          return []
-        }
-        const valueRelativePath = replacerParams.fieldsToReplace
-          .find(f => f.name === conditionValue)?.valuePath ?? ['value']
-        const value = _.get(condition, valueRelativePath)?.toString()
-        if (value === undefined) {
-          return []
-        }
-        const valuePath = instance.elemID
-          .createNestedID(...replacerParams.fieldName, i.toString(), ...valueRelativePath)
-        if (mapping !== undefined) {
-          const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
-          if (newValue !== undefined) {
-            _.set(condition, valueRelativePath, (isIdNumber && Number.isInteger(Number(newValue)))
-              ? Number(newValue)
-              : newValue)
-          }
-        }
-        return [valuePath]
-      })
-  })
-)
-
-const fieldReplacer = (fields: string[]): UserReplacer => (instance, mapping) => (
-  fields
-    .flatMap(field => {
-      const value = _.get(instance.value, field)?.toString()
-      if (value === undefined) {
-        return []
-      }
-      const valuePath = instance.elemID.createNestedID(field)
-      if (mapping !== undefined) {
-        const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
-        if (newValue !== undefined) {
-          _.set(
-            instance.value,
-            field,
-            (Number.isInteger(Number(newValue)))
-              ? Number(newValue)
-              : newValue
-          )
-        }
-      }
-      return [valuePath]
-    })
-)
-
 const replaceRestrictionImpl = (values: Values, mapping?: Record<string, string>): string[] => {
   const restrictionRelativePath = ['restriction', 'id']
   const id = _.get(values, restrictionRelativePath)
@@ -137,12 +66,12 @@ const replaceRestrictionImpl = (values: Values, mapping?: Record<string, string>
   return restrictionRelativePath
 }
 
-const replaceRestriction: UserReplacer = (instance, mapping) => {
+const replaceRestriction: ValueReplacer = (instance, mapping) => {
   const relativePath = replaceRestrictionImpl(instance.value, mapping)
   return _.isEmpty(relativePath) ? [] : [instance.elemID.createNestedID(...relativePath)]
 }
 
-const workspaceReplacer: UserReplacer = (instance, mapping) => {
+const workspaceReplacer: ValueReplacer = (instance, mapping) => {
   const selectedMacros = instance.value.selected_macros
   return (selectedMacros ?? []).flatMap((macro: Values, index: number) => {
     const relativePath = replaceRestrictionImpl(macro, mapping)
@@ -150,7 +79,7 @@ const workspaceReplacer: UserReplacer = (instance, mapping) => {
   })
 }
 
-const mergeUserReplacers = (replacers: UserReplacer[]): UserReplacer => (instance, mapping) => (
+const mergeUserReplacers = (replacers: ValueReplacer[]): ValueReplacer => (instance, mapping) => (
   replacers.flatMap(replacer => replacer(instance, mapping))
 )
 
@@ -160,7 +89,7 @@ const DEFAULT_REPLACER_PARAMS_FOR_CONDITIONS = [
   { fieldName: ['conditions', 'any'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'requester_id' }] },
 ]
 
-export const TYPE_NAME_TO_REPLACER: Record<string, UserReplacer> = {
+export const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
   automation: replaceConditionsAndActionsCreator([
     ...[{ fieldName: ['actions'], fieldsToReplace: [{ name: 'assignee_id' }, { name: 'follower' }, { name: 'notification_user', valuePath: ['value', '0'] }] }],
     ...DEFAULT_REPLACER_PARAMS_FOR_CONDITIONS,

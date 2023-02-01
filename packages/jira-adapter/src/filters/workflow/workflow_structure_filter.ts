@@ -195,7 +195,6 @@ const filter: FilterCreator = ({ config }) => ({
 
     elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
       .forEach(instance => transformWorkflowInstance(instance.value))
   },

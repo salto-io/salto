@@ -25,7 +25,7 @@ import { JiraConfig } from '../config/config'
 import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
-import { workflowValidator } from './workflow'
+import { readOnlyWorkflowValidator } from './workflows/read_only_workflow'
 import { dashboardGadgetsValidator } from './dashboard_gadgets'
 import { dashboardLayoutValidator } from './dashboard_layout'
 import { permissionTypeValidator } from './permission_type'
@@ -33,15 +33,17 @@ import { maskingValidator } from './masking'
 import { automationsValidator } from './automations'
 import { lockedFieldsValidator } from './locked_fields'
 import { systemFieldsValidator } from './system_fields'
-import { workflowPropertiesValidator } from './workflow_properties'
+import { workflowPropertiesValidator } from './workflows/workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
 import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
 import { GetIdMapFunc } from '../users_map'
 import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
-import { workflowSchemeDupsValidator } from './workflow_scheme_dups'
+import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
+import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 import { fieldContextValidator } from './field_contexts/field_contexts'
+import { permissionSchemeDeploymentValidator } from './permission_scheme'
 
 const {
   deployTypesNotSupportedValidator,
@@ -61,7 +63,8 @@ export default (
     projectDeletionValidator(client, config),
     statusValidator,
     privateApiValidator(config),
-    workflowValidator,
+    emptyValidatorWorkflowChangeValidator,
+    readOnlyWorkflowValidator,
     dashboardGadgetsValidator,
     dashboardLayoutValidator,
     permissionTypeValidator,
@@ -76,6 +79,7 @@ export default (
     wrongUserPermissionSchemeValidator(client, config, getIdMapFunc),
     accountIdValidator(client, config, getIdMapFunc),
     workflowSchemeDupsValidator,
+    permissionSchemeDeploymentValidator(client),
   ]
 
   return createChangeValidator(validators)

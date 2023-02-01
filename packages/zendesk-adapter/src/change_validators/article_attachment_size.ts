@@ -15,9 +15,12 @@
 */
 import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { ARTICLE_ATTACHMENT_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
+
 
 const SIZE_20_MB = 20 * 1024 * 1024
 export const articleAttachmentSizeValidator: ChangeValidator = async changes => {
@@ -27,6 +30,10 @@ export const articleAttachmentSizeValidator: ChangeValidator = async changes => 
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
     .filter(async attachmentInstance => {
+      if (attachmentInstance.value.content === undefined) {
+        log.error(`the attachment ${attachmentInstance.elemID.getFullName()} does not have a content field`)
+        return false
+      }
       const internalContentLength = Buffer.byteLength(await attachmentInstance.value.content.getContent())
       return internalContentLength >= SIZE_20_MB
     })

@@ -16,17 +16,18 @@
 import { collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
-  ChangeValidator,
   getChangeData,
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { isStandardInstanceOrCustomRecordType } from '../types'
 import { NOT_YET_SUPPORTED_VALUE } from '../constants'
 import { isElementContainsStringValue } from './utils'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
@@ -36,7 +37,7 @@ const changeValidator: ChangeValidator = async changes => (
       elemID: element.elemID,
       severity: 'Error',
       message: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed',
-      detailedMessage: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. Please see https://docs.salto.io/docs/deploying-elements-containing-not-yet-supported-values for more details.',
+      detailedMessage: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. Please see https://help.salto.io/en/articles/6845063-deploying-elements-containing-not-yet-supported-values for more details.',
     } as ChangeError))
     .toArray()
 )

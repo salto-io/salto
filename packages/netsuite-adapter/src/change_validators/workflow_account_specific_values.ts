@@ -16,7 +16,6 @@
 import { values } from '@salto-io/lowerdash'
 import {
   ChangeError,
-  ChangeValidator,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -24,6 +23,8 @@ import {
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { ACCOUNT_SPECIFIC_VALUE, WORKFLOW } from '../constants'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { isDefined } = values
 const SENDER = 'sender'
@@ -34,11 +35,11 @@ const toValidationError = (instance: InstanceElement, probField: string): Change
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Workflow contains fields which cannot be deployed',
-  detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://docs.salto.io/docs/deploying-workflows-actions-with-account-specific-value for more information.`,
+  detailedMessage: `The Workflow contains a '${probField}' field with an ACCOUNT_SPECIFIC_VALUE which cannot be deployed due to NetSuite constraints. Please refer to https://help.salto.io/en/articles/6845061-deploying-workflows-actions-with-account-specific-value for more information.`,
 })
 
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)

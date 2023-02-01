@@ -67,7 +67,7 @@ describe('generateTemplateExpression', () => {
 
     instances.push(issueTypeField)
 
-    const jql = 'status IN (Done, "To Do") AND otherfield = 2 AND issuetype = 3'
+    const jql = 'status IN (Done, "To Do", 1) AND otherfield = 2 AND issuetype = 3'
     const expression = generateTemplateExpression(jql, generateJqlContext(instances))
     expect(expression).toEqual({
       template: new TemplateExpression({ parts: [
@@ -76,7 +76,9 @@ describe('generateTemplateExpression', () => {
         new ReferenceExpression(doneInstance.elemID.createNestedID('name'), doneInstance.value.name),
         ', "',
         new ReferenceExpression(todoInstance.elemID.createNestedID('name'), todoInstance.value.name),
-        '") AND otherfield = 2 AND ',
+        '", ',
+        new ReferenceExpression(doneInstance.elemID, doneInstance),
+        ') AND otherfield = 2 AND ',
         new ReferenceExpression(issueTypeField.elemID, issueTypeField),
         ' = 3',
       ] }),

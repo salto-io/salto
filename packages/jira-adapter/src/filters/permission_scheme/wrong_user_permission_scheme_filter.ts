@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { Change, ChangeDataType } from '@salto-io/adapter-api'
-import { IdMap } from '../../users_map'
+import _ from 'lodash'
+import { UserMap } from '../../users'
 import { FilterCreator } from '../../filter'
 import { omitChanges, OmitChangesPredicate, addBackPermissions, PermissionHolder } from './omit_permissions_common'
 
@@ -23,30 +24,34 @@ import { omitChanges, OmitChangesPredicate, addBackPermissions, PermissionHolder
  * A predicate that returns true if the permission scheme contains an account ID and it does not
  * exist in the provided idMap
  */
-export const wrongUserPermissionSchemePredicateCreator = (idMap: IdMap): OmitChangesPredicate =>
+export const wrongUserPermissionSchemePredicateCreator = (userMap: UserMap): OmitChangesPredicate =>
   (permissionScheme: PermissionHolder) => {
     const accountId = permissionScheme.holder?.parameter?.id
     return accountId !== undefined
-      && !Object.prototype.hasOwnProperty.call(idMap, accountId)
+      && !Object.prototype.hasOwnProperty.call(userMap, accountId)
   }
 
 /**
  * pre deploy removes permissions within a permission scheme that contain a wrong account id.
  * on deploy adds those permissions back
  */
-const filter: FilterCreator = ({ config, client, getIdMapFunc }) => {
+const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
   let erroneousPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
       if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
-      const idMap = client.isDataCenter
-        ? Object.fromEntries(Object.entries(await getIdMapFunc()).map(([key, mapValue]) => [mapValue, key]))
-        : await getIdMapFunc()
+      const userMap = client.isDataCenter
+        ? _.keyBy(
+          Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
+          userInfo => userInfo.username as string
+        )
+        : await getUserMapFunc()
+
       erroneousPermissionSchemes = omitChanges(
         changes,
-        wrongUserPermissionSchemePredicateCreator(idMap)
+        wrongUserPermissionSchemePredicateCreator(userMap)
       )
     },
     onDeploy: async (changes: Change<ChangeDataType>[]) => {

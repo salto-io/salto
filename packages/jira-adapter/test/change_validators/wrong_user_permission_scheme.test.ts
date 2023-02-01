@@ -22,8 +22,8 @@ import { wrongUserPermissionSchemeValidator } from '../../src/change_validators/
 
 describe('wrongUsersPermissionSchemeValidator', () => {
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-  const { client, getIdMapFunc, connection } = mockClient()
-  const validator = wrongUserPermissionSchemeValidator(client, config, getIdMapFunc)
+  const { client, getUserMapFunc, connection } = mockClient()
+  const validator = wrongUserPermissionSchemeValidator(client, config, getUserMapFunc)
   const url = `${client.baseUrl}jira/people/search`
   let instances: InstanceElement[]
   let changes: Change[]
@@ -31,14 +31,24 @@ describe('wrongUsersPermissionSchemeValidator', () => {
     status: 200,
     data: [{
       accountId: 'id0',
+      displayName: 'name0',
+      locale: 'en_US',
     }, {
       accountId: 'id2',
+      displayName: 'name2',
+      locale: 'en_US',
     }, {
       accountId: 'id3',
+      displayName: 'name3',
+      locale: 'en_US',
     }, {
       accountId: 'id4',
+      displayName: 'name4',
+      locale: 'en_US',
     }, {
       accountId: 'id5',
+      displayName: 'name5',
+      locale: 'en_US',
     }],
   })
   const createWarning = (element: InstanceElement, parentName: string): ChangeError => ({
@@ -108,7 +118,7 @@ Check ${url} to see valid users and account IDs.`,
   it('should not return a warning when the flag is off', async () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     configOff.fetch.convertUsersIds = false
-    const validatorOff = wrongUserPermissionSchemeValidator(client, configOff, getIdMapFunc)
+    const validatorOff = wrongUserPermissionSchemeValidator(client, configOff, getUserMapFunc)
     expect(await validatorOff(
       changes
     )).toEqual([])

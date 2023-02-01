@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { wrongUserPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_user_permission_scheme_filter'
-import { GetIdMapFunc } from '../users_map'
+import { GetUserMapFunc } from '../users'
 
 
 const createChangeError = (
@@ -45,16 +46,20 @@ Check ${new URL(JIRA_USERS_PAGE, url).href} to see valid users and account IDs.`
 export const wrongUserPermissionSchemeValidator: (
   client: JiraClient,
   config: JiraConfig,
-  getIdMapFunc: GetIdMapFunc
-  ) => ChangeValidator = (client, config, getIdMapFunc) => async changes => {
+  getUserMapFunc: GetUserMapFunc
+  ) => ChangeValidator = (client, config, getUserMapFunc) => async changes => {
     if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
     const { baseUrl, isDataCenter } = client
-    const idMap = isDataCenter
-      ? Object.fromEntries(Object.entries(await getIdMapFunc()).map(([key, mapValue]) => [mapValue, key]))
-      : await getIdMapFunc()
-    const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(idMap)
+    const userMap = isDataCenter
+      ? _.keyBy(
+        Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
+        userInfo => userInfo.username as string
+      )
+      : await getUserMapFunc()
+
+    const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(userMap)
     return changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)

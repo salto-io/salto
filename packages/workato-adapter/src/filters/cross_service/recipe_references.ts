@@ -134,6 +134,7 @@ const addReferencesForConnectionRecipes = async (
  * Find references from recipe code blocks to other adapters in the workspace.
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: 'recipeCrossServiceReferencesFilter',
   onPostFetch: async ({
     currentAdapterElements,
     elementsByAccount,

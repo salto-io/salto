@@ -56,7 +56,7 @@ export interface WorkatoAdapterParams {
 }
 
 export default class WorkatoAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Filter>
+  private createFiltersRunner: () => Required<Omit<Filter, 'name'>>
   private client: WorkatoClient
   private paginator: clientUtils.Paginator
   private userConfig: WorkatoConfig

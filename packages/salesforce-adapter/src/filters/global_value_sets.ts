@@ -41,7 +41,6 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-export const CUSTOM_VALUE = 'customValue'
 export const MASTER_LABEL = 'master_label'
 
 
@@ -52,7 +51,7 @@ type GlobalValueSetValue = InstanceElement['value'] & {
 }
 
 const isGlobalValueSetValue = (value: Values): value is GlobalValueSetValue => (
-  makeArray(value[CUSTOM_VALUE])
+  makeArray(value[FIELD_ANNOTATIONS.CUSTOM_VALUE])
     .every(entry => _.isString(_.get(entry, INSTANCE_FULL_NAME_FIELD)))
 )
 

@@ -17,22 +17,23 @@ import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import filterCreator,
-{ GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
+{ MASTER_LABEL } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE } from '../../src/constants'
 
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
     annotationRefsOrTypes: {},
-    annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
+    annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET_METADATA_TYPE },
   }),
   {
     [constants.INSTANCE_FULL_NAME_FIELD]: name,
     [MASTER_LABEL]: name,
     [constants.DESCRIPTION]: name,
     sorted: false,
-    [CUSTOM_VALUE]: values.map(v => (
+    [FIELD_ANNOTATIONS.CUSTOM_VALUE]: values.map(v => (
       {
         [constants.CUSTOM_VALUE.FULL_NAME]: v,
         [constants.CUSTOM_VALUE.DEFAULT]: false,

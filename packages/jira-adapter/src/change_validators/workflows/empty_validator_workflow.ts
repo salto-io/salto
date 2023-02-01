@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { isWorkflowInstance } from '../../filters/workflow/types'
+import { isWorkflowInstance, WorkflowInstance } from '../../filters/workflow/types'
 
 const { isDefined } = values
 export const CONFIGURATION_VALIDATOR_TYPE = new Set([
@@ -32,20 +32,20 @@ export const CONFIGURATION_VALIDATOR_TYPE = new Set([
   'WindowsDateValidator',
 ])
 
-const workflowHasEmptyValidator = (instance: InstanceElement): Set<string> => {
+const workflowHasEmptyValidator = (instance: WorkflowInstance): Set<string> => {
   const invalidValidators = new Set<string>()
-  for (const transition of instance.value.transitions) {
-    for (const validator of transition.rules.validators) {
-      if (CONFIGURATION_VALIDATOR_TYPE.has(validator.type) && !('configuration' in validator)) {
+  instance.value.transitions?.forEach(transition => {
+    transition.rules?.validators?.forEach(validator => {
+      if (validator.type !== undefined && CONFIGURATION_VALIDATOR_TYPE.has(validator.type) && !('configuration' in validator)) {
         invalidValidators.add(validator.type)
       }
-    }
-  }
+    })
+  })
   return invalidValidators
 }
 
 const createEmptyValidatorWorkflowError = (
-  instance: InstanceElement,
+  instance: WorkflowInstance,
   validatorType: Set<string>,
 ): ChangeError | undefined => (validatorType.size > 0 ? {
   elemID: instance.elemID,

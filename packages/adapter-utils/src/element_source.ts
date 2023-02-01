@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, Element, ElemID, isElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -82,7 +82,7 @@ export const buildLazyShallowTypeResolverElementsSource = (
   const resolved: Set<ElemID> = new Set()
   const getElementWithResolvedShallowType = async (id: ElemID): ReturnType<ReadOnlyElementsSource['get']> => {
     const element = await elementsSource.get(id)
-    if (resolved.has(id)) {
+    if (!isElement(element) || resolved.has(id)) {
       return element
     }
     await resolveTypeShallow(element, elementsSource)

@@ -19,6 +19,7 @@ import { ClientRetryConfig } from './config'
 export const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
+  additionalStatusCodesToRetry: [],
 }
 
 export const RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS = -1

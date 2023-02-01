@@ -27,6 +27,12 @@ type WorkflowSchemeItem = {
     issueType: ReferenceExpression
 }
 
+type ChangedItem = {
+  before: ReferenceExpression
+  after: ReferenceExpression
+  issueType: ReferenceExpression
+}
+
 type StatusMigration = {
   issueTypeId: ReferenceExpression
   statusId: ReferenceExpression
@@ -48,6 +54,62 @@ const getWorkflowFromId = (workflowId: ElemID, workflows: InstanceElement[]): In
     throw new Error('workflow is undefined')
   }
   return workflow
+}
+
+const isItemEquals = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): boolean =>
+  item1.issueType.elemID.isEqual(item2.issueType.elemID)
+
+const isItemModified = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): boolean =>
+  item1.issueType.elemID.isEqual(item2.issueType.elemID) && !item1.workflow.elemID.isEqual(item2.workflow.elemID)
+
+const getChangedItemsFromChange = (change: ModificationChange<InstanceElement>): ChangedItem[] => {
+  const { before, after } = change.data
+  const removedItems = _.differenceWith(before.value.items, after.value.items, isItemEquals).map(item => ({
+    before: item.workflow,
+    after: after.value.defaultWorkflow,
+    issueType: item.issueType,
+  }))
+  const addedItems = _.differenceWith(after.value.items, before.value.items, isItemEquals).map(item => ({
+    before: before.value.defaultWorkflow,
+    after: item.workflow,
+    issueType: item.issueType,
+  }))
+  const modifiedItems = before.value.items.map((beforeItem: WorkflowSchemeItem) => {
+    const afterItem = after.value.items.find((item: WorkflowSchemeItem) => isItemModified(beforeItem, item))
+    if (afterItem === undefined) {
+      return undefined
+    }
+    return {
+      before: beforeItem.workflow,
+      after: afterItem.workflow,
+      issueType: beforeItem.issueType,
+    }
+  })
+  return [
+    ...addedItems,
+    ...removedItems,
+    ...modifiedItems.filter(isDefined),
+  ]
+}
+
+const areStatusesEquals = (status1: ReferenceExpression, status2: ReferenceExpression): boolean =>
+  status1.elemID.isEqual(status2.elemID)
+
+const getMissingStatuses = (before: InstanceElement, after: InstanceElement): ReferenceExpression[] => {
+  const beforeStatuses = before.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
+  const afterStatuses = after.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
+  return _.differenceWith(beforeStatuses, afterStatuses, areStatusesEquals)
+}
+
+const getMigrationForChangedItem = (changedItem: ChangedItem, workflows: InstanceElement[]): StatusMigration[] => {
+  const { before, after, issueType } = changedItem
+  const beforeWorkflow = getWorkflowFromId(before.elemID, workflows)
+  const afterWorkflow = getWorkflowFromId(after.elemID, workflows)
+  const missingStatuses = getMissingStatuses(beforeWorkflow, afterWorkflow)
+  return missingStatuses.map((status: ReferenceExpression) => ({
+    issueTypeId: issueType,
+    statusId: status,
+  }))
 }
 
 const getDefaultWorkflowItems = (
@@ -146,6 +208,13 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .toArray()
+  const bla = relevantChanges.map(change => [
+    getChangeData(change).elemID.getFullName(),
+    getChangedItemsFromChange(change)
+      .map(changedItem => getMigrationForChangedItem(changedItem, workflows)),
+  ])
+  // eslint-disable-next-line no-console
+  console.log(bla)
   const bla2 = await awu(relevantChanges).map(
     async change => getStatusMigrationsForChange(change, projects, workflows, elementSource)
   ).filter(isDefined).toArray()

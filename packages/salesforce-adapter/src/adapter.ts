@@ -78,6 +78,7 @@ import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
+import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -96,6 +97,7 @@ const { concatObjects } = objects
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
+  { creator: addDefaultActivateRSSFilter },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },

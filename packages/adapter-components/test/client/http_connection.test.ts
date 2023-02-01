@@ -75,7 +75,7 @@ describe('client_http_connection', () => {
     let retryOptions: RetryOptions
 
     beforeEach(() => {
-      retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100 })
+      retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100, additionalStatusCodesToRetry: [] })
     })
     it('should retry error code 429', () => {
       expect(retryOptions.retryCondition?.({

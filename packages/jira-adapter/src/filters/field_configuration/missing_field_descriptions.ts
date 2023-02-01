@@ -20,6 +20,7 @@ import { FilterCreator } from '../../filter'
 
 
 const filter: FilterCreator = () => ({
+  name: 'missingFieldDescriptionsFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

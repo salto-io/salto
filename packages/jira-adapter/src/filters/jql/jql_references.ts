@@ -91,6 +91,7 @@ const filter: FilterCreator = ({ config }) => {
   const jqlToTemplateExpression: Record<string, TemplateExpression> = {}
 
   return {
+    name: 'jqlReferencesFilter',
     onFetch: async elements => log.time(async () => {
       if (config.fetch.parseTemplateExpressions === false) {
         log.debug('Parsing JQL template expression was disabled')

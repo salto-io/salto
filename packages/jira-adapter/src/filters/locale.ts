@@ -23,6 +23,7 @@ const log = logger(module)
  * Check whether user locale is en_US to make sure we're only pulling Jira information in English
  */
 const filter: FilterCreator = ({ client }) => ({
+  name: 'localeFilter',
   onFetch: async () => {
     if (!client.isDataCenter) {
       return undefined

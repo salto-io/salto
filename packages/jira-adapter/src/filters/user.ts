@@ -36,6 +36,7 @@ const simplifyUsers: WalkOnUsersCallback = ({ value, fieldName }): void => {
  * Replaces the user obj with only the account id
  */
 const filter: FilterCreator = () => ({
+  name: 'userFilter',
   onFetch: async elements => log.time(async () => {
     await awu(elements)
       .filter(isInstanceElement)

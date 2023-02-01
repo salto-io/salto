@@ -217,6 +217,7 @@ const convertType = async (objectType: ObjectType): Promise<void> => {
 const filter: FilterCreator = () => {
   const cache: AccountIdsCache = {}
   return {
+    name: 'accountIdFilter',
     onFetch: async elements => log.time(async () => {
       elements
         .filter(isInstanceElement)

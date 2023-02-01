@@ -56,6 +56,7 @@ const convertUserNameToId = (userMap: UserMap): WalkOnUsersCallback => (
  * While using Jira DC the filter convert user id to user key
  */
 const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
+  name: 'userIdFilter',
   onFetch: async elements => log.time(async () => {
     if (!(config.fetch.convertUsersIds ?? true)) {
       return

@@ -107,6 +107,7 @@ const deploySecurityLevels = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'securitySchemeFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

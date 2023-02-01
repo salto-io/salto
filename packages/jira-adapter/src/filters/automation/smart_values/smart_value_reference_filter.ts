@@ -152,6 +152,7 @@ const prepRef = (part: ReferenceExpression): TemplatePart => {
 const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
+    name: 'smartValueReferenceFilter',
     onFetch: async (elements: Element[]) => log.time(async () => {
       if (config.fetch.parseTemplateExpressions === false) {
         log.debug('Parsing smart values template expressions was disabled')

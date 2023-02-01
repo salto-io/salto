@@ -29,6 +29,7 @@ const generateNotificationIds = (instance: InstanceElement): Record<string, stri
     .value()
 
 const filter: FilterCreator = () => ({
+  name: 'notificationSchemeStructureFilter',
   onFetch: async elements => {
     elements
       .filter(isInstanceElement)

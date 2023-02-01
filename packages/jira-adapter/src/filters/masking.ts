@@ -85,6 +85,7 @@ const maskValues = async (
  * Replace sensitive data in the NaCls with some placeholder
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: 'maskingFilter',
   onFetch: async elements => log.time(async () => {
     if (config.masking.automationHeaders.length === 0
       && config.masking.secretRegexps.length === 0) {

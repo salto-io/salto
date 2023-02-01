@@ -38,6 +38,7 @@ response is Array<{key?: string; configuration?: Record<string, unknown>}> => {
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'triggersFilter',
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping triggers filter because private API is not enabled')

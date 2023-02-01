@@ -24,6 +24,7 @@ const { awu } = collections.asynciterable
 const RELEVANT_TYPES = [STATUS_TYPE_NAME]
 
 const filter: FilterCreator = () => ({
+  name: 'iconUrlFilter',
   preDeploy: async changes => {
     await awu(changes)
       .filter(isInstanceChange)

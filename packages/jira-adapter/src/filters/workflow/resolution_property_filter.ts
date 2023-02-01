@@ -46,6 +46,7 @@ const splitResolutionProperties = (instance: WorkflowInstance): void => {
  * of 'id1,id2,id3' to a list [id1, id2, id3] so we can convert it to references later
  */
 const filter: FilterCreator = () => ({
+  name: 'resolutionPropertyFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

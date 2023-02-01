@@ -117,6 +117,7 @@ const sortLists = async (instance: InstanceElement): Promise<void> => {
 }
 
 const filter: FilterCreator = () => ({
+  name: 'sortListsFilter',
   onFetch: async elements => log.time(async () => {
     await awu(elements)
       .filter(isInstanceElement)

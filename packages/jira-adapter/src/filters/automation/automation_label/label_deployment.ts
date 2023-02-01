@@ -82,6 +82,7 @@ const createAutomationLabel = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'automationLabelDeployFilter',
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping automation label deployment filter because private API is not enabled')

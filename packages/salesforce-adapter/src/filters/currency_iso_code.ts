@@ -13,7 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  Element,
+  isObjectType,
+  ObjectType,
+  ElemID,
+  ListType,
+  InstanceElement,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
 import {
@@ -35,6 +44,10 @@ const currencyCodeType = new ObjectType(
     },
     isSettings: true,
     path: getTypePath(CURRENCY_CODE_TYPE_NAME),
+    annotations: {
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+    },
   }
 )
 
@@ -87,6 +100,10 @@ const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceEl
     currencyCodeType,
     { [FIELD_ANNOTATIONS.VALUE_SET]: supportedCurrencies },
     [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, currencyCodeType.elemID.name],
+    {
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+    },
   )
 )
 

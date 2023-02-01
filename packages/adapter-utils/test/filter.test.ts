@@ -48,7 +48,7 @@ describe('filtersRunner', () => {
     'preDeploy',
     'onDeploy',
     'onPostFetch',
-  ]).describe('%s', (operation: keyof Filter<void>) => {
+  ]).describe('%s', (operation: keyof Omit<Filter<void>, 'name'>) => {
     const operation1 = jest.fn()
     const operation2 = jest.fn()
     let filterRunnerPromise: Promise<unknown>
@@ -79,6 +79,7 @@ describe('filtersRunner', () => {
 
     beforeEach(async () => {
       const filter: FilterWith<{}, 'deploy'> = {
+        name: 'deployTestFilter',
         deploy: async changes => ({
           deployResult: {
             appliedChanges: [changes[0]],

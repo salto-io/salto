@@ -45,8 +45,7 @@ const currencyCodeType = new ObjectType(
     isSettings: true,
     path: getTypePath(CURRENCY_CODE_TYPE_NAME),
     annotations: {
-      [CORE_ANNOTATIONS.CREATABLE]: false,
-      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.HIDDEN]: true,
     },
   }
 )
@@ -101,8 +100,7 @@ const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceEl
     { [FIELD_ANNOTATIONS.VALUE_SET]: supportedCurrencies },
     [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, currencyCodeType.elemID.name],
     {
-      [CORE_ANNOTATIONS.CREATABLE]: false,
-      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.HIDDEN]: true,
     },
   )
 )

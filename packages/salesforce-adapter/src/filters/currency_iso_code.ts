@@ -16,7 +16,15 @@
 import { Element, isObjectType, ObjectType, ElemID, ListType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
-import { SALESFORCE, FIELD_ANNOTATIONS, RECORDS_PATH, SETTINGS_PATH, CUSTOM_VALUE, CURRENCY_CODE_TYPE_NAME } from '../constants'
+import {
+  SALESFORCE,
+  FIELD_ANNOTATIONS,
+  RECORDS_PATH,
+  SETTINGS_PATH,
+  CUSTOM_VALUE,
+  CURRENCY_CODE_TYPE_NAME,
+  CURRENCY_ISO_CODE,
+} from '../constants'
 import { Types, getTypePath } from '../transformers/transformer'
 
 const currencyCodeType = new ObjectType(
@@ -30,13 +38,11 @@ const currencyCodeType = new ObjectType(
   }
 )
 
-const CURRENCY_CODE_FIELD_NAME = 'CurrencyIsoCode'
-
 type ValueSet = {}
 
 type CurrencyIsoCodeType = ObjectType & {
   fields: {
-    [CURRENCY_CODE_FIELD_NAME]: {
+    [CURRENCY_ISO_CODE]: {
       annotations: {
         valueSet?: ValueSet[]
         valueSetName?: ReferenceExpression
@@ -55,10 +61,10 @@ const VALUE_SET_SCHEMA = Joi.object({
 }).unknown(true).required()
 
 const isTypeWithCurrencyIsoCode = (elem: ObjectType): elem is CurrencyIsoCodeType => {
-  if (!Object.prototype.hasOwnProperty.call(elem.fields, CURRENCY_CODE_FIELD_NAME)) {
+  if (!Object.prototype.hasOwnProperty.call(elem.fields, CURRENCY_ISO_CODE)) {
     return false
   }
-  const { error } = VALUE_SET_SCHEMA.validate(elem.fields[CURRENCY_CODE_FIELD_NAME]?.annotations)
+  const { error } = VALUE_SET_SCHEMA.validate(elem.fields[CURRENCY_ISO_CODE]?.annotations)
   return error === undefined
 }
 

@@ -73,10 +73,10 @@ const createOrganizationType = (): ObjectType => (
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    const filterNulls = (obj: Values): void => {
-      _.pickBy(obj, value => value !== null)
-      _.mapValues(obj, value => (_.isPlainObject(value) ? filterNulls(value) : value))
-    }
+    const filterNulls = (obj: Values): Values => (
+      _.mapValues(_.pickBy(obj, value => value !== null),
+        value => (_.isPlainObject(value) ? filterNulls(value) : value))
+    )
 
     const objectType = createOrganizationType()
     await enrichTypeWithFields(client, objectType)
@@ -87,8 +87,7 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
 
-    const organizationObject = _.mapKeys(queryResult[0], (_value, key) => _.camelCase(key))
-    filterNulls(organizationObject)
+    const organizationObject = filterNulls(_.mapKeys(queryResult[0], (_value, key) => _.camelCase(key)))
 
     const organizationInstance = createInstanceElement(
       {

@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
+import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 
+const { awu } = collections.asynciterable
 const { isDefined } = values
 
 type WorkflowSchemeItem = {
@@ -52,8 +53,38 @@ const isItemEquals = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): boo
 const isItemModified = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): boolean =>
   item1.issueType.elemID.isEqual(item2.issueType.elemID) && !item1.workflow.elemID.isEqual(item2.workflow.elemID)
 
-const getChangedItemsFromChange = (change: ModificationChange<InstanceElement>): ChangedItem[] => {
+const getDefaultWorkflowIssueTypes = async (
+  elementSource: ReadOnlyElementsSource,
+  workflowScheme: InstanceElement,
+  projects: InstanceElement[]
+): Promise<ReferenceExpression[]> => {
+  const assignedProjects = projects.filter(instance =>
+        instance.value.workflowScheme?.elemID.isEqual(workflowScheme.elemID))
+  const issueTypeSchemes = await awu(assignedProjects)
+    .map(instance => instance.value.issueTypeScheme)
+    .map((ref: ReferenceExpression) => elementSource.get(ref.elemID))
+    .toArray()
+  const issueTypes = issueTypeSchemes.flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
+  const assignedIssueTypes = _.uniqBy(issueTypes, (issueType: ReferenceExpression) => issueType.elemID.getFullName())
+  workflowScheme.value.items
+    .forEach((item: WorkflowSchemeItem) =>
+      _.remove(assignedIssueTypes, issueType => issueType.elemID.isEqual(item.issueType.elemID)))
+  return assignedIssueTypes
+}
+
+const getChangedItemsFromChange = async (
+  change: ModificationChange<InstanceElement>,
+  projects: InstanceElement[],
+  elementSource: ReadOnlyElementsSource,
+): Promise<ChangedItem[]> => {
   const { before, after } = change.data
+  const defaultWorkflowIssueTypes = !before.value.defaultWorkflow.elemID.isEqual(after.value.defaultWorkflow.elemID)
+    ? await getDefaultWorkflowIssueTypes(elementSource, after, projects) : []
+  const changedDefaultWorkflowItems = defaultWorkflowIssueTypes.map(issueType => ({
+    before: before.value.defaultWorkflow,
+    after: after.value.defaultWorkflow,
+    issueType,
+  }))
   const removedItems = _.differenceWith(before.value.items, after.value.items, isItemEquals).map(item => ({
     before: item.workflow,
     after: after.value.defaultWorkflow,
@@ -79,6 +110,7 @@ const getChangedItemsFromChange = (change: ModificationChange<InstanceElement>):
     ...addedItems,
     ...removedItems,
     ...modifiedItems,
+    ...changedDefaultWorkflowItems,
   ]
 }
 
@@ -113,23 +145,23 @@ const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => 
 }
 
 const getErrorMessageForStatusMigration = (
-  id: ElemID,
+  instance: InstanceElement,
   statusMigrations: StatusMigration[],
-  serviceUrl?: string
-): ChangeError | undefined =>
-  (statusMigrations.length > 0 ? {
-    elemID: id,
+): ChangeError | undefined => {
+  const { serviceUrl } = instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+  return statusMigrations.length > 0 ? {
+    elemID: instance.elemID,
     severity: 'Warning',
-    message: `Deployment of workflow scheme ${id.name} will require migrating ${statusMigrations.length === 1 ? 'one status' : `${statusMigrations.length} statuses`}`,
+    message: `Deployment of workflow scheme ${instance.elemID.name} will require migrating ${statusMigrations.length === 1 ? 'one status' : `${statusMigrations.length} statuses`}`,
     detailedMessage: '',
     deployActions: {
       preAction: {
-        title: `Status migration for workflow scheme ${id.name}`,
+        title: `Status migration for workflow scheme ${instance.elemID.name}`,
         description: `Add the following field to migrate statuses in Jira: \n${formatStatusMigrations(statusMigrations)}\n`,
         subActions: [],
       },
       postAction: serviceUrl ? {
-        title: `Status migration for workflow scheme ${id.name}`,
+        title: `Status migration for workflow scheme ${instance.elemID.name}`,
         description: 'finish the migration in Jira by following the steps below:',
         subActions: [
           `Open workflow scheme page in jira ${serviceUrl}`,
@@ -139,16 +171,26 @@ const getErrorMessageForStatusMigration = (
         ],
       } : undefined,
     },
-  } : undefined)
+  } : undefined
+}
 
 export const workflowSchemeMigrationValidator: ChangeValidator = async (changes, elementSource) => {
-  if (elementSource === undefined) {
+  const relevantChanges = getRelevantChanges(changes)
+  if (elementSource === undefined || relevantChanges.length === 0) {
     return []
   }
-  const relevantChanges = getRelevantChanges(changes)
-  const errors = relevantChanges.map(change =>
-    getErrorMessageForStatusMigration(getChangeData(change).elemID, getChangedItemsFromChange(change)
-      .flatMap(changedItem => getMigrationForChangedItem(changedItem)).flat(),
-    getChangeData(change).annotations[CORE_ANNOTATIONS.SERVICE_URL])).filter(isDefined)
+  const ids = await awu(await elementSource.list()).toArray()
+  const projects = await awu(ids)
+    .filter(id => id.typeName === PROJECT_TYPE)
+    .filter(id => id.idType === 'instance')
+    .map(id => elementSource.get(id))
+    .toArray()
+
+  const errors = await awu(relevantChanges).map(async change => {
+    const instance = getChangeData(change)
+    const changedItems = await getChangedItemsFromChange(change, projects, elementSource)
+    const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
+    return getErrorMessageForStatusMigration(instance, statusMigrations)
+  }).filter(isDefined).toArray()
   return errors
 }

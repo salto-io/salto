@@ -77,6 +77,7 @@ export const filtersRunner = <
     )
 
   return {
+    name: '',
     onFetch: async elements => {
       const filterResults = (await promises.array.series(
         filtersWith('onFetch').map(filter => () => log.time(() => filter.onFetch(elements), `onFetch.${filter.name}`))

@@ -30,6 +30,8 @@ export type ClientPageSizeConfig = Partial<{
 export type ClientRetryConfig = Partial<{
   maxAttempts: number
   retryDelay: number
+  // This is not included in clientRetryConfigType because currently we don't want to allow the user to change it
+  additionalStatusCodesToRetry: number[]
 }>
 
 export type ClientBaseConfig<RateLimitConfig extends ClientRateLimitConfig> = Partial<{

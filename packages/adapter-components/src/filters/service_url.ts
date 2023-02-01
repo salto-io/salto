@@ -39,6 +39,7 @@ export const serviceUrlFilterCreator: <
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
 >(baseUrl: string) => FilterCreator<TClient, TContext, TResult> = baseUrl => ({ config }) => ({
+  name: 'serviceUrlFilter',
   onFetch: async (elements: Element[]) => log.time(async () => {
     elements
       .filter(isInstanceElement)

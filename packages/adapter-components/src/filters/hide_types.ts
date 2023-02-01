@@ -31,6 +31,7 @@ export const hideTypesFilterCreator: <
  TResult extends void | filter.FilterResult = void,
 > () => FilterCreator<TClient, TContext, TResult> = (
 ) => ({ config }) => ({
+  name: 'hideTypes',
   onFetch: async (elements: Element[]) => log.time(async () => {
     if (config.fetch.hideTypes) {
       elements

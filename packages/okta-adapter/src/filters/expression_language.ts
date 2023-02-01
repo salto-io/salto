@@ -23,9 +23,12 @@ import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHE
 const log = logger(module)
 
 const USER_SCHEMA_REGEX = /(user\.[a-zA-Z]+)/g // pattern: user.someString
-const ID_REEGX = /(\(["'].+?['"]\))/g // pattern: ("someId", "anotherId")
-const GROUP_ID_IE_REGEX = /(['"]group\.id['"]:{['"\s,a-zA-Z\d]+})/g // pattern: 'group.id':{'id1', 'id2'}
+const ID_REEGX = /(\(["']['"\s,a-zA-Z0-9]+?['"]\))/g // pattern: ("id1", "Id2")
+// Identity engine patterns:
+const GROUP_ID_IE_REGEX = /({["']['"\s,a-zA-Z\d]+?["']})/g // pattern: {"iD1", "id2"}
 const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z]+)/g // pattern: user.profile.someString
+// const id1 = /(\(["'][a-zA-Z0-9]+?['"\s],)/g
+// const id2 = /(\(["'][a-zA-Z0-9]+?['"]\))/g
 
 type expressionDetails = {
   path: string[]
@@ -93,15 +96,15 @@ const stringToTemplate = (
     expressionValue,
     patterns,
     expression => {
-      if (expression.match(ID_REEGX)) {
+      if (expression.startsWith('(') && expression.endsWith(')')) {
         const ids = expression.slice(1, -1) // remove brackets to get ids
         return ['(', getTemplatePartsFromIds(ids, instancesByType), ')'].flat()
       }
-      if (expression.match(GROUP_ID_IE_REGEX)) {
-        const ids = expression.replace(/['"]group.id["']:/, '').slice(1, -1) // remove group.id prefix and curly braces to get ids
-        return ['"group.id":{', getTemplatePartsFromIds(ids, instancesByType), '}'].flat()
+      if (expression.startsWith('{') && expression.endsWith('}')) {
+        const ids = expression.slice(1, -1) // remove curly braces to get ids
+        return ['{', getTemplatePartsFromIds(ids, instancesByType), '}'].flat()
       }
-      if (expression.match(USER_SCHEMA_REGEX)) {
+      if (expression.startsWith('user.')) {
         const userSchemaInstance = instancesByType[USER_SCHEMA_TYPE_NAME]?.find(instance => instance.elemID.name === 'user')
         if (userSchemaInstance === undefined) {
           return expression
@@ -128,6 +131,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
       const expressionFieldPath = instance.elemID.createNestedID(...path)
       const expressionValue = resolvePath(instance, expressionFieldPath)
       if (_.isString(expressionValue)) {
+        // TODO pass just relevant instances
         const template = stringToTemplate(expressionValue, patterns, instancesByType)
         setPath(instance, expressionFieldPath, template)
       }

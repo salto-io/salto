@@ -16,7 +16,7 @@
 import { Change, DeployResult, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import { objects } from '@salto-io/lowerdash'
 import each from 'jest-each'
-import { Filter, FilterCreator, filtersRunner, FilterWith } from '../src/filter'
+import { Filter, FilterCreator, FilterMetadata, filtersRunner, FilterWith } from '../src/filter'
 
 const { concatObjects } = objects
 
@@ -48,7 +48,7 @@ describe('filtersRunner', () => {
     'preDeploy',
     'onDeploy',
     'onPostFetch',
-  ]).describe('%s', (operation: keyof Omit<Filter<void>, 'name'>) => {
+  ]).describe('%s', (operation: keyof Omit<Filter<void>, keyof FilterMetadata>) => {
     const operation1 = jest.fn()
     const operation2 = jest.fn()
     let filterRunnerPromise: Promise<unknown>

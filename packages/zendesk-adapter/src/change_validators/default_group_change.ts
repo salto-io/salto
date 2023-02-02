@@ -32,7 +32,7 @@ const defaultGroupRemovalError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
   severity: 'Error',
   message: 'Cannot delete the default group',
-  detailedMessage: `This group is currently set as default in Zendesk and therefore cannot be deleted.
+  detailedMessage: `This group (${group.elemID.name}) is currently set as default in Zendesk and therefore cannot be deleted.
 ${API_ERROR_MESSAGE}, therefore, you will need to configure a new default group directly via Zendesk and fetch.`,
 })
 

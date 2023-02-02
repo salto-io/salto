@@ -74,7 +74,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       // The http_client code catches the original error and transforms it such that it removes
       // the parsed information (like the status code), so we have to parse the string here in order
       // to realize what type of error was thrown
-      if (e.response?.status === 404) {
+      if (e instanceof clientUtils.HTTPError && e.response?.status === 404) {
         log.warn('Suppressing 404 error %o', e)
         return {
           data: [],

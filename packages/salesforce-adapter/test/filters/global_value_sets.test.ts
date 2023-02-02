@@ -17,22 +17,23 @@ import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import filterCreator,
-{ GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
+{ MASTER_LABEL } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE } from '../../src/constants'
 
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
     annotationRefsOrTypes: {},
-    annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
+    annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET_METADATA_TYPE },
   }),
   {
     [constants.INSTANCE_FULL_NAME_FIELD]: name,
     [MASTER_LABEL]: name,
     [constants.DESCRIPTION]: name,
     sorted: false,
-    [CUSTOM_VALUE]: values.map(v => (
+    [FIELD_ANNOTATIONS.CUSTOM_VALUE]: values.map(v => (
       {
         [constants.CUSTOM_VALUE.FULL_NAME]: v,
         [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -74,22 +75,28 @@ const createPicklistObjectType = (
 describe('Global Value Sets filter', () => {
   const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+  const GLOBAL_VALUE_SET_VALUES = ['val1', 'val2']
+
   let elements: Element[] = []
 
   beforeEach(() => {
     elements = [
-      createGlobalValueSetInstanceElement('test1', ['val1', 'val2']),
+      createGlobalValueSetInstanceElement('test1', GLOBAL_VALUE_SET_VALUES),
     ]
   })
 
   describe('on fetch', () => {
-    it('should replace value set with references', async () => {
+    it('should replace value set with references and restrict their values', async () => {
       elements.push(createPicklistObjectType(mockElemID, 'test', 'test1'))
       await filter.onFetch(elements)
       const globalValueSetInstance = elements[0] as InstanceElement
       const customObjectType = elements[1] as ObjectType
       expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
         .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
+      expect(customObjectType.fields.state.annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+        enforce_value: true,
+        values: GLOBAL_VALUE_SET_VALUES,
+      })
     })
 
     it('should not replace value set with references if value set name does not exist', async () => {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, ElemID, Field, getChangeData, InstanceElement, isObjectTypeChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { Filter } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import clientValidation from '../../src/change_validators/client_validation'
@@ -124,6 +124,37 @@ File: ~/Objects/customrecord1.xml`
     expect(changeErrors[0]).toEqual({
       detailedMessage,
       elemID: getChangeData(changes[1]).elemID,
+      message: 'SDF Objects Validation Error',
+      severity: 'Error',
+    })
+  })
+  it('should have SDF Objects Validation Error for customRecordType field', async () => {
+    const detailedMessage = `An error occurred during custom object validation. (customrecord1)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
+File: ~/Objects/customrecord1.xml`
+    const fullErrorMessage = `Validation failed.\n\n${detailedMessage}`
+    mockValidate.mockReturnValue([
+      new ObjectsDeployError(fullErrorMessage, new Set(['customrecord1'])),
+    ])
+    const fieldChanges = changes.filter(isObjectTypeChange).map(getChangeData).map(type => toChange({
+      after: new Field(type, 'some_field', BuiltinTypes.STRING, { [SCRIPT_ID]: 'some_field' }),
+    }))
+    const changeErrors = await clientValidation(
+      fieldChanges,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage,
+      elemID: getChangeData(fieldChanges[0]).elemID,
       message: 'SDF Objects Validation Error',
       severity: 'Error',
     })

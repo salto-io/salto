@@ -114,6 +114,8 @@ import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/pr
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
 import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
 import commonFilters from './filters/common'
+import accountInfoFilter from './filters/account_info'
+import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 
 const {
   generateTypes,
@@ -125,6 +127,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  accountInfoFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
@@ -214,6 +217,7 @@ export const DEFAULT_FILTERS = [
   smartValueReferenceFilter,
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
+  deployPermissionSchemeFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

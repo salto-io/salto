@@ -44,6 +44,7 @@ import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default
 import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 import { fieldContextValidator } from './field_contexts/field_contexts'
 import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
+import { permissionSchemeDeploymentValidator } from './permission_scheme'
 
 const {
   deployTypesNotSupportedValidator,
@@ -80,6 +81,7 @@ export default (
     wrongUserPermissionSchemeValidator(client, config, getIdMapFunc),
     accountIdValidator(client, config, getIdMapFunc),
     workflowSchemeDupsValidator,
+    permissionSchemeDeploymentValidator(client),
   ]
 
   return createChangeValidator(validators)

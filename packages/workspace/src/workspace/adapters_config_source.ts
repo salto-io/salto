@@ -233,9 +233,8 @@ export const buildAdaptersConfigSource = async ({
       }
       await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
     },
-    getElementNaclFiles: async adapter => naclSource.getElementNaclFiles(
-      new ElemID(adapter, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME)
-    ),
+    getElementNaclFiles: async adapter => (await naclSource.listNaclFiles())
+      .filter(filePath => filePath.startsWith(path.join(...CONFIG_PATH, adapter).concat(path.sep))),
 
     getErrors: async () => {
       const validationErrors = await awu(validationErrorsMap.values()).flat().toArray()

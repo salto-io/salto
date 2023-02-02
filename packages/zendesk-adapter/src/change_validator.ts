@@ -52,6 +52,7 @@ import {
   orderChildrenParentValidator,
   macroActionsTicketFieldDeactivationValidator,
   sideConversationsValidator,
+  externalSourceWebhook,
   missingUsersValidator,
   customStatusUniqueAgentLabelValidator,
   customStatusCategoryChangeValidator,
@@ -121,6 +122,7 @@ export default ({
     translationForDefaultLocaleValidator,
     helpCenterActivationValidator,
     helpCenterCreationOrRemovalValidator(client, apiConfig),
+    externalSourceWebhook,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

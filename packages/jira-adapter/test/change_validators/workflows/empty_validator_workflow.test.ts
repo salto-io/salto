@@ -96,6 +96,25 @@ describe('workflowPropertiesValidator', () => {
       }),
     ])).toEqual([])
   })
+
+  it('should not return an error when there are no validators', async () => {
+    delete instance.value.transitions[0].rules
+    expect(await emptyValidatorWorkflowChangeValidator([
+      toChange({
+        after: instance,
+      }),
+    ])).toEqual([])
+  })
+
+  it('should not return an error when there are no rules', async () => {
+    delete instance.value.transitions[0]
+    expect(await emptyValidatorWorkflowChangeValidator([
+      toChange({
+        after: instance,
+      }),
+    ])).toEqual([])
+  })
+
   it('should not return an error when workflow is removed', async () => {
     expect(await emptyValidatorWorkflowChangeValidator([
       toChange({

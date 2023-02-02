@@ -114,6 +114,7 @@ import guideAddBrandToArticleTranslation from './filters/guide_add_brand_to_tran
 import ticketFormDeploy from './filters/ticket_form'
 import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
+import organizationsFilter from './filters/organizations'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -155,6 +156,7 @@ export const DEFAULT_FILTERS = [
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   usersFilter,
+  organizationsFilter,
   tagsFilter,
   supportAddress,
   customStatus,
@@ -380,6 +382,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
+  private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
     filterRunnerClient,
     paginator,
@@ -421,6 +424,14 @@ export default class ZendeskAdapter implements AdapterOperations {
           config: clientConfig,
         },
       )
+    }
+
+    const clientsBySubdomain: Record<string, ZendeskClient> = {}
+    this.getClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
+      if (clientsBySubdomain[subdomain] === undefined) {
+        clientsBySubdomain[subdomain] = this.createClientBySubdomain(subdomain, deployRateLimit)
+      }
+      return clientsBySubdomain[subdomain]
     }
 
 
@@ -628,7 +639,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       .filter(isString)
     const subdomainToClient = Object.fromEntries(subdomainsList
       .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
-      .map(subdomain => ([subdomain, this.createClientBySubdomain(subdomain, true)])))
+      .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
     const guideDeployResults = await awu(Object.entries(subdomainToClient))
       .map(async ([subdomain, client]) => {
         const brandRunner = await this.createFiltersRunner({

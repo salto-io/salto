@@ -35,8 +35,9 @@ const invalidRecordTypeError = (instance: InstanceElement): ChangeError => (
   {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'You cannot set a value for AccountSettings.enableAccountOwnerReport unless your organization-wide sharing access level for Accounts is set to Private',
-    detailedMessage: `In ${instance.elemID.getFullName()}, enableAccountOwnerReport is set to '${instance.value.enableAccountOwnerReport}' but the organization-wide sharing access level for Accounts is not set to 'Private'.`,
+    message: 'Cannot set a value for \'enableAccountOwnerReport\' unless your organization-wide sharing access level for Accounts is set to Private',
+    detailedMessage: `enableAccountOwnerReport is set to '${instance.value.enableAccountOwnerReport}' but the organization-wide sharing access level for Accounts is not set to 'Private'.
+See https://help.salesforce.com/s/articleView?id=sf.admin_sharing.htm for instruction on how to change the organization-wide sharing defaults, or remove the 'enableAccountOwnerReport' value from ${instance.value.fullName}.`,
   }
 )
 

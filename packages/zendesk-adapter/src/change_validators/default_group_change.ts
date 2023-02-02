@@ -25,7 +25,7 @@ const defaultGroupAdditionError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
   severity: 'Error',
   message: 'Cannot add a new default group',
-  detailedMessage: `${API_ERROR_MESSAGE}, Once deployed, you will need to set the group as default directly via Zendesk and fetch`,
+  detailedMessage: `${API_ERROR_MESSAGE}, once deployed, you will need to set the group as default directly via Zendesk and fetch`,
 })
 
 const defaultGroupRemovalError = (group: InstanceElement): ChangeError => ({
@@ -33,14 +33,14 @@ const defaultGroupRemovalError = (group: InstanceElement): ChangeError => ({
   severity: 'Error',
   message: 'Cannot delete the default group',
   detailedMessage: `This group is currently set as default in Zendesk and therefore cannot be deleted.
-${API_ERROR_MESSAGE}, Therefore, you will need to configure a new default group directly via Zendesk and fetch.`,
+${API_ERROR_MESSAGE}, therefore, you will need to configure a new default group directly via Zendesk and fetch.`,
 })
 
 const defaultGroupModificationError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
   severity: 'Error',
   message: 'Cannot change the default group',
-  detailedMessage: `${API_ERROR_MESSAGE}, Therefore, you will need to do it directly via Zendesk and fetch.`,
+  detailedMessage: `${API_ERROR_MESSAGE}, therefore, you will need to do it directly via Zendesk and fetch.`,
 })
 
 /**

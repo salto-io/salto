@@ -30,16 +30,18 @@ describe('defaultGroupDeletion', () => {
   const afterNotDefaultGroup = createGroup('afterDefaultGroup', false)
   const beforeNotDefaultGroup = createGroup('beforeNotDefaultGroup', false)
   const afterDefaultGroup = createGroup('afterDefaultGroup', true)
-  const notChangingDefaultGroup = createGroup('notChangingDefaultGroup', true)
-  const notChangingNotDefaultGroup = createGroup('notChangingNotDefaultGroup', false)
+  const defaultGroup = createGroup('notChangingDefaultGroup', true)
+  const notDefaultGroup = createGroup('notChangingNotDefaultGroup', false)
   it('should not allow the user to make a change of the default group', async () => {
     const changes = [
       toChange({ after: newDefaultGroup }), // New group that is default
       toChange({ before: removedDefaultGroup }), // Removed group that is default
       toChange({ before: beforeDefaultGroup, after: afterNotDefaultGroup }), // Changed from default to not default
       toChange({ before: beforeNotDefaultGroup, after: afterDefaultGroup }), // Changed from not default to default
-      toChange({ before: notChangingDefaultGroup, after: notChangingDefaultGroup }), // No Change
-      toChange({ before: notChangingNotDefaultGroup, after: notChangingNotDefaultGroup }), // No Change
+      toChange({ before: defaultGroup, after: defaultGroup }), // No Change
+      toChange({ before: notDefaultGroup, after: notDefaultGroup }), // No Change
+      toChange({ before: notDefaultGroup }), // Should do nothing because it is not a default group
+      toChange({ after: notDefaultGroup }), // Should do nothing because it is not a default group
     ]
 
     const errors = await defaultGroupChangeValidator(changes)
@@ -49,26 +51,26 @@ describe('defaultGroupDeletion', () => {
         elemID: newDefaultGroup.elemID,
         severity: 'Error',
         message: 'Cannot add a new default group',
-        detailedMessage: 'Changing the default group is not supported via the Zendesk API, Once deployed, you will need to set the group as default directly via Zendesk and fetch',
+        detailedMessage: 'Changing the default group is not supported via the Zendesk API, once deployed, you will need to set the group as default directly via Zendesk and fetch',
       },
       {
         elemID: removedDefaultGroup.elemID,
         severity: 'Error',
         message: 'Cannot delete the default group',
         detailedMessage: 'This group is currently set as default in Zendesk and therefore cannot be deleted.\n'
-            + 'Changing the default group is not supported via the Zendesk API, Therefore, you will need to configure a new default group directly via Zendesk and fetch.',
+            + 'Changing the default group is not supported via the Zendesk API, therefore, you will need to configure a new default group directly via Zendesk and fetch.',
       },
       {
         elemID: afterNotDefaultGroup.elemID,
         severity: 'Error',
         message: 'Cannot change the default group',
-        detailedMessage: 'Changing the default group is not supported via the Zendesk API, Therefore, you will need to do it directly via Zendesk and fetch.',
+        detailedMessage: 'Changing the default group is not supported via the Zendesk API, therefore, you will need to do it directly via Zendesk and fetch.',
       },
       {
         elemID: afterDefaultGroup.elemID,
         severity: 'Error',
         message: 'Cannot change the default group',
-        detailedMessage: 'Changing the default group is not supported via the Zendesk API, Therefore, you will need to do it directly via Zendesk and fetch.',
+        detailedMessage: 'Changing the default group is not supported via the Zendesk API, therefore, you will need to do it directly via Zendesk and fetch.',
       },
     ])
   })

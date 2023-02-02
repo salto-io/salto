@@ -202,9 +202,7 @@ describe('referenced instances', () => {
       noIdFieldsType,
       {},
       [],
-      {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(noIdFieldsParent.elemID, noIdFieldsParent),
-      }
+      { [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(noIdFieldsParent.elemID, noIdFieldsParent) }
     )
     return [recipeType, bookType, ...recipes, anotherBook, rootBook,
       sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups,

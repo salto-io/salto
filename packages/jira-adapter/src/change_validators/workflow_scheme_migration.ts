@@ -143,6 +143,10 @@ const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => 
   const formattedStatusMigrations = statusMigrations.map(formatStatusMigration)
   return `statusMigrations = [\n${formattedStatusMigrations.join(',\n')}\n]`
 }
+const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>
+  statusMigration1.issueTypeId.elemID.isEqual(statusMigration2.issueTypeId.elemID)
+    && statusMigration1.statusId.elemID.isEqual(statusMigration2.statusId.elemID)
+
 
 const getErrorMessageForStatusMigration = (
   instance: InstanceElement,
@@ -190,7 +194,9 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
     const instance = getChangeData(change)
     const changedItems = await getChangedItemsFromChange(change, projects, elementSource)
     const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
-    return getErrorMessageForStatusMigration(instance, statusMigrations)
+    const existingStatusMigrations = instance.value.statusMigrations ?? []
+    const newStatusMigrations = _.differenceWith(statusMigrations, existingStatusMigrations, isSameStatusMigration)
+    return getErrorMessageForStatusMigration(instance, newStatusMigrations)
   }).filter(isDefined).toArray()
   return errors
 }

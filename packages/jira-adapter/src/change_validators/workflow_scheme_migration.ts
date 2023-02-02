@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'

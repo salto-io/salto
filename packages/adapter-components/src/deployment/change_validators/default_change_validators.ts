@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { createUnresolvedReferencesValidator } from './unresolved_references'
 
 
-const DEFAULT_CHANGE_VALIDATORS = {
+export const DEFAULT_CHANGE_VALIDATORS = {
   unresolvedReferencesValidator: createUnresolvedReferencesValidator(),
 }
 

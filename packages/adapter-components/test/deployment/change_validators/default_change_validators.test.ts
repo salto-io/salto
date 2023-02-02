@@ -13,12 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { DEFAULT_CHANGE_VALIDATORS } from '../../../src/deployment/change_validators/default_change_validators'
 import { getDefaultChangeValidators } from '../../../src/deployment/change_validators'
 
 describe('default_change_validators', () => {
   it('should omit validators in validatorsToOmit', () => {
     const allValidators = getDefaultChangeValidators()
+    expect(allValidators).toContain(DEFAULT_CHANGE_VALIDATORS.unresolvedReferencesValidator)
     const validators = getDefaultChangeValidators(['unresolvedReferencesValidator'])
     expect(validators).toHaveLength(allValidators.length - 1)
+    expect(validators).not.toContain(DEFAULT_CHANGE_VALIDATORS.unresolvedReferencesValidator)
   })
 })

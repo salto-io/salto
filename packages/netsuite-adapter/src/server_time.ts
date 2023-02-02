@@ -44,16 +44,7 @@ const serverTimeType = new ObjectType({
 
 export const createServerTimeElements = (time: Date): ServerTimeElements => {
   log.debug(`Creating server time elements with time: ${time.toJSON()}`)
-  const instance = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    serverTimeType,
-    {
-      serverTime: time.toJSON(),
-      instancesFetchTime: {},
-    },
-    undefined,
-    { [CORE_ANNOTATIONS.HIDDEN]: true },
-  )
+  c
 
   return { type: serverTimeType, instance }
 }

@@ -21,7 +21,6 @@ import {
   ListType,
   InstanceElement,
   ReferenceExpression,
-  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { FilterWith } from '../filter'
@@ -44,9 +43,6 @@ const currencyCodeType = new ObjectType(
     },
     isSettings: true,
     path: getTypePath(CURRENCY_CODE_TYPE_NAME),
-    annotations: {
-      [CORE_ANNOTATIONS.HIDDEN]: true,
-    },
   }
 )
 
@@ -99,9 +95,6 @@ const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceEl
     currencyCodeType,
     { [FIELD_ANNOTATIONS.VALUE_SET]: supportedCurrencies },
     [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, currencyCodeType.elemID.name],
-    {
-      [CORE_ANNOTATIONS.HIDDEN]: true,
-    },
   )
 )
 

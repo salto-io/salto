@@ -76,8 +76,8 @@ const createInstanceHasUnsupportedCurrencyError = (
   supportedIsoCodes: string[],
 ): ChangeError => ({
   elemID: instance.elemID,
-  message: 'Instance has unsupported currency',
-  detailedMessage: `The instance ${instance.elemID.getFullName()} has unsupported currency ${instance.value[CURRENCY_ISO_CODE]}. Supported currencies: ${supportedIsoCodes}`,
+  message: `Unsupported currency ${instance.value[CURRENCY_ISO_CODE]}`,
+  detailedMessage: `Please set to one of the supported currencies or enable the currency you need directly in salesforce. Current supported currencies are: ${supportedIsoCodes}`,
   severity: 'Error',
 })
 

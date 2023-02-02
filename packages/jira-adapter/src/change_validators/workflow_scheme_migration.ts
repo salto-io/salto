@@ -16,7 +16,7 @@
 import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { filters, client as clientUtils } from '@salto-io/adapter-components'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { paginate, removeScopedObjects } from '../client/pagination'
@@ -24,6 +24,7 @@ import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 
 const { createPaginator } = clientUtils
+const { addUrlToInstance } = filters
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
@@ -213,6 +214,7 @@ export const workflowSchemeMigrationValidator: (
     const errors = await awu(activeWorkflowsChanges).map(async change => {
       await updateSchemeId(change, client, paginator, config)
       const instance = getChangeData(change)
+      addUrlToInstance(instance, client.baseUrl, config)
       const changedItems = await getChangedItemsFromChange(change, projects, elementSource)
       const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
       const existingStatusMigrations = instance.value.statusMigrations ?? []

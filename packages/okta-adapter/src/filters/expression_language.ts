@@ -23,12 +23,8 @@ import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHE
 const log = logger(module)
 
 const USER_SCHEMA_REGEX = /(user\.[a-zA-Z]+)/g // pattern: user.someString
-const ID_REEGX = /(\(["']['"\s,a-zA-Z0-9]+?['"]\))/g // pattern: ("id1", "Id2")
-// Identity engine patterns:
-const GROUP_ID_IE_REGEX = /({["']['"\s,a-zA-Z\d]+?["']})/g // pattern: {"iD1", "id2"}
 const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z]+)/g // pattern: user.profile.someString
-// const id1 = /(\(["'][a-zA-Z0-9]+?['"\s],)/g
-// const id2 = /(\(["'][a-zA-Z0-9]+?['"]\))/g
+const ID_REGEX = /(["'][a-zA-Z0-9]+?['"])/g // pattern: "someId" or 'someId'
 
 type expressionDetails = {
   path: string[]
@@ -38,27 +34,12 @@ type expressionDetails = {
 const TYPE_TO_EXPRESSIONS: Record<string, expressionDetails> = {
   [GROUP_RULE_TYPE_NAME]: {
     path: ['conditions', 'expression', 'value'],
-    patterns: [USER_SCHEMA_REGEX, ID_REEGX],
+    patterns: [USER_SCHEMA_REGEX, ID_REGEX],
   },
   [POLICY_RULE_TYPE_NAME]: {
     path: ['conditions', 'additionalProperties', 'elCondition', 'condition'],
-    patterns: [GROUP_ID_IE_REGEX, USER_SCHEMA_IE_REGEX],
+    patterns: [ID_REGEX, USER_SCHEMA_IE_REGEX],
   },
-}
-
-/**
- * Gets a string with ids and returns the matching template
- */
-const getTemplatePartsFromIds = (
-  expression: string,
-  instancesByType: Record<string, InstanceElement[]>,
-): TemplatePart | TemplatePart[] => {
-  const ids = expression.split(', ').map(id => id.replace(/['"]/g, ''))
-  const templateParts = ids.map(id => {
-    const matchingInstance = instancesByType[GROUP_TYPE_NAME]?.find(instance => instance.value.id === id)
-    return matchingInstance !== undefined ? new ReferenceExpression(matchingInstance.elemID, matchingInstance) : `"${id}"`
-  })
-  return templateParts
 }
 
 const getUserSchemaReferences = (
@@ -71,14 +52,14 @@ const getUserSchemaReferences = (
   if (customValue !== undefined) {
     return new ReferenceExpression(
       userSchemaInstance.elemID.createNestedID(...customPath),
-      userSchemaInstance.value.definitions?.custom?.properties?.additionalProperties?.userFieldName
+      customValue
     )
   }
   const baseValue = resolvePath(userSchemaInstance, userSchemaInstance.elemID.createNestedID(...basePath))
   if (baseValue) {
     return new ReferenceExpression(
       userSchemaInstance.elemID.createNestedID(...basePath),
-      userSchemaInstance.value.definitions?.base?.properties?.userFieldName
+      baseValue
     )
   }
   return undefined
@@ -90,22 +71,22 @@ const getUserSchemaReferences = (
 const stringToTemplate = (
   expressionValue: string,
   patterns: RegExp[],
-  instancesByType: Record<string, InstanceElement[]>
+  instances: InstanceElement[]
 ): string | TemplateExpression => {
+  const groupInstances = instances.filter(i => i.elemID.typeName === GROUP_TYPE_NAME)
+  const userSchemaInstance = instances.find(i => i.elemID.typeName === USER_SCHEMA_TYPE_NAME && i.elemID.name === 'user')
   const template = extractTemplate(
     expressionValue,
     patterns,
     expression => {
-      if (expression.startsWith('(') && expression.endsWith(')')) {
-        const ids = expression.slice(1, -1) // remove brackets to get ids
-        return ['(', getTemplatePartsFromIds(ids, instancesByType), ')'].flat()
-      }
-      if (expression.startsWith('{') && expression.endsWith('}')) {
-        const ids = expression.slice(1, -1) // remove curly braces to get ids
-        return ['{', getTemplatePartsFromIds(ids, instancesByType), '}'].flat()
+      if (expression.match(/^["'][a-zA-Z0-9]+?['"]$/)) { // check if the string is a potential id
+        const id = expression.slice(1, -1)
+        const matchingInstance = groupInstances.find(instance => instance.value.id === id)
+        return matchingInstance !== undefined
+          ? new ReferenceExpression(matchingInstance.elemID, matchingInstance)
+          : expression
       }
       if (expression.startsWith('user.')) {
-        const userSchemaInstance = instancesByType[USER_SCHEMA_TYPE_NAME]?.find(instance => instance.elemID.name === 'user')
         if (userSchemaInstance === undefined) {
           return expression
         }
@@ -122,8 +103,7 @@ const stringToTemplate = (
   return template
 }
 
-const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
-  const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
+const replaceExpressionsWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
   instances
     .filter(instance => Object.keys(TYPE_TO_EXPRESSIONS).includes(instance.elemID.typeName))
     .forEach(instance => {
@@ -131,20 +111,18 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[]): Promi
       const expressionFieldPath = instance.elemID.createNestedID(...path)
       const expressionValue = resolvePath(instance, expressionFieldPath)
       if (_.isString(expressionValue)) {
-        // TODO pass just relevant instances
-        const template = stringToTemplate(expressionValue, patterns, instancesByType)
+        const template = stringToTemplate(expressionValue, patterns, instances)
         setPath(instance, expressionFieldPath, template)
       }
     })
 }
-
 
 /**
  * Create template expressions for okta expression language references
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => log.time(async () => {
-    await replaceFormulasWithTemplates(elements.filter(isInstanceElement))
+    await replaceExpressionsWithTemplates(elements.filter(isInstanceElement))
   }, 'Expression language filter'),
 })
 

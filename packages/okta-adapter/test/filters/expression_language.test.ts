@@ -20,7 +20,6 @@ import { getFilterParams } from '../utils'
 import oktaExpressionLanguageFilter from '../../src/filters/expression_language'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
-
 describe('expression language filter', () => {
       type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
       let filter: FilterType
@@ -36,15 +35,15 @@ describe('expression language filter', () => {
         {
           conditions: {
             expression: {
-              value: '(String.stringContains(user.department, "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup("123") AND !isMemberOfAnyGroup("234", \'345\')',
+              value: '(String.stringContains(user.department, "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup("123A") AND !isMemberOfAnyGroup("234B", \'345C\')',
             },
           },
         }
       )
       const groupInstances = [
-        new InstanceElement('group1', groupType, { id: 123 },),
-        new InstanceElement('group2', groupType, { id: 234 },),
-        new InstanceElement('group3', groupType, { id: 345 },),
+        new InstanceElement('group1', groupType, { id: '123A' },),
+        new InstanceElement('group2', groupType, { id: '234B' },),
+        new InstanceElement('group3', groupType, { id: '345C' },),
       ]
       const userSchemaInstance = new InstanceElement(
         'user',
@@ -81,7 +80,7 @@ describe('expression language filter', () => {
           conditions: {
             additionalProperties: {
               elCondition: {
-                condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345", \'123\'}})',
+                condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", \'123A\'}})',
               },
             },
           },
@@ -106,12 +105,14 @@ describe('expression language filter', () => {
               '(String.stringContains(',
               new ReferenceExpression(
                 userSchemaInstance.elemID.createNestedID(...basePath),
-                _.get(userSchemaInstance.value, customPath)
+                _.get(userSchemaInstance.value, basePath)
               ),
               ', "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup(',
-              ') AND !isMemberOfAnyGroup(',
               new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
+              ') AND !isMemberOfAnyGroup(',
               new ReferenceExpression(groupInstances[1].elemID, groupInstances[1]),
+              ', ',
+              new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),
               ')',
             ],
           }))
@@ -122,13 +123,14 @@ describe('expression language filter', () => {
               parts: [
                 new ReferenceExpression(
                   userSchemaInstance.elemID.createNestedID(...customPath),
-                  _.get(userSchemaInstance.value, basePath)
+                  _.get(userSchemaInstance.value, customPath)
                 ),
-                ' == "salto" AND user.isMemberOf({',
-                '"group.id": {"',
+                // eslint-disable-next-line no-useless-escape
+                ' == \'salto\' AND user.isMemberOf({\'group.id\':{',
                 new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),
+                ', ',
                 new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
-                '})',
+                '}})',
               ],
             }))
         })
@@ -140,7 +142,7 @@ describe('expression language filter', () => {
             {
               conditions: {
                 expression: {
-                  value: 'isMemberOfAnyGroup("123", "555")',
+                  value: 'isMemberOfAnyGroup("123A", "555E")',
                 },
               },
             }
@@ -152,10 +154,9 @@ describe('expression language filter', () => {
           expect(groupRule?.value?.conditions?.expression?.value).toEqual(
             new TemplateExpression({
               parts: [
-                'isMemberOfAnyGroup',
-                '("',
-                new ReferenceExpression(groupInstances[0].elemID, groupInstances),
-                ', "555")',
+                'isMemberOfAnyGroup(',
+                new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
+                ', "555E")',
               ],
             })
           )

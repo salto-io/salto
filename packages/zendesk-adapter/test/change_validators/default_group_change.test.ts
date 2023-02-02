@@ -57,7 +57,7 @@ describe('defaultGroupDeletion', () => {
         elemID: removedDefaultGroup.elemID,
         severity: 'Error',
         message: 'Cannot delete the default group',
-        detailedMessage: 'This group is currently set as default in Zendesk and therefore cannot be deleted.\n'
+        detailedMessage: `This group (${removedDefaultGroup.elemID.name}) is currently set as default in Zendesk and therefore cannot be deleted.\n`
             + 'Changing the default group is not supported via the Zendesk API, therefore, you will need to configure a new default group directly via Zendesk and fetch.',
       },
       {

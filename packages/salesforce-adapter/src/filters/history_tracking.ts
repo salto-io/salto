@@ -23,8 +23,14 @@ import { FIELD_HISTORY_TRACKING_ENABLED, HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_
 
 const trackedFields = (type: ObjectType): string[] => type.annotations[HISTORY_TRACKED_FIELDS] ?? []
 
+const isHistoryTrackingEnabled = (type: ObjectType): boolean => (
+  !!type.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
+  || type.annotations[HISTORY_TRACKED_FIELDS] !== undefined
+)
+
 const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void => {
-  if (!customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]) {
+  if (!isHistoryTrackingEnabled(customObject)) {
+    delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
     return
   }
 
@@ -34,10 +40,11 @@ const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void =>
     .sort()
 
   Object.values(customObject.fields).forEach(field => delete field.annotations.trackHistory)
+  delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
 }
 
 const distributeHistoryTrackingAnnotations = (field: Field): void => {
-  if (!field.parent.annotations[OBJECT_HISTORY_TRACKING_ENABLED]) {
+  if (!isHistoryTrackingEnabled(field.parent)) {
     return
   }
 
@@ -91,26 +98,35 @@ const filter: LocalFilterCreator = () => ({
       .filter(isField)
       .filter(isFieldOfCustomObject)
 
-    // 1. If a field was changed, make sure it has the expected 'trackHistory' value
+    const objectTypeChanges = changes
+      .filter(isModificationChange)
+      .filter(isObjectTypeChange)
+
+    // 1. For all CustomObjects, set the correct 'enableHistory' value
+    objectTypeChanges
+      .map(getChangeData)
+      .forEach(objType => {
+        objType.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = isHistoryTrackingEnabled(objType)
+      })
+
+    // 2. For all changed fields, make sure they have the expected 'trackHistory' value
     changedCustomObjectFields
       .forEach(distributeHistoryTrackingAnnotations)
-    // 2. If an object's historyTrackedFields changed:
-    //  2.1 for every field that was added/removed in historyTrackedFields:
-    //    2.1.1 If there already is a change to the field, it was handled by (1)
-    //    2.1.2 Else if the field was added:
-    //      2.1.2.1 create a new change where the 'before' part is the field from the object and the 'after' part is
+
+    // 3. If an object's historyTrackedFields changed:
+    //  3.1 for every field that was added/removed in historyTrackedFields:
+    //    3.1.1 If there already is a change to the field, it was handled by (1)
+    //    3.1.2 Else if the field was added:
+    //      3.1.2.1 create a new change where the 'before' part is the field from the object and the 'after' part is
     //              the same field with trackHistory=true
-    //    2.1.3 Else if the field was removed:
-    //    2.1.3.1 create a new change where the 'before' part is the field from the object with trackHistory=true and
+    //    3.1.3 Else if the field was removed:
+    //    3.1.3.1 create a new change where the 'before' part is the field from the object with trackHistory=true and
     //            the 'after' part is the field from the object
     // Note: if an object was added we assume we'll get an AdditionChange for every one of its fields, so that case will
     //       be handled in (1)
-    // Note: For now we don't handle the case where an object's enableHistory value changed but the appropriate change
-    //       was not made to its historyTrackedFields annotations. This will be handled in a change validator
+
     const changedFieldNames = changedCustomObjectFields.map(field => field.elemID)
-    const additionalChanges = changes
-      .filter(isModificationChange)
-      .filter(isObjectTypeChange)
+    const additionalChanges = objectTypeChanges
       .map((change):{type: ObjectType; added: string[]; removed: string[]} => (
         {
           type: getChangeData(change),

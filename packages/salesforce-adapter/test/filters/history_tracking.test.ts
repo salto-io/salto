@@ -18,7 +18,7 @@ import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from '../../src/filter'
 import { Types } from '../../src/transformers/transformer'
-import { HISTORY_TRACKED_FIELDS } from '../../src/constants'
+import { HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_TRACKING_ENABLED } from '../../src/constants'
 
 describe('History tracking', () => {
   const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'|'preDeploy'>
@@ -27,6 +27,7 @@ describe('History tracking', () => {
       const inputType = mockTypes.Account.clone()
       inputType.annotations.enableHistory = false
       const expectedOutput = inputType.clone()
+      delete expectedOutput.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
       const elements = [inputType]
       await filter.onFetch(elements)
       expect(elements).toEqual([expectedOutput])
@@ -55,13 +56,15 @@ describe('History tracking', () => {
       },
     })
     it('Should update the object and field annotations correctly', async () => {
-      typeWithHistoryTrackedFields.annotations.enableHistory = true
-      await filter.onFetch([typeWithHistoryTrackedFields])
-      const trackedFieldNames = typeWithHistoryTrackedFields.annotations[HISTORY_TRACKED_FIELDS]
+      const elements = [typeWithHistoryTrackedFields.clone()]
+      elements[0].annotations.enableHistory = true
+      await filter.onFetch(elements)
+      const trackedFieldNames = elements[0].annotations[HISTORY_TRACKED_FIELDS]
       expect(trackedFieldNames).toBeDefined()
       expect(trackedFieldNames).toEqual(['fieldWithHistoryTracking'])
-      expect(typeWithHistoryTrackedFields.fields.fieldWithHistoryTracking.annotations.trackHistory).not.toBeDefined()
-      expect(typeWithHistoryTrackedFields.fields.fieldWithoutHistoryTracking.annotations.trackHistory).not.toBeDefined()
+      expect(elements[0].fields.fieldWithHistoryTracking.annotations.trackHistory).not.toBeDefined()
+      expect(elements[0].fields.fieldWithoutHistoryTracking.annotations.trackHistory).not.toBeDefined()
+      expect(elements[0].annotations[OBJECT_HISTORY_TRACKING_ENABLED]).not.toBeDefined()
     })
   })
 })

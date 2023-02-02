@@ -54,6 +54,7 @@ export default (
   client: JiraClient, config: JiraConfig, getIdMapFunc: GetIdMapFunc
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
+    ...deployment.changeValidators.getDefaultChangeValidators(),
     deployTypesNotSupportedValidator,
     readOnlyProjectRoleChangeValidator,
     defaultFieldConfigurationValidator,

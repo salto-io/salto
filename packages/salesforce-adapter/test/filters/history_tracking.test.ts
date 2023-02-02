@@ -35,9 +35,9 @@ describe('History tracking', () => {
   })
   describe('When fetching an object with history tracking enabled', () => {
     const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking', {
-      // annotations: {
-      //   enableHistory: true,
-      // },
+      annotations: {
+        enableHistory: true,
+      },
       fields: {
         fieldWithHistoryTracking: {
           refType: Types.primitiveDataTypes.Text,
@@ -57,7 +57,6 @@ describe('History tracking', () => {
     })
     it('Should update the object and field annotations correctly', async () => {
       const elements = [typeWithHistoryTrackedFields.clone()]
-      elements[0].annotations.enableHistory = true
       await filter.onFetch(elements)
       const trackedFieldNames = elements[0].annotations[HISTORY_TRACKED_FIELDS]
       expect(trackedFieldNames).toBeDefined()

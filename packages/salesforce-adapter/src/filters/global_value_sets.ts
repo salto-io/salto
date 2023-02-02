@@ -24,9 +24,10 @@ import {
   InstanceElement,
   isInstanceElement, Values,
 } from '@salto-io/adapter-api'
-import { collections, multiIndex } from '@salto-io/lowerdash'
+import { collections, functions, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { hiddenValues } from '@salto-io/workspace'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import {
   FIELD_ANNOTATIONS,
@@ -40,6 +41,8 @@ import { isInstanceOfType, buildElementsSourceForFetch } from './utils'
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
+const { notAsync } = functions
+const { isHidden } = hiddenValues
 
 export const MASTER_LABEL = 'master_label'
 
@@ -80,7 +83,7 @@ const addRefAndRestrict = (
         return
       }
       f.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-        enforce_value: true,
+        enforce_value: f.annotations[CORE_ANNOTATIONS.REQUIRED] ?? false,
         values: globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
       })
     })
@@ -102,8 +105,11 @@ const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> =>
       key: async inst => [await apiName(inst)],
       map: inst => inst,
     })
-    const customObjects = elements.filter(isObjectType).filter(isCustomObject)
-    customObjects.forEach(object => addRefAndRestrict(object, valueSetNameToRef))
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomObject)
+      .filter(customObject => notAsync(isHidden)(customObject))
+      .forEach(object => addRefAndRestrict(object, valueSetNameToRef))
   },
 })
 

@@ -137,6 +137,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: topicsForObjectsFilter },
   { creator: valueSetFilter },
   { creator: globalValueSetFilter },
+  // valueSetFilter and globalValueSetFilter should run after all the CustomObject's related filters.
   { creator: staticResourceFileExtFilter },
   { creator: profilePathsFilter, addsNewInformation: true },
   { creator: territoryFilter },

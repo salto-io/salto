@@ -35,7 +35,7 @@ describe('value set filter', () => {
         annotations: {
           [constants.API_NAME]: `${customObjectName}.${fieldName}`,
           [constants.LABEL]: 'label',
-          [CORE_ANNOTATIONS.REQUIRED]: false,
+          [CORE_ANNOTATIONS.REQUIRED]: true,
           [constants.FIELD_ANNOTATIONS.RESTRICTED]: restricted,
           ...values === undefined
             ? {}
@@ -60,14 +60,29 @@ describe('value set filter', () => {
 
     beforeEach(async () => {
       objectWithPicklistField = createObjectWithPicklistField(PICKLIST_VALUES)
-      await filter.onFetch([objectWithPicklistField])
     })
 
-    it('should add restriction on value set values', () => {
-      const { annotations } = objectWithPicklistField.fields[fieldName]
-      expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
-        enforce_value: true,
-        values: PICKLIST_VALUES,
+    describe('when object is not hidden', () => {
+      beforeEach(async () => {
+        await filter.onFetch([objectWithPicklistField])
+      })
+      it('should add restrictions', () => {
+        const { annotations } = objectWithPicklistField.fields[fieldName]
+        expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+          enforce_value: true,
+          values: PICKLIST_VALUES,
+        })
+      })
+    })
+
+    describe('when object is hidden', () => {
+      beforeEach(async () => {
+        objectWithPicklistField.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+        await filter.onFetch([objectWithPicklistField])
+      })
+      it('should not add restrictions', () => {
+        const { annotations } = objectWithPicklistField.fields[fieldName]
+        expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeUndefined()
       })
     })
   })

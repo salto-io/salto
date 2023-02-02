@@ -13,6 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { default as defaultOpts } from './default_opts'
-export * from './opts_validator'
-export * from './wrappers'
+
+export const not = <TArgs extends unknown[]> (func: (...args: TArgs) => boolean): typeof func => (
+  (...args: TArgs) => (
+    !func(...args)
+  )
+)
+
+export const notAsync = <TArgs extends unknown[]> (func: (...args: TArgs) => Promise<boolean>): typeof func => (
+  async (...args: TArgs) => (
+    !await func(...args)
+  )
+)

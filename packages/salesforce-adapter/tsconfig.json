@@ -30,5 +30,6 @@
         { "path": "../logging" },
         { "path": "../lowerdash" },
         { "path": "../test-utils" },
+        { "path": "../workspace" },
     ]
 }

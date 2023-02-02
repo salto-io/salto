@@ -13,6 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { default as defaultOpts } from './default_opts'
-export * from './opts_validator'
-export * from './wrappers'
+import { not, notAsync } from '../../src/functions'
+
+describe('wrappers', () => {
+  describe('not', () => {
+    it('should return negated return value', () => {
+      const originalFunc = (): boolean => true
+      expect(not(originalFunc)()).toEqual(!originalFunc())
+    })
+  })
+
+  describe('notAsync', () => {
+    it('should return negated return value', async () => {
+      const originalFunc = (): Promise<boolean> => Promise.resolve(true)
+      expect(await notAsync(originalFunc)()).toEqual(!await originalFunc())
+    })
+  })
+})

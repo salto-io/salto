@@ -52,7 +52,7 @@ const createPicklistObjectType = (
     state: {
       refType: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.API_NAME]: apiName,
         label: 'test label',
         [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: valueSetName,
@@ -86,26 +86,47 @@ describe('Global Value Sets filter', () => {
   })
 
   describe('on fetch', () => {
-    it('should replace value set with references and restrict their values', async () => {
-      elements.push(createPicklistObjectType(mockElemID, 'test', 'test1'))
-      await filter.onFetch(elements)
-      const globalValueSetInstance = elements[0] as InstanceElement
-      const customObjectType = elements[1] as ObjectType
-      expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
-      expect(customObjectType.fields.state.annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
-        enforce_value: true,
-        values: GLOBAL_VALUE_SET_VALUES,
+    describe('when CustomObject is not hidden', () => {
+      beforeEach(async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1'))
+        await filter.onFetch(elements)
+      })
+      it('should replace value set with references and restrict their values', () => {
+        const globalValueSetInstance = elements[0] as InstanceElement
+        const customObjectType = elements[1] as ObjectType
+        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+          .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
+        expect(customObjectType.fields.state.annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+          enforce_value: true,
+          values: GLOBAL_VALUE_SET_VALUES,
+        })
       })
     })
-
-    it('should not replace value set with references if value set name does not exist', async () => {
-      elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist'))
-      await filter.onFetch(elements)
-      const customObjectType = elements[1] as ObjectType
-      expect(customObjectType.fields.state
-        .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual('not_exist')
+    describe('when CustomObject is hidden', () => {
+      beforeEach(async () => {
+        const picklistObjectType = createPicklistObjectType(mockElemID, 'test', 'test1')
+        picklistObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+        elements.push(picklistObjectType)
+        await filter.onFetch(elements)
+      })
+      it('should do nothing', () => {
+        const customObjectType = elements[1] as ObjectType
+        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+          .toBeString()
+        expect(customObjectType.fields.state.annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeUndefined()
+      })
+    })
+    describe('when GlobalValueSet instance does not exist', () => {
+      beforeEach(async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist'))
+        await filter.onFetch(elements)
+      })
+      it('should not replace value set with references if value set name does not exist', async () => {
+        const customObjectType = elements[1] as ObjectType
+        expect(customObjectType.fields.state
+          .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+          .toEqual('not_exist')
+      })
     })
   })
 })

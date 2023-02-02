@@ -62,7 +62,7 @@ describe('filtersRunner', () => {
     it(`should run all ${operation} filters in order`, async () => {
       const operations = [operation1, operation2]
       const filters = operations
-        .map(f => () => ({ [operation]: f }))
+        .map(f => () => ({ [operation]: f, name: 'bla' }))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       filterRunnerPromise = filtersRunner({}, filters)[operation]({} as any)
       const orderedOperations = operation === 'preDeploy' ? [...operations].reverse() : operations

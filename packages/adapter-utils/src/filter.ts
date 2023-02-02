@@ -32,7 +32,7 @@ const log = logger(module)
 export type FilterResult = Record<string, unknown[] | undefined>
 
 export type FilterMetadata = {
-  name?: string
+  name: string
 }
 
 export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
@@ -67,7 +67,7 @@ export const filtersRunner = <
     opts: T,
     filterCreators: ReadonlyArray<FilterCreator<R, T, DeployInfo>>,
     onFetchAggregator: (results: R[]) => R | void = () => undefined,
-  ): Required<Filter<R, DeployInfo>> => {
+  ): Required<Omit<Filter<R, DeployInfo>, keyof FilterMetadata>> => {
   // Create all filters in advance to allow them to hold context between calls
   const allFilters = filterCreators.map(f => f(opts))
 
@@ -77,7 +77,6 @@ export const filtersRunner = <
     )
 
   return {
-    name: '',
     onFetch: async elements => {
       const filterResults = (await promises.array.series(
         filtersWith('onFetch').map(filter => () => log.time(() => filter.onFetch(elements), `onFetch.${filter.name}`))

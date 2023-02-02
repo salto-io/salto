@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { generateInstanceNameFromConfig } from '../../src/elements/instance_elements'
+import { ElemID } from '@salto-io/adapter-api'
+import { generateInstanceNameFromConfig, getInstanceNaclName } from '../../src/elements/instance_elements'
 import { NameMappingOptions } from '../../src/config'
-
 
 describe('generateInstanceNameFromConfig', () => {
   it('should return the name of the instance based on the type config', () => {
@@ -114,5 +114,18 @@ describe('generateInstanceNameFromConfig', () => {
         supportedTypes: {},
       }
     )).toBe('Id')
+  })
+})
+
+describe('getInstanceNaclName', () => {
+  it('should return a naclName of the parentName without __ suffix, when the name is empty', () => {
+    const naclName = getInstanceNaclName({
+      entry: {},
+      name: '',
+      parentName: 'parent',
+      adapterName: 'zendesk',
+      typeElemId: new ElemID('zendesk', 'test'),
+    })
+    expect(naclName).toBe('parent')
   })
 })

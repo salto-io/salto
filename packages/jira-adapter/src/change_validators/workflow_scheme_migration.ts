@@ -16,8 +16,14 @@
 import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { updateSchemeId } from '../filters/workflow_scheme'
+import JiraClient from '../client/client'
+import { paginate, removeScopedObjects } from '../client/pagination'
+import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 
+const { createPaginator } = clientUtils
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
@@ -140,12 +146,12 @@ const getMigrationForChangedItem = (changedItem: ChangedItem): StatusMigration[]
 
 const formatStatusMigration = (statusMigration: StatusMigration): string => {
   const { issueTypeId, statusId, newStatusId } = statusMigration
-  return `{\n issueTypeId = ${issueTypeId.elemID.getFullName()}\n statusId = ${statusId.elemID.getFullName()}\n newStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<ENTER_STATUS_HERE>'}\n}`
+  return `{\n \tissueTypeId = ${issueTypeId.elemID.getFullName()}\n \tstatusId = ${statusId.elemID.getFullName()}\n \tnewStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<ENTER_STATUS_HERE>'}\n}`
 }
 
 const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => {
   const formattedStatusMigrations = statusMigrations.map(formatStatusMigration)
-  return `statusMigrations = [\n${formattedStatusMigrations.join(',\n')}\n]`
+  return `statusMigrations = [\n${formattedStatusMigrations.join(',\n')},\n]`
 }
 const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>
   statusMigration1.issueTypeId.elemID.isEqual(statusMigration2.issueTypeId.elemID)
@@ -182,26 +188,37 @@ const getErrorMessageForStatusMigration = (
   } : undefined
 }
 
-export const workflowSchemeMigrationValidator: ChangeValidator = async (changes, elementSource) => {
-  const relevantChanges = getRelevantChanges(changes)
-  if (elementSource === undefined || relevantChanges.length === 0) {
-    return []
+export const workflowSchemeMigrationValidator: (
+  client: JiraClient,
+  config: JiraConfig,
+) => ChangeValidator = (client, config) => {
+  const paginator = createPaginator({
+    client,
+    paginationFuncCreator: paginate,
+    customEntryExtractor: removeScopedObjects,
+  })
+  return async (changes, elementSource) => {
+    const relevantChanges = getRelevantChanges(changes)
+    if (elementSource === undefined || relevantChanges.length === 0) {
+      return []
+    }
+    const ids = await awu(await elementSource.list()).toArray()
+    const projects = await awu(ids)
+      .filter(id => id.typeName === PROJECT_TYPE)
+      .filter(id => id.idType === 'instance')
+      .map(id => elementSource.get(id))
+      .toArray()
+    const activeWorkflowsChanges = relevantChanges
+      .filter(change => isWorkflowSchemeActive(getChangeData(change), projects))
+    const errors = await awu(activeWorkflowsChanges).map(async change => {
+      await updateSchemeId(change, client, paginator, config)
+      const instance = getChangeData(change)
+      const changedItems = await getChangedItemsFromChange(change, projects, elementSource)
+      const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
+      const existingStatusMigrations = instance.value.statusMigrations ?? []
+      const newStatusMigrations = _.differenceWith(statusMigrations, existingStatusMigrations, isSameStatusMigration)
+      return getErrorMessageForStatusMigration(instance, newStatusMigrations)
+    }).filter(isDefined).toArray()
+    return errors
   }
-  const ids = await awu(await elementSource.list()).toArray()
-  const projects = await awu(ids)
-    .filter(id => id.typeName === PROJECT_TYPE)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
-  const activeWorkflowsChanges = relevantChanges
-    .filter(change => isWorkflowSchemeActive(getChangeData(change), projects))
-  const errors = await awu(activeWorkflowsChanges).map(async change => {
-    const instance = getChangeData(change)
-    const changedItems = await getChangedItemsFromChange(change, projects, elementSource)
-    const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
-    const existingStatusMigrations = instance.value.statusMigrations ?? []
-    const newStatusMigrations = _.differenceWith(statusMigrations, existingStatusMigrations, isSameStatusMigration)
-    return getErrorMessageForStatusMigration(instance, newStatusMigrations)
-  }).filter(isDefined).toArray()
-  return errors
 }

@@ -95,7 +95,7 @@ const publishDraft = async (
   await waitForWorkflowSchemePublish(response, client, MAX_TASK_CHECKS)
 }
 
-const updateSchemeId = async (
+export const updateSchemeId = async (
   change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
   paginator: clientUtils.Paginator,

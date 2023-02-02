@@ -70,7 +70,7 @@ export default (
     dashboardLayoutValidator,
     permissionTypeValidator,
     automationsValidator,
-    workflowSchemeMigrationValidator,
+    workflowSchemeMigrationValidator(client, config),
     maskingValidator(client),
     lockedFieldsValidator,
     fieldContextValidator,

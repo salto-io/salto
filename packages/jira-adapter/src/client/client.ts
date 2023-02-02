@@ -15,6 +15,7 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
@@ -73,7 +74,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       // The http_client code catches the original error and transforms it such that it removes
       // the parsed information (like the status code), so we have to parse the string here in order
       // to realize what type of error was thrown
-      if (e.message.endsWith('Request failed with status code 404')) {
+      if (e instanceof clientUtils.HTTPError && e.response?.status === 404) {
         log.warn('Suppressing 404 error %o', e)
         return {
           data: [],
@@ -82,6 +83,14 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       }
       throw e
     }
+  }
+
+  @handleDeploymentErrors()
+  public async sendRequest<T extends keyof clientUtils.HttpMethodToClientParams>(
+    method: T,
+    params: clientUtils.HttpMethodToClientParams[T]
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return super.sendRequest(method, params)
   }
 
   protected async ensureLoggedIn(): Promise<void> {

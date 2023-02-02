@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -38,7 +38,7 @@ export const createAutomationTypes = (): {
     elemID: new ElemID(JIRA, AUTOMATION_FIELD),
     fields: {
       type: { refType: BuiltinTypes.STRING },
-      value: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_FIELD],
   })
@@ -72,7 +72,7 @@ export const createAutomationTypes = (): {
   const conditionCriteriaType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_CONDITION_CRITERIA),
     fields: {
-      value: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_CONDITION_CRITERIA],
   })
@@ -123,8 +123,8 @@ export const createAutomationTypes = (): {
   const compareFieldValueType = new ObjectType({
     elemID: new ElemID(JIRA, AUTOMATION_COMPARE_VALUE),
     fields: {
-      value: { refType: BuiltinTypes.STRING },
-      values: { refType: new ListType(BuiltinTypes.STRING) },
+      value: { refType: BuiltinTypes.UNKNOWN },
+      values: { refType: new ListType(BuiltinTypes.UNKNOWN) },
     },
     path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, AUTOMATION_COMPARE_VALUE],
   })

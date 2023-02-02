@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -23,7 +23,10 @@ describe('client', () => {
     let client: ZendeskClient
     beforeEach(() => {
       mockAxios = new MockAdapter(axios)
-      client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+      client = new ZendeskClient({
+        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+        config: { retry: { retryDelay: 0 } },
+      })
     })
 
     afterEach(() => {
@@ -37,21 +40,7 @@ describe('client', () => {
       expect(res.data).toEqual([])
       expect(res.status).toEqual(404)
     })
-    it('should return an empty result when there is a 403 response and we asked for workspaces', async () => {
-      // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
-      const res = await client.getSinglePage({ url: '/api/v2/workspaces' })
-      expect(res.data).toEqual([])
-      expect(res.status).toEqual(403)
-    })
-    it('should return an empty result when there is a 403 response and we asked for custom statuses', async () => {
-      // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
-      const res = await client.getSinglePage({ url: '/api/v2/custom_statuses' })
-      expect(res.data).toEqual([])
-      expect(res.status).toEqual(403)
-    })
-    it('should throw when there is a 403 response but we did not ask for workspaces or custom statuses', async () => {
+    it('should throw when there is a 403 response', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
       await expect(client.getSinglePage({ url: '/api/v2/routing/attributes' })).rejects.toThrow()
@@ -62,6 +51,20 @@ describe('client', () => {
       await expect(
         client.getSinglePage({ url: '/api/v2/routing/attributes' })
       ).rejects.toThrow()
+    })
+    it('should retry on 409, 429 and 503', async () => {
+      // The first replyOnce with 200 is for the client authentication
+      mockAxios.onGet().replyOnce(200)
+        .onPost()
+        .replyOnce(429)
+        .onPost()
+        .replyOnce(409)
+        .onPost()
+        .replyOnce(503)
+        .onPost()
+        .replyOnce(200)
+      await client.post({ url: '/api/v2/routing/attributes', data: {} })
+      expect(mockAxios.history.post.length).toEqual(4)
     })
   })
 })

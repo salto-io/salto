@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,7 +22,7 @@ import JiraClient from '../client/client'
 import { defaultDeployChange, deployChanges } from '../deployment/standard_deployment'
 import { getLookUpName } from '../reference_mapping'
 import { FilterCreator } from '../filter'
-import { findObject, setFieldDeploymentAnnotations } from '../utils'
+import { findObject, isFreeLicense, setFieldDeploymentAnnotations } from '../utils'
 import { PROJECT_CONTEXTS_FIELD } from './fields/contexts_projects_filter'
 
 const PROJECT_TYPE_NAME = 'Project'
@@ -33,6 +33,7 @@ const ISSUE_TYPE_SCREEN_SCHEME_FIELD = 'issueTypeScreenScheme'
 const FIELD_CONFIG_SCHEME_FIELD = 'fieldConfigurationScheme'
 const ISSUE_TYPE_SCHEME = 'issueTypeScheme'
 const PRIORITY_SCHEME = 'priorityScheme'
+const PERMISSION_SCHEME_FIELD = 'permissionScheme'
 
 const log = logger(module)
 
@@ -180,7 +181,7 @@ const deleteFieldConfigurationScheme = async (
 /**
  * Restructures Project type to fit the deployment endpoint
  */
-const filter: FilterCreator = ({ config, client }) => ({
+const filter: FilterCreator = ({ config, client, elementsSource }) => ({
   onFetch: async (elements: Element[]) => {
     const projectType = findObject(elements, PROJECT_TYPE_NAME)
     if (projectType !== undefined) {
@@ -241,6 +242,21 @@ const filter: FilterCreator = ({ config, client }) => ({
         && isAdditionOrModificationChange(change)
     )
 
+    const getFieldsToIgnore = async (change: Change<InstanceElement>): Promise<string[]> => {
+      const fieldsToIgnore = [
+        COMPONENTS_FIELD,
+        FIELD_CONFIG_SCHEME_FIELD,
+        PROJECT_CONTEXTS_FIELD,
+        PRIORITY_SCHEME,
+      ]
+      if (shouldSeparateSchemeDeployment(change, client.isDataCenter)) {
+        fieldsToIgnore.push(WORKFLOW_SCHEME_FIELD, ISSUE_TYPE_SCREEN_SCHEME_FIELD, ISSUE_TYPE_SCHEME)
+      }
+      if (await isFreeLicense(elementsSource)) {
+        fieldsToIgnore.push(PERMISSION_SCHEME_FIELD)
+      }
+      return fieldsToIgnore
+    }
 
     const deployResult = await deployChanges(
       relevantChanges as Change<InstanceElement>[],
@@ -250,22 +266,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             change,
             client,
             apiDefinitions: config.apiDefinitions,
-            fieldsToIgnore: shouldSeparateSchemeDeployment(change, client.isDataCenter)
-              ? [
-                COMPONENTS_FIELD,
-                WORKFLOW_SCHEME_FIELD,
-                ISSUE_TYPE_SCREEN_SCHEME_FIELD,
-                FIELD_CONFIG_SCHEME_FIELD,
-                ISSUE_TYPE_SCHEME,
-                PROJECT_CONTEXTS_FIELD,
-                PRIORITY_SCHEME,
-              ]
-              : [
-                COMPONENTS_FIELD,
-                FIELD_CONFIG_SCHEME_FIELD,
-                PROJECT_CONTEXTS_FIELD,
-                PRIORITY_SCHEME,
-              ],
+            fieldsToIgnore: await getFieldsToIgnore(change),
           })
         } catch (error) {
           // When a JSM project is created, a fieldConfigurationScheme is created

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -73,7 +73,7 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
     })
 
     it('should return the correct warning messages when docsUrl is provided', async () => {
-      const docsUrl = 'https://docs.salto.io/docs/salesforce-cpq'
+      const docsUrl = 'https://help.salto.io/en/articles/6927217-salto-for-salesforce-cpq-support'
       const errors = await getAndLogCollisionWarnings({
         instances: [instance, instance.clone()],
         adapterName: 'salto',

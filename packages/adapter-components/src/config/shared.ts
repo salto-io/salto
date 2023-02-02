@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,6 +20,8 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
+
+export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
 export type TypeConfig<T extends TransformationConfig = TransformationConfig> = {
   request?: FetchRequestConfig
@@ -53,6 +55,11 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = unde
   include: FetchEntry<T>[]
   exclude: FetchEntry<T>[]
   hideTypes?: boolean
+}
+
+export type UserDeployConfig = {
+  // Replace references for missing users during deploy with defaultMissingUserFallback value
+  defaultMissingUserFallback?: string
 }
 
 export const createAdapterApiConfigType = ({
@@ -168,6 +175,22 @@ export const createUserFetchConfigType = (
     },
   })
 }
+
+export const createUserDeployConfigType = (
+  adapter: string,
+  additionalFields?: Record<string, FieldDefinition>,
+): ObjectType => (
+  createMatchingObjectType<UserDeployConfig>({
+    elemID: new ElemID(adapter, 'userDeployConfig'),
+    fields: {
+      defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
+      ...additionalFields,
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
+  })
+)
 
 export const getConfigWithDefault = <
   T extends TransformationConfig | FetchRequestConfig | undefined,

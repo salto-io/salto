@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -60,7 +60,8 @@ const main = async () => {
   const tsConfigs = readTsConfigs(workspaces)
 
   const referenceToWorkspacePackage = ({ path: refPath }, { location: packageLocation }) => {
-    const refLocation = path.join(packageLocation, refPath)
+    const pathSepRegEx = new RegExp(path.sep, 'g')
+    const refLocation = path.join(packageLocation, refPath).replace(pathSepRegEx, '/')
     return findKey(workspaces, ({ location }) => location === refLocation)
   }
 

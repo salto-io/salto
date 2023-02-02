@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -60,7 +60,8 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-        retry: DEFAULT_RETRY_OPTS,
+        // These statuses are returned by Zendesk and are not related to our data, a retry should solve them
+        retry: Object.assign(DEFAULT_RETRY_OPTS, { additionalStatusCodesToRetry: [409, 503] }),
       },
     )
     this.resourceConn = clientUtils.createClientConnection({
@@ -84,13 +85,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       const status = e.response?.status
       // Zendesk returns 404 when it doesn't have permissions for objects (not enabled features)
       // Specifically for workspaces and custom statuses, it returns 403
-      if (
-        status === 404
-        || (status === 403 && [
-          '/api/v2/workspaces',
-          '/api/v2/custom_statuses',
-        ].includes(args.url))
-      ) {
+      if (status === 404) {
         log.warn('Suppressing %d error %o', status, e)
         return { data: [], status }
       }

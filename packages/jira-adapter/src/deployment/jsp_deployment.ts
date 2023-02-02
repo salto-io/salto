@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -78,7 +78,13 @@ const deployChange = async (
         },
       })
     } catch (err) {
-      log.debug(`Received error ${err.message} for ${instance.elemID.getFullName()}. Could be because the element is already removed`)
+      if (err instanceof clientUtils.HTTPError
+        && err.response.status === 404
+        && isRemovalChange(change)) {
+        log.debug(`Received error ${err.message} for ${instance.elemID.getFullName()}. The element is already removed`)
+        return
+      }
+      throw err
     }
   }
 }

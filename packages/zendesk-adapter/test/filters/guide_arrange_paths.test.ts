@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -132,6 +132,17 @@ describe('guide arrange paths', () => {
       name: 'section in section name',
     }
   )
+  const sectionInInSectionInstance = new InstanceElement(
+    'instance15',
+    sectionType,
+    {
+      id: 5,
+      brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+      direct_parent_id: new ReferenceExpression(sectionInSectionInstance.elemID, sectionInSectionInstance),
+      direct_parent_type: 'section',
+      name: 'section in section in section name',
+    }
+  )
   const articleInstance = new InstanceElement(
     'instance8',
     articleType,
@@ -228,6 +239,7 @@ describe('guide arrange paths', () => {
         permissionGroupInstance,
         sectionInstance,
         sectionInSectionInstance,
+        sectionInInSectionInstance,
         categoryInstance,
         articleInstance,
         articleTranslationInstance,
@@ -274,6 +286,17 @@ describe('guide arrange paths', () => {
           'section_name',
           'section_in_section_name',
           'section_in_section_name',
+        ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'category_name',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'section_name',
+          'section_in_section_name',
+          'section_in_section_in_section_name',
+          'section_in_section_in_section_name',
         ],
         [
           ...GUIDE_PATH,

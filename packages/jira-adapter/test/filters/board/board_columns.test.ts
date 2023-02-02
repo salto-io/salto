@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -186,6 +186,13 @@ describe('boardColumnsFilter', () => {
         ],
         constraintType: 'issueCount',
       })
+    })
+
+    it('should do nothing if board does not have config', async () => {
+      delete instance.value.config
+
+      await filter.onFetch([instance])
+      expect(instance.value[COLUMNS_CONFIG_FIELD]).toBeUndefined()
     })
 
     it('should add deployment annotations', async () => {

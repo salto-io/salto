@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,6 +16,7 @@
 import { AccountId, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
+import { FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
 
 const isAuthorized = async (
   connection: clientUtils.APIConnection,
@@ -56,6 +57,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
           username: credentials.user,
           password: credentials.token,
         },
+        headers: credentials.isDataCenter ? {} : FORCE_ACCEPT_LANGUAGE_HEADERS,
       }
     ),
     baseURLFunc: ({ baseUrl }) => baseUrl,

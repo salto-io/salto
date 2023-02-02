@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,3 +24,4 @@ export const POLICY_TYPE_NAME = 'Policy'
 export const APP_USER_TYPE_NAME = 'AppUser'
 export const NETWORK_ZONE_TYPE_NAME = 'NetworkZone'
 export const ROLE_TYPE_NAME = 'Role'
+export const USER_SCHEMA_TYPE_NAME = 'UserSchema'

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,7 +18,9 @@ import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings, collections } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists, readFile, writeFile } from '@salto-io/file'
-import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
+import { SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
+// eslint-disable-next-line no-restricted-imports
+import { testHelpers as salesforceTestHelpers } from '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
 import { Workspace, parser } from '@salto-io/workspace'
 // eslint-disable-next-line no-restricted-imports

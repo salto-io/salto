@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -747,19 +747,34 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'custom_statuses__custom_statuses',
       idFields: ['status_category', 'raw_agent_label'],
       fileNameFields: ['status_category', 'raw_agent_label'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'end_user_label', fieldType: 'string' },
         { fieldName: 'agent_label', fieldType: 'string' },
         { fieldName: 'description', fieldType: 'string' },
         { fieldName: 'end_user_description', fieldType: 'string' },
-        { fieldName: 'end_user_label', fieldType: 'string' },
+        { fieldName: 'default', fieldType: 'boolean' },
       ),
+      fieldsToOmit: FIELDS_TO_OMIT,
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/objects-rules/tickets/ticket_statuses/edit/{id}',
     },
-    // TODO add deploy SALTO-2895
+    deployRequests: {
+      add: {
+        url: '/api/v2/custom_statuses',
+        deployAsField: 'custom_status',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v2/custom_statuses/{custom_status_id}',
+        method: 'put',
+        deployAsField: 'custom_status',
+        urlParamsToFields: {
+          custom_status_id: 'id',
+        },
+      },
+    },
   },
-
   ticket_field: {
     transformation: {
       sourceTypeName: 'ticket_fields__ticket_fields',
@@ -832,7 +847,19 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
     transformation: {
       idFields: ['value'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      fieldTypeOverrides: [
+        { fieldName: 'id', fieldType: 'number' },
+        {
+          fieldName: 'value',
+          fieldType: 'string',
+          restrictions: {
+            enforce_value: true,
+            // this regex will not allow the following characters to be in the string:
+            // & % $ # @ ! { } [ ] = + ( ) * ? < > , " ' ` ; \
+            regex: '^[^&%$#@\\! \\{\\}\\[\\]=\\+\\(\\)\\*\\?<>,"\'`;\\\\]+$',
+          },
+        },
+      ],
     },
   },
   user_field: {
@@ -2382,6 +2409,20 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       ],
     },
   },
+  features: {
+    request: {
+      url: '/api/v2/account/features',
+    },
+    transformation: {
+      dataField: 'features',
+    },
+  },
+  account_features: {
+    transformation: {
+      sourceTypeName: 'features__features',
+      isSingleton: true,
+    },
+  },
 }
 
 export const SUPPORTED_TYPES = {
@@ -2418,6 +2459,7 @@ export const SUPPORTED_TYPES = {
   view: ['views'],
   webhook: ['webhooks'],
   workspace: ['workspaces'],
+  account_features: ['features'],
 }
 
 // Types in Zendesk Guide which relate to a certain brand

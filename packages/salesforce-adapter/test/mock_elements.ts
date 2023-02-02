@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -26,12 +26,13 @@ import {
   API_NAME,
   METADATA_TYPE,
   CUSTOM_OBJECT,
-  CPQ_QUOTE,
+  CPQ_QUOTE, ACTIVATE_RSS, INSTALLED_PACKAGE_METADATA,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
+import { createCustomObjectType } from './utils'
 
 
 export const mockTypes = {
@@ -255,6 +256,14 @@ export const mockTypes = {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
+  [INSTALLED_PACKAGE_METADATA]: createMetadataObjectType({
+    annotations: {
+      metadataType: INSTALLED_PACKAGE_METADATA,
+    },
+    fields: {
+      [ACTIVATE_RSS]: { refType: BuiltinTypes.BOOLEAN },
+    },
+  }),
   Product2: new ObjectType({
     elemID: new ElemID(SALESFORCE, 'Product2'),
     fields: {
@@ -344,6 +353,35 @@ export const mockTypes = {
       metadataType: 'CustomLabel',
     },
   }),
+  CaseSettings: createCustomObjectType(
+    'CaseSettings',
+    {
+      fields: {
+        defaultCaseOwner: {
+          refType: BuiltinTypes.STRING,
+        },
+        defaultCaseUser: {
+          refType: BuiltinTypes.STRING,
+        },
+        defaultCaseOwnerType: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    }
+  ),
+  FolderShare: createCustomObjectType(
+    'FolderShare',
+    {
+      fields: {
+        sharedTo: {
+          refType: BuiltinTypes.STRING,
+        },
+        sharedToType: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+    }
+  ),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

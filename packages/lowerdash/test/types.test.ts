@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard,
+  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray,
 } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
@@ -125,6 +125,14 @@ describe('types', () => {
     it('should return true if the array is empty', () => {
       const falsy: Guard = (_t: unknown): _t is MyType => false
       expect(isArrayOfType([], falsy)).toBeTruthy()
+    })
+  })
+  describe('isNonEmptyArray', () => {
+    it('should return true for non empty array', () => {
+      expect(isNonEmptyArray([12])).toEqual(true)
+    })
+    it('should return false for empty array', () => {
+      expect(isNonEmptyArray([])).toEqual(false)
     })
   })
 })

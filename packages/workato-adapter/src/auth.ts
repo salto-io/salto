@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,20 +13,29 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
-export const usernameTokenCredentialsType = new ObjectType({
-  elemID: new ElemID(constants.WORKATO),
-  fields: {
-    username: { refType: BuiltinTypes.STRING },
-    token: { refType: BuiltinTypes.STRING },
-  },
-})
-
 export type UsernameTokenCredentials = {
-  username: string
+  username?: string
   token: string
 }
+
+export const usernameTokenCredentialsType = createMatchingObjectType<UsernameTokenCredentials>({
+  elemID: new ElemID(constants.WORKATO),
+  fields: {
+    username: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        message: 'message (optional) - keep empty if using token-based authentication',
+      },
+    },
+    token: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+  },
+})
 
 export type Credentials = UsernameTokenCredentials

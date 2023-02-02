@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -27,7 +27,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   isRemovalChange,
-  getChangeData,
+  getChangeData, TemplateExpression,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -85,6 +85,16 @@ const callbackResponseFunc = (config: AxiosRequestConfig): any => {
   return [404]
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const callbackResponseFuncWith403 = (config: AxiosRequestConfig): any => {
+  const { url } = config
+  if (url !== undefined && url.includes('custom_status')) {
+    return [403]
+  }
+  return callbackResponseFunc(config)
+}
+
+
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
   const userSegmentType = new ObjectType({
@@ -129,6 +139,7 @@ describe('adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.account_features',
           'zendesk.account_setting',
           'zendesk.account_setting.instance',
           'zendesk.account_setting__active_features',
@@ -291,6 +302,7 @@ describe('adapter', () => {
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__en_US_b@uuumuuum',
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__es@uuumuu',
           'zendesk.dynamic_content_item__variants.instance.dynamic_content_item_544_s__he@uuumuu',
+          'zendesk.features',
           'zendesk.group',
           'zendesk.group.instance.Support',
           'zendesk.group.instance.Support2',
@@ -610,16 +622,65 @@ describe('adapter', () => {
         ])
 
         const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand'))
+        const brand = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
+        expect(brand).toBeDefined()
+        if (brand === undefined) {
+          return
+        }
         expect(supportAddress).toBeDefined()
         expect(supportAddress?.value).toMatchObject({
           id: 1500000743022,
           default: true,
           name: 'myBrand',
-          email: 'support@myBrand.zendesk.com',
+          email: new TemplateExpression({
+            parts: [
+              'support@',
+              new ReferenceExpression(brand.elemID.createNestedID('subdomain'), brand.value.subdomain),
+              '.zendesk.com',
+            ],
+          }),
           // eslint-disable-next-line camelcase
           brand_id: expect.any(ReferenceExpression),
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
+      })
+      it('should return an 403 error for custom statuses', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFuncWith403)
+        const { elements, errors } = await adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            usernamePasswordCredentialsType,
+            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                include: [{
+                  type: '.*',
+                }],
+                exclude: [],
+                guide: {
+                  brands: ['.*'],
+                },
+              },
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(errors).toBeDefined()
+        expect(errors).toEqual([
+          {
+            severity: 'Warning',
+            message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
+          },
+        ])
+        const elementsNames = elements.map(e => e.elemID.getFullName())
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.new___zd_status_new__@u_00123_00123vu_00125_00125')
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.open___zd_status_open__@u_00123_00123vu_00125_00125')
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.open_test_n1')
+        expect(elementsNames).not.toContain('zendesk.custom_status.instance.open_test_n1@ub')
       })
 
       it('should generate guide elements according to brands config', async () => {
@@ -1227,45 +1288,80 @@ describe('adapter', () => {
         toChange({ before: new InstanceElement('inst', groupType) }),
       ])
     })
-    it('should rate limit guide requests to 1, and not limit support requests', async () => {
+    describe('clients tests', () => {
       const { client } = createFilterCreatorParams({})
-      const brand1 = new InstanceElement('brand1', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), { subdomain: 'domain1', id: 1 })
-      const brand2 = new InstanceElement('brand2', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), { subdomain: 'domain2', id: 2 })
+      const brand1 = new InstanceElement('brand1', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
+        subdomain: 'domain1',
+        id: 1,
+      })
+      const brand2 = new InstanceElement('brand2', new ObjectType({ elemID: new ElemID(ZENDESK, BRAND_TYPE_NAME) }), {
+        subdomain: 'domain2',
+        id: 2,
+      })
       const settings1 = new InstanceElement('guide_language_settings1', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 1 })
       const settings2 = new InstanceElement('guide_language_settings2', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 2 })
-      const zendeskAdapter = new ZendeskAdapter({
-        config: DEFAULT_CONFIG,
-        client,
-        credentials: { accessToken: '', subdomain: '' },
-        elementsSource: buildElementsSourceFromElements([brand1, brand2, settings1, settings2]),
-      })
-      // any is needed to be able to spy on private method
-      // eslint-disable-next-line
-      const createClientSpy = jest.spyOn(zendeskAdapter as any, 'createClientBySubdomain')
-      // eslint-disable-next-line
-      const createFiltersRunnerSpy = jest.spyOn(zendeskAdapter as any, 'createFiltersRunner')
-      await zendeskAdapter.deploy({
-        changeGroup: {
-          groupID: '1',
-          changes: [toChange({ after: settings1 }), toChange({ after: settings2 })],
-        },
-      })
-
-      const guideFilterRunnerCall = expect.objectContaining({
-        filterRunnerClient: expect.objectContaining({
-          config: {
-            rateLimit: {
-              deploy: 1,
-            },
+      it('should rate limit guide requests to 1, and not limit support requests', async () => {
+        const zendeskAdapter = new ZendeskAdapter({
+          config: DEFAULT_CONFIG,
+          client,
+          credentials: { accessToken: '', subdomain: '' },
+          elementsSource: buildElementsSourceFromElements([brand1, brand2, settings1, settings2]),
+        })
+        // any is needed to be able to spy on private method
+        // eslint-disable-next-line
+        const createClientSpy = jest.spyOn(zendeskAdapter as any, 'createClientBySubdomain')
+        // eslint-disable-next-line
+        const createFiltersRunnerSpy = jest.spyOn(zendeskAdapter as any, 'createFiltersRunner')
+        await zendeskAdapter.deploy({
+          changeGroup: {
+            groupID: '1',
+            changes: [toChange({ after: settings1 }), toChange({ after: settings2 })],
           },
-        }),
-      })
+        })
+        const guideFilterRunnerCall = expect.objectContaining({
+          filterRunnerClient: expect.objectContaining({
+            config: {
+              rateLimit: {
+                deploy: 1,
+              },
+            },
+          }),
+        })
 
-      expect(createClientSpy).toHaveBeenCalledTimes(2)
-      expect(createFiltersRunnerSpy).toHaveBeenCalledTimes(3)
-      expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy
-      expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
-      expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
+        expect(createClientSpy).toHaveBeenCalledTimes(2)
+        expect(createFiltersRunnerSpy).toHaveBeenCalledTimes(3)
+        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy
+        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
+        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
+      })
+      it('should use the same client for all guide requests of the same subdomain', async () => {
+        const zendeskAdapter = new ZendeskAdapter({
+          config: DEFAULT_CONFIG,
+          client,
+          credentials: { accessToken: '', subdomain: '' },
+          elementsSource: buildElementsSourceFromElements([brand1, brand2, settings1, settings2]),
+        })
+        // any is needed to be able to spy on private method
+        // eslint-disable-next-line
+        const getClientSpy = jest.spyOn(zendeskAdapter as any, 'getClientBySubdomain')
+        // eslint-disable-next-line
+        const createClientSpy = jest.spyOn(zendeskAdapter as any, 'createClientBySubdomain')
+
+        await zendeskAdapter.deploy({
+          changeGroup: {
+            groupID: '1',
+            changes: [toChange({ after: settings1 })],
+          },
+        })
+        await zendeskAdapter.deploy({
+          changeGroup: {
+            groupID: '2',
+            changes: [toChange({ before: settings1 })],
+          },
+        })
+        expect(getClientSpy).toHaveBeenCalledTimes(2)
+        expect(createClientSpy).toHaveBeenCalledTimes(1)
+      })
     })
   })
 })

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -53,6 +53,9 @@ describe('userFilter', () => {
           admins: {
             users: [{
               accountId: 'John Doe',
+            },
+            {
+              accountId: 'John Doe4',
             }],
           },
         }
@@ -64,32 +67,47 @@ describe('userFilter', () => {
           owner: {
             accountId: 'John Doe2',
           },
+          editPermissions: [
+            {
+              type: 'user',
+              user: {
+                displayName: 'No One',
+                accountId: {
+                  id: 'noOne',
+                },
+              },
+            },
+          ],
         }
       )
       const instanceDashboard = new InstanceElement(
         'instance3',
         dashboardType,
         {
-          inner: {
-            owner: {
-              accountId: 'John Doe3',
-            },
+          owner: {
+            accountId: 'John Doe3',
           },
         }
       )
       await filter.onFetch?.([instance, instanceFilter, instanceDashboard])
       expect(instance.value).toEqual({
         admins: {
-          users: ['John Doe'],
+          users: ['John Doe', 'John Doe4'],
         },
       })
       expect(instanceFilter.value).toEqual({
         owner: 'John Doe2',
+        editPermissions: [
+          {
+            type: 'user',
+            user: {
+              id: 'noOne',
+            },
+          },
+        ],
       })
       expect(instanceDashboard.value).toEqual({
-        inner: {
-          owner: 'John Doe3',
-        },
+        owner: 'John Doe3',
       })
     })
 

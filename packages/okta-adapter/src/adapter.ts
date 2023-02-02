@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -33,6 +33,7 @@ import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import appStructureFilter from './filters/app_structure'
 import standardRolesFilter from './filters/standard_roles'
+import fetchUserSchemaFilter from './filters/user_schema'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -48,6 +49,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   standardRolesFilter,
+  fetchUserSchemaFilter,
   appStructureFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
@@ -132,7 +134,7 @@ export default class OktaAdapter implements AdapterOperations {
   private async getInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  ): Promise<InstanceElement[]> {
+  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
       ...this.userConfig.apiDefinitions,
       types: {
@@ -159,7 +161,7 @@ export default class OktaAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getAllTypes()
     progressReporter.reportProgress({ message: 'Fetching instances' })
-    const instances = await this.getInstances(allTypes, parsedConfigs)
+    const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
 
     const elements = [
       ...Object.values(allTypes),
@@ -172,9 +174,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     // TODO SALTO-2690: addDeploymentAnnotations
 
-    return filterResult.errors !== undefined
-      ? { elements, errors: filterResult.errors }
-      : { elements }
+    return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []) }
   }
 
   /**

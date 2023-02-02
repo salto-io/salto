@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -48,3 +48,12 @@ export { childInOrderValidator } from './guide_order/child_in_order_validator'
 export { guideOrderDeletionValidator } from './guide_order/order_deletion_validator'
 export { articleAttachmentSizeValidator } from './article_attachment_size'
 export { macroActionsTicketFieldDeactivationValidator } from './macro_actions'
+export { externalSourceWebhook } from './external_source_webhook'
+export { customRoleRemovalValidator } from './custom_role_removal'
+export { sideConversationsValidator } from './side_conversation'
+export { missingUsersValidator } from './missing_users'
+export { customStatusCategoryValidator } from './custom_status_valid_category'
+export { customStatusCategoryChangeValidator } from './custom_status_change_category'
+export { customStatusUniqueAgentLabelValidator } from './custom_statuses_unique_agent_label'
+export { defaultCustomStatusesValidator } from './default_custom_statuses'
+export { customStatusActiveDefaultValidator } from './custom_status_active_default'

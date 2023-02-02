@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -42,7 +42,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       idFieldsName: 'idFields',
       // Needed because 'safeJsonStringify' is really slow, which causes problems with articles stress test (SALTO-3059)
       skipLogCollisionStringify: isGuideEnabled(config[FETCH_CONFIG]),
-      docsUrl: 'https://docs.salto.io/docs/zendesk#zendesk-duplicate-names',
+      docsUrl: 'https://help.salto.io/en/articles/6927157-salto-id-collisions',
     })
     return { errors: collistionWarnings }
   }, 'collisionErrorsFilter'),

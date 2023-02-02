@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,20 +15,25 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isModificationChange,
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isModificationChange,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
+import { WEBHOOK_TYPE_NAME } from '../constants'
 
-export const WEBHOOK_TYPE_NAME = 'webhook'
 export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
   bearer_token: { token: '123456' },
   basic_auth: { username: 'user@name.com', password: 'password' },
 }
 
 /**
- * Removes the authentication data from webhook if it wasn't changed
+ * onFetch: On relevant webhooks, replace installation_id field with appInstallation reference
+ * onDeploy: Removes the authentication data from webhook if it wasn't changed
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   deploy: async (changes: Change<InstanceElement>[]) => {
@@ -67,7 +72,8 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           }
           instance.value.authentication.data = placeholder
         }
-        await deployChange(clonedChange, client, config.apiDefinitions)
+        // Ignore external_source because it is impossible to deploy, the user was warned at externalSourceWebhook.ts
+        await deployChange(clonedChange, client, config.apiDefinitions, ['external_source'])
         getChangeData(change).value.id = getChangeData(clonedChange).value.id
       },
     )

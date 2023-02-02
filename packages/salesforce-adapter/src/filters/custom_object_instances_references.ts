@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -84,7 +84,7 @@ const createWarnings = async (
     getTypeName: async instance => apiName(await instance.getType(), true),
     idFieldsName: 'saltoIDSettings',
     getInstanceName: instance => apiName(instance),
-    docsUrl: 'https://docs.salto.io/docs/salesforce-cpq',
+    docsUrl: 'https://help.salto.io/en/articles/6927217-salto-for-salesforce-cpq-support',
   })
 
   const typeToInstanceIdToMissingRefs = _.mapValues(

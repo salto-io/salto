@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -105,6 +105,12 @@ describe('boardEstimationFilter', () => {
         '/rest/greenhopper/1.0/rapidviewconfig/estimation?rapidViewId=1',
         undefined,
       )
+    })
+
+    it('should do nothing if there is no config', async () => {
+      delete instance.value.config
+      await filter.onFetch([instance])
+      expect(instance.value.estimation).toBeUndefined()
     })
 
     it('should add deployment annotations', async () => {

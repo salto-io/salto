@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -22,10 +22,12 @@ import { DEFAULT_API_DEFINITIONS } from '../../src/config'
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
   const getMockInstances: typeof elementUtils.swagger.getAllInstances = async () => (
-    [new InstanceElement(
-      'a',
-      new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'CustomObjectDefinition') })
-    )]
+    {
+      elements: [new InstanceElement(
+        'a',
+        new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'CustomObjectDefinition') })
+      )],
+    }
   )
   return {
     ...actual,

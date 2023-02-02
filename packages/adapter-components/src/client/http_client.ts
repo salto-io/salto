@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -60,7 +60,7 @@ export interface HTTPWriteClientInterface {
   patch(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
 }
 
-type HttpMethodToClientParams = {
+export type HttpMethodToClientParams = {
   get: ClientBaseParams
   post: ClientDataParams
   put: ClientDataParams
@@ -168,7 +168,7 @@ export abstract class AdapterHTTPClient<
     return this.sendRequest('patch', params)
   }
 
-  private async sendRequest<T extends keyof HttpMethodToClientParams>(
+  protected async sendRequest<T extends keyof HttpMethodToClientParams>(
     method: T,
     params: HttpMethodToClientParams[T]
   ): Promise<Response<ResponseValue | ResponseValue[]>> {

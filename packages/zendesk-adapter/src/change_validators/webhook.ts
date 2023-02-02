@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,7 +16,7 @@
 import { ChangeError, ChangeValidator, ElemID, getChangeData,
   isAdditionChange, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import ZendeskClient from '../client/client'
-import { WEBHOOK_TYPE_NAME } from '../filters/webhook'
+import { WEBHOOK_TYPE_NAME } from '../constants'
 
 const WEBHOOKS_SERVICE_URL = 'admin/apps-integrations/webhooks/webhooks'
 

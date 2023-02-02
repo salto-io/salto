@@ -1,6 +1,6 @@
 
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,6 +18,20 @@ import _ from 'lodash'
 import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from '@salto-io/adapter-api'
 import { generateTypes, toPrimitiveType } from '../../../src/elements/swagger'
 import { RequestableTypeSwaggerConfig } from '../../../src/config'
+
+jest.mock('@salto-io/lowerdash', () => {
+  const actual = jest.requireActual('@salto-io/lowerdash')
+  return {
+    ...actual,
+    promises: {
+      ...actual.promises,
+      timeout: {
+        ...actual.promises.timeout,
+        sleep: () => undefined,
+      },
+    },
+  }
+})
 
 const ADAPTER_NAME = 'myAdapter'
 const BASE_DIR = __dirname.replace('/dist', '')

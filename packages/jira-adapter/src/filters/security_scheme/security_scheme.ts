@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { objects } from '@salto-io/lowerdash'
 import { getParents } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { findObject, getFilledJspUrls, setFieldDeploymentAnnotations, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
@@ -238,11 +239,22 @@ const filter: FilterCreator = ({ client, config }) => ({
         deployLevels: (levelsChanges: Change<InstanceElement>[]) => deployChanges(
           levelsChanges as Change<InstanceElement>[],
           async change => {
-            await defaultDeployChange({
-              change,
-              client,
-              apiDefinitions: config.apiDefinitions,
-            })
+            try {
+              await defaultDeployChange({
+                change,
+                client,
+                apiDefinitions: config.apiDefinitions,
+              })
+            } catch (err) {
+              if (err instanceof clientUtils.HTTPError
+                && err.response.status === 404
+                && isRemovalChange(change)) {
+                // if delete fails on 404 it can be considered a success
+                log.debug(`Received 404 error ${err.message} for ${getChangeData(change).elemID.getFullName()}. The element is already removed`)
+                return
+              }
+              throw err
+            }
           }
         ),
       }

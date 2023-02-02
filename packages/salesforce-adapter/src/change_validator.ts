@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -32,10 +32,16 @@ import flowsValidator from './change_validators/flows'
 import fullNameChangedValidator from './change_validators/fullname_changed'
 import invalidListViewFilterScope from './change_validators/invalid_listview_filterscope'
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
+import unknownUser from './change_validators/unknown_users'
+import animationRuleRecordType from './change_validators/animation_rule_recordtype'
+import SalesforceClient from './client/client'
 
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
-type ChangeValidatorCreator = (config: SalesforceConfig, isSandbox: boolean) => ChangeValidator
+
+type ChangeValidatorCreator = (config: SalesforceConfig,
+                               isSandbox: boolean,
+                               client: SalesforceClient) => ChangeValidator
 
 type ChangeValidatorDefinition = {
   creator: ChangeValidatorCreator
@@ -58,17 +64,21 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   cpqValidator: { creator: () => cpqValidator, ...defaultAlwaysRun },
   sbaaApprovalRulesCustomCondition: { creator: () => sbaaApprovalRulesCustomCondition, ...defaultAlwaysRun },
   recordTypeDeletion: { creator: () => recordTypeDeletionValidator, ...defaultAlwaysRun },
-  flowsValidator: { creator: (config, isSandbox) => flowsValidator(config, isSandbox), ...defaultAlwaysRun },
+  flowsValidator: { creator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
+    ...defaultAlwaysRun },
   fullNameChangedValidator: { creator: () => fullNameChangedValidator, ...defaultAlwaysRun },
   invalidListViewFilterScope: { creator: () => invalidListViewFilterScope, ...defaultAlwaysRun },
   caseAssignmentRulesValidator: { creator: () => caseAssignmentRulesValidator, ...defaultAlwaysRun },
   omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
+  unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
+  animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
 }
 
-const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
+const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {
   config: SalesforceConfig
   isSandbox: boolean
   checkOnly: boolean
+  client: SalesforceClient
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
   const activeValidators = Object.entries(changeValidators).filter(
@@ -79,8 +89,9 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly }: {
     ([name]) => config.validators?.[name as ChangeValidatorName] === false
   )
   return createChangeValidator(
-    activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox)),
-    disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox)),
+    activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
+    disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
 }
+
 export default createSalesforceChangeValidator

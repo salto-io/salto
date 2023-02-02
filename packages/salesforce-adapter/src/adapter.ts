@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -77,7 +77,8 @@ import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
-import deployFlowsFilter from './filters/deploy_flows'
+import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
+import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -85,7 +86,7 @@ import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
-import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
+import { deployMetadata, NestedMetadataTypeInfo, quickDeploy } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
@@ -96,6 +97,7 @@ const { concatObjects } = objects
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
+  { creator: addDefaultActivateRSSFilter },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },
@@ -105,6 +107,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
+  { creator: organizationWideDefaults, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },
@@ -125,7 +128,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },
   { creator: flowFilter },
-  { creator: deployFlowsFilter, addsNewInformation: true },
   { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
   { creator: cpqReferencableFieldReferencesFilter },
   { creator: cpqCustomScriptFilter },
@@ -239,6 +241,7 @@ const METADATA_TO_RETRIEVE = [
   'Territory2Model', // All Territory2 types do not support CRUD
   'Territory2Rule', // All Territory2 types do not support CRUD
   'Territory2Type', // All Territory2 types do not support CRUD
+  'Layout', // retrieve returns more information about relatedLists
 ]
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
@@ -431,10 +434,14 @@ export default class SalesforceAdapter implements AdapterOperations {
       deployResult = await deployCustomObjectInstancesGroup(
         resolvedChanges as Change<InstanceElement>[],
         this.client,
-        this.fetchProfile.dataManagement
+        changeGroup.groupID,
+        this.fetchProfile.dataManagement,
       )
+    } else if (this.userConfig.client?.deploy?.quickDeployParams !== undefined) {
+      deployResult = await quickDeploy(resolvedChanges, this.client,
+        changeGroup.groupID, this.userConfig.client?.deploy?.quickDeployParams)
     } else {
-      deployResult = await deployMetadata(resolvedChanges, this.client,
+      deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
     }
     // onDeploy can change the change list in place, so we need to give it a list it can modify

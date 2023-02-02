@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -29,6 +29,7 @@ import * as types from './types'
 import * as validators from './validators'
 import * as values from './values'
 import * as objects from './objects'
+import * as serialize from './serialize'
 
 export {
   collections,
@@ -41,6 +42,7 @@ export {
   regex,
   retry,
   stack,
+  serialize,
   streams,
   strings,
   types,

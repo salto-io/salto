@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,12 +15,11 @@
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange, createRefToElmWithValue } from '@salto-io/adapter-api'
 import packageValidator, {
-  INSTALLED_PACKAGE_METADATA,
   PACKAGE_VERSION_FIELD_NAME,
 } from '../../src/change_validators/package'
 import {
   API_NAME,
-  CUSTOM_OBJECT,
+  CUSTOM_OBJECT, INSTALLED_PACKAGE_METADATA,
   INSTANCE_FULL_NAME_FIELD,
   METADATA_TYPE,
   OBJECTS_PATH,

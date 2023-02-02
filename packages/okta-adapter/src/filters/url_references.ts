@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,6 +19,7 @@ import Joi from 'joi'
 import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { APPLICATION_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
+import { extractIdFromUrl } from '../utils'
 
 type linkProperty = {
     href: string
@@ -32,11 +33,6 @@ const isLinkProperty = createSchemeGuard<linkProperty>(LINK_PROPERTY_SCHEME, 'Re
 
 const RELEVAT_FIELDS = ['profileEnrollment', 'accessPolicy']
 const INSTANCE_LINKS_PATH = ['_links', 'additionalProperties']
-
-const extractIdFromUrl = (url: string): string | undefined => {
-  const urlParts = url.split('/')
-  return urlParts.pop()
-}
 
 const extractIdsFromUrls = (instance: InstanceElement): void => {
   const linksObject = _.get(instance.value, INSTANCE_LINKS_PATH)

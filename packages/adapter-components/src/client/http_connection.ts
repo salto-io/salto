@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -112,6 +112,9 @@ const getRetryDelay = (retryOptions: Required<ClientRetryConfig>, error: AxiosEr
   return retryDelay
 }
 
+const shouldRetryStatusCode = (statusCode?: number, additionalStatusesToRetry: number[] = []): boolean =>
+  statusCode !== undefined && [429, ...additionalStatusesToRetry].includes(statusCode)
+
 export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
@@ -126,7 +129,7 @@ export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): R
     return retryDelay
   },
   retryCondition: err => axiosRetry.isNetworkOrIdempotentRequestError(err)
-    || err.response?.status === 429,
+    || shouldRetryStatusCode(err.response?.status, retryOptions.additionalStatusCodesToRetry),
 })
 
 type ConnectionParams<TCredentials> = {

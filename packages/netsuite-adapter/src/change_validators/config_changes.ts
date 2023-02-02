@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,9 +15,11 @@
 */
 import _ from 'lodash'
 import {
-  ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange,
+  ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange,
   ChangeError,
 } from '@salto-io/adapter-api'
+import { NetsuiteChangeValidator } from './types'
+
 
 const getDifferenceFieldsElemIDs = (
   instance: InstanceElement,
@@ -29,7 +31,7 @@ const getDifferenceFieldsElemIDs = (
     .map(fieldName => instance.elemID.createNestedID(fieldName))
 }
 
-const changeValidator: ChangeValidator = async changes => {
+const changeValidator: NetsuiteChangeValidator = async changes => {
   const [modificationChanges, invalidChanges] = _.partition(
     changes
       .filter(isInstanceChange)

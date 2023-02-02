@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -28,8 +28,8 @@ export const VERSION_CODE = 'commander.version'
 export const createProgramCommand = (): commander.Command => (
   new commander.Command('salto')
     .version(`${versionString}\n`)
-    .passCommandToAction(false)
     .exitOverride()
+    .showHelpAfterError('See \'salto --help\'.')
 )
 
 const wrapWithRequired = (innerStr: string): string =>
@@ -99,14 +99,18 @@ const registerCommand = <T>(
   cliArgs: CliArgs,
 ): void => {
   const {
-    properties: { name, description, keyedOptions = [], positionalOptions = [] },
+    properties: { name, description, summary, keyedOptions = [], positionalOptions = [] },
     action,
   } = commandDef
   const command = new commander.Command()
-    .passCommandToAction(false)
     .command(`${name} ${positionalOptionsStr(positionalOptions)}`)
     .exitOverride()
   command.description(description)
+  if (summary) {
+    command.summary(summary)
+  } else if (description.includes('\n')) {
+    command.summary(description.split('\n')[0])
+  }
   positionalOptions.forEach(positionalOption =>
     // Positional options are added as non-required Options because for positional options
     // requireness derives from <> or [] in the command and not option definition

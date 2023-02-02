@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -16,10 +16,11 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
-import JiraClient, { JSP_API_HEADERS } from '../../../src/client/client'
+import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import { deploySteps } from '../../../src/filters/workflow/steps_deployment'
+import { JSP_API_HEADERS } from '../../../src/client/headers'
 
 describe('steps_deployment', () => {
   let workflowType: ObjectType
@@ -106,6 +107,7 @@ describe('steps_deployment', () => {
       {
         headers: JSP_API_HEADERS,
       },
+
     )
 
     expect(mockConnection.post).toHaveBeenCalledTimes(2)

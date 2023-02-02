@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -110,7 +110,7 @@ const getAttachmentContent = async ({
   attachmentType: ObjectType
 }): Promise<void> => {
   if (article === undefined) {
-    log.error(`could not att attachment ${attachment.elemID.getFullName()}, as could not find article for article_id ${attachment.value.article_id}`)
+    log.error(`could not add attachment ${attachment.elemID.getFullName()}, as could not find article for article_id ${attachment.value.article_id}`)
     return
   }
   const client = brandIdToClient[attachment.value.brand]
@@ -139,7 +139,7 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
   apiDefinitions: ZendeskApiConfig
   attachments: Attachment[]
 }): Promise<void> => {
-  attachments.forEach(async attachment => {
+  await awu(attachments).forEach(async attachment => {
     const article = articleById[getParent(attachment).value.id]
     await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
   })

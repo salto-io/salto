@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -442,13 +442,13 @@ describe('ducktype_transformer', () => {
         .toEqual({
           id: 1,
           name: 'folder1',
-          subfolders: [new ReferenceExpression(subfolder1.elemID)],
+          subfolders: [new ReferenceExpression(subfolder1.elemID, subfolder1)],
         })
       expect(folder2.value)
         .toEqual({
           id: 2,
           name: 'folder2',
-          subfolders: [new ReferenceExpression(subfolder2.elemID)],
+          subfolders: [new ReferenceExpression(subfolder2.elemID, subfolder2)],
         })
       expect(subfolder1.value).toEqual({ id: 3, name: 'subfolder1' })
       expect(subfolder1.annotations).toEqual({ [CORE_ANNOTATIONS.PARENT]: [

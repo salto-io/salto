@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,10 +15,12 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
 import { getProductSettings } from '../product_settings'
+import { JSP_API_HEADERS, PRIVATE_API_HEADERS } from './headers'
 
 const log = logger(module)
 
@@ -35,17 +37,6 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
-
-
-export const PRIVATE_API_HEADERS = {
-  'X-Atlassian-Token': 'no-check',
-}
-
-export const JSP_API_HEADERS = {
-  ...PRIVATE_API_HEADERS,
-  'Content-Type': 'application/x-www-form-urlencoded',
-}
-
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
@@ -83,7 +74,7 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       // The http_client code catches the original error and transforms it such that it removes
       // the parsed information (like the status code), so we have to parse the string here in order
       // to realize what type of error was thrown
-      if (e.message.endsWith('Request failed with status code 404')) {
+      if (e instanceof clientUtils.HTTPError && e.response?.status === 404) {
         log.warn('Suppressing 404 error %o', e)
         return {
           data: [],
@@ -92,6 +83,14 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       }
       throw e
     }
+  }
+
+  @handleDeploymentErrors()
+  public async sendRequest<T extends keyof clientUtils.HttpMethodToClientParams>(
+    method: T,
+    params: clientUtils.HttpMethodToClientParams[T]
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return super.sendRequest(method, params)
   }
 
   protected async ensureLoggedIn(): Promise<void> {

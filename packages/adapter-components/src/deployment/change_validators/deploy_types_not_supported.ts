@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -23,6 +23,6 @@ export const deployTypesNotSupportedValidator: ChangeValidator = async changes =
       elemID: objectType.elemID,
       severity: 'Error',
       message: `Deployment of non-instance elements is not supported in adapter ${objectType.elemID.adapter}`,
-      detailedMessage: `Deployment of non-instance elements is not supported in adapter ${objectType.elemID.adapter}. Please see your business app FAQ at https://docs.salto.io/docs/supported-bizapps for a list of supported elements.`,
+      detailedMessage: `Deployment of non-instance elements is not supported in adapter ${objectType.elemID.adapter}. Please see your business app FAQ at https://help.salto.io/en/articles/6927118-supported-business-applications for a list of supported elements.`,
     }))
 )

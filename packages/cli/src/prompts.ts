@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -381,4 +381,11 @@ ${Prompts.LIST_IDS(ids)}
 
   public static readonly FETCH_PROGRESSING_MESSAGES =
     (adapterName: string, progressMessage: string): string => `- ${adapterName} adapter: ${progressMessage}`
+
+  public static readonly VALIDATION_PARAMETERS = 'Validation parameters: '
+
+  public static readonly QUICK_DEPLOY_PARAMETERS = (requestId: string, hash: string): string => `requestId = ${requestId}, hash = ${hash}\n`
+
+  public static readonly DEPLOYMENT_URLS = (checkOnly: boolean, deploymentUrls: string[]): string =>
+    `You can see your ${deployOrValidate({ checkOnly, capitalize: false, noun: true })} here:\n${deploymentUrls.join('\n')}`
 }

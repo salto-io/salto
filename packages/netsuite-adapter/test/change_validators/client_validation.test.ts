@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, ElemID, Field, getChangeData, InstanceElement, isObjectTypeChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { Filter } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import clientValidation from '../../src/change_validators/client_validation'
@@ -37,7 +37,9 @@ describe('client validation', () => {
     preDeploy: jest.fn(),
   } as unknown as Required<Filter>
 
-  const mockElementsSourceIndex = {} as unknown as LazyElementsSourceIndexes
+  const mockElementsSourceIndex = {
+    getIndexes: () => ({ mapKeyFieldsIndex: {} }),
+  } as unknown as LazyElementsSourceIndexes
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -46,7 +48,7 @@ describe('client validation', () => {
         after: new InstanceElement(
           'instanceName',
           workflowType().type,
-          { [SCRIPT_ID]: 'object_name' }
+          { [SCRIPT_ID]: 'object_name', manifestTest: '[scriptid=some_scriptid]' }
         ),
       }), toChange({
         after: new ObjectType({
@@ -126,9 +128,43 @@ File: ~/Objects/customrecord1.xml`
       severity: 'Error',
     })
   })
-  it('should have SDF Manifest Validation Error', async () => {
-    const detailedMessage = 'manifest error'
-    mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage)])
+  it('should have SDF Objects Validation Error for customRecordType field', async () => {
+    const detailedMessage = `An error occurred during custom object validation. (customrecord1)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
+File: ~/Objects/customrecord1.xml`
+    const fullErrorMessage = `Validation failed.\n\n${detailedMessage}`
+    mockValidate.mockReturnValue([
+      new ObjectsDeployError(fullErrorMessage, new Set(['customrecord1'])),
+    ])
+    const fieldChanges = changes.filter(isObjectTypeChange).map(getChangeData).map(type => toChange({
+      after: new Field(type, 'some_field', BuiltinTypes.STRING, { [SCRIPT_ID]: 'some_field' }),
+    }))
+    const changeErrors = await clientValidation(
+      fieldChanges,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage,
+      elemID: getChangeData(fieldChanges[0]).elemID,
+      message: 'SDF Objects Validation Error',
+      severity: 'Error',
+    })
+  })
+  it('should have SDF Manifest Validation Error and remove the element causing it', async () => {
+    const detailedMessage = `Validation of account settings failed.
+    
+    An error occurred during account settings validation.
+    Details: The manifest contains a dependency on some_scriptid object, but it is not in the account.`
+    mockValidate.mockReturnValue([new ManifestValidationError(detailedMessage, ['some_scriptid'])])
     const changeErrors = await clientValidation(
       changes,
       client,
@@ -136,11 +172,11 @@ File: ~/Objects/customrecord1.xml`
       mockFiltersRunner,
       mockElementsSourceIndex
     )
-    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: 'This element depends on the following missing elements: some_scriptid. Please make sure that all the bundles from the source account are installed and updated in the target account.',
       elemID: getChangeData(changes[0]).elemID,
-      message: 'SDF Manifest Validation Error',
+      message: 'This element depends on missing elements',
       severity: 'Error',
     })
   })

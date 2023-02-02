@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,7 +20,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
-import { WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { WORKFLOW_RULES_TYPE_NAME } from '../../constants'
 import { isWorkflowInstance, triggerSchema } from './types'
 import { triggerType } from './triggers_types'
 
@@ -59,7 +59,6 @@ const filter: FilterCreator = ({ client, config }) => ({
     const failedWorkflowsIds = new Set<string>()
     await Promise.all(elements
       .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .filter(isWorkflowInstance)
       .filter(workflow => workflow.value.name !== undefined)
       .map(async instance => {

@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -747,6 +747,25 @@ describe('securitySchemeFilter', () => {
       expect(errors[0].message).toEqual('Deployment of jira.SecurityScheme.instance.securityScheme failed: Error: Failed to post /rest/api/3/issuesecurityschemes with error: Error: Name already exists')
       expect(appliedChanges.length).toEqual(0)
       expect(leftoverChanges.length).toEqual(0)
+    })
+    it('Should not throw when delete request fail and the instance is already deleted', async () => {
+      connection.delete.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {},
+      }))
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy(
+        [toChange({ before: securityLevelInstance })]
+      )
+      expect(errors).toHaveLength(0)
+      expect(appliedChanges).toHaveLength(1)
+    })
+    it('Should throw when the request fail with 500', async () => {
+      connection.delete.mockRejectedValueOnce(new Error('Name already exists'))
+      const { deployResult: { errors, appliedChanges } } = await filter.deploy(
+        [toChange({ before: securityLevelInstance })]
+      )
+      expect(errors).toHaveLength(1)
+      expect(appliedChanges).toHaveLength(0)
     })
   })
 })

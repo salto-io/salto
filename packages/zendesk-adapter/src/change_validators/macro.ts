@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -15,7 +15,8 @@
 */
 import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
-import { MACRO_TYPE_NAME, ATTACHMENTS_FIELD_NAME } from '../filters/macro_attachments'
+import { MACRO_TYPE_NAME } from '../constants'
+import { ATTACHMENTS_FIELD_NAME } from '../filters/macro_attachments'
 
 const MAX_ATTACHMENTS_IN_MACRO = 5
 

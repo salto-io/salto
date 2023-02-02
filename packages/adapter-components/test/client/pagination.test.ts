@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -343,16 +343,18 @@ describe('client_pagination', () => {
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a1' }], pageSize: 1, responseData: { items: [{ a: 'a1' }] } })
     })
   })
-
   describe('getWithItemIndexPagination', () => {
     it('should query a single page if data has less items than page size', async () => {
-      const paginate = getWithItemIndexPagination({ firstIndex: 0, itemsPerPage: 10 })
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: 'maxResults' })
       const args = {
         getParams: {
           url: '/ep',
           paginationField: 'startAt',
+          queryParams: {
+            maxResults: '20',
+          },
         },
-        pageSize: 10,
+        pageSize: 30,
       }
       expect(paginate({
         ...args,
@@ -364,17 +366,138 @@ describe('client_pagination', () => {
       })).toEqual([])
       expect(paginate({
         ...args,
-        currentParams: { startAt: '10' },
+        currentParams: { startAt: '20' },
         responseData: {},
         page: [],
       })).toEqual([])
     })
-    it('should query multiple pages if response has more items than page size (or equal)', async () => {
-      const paginate = getWithItemIndexPagination({ firstIndex: 0, itemsPerPage: 2 })
+    it('should query a single page with default size if data has less items than page size and pageSizeArgName is not provided', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: undefined })
       const args = {
         getParams: {
           url: '/ep',
           paginationField: 'startAt',
+        },
+        pageSize: 30,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }],
+      })).toEqual([])
+    })
+    it('should query a single page with default size if data has less items than page size and maxResults is not a number', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: undefined })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+          queryParams: {
+            maxResults: 'not a number',
+          },
+        },
+        pageSize: 30,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }],
+      })).toEqual([])
+    })
+    it('should query multiple pages if response has more items than page size (or equal)', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: 'maxResults' })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+          queryParams: {
+            maxResults: '2',
+          },
+        },
+        pageSize: 30,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '2' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '2' },
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '4' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '4' },
+        responseData: {},
+        page: [{
+          a: 'a2',
+        }],
+      })).toEqual([])
+    })
+    it('should query multiple pages if response has more items than page size (or equal) with pageSizeArgName is not provided', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: undefined })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+        },
+        pageSize: 2,
+      }
+      expect(paginate({
+        ...args,
+        currentParams: {},
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '2' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '2' },
+        responseData: {},
+        page: [{
+          a: 'a1',
+        }, {
+          b: 'b2',
+        }],
+      })).toEqual([{ startAt: '4' }])
+      expect(paginate({
+        ...args,
+        currentParams: { startAt: '4' },
+        responseData: {},
+        page: [{
+          a: 'a2',
+        }],
+      })).toEqual([])
+    })
+    it('should query multiple pages if response has more items than page size (or equal) and maxResults is not a number', async () => {
+      const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: 'maxResults' })
+      const args = {
+        getParams: {
+          url: '/ep',
+          paginationField: 'startAt',
+          queryParams: {
+            maxResults: 'not a number',
+          },
         },
         pageSize: 2,
       }

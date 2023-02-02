@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -23,7 +23,7 @@ describe('client', () => {
     let client: WorkatoClient
     beforeEach(() => {
       mockAxios = new MockAdapter(axios)
-      client = new WorkatoClient({ credentials: { username: 'dummy_user', token: 'dummy_token' } })
+      client = new WorkatoClient({ credentials: { token: 'dummy_token' } })
     })
 
     afterEach(() => {

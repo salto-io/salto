@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -34,7 +34,7 @@ const log = logger(module)
 const UNDERSCORE = '_'
 export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
 export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
-export const QUERY_DATE_FORMAT = 'YYYY-MM-DD'
+export const QUERY_DATE_FORMAT = 'YYYY-MM-DD HH:MI:SS'
 const FILE_TYPE = 'FILE_TYPE'
 const FOLDER_TYPE = 'FOLDER_TYPE'
 
@@ -286,11 +286,14 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       }
     }
 
-    const { timeZone, timeFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
+    const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
 
     const setChangedAt = async (element: Element, lastModifiedDate: string): Promise<void> => {
       if (isDefined(lastModifiedDate)) {
-        const formatedDate = changeDateFormat(lastModifiedDate, { dateFormat: QUERY_DATE_FORMAT, timeZone, timeFormat })
+        const [systemNotesDateFormat, systemNotesTimeFormat] = QUERY_DATE_FORMAT.split(' ')
+        const formatedDate = changeDateFormat(
+          lastModifiedDate, { dateFormat: systemNotesDateFormat, timeZone, timeFormat: systemNotesTimeFormat }
+        )
         element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate })
       } else {
         const changedAt = elemIdToChangeAtIndex[element.elemID.getFullName()]

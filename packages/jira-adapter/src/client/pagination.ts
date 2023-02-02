@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -21,6 +21,7 @@ const { makeArray } = collections.array
 
 const ITEM_INDEX_PAGINATION_URLS = [
   '/rest/api/3/users/search',
+  '/rest/api/2/user/search',
   '/rest/api/2/priorityschemes',
 ]
 
@@ -51,7 +52,12 @@ export const paginate: clientUtils.PaginationFuncCreator = args => {
   if (ITEM_INDEX_PAGINATION_URLS.includes(args.getParams?.url)) {
     // special handling for endpoints that use pagination without meta-data
     // if more cases encountered should be moved to an object with url and items per page
-    return clientUtils.getWithItemIndexPagination({ firstIndex: 0, itemsPerPage: 50 })
+    return clientUtils.getWithItemIndexPagination(
+      {
+        firstIndex: 0,
+        pageSizeArgName: args.getParams.pageSizeArgName,
+      }
+    )
   }
   return clientUtils.getWithOffsetAndLimit()
 }

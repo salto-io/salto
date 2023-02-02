@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -24,7 +24,9 @@ export const createAutomationValues = (name: string): Values => ({
   authorAccountId: {
     id: 'salto',
   },
-  actorAccountId: 'JIRAUSER10000',
+  actorAccountId: {
+    id: 'salto',
+  },
   trigger: {
     component: 'TRIGGER',
     schemaVersion: 1,

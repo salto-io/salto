@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID } from '@salto-io/adapter-api'
+
 export const JIRA = 'jira'
 export const ISSUE_TYPE_SCHEMA_NAME = 'IssueTypeScheme'
 export const ISSUE_TYPE_NAME = 'IssueType'
@@ -32,9 +34,12 @@ export const LEVEL_MEMBER_TYPE_NAME = 'IssueSecurityLevelMember'
 export const DASHBOARD_TYPE = 'Dashboard'
 export const DASHBOARD_GADGET_TYPE = 'DashboardGadget'
 export const DASHBOARD_GADGET_POSITION_TYPE = 'DashboardGadgetPosition'
+export const DASHBOARD_GADGET_PROPERTIES_TYPE = 'GadgetProperties'
+export const DASHBOARD_GADGET_PROPERTIES_CONFIG_TYPE = 'GadgetConfig'
 export const NOTIFICATION_SCHEME_TYPE_NAME = 'NotificationScheme'
 export const NOTIFICATION_EVENT_TYPE_NAME = 'NotificationSchemeEvent'
 export const PROJECT_TYPE = 'Project'
+export const PROJECT_COMPONENT_TYPE = 'ProjectComponent'
 export const PROJECT_ROLE_TYPE = 'ProjectRole'
 export const AUTOMATION_TYPE = 'Automation'
 export const BOARD_TYPE_NAME = 'Board'
@@ -63,8 +68,13 @@ export const PERMISSIONS = 'Permissions_permissions'
 export const PERMISSION_SCHEME_TYPE_NAME = 'PermissionScheme'
 export const ACCOUNT_ID_INFO_TYPE = 'AccountIdInfo'
 export const ACCOUNT_ID_STRING = 'ACCOUNT_ID'
-export const ACCOUNT_IDS_FIELDS_NAMES = ['leadAccountId', 'authorAccountId', 'accountId']
+export const ACCOUNT_IDS_FIELDS_NAMES = ['leadAccountId', 'authorAccountId', 'accountId', 'actorAccountId', 'user']
 export const JIRA_USERS_PAGE = 'jira/people/search'
 export const ISSUE_EVENT_TYPE_NAME = 'IssueEvent'
 export const PRIORITY_SCHEME_TYPE_NAME = 'PriorityScheme'
 export const SCREEN_SCHEME_TYPE = 'ScreenScheme'
+export const ACCOUNT_INFO_TYPE = 'AccountInfo'
+export const LICENSE_TYPE = 'License'
+export const LICENSED_APPLICATION_TYPE = 'LicensedApplication'
+export const ACCOUNT_INFO_ELEM_ID = new ElemID(JIRA, ACCOUNT_INFO_TYPE, 'instance', ElemID.CONFIG_NAME)
+export const JIRA_FREE_PLAN = 'FREE'

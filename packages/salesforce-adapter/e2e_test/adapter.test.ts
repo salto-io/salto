@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -2452,7 +2452,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(modificationResult.appliedChanges[0]).toMatchObject(changes[0])
 
       // Verify the lookup filter was created
-      const customObject = await client.describeSObjects([customObjectName])
+      const { result: customObject } = await client.describeSObjects([customObjectName])
       expect(customObject[0]).toBeDefined()
       const lookupField = customObject[0].fields
         .filter(field => field.name === lookupFieldApiName)[0]

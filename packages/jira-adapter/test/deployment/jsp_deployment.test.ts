@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,7 +19,8 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import _ from 'lodash'
 import { mockClient } from '../utils'
 import { deployWithJspEndpoints } from '../../src/deployment/jsp_deployment'
-import JiraClient, { JSP_API_HEADERS, PRIVATE_API_HEADERS } from '../../src/client/client'
+import { PRIVATE_API_HEADERS, JSP_API_HEADERS } from '../../src/client/headers'
+import JiraClient from '../../src/client/client'
 import { JIRA } from '../../src/constants'
 import { JspUrls } from '../../src/config/config'
 
@@ -419,7 +420,10 @@ describe('jsp_deployment', () => {
     })
 
     it('Should not throw when the request fail and the instance is already deleted', async () => {
-      mockConnection.post.mockRejectedValue(new Error('some error'))
+      mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
+        status: 404,
+        data: {},
+      }))
       mockConnection.get.mockResolvedValueOnce({
         status: 200,
         data: [],
@@ -431,6 +435,23 @@ describe('jsp_deployment', () => {
       })
       expect(results.errors).toHaveLength(0)
       expect(results.appliedChanges).toHaveLength(1)
+    })
+    it('Should throw when the request fail with 500', async () => {
+      mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
+        status: 500,
+        data: {},
+      }))
+      mockConnection.get.mockResolvedValueOnce({
+        status: 200,
+        data: [],
+      })
+      const results = await deployWithJspEndpoints({
+        changes: [toChange({ before: instance })],
+        client,
+        urls,
+      })
+      expect(results.errors).toHaveLength(1)
+      expect(results.appliedChanges).toHaveLength(0)
     })
   })
 })

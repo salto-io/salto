@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -20,6 +20,6 @@ export const deployNotSupportedValidator: ChangeValidator = async changes => (
     elemID: getChangeData(change).elemID,
     severity: 'Error',
     message: `Salto does not support ${getChangeData(change).elemID.adapter} deployments.`,
-    detailedMessage: `Salto does not support ${getChangeData(change).elemID.adapter} deployments. Please see https://docs.salto.io/docs/supported-bizapps for more details.`,
+    detailedMessage: `Salto does not support ${getChangeData(change).elemID.adapter} deployments. Please see https://help.salto.io/en/articles/6927118-supported-business-applications for more details.`,
   }))
 )

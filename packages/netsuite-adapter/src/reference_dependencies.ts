@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -74,7 +74,7 @@ export const findDependingElementsFromRefs = async (
 /*
  * Due to SDF bugs, sometimes referenced objects are required to be as part of the project as part
  * of deploy and writing them in the manifest.xml doesn't suffice.
- * Here we add automatically all of the referenced elements.
+ * Here we add automatically all of the referenced elements (recursively) including the source elements.
  */
 const getAllReferencedElements = async (
   sourceElements: ReadonlyArray<ChangeDataType>
@@ -103,9 +103,9 @@ const getAllReferencedElements = async (
 /*
  * Due to SDF bugs, sometimes referenced objects are required to be as part of the project as part
  * of deploy and writing them in the manifest.xml doesn't suffice.
- * Here we add manually all of the quirks we identified.
+ * Here we add manually all of the quirks we identified including the source elements.
  */
-const getRequiredReferencedElements = async (
+export const getRequiredReferencedElements = async (
   sourceElements: ReadonlyArray<ChangeDataType>
 ): Promise<ReadonlyArray<ChangeDataType>> => {
   const getReferencedElement = (

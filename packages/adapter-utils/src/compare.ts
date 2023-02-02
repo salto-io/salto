@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -19,10 +19,11 @@ import {
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
   isElement,
   CompareOptions,
-  isIndexPathPart,
+  isIndexPathPart, Change, getChangeData,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { resolvePath, setPath } from './utils'
+import { hash as hashUtils } from '@salto-io/lowerdash'
+import { resolvePath, safeJsonStringify, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
 
 const log = logger(module)
@@ -369,3 +370,8 @@ export const applyDetailedChanges = (
     applyListChanges(element, changes)
   })
 }
+const sortChanges = (a: Change, b: Change): number =>
+  getChangeData(a).elemID.getFullName().localeCompare(getChangeData(b).elemID.getFullName())
+
+export const calculateChangesHash = (changes: ReadonlyArray<Change>): string =>
+  hashUtils.toMD5(safeJsonStringify(Array.from(changes).sort(sortChanges)))

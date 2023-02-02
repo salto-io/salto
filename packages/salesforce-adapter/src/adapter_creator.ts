@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -86,6 +86,12 @@ SalesforceConfig => {
         }
       }
     }
+    if (clientConfig?.deploy?.quickDeployParams !== undefined) {
+      if (clientConfig.deploy.quickDeployParams.requestId === undefined
+          || clientConfig.deploy.quickDeployParams.hash === undefined) {
+        throw new ConfigValidationError([CLIENT_CONFIG, 'deploy', 'quickDeployParams'], 'quickDeployParams must include requestId and hash')
+      }
+    }
   }
 
   const validateValidatorsConfig = (validators: ChangeValidatorConfig | undefined): void => {
@@ -167,8 +173,9 @@ export const adapter: Adapter = {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
     const config = adapterConfigFromConfig(updatedConfig?.config ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
+    const client = new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] })
     const salesforceAdapter = new SalesforceAdapter({
-      client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
+      client,
       config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
@@ -191,13 +198,13 @@ export const adapter: Adapter = {
       validate: salesforceAdapter.validate.bind(salesforceAdapter),
       deployModifiers: {
         changeValidator: createChangeValidator(
-          { config, isSandbox: credentials.isSandbox, checkOnly: false }
+          { config, isSandbox: credentials.isSandbox, checkOnly: false, client }
         ),
         getChangeGroupIds,
       },
       validationModifiers: {
         changeValidator: createChangeValidator(
-          { config, isSandbox: credentials.isSandbox, checkOnly: true }
+          { config, isSandbox: credentials.isSandbox, checkOnly: true, client }
         ),
       },
     }

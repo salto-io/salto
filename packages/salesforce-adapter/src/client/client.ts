@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -61,6 +61,8 @@ import {
   UsernamePasswordCredentials,
 } from '../types'
 import Connection from './jsforce'
+import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
+import { HANDLED_ERROR_PREDICATES } from '../config_change'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
@@ -125,6 +127,7 @@ const errorMessagesToRetry = [
   'An internal server error has occurred',
   'An unexpected connection error occurred',
   'ECONNREFUSED',
+  'Internal_Error',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -136,16 +139,8 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 
 export type ErrorFilter = (error: Error) => boolean
 
-const NON_TRANSIENT_ERROR_TYPES = [
-  'sf:DUPLICATE_VALUE',
-  'sf:INVALID_CROSS_REFERENCE_KEY',
-  'sf:INVALID_ID_FIELD',
-  'sf:INVALID_FIELD',
-  'sf:INVALID_TYPE',
-  'sf:UNKNOWN_EXCEPTION',
-]
 const isSFDCUnhandledException = (error: Error): boolean => (
-  !NON_TRANSIENT_ERROR_TYPES.includes(error.name)
+  !HANDLED_ERROR_PREDICATES.some(predicate => predicate(error))
 )
 
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
@@ -270,9 +265,15 @@ type SendChunkedArgs<TIn, TOut> = {
   isSuppressedError?: ErrorFilter
   isUnhandledError?: ErrorFilter
 }
+
+type SendChunkedError<TIn> = {
+  input: TIn
+  error: Error
+}
+
 export type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
-  errors: TIn[]
+  errors: SendChunkedError<TIn>[]
 }
 const sendChunked = async <TIn, TOut>({
   input,
@@ -314,7 +315,7 @@ const sendChunked = async <TIn, TOut>({
       }
       log.warn('chunked %s unknown error on %o: %o',
         operationInfo, chunkInput[0], error)
-      return { result: [], errors: chunkInput }
+      return { result: [], errors: chunkInput.map(i => ({ input: i, error })) }
     }
   }
   const result = await Promise.all(_.chunk(makeArray(input), chunkSize)
@@ -525,6 +526,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async countInstances(typeName: string) : Promise<number> {
     const countResult = await this.conn.query(`SELECT COUNT() FROM ${typeName}`)
     return countResult.totalSize
@@ -536,6 +538,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
     return flatValues((describeResult).metadataObjects)
@@ -548,6 +551,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = await this.retryOnBadResponse(
@@ -559,6 +563,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'list', keys: ['type', '0.type'] })
   @logDecorator(['type', '0.type'])
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
@@ -573,6 +578,7 @@ export default class SalesforceClient {
   }
 
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async getUrl(): Promise<URL | undefined> {
     try {
       return new URL(this.conn.instanceUrl)
@@ -594,6 +600,7 @@ export default class SalesforceClient {
     },
   )
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async readMetadata(
     type: string,
     name: string | string[],
@@ -623,6 +630,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return flatValues((await this.retryOnBadResponse(() => this.conn.describeGlobal())).sobjects)
   }
@@ -630,14 +638,15 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async describeSObjects(objectNames: string[]):
-  Promise<DescribeSObjectResult[]> {
-    return (await sendChunked({
+  Promise<SendChunkedResult<string, DescribeSObjectResult>> {
+    return sendChunked({
       operationInfo: 'describeSObjects',
       input: objectNames,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.soap.describeSObjects(chunk)),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
-    })).result
+    })
   }
 
   /**
@@ -649,6 +658,7 @@ export default class SalesforceClient {
   @logDecorator(['fullName'])
   @validateSaveResult
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<UpsertResult[]> {
     const result = await sendChunked({
@@ -670,6 +680,7 @@ export default class SalesforceClient {
   @logDecorator()
   @validateDeleteResult
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     const result = await sendChunked({
       operationInfo: `delete (${type})`,
@@ -683,6 +694,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
     return flatValues(
       await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
@@ -698,6 +710,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async deploy(zip: Buffer, deployOptions?: DeployOptions): Promise<DeployResult> {
     this.setDeployPollingTimeout()
     const defaultDeployOptions = { rollbackOnError: true, ignoreWarnings: true }
@@ -717,9 +730,27 @@ export default class SalesforceClient {
     return deployResult
   }
 
+  /**
+   * preform quick deploy to salesforce metadata
+   * @param validationId The package zip
+   * @returns The save result of the requested update
+   */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
+  @logDecorator()
+  @requiresLogin()
+  public async quickDeploy(validationId: string): Promise<DeployResult> {
+    this.setDeployPollingTimeout()
+    const deployResult = flatValues(await this.conn.metadata.deployRecentValidation(
+      validationId
+    ).complete(true))
+    this.setFetchPollingTimeout()
+    return deployResult
+  }
+
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.query(queryString))
@@ -728,6 +759,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
     return this.retryOnBadResponse(() => conn.queryMore(queryString))
@@ -773,6 +805,7 @@ export default class SalesforceClient {
    * @param queryString the string to query with for records
    */
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async queryAll(
     queryString: string,
     useToolingApi = false,
@@ -783,6 +816,7 @@ export default class SalesforceClient {
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
+  @mapToUserFriendlyErrorMessages
   public async bulkLoadOperation(
     type: string,
     operation: BulkLoadOperation,

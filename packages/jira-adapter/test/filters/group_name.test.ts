@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ElemIdGetter, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, ElemIdGetter, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
 import { GROUP_TYPE_NAME, JIRA } from '../../src/constants'
@@ -33,30 +33,35 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('group name filter', () => {
-  let filter: filterUtils.FilterWith<'onFetch'>
+  let filter: filterUtils.FilterWith<'onFetch' | 'onDeploy'>
+  let withUUIDInstance: InstanceElement
+  let withoutUUIDInstance: InstanceElement
+
   const type = new ObjectType({
     elemID: new ElemID(JIRA, GROUP_TYPE_NAME),
   })
-  const withUUIDInstance = new InstanceElement(
-    'trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b',
-    type,
-    {
-      name: 'trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b',
-    }
-  )
-  const withoutUUIDInstance = new InstanceElement(
-    'normal',
-    type,
-    {
-      name: 'normal',
-    }
-  )
-  withUUIDInstance.path = ['trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b']
+
   beforeEach(async () => {
     mockGetConfigWithDefault.mockReturnValue({ serviceIdField: 'groupId' })
     const elemIdGetter = mockFunction<ElemIdGetter>()
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
     filter = groupNameFilter({ ...getFilterParams(), getElemIdFunc: elemIdGetter }) as typeof filter
+
+    withUUIDInstance = new InstanceElement(
+      'trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b',
+      type,
+      {
+        name: 'trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b',
+      }
+    )
+    withoutUUIDInstance = new InstanceElement(
+      'normal',
+      type,
+      {
+        name: 'normal',
+      }
+    )
+    withUUIDInstance.path = ['trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b']
   })
   it('should remove uuid suffix from element name, file name and field into a new field', async () => {
     const elements = [withUUIDInstance]
@@ -87,5 +92,28 @@ describe('group name filter', () => {
     const elements = [withUUIDInstance]
     await filter.onFetch(elements)
     expect(elements[0].path).toEqual(['trusted_users'])
+  })
+
+  it('onDeploy should add originalName when addition', async () => {
+    await filter.onDeploy([toChange({ after: withUUIDInstance })])
+    expect(withUUIDInstance.value.name).toEqual('trusted-users')
+    expect(withUUIDInstance.value.originalName).toEqual('trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b')
+  })
+
+  it('onDeploy should not add originalName when not addition', async () => {
+    await filter.onDeploy([toChange({ before: withUUIDInstance })])
+    expect(withUUIDInstance.value.originalName).toBeUndefined()
+  })
+
+  it('onDeploy should not add originalName when not group type', async () => {
+    withUUIDInstance = new InstanceElement(
+      'trusted_users_128baddc_c238_4857_b249_cfc84bd10c4b@b',
+      new ObjectType({ elemID: new ElemID(JIRA, 'not_group_type') }),
+      {
+        name: 'trusted-users-128baddc-c238-4857-b249-cfc84bd10c4b',
+      }
+    )
+    await filter.onDeploy([toChange({ after: withUUIDInstance })])
+    expect(withUUIDInstance.value.originalName).toBeUndefined()
   })
 })

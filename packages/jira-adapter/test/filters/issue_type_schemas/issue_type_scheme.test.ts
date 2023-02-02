@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -127,7 +127,7 @@ describe('issueTypeScheme', () => {
       it('should call the endpoint to remove the removed issue types ids', () => {
         expect(mockConnection.delete).toHaveBeenCalledWith(
           '/rest/api/3/issuetypescheme/1/issuetype/2',
-          undefined
+          undefined,
         )
       })
 

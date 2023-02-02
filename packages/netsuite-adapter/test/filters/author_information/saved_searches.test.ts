@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -58,15 +58,9 @@ describe('netsuite saved searches author information tests', () => {
     missingSavedSearch.value.scriptid = '2'
     userPreferenceInstance.value.configRecord = { data: {
       fields: {
-        DATEFORMAT: {
-          text: 'MM/DD/YYYY',
-        },
-        TIMEZONE: {
-          value: 'America/Toronto',
-        },
-        TIMEFORMAT: {
-          value: 'H:mm',
-        },
+        DATEFORMAT: 'MM/DD/YYYY',
+        TIMEZONE: 'America/Toronto',
+        TIMEFORMAT: 'H:mm',
       },
     } }
     elements = [savedSearch, missingSavedSearch, userPreferenceInstance]
@@ -107,7 +101,7 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should add last modified date for different formats', async () => {
-    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT.text = 'D/M/YYYY'
+    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT = 'D/M/YYYY'
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28/1/1995 6:17 am' },
     ])
@@ -116,8 +110,8 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should add last modified date for different format', async () => {
-    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT.text = 'D Month, YYYY'
-    userPreferenceInstance.value.configRecord.data.fields.TIMEZONE.value = 'Asia/Jerusalem'
+    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT = 'D Month, YYYY'
+    userPreferenceInstance.value.configRecord.data.fields.TIMEZONE = 'Asia/Jerusalem'
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 1995 6:17 am' },
     ])

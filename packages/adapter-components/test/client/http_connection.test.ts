@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -75,7 +75,7 @@ describe('client_http_connection', () => {
     let retryOptions: RetryOptions
 
     beforeEach(() => {
-      retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100 })
+      retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100, additionalStatusCodesToRetry: [] })
     })
     it('should retry error code 429', () => {
       expect(retryOptions.retryCondition?.({

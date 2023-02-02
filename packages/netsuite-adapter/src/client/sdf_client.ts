@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -111,7 +111,7 @@ const settingsValidationErrorRegex = RegExp('^Validation of account settings fai
 export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
-const manifestErrorRegex = RegExp('^Details: The manifest', 'm')
+const manifestErrorDetailsRegex = RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -191,6 +191,7 @@ export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string):
     .map(r => r.groups)
     .filter(isDefined)
     .map(groups => groups[item])
+
 
 type Project = {
   projectName: string
@@ -912,8 +913,9 @@ export default class SdfClient {
   private static customizeDeployError(error: Error): Error {
     const errorMessage = error.message
     if (settingsValidationErrorRegex.test(errorMessage)) {
-      if (manifestErrorRegex.test(errorMessage)) {
-        return new ManifestValidationError(errorMessage)
+      const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
+      if (manifestErrorScriptids.length > 0) {
+        return new ManifestValidationError(errorMessage, manifestErrorScriptids)
       }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }

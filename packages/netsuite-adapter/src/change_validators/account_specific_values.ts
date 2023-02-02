@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,15 +14,17 @@
 * limitations under the License.
 */
 import { values, collections } from '@salto-io/lowerdash'
-import { ChangeError, ChangeValidator, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { ChangeError, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { isStandardInstanceOrCustomRecordType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
 import { isElementContainsStringValue } from './utils'
+import { NetsuiteChangeValidator } from './types'
+
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
-const changeValidator: ChangeValidator = async changes => (
+const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(async change => {

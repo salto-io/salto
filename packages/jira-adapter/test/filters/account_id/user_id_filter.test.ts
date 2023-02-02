@@ -201,7 +201,11 @@ describe('add_display_name_filter', () => {
     expect(mockConnection.get).toHaveBeenCalledOnce()
     expect(mockConnection.get).toHaveBeenCalledWith(
       '/rest/api/3/users/search',
-      undefined
+      {
+        params: {
+          maxResults: '1000',
+        },
+      }
     )
     common.checkDisplayNames(instances[2], '2')
   })

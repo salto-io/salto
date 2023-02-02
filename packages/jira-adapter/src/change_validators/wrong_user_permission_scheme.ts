@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { wrongUserPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_user_permission_scheme_filter'
-import { GetUserMapFunc } from '../users'
+import { GetUserMapFunc, getUsersMapByVisibleId } from '../users'
 
 
 const createChangeError = (
@@ -51,13 +50,8 @@ export const wrongUserPermissionSchemeValidator: (
     if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
-    const { baseUrl, isDataCenter } = client
-    const userMap = isDataCenter
-      ? _.keyBy(
-        Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
-        userInfo => userInfo.username as string
-      )
-      : await getUserMapFunc()
+    const { baseUrl } = client
+    const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
 
     const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(userMap)
     return changes

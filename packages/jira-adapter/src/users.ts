@@ -18,6 +18,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
+import _ from 'lodash'
 import JiraClient from './client/client'
 
 const { makeArray } = collections.array
@@ -36,7 +37,7 @@ export type GetUserMapFunc = () => Promise<UserMap>
 
 const paginateUsers = async (paginator: clientUtils.Paginator, isDataCenter: boolean)
   : Promise<clientUtils.ResponseValue[][]> => {
-  const paginationArgs = isDataCenter
+  const paginationArgs: clientUtils.ClientGetWithPaginationParams = isDataCenter
     ? {
       url: '/rest/api/2/user/search',
       paginationField: 'startAt',
@@ -49,7 +50,12 @@ const paginateUsers = async (paginator: clientUtils.Paginator, isDataCenter: boo
     : {
       url: '/rest/api/3/users/search',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: '1000',
+      },
+      pageSizeArgName: 'maxResults',
     }
+
   const usersCallPromise = toArrayAsync(paginator(
     paginationArgs,
     page => makeArray(page) as clientUtils.ResponseValue[]
@@ -136,3 +142,12 @@ export const getCurrentUserInfo = async (client: JiraClient): Promise<UserInfo |
 
 export const getUserIdFromEmail = (email: string, userMap: UserMap): string | undefined =>
   Object.values(userMap).find(userInfo => userInfo.email === email)?.userId
+
+export const getUsersMapByVisibleId = (userMap: UserMap, isDataCenter: boolean): UserMap => (
+  isDataCenter
+    ? _.keyBy(
+      Object.values(userMap).filter(userInfo => _.isString(userInfo.username)),
+      userInfo => userInfo.username as string
+    )
+    : userMap
+)

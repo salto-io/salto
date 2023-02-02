@@ -61,10 +61,10 @@ describe('user_fallback_filter', () => {
           return {
             status: 200,
             data: {
-              accountId: '2',
-              displayName: 'disp2',
+              accountId: '3',
+              displayName: 'disp3',
               locale: 'en_US',
-              emailAddress: 'email2',
+              emailAddress: 'email3',
             },
           }
         }
@@ -83,6 +83,12 @@ describe('user_fallback_filter', () => {
               displayName: 'disp2',
               locale: 'en_US',
               emailAddress: 'email2',
+            },
+            {
+              accountId: '3',
+              displayName: 'disp3',
+              locale: 'en_US',
+              emailAddress: 'email3',
             },
           ],
         }
@@ -112,13 +118,13 @@ describe('user_fallback_filter', () => {
       config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
-      expect(instance.value.leadAccountId.id).toEqual('2')
+      expect(instance.value.leadAccountId.id).toEqual('3')
       await filter.onDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('notExist')
     })
 
     it('should not replace the account id with the default if the default not exist', async () => {
-      config.deploy.defaultMissingUserFallback = 'email3'
+      config.deploy.defaultMissingUserFallback = 'email4'
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('notExist')
@@ -153,11 +159,11 @@ describe('user_fallback_filter', () => {
           return {
             status: 200,
             data: {
-              key: '2',
-              name: 'name2',
-              displayName: 'disp2',
+              key: '3',
+              name: 'name3',
+              displayName: 'disp3',
               locale: 'en_US',
-              emailAddress: 'email2',
+              emailAddress: 'email3',
             },
           }
         }
@@ -178,6 +184,13 @@ describe('user_fallback_filter', () => {
               displayName: 'disp2',
               locale: 'en_US',
               emailAddress: 'email2',
+            },
+            {
+              key: '3',
+              name: 'name3',
+              displayName: 'disp3',
+              locale: 'en_US',
+              emailAddress: 'email3',
             },
           ],
         }
@@ -207,13 +220,13 @@ describe('user_fallback_filter', () => {
       config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
-      expect(instance.value.leadAccountId.id).toEqual('name2')
+      expect(instance.value.leadAccountId.id).toEqual('name3')
       await filter.onDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('notExist')
-    }, 1000000)
+    })
 
     it('should not replace the account id with the default if the default not exist', async () => {
-      config.deploy.defaultMissingUserFallback = 'name3'
+      config.deploy.defaultMissingUserFallback = 'name4'
       const change = toChange({ after: instance })
       await filter.preDeploy([change])
       expect(instance.value.leadAccountId.id).toEqual('notExist')

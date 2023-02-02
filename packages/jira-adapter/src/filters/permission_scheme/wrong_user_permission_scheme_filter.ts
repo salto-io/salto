@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import { Change, ChangeDataType } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { UserMap } from '../../users'
+import { getUsersMapByVisibleId, UserMap } from '../../users'
 import { FilterCreator } from '../../filter'
 import { omitChanges, OmitChangesPredicate, addBackPermissions, PermissionHolder } from './omit_permissions_common'
 
@@ -42,12 +41,7 @@ const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
       if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
-      const userMap = client.isDataCenter
-        ? _.keyBy(
-          Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
-          userInfo => userInfo.username as string
-        )
-        : await getUserMapFunc()
+      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
 
       erroneousPermissionSchemes = omitChanges(
         changes,

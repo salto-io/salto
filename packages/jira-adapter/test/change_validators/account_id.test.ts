@@ -186,8 +186,7 @@ Go to ${url} to see valid users and account IDs.`,
   })
 
   it('should return an error when the account id is wrong', async () => {
-    const field = 'leadAccountId'
-    instances[0].value[field].id = '403'
+    instances[0].value.leadAccountId.id = '403'
     expect(await validator([
       toChange({
         after: instances[0],
@@ -201,9 +200,8 @@ Go to ${url} to see valid users and account IDs.`,
   })
 
   it('should return a warning when the account id is wrong but there is a valid default user', async () => {
-    const field = 'leadAccountId'
     config.deploy.defaultMissingUserFallback = 'email1list2'
-    instances[0].value[field].id = '403'
+    instances[0].value.leadAccountId.id = '403'
     expect(await validator([
       toChange({
         after: instances[0],
@@ -217,9 +215,8 @@ Go to ${url} to see valid users and account IDs.`,
   })
 
   it('should return a warning when the account id is wrong but the default user is the current deployer', async () => {
-    const field = 'leadAccountId'
     config.deploy.defaultMissingUserFallback = configUtils.DEPLOYER_FALLBACK_VALUE
-    instances[0].value[field].id = '403'
+    instances[0].value.leadAccountId.id = '403'
     expect(await validator([
       toChange({
         after: instances[0],
@@ -233,9 +230,8 @@ Go to ${url} to see valid users and account IDs.`,
   })
 
   it('should return an error when the account id is wrong and the default user is wrong', async () => {
-    const field = 'leadAccountId'
     config.deploy.defaultMissingUserFallback = '404'
-    instances[0].value[field].id = '403'
+    instances[0].value.leadAccountId.id = '403'
     expect(await validator([
       toChange({
         after: instances[0],
@@ -371,7 +367,7 @@ Go to ${url} to see valid users and account IDs.`,
       data: [{
         key: 'JIRAUSER10000',
         name: 'firstAccount',
-        displayName: 'firstAccount',
+        displayName: 'firstAccountDisplayName',
       }],
     })
 
@@ -423,7 +419,7 @@ Go to ${url} to see valid users and account IDs.`,
       ])
       expect(changeErrors).toEqual([])
     })
-    it('should raise an error when accountId does not in the target environment', async () => {
+    it('should raise an error when accountId does not exist in the target environment', async () => {
       const changeErrors = await validatorDC([
         toChange({
           after: invalidUserInstance,

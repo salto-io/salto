@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
-import { getUserIdFromEmail, GetUserMapFunc, UserMap } from '../users'
+import { getUserIdFromEmail, GetUserMapFunc, getUsersMapByVisibleId, UserMap } from '../users'
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
@@ -250,12 +250,7 @@ export const accountIdValidator: (
         return []
       }
       const { baseUrl, isDataCenter } = client
-      const userMap = isDataCenter
-        ? _.keyBy(
-          Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
-          userInfo => userInfo.username as string
-        )
-        : await getUserMapFunc()
+      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
 
       const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
       return changes

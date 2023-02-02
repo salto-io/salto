@@ -14,14 +14,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import { walkOnElement } from '@salto-io/adapter-utils'
+import { ElemID, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { setPath, walkOnElement } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers } from './account_id_filter'
-import { getCurrentUserInfo, getUserIdFromEmail, UserMap } from '../../users'
+import { getCurrentUserInfo, getUserIdFromEmail, getUsersMapByVisibleId, UserMap } from '../../users'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
@@ -58,38 +58,13 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
         return
       }
 
-      const userMap = client.isDataCenter
-        ? _.keyBy(
-          Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
-          userInfo => userInfo.username as string
-        )
-        : await getUserMapFunc()
+      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
 
       const fallbackUser = await getFallbackUser(client, config.deploy.defaultMissingUserFallback, userMap)
       if (fallbackUser === undefined) {
         return
       }
 
-      const relevantInstances = changes
-        .filter(isInstanceChange)
-        .filter(isAdditionOrModificationChange)
-        .map(getChangeData)
-
-      relevantInstances.forEach(element =>
-        walkOnElement({
-          element,
-          func: walkOnUsers(({ value, fieldName, path }) => {
-            if (!Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
-              fallbackPathToUser[path.createNestedID(fieldName).getFullName()] = value[fieldName].id
-              value[fieldName].id = fallbackUser
-            }
-          }),
-        }))
-    },
-    onDeploy: async changes => log.time(async () => {
-      if (_.isEmpty(fallbackPathToUser)) {
-        return
-      }
       changes
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
@@ -98,12 +73,35 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
           walkOnElement({
             element,
             func: walkOnUsers(({ value, fieldName, path }) => {
-              const fullPath = path.createNestedID(fieldName).getFullName()
-              if (Object.prototype.hasOwnProperty.call(fallbackPathToUser, fullPath)) {
-                value[fieldName].id = fallbackPathToUser[fullPath]
+              if (!Object.prototype.hasOwnProperty.call(userMap, value[fieldName].id)) {
+                fallbackPathToUser[path.createNestedID(fieldName).getFullName()] = value[fieldName].id
+                value[fieldName].id = fallbackUser
               }
             }),
           }))
+    },
+    onDeploy: async changes => log.time(async () => {
+      if (_.isEmpty(fallbackPathToUser)) {
+        return
+      }
+
+      const idToInstance = _(changes)
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .keyBy(element => element.elemID.getFullName())
+        .value()
+
+      Object.entries(fallbackPathToUser)
+        .forEach(([path, userId]) => {
+          const idPath = ElemID.fromFullName(path)
+          const baseId = idPath.createBaseID().parent.getFullName()
+          if (!Object.prototype.hasOwnProperty.call(idToInstance, baseId)) {
+            return
+          }
+
+          setPath(idToInstance[baseId], idPath.createNestedID('id'), userId)
+        })
     }, 'user_id_filter deploy'),
   }
 }

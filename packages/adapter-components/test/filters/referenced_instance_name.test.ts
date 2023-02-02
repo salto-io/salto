@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -200,7 +200,8 @@ describe('referenced instances', () => {
     const noIdFieldsWithParent = new InstanceElement(
       'no_idFieldsWithParent',
       noIdFieldsType,
-      {}, [],
+      {},
+      [],
       {
         [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(noIdFieldsParent.elemID, noIdFieldsParent),
       }

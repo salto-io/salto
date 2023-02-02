@@ -17,10 +17,7 @@ import {
   ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionChange,
   isInstanceChange, isModificationChange, isRemovalChange,
 } from '@salto-io/adapter-api'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { GROUP_TYPE_NAME } from '../constants'
-
-const { isDefined } = lowerDashValues
 
 const API_ERROR_MESSAGE = 'Changing the default group is not supported via the Zendesk API'
 
@@ -53,14 +50,16 @@ export const defaultGroupChangeValidator: ChangeValidator = async changes => {
   const groupChanges = changes.filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === GROUP_TYPE_NAME)
 
-  const defaultGroupAddition = groupChanges.filter(isAdditionChange).find(change => getChangeData(change).value.default)
-  const defaultGroupRemoval = groupChanges.filter(isRemovalChange).find(change => getChangeData(change).value.default)
-  const defaultGroupModification = groupChanges.filter(isModificationChange).filter(change =>
-    change.data.before.value.default !== change.data.after.value.default)
+  const defaultGroupAddition = groupChanges.filter(isAdditionChange).map(getChangeData)
+    .filter(group => group.value.default === true)
+  const defaultGroupRemoval = groupChanges.filter(isRemovalChange).map(getChangeData)
+    .filter(group => group.value.default === true)
+  const defaultGroupModification = groupChanges.filter(isModificationChange)
+    .filter(change => change.data.before.value.default !== change.data.after.value.default)
 
   return [
-    defaultGroupAddition !== undefined ? defaultGroupAdditionError(getChangeData(defaultGroupAddition)) : undefined,
-    defaultGroupRemoval !== undefined ? defaultGroupRemovalError(getChangeData(defaultGroupRemoval)) : undefined,
+    defaultGroupAddition.map(defaultGroupAdditionError),
+    defaultGroupRemoval.map(defaultGroupRemovalError),
     defaultGroupModification.map(getChangeData).map(defaultGroupModificationError),
-  ].filter(isDefined).flat()
+  ].flat()
 }

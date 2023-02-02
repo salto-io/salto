@@ -272,7 +272,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-  private createFiltersRunner: () => Required<Omit<Filter, 'name'>>
+  private createFiltersRunner: () => Required<Filter>
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile

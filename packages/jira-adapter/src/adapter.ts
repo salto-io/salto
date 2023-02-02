@@ -247,7 +247,7 @@ type AdapterSwaggers = {
 }
 
 export default class JiraAdapter implements AdapterOperations {
-  private createFiltersRunner: () => Required<Omit<Filter, 'name'>>
+  private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator

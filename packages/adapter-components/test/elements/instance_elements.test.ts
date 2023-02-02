@@ -119,13 +119,21 @@ describe('generateInstanceNameFromConfig', () => {
 
 describe('getInstanceNaclName', () => {
   it('should return a naclName of the parentName without __ suffix, when the name is empty', () => {
-    const naclName = getInstanceNaclName({
+    const naclNameEmptyName = getInstanceNaclName({
       entry: {},
       name: '',
       parentName: 'parent',
       adapterName: 'zendesk',
       typeElemId: new ElemID('zendesk', 'test'),
     })
-    expect(naclName).toBe('parent')
+    const naclNameRegular = getInstanceNaclName({
+      entry: {},
+      name: 'name',
+      parentName: 'parent',
+      adapterName: 'zendesk',
+      typeElemId: new ElemID('zendesk', 'test'),
+    })
+    expect(naclNameEmptyName).toBe('parent')
+    expect(naclNameRegular).toBe('parent__name')
   })
 })

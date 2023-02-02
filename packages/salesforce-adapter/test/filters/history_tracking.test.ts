@@ -13,15 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { getChangeData, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/history_tracking'
-import { createCustomObjectType, defaultFilterContext } from '../utils'
+import { createCustomObjectType, createField, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { FilterWith } from '../../src/filter'
 import { Types } from '../../src/transformers/transformer'
-import { HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_TRACKING_ENABLED } from '../../src/constants'
+import { FIELD_HISTORY_TRACKING_ENABLED, HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_TRACKING_ENABLED } from '../../src/constants'
 
 describe('History tracking', () => {
-  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'|'preDeploy'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy'>
+  const baseCustomObjectType = createCustomObjectType('TypeWithHistoryTracking', {
+    fields: {
+      fieldWithHistoryTracking: {
+        refType: Types.primitiveDataTypes.Text,
+        annotations: {
+          apiName: 'fieldWithHistoryTracking',
+          trackHistory: true,
+        },
+      },
+      fieldWithoutHistoryTracking: {
+        refType: Types.primitiveDataTypes.Text,
+        annotations: {
+          apiName: 'fieldWithoutHistoryTracking',
+          trackHistory: false,
+        },
+      },
+    },
+  })
+
   describe('When fetching an object with history tracking disabled', () => {
     it('Should not modify the object', async () => {
       const inputType = mockTypes.Account.clone()
@@ -34,27 +54,13 @@ describe('History tracking', () => {
     })
   })
   describe('When fetching an object with history tracking enabled', () => {
-    const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking', {
-      annotations: {
-        enableHistory: true,
-      },
-      fields: {
-        fieldWithHistoryTracking: {
-          refType: Types.primitiveDataTypes.Text,
-          annotations: {
-            name: 'fieldWithHistoryTracking',
-            trackHistory: true,
-          },
-        },
-        fieldWithoutHistoryTracking: {
-          refType: Types.primitiveDataTypes.Text,
-          annotations: {
-            name: 'fieldWithoutHistoryTracking',
-            trackHistory: false,
-          },
-        },
-      },
+    let typeWithHistoryTrackedFields: ObjectType
+
+    beforeAll(() => {
+      typeWithHistoryTrackedFields = baseCustomObjectType.clone()
+      typeWithHistoryTrackedFields.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = true
     })
+
     it('Should update the object and field annotations correctly', async () => {
       const elements = [typeWithHistoryTrackedFields.clone()]
       await filter.onFetch(elements)
@@ -64,6 +70,114 @@ describe('History tracking', () => {
       expect(elements[0].fields.fieldWithHistoryTracking.annotations.trackHistory).not.toBeDefined()
       expect(elements[0].fields.fieldWithoutHistoryTracking.annotations.trackHistory).not.toBeDefined()
       expect(elements[0].annotations[OBJECT_HISTORY_TRACKING_ENABLED]).not.toBeDefined()
+    })
+  })
+  describe('on preDeploy', () => {
+    const typeForPreDeploy = (trackedFields?: string[]): ObjectType => {
+      const type = baseCustomObjectType.clone()
+      if (trackedFields !== undefined) {
+        type.annotations[HISTORY_TRACKED_FIELDS] = trackedFields
+      }
+      return type
+    }
+
+    describe('when an object has no historyTrackedFields', () => {
+      it('should add enableHistory=false annotation if the object type is new', async () => {
+        const changes = [toChange({ after: typeForPreDeploy() })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, false)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+      it('should add enableHistory=false annotation if the change is not related to history tracking', async () => {
+        const before = typeForPreDeploy()
+        before.annotations.unrelatedAnnotation = 'Something'
+        const changes = [toChange({ before, after: typeForPreDeploy() })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, false)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+      it('should add enableHistory=false annotation if historyTrackedFields was removed', async () => {
+        const changes = [toChange({ before: typeForPreDeploy(['Somefield']), after: typeForPreDeploy() })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, false)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+    })
+
+    describe('when an object type has a historyTrackedFields annotation', () => {
+      it('should add the enableHistory annotation if the object type is new', async () => {
+        const changes = [toChange({ after: typeForPreDeploy([]) })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+      it('should add the enableHistory annotation if historyTrackedFields was modified', async () => {
+        const changes = [toChange({ before: typeForPreDeploy(['Somefield']), after: typeForPreDeploy([]) })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+      it('should add the enableHistory annotation if historyTrackedFields was added', async () => {
+        const changes = [toChange({ before: typeForPreDeploy(), after: typeForPreDeploy([]) })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+    })
+
+    describe('when fields belong to an object that has history tracking disabled', () => {
+      const field = createField(typeForPreDeploy(), Types.primitiveDataTypes.Text, 'SomeField')
+
+      it('should not be modified if the field was modified', async () => {
+        const after = field.clone()
+        after.annotations.someAnnotation = true
+        const changes = [toChange({ before: field, after })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED)
+      })
+      it('should not be modified if the field was added', async () => {
+        const after = field.clone()
+        const changes = [toChange({ after })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED)
+      })
+    })
+
+    describe('when fields belong to an object that has history tracking enabled', () => {
+      describe('when the field is not tracked', () => {
+        const parentType = typeForPreDeploy(['NotMyField'])
+        const field = createField(parentType, Types.primitiveDataTypes.Text, 'SomeField')
+
+        it('should add trackHistory=false annotation if the field was modified', async () => {
+          const after = field.clone()
+          after.annotations.someAnnotation = true
+          const changes = [toChange({ before: field, after })]
+          await filter.preDeploy(changes)
+          expect(getChangeData(changes[0]).annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, false)
+        })
+        it('should add trackHistory=false annotation if the field was added', async () => {
+          const changes = [toChange({ after: field.clone() })]
+          await filter.preDeploy(changes)
+          expect(getChangeData(changes[0]).annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, false)
+        })
+      })
+      describe('when the field is tracked', () => {
+        const parentType = typeForPreDeploy(['SomeField'])
+        const field = createField(parentType, Types.primitiveDataTypes.Text, 'SomeField')
+
+        it('should add trackHistory=true annotation if the field was modified', async () => {
+          const after = field.clone()
+          after.annotations.someAnnotation = true
+          const changes = [toChange({ before: field, after })]
+          await filter.preDeploy(changes)
+          expect(getChangeData(changes[0]).annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, true)
+        })
+        it('should add trackHistory=true annotation if the field was added', async () => {
+          const changes = [toChange({ after: field.clone() })]
+          await filter.preDeploy(changes)
+          expect(getChangeData(changes[0]).annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, true)
+        })
+      })
     })
   })
 })

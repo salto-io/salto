@@ -47,27 +47,28 @@ describe('defaultGroupDeletion', () => {
     expect(errors).toEqual([
       {
         elemID: newDefaultGroup.elemID,
-        severity: 'Warning',
-        message: 'Cannot make changes of the default group',
-        detailedMessage: 'TODO - talk with Tomer',
+        severity: 'Error',
+        message: 'Cannot add a new default group',
+        detailedMessage: 'Changing the default group is not supported via the Zendesk API, Once deployed, you will need to set the group as default directly via Zendesk and fetch',
       },
       {
         elemID: removedDefaultGroup.elemID,
         severity: 'Error',
-        message: 'Cannot make changes of the default group',
-        detailedMessage: 'TODO - talk with Tomer',
+        message: 'Cannot delete the default group',
+        detailedMessage: 'This group is currently set as default in Zendesk and therefore cannot be deleted.\n'
+            + 'Changing the default group is not supported via the Zendesk API, Therefore, you will need to configure a new default group directly via Zendesk and fetch.',
       },
       {
         elemID: afterNotDefaultGroup.elemID,
         severity: 'Error',
-        message: 'Cannot make changes of the default group',
-        detailedMessage: 'TODO - talk with Tomer',
+        message: 'Cannot change the default group',
+        detailedMessage: 'Changing the default group is not supported via the Zendesk API, Therefore, you will need to do it directly via Zendesk and fetch.',
       },
       {
         elemID: afterDefaultGroup.elemID,
         severity: 'Error',
-        message: 'Cannot make changes of the default group',
-        detailedMessage: 'TODO - talk with Tomer',
+        message: 'Cannot change the default group',
+        detailedMessage: 'Changing the default group is not supported via the Zendesk API, Therefore, you will need to do it directly via Zendesk and fetch.',
       },
     ])
   })

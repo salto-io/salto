@@ -22,25 +22,28 @@ import { GROUP_TYPE_NAME } from '../constants'
 
 const { isDefined } = lowerDashValues
 
+const API_ERROR_MESSAGE = 'Changing the default group is not supported via the Zendesk API'
+
 const defaultGroupAdditionError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
-  severity: 'Warning',
-  message: 'Cannot make changes of the default group',
-  detailedMessage: 'TODO - talk with Tomer',
+  severity: 'Error',
+  message: 'Cannot add a new default group',
+  detailedMessage: `${API_ERROR_MESSAGE}, Once deployed, you will need to set the group as default directly via Zendesk and fetch`,
 })
 
 const defaultGroupRemovalError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
   severity: 'Error',
-  message: 'Cannot make changes of the default group',
-  detailedMessage: 'TODO - talk with Tomer',
+  message: 'Cannot delete the default group',
+  detailedMessage: `This group is currently set as default in Zendesk and therefore cannot be deleted.
+${API_ERROR_MESSAGE}, Therefore, you will need to configure a new default group directly via Zendesk and fetch.`,
 })
 
 const defaultGroupModificationError = (group: InstanceElement): ChangeError => ({
   elemID: group.elemID,
-  severity: 'Error', // TODO: do we want to make the changes anyway and just warn the user?
-  message: 'Cannot make changes of the default group',
-  detailedMessage: 'TODO - talk with Tomer',
+  severity: 'Error',
+  message: 'Cannot change the default group',
+  detailedMessage: `${API_ERROR_MESSAGE}, Therefore, you will need to do it directly via Zendesk and fetch.`,
 })
 
 /**

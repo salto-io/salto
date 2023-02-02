@@ -38,6 +38,12 @@ type StatusMigration = {
   newStatusId?: ReferenceExpression
 }
 
+const getAssignedProjects = (workflowScheme: InstanceElement, projects: InstanceElement[]): InstanceElement[] =>
+  projects.filter(instance => instance.value.workflowScheme?.elemID.isEqual(workflowScheme.elemID))
+
+const isWorkflowSchemeActive = (workflowScheme: InstanceElement, projects: InstanceElement[]): boolean =>
+  getAssignedProjects(workflowScheme, projects).length > 0
+
 const getRelevantChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
 ): ModificationChange<InstanceElement>[] =>
@@ -57,8 +63,7 @@ const getDefaultWorkflowIssueTypes = async (
   workflowScheme: InstanceElement,
   projects: InstanceElement[]
 ): Promise<ReferenceExpression[]> => {
-  const assignedProjects = projects.filter(instance =>
-        instance.value.workflowScheme?.elemID.isEqual(workflowScheme.elemID))
+  const assignedProjects = getAssignedProjects(workflowScheme, projects)
   const issueTypeSchemes = await awu(assignedProjects)
     .map(instance => instance.value.issueTypeScheme)
     .map((ref: ReferenceExpression) => elementSource.get(ref.elemID))
@@ -188,8 +193,9 @@ export const workflowSchemeMigrationValidator: ChangeValidator = async (changes,
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .toArray()
-
-  const errors = await awu(relevantChanges).map(async change => {
+  const activeWorkflowsChanges = relevantChanges
+    .filter(change => isWorkflowSchemeActive(getChangeData(change), projects))
+  const errors = await awu(activeWorkflowsChanges).map(async change => {
     const instance = getChangeData(change)
     const changedItems = await getChangedItemsFromChange(change, projects, elementSource)
     const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))

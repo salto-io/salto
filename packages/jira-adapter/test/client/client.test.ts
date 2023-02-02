@@ -18,7 +18,6 @@ import MockAdapter from 'axios-mock-adapter'
 import * as clientUtils from '@salto-io/adapter-components'
 import JiraClient from '../../src/client/client'
 
-jest.setTimeout(3000000)
 describe('client', () => {
   let client: JiraClient
   let mockAxios: MockAdapter

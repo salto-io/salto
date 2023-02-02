@@ -55,11 +55,11 @@ export const defaultGroupChangeValidator: ChangeValidator = async changes => {
   const defaultGroupRemoval = groupChanges.filter(isRemovalChange).map(getChangeData)
     .filter(group => group.value.default === true)
   const defaultGroupModification = groupChanges.filter(isModificationChange)
-    .filter(change => change.data.before.value.default !== change.data.after.value.default)
+    .filter(change => change.data.before.value.default !== change.data.after.value.default).map(getChangeData)
 
   return [
     defaultGroupAddition.map(defaultGroupAdditionError),
     defaultGroupRemoval.map(defaultGroupRemovalError),
-    defaultGroupModification.map(getChangeData).map(defaultGroupModificationError),
+    defaultGroupModification.map(defaultGroupModificationError),
   ].flat()
 }

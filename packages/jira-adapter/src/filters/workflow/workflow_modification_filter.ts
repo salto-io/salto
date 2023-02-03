@@ -150,7 +150,8 @@ const deployWorkflowModification = async ({
     })
   } catch (err) {
     await cleanTempInstance()
-    if (err.response?.data?.errorMessages?.some((message: string) => message.includes('is missing the mappings required for statuses with'))) {
+    if (err instanceof clientUtils.HTTPError && Array.isArray(err.response.data.errorMessages)
+      && err.response?.data?.errorMessages?.some((message: string) => message.includes('is missing the mappings required for statuses with'))) {
       throw new Error(`Modification to an active workflow ${getChangeData(change).elemID.getFullName()} is not backward compatible`)
     }
     throw err
@@ -165,7 +166,7 @@ const deployWorkflowModification = async ({
   } catch (err) {
     await cleanTempInstance()
     // if the workflow is active it means the env is not updated, as we remove known active associations
-    if (err.response?.data?.errorMessages?.some((message: string) => message.includes('Cannot delete an active workflow'))) {
+    if (err instanceof clientUtils.HTTPError && Array.isArray(err.response.data.errorMessages)) {
       throw new Error(`The environment is not synced to the Jira Service for ${getChangeData(change).elemID.getFullName()}, run fetch and try again`)
     }
     throw err

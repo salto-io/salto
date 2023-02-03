@@ -287,13 +287,12 @@ describe('workflowModificationFilter', () => {
     })
 
     it('should throw when change is not backward compatible', async () => {
-      deployWorkflowSchemeMock.mockRejectedValueOnce({
-        response: {
-          data: {
-            errorMessages: ['is missing the mappings required for statuses with'],
-          },
+      deployWorkflowSchemeMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+        status: 400,
+        data: {
+          errorMessages: ['is missing the mappings required for statuses with'],
         },
-      })
+      }))
 
       deployWorkflowMock.mockResolvedValueOnce()
       deployWorkflowMock.mockRejectedValueOnce(new Error('error'))
@@ -309,13 +308,12 @@ describe('workflowModificationFilter', () => {
     })
 
     it('should clean when failure in deploy of temp instance', async () => {
-      deployWorkflowMock.mockRejectedValueOnce({
-        response: {
-          data: {
-            errorMessages: ['some error'],
-          },
+      deployWorkflowMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+        status: 400,
+        data: {
+          errorMessages: ['some error'],
         },
-      })
+      }))
       await filter.deploy([change])
 
       expectCreateOfTempWorkflow(1)
@@ -343,13 +341,12 @@ describe('workflowModificationFilter', () => {
 
     it('should clean when failure in deploy of the actual instance', async () => {
       deployWorkflowMock.mockResolvedValueOnce()
-      deployWorkflowMock.mockRejectedValueOnce({
-        response: {
-          data: {
-            errorMessages: ['Cannot delete an active workflow'],
-          },
+      deployWorkflowMock.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+        status: 400,
+        data: {
+          errorMessages: ['Cannot delete an active workflow'],
         },
-      })
+      }))
       const res = await filter.deploy([change])
 
       expect(res.deployResult.errors).toEqual([new Error('Deployment of jira.Workflow.instance.workflowInstance failed: Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again')])

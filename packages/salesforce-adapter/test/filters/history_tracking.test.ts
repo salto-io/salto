@@ -193,20 +193,25 @@ describe('History tracking', () => {
         : change is T & ModificationChange<Field> => (
           isFieldChange(change) && isModificationChange(change)
         )
+      const expectFieldTrackingChange = (change: Change, isRemoval: boolean): void => {
+        expect(isFieldModificationChange(change)).toBeTrue()
+        if (!isModificationChange(change)) {
+          return // just to make the compiler aware
+        }
+        expect(change.data.before.annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, isRemoval)
+        expect(change.data.after.annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, !isRemoval)
+      }
       describe('When fields are added', () => {
+        const expectFieldTrackingAdditionChange = (change: Change): void => expectFieldTrackingChange(change, false)
         it('should create new changes for newly tracked fields that existed before', async () => {
           const before = typeForPreDeploy([], ['SomeField'])
           const after = typeForPreDeploy(['SomeField'], ['SomeField'])
           const changes = [toChange({ before, after })]
           await filter.preDeploy(changes)
           expect(changes).toHaveLength(2)
-          expect(isFieldModificationChange(changes[1])).toBeTrue()
-          if (!isModificationChange(changes[1])) {
-            return // just to make the compiler aware
-          }
-          expect(changes[1].data.before.annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, false)
-          expect(changes[1].data.after.annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, true)
+          expectFieldTrackingAdditionChange(changes[1])
         })
+
         it('should not create new changes for newly tracked fields that are created', async () => {
           const before = typeForPreDeploy([], [])
           const after = typeForPreDeploy(['SomeField'], ['SomeField'])
@@ -214,20 +219,26 @@ describe('History tracking', () => {
           await filter.preDeploy(changes)
           expect(changes).toHaveLength(1)
         })
+        it('should create changes if the object\'s history tracking is enabled', async () => {
+          const before = typeForPreDeploy(undefined, ['SomeField'])
+          const after = typeForPreDeploy(['SomeField'], ['SomeField'])
+          const changes = [toChange({ before, after })]
+          await filter.preDeploy(changes)
+          expect(changes).toHaveLength(2)
+          expectFieldTrackingAdditionChange(changes[1])
+        })
       })
+
       describe('When fields are removed', () => {
+        const expectFieldTrackingRemovalChange = (change: Change): void => expectFieldTrackingChange(change, true)
+
         it('should create new changes for removed fields that still exist', async () => {
           const before = typeForPreDeploy(['SomeField'], ['SomeField'])
           const after = typeForPreDeploy([], ['SomeField'])
           const changes = [toChange({ before, after })]
           await filter.preDeploy(changes)
           expect(changes).toHaveLength(2)
-          expect(isFieldModificationChange(changes[1])).toBeTrue()
-          if (!isModificationChange(changes[1])) {
-            return // just to make the compiler aware
-          }
-          expect(changes[1].data.before.annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, true)
-          expect(changes[1].data.after.annotations).toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED, false)
+          expectFieldTrackingRemovalChange(changes[1])
         })
         it('should not create new changes for fields that are no longer tracked because they no longer exist', async () => {
           const before = typeForPreDeploy(['SomeField'], ['SomeField'])
@@ -235,6 +246,14 @@ describe('History tracking', () => {
           const changes = [toChange({ before, after })]
           await filter.preDeploy(changes)
           expect(changes).toHaveLength(1)
+        })
+        it('should create changes if the object\'s history tracking is disabled [SALTO-3378]', async () => {
+          const before = typeForPreDeploy(['SomeField'], ['SomeField'])
+          const after = typeForPreDeploy(undefined, ['SomeField'])
+          const changes = [toChange({ before, after })]
+          await filter.preDeploy(changes)
+          expect(changes).toHaveLength(2)
+          expectFieldTrackingRemovalChange(changes[1])
         })
       })
     })

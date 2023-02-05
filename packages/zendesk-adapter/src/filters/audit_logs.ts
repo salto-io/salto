@@ -100,6 +100,9 @@ const filterCreator: FilterCreator = ({ elementsSource, client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const newTimeElements = await createTimeElements(client)
     elements.push(...newTimeElements)
+    // add update at for all the elements
+    // find prev time instance
+    // check for elements that are not in guide and have changed after the time in the element source
   },
 })
 export default filterCreator

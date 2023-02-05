@@ -65,7 +65,7 @@ const isItemEquals = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): boo
 const isItemModified = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): boolean =>
   item1.issueType.elemID.isEqual(item2.issueType.elemID) && !item1.workflow.elemID.isEqual(item2.workflow.elemID)
 
-const getDefaultWorkflowIssueTypes = async (
+const getAllIssueTypesForWorkflowScheme = async (
   elementSource: ReadOnlyElementsSource,
   workflowScheme: InstanceElement,
   projects: InstanceElement[]
@@ -76,7 +76,13 @@ const getDefaultWorkflowIssueTypes = async (
     .map((ref: ReferenceExpression) => elementSource.get(ref.elemID))
     .toArray()
   const issueTypes = issueTypeSchemes.flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
-  const assignedIssueTypes = _.uniqBy(issueTypes, (issueType: ReferenceExpression) => issueType.elemID.getFullName())
+  return _.uniqBy(issueTypes, (issueType: ReferenceExpression) => issueType.elemID.getFullName())
+}
+
+const getDefaultWorkflowIssueTypes = (
+  workflowScheme: InstanceElement,
+  assignedIssueTypes: ReferenceExpression[]
+): ReferenceExpression[] => {
   workflowScheme.value.items
     .forEach((item: WorkflowSchemeItem) =>
       _.remove(assignedIssueTypes, issueType => issueType.elemID.isEqual(item.issueType.elemID)))
@@ -89,8 +95,9 @@ const getChangedItemsFromChange = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<ChangedItem[]> => {
   const { before, after } = change.data
+  const assignedIssueTypes = await getAllIssueTypesForWorkflowScheme(elementSource, after, projects)
   const defaultWorkflowIssueTypes = !before.value.defaultWorkflow.elemID.isEqual(after.value.defaultWorkflow.elemID)
-    ? await getDefaultWorkflowIssueTypes(elementSource, after, projects) : []
+    ? getDefaultWorkflowIssueTypes(after, assignedIssueTypes) : []
   const changedDefaultWorkflowItems = defaultWorkflowIssueTypes.map(issueType => ({
     before: before.value.defaultWorkflow,
     after: after.value.defaultWorkflow,
@@ -117,12 +124,16 @@ const getChangedItemsFromChange = async (
       issueType: beforeItem.issueType,
     }
   }).filter(isDefined)
-  return [
+  const changedItems = [
     ...addedItems,
     ...removedItems,
     ...modifiedItems,
     ...changedDefaultWorkflowItems,
   ]
+  return _.uniqBy(changedItems, (item: ChangedItem) => item.issueType.elemID.getFullName())
+    // Might happen if the user changed default workflow.
+    .filter(item => !item.before.elemID.isEqual(item.after.elemID))
+    .filter(item => assignedIssueTypes.some(issueType => issueType.elemID.isEqual(item.issueType.elemID)))
 }
 
 const areStatusesEquals = (status1: ReferenceExpression, status2: ReferenceExpression): boolean =>
@@ -137,6 +148,7 @@ const getMissingStatuses = (before: InstanceElement, after: InstanceElement): Re
 const getMigrationForChangedItem = (changedItem: ChangedItem): StatusMigration[] => {
   const { before, after, issueType } = changedItem
   const missingStatuses = getMissingStatuses(before.value, after.value)
+  // remove this after finishing development
   const defaultStatus: ReferenceExpression | undefined = after.value.value.statuses[0]?.id
   return missingStatuses.map((status: ReferenceExpression) => ({
     issueTypeId: issueType,

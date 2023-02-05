@@ -198,7 +198,6 @@ export const FIELD_ANNOTATIONS = {
   SUMMARY_OPERATION: 'summaryOperation',
   RESTRICTED: 'restricted',
   VALUE_SET: 'valueSet',
-  CUSTOM_VALUE: 'customValue',
   DEFAULT_VALUE: 'defaultValue',
   FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
   TRACK_HISTORY: 'trackHistory',
@@ -369,7 +368,6 @@ export const CUSTOM_METADATA = 'CustomMetadata'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 export const ACTIVATE_RSS = 'activateRSS'
-export const GLOBAL_VALUE_SET_METADATA_TYPE = 'GlobalValueSet'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

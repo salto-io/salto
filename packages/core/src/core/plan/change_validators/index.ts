@@ -18,12 +18,10 @@ import { AdapterOperations, ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getAdapterChangeValidators } from '../../adapters'
-import { changeValidator as unresolvedReferencesValidator } from './unresolved_references'
 import { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
 
 
 const DEFAULT_CHANGE_VALIDATORS = [
-  unresolvedReferencesValidator,
   checkDeploymentAnnotationsValidator,
 ]
 

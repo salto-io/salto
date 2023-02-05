@@ -103,6 +103,11 @@ const getResolvedValue = async (
   return value
 }
 
+export class UnresolvedReference {
+  constructor(public target: ElemID) {
+  }
+}
+
 export class ReferenceExpression {
   constructor(
     public readonly elemID: ElemID,

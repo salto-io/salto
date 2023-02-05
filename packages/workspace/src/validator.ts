@@ -27,10 +27,11 @@ import {
   isType,
   isField,
   isTemplateExpression,
+  UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { toObjectType } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
-import { UnresolvedReference, CircularReference, resolve } from './expressions'
+import { CircularReference, resolve } from './expressions'
 import { IllegalReference } from './parser/parse'
 
 const log = logger(module)

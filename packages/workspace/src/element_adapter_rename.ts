@@ -36,9 +36,9 @@ import {
   TemplateExpression,
   isStaticFile,
   StaticFile,
+  UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
-import { UnresolvedReference } from './expressions'
 
 const { awu } = collections.asynciterable
 

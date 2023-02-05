@@ -90,7 +90,7 @@ export const filtersRunner = <
      * to get in preDeploy a similar value to what it created in onFetch.
      */
     preDeploy: async changes => {
-      await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => log.time(() => filter.preDeploy(changes), `preDeploy.${filter.name}`)))
+      await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => log.time(() => filter.preDeploy(changes), `(${filter.name}):preDeploy`)))
     },
     /**
      * deploy method for implementing a deployment functionality.
@@ -98,7 +98,7 @@ export const filtersRunner = <
     deploy: async changes => (
       awu(filtersWith('deploy')).reduce(
         async (total, current) => {
-          const { deployResult, leftoverChanges } = await log.time(() => current.deploy(total.leftoverChanges), `deploy.${current.name}`)
+          const { deployResult, leftoverChanges } = await log.time(() => current.deploy(total.leftoverChanges), `(${current.name}):deploy`)
           return {
             deployResult: concatObjects([total.deployResult, deployResult]),
             leftoverChanges,
@@ -119,7 +119,7 @@ export const filtersRunner = <
      * of on elements)
      */
     onDeploy: async (changes, deployResult) => {
-      await promises.array.series(filtersWith('onDeploy').map(filter => () => log.time(() => filter.onDeploy(changes, deployResult), `onDeploy.${filter.name}`)))
+      await promises.array.series(filtersWith('onDeploy').map(filter => () => log.time(() => filter.onDeploy(changes, deployResult), `(${filter.name}):onDeploy`)))
     },
     /**
      * onPostFetch is run after fetch completed for all accounts, and receives
@@ -131,7 +131,7 @@ export const filtersRunner = <
      */
     onPostFetch: async args => {
       await promises.array.series(
-        filtersWith('onPostFetch').map(filter => () => log.time(() => filter.onPostFetch(args), `onPostFetch.${filter.name}`))
+        filtersWith('onPostFetch').map(filter => () => log.time(() => filter.onPostFetch(args), `(${filter.name}):onPostFetch`))
       )
     },
   }

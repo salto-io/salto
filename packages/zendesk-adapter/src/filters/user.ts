@@ -84,13 +84,17 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] ?? {}
       if (defaultMissingUserFallback !== undefined) {
         const userEmails = new Set(users.map(user => user.email))
-        const { fallbackValue } = await getUserFallbackValue(
-          defaultMissingUserFallback,
-          userEmails,
-          client
-        )
-        if (fallbackValue !== undefined) {
-          replaceMissingUsers(relevantChanges, userEmails, fallbackValue)
+        try {
+          const fallbackValue = await getUserFallbackValue(
+            defaultMissingUserFallback,
+            userEmails,
+            client
+          )
+          if (fallbackValue !== undefined) {
+            replaceMissingUsers(relevantChanges, userEmails, fallbackValue)
+          }
+        } catch (e) {
+          log.error('Error while trying to get defaultMissingUserFallback value')
         }
       }
 

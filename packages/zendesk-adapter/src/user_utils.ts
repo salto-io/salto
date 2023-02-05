@@ -27,6 +27,7 @@ const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
+const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback does not exist in the target environemt'
 // system options that does not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
@@ -196,25 +197,24 @@ export const getUserFallbackValue = async (
   defaultMissingUserFallback: string,
   existingUsers: Set<string>,
   client: ZendeskClient
-): Promise<{fallbackValue: string | undefined; isValidValue: boolean}> => {
+): Promise<string | undefined> => {
   if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (await client.getSinglePage({
         url: '/api/v2/users/me',
       })).data
       if (isCurrentUserResponse(response)) {
-        return { fallbackValue: response.user.email, isValidValue: true }
+        return response.user.email
       }
-      log.warn('Received invalid user reponse')
-      return { fallbackValue: undefined, isValidValue: true }
+      return undefined
     } catch (e) {
       log.error('Attempt to get current user details has failed with error: %o', e)
-      return { fallbackValue: undefined, isValidValue: true }
+      throw new Error('Failed to get current user from endpoint \'/api/v2/users/me\'')
     }
   }
   if (!existingUsers.has(defaultMissingUserFallback)) {
-    log.error('User provided in defaultMissingUserFallback does not exist in the target environemt')
-    return { fallbackValue: undefined, isValidValue: false }
+    log.error(MISSING_DEPLOY_CONFIG_USER)
+    throw new Error(MISSING_DEPLOY_CONFIG_USER)
   }
-  return { fallbackValue: defaultMissingUserFallback, isValidValue: true }
+  return defaultMissingUserFallback
 }

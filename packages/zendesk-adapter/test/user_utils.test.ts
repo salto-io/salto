@@ -626,25 +626,22 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: 'salto@io',
       }
-      const { fallbackValue, isValidValue } = await getUserFallbackValue(
+      const fallbackValue = await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
       )
       expect(fallbackValue).toEqual('salto@io')
-      expect(isValidValue).toEqual(true)
     })
     it('should not return specific user value if it is missing from target env', async () => {
       deployConfig = {
-        defaultMissingUserFallback: 'blabala',
+        defaultMissingUserFallback: 'useruser@zendesk.com',
       }
-      const { fallbackValue, isValidValue } = await getUserFallbackValue(
+      await expect(getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )
-      expect(fallbackValue).toBeUndefined()
-      expect(isValidValue).toEqual(false)
+      )).rejects.toThrow(new Error('User provided in defaultMissingUserFallback does not exist in the target environemt'))
     })
     it('should return deployer user email', async () => {
       mockGet
@@ -652,13 +649,12 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      const { fallbackValue, isValidValue } = await getUserFallbackValue(
+      const fallbackValue = await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
       )
       expect(fallbackValue).toEqual('saltoo@io')
-      expect(isValidValue).toEqual(true)
     })
     it('should not return value in case of fallback to deployer and invalid user reponse', async () => {
       mockGet
@@ -666,7 +662,7 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      const { fallbackValue } = await getUserFallbackValue(
+      const fallbackValue = await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
@@ -674,17 +670,15 @@ describe('userUtils', () => {
       expect(fallbackValue).toBeUndefined()
     })
     it('should not return value in case of an error in current user request', async () => {
-      mockGet
-        .mockResolvedValueOnce({ status: 400, data: {} })
+      mockGet.mockRejectedValue({ status: 400, data: {} })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      const { fallbackValue } = await getUserFallbackValue(
+      await expect(getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )
-      expect(fallbackValue).toBeUndefined()
+      )).rejects.toThrow(new Error('Failed to get current user from endpoint \'/api/v2/users/me\''))
     })
   })
 })

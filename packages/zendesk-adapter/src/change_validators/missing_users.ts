@@ -28,7 +28,7 @@ const { awu } = collections.asynciterable
 const { createPaginator } = clientUtils
 const { isDefined } = lowerdashValues
 
-const MISSING_USERS_DOC_LINK = 'https://docs.salto.io/docs/username-not-found-in-target-environment'
+const MISSING_USERS_DOC_LINK = 'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
 const MISSING_USERS_ERROR_MSG = 'Element references users which don\'t exist in target environment'
 
 const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>): string[] => {
@@ -86,7 +86,7 @@ const getFallbackUserIsMissingError = (
     elemID: instance.elemID,
     severity: 'Error',
     message: MISSING_USERS_ERROR_MSG,
-    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn addition, the defined fallback user ${userFallbackValue} was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`,
+    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn addition, we could not get the defined fallback user ${userFallbackValue}. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`,
   }
 }
 
@@ -116,13 +116,14 @@ export const missingUsersValidator: (client: ZendeskClient, deployConfig?: Zedne
 
     const missingUserFallback = deployConfig?.defaultMissingUserFallback
     if (missingUserFallback !== undefined) {
-      const { fallbackValue, isValidValue } = await getUserFallbackValue(missingUserFallback, usersEmails, client)
-      if (fallbackValue !== undefined) {
-        return relevantInstances
-          .map(instance => getMissingUsersChangeWarning(instance, usersEmails, fallbackValue))
-          .filter(isDefined)
-      }
-      if (!isValidValue) {
+      try {
+        const fallbackValue = await getUserFallbackValue(missingUserFallback, usersEmails, client)
+        if (fallbackValue !== undefined) {
+          return relevantInstances
+            .map(instance => getMissingUsersChangeWarning(instance, usersEmails, fallbackValue))
+            .filter(isDefined)
+        }
+      } catch (e) {
         return relevantInstances
           .map(instance => getFallbackUserIsMissingError(instance, usersEmails, missingUserFallback))
           .filter(isDefined)

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, isInstanceElement, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
-import { extractTemplate, resolvePath, setPath } from '@salto-io/adapter-utils'
+import { Element, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
+import { extractTemplate, resolvePath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
@@ -25,19 +25,24 @@ const log = logger(module)
 const USER_SCHEMA_REGEX = /(user\.[a-zA-Z]+)/g // pattern: user.someString
 const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z]+)/g // pattern: user.profile.someString
 const ID_REGEX = /(["'][a-zA-Z0-9]+?['"])/g // pattern: "someId" or 'someId'
+const USER_SCHEMA_PREFIX = 'user.'
+const USER_SCHEMA_IE_PREFIX = 'user.profile.'
 
 type expressionDetails = {
-  path: string[]
+  pathToContainer: string[]
+  fieldName: string
   patterns: RegExp[]
 }
 
 const TYPE_TO_EXPRESSIONS: Record<string, expressionDetails> = {
   [GROUP_RULE_TYPE_NAME]: {
-    path: ['conditions', 'expression', 'value'],
+    pathToContainer: ['conditions', 'expression'],
+    fieldName: 'value',
     patterns: [USER_SCHEMA_REGEX, ID_REGEX],
   },
   [POLICY_RULE_TYPE_NAME]: {
-    path: ['conditions', 'additionalProperties', 'elCondition', 'condition'],
+    pathToContainer: ['conditions', 'additionalProperties', 'elCondition'],
+    fieldName: 'condition',
     patterns: [ID_REGEX, USER_SCHEMA_IE_REGEX],
   },
 }
@@ -86,15 +91,15 @@ const stringToTemplate = (
           ? new ReferenceExpression(matchingInstance.elemID, matchingInstance)
           : expression
       }
-      if (expression.startsWith('user.')) {
+      if (expression.startsWith(USER_SCHEMA_PREFIX)) {
         if (userSchemaInstance === undefined) {
           return expression
         }
         if (expression.match(USER_SCHEMA_IE_REGEX)) {
-          const userAttribute = expression.replace('user.profile.', '')
+          const userAttribute = expression.replace(USER_SCHEMA_IE_PREFIX, '')
           return getUserSchemaReferences(userAttribute, userSchemaInstance) ?? expression
         }
-        const userAttribute = expression.replace('user.', '')
+        const userAttribute = expression.replace(USER_SCHEMA_PREFIX, '')
         return getUserSchemaReferences(userAttribute, userSchemaInstance) ?? expression
       }
       return expression
@@ -103,16 +108,18 @@ const stringToTemplate = (
   return template
 }
 
-const replaceExpressionsWithTemplates = async (instances: InstanceElement[]): Promise<void> => {
+const replaceExpressionsWithTemplates = (instances: InstanceElement[]): void => {
   instances
     .filter(instance => Object.keys(TYPE_TO_EXPRESSIONS).includes(instance.elemID.typeName))
     .forEach(instance => {
-      const { path, patterns } = TYPE_TO_EXPRESSIONS[instance.elemID.typeName]
-      const expressionFieldPath = instance.elemID.createNestedID(...path)
-      const expressionValue = resolvePath(instance, expressionFieldPath)
+      const { pathToContainer, fieldName, patterns } = TYPE_TO_EXPRESSIONS[instance.elemID.typeName]
+      const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
+      const expressionValue = container?.[fieldName]
       if (_.isString(expressionValue)) {
         const template = stringToTemplate(expressionValue, patterns, instances)
-        setPath(instance, expressionFieldPath, template)
+        if (isTemplateExpression(template)) {
+          _.set(container, fieldName, template)
+        }
       }
     })
 }
@@ -121,8 +128,8 @@ const replaceExpressionsWithTemplates = async (instances: InstanceElement[]): Pr
  * Create template expressions for okta expression language references
  */
 const filter: FilterCreator = () => ({
-  onFetch: async (elements: Element[]) => log.time(async () => {
-    await replaceExpressionsWithTemplates(elements.filter(isInstanceElement))
+  onFetch: async (elements: Element[]) => log.time(() => {
+    replaceExpressionsWithTemplates(elements.filter(isInstanceElement))
   }, 'Expression language filter'),
 })
 

@@ -57,3 +57,4 @@ export { customStatusCategoryChangeValidator } from './custom_status_change_cate
 export { customStatusUniqueAgentLabelValidator } from './custom_statuses_unique_agent_label'
 export { defaultCustomStatusesValidator } from './default_custom_statuses'
 export { customStatusActiveDefaultValidator } from './custom_status_active_default'
+export { defaultGroupChangeValidator } from './default_group_change'

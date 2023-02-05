@@ -29,15 +29,22 @@ import {
 } from './types'
 import * as constants from './constants'
 import {
-  DUPLICATE_VALUE,
-  INVALID_CROSS_REFERENCE_KEY, INVALID_FIELD,
-  INVALID_ID_FIELD, INVALID_TYPE,
-  SOCKET_TIMEOUT, UNKNOWN_EXCEPTION,
+  SALESFORCE_ERRORS, SalesforceErrorName,
+  SOCKET_TIMEOUT,
   UNLIMITED_INSTANCES_VALUE,
 } from './constants'
 
 const { isDefined } = values
 const { makeArray } = collections.array
+
+const {
+  DUPLICATE_VALUE,
+  INVALID_CROSS_REFERENCE_KEY,
+  INVALID_FIELD,
+  INVALID_ID_FIELD,
+  INVALID_TYPE,
+  UNKNOWN_EXCEPTION,
+} = SALESFORCE_ERRORS
 
 const MESSAGE_INTRO = 'Salto failed to fetch some items from salesforce. '
 const MESSAGE_REASONS_INTRO = 'Due to the following issues: '
@@ -122,7 +129,7 @@ const isInvalidCrossReferenceKeyError: CreateConfigSuggestionPredicate = (e: Err
   return _.isString(errorCode) && errorCode === INVALID_CROSS_REFERENCE_KEY
 }
 
-export const NON_TRANSIENT_SALESFORCE_ERRORS = [
+export const NON_TRANSIENT_SALESFORCE_ERRORS: SalesforceErrorName[] = [
   DUPLICATE_VALUE,
   INVALID_ID_FIELD,
   INVALID_FIELD,
@@ -131,7 +138,7 @@ export const NON_TRANSIENT_SALESFORCE_ERRORS = [
 ]
 
 const isNonTransientSalesforceError: CreateConfigSuggestionPredicate = (e: Error): boolean => (
-  NON_TRANSIENT_SALESFORCE_ERRORS.includes(e.name)
+  (NON_TRANSIENT_SALESFORCE_ERRORS as ReadonlyArray<string>).includes(e.name)
 )
 
 type ConfigSuggestionCreator = {

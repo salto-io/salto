@@ -129,6 +129,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },
   { creator: flowFilter },
+  // referencedPackagesFilter should run before all the filters that create references
+  { creator: referencedPackagesFilter },
   { creator: customObjectInstanceReferencesFilter, addsNewInformation: true },
   { creator: cpqReferencableFieldReferencesFilter },
   { creator: cpqCustomScriptFilter },
@@ -168,8 +170,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
-  // referencedPackagesFilter should run last
-  { creator: referencedPackagesFilter },
 ]
 
 // By default we run all filters and provide a client

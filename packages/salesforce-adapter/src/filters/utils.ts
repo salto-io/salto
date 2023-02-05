@@ -32,7 +32,7 @@ import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
+  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
@@ -145,10 +145,10 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
   }
 }
 
-export const getNamespaceFromString = (name: string): string | undefined => {
-  const nameParts = name.split(NAMESPACE_SEPARATOR)
-  return nameParts.length === 3 ? nameParts[0] : undefined
-}
+export const getNamespaceFromString = (name: string): string | undefined => name
+  .replace(CUSTOM_METADATA_SUFFIX, '')
+  .replace(SALESFORCE_CUSTOM_SUFFIX, '')
+  .split(NAMESPACE_SEPARATOR)[0]
 
 export const getNamespace = async (
   customElement: Field | ObjectType

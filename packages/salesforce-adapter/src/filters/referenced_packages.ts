@@ -13,31 +13,70 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import {
+  Element, ElemID,
+  isInstanceElement,
+  isObjectType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
+import { collections, values } from '@salto-io/lowerdash'
+import { DetailedDependency, extendGeneratedDependencies, WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { FilterWith, LocalFilterCreator } from '../filter'
-import { isCustomObject } from '../transformers/transformer'
-
-const { awu } = collections.asynciterable
-
-const getReferencedPackageNamesFromInstance = (instance: InstanceElement): Set<string> => {
-  const referencedPackageNames = new Set<string>()
-  console.log(instance)
-  return referencedPackageNames
-}
+import { getNamespaceFromString, isInstanceOfType } from './utils'
+import { INSTALLED_PACKAGE_METADATA } from '../constants'
+import { apiName } from '../transformers/transformer'
 
 
-const addReferencedPackagesAnnotation = async (element: Element): Promise<void> => {
-  if (isObjectType(element) && await isCustomObject(element)) {
-    console.log('TODO')
-  } else if (isInstanceElement(element)) {
-    console.log('TODO')
-  }
+const log = logger(module)
+const { awu, keyByAsync } = collections.asynciterable
+const { isDefined } = values
+
+const addReferencedPackagesAnnotation = (
+  element: Element,
+  installedPackageElemIDByName: Record<string, ElemID>
+): Set<string> => {
+  const missingPackageNames = new Set<string>()
+  const detailedDependencies: DetailedDependency[] = []
+  walkOnElement({
+    element,
+    func: ({ value }) => {
+      if (_.isString(value)) {
+        const namespace = getNamespaceFromString(value)
+        if (isDefined(namespace)) {
+          const installedPackageElemID = installedPackageElemIDByName[namespace]
+          if (Object.keys(installedPackageElemIDByName).includes(namespace)) {
+            detailedDependencies.push({ reference: new ReferenceExpression(installedPackageElemID) })
+          } else {
+            missingPackageNames.add(namespace)
+          }
+        }
+      }
+      extendGeneratedDependencies(element, detailedDependencies)
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return missingPackageNames
 }
 
 const filterCreator: LocalFilterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    await awu(elements).forEach(addReferencedPackagesAnnotation)
+    const installedPackageElemIDByName = _.mapValues(
+      await keyByAsync(
+        await awu(elements)
+          .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
+          .toArray(),
+        apiName,
+      ),
+      instance => instance.elemID,
+    )
+    const missingPackageNames = elements
+      .filter(e => isInstanceElement(e) || isObjectType(e))
+      .flatMap(e => addReferencedPackagesAnnotation(e, installedPackageElemIDByName))
+    if (!_.isEmpty(missingPackageNames)) {
+      log.warn('Missing packages: %o', missingPackageNames)
+    }
   },
 })
 

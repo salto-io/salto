@@ -22,6 +22,7 @@ import JiraClient from '../client/client'
 import { paginate, removeScopedObjects } from '../client/pagination'
 import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
+import { doesProjectHaveIssues } from './project_deletion'
 
 const { createPaginator } = clientUtils
 const { addUrlToInstance } = filters
@@ -50,6 +51,13 @@ const getAssignedProjects = (workflowScheme: InstanceElement, projects: Instance
 
 const isWorkflowSchemeActive = (workflowScheme: InstanceElement, projects: InstanceElement[]): boolean =>
   getAssignedProjects(workflowScheme, projects).length > 0
+
+const workflowLinkedToProjectWithIssues = async (
+  workflowScheme: InstanceElement,
+  projects: InstanceElement[],
+  client: JiraClient,
+): Promise<boolean> =>
+  awu(getAssignedProjects(workflowScheme, projects)).some(async project => doesProjectHaveIssues(project, client))
 
 const getRelevantChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
@@ -218,6 +226,7 @@ export const workflowSchemeMigrationValidator: (
       .toArray()
     const activeWorkflowsChanges = relevantChanges
       .filter(change => isWorkflowSchemeActive(getChangeData(change), projects))
+      .filter(change => workflowLinkedToProjectWithIssues(getChangeData(change), projects, client))
     const errors = await awu(activeWorkflowsChanges).map(async change => {
       await updateSchemeId(change, client, paginator, config)
       const instance = getChangeData(change)

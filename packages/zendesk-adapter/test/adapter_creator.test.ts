@@ -142,7 +142,7 @@ describe('adapter creator', () => {
     })).toBeDefined()
   })
 
-  it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
+  it('should throw error when deploy config is invalid', () => {
     expect(() => adapter.operations({
       credentials: new InstanceElement(ZENDESK,
         adapter.authenticationMethods.basic.credentialsType),
@@ -180,10 +180,10 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Invalid user value in deploy.defaultMissingUserFallback: invalid@user. Value can be either ##DEPLOYER## or a valid user name'))
+    })).toThrow(new Error('Invalid user value in deploy.defaultMissingUserFallback: #DEPLOYER#. Value can be either ##DEPLOYER## or a valid user name'))
   })
 
-  it('should throw error when deploy config is invalid', () => {
+  it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
     expect(() => adapter.operations({
       credentials: new InstanceElement(ZENDESK,
         adapter.authenticationMethods.basic.credentialsType),

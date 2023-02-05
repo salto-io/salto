@@ -64,12 +64,12 @@ export const getCustomGroupIds = async (
   return mergeChangeGroupInfo(changeGroupInfoPerAdapter)
 }
 
+// If we add / remove an object type, we can omit all the field add / remove
+// changes from the same group since they are included in the parent change
 const removeRedundantFieldNodes = (
   graph: DataNodeMap<Change>,
   groupKey: GroupKeyFunc
 ): DataNodeMap<Change> => log.time(() => {
-  // If we add / remove an object type, we can omit all the field add / remove
-  // changes from the same group since they are included in the parent change
   const groupIdToAddedOrRemovedTypesMap = new DefaultMap<string, Map<string, collections.set.SetId>>(() => new Map())
   wu(graph.keys()).forEach(nodeId => {
     const change = graph.getData(nodeId)
@@ -77,31 +77,37 @@ const removeRedundantFieldNodes = (
       groupIdToAddedOrRemovedTypesMap.get(groupKey(nodeId)).set(getChangeData(change).elemID.getFullName(), nodeId)
     }
   })
-  const getNodeIdOrParent = (nodeId: collections.set.SetId): collections.set.SetId => {
+  const getParentForRedundantChanges = (nodeId: collections.set.SetId): collections.set.SetId | undefined => {
     const change = graph.getData(nodeId)
     if (!isAdditionOrRemovalChange(change) || !isFieldChange(change)) {
-      return nodeId
+      return undefined
     }
     const parentNodeId = groupIdToAddedOrRemovedTypesMap
       .get(groupKey(nodeId))
       .get(getChangeData(change).parent.elemID.getFullName())
-    return parentNodeId ?? nodeId
+    return parentNodeId
   }
 
   const graphWithoutRedundantFieldNodes = new DataNodeMap<Change>()
   wu(graph.keys()).forEach(nodeId => {
-    const nodeIdOrParent = getNodeIdOrParent(nodeId)
+    const parentNodeId = getParentForRedundantChanges(nodeId)
+    const nodeIdOrParent = parentNodeId ?? nodeId
     if (!graphWithoutRedundantFieldNodes.nodeData.has(nodeIdOrParent)) {
       graphWithoutRedundantFieldNodes.addNode(
         nodeIdOrParent,
-        wu(graph.get(nodeIdOrParent)).map(getNodeIdOrParent).filter(id => id !== nodeIdOrParent),
+        wu(graph.get(nodeIdOrParent))
+          .map(id => getParentForRedundantChanges(id) ?? id)
+          .filter(id => id !== nodeIdOrParent),
         graph.getData(nodeIdOrParent)
       )
     }
-    if (nodeId !== nodeIdOrParent) {
-      wu(graph.get(nodeId)).map(getNodeIdOrParent).filter(id => id !== nodeIdOrParent).forEach(id => {
-        graphWithoutRedundantFieldNodes.addEdge(nodeIdOrParent, id)
-      })
+    if (parentNodeId !== undefined) {
+      wu(graph.get(nodeId))
+        .map(id => getParentForRedundantChanges(id) ?? id)
+        .filter(id => id !== parentNodeId)
+        .forEach(id => {
+          graphWithoutRedundantFieldNodes.addEdge(parentNodeId, id)
+        })
     }
   })
 

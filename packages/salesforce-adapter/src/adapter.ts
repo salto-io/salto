@@ -250,7 +250,6 @@ export const SYSTEM_FIELDS = [
   'ConnectionSentId',
   'CreatedById',
   'CreatedDate',
-  'CurrencyIsoCode',
   'Id',
   'IsDeleted',
   'LastActivityDate',

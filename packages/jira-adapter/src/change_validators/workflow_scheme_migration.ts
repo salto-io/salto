@@ -138,7 +138,7 @@ const getChangedItemsFromChange = async (
     ...modifiedItems,
     ...changedDefaultWorkflowItems,
   ]
-  return _.uniqBy(changedItems, (item: ChangedItem) => item.issueType.elemID.getFullName())
+  return changedItems
     // Might happen if the user changed default workflow.
     .filter(item => !item.before.elemID.isEqual(item.after.elemID))
     .filter(item => assignedIssueTypes.some(issueType => issueType.elemID.isEqual(item.issueType.elemID)))

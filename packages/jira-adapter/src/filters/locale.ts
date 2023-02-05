@@ -13,22 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
 import { FilterCreator } from '../filter'
+import { getCurrentUserInfo } from '../users'
 
 const log = logger(module)
-
-type LocaleResponse = {
-  locale: string
-}
-
-const LOCALE_GET_RESPONSE_SCHEME = Joi.object({
-  locale: Joi.string().allow('').required(),
-}).unknown(true)
-
-const isLocaleResponse = createSchemeGuard<LocaleResponse>(LOCALE_GET_RESPONSE_SCHEME, 'Failed to get locale, received invalid response')
 
 /**
  * Check whether user locale is en_US to make sure we're only pulling Jira information in English
@@ -40,15 +29,14 @@ const filter: FilterCreator = ({ client }) => ({
     }
 
     try {
-      const response = await client.getSinglePage({
-        url: '/rest/api/2/myself',
-      })
+      const userInfo = await getCurrentUserInfo(client)
 
-      if (!isLocaleResponse(response.data)) {
-        throw new Error('Failed to get locale, received invalid response')
+      if (userInfo?.locale === undefined) {
+        log.error('Failed to get current user locale')
+        return undefined
       }
 
-      if (response.data.locale !== 'en_US') {
+      if (userInfo?.locale !== 'en_US') {
         return {
           errors: [
             {

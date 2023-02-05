@@ -183,7 +183,7 @@ const getErrorMessageForStatusMigration = (
   instance: InstanceElement,
   statusMigrations: StatusMigration[],
 ): ChangeError | undefined => {
-  const { serviceUrl } = instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]
+  const serviceUrl = instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]
   return statusMigrations.length > 0 ? {
     elemID: instance.elemID,
     severity: 'Warning',

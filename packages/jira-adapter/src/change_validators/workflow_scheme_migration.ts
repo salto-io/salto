@@ -156,18 +156,15 @@ const getMissingStatuses = (before: InstanceElement, after: InstanceElement): Re
 const getMigrationForChangedItem = (changedItem: ChangedItem): StatusMigration[] => {
   const { before, after, issueType } = changedItem
   const missingStatuses = getMissingStatuses(before.value, after.value)
-  // remove this after finishing development
-  const defaultStatus: ReferenceExpression | undefined = after.value.value.statuses[0]?.id
   return missingStatuses.map((status: ReferenceExpression) => ({
     issueTypeId: issueType,
     statusId: status,
-    newStatusId: defaultStatus,
   }))
 }
 
 const formatStatusMigration = (statusMigration: StatusMigration): string => {
   const { issueTypeId, statusId, newStatusId } = statusMigration
-  return `{\n \tissueTypeId = ${issueTypeId.elemID.getFullName()}\n \tstatusId = ${statusId.elemID.getFullName()}\n \tnewStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<ENTER_STATUS_HERE>'}\n}`
+  return `{\n \tissueTypeId = ${issueTypeId.elemID.getFullName()}\n \tstatusId = ${statusId.elemID.getFullName()}\n \tnewStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<NEW_STATUS>'}\n}`
 }
 
 const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => {

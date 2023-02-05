@@ -462,7 +462,7 @@ export const ERROR_PROPERTIES = {
   MESSAGE: 'message',
   STACKTRACE: 'stacktrace',
   NAME: 'name',
-  HOST_NAME: 'hostname',
+  HOSTNAME: 'hostname',
   CODE: 'code',
   ERROR_CODE: 'errorCode',
 } as const

@@ -363,7 +363,7 @@ describe('salesforce client', () => {
       ],
       [ENOTFOUND]: {
         errorProperties: {
-          [ERROR_PROPERTIES.HOST_NAME]: TEST_HOSTNAME,
+          [ERROR_PROPERTIES.HOSTNAME]: TEST_HOSTNAME,
           [ERROR_PROPERTIES.CODE]: ENOTFOUND,
         },
         expectedMessage: `Unable to communicate with the salesforce org at ${TEST_HOSTNAME}.`

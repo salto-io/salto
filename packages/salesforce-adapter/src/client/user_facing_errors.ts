@@ -54,11 +54,11 @@ export const INVALID_GRANT_MESSAGE = 'Salesforce user is inactive, please re-aut
 
 type DNSException = Error & {
   [ERROR_PROPERTIES.CODE]: string
-  [ERROR_PROPERTIES.HOST_NAME]: string
+  [ERROR_PROPERTIES.HOSTNAME]: string
 }
 
 const isDNSException = (error: Error): error is DNSException => (
-  _.isString(_.get(error, ERROR_PROPERTIES.CODE)) && _.isString(_.get(error, ERROR_PROPERTIES.HOST_NAME))
+  _.isString(_.get(error, ERROR_PROPERTIES.CODE)) && _.isString(_.get(error, ERROR_PROPERTIES.HOSTNAME))
 )
 
 const ERROR_MAPPERS: Record<MappableErrorName, GetUserFriendlyErrorFunc> = {
@@ -82,7 +82,7 @@ const ERROR_MAPPERS: Record<MappableErrorName, GetUserFriendlyErrorFunc> = {
   ),
   [ENOTFOUND]: (error: Error) => (
     isDNSException(error) && error.code === ENOTFOUND
-      ? `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOST_NAME]}.`
+      ? `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
       + 'This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.'
       : undefined
   ),

@@ -187,17 +187,16 @@ const getErrorMessageForStatusMigration = (
   return statusMigrations.length > 0 ? {
     elemID: instance.elemID,
     severity: 'Warning',
-    message: `Deployment of workflow scheme ${instance.elemID.name} will require migrating ${statusMigrations.length === 1 ? 'one status' : `${statusMigrations.length} statuses`}`,
-    detailedMessage: `Add the following field to migrate statuses in Jira: \n${formatStatusMigrations(statusMigrations)}\n`,
+    message: 'Workflow scheme change requires issue migration',
+    detailedMessage: `This workflow scheme change requires an issue migration, as some issue statuses do not exist in the new workflow. If you continue with the deployment, the changes will be pushed as a workflow scheme draft but will not be published. You will have to publish them manually from Jira. Alternatively, you can add the following NACL code to this workflow’s scheme code. Make sure to specific, for each issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes .\n${formatStatusMigrations(statusMigrations)}`,
     deployActions: {
       postAction: serviceUrl ? {
-        title: `Status migration for workflow scheme ${instance.elemID.name}`,
-        description: 'finish the migration in Jira by following the steps below:',
+        title: 'Finalize workflow scheme change',
+        description: `Salto pushed the ${instance.elemID.name} workflow scheme changes, but did not publish it. Please follow these steps to complete this change and migrate affected issues`,
         subActions: [
-          `Open workflow scheme page in jira ${serviceUrl}`,
-          'Press on publish',
-          '???',
-          'Click "Submit"',
+          `Go to ${serviceUrl}`,
+          'Click on "Publish"',
+          'Migrate issues as instructed',
         ],
       } : undefined,
     },

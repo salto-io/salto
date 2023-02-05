@@ -16,7 +16,6 @@
 */
 import { getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { walkOnElement } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
@@ -25,7 +24,6 @@ import { UserMap } from '../../users'
 import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 const addDisplayName = (userMap: UserMap): WalkOnUsersCallback => (
   { value, fieldName }
@@ -57,7 +55,7 @@ const convertUserNameToId = (userMap: UserMap): WalkOnUsersCallback => (
  */
 const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
   name: 'userIdFilter',
-  onFetch: async elements => log.time(async () => {
+  onFetch: async elements => {
     if (!(config.fetch.convertUsersIds ?? true)) {
       return
     }
@@ -71,7 +69,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
           walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap,)) })
         }
       })
-  }, 'user_id_filter fetch'),
+  },
   preDeploy: async changes => {
     if (!(config.fetch.convertUsersIds ?? true) || !client.isDataCenter) {
       return
@@ -90,7 +88,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       .forEach(element =>
         walkOnElement({ element, func: walkOnUsers(convertUserNameToId(userMap)) }))
   },
-  onDeploy: async changes => log.time(async () => {
+  onDeploy: async changes => {
     if (!(config.fetch.convertUsersIds ?? true)
        || !client.isDataCenter) {
       return
@@ -103,7 +101,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
         walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) }))
-  }, 'user_id_filter deploy'),
+  },
 })
 
 export default filter

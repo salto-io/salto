@@ -302,9 +302,9 @@ const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
     name: 'handleTemplateExpressionFilter',
-    onFetch: async (elements: Element[]): Promise<void> => log.time(async () =>
-      replaceFormulasWithTemplates(elements.filter(isInstanceElement), config[FETCH_CONFIG].enableMissingReferences), 'Create template creation filter'),
-    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
+    onFetch: async (elements: Element[]): Promise<void> =>
+      replaceFormulasWithTemplates(elements.filter(isInstanceElement), config[FETCH_CONFIG].enableMissingReferences),
+    preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       try {
         (await getContainers(await awu(changes).map(getChangeData).toArray())).forEach(
           async container => replaceTemplatesWithValues(container, deployTemplateMapping, prepRef)
@@ -312,11 +312,11 @@ const filterCreator: FilterCreator = ({ config }) => {
       } catch (e) {
         log.error(`Error parsing templates in deployment: ${e.message}`)
       }
-    }, 'Create template resolve filter'),
-    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
+    },
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       (await getContainers(changes.map(getChangeData)))
-        .forEach(container => resolveTemplates(container, deployTemplateMapping)),
-    'Create templates restore filter'),
+        .forEach(container => resolveTemplates(container, deployTemplateMapping))
+    },
   })
 }
 

@@ -86,7 +86,7 @@ const maskValues = async (
  */
 const filter: FilterCreator = ({ config }) => ({
   name: 'maskingFilter',
-  onFetch: async elements => log.time(async () => {
+  onFetch: async elements => {
     if (config.masking.automationHeaders.length === 0
       && config.masking.secretRegexps.length === 0) {
       return
@@ -97,7 +97,7 @@ const filter: FilterCreator = ({ config }) => ({
       .forEach(async instance => {
         await maskValues(instance, config.masking)
       })
-  }, 'masking filter'),
+  },
 })
 
 export default filter

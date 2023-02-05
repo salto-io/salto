@@ -204,7 +204,7 @@ const getMacroAttachments = async ({
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'macroAttachmentsFilter',
-  onFetch: async elements => log.time(async () => {
+  onFetch: async elements => {
     const macrosWithAttachments = elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === MACRO_TYPE_NAME)
@@ -214,7 +214,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       .map(async macro => getMacroAttachments({ client, attachmentType, macro })))).flat()
     _.remove(elements, element => element.elemID.isEqual(attachmentType.elemID))
     elements.push(attachmentType, ...macroAttachments)
-  }, 'Macro attachment filter'),
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

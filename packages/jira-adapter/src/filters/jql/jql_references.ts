@@ -92,7 +92,7 @@ const filter: FilterCreator = ({ config }) => {
 
   return {
     name: 'jqlReferencesFilter',
-    onFetch: async elements => log.time(async () => {
+    onFetch: async elements => {
       if (config.fetch.parseTemplateExpressions === false) {
         log.debug('Parsing JQL template expression was disabled')
         return {}
@@ -136,7 +136,7 @@ const filter: FilterCreator = ({ config }) => {
       return {
         errors: ambiguityWarnings,
       }
-    }, 'jqlReferencesFilter'),
+    },
 
     preDeploy: async changes => {
       await awu(changes)

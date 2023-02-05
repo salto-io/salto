@@ -59,7 +59,7 @@ const turnParametersFieldToMap = (
  */
 const filterCreator: FilterCreator = () => ({
   name: 'appOwnedConvertListToMapFilter',
-  onFetch: async elements => log.time(async () => {
+  onFetch: async elements => {
     elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME)
@@ -68,7 +68,7 @@ const filterCreator: FilterCreator = () => ({
         turnParametersFieldToMap(
           elem,
         ))
-  }, 'appOwnedConvertListToMap filter'),
+  },
 })
 
 export default filterCreator

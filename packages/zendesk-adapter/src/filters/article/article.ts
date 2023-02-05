@@ -249,7 +249,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
   const articleNameToAttachments: Record<string, number[]> = {}
   return {
     name: 'articleFilter',
-    onFetch: async (elements: Element[]) => log.time(async () => {
+    onFetch: async (elements: Element[]) => {
       const articleInstances = elements
         .filter(isInstanceElement)
         .filter(instance => instance.elemID.typeName === ARTICLE_TYPE_NAME)
@@ -285,7 +285,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         ])
         article.value.attachments = sortedAttachments
       })
-    }, 'articlesFilter'),
+    },
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       const addedArticleAttachments = await handleArticleAttachmentsPreDeploy(
         { changes, client, elementsSource, articleNameToAttachments }

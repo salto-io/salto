@@ -153,7 +153,7 @@ const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
     name: 'smartValueReferenceFilter',
-    onFetch: async (elements: Element[]) => log.time(async () => {
+    onFetch: async (elements: Element[]) => {
       if (config.fetch.parseTemplateExpressions === false) {
         log.debug('Parsing smart values template expressions was disabled')
         return {}
@@ -162,9 +162,9 @@ const filterCreator: FilterCreator = ({ config }) => {
       return {
         errors: warnings,
       }
-    }, 'Smart values creation filter'),
+    },
 
-    preDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {
+    preDeploy: async (changes: Change<InstanceElement>[]) => {
       filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
         async instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
           try {
@@ -178,9 +178,9 @@ const filterCreator: FilterCreator = ({ config }) => {
           }
         })
       )
-    }, 'Smart values resolve filter'),
+    },
 
-    onDeploy: async (changes: Change<InstanceElement>[]) => log.time(() => {
+    onDeploy: async (changes: Change<InstanceElement>[]) => {
       filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
         async instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
           try {
@@ -193,7 +193,7 @@ const filterCreator: FilterCreator = ({ config }) => {
           }
         })
       )
-    }, 'Smart values restore filter'),
+    },
   })
 }
 

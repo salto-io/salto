@@ -22,7 +22,7 @@ import {
   getInstanceDesc,
   getInstancesDetailsMsg,
   createWarningFromMsg,
-  getInstancesWithCollidingElemID, safeJsonStringify,
+  getInstancesWithCollidingElemID, safeJsonStringify, elementExpressionStringifyReplacer,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError, ElemID } from '@salto-io/adapter-api'
@@ -133,9 +133,13 @@ const createWarnings = async (
   )
 
   const instancesWithoutNameWarnings = Object.entries(instancesWithoutNameByType)
-    .map(([typeName, instances]) => (
-      createWarningFromMsg(`Omitted instances without names of type ${typeName} with values ${safeJsonStringify(instances.map(i => i.value))}`)
-    ))
+    .map(([typeName, instances]) => {
+      const message = `Omitted instances without names of type ${typeName}.
+      This is probably due to the fact that None of the idFields had values. 
+      Instance values: ${instances.map(instance => safeJsonStringify(instance.value, elementExpressionStringifyReplacer, 2)).join('\n')}`
+      log.warn(message)
+      return createWarningFromMsg(message)
+    })
 
   return [
     ...collisionWarnings,

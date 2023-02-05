@@ -311,7 +311,7 @@ export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const MAX_QUERY_LENGTH = 2000
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
-  maxAttempts: 3,
+  maxAttempts: 5,
   retryDelay: 1000,
   retryableFailures: [
     'FIELD_CUSTOM_VALIDATION_EXCEPTION',

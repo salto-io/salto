@@ -594,6 +594,28 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/groups/rules',
+        method: 'post',
+        fieldsToIgnore: ['status', 'allGroupsValid'],
+      },
+      modify: {
+        url: '/api/v1/groups/rules/{ruleId}',
+        method: 'put',
+        urlParamsToFields: {
+          ruleId: 'id',
+        },
+        fieldsToIgnore: ['status', 'allGroupsValid'],
+      },
+      remove: {
+        url: '/api/v1/groups/rules/{ruleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          ruleId: 'id',
+        },
+      },
+    },
   },
   InlineHook: {
     transformation: {

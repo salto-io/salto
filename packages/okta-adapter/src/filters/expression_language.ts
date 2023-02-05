@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
-import { extractTemplate, resolvePath } from '@salto-io/adapter-utils'
+import { Change, Element, getChangeData, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
+import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
@@ -32,6 +32,7 @@ type expressionDetails = {
   pathToContainer: string[]
   fieldName: string
   patterns: RegExp[]
+  isIdentityEngine: boolean
 }
 
 const TYPE_TO_EXPRESSIONS: Record<string, expressionDetails> = {
@@ -39,11 +40,13 @@ const TYPE_TO_EXPRESSIONS: Record<string, expressionDetails> = {
     pathToContainer: ['conditions', 'expression'],
     fieldName: 'value',
     patterns: [USER_SCHEMA_REGEX, ID_REGEX],
+    isIdentityEngine: false,
   },
   [POLICY_RULE_TYPE_NAME]: {
     pathToContainer: ['conditions', 'additionalProperties', 'elCondition'],
     fieldName: 'condition',
     patterns: [ID_REGEX, USER_SCHEMA_IE_REGEX],
+    isIdentityEngine: true,
   },
 }
 
@@ -124,13 +127,79 @@ const replaceExpressionsWithTemplates = (instances: InstanceElement[]): void => 
     })
 }
 
+const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression) => TemplatePart => {
+  const prepRef = (part: ReferenceExpression): TemplatePart => {
+    if (part.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
+      const userSchemaField = part.elemID.getFullNameParts().pop()
+      if (!_.isString(userSchemaField)) {
+        throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
+      }
+      return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
+    }
+    if (part.elemID.isTopLevel()) {
+      return `"${part.value.value.id}"`
+    }
+    return part
+  }
+  return prepRef
+}
+
 /**
  * Create template expressions for okta expression language references
  */
-const filter: FilterCreator = () => ({
-  onFetch: async (elements: Element[]) => log.time(() => {
-    replaceExpressionsWithTemplates(elements.filter(isInstanceElement))
-  }, 'Expression language filter'),
-})
+const filter: FilterCreator = () => {
+  const changeToTemplateMapping: Record<string, TemplateExpression> = {}
+  return ({
+    onFetch: async (elements: Element[]) => log.time(() => {
+      replaceExpressionsWithTemplates(elements.filter(isInstanceElement))
+    }, 'Expression language filter'),
+
+    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
+      changes
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .filter(instance => Object.keys(TYPE_TO_EXPRESSIONS).includes(instance.elemID.typeName))
+        .forEach(
+          async instance => {
+            const { pathToContainer, fieldName, isIdentityEngine } = TYPE_TO_EXPRESSIONS[instance.elemID.typeName]
+            const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
+            const expressionValue = container?.[fieldName]
+            if (isTemplateExpression(expressionValue)) {
+              try {
+                replaceTemplatesWithValues(
+                  { values: [container], fieldName },
+                  changeToTemplateMapping,
+                  createPrepRefFunc(isIdentityEngine),
+                )
+              } catch (e) {
+                log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment`, e)
+              }
+            }
+          }
+        )
+    }, 'Resolve templates to values preDeploy filter'),
+
+    onDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
+      changes
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .filter(instance => Object.keys(TYPE_TO_EXPRESSIONS).includes(instance.elemID.typeName))
+        .forEach(
+          async instance => {
+            const { pathToContainer, fieldName } = TYPE_TO_EXPRESSIONS[instance.elemID.typeName]
+            const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
+            const expressionValue = container?.[fieldName]
+            if (_.isString(expressionValue)) {
+              try {
+                resolveTemplates({ values: [container], fieldName }, changeToTemplateMapping)
+              } catch (e) {
+                log.error(`Error restoring templates in instance ${instance.elemID.getFullName()} after deployment`, e)
+              }
+            }
+          }
+        )
+    }, 'Restore templates onDeloy filter'),
+  })
+}
 
 export default filter

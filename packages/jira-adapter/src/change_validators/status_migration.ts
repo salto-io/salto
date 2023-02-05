@@ -1,0 +1,83 @@
+/*
+*                      Copyright 2023 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, ModificationChange } from '@salto-io/adapter-api'
+import Joi from 'joi'
+import _ from 'lodash'
+import { getRelevantChanges, StatusMigration } from './workflow_scheme_migration'
+
+const statusMigrationSchema = Joi.object({
+  issueTypeId: Joi.string().required(),
+  statusId: Joi.string().required(),
+  newStatusId: Joi.string().required(),
+})
+
+const isSameStatusMigration = (
+  a: StatusMigration,
+  b: StatusMigration,
+): boolean => a.issueTypeId === b.issueTypeId && a.statusId === b.statusId
+
+const getRepeatingItem = (statusMigrations: StatusMigration[]): StatusMigration | undefined =>
+  _.intersectionWith(statusMigrations, statusMigrations, isSameStatusMigration)[0]
+
+const generateStatusMigrationRepeatingItemError = (change: ModificationChange<InstanceElement>): ChangeError => {
+  const repeatingItem = getRepeatingItem(getChangeData(change).value.statusMigrations)
+  return { elemID: getChangeData(change).elemID,
+    severity: 'Error',
+    message: 'Invalid statusMigration',
+    detailedMessage: `The provided statusMigration is invalid. Issue type ${repeatingItem?.issueTypeId} and status ${repeatingItem?.statusId} appear more than once. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes`,
+}
+}
+
+const generateStatusMigrationInvalidError = (change: ModificationChange<InstanceElement>): ChangeError => ({
+  elemID: getChangeData(change).elemID,
+  severity: 'Error',
+  message: 'Invalid statusMigration',
+  detailedMessage: "The provided statusMigration is invalid. One of the objects is not formatted properly, with an issue type, status and new status. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes",
+})
+
+
+const StatusMigrationHasRepeatingItem = (change: ModificationChange<InstanceElement>): boolean => {
+  const instance = getChangeData(change)
+  const { statusMigrations } = instance.value
+  if (statusMigrations === undefined) {
+    return false
+  }
+  return getRepeatingItem(statusMigrations) !== undefined
+}
+
+const StatusMigrationHasInvalidItem = (change: ModificationChange<InstanceElement>): boolean => {
+  const instance = getChangeData(change)
+  const { statusMigrations } = instance.value
+  if (statusMigrations === undefined) {
+    return false
+  }
+  if (!Array.isArray(statusMigrations)) {
+    return true
+  }
+  return statusMigrations.some(item => statusMigrationSchema.validate(item).error !== undefined)
+}
+
+/**
+ * Validates status migration fields in workflowSchemes.
+ */
+export const statusMigrationChangeValidator: ChangeValidator = async changes => {
+  const relevantChanges = getRelevantChanges(changes)
+  const invalidItemErrors = _.remove(relevantChanges, StatusMigrationHasInvalidItem)
+    .map(generateStatusMigrationInvalidError)
+  const repeatingItemErrors = _.remove(relevantChanges, StatusMigrationHasRepeatingItem)
+    .map(generateStatusMigrationRepeatingItemError)
+  return [...invalidItemErrors, ...repeatingItemErrors]
+}

@@ -40,7 +40,7 @@ type ChangedItem = {
   issueType: ReferenceExpression
 }
 
-type StatusMigration = {
+export type StatusMigration = {
   issueTypeId: ReferenceExpression
   statusId: ReferenceExpression
   newStatusId?: ReferenceExpression
@@ -59,7 +59,7 @@ const workflowLinkedToProjectWithIssues = async (
 ): Promise<boolean> =>
   awu(getAssignedProjects(workflowScheme, projects)).some(async project => doesProjectHaveIssues(project, client))
 
-const getRelevantChanges = (
+export const getRelevantChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
 ): ModificationChange<InstanceElement>[] =>
   changes

@@ -125,7 +125,6 @@ describe('expression language filter', () => {
                   userSchemaInstance.elemID.createNestedID(...customPath),
                   _.get(userSchemaInstance.value, customPath)
                 ),
-                // eslint-disable-next-line no-useless-escape
                 ' == \'salto\' AND user.isMemberOf({\'group.id\':{',
                 new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),
                 ', ',
@@ -160,6 +159,25 @@ describe('expression language filter', () => {
               ],
             })
           )
+        })
+
+        it('should not create template expression if no references were found', async () => {
+          const groupRuleNoReferences = new InstanceElement(
+            'groupRuleNoReferences',
+            groupRuleType,
+            {
+              conditions: {
+                expression: {
+                  value: 'isMemberOfGroupNameRegex("/.*admin.*")',
+                },
+              },
+            }
+          )
+          elements = [groupRuleType, groupType, groupRuleNoReferences]
+          await filter.onFetch(elements)
+          const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleNoReferences')
+          expect(groupRule).toBeDefined()
+          expect(groupRule?.value?.conditions?.expression?.value).toEqual('isMemberOfGroupNameRegex("/.*admin.*")')
         })
 
         // it('should not create template expression if expression path does not exist', () => {

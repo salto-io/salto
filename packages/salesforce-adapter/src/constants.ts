@@ -153,6 +153,7 @@ export const IS_ATTRIBUTE = 'isAttribute'
 export const FOLDER_CONTENT_TYPE = 'folderContentType'
 // must have the same name as INTERNAL_ID_FIELD
 export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
+export const REFERENCED_PACKAGES = 'referencedPackages'
 
 // Salesforce annotations
 export const LABEL = 'label'

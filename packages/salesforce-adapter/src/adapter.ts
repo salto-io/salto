@@ -79,6 +79,7 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
+import referencedPackagesFilter from './filters/referenced_packages'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -167,6 +168,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
+  // referencedPackagesFilter should run last
+  { creator: referencedPackagesFilter },
 ]
 
 // By default we run all filters and provide a client

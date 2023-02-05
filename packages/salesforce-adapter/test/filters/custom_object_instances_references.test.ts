@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -22,6 +23,10 @@ import mockClient from '../client'
 import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL, FIELD_ANNOTATIONS } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { mockTypes } from '../mock_elements'
+import { isInstanceOfType } from '../../src/filters/utils'
+
+const { awu } = collections.asynciterable
 
 describe('Custom Object Instances References filter', () => {
   let client: SalesforceClient
@@ -239,6 +244,23 @@ describe('Custom Object Instances References filter', () => {
         Id: 'duplicateId-2',
       },
     )
+
+    const objectWithInstancesWithoutName = 'Product2'
+    const instanceWithoutName = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      mockTypes[objectWithInstancesWithoutName],
+      {
+        Name: 'ProductInstanceName',
+      },
+    )
+    const anotherInstanceWithoutName = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      mockTypes[objectWithInstancesWithoutName],
+      {
+        Name: 'AnotherProductInstanceName',
+      },
+    )
+
     const refFromToDupName = 'refFromToDuplicateInstance'
     const refFromToDupInst = new InstanceElement(
       refFromToDupName,
@@ -263,6 +285,7 @@ describe('Custom Object Instances References filter', () => {
       refToObj,
       masterObj,
       userObj,
+      mockTypes[objectWithInstancesWithoutName],
     ]
     const legalInstances = [
       refToInstance,
@@ -273,6 +296,8 @@ describe('Custom Object Instances References filter', () => {
       refFromEmptyRefsInstance,
       firstDupInst,
       secondDupInst,
+      instanceWithoutName,
+      anotherInstanceWithoutName,
     ]
     const sideEffectIllegalInstances = [
       refFromToDupInst,
@@ -326,6 +351,15 @@ describe('Custom Object Instances References filter', () => {
         e => e.elemID.isEqual(refFromEmptyRefsInstance.elemID)
       )
       expect(afterFilterEmptyRefToInst).toBeUndefined()
+    })
+
+    it('should drop instances without name and create warning', async () => {
+      const omittedTypeInstances = await awu(elements)
+        .filter(isInstanceOfType(objectWithInstancesWithoutName))
+        .toArray()
+      expect(omittedTypeInstances).toBeEmpty()
+      expect(errors)
+        .toSatisfyAny(e => e.severity === 'Warning' && e.message.startsWith('Omitted instances without names'))
     })
 
     it('should drop instances with duplicate elemIDs', () => {

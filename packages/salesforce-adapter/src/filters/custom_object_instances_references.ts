@@ -22,10 +22,10 @@ import {
   getInstanceDesc,
   getInstancesDetailsMsg,
   createWarningFromMsg,
-  getInstancesWithCollidingElemID,
+  getInstancesWithCollidingElemID, safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
+import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError, ElemID } from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
@@ -35,7 +35,7 @@ import { DataManagement } from '../fetch_profile/data_management'
 const { makeArray } = collections.array
 const { isDefined } = lowerdashValues
 const { DefaultMap } = collections.map
-const { keyByAsync } = collections.asynciterable
+const { keyByAsync, groupByAsync } = collections.asynciterable
 const { removeAsync } = promises.array
 const { mapValuesAsync } = promises.object
 type RefOrigin = { type: string; id: string; field?: string }
@@ -68,6 +68,7 @@ const deserializeInternalID = (internalID: string): RefOrigin => {
 }
 
 const createWarnings = async (
+  instancesWithoutName: InstanceElement[],
   instancesWithCollidingElemID: InstanceElement[],
   missingRefs: MissingRef[],
   illegalRefSources: Set<string>,
@@ -126,8 +127,19 @@ const createWarnings = async (
   const illegalOriginsWarnings = illegalRefSources.size === 0 ? [] : [createWarningFromMsg(`Omitted ${illegalRefSources.size} instances due to the previous SaltoID collisions and/or missing instances.
   Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`)]
 
+  const instancesWithoutNameByType = await groupByAsync(
+    instancesWithoutName,
+    async instance => apiName(await instance.getType())
+  )
+
+  const instancesWithoutNameWarnings = Object.entries(instancesWithoutNameByType)
+    .map(([typeName, instances]) => (
+      createWarningFromMsg(`Omitted instances without names of type ${typeName} with values ${safeJsonStringify(instances.map(i => i.value))}`)
+    ))
+
   return [
     ...collisionWarnings,
+    ...instancesWithoutNameWarnings,
     ...missingRefsWarnings,
     ...illegalOriginsWarnings,
   ]
@@ -272,7 +284,11 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
       internalToInstance,
       dataManagement,
     )
-    const instancesWithCollidingElemID = getInstancesWithCollidingElemID(customObjectInstances)
+    const instancesWithoutName = customObjectInstances
+      .filter(instance => instance.elemID.name === ElemID.CONFIG_NAME)
+    const instancesWithCollidingElemID = getInstancesWithCollidingElemID(
+      customObjectInstances.filter(e => !instancesWithoutName.includes(e))
+    )
     const missingRefOriginInternalIDs = new Set(
       missingRefs
         .map(missingRef => serializeInternalID(missingRef.origin.type, missingRef.origin.id))
@@ -298,10 +314,12 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
         (await isInstanceOfCustomObject(element)
         && invalidInstances.has(await serializeInstanceInternalID(element as InstanceElement))),
     )
+    _.pullAll(elements, instancesWithoutName)
     const baseUrl = await client.getUrl()
     const customObjectPrefixKeyMap = await buildCustomObjectPrefixKeyMap(elements)
     return {
       errors: await createWarnings(
+        instancesWithoutName,
         instancesWithCollidingElemID,
         missingRefs,
         illegalRefSources,

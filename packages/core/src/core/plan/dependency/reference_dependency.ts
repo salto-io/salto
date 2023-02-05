@@ -34,7 +34,7 @@ const getChangeElemId = (change: Change<ChangeDataType>): string => (
 )
 
 const isReferenceValueChanged = (change: Change<ChangeDataType>, refElemId: ElemID): boolean => {
-  if (!isModificationChange(change) || refElemId.createBaseID().path.length === 0) {
+  if (!isModificationChange(change) || refElemId.isBaseID()) {
     return false
   }
   const beforeTopLevel = isField(change.data.before) ? change.data.before.parent : change.data.before

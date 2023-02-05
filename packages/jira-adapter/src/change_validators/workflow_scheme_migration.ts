@@ -168,13 +168,8 @@ const getErrorMessageForStatusMigration = (
     elemID: instance.elemID,
     severity: 'Warning',
     message: `Deployment of workflow scheme ${instance.elemID.name} will require migrating ${statusMigrations.length === 1 ? 'one status' : `${statusMigrations.length} statuses`}`,
-    detailedMessage: '',
+    detailedMessage: `Add the following field to migrate statuses in Jira: \n${formatStatusMigrations(statusMigrations)}\n`,
     deployActions: {
-      preAction: {
-        title: `Status migration for workflow scheme ${instance.elemID.name}`,
-        description: `Add the following field to migrate statuses in Jira: \n${formatStatusMigrations(statusMigrations)}\n`,
-        subActions: [],
-      },
       postAction: serviceUrl ? {
         title: `Status migration for workflow scheme ${instance.elemID.name}`,
         description: 'finish the migration in Jira by following the steps below:',

@@ -43,7 +43,8 @@ const isLicenseResponse = createSchemeGuard<LicenseResponse>(LICENSE_RESPONSE_SC
  * the info includes license data
 */
 const filter: FilterCreator = ({ client }) => ({
-  onFetch: async elements => log.time(async () => {
+  name: 'account info filter',
+  onFetch: async elements => {
     if (client.isDataCenter) {
       // Add here data center license info in the future
       return
@@ -101,6 +102,6 @@ const filter: FilterCreator = ({ client }) => ({
     } catch (e) {
       log.error(`Received an error when fetching jira license, ${e.message}.`)
     }
-  }, 'account info filter'),
+  },
 })
 export default filter

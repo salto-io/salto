@@ -24,10 +24,10 @@ import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
 describe('wrongUsersPermissionSchemeFilter', () => {
   let instances: InstanceElement[]
   let changes: Change[]
-  const { getIdMapFunc, connection } = mockClient()
+  const { getUserMapFunc, connection } = mockClient()
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
   const filter = wrongUserPermissionSchemeFilter(getFilterParams({
-    getIdMapFunc,
+    getUserMapFunc,
     config,
   })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
 
@@ -72,10 +72,16 @@ describe('wrongUsersPermissionSchemeFilter', () => {
       status: 200,
       data: [{
         accountId: 'id1',
+        locale: 'en_US',
+        displayName: 'name1',
       }, {
         accountId: 'id4',
+        locale: 'en_US',
+        displayName: 'name2',
       }, {
         accountId: 'id5',
+        locale: 'en_US',
+        displayName: 'name3',
       }],
     })
   })

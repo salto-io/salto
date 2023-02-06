@@ -54,6 +54,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
  * Add author information to validation rules instances.
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: 'validationRulesAuthorFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

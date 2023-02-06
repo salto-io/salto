@@ -85,10 +85,12 @@ jest.mock('../src/changes_detector/changes_detector')
 
 const onFetchMock = jest.fn().mockImplementation(async _arg => undefined)
 const firstDummyFilter: FilterCreator = () => ({
+  name: 'firstDummyFilter',
   onFetch: () => onFetchMock(1),
 })
 
 const secondDummyFilter: FilterCreator = () => ({
+  name: 'secondDummyFilter',
   onFetch: () => onFetchMock(2),
 })
 

@@ -26,6 +26,7 @@ import { FilterCreator } from '../../filter'
  * so issuing an error in the the change validator would fail the deployment of the project as well.
  */
 const filter: FilterCreator = ({ client, elementsSource }) => ({
+  name: 'deployPermissionSchemeFilter',
   deploy: async changes => {
     if (client.isDataCenter
       || !await isFreeLicense(elementsSource)) {

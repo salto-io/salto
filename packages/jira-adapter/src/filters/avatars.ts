@@ -29,6 +29,7 @@ export const removeDomainPrefix = (url: string, baseUrl: string): string => {
 }
 
 const filter: FilterCreator = ({ client }) => ({
+  name: 'avatarsFilter',
   // There is no need to revert the changes of iconUrl and avatarUrls
   // pre deploy because they are not deployable
   // (and we already have a change validator for undeployable changes)

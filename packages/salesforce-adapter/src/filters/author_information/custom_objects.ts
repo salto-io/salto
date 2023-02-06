@@ -103,6 +103,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
  * add author information to object types and fields.
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: 'customObjectAuthorFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

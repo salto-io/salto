@@ -21,6 +21,7 @@ import { TICKET_FORM_TYPE_NAME } from '../../constants'
  * Add ticket forms order element with all the ticket forms ordered
  */
 const filterCreator = createReorderFilterCreator({
+  filterName: 'ticketFormOrderFilter',
   typeName: TICKET_FORM_TYPE_NAME,
   orderFieldName: 'ticket_form_ids',
   activeFieldName: 'active',

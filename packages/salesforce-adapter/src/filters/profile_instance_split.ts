@@ -71,6 +71,7 @@ const isProfileInstance = async (elem: Element): Promise<boolean> => (
  * to Attributes.nacl.
  */
 const filterCreator: LocalFilterCreator = () => ({
+  name: 'profileInstanceSplitFilter',
   onFetch: async (elements: Element[]) => {
     const profileInstances = await removeAsync(elements, isProfileInstance) as InstanceElement[]
     if (profileInstances.length === 0) {

@@ -26,6 +26,7 @@ import { TARGET_TYPE_NAME } from '../constants'
  * Removes the authentication data from target if it wasn't changed
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'targetFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [targetModificationChanges, leftoverChanges] = _.partition(
       changes,

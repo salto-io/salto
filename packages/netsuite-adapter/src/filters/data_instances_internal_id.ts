@@ -48,6 +48,7 @@ const shouldUseIdField = (fieldType: TypeElement | undefined, path: ElemID): boo
  * the objects in the list need to be extracted to new instances).
  */
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'dataInstancesInternalId',
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === RECORD_REF)

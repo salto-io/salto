@@ -239,7 +239,7 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 | Name              | Default when undefined                                  | Description                           |
 |-------------------|---------------------------------------------------------|---------------------------------------|
-| maxAttempts       | `3`                                                     | Max attempts to deploy data instances |
+| maxAttempts       | `5`                                                     | Max attempts to deploy data instances |
 | retryDelay        | `1000`                                                  | Delay (in millis) between each retry  |
 | retryableFailures | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW` | Error messages for which to retry     |
 | 

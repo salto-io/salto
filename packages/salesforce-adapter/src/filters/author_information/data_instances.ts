@@ -58,6 +58,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
  * add author information to data instance elements.
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: 'dataInstancesAuthorFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

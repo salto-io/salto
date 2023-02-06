@@ -28,6 +28,7 @@ export const FLOW_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'FlowMetadataValue')
  * Create filter that handles flow type/instances corner case.
  */
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'flowFilter',
   /**
    * Upon fetch remove restriction values from flowMetadataValue.name.
    *

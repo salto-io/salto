@@ -22,6 +22,7 @@ import { FilterCreator } from '../filter'
  * Convert field values into references, based on predefined rules.
  */
 const filter: FilterCreator = () => ({
+  name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,

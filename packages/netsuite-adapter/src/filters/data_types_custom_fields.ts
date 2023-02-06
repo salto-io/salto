@@ -134,6 +134,7 @@ export const getCustomField = ({
 }
 
 const filterCreator: FilterCreator = ({ isPartial, elementsSourceIndex }) => ({
+  name: 'dataTypesCustomFields',
   onFetch: async elements => {
     const nameToType = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
 

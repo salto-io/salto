@@ -17,15 +17,15 @@ import wu from 'wu'
 import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
-  ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeData,
-  isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
+  ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction,
+  ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
   isModificationChange, isRemovalChange, ReferenceExpression, changeId,
   shouldResolve,
   isTemplateExpression,
   CompareOptions,
 } from '@salto-io/adapter-api'
-import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
+import { DataNodeMap, DiffNode, DiffGraph, GroupDAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
@@ -504,35 +504,6 @@ export const defaultDependencyChangers = [
   addInstanceToFieldsDependency,
 ]
 
-const removeRedundantFieldChanges = (
-  graph: GroupDAG<Change<ChangeDataType>>
-): GroupDAG<Change<ChangeDataType>> => log.time(() => (
-  // If we add / remove an object type, we can omit all the field add / remove
-  // changes from the same group since they are included in the parent change
-  new DAG<Group<Change<ChangeDataType>>>(
-    graph.entries(),
-    new Map(wu(graph.keys()).map(key => {
-      const group = graph.getData(key)
-      const objTypeAddOrRemove = new Set(
-        wu(group.items.values())
-          .filter(isAdditionOrRemovalChange)
-          .map(getChangeData)
-          .filter(isObjectType)
-          .map(obj => obj.elemID.getFullName())
-      )
-      const isRedundantFieldChange = (change: Change<ChangeDataType>): boolean => (
-        isAdditionOrRemovalChange(change)
-        && isFieldChange(change)
-        && objTypeAddOrRemove.has(getChangeData(change).parent.elemID.getFullName())
-      )
-      const filteredItems = new Map(
-        wu(group.items.entries()).filter(([_id, change]) => !isRedundantFieldChange(change))
-      )
-      return [key, { groupKey: group.groupKey, items: filteredItems }]
-    }))
-  )
-), 'removeRedundantFieldChanges')
-
 export type AdditionalResolveContext = {
   before: ReadonlyArray<Element>
   after: ReadonlyArray<Element>
@@ -588,12 +559,10 @@ export const getPlan = async ({
       customGroupIdFunctions,
     )
     // build graph
-    const groupedGraph = removeRedundantFieldChanges(
-      buildGroupedGraphFromDiffGraph(
-        filterResult.validDiffGraph,
-        changeGroupIdMap,
-        disjointGroups
-      )
+    const groupedGraph = buildGroupedGraphFromDiffGraph(
+      filterResult.validDiffGraph,
+      changeGroupIdMap,
+      disjointGroups
     )
     // build plan
     return addPlanFunctions(groupedGraph, filterResult.changeErrors, compareOptions)

@@ -19,6 +19,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData, resolveValues, safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { handleDeploymentError } from '../deployment/deployment_error_handling'
 import { getLookUpName } from '../reference_mapping'
 import { findObject } from '../utils'
 import { FilterCreator } from '../filter'
@@ -221,9 +222,11 @@ export const deployWorkflowScheme = async (
       await publishDraft(change, client, statusMigrations)
     } catch (err) {
       try {
+        err.message = 'Failed to publish draft with error: '
         err.response.data.errorMessages = await reformatMigrationErrorMessages(
           err.response.data.errorMessages, elementsSource
         )
+        handleDeploymentError(err)
       } catch (error) {
         log.warn(`failed to reformat the workflow scheme ${getChangeData(change).elemID.getFullName()} migration error `)
         throw (err)
@@ -234,6 +237,7 @@ export const deployWorkflowScheme = async (
 }
 
 const filter: FilterCreator = ({ config, client, paginator, elementsSource }) => ({
+  name: 'workflowSchemeFilter',
   onFetch: async elements => {
     const workflowSchemeType = findObject(elements, WORKFLOW_SCHEME_TYPE)
     if (workflowSchemeType !== undefined) {

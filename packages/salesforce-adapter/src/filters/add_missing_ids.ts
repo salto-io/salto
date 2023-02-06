@@ -74,6 +74,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying populate inter
  * Add missing env-specific ids using listMetadataObjects.
  */
 const filter: RemoteFilterCreator = ({ client, config }) => ({
+  name: 'addMissingIdsFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

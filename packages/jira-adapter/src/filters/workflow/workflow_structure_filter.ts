@@ -156,6 +156,7 @@ const transformWorkflowInstance = (workflowValues: Workflow): void => {
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
 const filter: FilterCreator = ({ config }) => ({
+  name: 'workflowStructureFilter',
   onFetch: async (elements: Element[]) => {
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
     if (workflowType !== undefined) {

@@ -98,6 +98,7 @@ export type ChangeValidatorName = (
   | 'omitData'
   | 'unknownUser'
   | 'animationRuleRecordType'
+  | 'currencyIsoCodes'
   | 'duplicateRulesSortOrder'
 )
 
@@ -588,6 +589,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     omitData: { refType: BuiltinTypes.BOOLEAN },
     unknownUser: { refType: BuiltinTypes.BOOLEAN },
     animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
+    currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
     duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

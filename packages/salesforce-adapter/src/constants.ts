@@ -311,7 +311,7 @@ export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const MAX_QUERY_LENGTH = 2000
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
-  maxAttempts: 3,
+  maxAttempts: 5,
   retryDelay: 1000,
   retryableFailures: [
     'FIELD_CUSTOM_VALIDATION_EXCEPTION',
@@ -319,6 +319,9 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   ],
 }
 export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
+
+// Fields
+export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
@@ -450,6 +453,7 @@ export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
+
 // Errors
 export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
 export const INVALID_CROSS_REFERENCE_KEY = 'sf:INVALID_CROSS_REFERENCE_KEY'

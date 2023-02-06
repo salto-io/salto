@@ -212,8 +212,10 @@ export default class NetsuiteClient {
     elementsSourceIndex: LazyElementsSourceIndexes,
   ):Promise<Map<string, Set<string>>> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
-    const elemIdsAndCustInfoArr = await awu(changes)
-      .map(getChangeData)
+    const elements = changes.map(getChangeData)
+    const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
+    const elemIdsAndCustInfoArr = await awu(elements)
+      .filter(element => !isField(element) || !elemIdSet.has(element.parent.elemID.getFullName()))
       .map(async element => ({
         elemId: element.elemID,
         custInfos: await NetsuiteClient.toCustomizationInfos(

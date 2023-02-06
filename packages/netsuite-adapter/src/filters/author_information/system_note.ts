@@ -224,6 +224,7 @@ const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceE
     .toArray()
 
 const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
+  name: 'systemNoteAuthorInformation',
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {

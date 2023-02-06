@@ -29,6 +29,7 @@ const RELEVANT_TYPES: string[] = [
 ]
 
 const filter: FilterCreator = () => ({
+  name: 'removeEmptyValuesFilter',
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)

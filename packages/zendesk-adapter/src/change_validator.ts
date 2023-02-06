@@ -58,7 +58,7 @@ import {
   customStatusCategoryChangeValidator,
   customStatusCategoryValidator,
   defaultCustomStatusesValidator,
-  customStatusActiveDefaultValidator,
+  customStatusActiveDefaultValidator, defaultGroupChangeValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -66,6 +66,7 @@ const {
   deployTypesNotSupportedValidator,
   createCheckDeploymentBasedOnConfigValidator,
   createSkipParentsOfSkippedInstancesValidator,
+  getDefaultChangeValidators,
 } = deployment.changeValidators
 
 export default ({
@@ -80,6 +81,7 @@ export default ({
   typesWithNoDeploy: string[]
 }): ChangeValidator => {
   const validators: ChangeValidator[] = [
+    ...getDefaultChangeValidators(),
     deployTypesNotSupportedValidator,
     createCheckDeploymentBasedOnConfigValidator(
       { apiConfig, typesDeployedViaParent, typesWithNoDeploy }
@@ -123,6 +125,7 @@ export default ({
     helpCenterActivationValidator,
     helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook,
+    defaultGroupChangeValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

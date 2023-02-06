@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import {
-  buildLazyShallowTypeResolverElementsSource,
+import { buildLazyShallowTypeResolverElementsSource,
   createChangeValidator,
-} from '@salto-io/adapter-utils'
+  createChangeValidator } from '@salto-io/adapter-utils'
+
+import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
@@ -37,9 +38,9 @@ import invalidListViewFilterScope from './change_validators/invalid_listview_fil
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
+import currencyIsoCodes from './change_validators/currency_iso_codes'
 import duplicateRulesSortOrder from './change_validators/duplicate_rules_sort_order'
 import SalesforceClient from './client/client'
-
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
@@ -76,6 +77,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
   duplicateRulesSortOrder: { creator: () => duplicateRulesSortOrder, ...defaultAlwaysRun },
+  currencyIsoCodes: { creator: () => currencyIsoCodes, ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {
@@ -93,7 +95,9 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     ([name]) => config.validators?.[name as ChangeValidatorName] === false
   )
   const changeValidator = createChangeValidator(
-    activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
+    activeValidators
+      .map(([_name, validator]) => validator.creator(config, isSandbox, client))
+      .concat(deployment.changeValidators.getDefaultChangeValidators()),
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
   // Resolve the types of all the elements before the ChangeValidator runs.

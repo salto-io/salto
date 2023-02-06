@@ -25,6 +25,7 @@ const { makeArray } = collections.array
 const RELEVANT_TYPE_NAMES = [ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME]
 
 const filterCreator: FilterCreator = () => ({
+  name: 'addFieldOptionsFilter',
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,

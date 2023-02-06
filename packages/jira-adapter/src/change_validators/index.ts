@@ -36,7 +36,7 @@ import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflows/workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
 import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
-import { GetIdMapFunc } from '../users_map'
+import { GetUserMapFunc } from '../users'
 import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
@@ -51,9 +51,10 @@ const {
 
 
 export default (
-  client: JiraClient, config: JiraConfig, getIdMapFunc: GetIdMapFunc
+  client: JiraClient, config: JiraConfig, getUserMapFunc: GetUserMapFunc
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
+    ...deployment.changeValidators.getDefaultChangeValidators(),
     deployTypesNotSupportedValidator,
     readOnlyProjectRoleChangeValidator,
     defaultFieldConfigurationValidator,
@@ -76,8 +77,8 @@ export default (
     workflowPropertiesValidator,
     permissionSchemeValidator,
     screenSchemeDefaultValidator,
-    wrongUserPermissionSchemeValidator(client, config, getIdMapFunc),
-    accountIdValidator(client, config, getIdMapFunc),
+    wrongUserPermissionSchemeValidator(client, config, getUserMapFunc),
+    accountIdValidator(client, config, getUserMapFunc),
     workflowSchemeDupsValidator,
     permissionSchemeDeploymentValidator(client),
   ]

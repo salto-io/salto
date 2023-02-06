@@ -19,6 +19,7 @@ import { isFileCabinetType } from '../types'
 import { FilterWith } from '../filter'
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'addParentFolder',
   onFetch: async elements => {
     elements
       .filter(isInstanceElement)

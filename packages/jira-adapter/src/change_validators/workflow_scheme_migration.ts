@@ -49,7 +49,7 @@ export type StatusMigration = {
 }
 
 const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
-  project.value.workflowScheme !== undefined
+  project.value.workflowScheme !== undefined && project.value.workflowScheme instanceof ReferenceExpression
 
 const workflowLinkedToProjectWithIssues = async (
   assignedProjects: InstanceElement[],
@@ -229,7 +229,7 @@ export const workflowSchemeMigrationValidator = (
       .toArray()
     const workflowSchemesToProjects = _.groupBy(
       projects.filter(projectHasWorkflowSchemeReference),
-      project => project.value.workflowScheme?.elemID.getFullName(),
+      project => project.value.workflowScheme.elemID.getFullName(),
     )
     const activeWorkflowsChanges = await awu(relevantChanges)
       .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()].length > 0)

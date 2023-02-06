@@ -16,7 +16,10 @@
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, ModificationChange } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
 import { getRelevantChanges, StatusMigration } from './workflow_scheme_migration'
+
+const { isDefined } = values
 
 const statusMigrationSchema = Joi.object({
   issueTypeId: Joi.required(),
@@ -32,15 +35,16 @@ const isSameStatusMigration = (
 const getRepeatingItem = (statusMigrations: StatusMigration[]): StatusMigration | undefined =>
   statusMigrations.filter((item, index, arr) => arr.findIndex(i => isSameStatusMigration(i, item)) !== index)[0]
 
-const generateStatusMigrationRepeatingItemError = (change: ModificationChange<InstanceElement>): ChangeError => {
-  const repeatingItem = getRepeatingItem(getChangeData(change).value.statusMigrations)
-  return {
+const generateStatusMigrationRepeatingItemError = (
+  change: ModificationChange<InstanceElement>,
+  repeatingItem: StatusMigration,
+): ChangeError =>
+  ({
     elemID: getChangeData(change).elemID,
     severity: 'Error',
     message: 'Invalid statusMigration',
-    detailedMessage: `The provided statusMigration is invalid. Issue type ${repeatingItem?.issueTypeId.elemID.name} and status ${repeatingItem?.statusId.elemID.name} appear more than once. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes`,
-  }
-}
+    detailedMessage: `The provided statusMigration is invalid. Issue type ${repeatingItem.issueTypeId.elemID.name} and status ${repeatingItem.statusId.elemID.name} appear more than once. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes`,
+  })
 
 const generateStatusMigrationInvalidError = (change: ModificationChange<InstanceElement>): ChangeError => ({
   elemID: getChangeData(change).elemID,
@@ -48,16 +52,6 @@ const generateStatusMigrationInvalidError = (change: ModificationChange<Instance
   message: 'Invalid statusMigration',
   detailedMessage: "The provided statusMigration is invalid. One of the objects is not formatted properly, with an issue type, status and new status. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes",
 })
-
-
-const StatusMigrationHasRepeatingItem = (change: ModificationChange<InstanceElement>): boolean => {
-  const instance = getChangeData(change)
-  const { statusMigrations } = instance.value
-  if (statusMigrations === undefined) {
-    return false
-  }
-  return getRepeatingItem(statusMigrations) !== undefined
-}
 
 const StatusMigrationHasInvalidItem = (change: ModificationChange<InstanceElement>): boolean => {
   const instance = getChangeData(change)
@@ -78,7 +72,12 @@ export const statusMigrationChangeValidator: ChangeValidator = async changes => 
   const relevantChanges = getRelevantChanges(changes)
   const invalidItemErrors = _.remove(relevantChanges, StatusMigrationHasInvalidItem)
     .map(generateStatusMigrationInvalidError)
-  const repeatingItemErrors = _.remove(relevantChanges, StatusMigrationHasRepeatingItem)
-    .map(generateStatusMigrationRepeatingItemError)
+  const repeatingItemErrors = relevantChanges.map(change => {
+    const repeatingItem = getRepeatingItem(getChangeData(change).value.statusMigrations)
+    if (repeatingItem === undefined) {
+      return undefined
+    }
+    return generateStatusMigrationRepeatingItemError(change, repeatingItem)
+  }).filter(isDefined)
   return [...invalidItemErrors, ...repeatingItemErrors]
 }

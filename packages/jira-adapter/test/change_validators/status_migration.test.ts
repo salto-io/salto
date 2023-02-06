@@ -62,8 +62,14 @@ describe('status migration', () => {
         newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
       },
     ]
-    const errors = await statusMigrationChangeValidator([toChange({ before: instance, after: instance })])
-    expect(errors).toHaveLength(1)
+    const missingFieldErrors = await statusMigrationChangeValidator([toChange({ before: instance, after: instance })])
+    expect(missingFieldErrors).toHaveLength(1)
+    instance.value.statusMigrations = {
+      issueTypeId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+      newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+    }
+    const invalidListErrors = await statusMigrationChangeValidator([toChange({ before: instance, after: instance })])
+    expect(invalidListErrors).toHaveLength(1)
   })
   it('should return error for workflow scheme two of the same items', async () => {
     instance.value.statusMigrations = [

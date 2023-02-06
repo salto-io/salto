@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ElemID, getChangeData, ChangeError, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, ElemID, getChangeData, ChangeError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
 
@@ -32,11 +32,9 @@ const createChangeError = (instanceElemID: ElemID): ChangeError => ({
  */
 const createDataChangeValidator: ChangeValidator = async changes => {
   const dataChange = await awu(changes)
-    .filter(isInstanceOfCustomObjectChange)
-    .map(change => getChangeData(change) as InstanceElement)
-    .find(Boolean)
+    .find(isInstanceOfCustomObjectChange)
 
-  return dataChange !== undefined ? [createChangeError(dataChange.elemID)] : []
+  return dataChange !== undefined ? [createChangeError(getChangeData(dataChange).elemID)] : []
 }
 
 export default createDataChangeValidator

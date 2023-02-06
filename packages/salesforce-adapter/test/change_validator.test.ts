@@ -147,7 +147,7 @@ describe('createSalesforceChangeValidator', () => {
           Object.values(changeValidators).filter(cv => cv.defaultInValidate).length
           + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
         ),
-        expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => !cv.defaultInValidate).length)
+        []
       )
     })
   })

@@ -101,7 +101,8 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
       .concat(deployment.changeValidators.getDefaultChangeValidators()),
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
-  // Resolve the types of all the elements before the ChangeValidator runs.
+  // Returns a change validator with elementsSource that lazily resolves types using resolveTypeShallow
+  // upon usage. This is relevant to Change Validators that get instances from the elementsSource.
   return async (changes, elementSource) => ((elementSource === undefined)
     ? changeValidator(changes, elementSource)
     : changeValidator(changes, buildLazyShallowTypeResolverElementsSource(elementSource)))

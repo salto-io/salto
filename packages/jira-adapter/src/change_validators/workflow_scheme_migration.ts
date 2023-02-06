@@ -218,8 +218,8 @@ export const workflowSchemeMigrationValidator = (
     if (elementSource === undefined || relevantChanges.length === 0) {
       return []
     }
-    const ids = awu(await elementSource.list())
-    const projects = await awu(ids)
+    const idsIterator = awu(await elementSource.list())
+    const projects = await awu(idsIterator)
       .filter(id => id.typeName === PROJECT_TYPE)
       .filter(id => id.idType === 'instance')
       .map(id => elementSource.get(id))

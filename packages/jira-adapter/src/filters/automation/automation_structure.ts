@@ -268,6 +268,7 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
 const filter: FilterCreator = () => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
+    name: 'automationStructureFilter',
     onFetch: async elements =>
       awu(elements)
         .filter(isInstanceElement)

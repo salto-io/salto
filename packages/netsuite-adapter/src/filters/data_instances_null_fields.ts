@@ -22,6 +22,7 @@ import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix } from '..
 const { awu } = collections.asynciterable
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
+  name: 'dataInstancesNullFields',
   preDeploy: async changes => {
     await awu(changes)
       .filter(isModificationChange)

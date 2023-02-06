@@ -53,6 +53,7 @@ const getUserSchema = async (
  * Fetch the non-default userSchema instances
  */
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'fetchUserSchemaFilter',
   onFetch: async elements => {
     const userTypeInstances = elements
       .filter(isInstanceElement)

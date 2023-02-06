@@ -122,6 +122,7 @@ export const deployWorkflow = async (
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'workflowDeployFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

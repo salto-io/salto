@@ -18,6 +18,7 @@ import { defaultDeployChange, deployChanges } from '../deployment/standard_deplo
 import { FilterCreator } from '../filter'
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'defaultInstancesDeployFilter',
   deploy: async changes => {
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),

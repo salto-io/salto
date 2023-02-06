@@ -91,6 +91,7 @@ const addFieldAccessAnnotations = async (
 }
 
 const filterCreator: FilesFilterCreator = ({ files, config }) => ({
+  name: 'sfdxCustomFieldsFilter',
   onFetch: async elements => {
     const customObjects = await awu(elements)
       .filter(isInstanceOfType(CUSTOM_OBJECT))

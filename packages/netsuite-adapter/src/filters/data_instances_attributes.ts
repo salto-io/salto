@@ -24,6 +24,7 @@ import { XSI_TYPE } from '../client/constants'
 const { awu } = collections.asynciterable
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'dataInstancesAttributes',
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)

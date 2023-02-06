@@ -68,6 +68,7 @@ const getApiNameOfRelatedChange = async (change: Change<ObjectType | Field>): Pr
 const filterCreator: LocalFilterCreator = ({ config }) : FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => {
   let groupedOriginalChangesByApiName: Record<string, Change[]>
   return {
+    name: 'customMetadataToObjectTypeFilter',
     onFetch: async elements => {
       const customMetadataType = await awu(elements)
         .filter(isObjectType)

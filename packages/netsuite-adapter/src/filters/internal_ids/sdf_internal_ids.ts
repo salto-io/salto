@@ -221,6 +221,7 @@ const addInternalIdToCustomListValues = async (
  * that are returned from SOAP API (e.g., Employee)
  */
 const filterCreator: FilterCreator = ({ client }) => ({
+  name: 'SDFInternalIds',
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return

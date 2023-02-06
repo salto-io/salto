@@ -96,6 +96,7 @@ const transformAnnotationsAndValues = async (
 }
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'translationConverter',
   onFetch: async elements => {
     addTranslateFields(elements.filter(isType))
 

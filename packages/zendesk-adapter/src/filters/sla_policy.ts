@@ -27,6 +27,7 @@ export const SLA_POLICY_TYPE_NAME = 'sla_policy'
  * Deploys sla policy
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'slaPolicyFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [slaPoliciesChanges, leftoverChanges] = _.partition(
       changes,

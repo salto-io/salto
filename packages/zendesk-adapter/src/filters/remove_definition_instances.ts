@@ -15,10 +15,8 @@
 */
 import _ from 'lodash'
 import { isInstanceElement } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 
-const log = logger(module)
 
 // We don't fetch those type names (except for trigger_definition) by default
 // But since we did in the past and we want to be backward compatible, we keep them in the filter
@@ -35,11 +33,12 @@ const DEFINITION_TYPE_NAMES = [
  * Removes the definition instances
  */
 const filterCreator: FilterCreator = () => ({
-  onFetch: async elements => log.time(async () => {
+  name: 'removeDefinitionInstancesFilter',
+  onFetch: async elements => {
     _.remove(elements,
       element =>
         isInstanceElement(element) && DEFINITION_TYPE_NAMES.includes(element.elemID.typeName))
-  }, 'Remove definition instances filter'),
+  },
 })
 
 export default filterCreator

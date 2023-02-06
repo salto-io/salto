@@ -50,6 +50,7 @@ const ID_TO_URL_GENERATOR: Record<string, GetUrlFunc> = {
 }
 
 const filter: FilterCreator = () => ({
+  name: 'serviceUrlFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

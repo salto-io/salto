@@ -31,6 +31,7 @@ const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate URLs for some of your salesforce configuration elements. This might affect the availability of the ‘go to service’ functionality in your workspace.'
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+  name: 'elementsUrlFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

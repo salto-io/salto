@@ -25,6 +25,7 @@ import { deployLayout } from './dashboard_layout'
 const log = logger(module)
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'dashboardFilter',
   onFetch: async (elements: Element[]) => {
     const gadgetPositionType = findObject(elements, DASHBOARD_GADGET_POSITION_TYPE)
     if (gadgetPositionType === undefined) {

@@ -49,6 +49,7 @@ export const hasValueSetNameAnnotation = (field: Field): boolean =>
  *  - Restricted custom value set
  */
 const filterCreator = (): FilterWith<'onDeploy'> => ({
+  name: 'valueSetFilter',
   onDeploy: async changes => {
     const isRestrictedPicklistField = (
       changedElement: ChangeDataType

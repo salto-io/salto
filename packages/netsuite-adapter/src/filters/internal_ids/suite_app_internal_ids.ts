@@ -17,6 +17,7 @@ import { getChangeData, isAdditionChange, isInstanceElement } from '@salto-io/ad
 import { FilterWith } from '../../filter'
 
 const filterCreator = (): FilterWith<'onDeploy'> => ({
+  name: 'suiteAppInternalIds',
   onDeploy: async (changes, { elemIdToInternalId = {} }) => {
     changes
       .filter(isAdditionChange)

@@ -53,6 +53,7 @@ export const addParentFields = (value: Values): void => {
 // filter omits these fields in preDeploy. and adds them in onDeploy. During deploy, the field
 // 'parent_section_id' is ignored and is deployed as modification change separately later.
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'guideParentSection',
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
       .filter(change => getChangeData(change).elemID.typeName === SECTION_TYPE_NAME)

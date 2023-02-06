@@ -135,6 +135,7 @@ const updateWebhook = async (
 }
 
 const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) => ({
+  name: 'webhookFilter',
   onFetch: async elements => {
     if (!fetchQuery.isTypeMatch(WEBHOOK_TYPE)) {
       return

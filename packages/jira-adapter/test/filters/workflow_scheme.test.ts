@@ -490,7 +490,7 @@ describe('workflowScheme', () => {
       expect(instance.value.id).toBe('1')
     })
 
-    it('when return error if publish draft failed', async () => {
+    it('should not return error if publish draft failed', async () => {
       const instance = new InstanceElement(
         'instance',
         workflowSchemeType,
@@ -521,8 +521,8 @@ describe('workflowScheme', () => {
       const instanceBefore = instance.clone()
       instanceBefore.value.description = 'desc'
       const res = await filter.deploy?.([toChange({ before: instanceBefore, after: instance })])
-      expect(res?.deployResult.appliedChanges).toEqual([])
-      expect(res?.deployResult.errors).toHaveLength(1)
+      expect(res?.deployResult.appliedChanges).toHaveLength(1)
+      expect(res?.deployResult.errors).toEqual([])
     })
 
     it('when throw if publish draft did not finish after max tries', async () => {

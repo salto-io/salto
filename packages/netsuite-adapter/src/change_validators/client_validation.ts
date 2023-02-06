@@ -20,7 +20,7 @@ import { getGroupItemFromRegex, objectValidationErrorRegex, OBJECT_ID } from '..
 import NetsuiteClient from '../client/client'
 import { AdditionalDependencies } from '../client/types'
 import { getChangeGroupIdsFunc } from '../group_changes'
-import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'
@@ -141,7 +141,7 @@ const changeValidator: ClientChangeValidator = async (
           }
           if (error instanceof ManifestValidationError) {
             const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(
-              error, dependencyMap, dependencyGraph, changes
+              error, { dependencyMap, dependencyGraph }, changes
             )
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
               failedElementsIds, groupChanges, dependencyMap, error
@@ -158,6 +158,15 @@ const changeValidator: ClientChangeValidator = async (
                   detailedMessage: `${detailedMessage} Please make sure that all the bundles from the source account are installed and updated in the target account.`,
                 }
               })
+          }
+          if (error instanceof MissingManifestFeaturesError) {
+            return groupChanges
+              .map(change => ({
+                message: 'This element depends on missing features',
+                severity: 'Error' as const,
+                elemID: getChangeData(change).elemID,
+                detailedMessage: `This element depends on one of the following missing features: ${Array.from(error.missingFeatures).join(', ')}.`,
+              }))
           }
           return groupChanges
             .map(change => ({

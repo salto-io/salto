@@ -55,6 +55,7 @@ describe('NetsuiteClient', () => {
     describe('deploy', () => {
       beforeEach(() => {
         jest.resetAllMocks()
+        deployParams[1].include.features = []
       })
 
       it('should try again to deploy after ObjectsDeployError', async () => {
@@ -296,13 +297,11 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           SDF_CHANGE_GROUP_ID,
           ...deployParams
         )).toEqual({
-          errors: [missingManifestFeaturesError],
+          errors: [],
           appliedChanges: [change],
         })
         expect(deployParams[1].include.features).toContain('SUBSCRIPTIONBILLING')
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
-        // clear AdditionalParameters for next test suite
-        deployParams[1].include.features = []
       })
 
 

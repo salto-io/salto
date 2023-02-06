@@ -171,9 +171,15 @@ jobs:
       - run:
           name: configure sources.list
           command: |
-            curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /tmp/sources.list
-            sudo mv /tmp/sources.list /etc/apt/sources.list
-            sudo apt update
+            if curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /tmp/sources.list; then
+              echo "found sources.list file"
+              sudo mv /tmp/sources.list /etc/apt/sources.list
+              sudo apt update
+            else
+              echo "did not find sources.list file, using the default one"
+            fi
+            echo "using sources.list:"
+            cat /etc/apt/sources.list
       - run:
           name: Install java
           command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends

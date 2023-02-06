@@ -98,15 +98,14 @@ describe('OrganizationExistence', () => {
   const changes = [
     toChange({ after: slaInstance }),
     toChange({ before: triggerInstance, after: triggerInstance }),
-    toChange({ before: slaInstance }),
+    toChange({ before: slaInstance }), // Should do nothing because we don't care about removals
   ]
 
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+  const validator = organizationExistenceValidator(client)
   getOrganizationsByNamesMock.mockResolvedValue([{ name: 'one' }, { name: 'two' }])
 
   it('should return an error if the organization does not exist, and cache the results of the existence check', async () => {
-    const validator = organizationExistenceValidator(client)
-
     const errors = await validator(changes)
     expect(errors).toMatchObject([
       {

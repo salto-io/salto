@@ -73,6 +73,9 @@ export const statusMigrationChangeValidator: ChangeValidator = async changes => 
   const invalidItemErrors = _.remove(relevantChanges, StatusMigrationHasInvalidItem)
     .map(generateStatusMigrationInvalidError)
   const repeatingItemErrors = relevantChanges.map(change => {
+    if (getChangeData(change).value.statusMigrations === undefined) {
+      return undefined
+    }
     const repeatingItem = getRepeatingItem(getChangeData(change).value.statusMigrations)
     if (repeatingItem === undefined) {
       return undefined

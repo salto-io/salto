@@ -134,9 +134,7 @@ const createWarnings = async (
 
   const instancesWithoutNameWarnings = Object.entries(instancesWithoutNameByType)
     .map(([typeName, instances]) => {
-      const message = `Omitted instances without names of type ${typeName}.
-      This is probably due to the fact that None of the idFields had values. 
-      Instance values: ${instances.map(instance => safeJsonStringify(instance.value, elementExpressionStringifyReplacer, 2)).join('\n')}`
+      const message = `Omitted instances without name of type ${typeName}. This is probably due to the fact that none of the idFields had values. Omitted Instances:\n ${instances.map(instance => safeJsonStringify(instance.value, elementExpressionStringifyReplacer, 2)).join('\n')}`
       log.warn(message)
       return createWarningFromMsg(message)
     })

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, ObjectType, isFieldChange, isObjectTypeChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, ObjectType, isFieldChange, isObjectTypeChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -162,8 +162,6 @@ export default class NetsuiteClient {
       .filter(elem => (
         isInstanceElement(elem) && error.failedObjects.has(elem.value[SCRIPT_ID])
       ) || (
-        isField(elem) && error.failedObjects.has(elem.parent.annotations[SCRIPT_ID])
-      ) || (
         error.failedObjects.has(elem.annotations[SCRIPT_ID])
       ))
       .map(elem => elem.elemID.getFullName()))
@@ -194,10 +192,8 @@ export default class NetsuiteClient {
     elementsSourceIndex: LazyElementsSourceIndexes,
   ):Promise<Map<string, Set<string>>> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
-    const elements = changes.map(getChangeData)
-    const elemIdSet = new Set(elements.map(element => element.elemID.getFullName()))
-    const elemIdsAndCustInfoArr = await awu(elements)
-      .filter(element => !isField(element) || !elemIdSet.has(element.parent.elemID.getFullName()))
+    const elemIdsAndCustInfoArr = await awu(changes)
+      .map(getChangeData)
       .map(async element => ({
         elemId: element.elemID,
         custInfos: await NetsuiteClient.toCustomizationInfos(

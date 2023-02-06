@@ -193,6 +193,7 @@ const createContextInstance = (
  * converts list with hidden values to maps
  */
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
+  name: 'fieldStructureFilter',
   onFetch: async (elements: Element[]) => {
     const types = _(elements)
       .filter(isObjectType)

@@ -23,6 +23,7 @@ import { FilterWith } from '../filter'
 export const FIELDS_TO_OMIT = ['currencyPrecision', 'locale', 'formatSample']
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
+  name: 'currencyUndeployableFieldsFilter',
   preDeploy: async changes => {
     changes
       .filter(isInstanceChange)

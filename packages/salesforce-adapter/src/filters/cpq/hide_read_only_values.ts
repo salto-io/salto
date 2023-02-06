@@ -22,6 +22,7 @@ import { FIELD_ANNOTATIONS } from '../../constants'
 const { awu } = collections.asynciterable
 
 const filter: LocalFilterCreator = ({ config }) => ({
+  name: 'hideReadOnlyValuesFilter',
   onFetch: async (elements: Element[]) => {
     if (config.fetchProfile.dataManagement?.showReadOnlyValues === true) {
       // eslint-disable-next-line no-useless-return

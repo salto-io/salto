@@ -27,6 +27,7 @@ import {
  * added in its creation.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'guideAddBrandToArticleTranslation',
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)

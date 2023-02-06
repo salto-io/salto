@@ -131,6 +131,7 @@ const supplyServiceUrl = (
 }
 
 const filter: FilterCreator = params => ({
+  name: 'serviceUrlInformationFilter',
   onFetch: async (elements: Element[]) => {
     const filterElementsBySupplier = (information: ServiceUrlSupplier): void => {
       const instances = elements

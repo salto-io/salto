@@ -22,6 +22,7 @@ export const TYPE_NAME = USER_FIELD_TYPE_NAME
  * Add user field order element with all the user fields ordered
  */
 const filterCreator = createReorderFilterCreator({
+  filterName: 'userFieldOrderFilter',
   typeName: TYPE_NAME,
   orderFieldName: 'user_field_ids',
   activeFieldName: 'active',

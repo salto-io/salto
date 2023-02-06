@@ -28,6 +28,7 @@ const WORKSPACE_TYPE_NAME = 'workspace'
  * Deploys workspaces
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'workspaceFilter',
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,

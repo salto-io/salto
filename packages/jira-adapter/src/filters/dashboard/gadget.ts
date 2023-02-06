@@ -109,6 +109,7 @@ const getPropertyValue = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'gadgetFilter',
   onFetch: async elements => {
     await Promise.all(elements
       .filter(isInstanceElement)

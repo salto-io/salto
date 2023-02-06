@@ -21,6 +21,7 @@ import { deployChange, deployChanges } from '../deployment'
  * Deploys all the changes that were not deployed by the previous filters
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'defaultDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),

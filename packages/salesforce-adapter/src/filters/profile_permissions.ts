@@ -120,6 +120,7 @@ const isAdminProfileChange = async (change: Change): Promise<boolean> => {
 const filterCreator: LocalFilterCreator = () => {
   let isPartialAdminProfile = false
   return {
+    name: 'profilePermissionsFilter',
     preDeploy: async changes => {
       const allAdditions = changes.filter(isAdditionChange)
 

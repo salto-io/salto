@@ -375,6 +375,7 @@ export const findTypeToConvert = async (
  * could be referenced, and can be split across multiple files.
  */
 const filter: LocalFilterCreator = () => ({
+  name: 'convertMapsFilter',
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)

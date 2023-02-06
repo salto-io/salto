@@ -60,6 +60,7 @@ const fixLayoutPath = async (
 * Fixes references in layout items.
 */
 const filterCreator: LocalFilterCreator = ({ config }) => ({
+  name: 'layoutFilter',
   /**
    * Upon fetch, shorten layout ID and add reference to layout sobjects.
    * Fixes references in layout items.

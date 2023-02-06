@@ -14,13 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { getUsers, TYPE_NAME_TO_REPLACER } from '../user_utils'
 import { deployModificationFunc } from '../replacers_utils'
 
-const log = logger(module)
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean => (
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
@@ -32,7 +30,8 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => (
 const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
-    onFetch: async elements => log.time(async () => {
+    name: 'usersFilter',
+    onFetch: async elements => {
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         return
@@ -44,7 +43,7 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
       })
-    }, 'Users filter'),
+    },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
       if (_.isEmpty(relevantChanges)) {

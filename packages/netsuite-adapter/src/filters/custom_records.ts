@@ -43,6 +43,7 @@ const addFieldsToType = (type: ObjectType): void => {
 }
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'customRecordsFilter',
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)

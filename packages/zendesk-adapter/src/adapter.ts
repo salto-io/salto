@@ -116,6 +116,7 @@ import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
+import auditTimeFilter from './filters/audit_logs'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -207,6 +208,7 @@ export const DEFAULT_FILTERS = [
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   // defaultDeployFilter should be last!
+  auditTimeFilter,
   defaultDeployFilter,
 ]
 

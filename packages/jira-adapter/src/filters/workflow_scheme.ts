@@ -227,7 +227,7 @@ export const deployWorkflowScheme = async (
           err.response.data.errorMessages, elementsSource
         )
         handleDeploymentError(err)
-        log.error(`failed to publish draft for workflow scheme ${getChangeData(change).elemID.name}, error: ${err.message}`)
+        log.warn(`failed to publish draft for workflow scheme ${getChangeData(change).elemID.name}, error: ${err.message}`)
       } catch (error) {
         log.warn(`failed to reformat the workflow scheme ${getChangeData(change).elemID.getFullName()} migration error `)
       }

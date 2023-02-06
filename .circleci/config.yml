@@ -171,8 +171,9 @@ jobs:
       - run:
           name: configure sources.list
           command: |
-            curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /etc/apt/sources.list
-            apt update
+            curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /tmp/sources.list
+            sudo mv /tmp/sources.list /etc/apt/sources.list
+            sudo apt update
       - run:
           name: Install java
           command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends

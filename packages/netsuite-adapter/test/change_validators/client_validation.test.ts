@@ -54,6 +54,7 @@ describe('client validation', () => {
         after: new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
           annotations: {
+            manifestTest: '[scriptid=ref_in_custom_record_type]',
             [SCRIPT_ID]: 'customrecord1',
             [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
           },
@@ -179,6 +180,32 @@ File: ~/Objects/customrecord1.xml`
       message: 'This element depends on missing elements',
       severity: 'Error',
     })
+  })
+  it('should have SDF Manifest Validation Error on field', async () => {
+    mockValidate.mockReturnValue([new ManifestValidationError('', ['ref_in_custom_record_type'])])
+    const fieldChanges = changes.filter(isObjectTypeChange).flatMap(change => [
+      change,
+      toChange({
+        after: new Field(
+          getChangeData(change),
+          'some_field',
+          BuiltinTypes.STRING,
+          { [SCRIPT_ID]: 'some_field' }
+        ),
+      }),
+    ])
+    const changeErrors = await clientValidation(
+      fieldChanges,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+      mockElementsSourceIndex
+    )
+    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors.map(changeErr => changeErr.elemID.getFullName())).toEqual([
+      'netsuite.customrecord1',
+      'netsuite.customrecord1.field.some_field',
+    ])
   })
   it('should have general Validation Error', async () => {
     const detailedMessage = 'some error'

@@ -20,12 +20,10 @@ import { filters, client as clientUtils } from '@salto-io/adapter-components'
 import os from 'os'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
-import { paginate, removeScopedObjects } from '../client/pagination'
 import { JiraConfig } from '../config/config'
 import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 import { doesProjectHaveIssues } from './project_deletion'
 
-const { createPaginator } = clientUtils
 const { addUrlToInstance } = filters
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -34,6 +32,9 @@ type WorkflowSchemeItem = {
     workflow: ReferenceExpression
     issueType: ReferenceExpression
 }
+
+const isWorkflowSchemeItem = (item: WorkflowSchemeItem): item is WorkflowSchemeItem =>
+  _.isPlainObject(item) && item.workflow instanceof ReferenceExpression && item.issueType instanceof ReferenceExpression
 
 type ChangedItem = {
   before: ReferenceExpression
@@ -47,18 +48,11 @@ export type StatusMigration = {
   newStatusId?: ReferenceExpression
 }
 
-const getAssignedProjects = (workflowScheme: InstanceElement, projects: InstanceElement[]): InstanceElement[] =>
-  projects.filter(instance => instance.value.workflowScheme?.elemID.isEqual(workflowScheme.elemID))
-
-const isWorkflowSchemeActive = (workflowScheme: InstanceElement, projects: InstanceElement[]): boolean =>
-  getAssignedProjects(workflowScheme, projects).length > 0
-
 const workflowLinkedToProjectWithIssues = async (
-  workflowScheme: InstanceElement,
-  projects: InstanceElement[],
+  assignedProjects: InstanceElement[],
   client: JiraClient,
 ): Promise<boolean> =>
-  awu(getAssignedProjects(workflowScheme, projects)).some(async project => doesProjectHaveIssues(project, client))
+  awu(assignedProjects).some(async project => doesProjectHaveIssues(project, client))
 
 export const getRelevantChanges = (
   changes: ReadonlyArray<Change<ChangeDataType>>
@@ -76,10 +70,8 @@ const isItemModified = (item1: WorkflowSchemeItem, item2: WorkflowSchemeItem): b
 
 const getAllIssueTypesForWorkflowScheme = async (
   elementSource: ReadOnlyElementsSource,
-  workflowScheme: InstanceElement,
-  projects: InstanceElement[]
+  assignedProjects: InstanceElement[]
 ): Promise<ReferenceExpression[]> => {
-  const assignedProjects = getAssignedProjects(workflowScheme, projects)
   const issueTypeSchemes = await awu(assignedProjects)
     .map(instance => instance.value.issueTypeScheme)
     .map((ref: ReferenceExpression) => elementSource.get(ref.elemID))
@@ -93,6 +85,7 @@ const getDefaultWorkflowIssueTypes = (
   assignedIssueTypes: ReferenceExpression[]
 ): ReferenceExpression[] => {
   workflowScheme.value.items
+    .filter(isWorkflowSchemeItem)
     .forEach((item: WorkflowSchemeItem) =>
       _.remove(assignedIssueTypes, issueType => issueType.elemID.isEqual(item.issueType.elemID)))
   return assignedIssueTypes
@@ -100,11 +93,11 @@ const getDefaultWorkflowIssueTypes = (
 
 const getChangedItemsFromChange = async (
   change: ModificationChange<InstanceElement>,
-  projects: InstanceElement[],
+  assignedProjects: InstanceElement[],
   elementSource: ReadOnlyElementsSource,
 ): Promise<ChangedItem[]> => {
   const { before, after } = change.data
-  const assignedIssueTypes = await getAllIssueTypesForWorkflowScheme(elementSource, after, projects)
+  const assignedIssueTypes = await getAllIssueTypesForWorkflowScheme(elementSource, assignedProjects)
   const defaultWorkflowIssueTypes = !before.value.defaultWorkflow.elemID.isEqual(after.value.defaultWorkflow.elemID)
     ? getDefaultWorkflowIssueTypes(after, assignedIssueTypes) : []
   const changedDefaultWorkflowItems = defaultWorkflowIssueTypes.map(issueType => ({
@@ -112,27 +105,41 @@ const getChangedItemsFromChange = async (
     after: after.value.defaultWorkflow,
     issueType,
   }))
-  const removedItems = _.differenceWith(before.value.items, after.value.items, isItemEquals).map(item => ({
+  const removedItems = _.differenceWith(
+    before.value.items.filter(isWorkflowSchemeItem),
+    after.value.items.filter(isWorkflowSchemeItem),
+    isItemEquals,
+  ).map((item: WorkflowSchemeItem) => ({
     before: item.workflow,
     after: after.value.defaultWorkflow,
     issueType: item.issueType,
   }))
-  const addedItems = _.differenceWith(after.value.items, before.value.items, isItemEquals).map(item => ({
+  const addedItems = _.differenceWith(
+    after.value.items.filter(isWorkflowSchemeItem),
+    before.value.items.filter(isWorkflowSchemeItem),
+    isItemEquals,
+  ).map(item => ({
     before: before.value.defaultWorkflow,
     after: item.workflow,
     issueType: item.issueType,
   }))
-  const modifiedItems = before.value.items.map((beforeItem: WorkflowSchemeItem) => {
-    const afterItem = after.value.items.find((item: WorkflowSchemeItem) => isItemModified(beforeItem, item))
-    if (afterItem === undefined) {
-      return undefined
-    }
-    return {
-      before: beforeItem.workflow,
-      after: afterItem.workflow,
-      issueType: beforeItem.issueType,
-    }
-  }).filter(isDefined)
+  const afterItems = _.keyBy(
+    after.value.items.filter(isWorkflowSchemeItem),
+    item => item.issueTypeId.elemID.getFullName(),
+  )
+  const modifiedItems = before.value.items
+    .filter(isWorkflowSchemeItem)
+    .map((beforeItem: WorkflowSchemeItem) => {
+      const afterItem: WorkflowSchemeItem = afterItems[beforeItem.issueType.elemID.getFullName()]
+      if (afterItem === undefined || !isItemModified(beforeItem, afterItem)) {
+        return undefined
+      }
+      return {
+        before: beforeItem.workflow,
+        after: afterItem.workflow,
+        issueType: beforeItem.issueType,
+      }
+    }).filter(isDefined)
   const changedItems = [
     ...addedItems,
     ...removedItems,
@@ -201,16 +208,12 @@ const getErrorMessageForStatusMigration = (
   } : undefined
 }
 
-export const workflowSchemeMigrationValidator: (
+export const workflowSchemeMigrationValidator = (
   client: JiraClient,
   config: JiraConfig,
-) => ChangeValidator = (client, config) => {
-  const paginator = createPaginator({
-    client,
-    paginationFuncCreator: paginate,
-    customEntryExtractor: removeScopedObjects,
-  })
-  return async (changes, elementSource) => {
+  paginator: clientUtils.Paginator,
+): ChangeValidator =>
+  async (changes, elementSource) => {
     const relevantChanges = getRelevantChanges(changes)
     if (elementSource === undefined || relevantChanges.length === 0) {
       return []
@@ -221,14 +224,22 @@ export const workflowSchemeMigrationValidator: (
       .filter(id => id.idType === 'instance')
       .map(id => elementSource.get(id))
       .toArray()
-    const activeWorkflowsChanges = relevantChanges
-      .filter(change => isWorkflowSchemeActive(getChangeData(change), projects))
-      .filter(change => workflowLinkedToProjectWithIssues(getChangeData(change), projects, client))
+    const workflowSchemesToProjects = _.groupBy(projects, project => project.value.workflowScheme.elemID.getFullName())
+    const activeWorkflowsChanges = await awu(relevantChanges)
+      .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()].length > 0)
+      .filter(async change => workflowLinkedToProjectWithIssues(
+        workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
+        client,
+      )).toArray()
     const errors = await awu(activeWorkflowsChanges).map(async change => {
       await updateSchemeId(change, client, paginator, config)
       const instance = getChangeData(change)
       addUrlToInstance(instance, client.baseUrl, config)
-      const changedItems = await getChangedItemsFromChange(change, projects, elementSource)
+      const changedItems = await getChangedItemsFromChange(
+        change,
+        workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
+        elementSource,
+      )
       const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
       const existingStatusMigrations = instance.value.statusMigrations ?? []
       const newStatusMigrations = _.differenceWith(statusMigrations, existingStatusMigrations, isSameStatusMigration)
@@ -236,4 +247,3 @@ export const workflowSchemeMigrationValidator: (
     }).filter(isDefined).toArray()
     return errors
   }
-}

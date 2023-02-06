@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
+import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
 import { defaultFieldConfigurationValidator } from './default_field_configuration'
@@ -53,7 +53,7 @@ const {
 
 
 export default (
-  client: JiraClient, config: JiraConfig, getIdMapFunc: GetIdMapFunc
+  client: JiraClient, config: JiraConfig, getIdMapFunc: GetIdMapFunc, paginator: clientUtils.Paginator
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     deployTypesNotSupportedValidator,
@@ -72,7 +72,7 @@ export default (
     permissionTypeValidator,
     automationsValidator,
     statusMigrationChangeValidator,
-    workflowSchemeMigrationValidator(client, config),
+    workflowSchemeMigrationValidator(client, config, paginator),
     maskingValidator(client),
     lockedFieldsValidator,
     fieldContextValidator,

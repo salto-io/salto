@@ -125,7 +125,7 @@ const getChangedItemsFromChange = async (
   }))
   const afterItems = _.keyBy(
     after.value.items.filter(isWorkflowSchemeItem),
-    item => item.issueTypeId.elemID.getFullName(),
+    item => item.issueType.elemID.getFullName(),
   )
   const modifiedItems = before.value.items
     .filter(isWorkflowSchemeItem)
@@ -224,7 +224,7 @@ export const workflowSchemeMigrationValidator = (
       .filter(id => id.idType === 'instance')
       .map(id => elementSource.get(id))
       .toArray()
-    const workflowSchemesToProjects = _.groupBy(projects, project => project.value.workflowScheme.elemID.getFullName())
+    const workflowSchemesToProjects = _.groupBy(projects, project => project.value.workflowScheme?.elemID.getFullName())
     const activeWorkflowsChanges = await awu(relevantChanges)
       .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()].length > 0)
       .filter(async change => workflowLinkedToProjectWithIssues(

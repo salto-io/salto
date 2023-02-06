@@ -38,17 +38,27 @@ const TASK_CHECK_INTERVAL_MILLI = 1000
 
 const log = logger(module)
 
+class InvalidResponseError extends Error {
+  constructor() {
+    super('Failed to publish workflow scheme draft due to invalid response')
+  }
+}
+
+class TooManyRetriesError extends Error {
+  constructor() {
+    super('Failed to publish workflow scheme draft after too many retries')
+  }
+}
+
+const shouldThrowError = (error: Error): boolean =>
+  error instanceof InvalidResponseError || error instanceof TooManyRetriesError
+
 function validateTaskResponse(
   response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
 ): asserts response is clientUtils.Response<clientUtils.ResponseValue & { self: string }> {
   if (Array.isArray(response.data) || !_.isString(response.data.self)) {
     log.warn(`Received unexpected response from when attempted to publish workflow scheme: ${safeJsonStringify(response.data, undefined, 2)}`)
-    throw new Error('Failed to publish workflow scheme draft')
-  }
-}
-class TooManyRetriesError extends Error {
-  constructor() {
-    super('Failed to publish workflow scheme draft after too many retries')
+    throw new InvalidResponseError()
   }
 }
 
@@ -226,7 +236,7 @@ export const deployWorkflowScheme = async (
     try {
       await publishDraft(change, client, statusMigrations)
     } catch (err) {
-      if (err instanceof TooManyRetriesError) {
+      if (shouldThrowError(err)) {
         throw err
       }
       try {

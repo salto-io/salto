@@ -18,12 +18,16 @@ import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { ISSUE_TYPE_NAME, JIRA, STATUS_TYPE_NAME } from '../../src/constants'
 import { getFilterParams, mockClient } from '../utils'
 import workflowSchemeFilter, { MAX_TASK_CHECKS } from '../../src/filters/workflow_scheme'
 import { Filter } from '../../src/filter'
 import { getDefaultConfig } from '../../src/config/config'
 import JiraClient from '../../src/client/client'
+
+const logging = logger('jira-adapter/src/filters/workflow_scheme')
+const logErrorSpy = jest.spyOn(logging, 'warn')
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -49,6 +53,7 @@ describe('workflowScheme', () => {
   let connection: MockInterface<clientUtils.APIConnection>
   let elementsSource: ReadOnlyElementsSource
   beforeEach(async () => {
+    jest.clearAllMocks()
     const { client: cli, paginator, connection: conn } = mockClient()
     client = cli
     connection = conn
@@ -525,7 +530,7 @@ describe('workflowScheme', () => {
       expect(res?.deployResult.errors).toEqual([])
     })
 
-    it('when throw if publish draft did not finish after max tries', async () => {
+    it('throw if publish draft did not finish after max tries', async () => {
       const instance = new InstanceElement(
         'instance',
         workflowSchemeType,
@@ -644,9 +649,9 @@ describe('workflowScheme', () => {
         [toChange({ before: instanceBefore, after: workflowSchemeInstance })]
       )
       expect(result).toBeDefined()
-      expect(result?.deployResult.errors).toHaveLength(1)
-      const errorMessage = result?.deployResult.errors[0].message
-      expect(errorMessage).toInclude('Issue type with name issueInstance is missing the mappings required for statuses with names statusFirstInstance,statusSecondInstance')
+      expect(result?.deployResult.appliedChanges).toHaveLength(1)
+      expect(result?.deployResult.errors).toEqual([])
+      expect(logErrorSpy).toHaveBeenCalledWith('failed to publish draft for workflow scheme workflowSchemeInstance, error: Failed to publish draft with error: . Issue type with name issueInstance is missing the mappings required for statuses with names statusFirstInstance,statusSecondInstance')
     })
 
     it('should throw the same error when the regex is not matched', async () => {

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
@@ -23,6 +24,7 @@ import { deployModificationFunc } from '../replacers_utils'
 import { paginate } from '../client/pagination'
 import { DEPLOY_CONFIG } from '../config'
 
+const log = logger(module)
 const { createPaginator } = clientUtils
 
 const isRelevantChange = (change: Change<InstanceElement>): boolean => (
@@ -55,6 +57,10 @@ const filterCreator: FilterCreator = ({ client, config }) => {
   return {
     name: 'usersFilter',
     onFetch: async elements => {
+      const paginator = createPaginator({
+        client,
+        paginationFuncCreator: paginate,
+      })
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         return

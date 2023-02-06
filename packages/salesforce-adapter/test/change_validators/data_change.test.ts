@@ -14,69 +14,62 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ElemID, InstanceElement, ObjectType, toChange, ChangeValidator,
+  ChangeError, Change, InstanceElement, toChange, getChangeData,
 } from '@salto-io/adapter-api'
-import createDeployOnlyValidator from '../../src/change_validators/data_change'
-import { CUSTOM_OBJECT } from '../../src/constants'
+import changeValidator from '../../src/change_validators/data_change'
+import { mockTypes } from '../mock_elements'
+// import { CUSTOM_OBJECT } from '../../src/constants'
 
 describe('dataChange deploy validator', () => {
-  const customObj = new ObjectType({
-    elemID: new ElemID('salesforce', 'customObj'),
-    annotations: { metadataType: CUSTOM_OBJECT, apiName: 'obj__c' },
-  })
-  const beforeCustomObjInstance = new InstanceElement(
-    'customObjInstance',
-    customObj,
-    { field: 'beforeValue' },
-  )
-  const afterCustomObjInstance = new InstanceElement(
-    'customObjInstance',
-    customObj,
-    { field: 'afterValue' },
-  )
-
-  const typeObj = new ObjectType({
-    elemID: new ElemID('salesforce', 'obj'),
-  })
-  const beforeInstance = new InstanceElement(
-    'instance',
-    typeObj,
-    { field: 'beforeValue' }
-  )
-  const afterInstance = new InstanceElement(
-    'instance',
-    typeObj,
-    { field: 'afterValue' }
-  )
-
-  let validator: ChangeValidator
-  beforeEach(() => {
-    validator = createDeployOnlyValidator
-  })
-  describe('with custom object instance change', () => {
-    let changeErrors: ReadonlyArray<ChangeError>
+  let changeErrors: ReadonlyArray<ChangeError>
+  describe('with data instance change', () => {
+    let change: Change
     beforeEach(async () => {
-      changeErrors = await validator([
-        toChange({ before: beforeCustomObjInstance, after: afterCustomObjInstance }),
+      const customObj = mockTypes.Product2
+      const beforeCustomObjInstance = new InstanceElement(
+        'customObjInstance',
+        customObj,
+        { field: 'beforeValue' },
+      )
+      const afterCustomObjInstance = new InstanceElement(
+        'customObjInstance',
+        customObj,
+        { field: 'afterValue' },
+      )
+      change = toChange({ before: beforeCustomObjInstance, after: afterCustomObjInstance })
+      changeErrors = await changeValidator([
+        change,
       ])
     })
-    it('should have Info for CustomObject instance modification', async () => {
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(beforeCustomObjInstance.elemID)
-      expect(changeError.severity).toEqual('Info')
+    it('should create a ChangeError with severity Info', async () => {
+      expect(changeErrors).toEqual([
+        expect.objectContaining({
+          elemID: getChangeData(change).elemID,
+          severity: 'Info',
+        }),
+      ])
     })
   })
 
   describe('with regular instance change', () => {
-    let changeErrors: ReadonlyArray<ChangeError>
     beforeEach(async () => {
-      changeErrors = await validator([
+      const typeObj = mockTypes.ApexClass
+      const beforeInstance = new InstanceElement(
+        'instance',
+        typeObj,
+        { field: 'beforeValue' }
+      )
+      const afterInstance = new InstanceElement(
+        'instance',
+        typeObj,
+        { field: 'afterValue' }
+      )
+      changeErrors = await changeValidator([
         toChange({ before: beforeInstance, after: afterInstance }),
       ])
     })
     it('should have no errors', () => {
-      expect(changeErrors).toHaveLength(0)
+      expect(changeErrors).toBeEmpty()
     })
   })
 })

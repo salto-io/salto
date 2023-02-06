@@ -17,6 +17,7 @@ import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS,
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { filters, client as clientUtils } from '@salto-io/adapter-components'
+import os from 'os'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { paginate, removeScopedObjects } from '../client/pagination'
@@ -164,7 +165,7 @@ const getMigrationForChangedItem = (changedItem: ChangedItem): StatusMigration[]
 
 const formatStatusMigration = (statusMigration: StatusMigration): string => {
   const { issueTypeId, statusId, newStatusId } = statusMigration
-  return `{\n \tissueTypeId = ${issueTypeId.elemID.getFullName()}\n \tstatusId = ${statusId.elemID.getFullName()}\n \tnewStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<NEW_STATUS>'}\n}`
+  return `{${os.EOL} \tissueTypeId = ${issueTypeId.elemID.getFullName()}${os.EOL} \tstatusId = ${statusId.elemID.getFullName()}${os.EOL} \tnewStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<NEW_STATUS>'}${os.EOL}}`
 }
 
 const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => {

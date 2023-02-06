@@ -49,6 +49,7 @@ const castAndOrderLists: TransformFunc = async ({ value, field }) => {
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'convertLists',
   /**
    * Upon fetch, mark values of list type as list and order lists that are fetched unordered
    *

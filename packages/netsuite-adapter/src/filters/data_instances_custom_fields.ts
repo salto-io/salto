@@ -27,6 +27,7 @@ const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'dataInstancesCustomFields',
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)

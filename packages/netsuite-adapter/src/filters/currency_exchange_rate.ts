@@ -32,6 +32,7 @@ export const getCurrencyAdditionsWithoutExchangeRate = (
 )
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
+  name: 'currencyExchangeRate',
   preDeploy: async changes => {
     getCurrencyAdditionsWithoutExchangeRate(changes)
       .forEach(instance => {

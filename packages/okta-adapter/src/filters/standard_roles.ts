@@ -45,6 +45,7 @@ const ROLE_ELEM_ID = new ElemID(OKTA, ROLE_TYPE_NAME)
  * which are not returned by the API but are useful for impact analysis
  */
 const filter: FilterCreator = () => ({
+  name: 'standardRolesFilter',
   onFetch: async (elements: Element[]) => {
     const roleObjectType = findObjectType(elements, ROLE_ELEM_ID)
     if (roleObjectType === undefined) {

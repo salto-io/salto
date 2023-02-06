@@ -26,6 +26,7 @@ const ROUTING_ATTRIBUTE_TYPE_NAME = 'routing_attribute'
  * Deploys routing attribute
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'routingAttributeFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

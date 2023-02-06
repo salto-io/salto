@@ -20,6 +20,7 @@ import { ORG_FIELD_TYPE_NAME } from '../../constants'
  * Add organization field order element with all the organization fields ordered
  */
 const filterCreator = createReorderFilterCreator({
+  filterName: 'organizationFieldOrderFilter',
   typeName: ORG_FIELD_TYPE_NAME,
   orderFieldName: 'organization_field_ids',
   iterateesToSortBy: [

@@ -22,6 +22,7 @@ import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const filter: FilterCreator = ({ client, config, elementsSource }) => ({
+  name: 'contextDeploymentFilter',
   onFetch: async (elements: Element[]) => {
     const fieldType = findObject(elements, FIELD_TYPE_NAME)
     if (fieldType !== undefined) {

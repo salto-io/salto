@@ -182,6 +182,7 @@ const deployWorkflowModification = async ({
 }
 
 const filter: FilterCreator = ({ client, config, elementsSource, paginator }) => ({
+  name: 'workflowModificationFilter',
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping workflow modification filter because private API is not enabled')

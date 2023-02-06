@@ -418,6 +418,7 @@ const getFieldType = (
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'replaceRecordRef',
   onFetch: async elements => {
     const recordRefElemId = new ElemID(NETSUITE, RECORD_REF)
 

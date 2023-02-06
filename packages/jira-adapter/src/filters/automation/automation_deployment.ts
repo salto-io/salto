@@ -255,6 +255,7 @@ const createAutomation = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'automationDeploymentFilter',
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping automation deployment filter because private API is not enabled')

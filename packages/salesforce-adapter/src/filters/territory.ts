@@ -71,6 +71,7 @@ const setTerritoryDeployPkgStructure = async (element: InstanceElement): Promise
 }
 
 const filterCreator: LocalFilterCreator = () => ({
+  name: 'territoryFilter',
   onFetch: async elements => {
     // Territory2 and Territory2Model support custom fields - these are returned
     // in a CustomObject with the appropriate name and also in each instance of these types

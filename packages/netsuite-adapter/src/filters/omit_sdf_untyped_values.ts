@@ -22,6 +22,7 @@ import { FilterCreator, FilterWith } from '../filter'
 const { awu } = collections.asynciterable
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+  name: 'omitSdfUntypedValues',
   onFetch: async elements => {
     // the default behavior is strictInstanceStructure=false
     if (!config.fetch?.strictInstanceStructure) {

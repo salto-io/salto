@@ -26,6 +26,7 @@ const log = logger(module)
  * (can happen if we remove an instance in the duplicate_ids filter)
  */
 const filter: FilterCreator = () => ({
+  name: 'unresolvedParentsFilter',
   onFetch: async elements => {
     const ids = new Set(
       elements.map(instance => instance.elemID.getFullName())

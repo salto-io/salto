@@ -26,6 +26,7 @@ const PROJECT_COMPONENT_TYPE_NAME = 'ProjectComponent'
 const log = logger(module)
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'projectComponentFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

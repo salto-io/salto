@@ -121,6 +121,7 @@ const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional i
  * Fetches the custom objects via the soap api and adds them to the elements
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
+  name: 'customObjectsFromDescribeFilter',
   onFetch: ensureSafeFilterFetch({
     filterName: 'describeSObjects',
     warningMessage: WARNING_MESSAGE,

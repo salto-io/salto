@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Element, Change, PostFetchOptions, DeployResult } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -21,12 +22,18 @@ const { concatObjects } = objects
 
 const { isDefined } = values
 
+const log = logger(module)
+
 // Filters run in a specific order and get a mutable list as input which they may modify
 // to affect the overall result as well as the input for subsequent filters.
 // Each filter will be created once and so it may store context between preDeploy and onDeploy.
 // Note that it cannot store context between onFetch and the other callbacks since these run in
 // separate commands
 export type FilterResult = Record<string, unknown[] | undefined>
+
+export type FilterMetadata = {
+  name: string
+}
 
 export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
   onFetch(elements: Element[]): Promise<T | void>
@@ -37,7 +44,7 @@ export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
   }>
   onDeploy(changes: Change[], deployInfo: DeployInfo): Promise<void>
   onPostFetch(args: PostFetchOptions): Promise<void>
-}>
+}> & FilterMetadata
 
 export type FilterWith<
   T extends FilterResult | void,
@@ -70,9 +77,10 @@ export const filtersRunner = <
     )
 
   return {
+    name: '',
     onFetch: async elements => {
       const filterResults = (await promises.array.series(
-        filtersWith('onFetch').map(filter => () => filter.onFetch(elements))
+        filtersWith('onFetch').map(filter => () => log.time(() => filter.onFetch(elements), `(${filter.name}):onFetch`))
       )).filter(isDefined)
       return onFetchAggregator(filterResults)
     },
@@ -82,7 +90,7 @@ export const filtersRunner = <
      * to get in preDeploy a similar value to what it created in onFetch.
      */
     preDeploy: async changes => {
-      await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => filter.preDeploy(changes)))
+      await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => log.time(() => filter.preDeploy(changes), `(${filter.name}):preDeploy`)))
     },
     /**
      * deploy method for implementing a deployment functionality.
@@ -90,7 +98,7 @@ export const filtersRunner = <
     deploy: async changes => (
       awu(filtersWith('deploy')).reduce(
         async (total, current) => {
-          const { deployResult, leftoverChanges } = await current.deploy(total.leftoverChanges)
+          const { deployResult, leftoverChanges } = await log.time(() => current.deploy(total.leftoverChanges), `(${current.name}):deploy`)
           return {
             deployResult: concatObjects([total.deployResult, deployResult]),
             leftoverChanges,
@@ -111,7 +119,7 @@ export const filtersRunner = <
      * of on elements)
      */
     onDeploy: async (changes, deployResult) => {
-      await promises.array.series(filtersWith('onDeploy').map(filter => () => filter.onDeploy(changes, deployResult)))
+      await promises.array.series(filtersWith('onDeploy').map(filter => () => log.time(() => filter.onDeploy(changes, deployResult), `(${filter.name}):onDeploy`)))
     },
     /**
      * onPostFetch is run after fetch completed for all accounts, and receives
@@ -123,7 +131,7 @@ export const filtersRunner = <
      */
     onPostFetch: async args => {
       await promises.array.series(
-        filtersWith('onPostFetch').map(filter => () => filter.onPostFetch(args))
+        filtersWith('onPostFetch').map(filter => () => log.time(() => filter.onPostFetch(args), `(${filter.name}):onPostFetch`))
       )
     },
   }

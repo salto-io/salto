@@ -78,6 +78,7 @@ const getInstanceName = (
 
 // Add __c suffix to custom fields and field type to their names to avoid conflicts between fields
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
+  name: 'fieldNameFilter',
   onFetch: async (elements: Element[]) => {
     const fields = _.remove(
       elements,

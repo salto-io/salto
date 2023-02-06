@@ -30,6 +30,7 @@ const valToString = (val: Value): string | string[] => (_.isArray(val) ? val.map
  * Deploys views
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'viewFilter',
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,

@@ -26,6 +26,7 @@ const sdPermissionSchemePredicate: OmitChangesPredicate = (
 const filter: FilterCreator = () => {
   let unsupportedPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
+    name: 'permissionSchemeFilter',
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
       unsupportedPermissionSchemes = omitChanges(changes, sdPermissionSchemePredicate)
     },

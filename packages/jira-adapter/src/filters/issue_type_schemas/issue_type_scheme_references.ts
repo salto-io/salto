@@ -18,6 +18,7 @@ import { ISSUE_TYPE_SCHEMA_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 
 const filter: FilterCreator = () => ({
+  name: 'issueTypeSchemeReferences',
   onFetch: async (elements: Element[]) => {
     const isIssueTypeScheme = (element: Element): boolean =>
       element.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME

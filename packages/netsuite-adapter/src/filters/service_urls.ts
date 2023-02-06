@@ -47,6 +47,7 @@ const SERVICE_URL_SETTERS = {
 }
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+  name: 'serviceUrls',
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return

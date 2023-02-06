@@ -31,6 +31,7 @@ export const removeTitleAndBody = (elem: InstanceElement): void => {
  * are created.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'fetchCategorySection',
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)

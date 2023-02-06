@@ -16,7 +16,7 @@
 import { Change, DeployResult, ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import { objects } from '@salto-io/lowerdash'
 import each from 'jest-each'
-import { Filter, FilterCreator, filtersRunner, FilterWith } from '../src/filter'
+import { Filter, FilterCreator, FilterMetadata, filtersRunner, FilterWith } from '../src/filter'
 
 const { concatObjects } = objects
 
@@ -48,7 +48,7 @@ describe('filtersRunner', () => {
     'preDeploy',
     'onDeploy',
     'onPostFetch',
-  ]).describe('%s', (operation: keyof Filter<void>) => {
+  ]).describe('%s', (operation: keyof Omit<Filter<void>, keyof FilterMetadata>) => {
     const operation1 = jest.fn()
     const operation2 = jest.fn()
     let filterRunnerPromise: Promise<unknown>
@@ -62,7 +62,7 @@ describe('filtersRunner', () => {
     it(`should run all ${operation} filters in order`, async () => {
       const operations = [operation1, operation2]
       const filters = operations
-        .map(f => () => ({ [operation]: f }))
+        .map(f => () => ({ [operation]: f, name: 'bla' }))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       filterRunnerPromise = filtersRunner({}, filters)[operation]({} as any)
       const orderedOperations = operation === 'preDeploy' ? [...operations].reverse() : operations
@@ -79,6 +79,7 @@ describe('filtersRunner', () => {
 
     beforeEach(async () => {
       const filter: FilterWith<{}, 'deploy'> = {
+        name: 'deployTestFilter',
         deploy: async changes => ({
           deployResult: {
             appliedChanges: [changes[0]],

@@ -102,6 +102,7 @@ const templateToEmail = (change: Change<InstanceElement>, deployTemplateMapping:
 const filterCreator: FilterCreator = () => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return ({
+    name: 'supportAddress',
     onFetch: async (elements: Element[]): Promise<void> => {
       const instances = elements
         .filter(isInstanceElement)

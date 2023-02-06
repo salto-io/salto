@@ -359,7 +359,7 @@ describe('Custom Object Instances References filter', () => {
         .toArray()
       expect(omittedTypeInstances).toBeEmpty()
       expect(errors)
-        .toSatisfyAny(e => e.severity === 'Warning' && e.message.startsWith('Omitted instances without names'))
+        .toSatisfyAny(e => e.severity === 'Warning' && e.message.startsWith('Omitted instances without name'))
     })
 
     it('should drop instances with duplicate elemIDs', () => {

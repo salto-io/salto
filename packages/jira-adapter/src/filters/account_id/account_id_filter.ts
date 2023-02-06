@@ -15,13 +15,13 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange,
-  isInstanceElement, isObjectType, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
+  isInstanceElement, isListType, isObjectType, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _, { isArray } from 'lodash'
 import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, AUTOMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { accountIdInfoType } from './types'
+import { accountIdInfoType, accountIdInfoListType } from './types'
 
 const { awu } = collections.asynciterable
 
@@ -37,6 +37,7 @@ const VALUE_FIELD = 'value'
 const VALUES_FIELD = 'values'
 const PARAMETER_FIELD = 'parameter'
 const OWNER_FIELD = 'owner'
+const ACCOUNT_IDS = 'accountIds'
 const USER_TYPE_FIELDS = ['assignee', 'reporter', 'creator', 'com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker',
   'com.atlassian.jira.plugin.system.customfieldtypes:userpicker', 'com.atlassian.servicedesk:sd-request-participants']
 
@@ -101,6 +102,13 @@ const accountIdsScenarios = (
       callback({ value, path, fieldName })
     }
   })
+  // main scenario, sub branch of multiple account ids
+  if (Object.prototype.hasOwnProperty.call(value, ACCOUNT_IDS)
+    && isArray(value[ACCOUNT_IDS])) {
+    _.range(value[ACCOUNT_IDS].length).forEach(index => {
+      callback({ value: value[ACCOUNT_IDS], path: path.createNestedID(ACCOUNT_IDS), fieldName: index.toString() })
+    })
+  }
   // second scenario: the type has ACCOUNT_ID_STRING and the value holds the actual account id
   if (value.type === ACCOUNT_ID_STRING) {
     callback({ value, path, fieldName: VALUE_FIELD })
@@ -205,6 +213,13 @@ const convertType = async (objectType: ObjectType): Promise<void> => {
       )
     }
   })
+  if (Object.prototype.hasOwnProperty.call(objectType.fields, ACCOUNT_IDS)
+    && isListType(await objectType.fields.accountIds.getType())) {
+    objectType.fields.accountIds.refType = new TypeReference(
+      accountIdInfoListType.elemID,
+      accountIdInfoListType
+    )
+  }
 }
 /*
  * A filter to change account ID from a string to an object that can contain

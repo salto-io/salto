@@ -46,6 +46,11 @@ function validateTaskResponse(
     throw new Error('Failed to publish workflow scheme draft')
   }
 }
+class TooManyRetriesError extends Error {
+  constructor() {
+    super('Failed to publish workflow scheme draft after too many retries')
+  }
+}
 
 const waitForWorkflowSchemePublish = async (
   taskResponse: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>,
@@ -64,7 +69,7 @@ const waitForWorkflowSchemePublish = async (
 
   if (checksLeft === 0) {
     log.warn(`Publish draft operation did not finish, last response: ${safeJsonStringify(taskResponse.data, undefined, 2)}`)
-    throw new Error('Failed to publish workflow scheme draft')
+    throw new TooManyRetriesError()
   }
 
   await new Promise(resolve => {
@@ -221,6 +226,9 @@ export const deployWorkflowScheme = async (
     try {
       await publishDraft(change, client, statusMigrations)
     } catch (err) {
+      if (err instanceof TooManyRetriesError) {
+        throw err
+      }
       try {
         err.message = 'Failed to publish draft with error: '
         err.response.data.errorMessages = await reformatMigrationErrorMessages(

@@ -31,36 +31,43 @@ export class GraphNode<T> {
 }
 
 export class Graph<T> {
-  nodes: GraphNode<T>[]
+  nodes: Map<T[keyof T], GraphNode<T>>
+  key: keyof T
 
-  constructor() {
-    this.nodes = []
+  constructor(key: keyof T, nodes: GraphNode<T>[] = []) {
+    this.nodes = new Map()
+    this.key = key
+    nodes.forEach(node => this.nodes.set(node.value[key], node))
   }
 
-  addNodes(...node: GraphNode<T>[]): void {
-    this.nodes.push(...node)
+  addNodes(nodes: GraphNode<T>[]): void {
+    nodes.forEach(node => {
+      if (!this.nodes.get(node.value[this.key])) {
+        this.nodes.set(node.value[this.key], node)
+      }
+    })
   }
 
-  dfs(node: GraphNode<T>, visited: Set<GraphNode<T>>): void {
-    visited.add(node)
+  dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>): void {
+    visited.set(node.value[this.key], node)
     node.edges.forEach(dependency => {
-      if (!visited.has(dependency)) {
+      if (!visited.get(dependency.value[this.key])) {
         this.dfs(dependency, visited)
       }
     })
   }
 
-  getNodeDependencies(nodeToRemove: GraphNode<T>): GraphNode<T>[] {
-    const visited = new Set<GraphNode<T>>()
-    this.dfs(nodeToRemove, visited)
-    return this.nodes.filter(node => visited.has(node))
+  getNodeDependencies(startNode: GraphNode<T>): GraphNode<T>[] {
+    const visited = new Map<T[keyof T], GraphNode<T>>()
+    this.dfs(startNode, visited)
+    return Array.from(visited.values())
   }
 
   findNode(value: T): GraphNode<T> | undefined {
-    return this.nodes.find(node => _.isEqual(node.value, value))
+    return this.nodes.get(value[this.key])
   }
 
-  findNodeByField(field: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
-    return this.nodes.find(node => _.isEqual(node.value[field], value))
+  findNodeByField(key: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
+    return Array.from(this.nodes.values()).find(node => _.isEqual(node.value[key], value))
   }
 }

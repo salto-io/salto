@@ -19,26 +19,27 @@ import _ from 'lodash'
 import { getRelevantChanges, StatusMigration } from './workflow_scheme_migration'
 
 const statusMigrationSchema = Joi.object({
-  issueTypeId: Joi.string().required(),
-  statusId: Joi.string().required(),
-  newStatusId: Joi.string().required(),
+  issueTypeId: Joi.required(),
+  statusId: Joi.required(),
+  newStatusId: Joi.required(),
 })
 
 const isSameStatusMigration = (
   a: StatusMigration,
   b: StatusMigration,
-): boolean => a.issueTypeId === b.issueTypeId && a.statusId === b.statusId
+): boolean => a.issueTypeId.elemID.isEqual(b.issueTypeId.elemID) && a.statusId.elemID.isEqual(b.statusId.elemID)
 
 const getRepeatingItem = (statusMigrations: StatusMigration[]): StatusMigration | undefined =>
-  _.intersectionWith(statusMigrations, statusMigrations, isSameStatusMigration)[0]
+  statusMigrations.filter((item, index, arr) => arr.findIndex(i => isSameStatusMigration(i, item)) !== index)[0]
 
 const generateStatusMigrationRepeatingItemError = (change: ModificationChange<InstanceElement>): ChangeError => {
   const repeatingItem = getRepeatingItem(getChangeData(change).value.statusMigrations)
-  return { elemID: getChangeData(change).elemID,
+  return {
+    elemID: getChangeData(change).elemID,
     severity: 'Error',
     message: 'Invalid statusMigration',
-    detailedMessage: `The provided statusMigration is invalid. Issue type ${repeatingItem?.issueTypeId} and status ${repeatingItem?.statusId} appear more than once. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes`,
-}
+    detailedMessage: `The provided statusMigration is invalid. Issue type ${repeatingItem?.issueTypeId.elemID.name} and status ${repeatingItem?.statusId.elemID.name} appear more than once. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes`,
+  }
 }
 
 const generateStatusMigrationInvalidError = (change: ModificationChange<InstanceElement>): ChangeError => ({

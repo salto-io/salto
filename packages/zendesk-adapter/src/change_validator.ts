@@ -58,7 +58,7 @@ import {
   customStatusCategoryChangeValidator,
   customStatusCategoryValidator,
   defaultCustomStatusesValidator,
-  customStatusActiveDefaultValidator, defaultGroupChangeValidator,
+  customStatusActiveDefaultValidator, defaultGroupChangeValidator, organizationExistenceValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 
@@ -126,6 +126,7 @@ export default ({
     helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook,
     defaultGroupChangeValidator,
+    organizationExistenceValidator(client),
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

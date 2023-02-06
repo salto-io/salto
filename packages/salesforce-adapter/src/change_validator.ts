@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { buildLazyShallowTypeResolverElementsSource,
+import {
+  buildLazyShallowTypeResolverElementsSource,
   createChangeValidator,
-  createChangeValidator } from '@salto-io/adapter-utils'
+} from '@salto-io/adapter-utils'
 
 import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'

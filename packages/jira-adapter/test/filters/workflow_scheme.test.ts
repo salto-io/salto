@@ -728,9 +728,9 @@ describe('workflowScheme', () => {
         [toChange({ before: instanceBefore, after: workflowSchemeInstance })]
       )
       expect(result).toBeDefined()
-      expect(result?.deployResult.errors).toHaveLength(1)
-      const errorMessage = result?.deployResult.errors[0].message
-      expect(errorMessage).toInclude('Issue type with name issueInstance is missing the mappings required for statuses with names ID 7')
+      expect(result?.deployResult.appliedChanges).toHaveLength(1)
+      expect(result?.deployResult.errors).toEqual([])
+      expect(logErrorSpy).toHaveBeenCalledWith('failed to publish draft for workflow scheme workflowSchemeInstance, error: Failed to publish draft with error: . Issue type with name issueInstance is missing the mappings required for statuses with names ID 7')
     })
   })
 

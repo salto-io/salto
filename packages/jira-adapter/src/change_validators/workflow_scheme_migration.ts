@@ -48,6 +48,9 @@ export type StatusMigration = {
   newStatusId?: ReferenceExpression
 }
 
+const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
+  project.value.workflowScheme !== undefined
+
 const workflowLinkedToProjectWithIssues = async (
   assignedProjects: InstanceElement[],
   client: JiraClient,
@@ -224,7 +227,10 @@ export const workflowSchemeMigrationValidator = (
       .filter(id => id.idType === 'instance')
       .map(id => elementSource.get(id))
       .toArray()
-    const workflowSchemesToProjects = _.groupBy(projects, project => project.value.workflowScheme?.elemID.getFullName())
+    const workflowSchemesToProjects = _.groupBy(
+      projects.filter(projectHasWorkflowSchemeReference),
+      project => project.value.workflowScheme?.elemID.getFullName(),
+    )
     const activeWorkflowsChanges = await awu(relevantChanges)
       .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()].length > 0)
       .filter(async change => workflowLinkedToProjectWithIssues(

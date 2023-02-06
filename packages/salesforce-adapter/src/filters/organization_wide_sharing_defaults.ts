@@ -62,8 +62,9 @@ const createOrganizationType = (): ObjectType => (
       },
     },
     annotations: {
-      [CORE_ANNOTATIONS.HIDDEN]: true,
       [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.DELETABLE]: false,
       [METADATA_TYPE]: 'Organization',
     },
     isSettings: true,
@@ -72,6 +73,7 @@ const createOrganizationType = (): ObjectType => (
 )
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
+  name: 'organization_wide_sharing_defaults',
   onFetch: async elements => {
     const objectType = createOrganizationType()
     await enrichTypeWithFields(client, objectType)
@@ -92,9 +94,9 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       objectType,
       undefined,
       {
-        [CORE_ANNOTATIONS.HIDDEN]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: false,
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+        [CORE_ANNOTATIONS.CREATABLE]: false,
+        [CORE_ANNOTATIONS.DELETABLE]: false,
       }
     )
 

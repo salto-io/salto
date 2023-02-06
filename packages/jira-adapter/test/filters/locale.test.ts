@@ -37,6 +37,9 @@ describe('localeFilter', () => {
       connection.get.mockResolvedValue({
         status: 200,
         data: {
+          key: 'key',
+          name: 'name',
+          displayName: 'displayName',
           locale: 'es_ES',
         },
       })
@@ -54,6 +57,20 @@ describe('localeFilter', () => {
 
     it('When an error is thrown, it should return nothing', async () => {
       connection.get.mockRejectedValue(new Error('Async error'))
+      const filterRes = await filter.onFetch([])
+      expect(filterRes).toEqual(undefined)
+    })
+
+    it('When locale is not returned, it should return nothing', async () => {
+      connection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          key: 'key',
+          name: 'name',
+          displayName: 'displayName',
+        },
+      })
+
       const filterRes = await filter.onFetch([])
       expect(filterRes).toEqual(undefined)
     })

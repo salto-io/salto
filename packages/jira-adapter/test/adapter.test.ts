@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement, toChange, isRemovalChange, getChangeData, BuiltinTypes, ReferenceExpression, ElemIdGetter, ServiceIds } from '@salto-io/adapter-api'
-import { deployment, elements, client } from '@salto-io/adapter-components'
+import { deployment, elements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import MockAdapter from 'axios-mock-adapter'
 import axios from 'axios'
@@ -135,11 +135,8 @@ describe('adapter', () => {
     })
 
     it('should return the errors', async () => {
-      deployChangeMock.mockImplementation(async params => {
-        if (isRemovalChange(params.change)) {
-          throw new Error('some error')
-        }
-        throw new client.HTTPError('some error', { status: 400, data: { errorMessages: ['errorMessage'], errors: { key: 'value' } } })
+      deployChangeMock.mockImplementation(async _params => {
+        throw new Error('some error')
       })
 
       const deployRes = await adapter.deploy({
@@ -153,7 +150,7 @@ describe('adapter', () => {
       })
 
       expect(deployRes.errors).toEqual([
-        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error. errorMessage, {"key":"value"}'),
+        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error'),
         new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst2 failed: Error: some error'),
       ])
     })

@@ -13,23 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isTemplateExpression, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, Element, ElemID, SeverityLevel, isReferenceExpression, isTemplateExpression, isAdditionOrModificationChange, UnresolvedReference } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
-import { expressions } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
 
-const getUnresolvedReferences = (element: Element): ElemID[] => {
+type ElemIDPredicate = (id: ElemID) => boolean
+
+const getUnresolvedReferences = (element: Element, shouldIgnore: ElemIDPredicate): ElemID[] => {
   const unresolvedReferences: ElemID[] = []
-  const func: WalkOnFunc = ({ value }) => {
-    if (isReferenceExpression(value) && value.value instanceof expressions.UnresolvedReference) {
+  const func: WalkOnFunc = ({ value, path }) => {
+    if (shouldIgnore(path)) {
+      return WALK_NEXT_STEP.RECURSE
+    }
+
+    if (isReferenceExpression(value) && value.value instanceof UnresolvedReference) {
       unresolvedReferences.push(value.elemID)
       return WALK_NEXT_STEP.SKIP
     }
     if (isTemplateExpression(value)) {
       value.parts.forEach(part => {
-        if (isReferenceExpression(part) && part.value instanceof expressions.UnresolvedReference) {
+        if (isReferenceExpression(part) && part.value instanceof UnresolvedReference) {
           unresolvedReferences.push(part.elemID)
         }
       })
@@ -41,12 +46,14 @@ const getUnresolvedReferences = (element: Element): ElemID[] => {
 }
 
 
-export const changeValidator: ChangeValidator = async changes => (
+export const createUnresolvedReferencesValidator = (shouldIgnore: ElemIDPredicate = () => false)
+: ChangeValidator => async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .map(async element => {
-      const unresolvedReferences = getUnresolvedReferences(element)
+      const unresolvedReferences = getUnresolvedReferences(element, shouldIgnore)
+
       if (unresolvedReferences.length === 0) {
         return undefined
       }

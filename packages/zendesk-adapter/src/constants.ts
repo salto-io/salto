@@ -48,6 +48,7 @@ export const SOLVED_CATEGORY = 'solved'
 export const HOLD_CATEGORY = 'hold'
 export const OPEN_CATEGORY = 'open'
 export const ROUTING_ATTRIBUTE_VALUE_TYPE = 'routing_attribute_value'
+export const GROUP_TYPE_NAME = 'group'
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'

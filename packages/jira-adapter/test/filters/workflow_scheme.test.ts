@@ -654,7 +654,7 @@ describe('workflowScheme', () => {
       expect(logErrorSpy).toHaveBeenCalledWith('failed to publish draft for workflow scheme workflowSchemeInstance, error: Failed to publish draft with error: . Issue type with name issueInstance is missing the mappings required for statuses with names statusFirstInstance,statusSecondInstance')
     })
 
-    it('should throw the same error when the regex is not matched', async () => {
+    it('should log the same error when the regex is not matched', async () => {
       const workflowSchemeInstance = new InstanceElement(
         'workflowSchemeInstance',
         workflowSchemeType,
@@ -691,9 +691,9 @@ describe('workflowScheme', () => {
         [toChange({ before: instanceBefore, after: workflowSchemeInstance })]
       )
       expect(result).toBeDefined()
-      expect(result?.deployResult.errors).toHaveLength(1)
-      const errorMessage = result?.deployResult.errors[0].message
-      expect(errorMessage).toInclude('<not correct message> 2 is missing the mappings required for statuses <not correct message> with 3')
+      expect(result?.deployResult.appliedChanges).toHaveLength(1)
+      expect(result?.deployResult.errors).toEqual([])
+      expect(logErrorSpy).toHaveBeenCalledWith('failed to publish draft for workflow scheme workflowSchemeInstance, error: Failed to publish draft with error: . <not correct message> 2 is missing the mappings required for statuses <not correct message> with 3')
     })
 
     it('should partly edit the error message when an ID is not in the elementsSource', async () => {

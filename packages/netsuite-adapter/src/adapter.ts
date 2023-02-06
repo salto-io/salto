@@ -438,12 +438,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.elementsSourceIndex,
     )
 
-    const ids = deployResult.appliedChanges.map(
+    const ids = new Set(deployResult.appliedChanges.map(
       change => getChangeData(change).elemID.getFullName()
-    )
+    ))
 
     const appliedChanges = changeGroup.changes
-      .filter(change => ids.includes(getChangeData(change).elemID.getFullName()))
+      .filter(change => ids.has(getChangeData(change).elemID.getFullName()))
       .map(change => ({
         action: change.action,
         data: _.mapValues(change.data, (element: Element) => element.clone()),

@@ -93,6 +93,9 @@ const getDCLicense = async (client: JiraClient): Promise<Value> => {
     throw new Error('Received an invalid dc license response')
   }
   delete response.data.rawLicense
+  delete response.data.organizationName
+  delete response.data.supportEntitlementNumber
+
   log.info(`jira license (type dc) is: ${safeJsonStringify(response.data)}`)
   return {
     applications: [{

@@ -29,7 +29,7 @@ const { createPaginator } = clientUtils
 const { isDefined } = lowerdashValues
 
 const MISSING_USERS_DOC_LINK = 'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
-const MISSING_USERS_ERROR_MSG = 'Element references users which don\'t exist in target environment'
+const MISSING_USERS_ERROR_MSG = 'Instance references users which don\'t exist in target environment'
 
 const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>): string[] => {
   const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
@@ -52,7 +52,7 @@ const getDefaultMissingUsersError = (
     elemID: instance.elemID,
     severity: 'Error',
     message: MISSING_USERS_ERROR_MSG,
-    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`,
+    detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
   }
 }
 
@@ -69,7 +69,7 @@ const getMissingUsersChangeWarning = (
     elemID: instance.elemID,
     severity: 'Warning',
     message: `${missingUsers.length} usernames will be overridden to ${userFallbackValue}`,
-    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${userFallbackValue} according to the environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`,
+    detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${userFallbackValue} according to the environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
   }
 }
 
@@ -86,13 +86,16 @@ const getFallbackUserIsMissingError = (
     elemID: instance.elemID,
     severity: 'Error',
     message: MISSING_USERS_ERROR_MSG,
-    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn addition, we could not get the defined fallback user ${userFallbackValue}. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment's user fallback options. Learn more: ${MISSING_USERS_DOC_LINK}`,
+    detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn addition, we could not get the defined fallback user ${userFallbackValue}. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
   }
 }
 
 /**
- * Verifies users exists before deployment of an element with user fields.
- * If the deploy option 'defaultMissingUserFallback' exists, warns the user about missing users changes
+ * Verifies users exist before deployment of an instance with user references.
+ * Change error will vary based on the following scenarios:
+ *  1. If the config option 'defaultMissingUserFallback' exists, we will warn the user about missing users changes.
+ *  2. If 'defaultMissingUserFallback' isn't defined, or if we could not use user fallback value for some reason,
+ *     we will return an error.
  */
 export const missingUsersValidator: (client: ZendeskClient, deployConfig?: ZedneskDeployConfig) =>
   ChangeValidator = (client, deployConfig) => async changes => {
@@ -118,11 +121,9 @@ export const missingUsersValidator: (client: ZendeskClient, deployConfig?: Zedne
     if (missingUserFallback !== undefined) {
       try {
         const fallbackValue = await getUserFallbackValue(missingUserFallback, usersEmails, client)
-        if (fallbackValue !== undefined) {
-          return relevantInstances
-            .map(instance => getMissingUsersChangeWarning(instance, usersEmails, fallbackValue))
-            .filter(isDefined)
-        }
+        return relevantInstances
+          .map(instance => getMissingUsersChangeWarning(instance, usersEmails, fallbackValue))
+          .filter(isDefined)
       } catch (e) {
         return relevantInstances
           .map(instance => getFallbackUserIsMissingError(instance, usersEmails, missingUserFallback))

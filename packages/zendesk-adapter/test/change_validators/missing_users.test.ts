@@ -45,7 +45,7 @@ describe('missingUsersValidator', () => {
         },
         {
           field: 'requester_id',
-          value: '1@1',
+          value: '1@salto.io',
         },
       ],
       restriction: {
@@ -66,11 +66,11 @@ describe('missingUsersValidator', () => {
         status: 200,
         data: {
           users: [
-            { id: 1, email: '1@1', role: 'agent', custom_role_id: 123 },
-            { id: 2, email: '2@2', role: 'agent', custom_role_id: 234 },
-            { id: 3, email: '3@3', role: 'admin', custom_role_id: 234 },
-            { id: 4, email: '4@4', role: 'agent' },
-            { id: 5, email: '5@5', role: 'agent', custom_role_id: 123 },
+            { id: 1, email: '1@salto.io', role: 'agent', custom_role_id: 123 },
+            { id: 2, email: '2@salto.io', role: 'agent', custom_role_id: 234 },
+            { id: 3, email: '3@salto.io', role: 'admin', custom_role_id: 234 },
+            { id: 4, email: '4@salto.io', role: 'agent' },
+            { id: 5, email: '5@salto.io', role: 'agent', custom_role_id: 123 },
           ],
         },
       }
@@ -86,20 +86,20 @@ describe('missingUsersValidator', () => {
       {
         elemID: articleInstance.elemID,
         severity: 'Error',
-        message: 'Element references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: article@salto.com.\nIn order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: 'Instance references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: article@salto.com.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
       {
         elemID: macroInstance.elemID,
         severity: 'Error',
-        message: 'Element references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: 'Instance references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
     ])
   })
   it('should return warning in case of overriding missing users with user from deploy config', async () => {
     const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
-    deployConfig = { defaultMissingUserFallback: '4@4' }
+    deployConfig = { defaultMissingUserFallback: '4@salto.io' }
     const changeValidator = missingUsersValidator(client, deployConfig)
     const errors = await changeValidator(changes)
     expect(errors).toHaveLength(2)
@@ -107,20 +107,20 @@ describe('missingUsersValidator', () => {
       {
         elemID: articleInstance.elemID,
         severity: 'Warning',
-        message: '1 usernames will be overridden to 4@4',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: article@salto.com.\nIf you continue, they will be set to 4@4 according to the environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: '1 usernames will be overridden to 4@salto.io',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: article@salto.com.\nIf you continue, they will be set to 4@salto.io according to the environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
       {
         elemID: macroInstance.elemID,
         severity: 'Warning',
-        message: '2 usernames will be overridden to 4@4',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIf you continue, they will be set to 4@4 according to the environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: '2 usernames will be overridden to 4@salto.io',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIf you continue, they will be set to 4@salto.io according to the environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
     ])
   })
   it('should return error in case of user provided in deploy config does not exist', async () => {
     const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
-    deployConfig = { defaultMissingUserFallback: '9@9' }
+    deployConfig = { defaultMissingUserFallback: '9@salto.io' }
     const changeValidator = missingUsersValidator(client, deployConfig)
     const errors = await changeValidator(changes)
     expect(errors).toHaveLength(2)
@@ -128,14 +128,14 @@ describe('missingUsersValidator', () => {
       {
         elemID: articleInstance.elemID,
         severity: 'Error',
-        message: 'Element references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: article@salto.com.\nIn addition, we could not get the defined fallback user 9@9. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: 'Instance references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: article@salto.com.\nIn addition, we could not get the defined fallback user 9@salto.io. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
       {
         elemID: macroInstance.elemID,
         severity: 'Error',
-        message: 'Element references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn addition, we could not get the defined fallback user 9@9. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: 'Instance references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn addition, we could not get the defined fallback user 9@salto.io. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
     ])
   })
@@ -151,14 +151,14 @@ describe('missingUsersValidator', () => {
       {
         elemID: articleInstance.elemID,
         severity: 'Error',
-        message: 'Element references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: article@salto.com.\nIn addition, we could not get the defined fallback user ##DEPLOYER##. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: 'Instance references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: article@salto.com.\nIn addition, we could not get the defined fallback user ##DEPLOYER##. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
       {
         elemID: macroInstance.elemID,
         severity: 'Error',
-        message: 'Element references users which don\'t exist in target environment',
-        detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn addition, we could not get the defined fallback user ##DEPLOYER##. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment\'s user fallback options. Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+        message: 'Instance references users which don\'t exist in target environment',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: thisuserismissing@salto.com, thisuserismissing2@salto.com.\nIn addition, we could not get the defined fallback user ##DEPLOYER##. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment\'s user fallback options.\nLearn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
       },
     ])
   })
@@ -166,7 +166,7 @@ describe('missingUsersValidator', () => {
     const articleWithValidUser = new InstanceElement(
       'article',
       articleType,
-      { author_id: '1@1', draft: false },
+      { author_id: '1@salto.io', draft: false },
     )
     const changes = [toChange({ after: articleWithValidUser })]
     const changeValidator = missingUsersValidator(client, deployConfig)

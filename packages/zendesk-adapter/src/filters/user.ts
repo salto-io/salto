@@ -96,9 +96,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
             userEmails,
             client
           )
-          if (fallbackValue !== undefined) {
-            replaceMissingUsers(relevantChanges, userEmails, fallbackValue)
-          }
+          replaceMissingUsers(relevantChanges, userEmails, fallbackValue)
         } catch (e) {
           log.error('Error while trying to get defaultMissingUserFallback value')
         }

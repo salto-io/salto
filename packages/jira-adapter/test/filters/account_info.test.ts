@@ -107,6 +107,8 @@ describe('accountInfoFilter', () => {
             licenseType: 'Developer',
             expired: false,
             rawLicense: 'should be removed',
+            organizationName: 'should be removed2',
+            supportEntitlementNumber: 'should be removed3',
           },
         })
         await filter.onFetch?.(elements)

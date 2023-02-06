@@ -24,7 +24,10 @@ import JiraClient from '../client/client'
 
 const log = logger(module)
 
-const createAccountTypes = (): ObjectType[] => {
+const createAccountTypes = ():
+  {accountInfoType: ObjectType
+  licenseType: ObjectType
+  licensedApplications: ObjectType} => {
   const licensedApplications = new ObjectType({
     elemID: new ElemID(JIRA, LICENSED_APPLICATION_TYPE),
     isSettings: true,
@@ -56,7 +59,7 @@ const createAccountTypes = (): ObjectType[] => {
       [CORE_ANNOTATIONS.HIDDEN]: true,
     },
   })
-  return [accountInfoType, licenseType, licensedApplications]
+  return { accountInfoType, licenseType, licensedApplications }
 }
 
 type LicenseResponse = {
@@ -127,7 +130,7 @@ const getAccountInfo = async (client: JiraClient, accountInfoType: ObjectType): 
 const filter: FilterCreator = ({ client }) => ({
   name: 'accountInfo',
   onFetch: async elements => log.time(async () => {
-    const [accountInfoType, licenseType, licensedApplications] = createAccountTypes()
+    const { accountInfoType, licenseType, licensedApplications } = createAccountTypes()
     try {
       elements.push(licenseType, licensedApplications, accountInfoType, await getAccountInfo(client, accountInfoType))
     } catch (e) {
@@ -144,8 +147,7 @@ const filter: FilterCreator = ({ client }) => ({
       .filter(isInstanceElement)
     log.info('jira user count is: %s',
       applicationRoles
-        .filter(role => role.value.key === 'jira-software')
-        .map(role => role.value.userCount)[0] ?? 'unknown')
+        .find(role => role.value.key === 'jira-software')?.value.userCount ?? 'unknown')
     applicationRoles
       .forEach(role => {
         delete role.value.userCount

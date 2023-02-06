@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import {
   ChangeError,
   ChangeValidator,
@@ -37,13 +36,13 @@ const { isDefined } = lowerDashValues
 const organizationsCache: Record<string, boolean> = {}
 
 // Request the organization by name and cache the result in order to save api calls
-const doesOrganizationExists = async (paginator: clientUtils.Paginator, orgName: string): Promise<boolean> => {
+export const doesOrganizationExists = async (paginator: clientUtils.Paginator, orgName: string): Promise<boolean> => {
   if (organizationsCache[orgName] !== undefined) {
     return organizationsCache[orgName]
   }
 
   const organizations = await getOrganizationsByNames([orgName], paginator, true)
-  // requesting organization returns all organizations that starts with the requested name, we want cache them all
+  // requesting organization returns all organizations that starts with the requested name, we want to cache them all
   organizations.forEach(org => { organizationsCache[org.name] = true })
 
   if (organizationsCache[orgName] === undefined) {
@@ -61,12 +60,12 @@ export const organizationExistenceValidator: (client: ZendeskClient) =>
 
       const instancesToOrganizations: Record<string, {orgs: Set<string>; instance: InstanceElement}> = {}
       // Organize the results by instance to all organizations that exists in it
-      Object.values(organizationPathEntryByOrgId).flat().forEach(orgPathEntry => {
-        const instanceName = orgPathEntry.instance.elemID.getFullName()
+      Object.values(organizationPathEntryByOrgId).flat().forEach(({ instance, id: orgName }) => {
+        const instanceName = instance.elemID.getFullName()
         const organizationNames = instancesToOrganizations[instanceName]?.orgs ?? new Set<string>()
-        organizationNames.add(orgPathEntry.id)
+        organizationNames.add(orgName)
 
-        instancesToOrganizations[instanceName] = { orgs: organizationNames, instance: orgPathEntry.instance }
+        instancesToOrganizations[instanceName] = { orgs: organizationNames, instance }
       })
 
       const paginator = clientUtils.createPaginator({ client, paginationFuncCreator: paginate })

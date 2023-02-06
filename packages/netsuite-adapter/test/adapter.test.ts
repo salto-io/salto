@@ -28,7 +28,6 @@ import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { FilterCreator } from '../src/filter'
 import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
-import * as referenceDependenciesModule from '../src/reference_dependencies'
 import NetsuiteClient from '../src/client/client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
@@ -71,15 +70,6 @@ getChangeValidatorMock.mockImplementation(({}: {
   fetchByQuery: FetchByQueryFunc
   deployReferencedElements?: boolean
 }) => (_changes: ReadonlyArray<Change>) => Promise.resolve([]))
-
-jest.mock('../src/reference_dependencies')
-const getReferencedInstancesMock = referenceDependenciesModule
-  .getReferencedElements as jest.Mock
-getReferencedInstancesMock
-  .mockImplementation((
-    sourceInstances: ReadonlyArray<InstanceElement>,
-    _deployAllReferencedElements: boolean
-  ) => sourceInstances)
 
 jest.mock('../src/changes_detector/changes_detector')
 
@@ -759,38 +749,6 @@ describe('Adapter', () => {
       })
     })
 
-    describe('deployReferencedElements', () => {
-      it('should call getReferencedInstances with deployReferencedElements=true', async () => {
-        const configWithDeployReferencedElements = {
-          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
-          fetchAllTypesAtOnce: true,
-          deploy: {
-            deployReferencedElements: true,
-          },
-        }
-        const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
-          client: new NetsuiteClient(client),
-          elementsSource: buildElementsSourceFromElements([]),
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
-          config: configWithDeployReferencedElements,
-          getElemIdFunc: mockGetElemIdFunc,
-        })
-
-        await netsuiteAdapterWithDeployReferencedElements.deploy({
-          changeGroup: {
-            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
-            changes: [{ action: 'add', data: { after: instance } }],
-          },
-        })
-
-        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], true)
-      })
-
-      it('should call getReferencedInstances with deployReferencedElements=false', async () => {
-        await adapterAdd(instance)
-        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], false)
-      })
-    })
     describe('additional sdf dependencies', () => {
       let custInfo: CustomizationInfo
       beforeAll(async () => {

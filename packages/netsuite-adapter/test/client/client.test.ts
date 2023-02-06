@@ -40,11 +40,9 @@ describe('NetsuiteClient', () => {
     const client = new NetsuiteClient(sdfClient)
 
     const deployParams: [
-      boolean,
       AdditionalDependencies,
       LazyElementsSourceIndexes,
     ] = [
-      false,
       {
         include: { features: [], objects: [] },
         exclude: { features: [], objects: [] },
@@ -263,7 +261,7 @@ describe('NetsuiteClient', () => {
             },
           )
         })
-        it('should transform field to customrecordtype instance', async () => {
+        it('should include custom record type field in appliedChanges', async () => {
           const customRecordType = new ObjectType({
             elemID: new ElemID(NETSUITE, 'customrecord1'),
             fields: {
@@ -274,62 +272,28 @@ describe('NetsuiteClient', () => {
               [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
             },
           })
-          const change = toChange({
-            after: customRecordType.fields.custom_field,
-          })
-          expect(await client.deploy(
-            [change],
-            SDF_CREATE_OR_UPDATE_GROUP_ID,
-            ...deployParams
-          )).toEqual({
-            errors: [],
-            appliedChanges: [change],
-          })
-          expect(mockSdfDeploy).toHaveBeenCalledWith(
-            [{
-              scriptId: 'customrecord1',
-              typeName: 'customrecordtype',
-              values: { '@_scriptid': 'customrecord1' },
-            }],
-            undefined,
-            {
-              additionalDependencies: {
-                exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
-              },
-              validateOnly: false,
-            },
-          )
-        })
-        it('should try again to deploy after ObjectsDeployError field fail', async () => {
-          const customRecordType = new ObjectType({
-            elemID: new ElemID(NETSUITE, 'customrecord1'),
-            fields: {
-              custom_field: { refType: BuiltinTypes.STRING },
-            },
-            annotations: {
-              [SCRIPT_ID]: 'customrecord1',
-              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
-            },
-          })
-          const objectsDeployError = new ObjectsDeployError('error', new Set(['customrecord1']))
+          const objectsDeployError = new ObjectsDeployError('error', new Set(['some_object']))
           mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
-          const successChange = toChange({
+          const failedChange = toChange({
             after: new InstanceElement(
               'instance',
               new ObjectType({ elemID: new ElemID(NETSUITE, 'type') }),
-              { scriptid: 'someObject' }
+              { scriptid: 'some_object' }
             ),
           })
-          const failedChange = toChange({
+          const successTypeChange = toChange({
+            after: customRecordType,
+          })
+          const successFieldChange = toChange({
             after: customRecordType.fields.custom_field,
           })
           expect(await client.deploy(
-            [successChange, failedChange],
+            [successTypeChange, successFieldChange, failedChange],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
             ...deployParams
           )).toEqual({
             errors: [objectsDeployError],
-            appliedChanges: [successChange],
+            appliedChanges: [successTypeChange, successFieldChange],
           })
           expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
         })
@@ -424,7 +388,7 @@ describe('NetsuiteClient', () => {
             values: { scriptid: 'someObject' },
           }],
           undefined,
-          { additionalDependencies: deployParams[1], validateOnly: true }
+          { additionalDependencies: deployParams[0], validateOnly: true }
         )
       })
       it('should skip validation', async () => {
@@ -462,11 +426,9 @@ describe('NetsuiteClient', () => {
     const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
 
     const deployParams: [
-      boolean,
       AdditionalDependencies,
       LazyElementsSourceIndexes,
     ] = [
-      false,
       {
         include: { features: [], objects: [] },
         exclude: { features: [], objects: [] },

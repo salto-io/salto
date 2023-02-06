@@ -61,6 +61,7 @@ import currencyExchangeRate from './filters/currency_exchange_rate'
 import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
+import additionalChanges from './filters/additional_changes'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
@@ -167,6 +168,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordsFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
+      // additionalChanges should be the first preDeploy filter to run
+      additionalChanges,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -431,7 +434,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const deployResult = await this.client.deploy(
       changesToDeploy,
       changeGroup.groupID,
-      this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       this.additionalDependencies,
       this.elementsSourceIndex,
     )

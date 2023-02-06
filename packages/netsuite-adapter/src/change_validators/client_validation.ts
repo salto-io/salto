@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeError, changeId, getChangeData, Element, ChangeDataType, isField } from '@salto-io/adapter-api'
+import { Change, ChangeError, changeId, getChangeData, Element, ChangeDataType, isField, isFieldChange, isInstanceChange, isObjectTypeChange, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { getGroupItemFromRegex, objectValidationErrorRegex, OBJECT_ID } from '../client/sdf_client'
 import NetsuiteClient from '../client/client'
 import { AdditionalDependencies } from '../client/types'
@@ -31,7 +31,7 @@ const { awu } = collections.asynciterable
 const VALIDATION_FAIL = 'Validation failed.'
 
 type FailedChangeWithDependencies = {
-  element: Change<ChangeDataType>
+  change: Change<ChangeDataType>
   dependencies: string[]
 }
 
@@ -60,11 +60,12 @@ const getFailedChangesWithDependencies = (
   dependencyMap: Map<string, Set<string>>,
   error: ManifestValidationError,
 ): FailedChangeWithDependencies[] => groupChanges
-  .filter(element => failedElementsIds.has(getChangeData(element).elemID.getFullName()))
-  .map(element => ({
-    element,
+  .filter(change => failedElementsIds.has(getChangeData(change).elemID.getFullName())
+    || (isFieldChange(change) && failedElementsIds.has(getChangeData(change).parent.elemID.getFullName())))
+  .map(change => ({
+    change,
     dependencies: error.missingDependencyScriptIds.filter(scriptid =>
-      dependencyMap.get(getChangeData(element).elemID.getFullName())?.has(scriptid)),
+      dependencyMap.get(getChangeData(change).elemID.getFullName())?.has(scriptid)),
   }))
 
 
@@ -83,7 +84,6 @@ const changeValidator: ClientChangeValidator = async (
   additionalDependencies,
   filtersRunner,
   elementsSourceIndex,
-  deployReferencedElements = false
 ) => {
   const clonedChanges = changes.map(change => ({
     action: change.action,
@@ -108,13 +108,15 @@ const changeValidator: ClientChangeValidator = async (
       const errors = await client.validate(
         groupChanges,
         groupId,
-        deployReferencedElements,
         additionalDependencies,
         elementsSourceIndex,
       )
       if (errors.length > 0) {
+        const topLevelChanges = changes.filter(
+          change => isInstanceChange(change) || isObjectTypeChange(change)
+        ) as Change<InstanceElement | ObjectType>[]
         const dependencyMap = await NetsuiteClient.createDependencyMap(
-          groupChanges, deployReferencedElements, elementsSourceIndex
+          topLevelChanges, elementsSourceIndex
         )
         return awu(errors).flatMap(async error => {
           if (error instanceof ObjectsDeployError) {
@@ -140,7 +142,9 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof ManifestValidationError) {
-            const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(error, dependencyMap, changes)
+            const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(
+              error, dependencyMap, topLevelChanges
+            )
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
               failedElementsIds, groupChanges, dependencyMap, error
             )
@@ -152,7 +156,7 @@ const changeValidator: ClientChangeValidator = async (
                 return {
                   message,
                   severity: 'Error' as const,
-                  elemID: getChangeData(changeAndMissingDependencies.element).elemID,
+                  elemID: getChangeData(changeAndMissingDependencies.change).elemID,
                   detailedMessage: `${detailedMessage} Please make sure that all the bundles from the source account are installed and updated in the target account.`,
                 }
               })

@@ -31,8 +31,8 @@ const { awu } = collections.asynciterable
 
 const createUnknownPicklistValueChangeError = ({ elemID, annotations }: Field, unknownValue: string): ChangeError => ({
   elemID,
-  message: 'Unknown picklist value',
-  detailedMessage: `The field ${elemID.getFullName()} was set with unsupported value ${unknownValue}. Supported values are ${annotations[CORE_ANNOTATIONS.RESTRICTION]?.values}`,
+  message: `Unknown picklist value ${unknownValue}`,
+  detailedMessage: `Supported values are ${annotations[CORE_ANNOTATIONS.RESTRICTION]?.values}`,
   severity: 'Error',
 })
 

@@ -31,7 +31,7 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
       'ProjectInstance',
       projectType,
     )
-    unresolvedElemId = new ElemID(JIRA, 'unresolved')
+    unresolvedElemId = new ElemID(JIRA, 'unresolvedProject')
     automationInstance = new InstanceElement(
       'AutomationInstance',
       automationType,
@@ -58,7 +58,7 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
         elemID: automationInstance.elemID,
         severity: 'Warning',
         message: 'Automation won’t be attached to some projects',
-        detailedMessage: 'The automation is attached to some projects which do not exist in the target environment: Project. If you continue, the automation will be deployed without them. Alternatively, you can go back and include these projects in your deployment.',
+        detailedMessage: 'The automation is attached to some projects which do not exist in the target environment: unresolvedProject. If you continue, the automation will be deployed without them. Alternatively, you can go back and include these projects in your deployment.',
       },
     ])
   })
@@ -89,7 +89,7 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
         elemID: automationInstance.elemID,
         severity: 'Error',
         message: 'Automation isn’t attached to any existing project',
-        detailedMessage: 'All projects attached to this automation do not exist in the target environment: Project. The automation can’t be deployed. To solve this, go back and include at least one attached project in your deployment.',
+        detailedMessage: 'All projects attached to this automation do not exist in the target environment: unresolvedProject. The automation can’t be deployed. To solve this, go back and include at least one attached project in your deployment.',
       },
     ])
   })

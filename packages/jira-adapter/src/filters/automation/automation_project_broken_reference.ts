@@ -27,7 +27,7 @@ export const filter: FilterCreator = () => {
       changes.filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
         .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
-        .filter(change => getChangeData(change).value.projects !== undefined) // todo check if needed
+        .filter(change => getChangeData(change).value.projects !== undefined)
         .forEach(change => {
           preDeployProjects[getChangeData(change).elemID.getFullName()] = change.data.after.value.projects
           change.data.after.value.projects = change.data.after.value.projects
@@ -39,7 +39,7 @@ export const filter: FilterCreator = () => {
       changes.filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
         .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE)
-        .filter(change => getChangeData(change).value.projects !== undefined) // todo check if needed
+        .filter(change => getChangeData(change).value.projects !== undefined)
         .forEach(change => {
           if (preDeployProjects[getChangeData(change).elemID.getFullName()] !== undefined) {
             change.data.after.value.projects = preDeployProjects[getChangeData(change).elemID.getFullName()]

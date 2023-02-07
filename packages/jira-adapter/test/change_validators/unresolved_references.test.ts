@@ -22,7 +22,7 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
   let elemId: ElemID
 
   beforeEach(() => {
-    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'projects', '0', 'projectId')
+    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'ruleName', 'projects', '0', 'projectId')
   })
 
   it('should return true when the elemId fit automationProjectId  ', async () => {
@@ -31,16 +31,19 @@ describe('automationProjectUnresolvedReferenceValidator', () => {
   })
 
   it('should return false when the elemId not fit automationProjectId  ', async () => {
-    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'projects', '0', 'projectIds')
+    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'ruleName', 'projects', '0', 'projectIds')
     expect(automationProjectReferenceDetector(elemId))
       .toBeFalse()
-    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'projects', 'notNumber', 'projectId')
+    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'ruleName', 'projects', 'notNumber', 'projectId')
     expect(automationProjectReferenceDetector(elemId))
       .toBeFalse()
-    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'project', '0', 'projectId')
+    elemId = new ElemID(JIRA, AUTOMATION_TYPE, 'instance', 'ruleName', 'project', '0', 'projectId')
     expect(automationProjectReferenceDetector(elemId))
       .toBeFalse()
-    elemId = new ElemID(JIRA, 'anotherType', 'instance', 'project', '0', 'projectId')
+    elemId = new ElemID(JIRA, 'anotherType', 'instance', 'ruleName', 'project', '0', 'projectId')
+    expect(automationProjectReferenceDetector(elemId))
+      .toBeFalse()
+    elemId = new ElemID('anotherAdapter', AUTOMATION_TYPE, 'instance', 'ruleName', 'project', '0', 'projectId')
     expect(automationProjectReferenceDetector(elemId))
       .toBeFalse()
     elemId = new ElemID('anotherAdapter', AUTOMATION_TYPE, 'instance', 'project', '0', 'projectId')

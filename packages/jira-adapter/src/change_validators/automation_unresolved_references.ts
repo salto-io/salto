@@ -20,6 +20,8 @@ import { AUTOMATION_TYPE } from '../constants'
 
 export type ProjectType = { projectId: ReferenceExpression }
 
+const isProjectType = (element: unknown): element is ProjectType =>
+  (element as ProjectType).projectId !== undefined
 
 export const isProjectReferenceBroken = (project: ProjectType): boolean =>
   project.projectId !== undefined
@@ -36,23 +38,27 @@ export const automationProjectUnresolvedReferenceValidator: ChangeValidator = as
     .filter(instance => instance.value.projects !== undefined)
     .map(instance => ({
       instance,
-      brokenReferencesNames: instance.value.projects.filter(isProjectReferenceBroken)
-        .map((project: ProjectType) => project.projectId.elemID.name),
+      brokenReferencesNames: instance.value.projects
+        .filter(isProjectType)
+        .filter(isProjectReferenceBroken)
+        .map((project: ProjectType) => project.projectId.value.target.name),
     }))
     .filter(({ brokenReferencesNames }) => brokenReferencesNames.length > 0)
     .map(({ instance, brokenReferencesNames }) => {
-    // automation must have at least one project to be valid
+      const brokenReferencesNamesString = brokenReferencesNames.join(', ')
+      // automation must have at least one project to be valid
       if (brokenReferencesNames.length === instance.value.projects.length) {
         return {
           elemID: instance.elemID,
           severity: 'Error' as SeverityLevel,
           message: 'Automation isn’t attached to any existing project',
-          detailedMessage: `All projects attached to this automation do not exist in the target environment: ${brokenReferencesNames}. The automation can’t be deployed. To solve this, go back and include at least one attached project in your deployment.`,
+          detailedMessage: `All projects attached to this automation do not exist in the target environment: ${brokenReferencesNamesString}. The automation can’t be deployed. To solve this, go back and include at least one attached project in your deployment.`,
         }
-      } return {
+      }
+      return {
         elemID: instance.elemID,
         severity: 'Warning' as SeverityLevel,
         message: 'Automation won’t be attached to some projects',
-        detailedMessage: `The automation is attached to some projects which do not exist in the target environment: ${brokenReferencesNames}. If you continue, the automation will be deployed without them. Alternatively, you can go back and include these projects in your deployment.`,
+        detailedMessage: `The automation is attached to some projects which do not exist in the target environment: ${brokenReferencesNamesString}. If you continue, the automation will be deployed without them. Alternatively, you can go back and include these projects in your deployment.`,
       }
     })

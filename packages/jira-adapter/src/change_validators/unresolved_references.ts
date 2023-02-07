@@ -14,17 +14,18 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, ElemID } from '@salto-io/adapter-api'
+import { ChangeValidator, ElemID, isIndexPathPart } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { AUTOMATION_TYPE } from '../constants'
 
-// for example: 'jira.Automation.instance.projects.123.projectId'
-const AUTOMATION_PROJECT_REFERENCE_REG = new RegExp('^jira\\.Automation\\..+\\.projects\\.\\d+\\.projectId$')
 
-export const automationProjectReferenceDetector = (id: ElemID): boolean => {
-  if (id.typeName === AUTOMATION_TYPE) {
-    const elemIdFullName = id.getFullName()
-    return AUTOMATION_PROJECT_REFERENCE_REG.test(elemIdFullName)
+export const automationProjectReferenceDetector = (elemId: ElemID): boolean => {
+  if (elemId.typeName === AUTOMATION_TYPE) {
+    const nameParts = elemId.getFullNameParts()
+    return nameParts.length === 7
+      && nameParts[4] === 'projects'
+      && isIndexPathPart(nameParts[5])
+      && nameParts[6] === 'projectId'
   }
   return false
 }

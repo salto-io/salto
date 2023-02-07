@@ -19,12 +19,8 @@ import { mockFunction } from '@salto-io/test-utils'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
-<<<<<<< HEAD
-import { getUsers } from '../../src/user_utils'
-import { DEFAULT_CONFIG } from '../../src/config'
-=======
 import { getIdByEmail, getUsers } from '../../src/user_utils'
->>>>>>> 043116892 (fix CR)
+import { DEFAULT_CONFIG } from '../../src/config'
 
 jest.mock('../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../src/user_utils'),
@@ -34,11 +30,7 @@ jest.mock('../../src/user_utils', () => ({
 
 describe('user filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-<<<<<<< HEAD
-=======
-  let filter: FilterType
   let getIdByEmailMock: jest.MockedFunction<typeof getIdByEmail>
->>>>>>> 043116892 (fix CR)
   let getUsersMock: jest.MockedFunction<typeof getUsers>
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })

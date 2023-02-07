@@ -19,11 +19,7 @@ import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-<<<<<<< HEAD
-import { getUsers, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
-=======
-import { getIdByEmail, getUsers, TYPE_NAME_TO_REPLACER } from '../user_utils'
->>>>>>> 043116892 (fix CR)
+import { getIdByEmail, getUsers, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
 import { deployModificationFunc } from '../replacers_utils'
 import { paginate } from '../client/pagination'
 import { DEPLOY_CONFIG } from '../config'
@@ -59,7 +55,6 @@ const replaceMissingUsers = (
 const filterCreator: FilterCreator = ({ client, config }) => {
   let userIdToEmail: Record<string, string> = {}
   return {
-<<<<<<< HEAD
     name: 'usersFilter',
     onFetch: async elements => {
       const paginator = createPaginator({
@@ -70,13 +65,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       if (_.isEmpty(users)) {
         return
       }
-      const mapping = Object.fromEntries(
-        users.map(user => [user.id.toString(), user.email])
-      ) as Record<string, string>
-=======
-    onFetch: async elements => log.time(async () => {
       const mapping = await getIdByEmail(paginator)
->>>>>>> 043116892 (fix CR)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
@@ -95,8 +84,6 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       if (_.isEmpty(users)) {
         return
       }
-<<<<<<< HEAD
-
       const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] ?? {}
       if (defaultMissingUserFallback !== undefined) {
         const userEmails = new Set(users.map(user => user.email))
@@ -115,9 +102,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       userIdToEmail = Object.fromEntries(
         users.map(user => [user.id.toString(), user.email])
       ) as Record<string, string>
-=======
       userIdToEmail = await getIdByEmail(paginator)
->>>>>>> 043116892 (fix CR)
       const emailToUserId = Object.fromEntries(
         users.map(user => [user.email, user.id.toString()])
       ) as Record<string, string>

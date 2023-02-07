@@ -1,0 +1,120 @@
+/*
+*                      Copyright 2023 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression, ChangeValidator, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { mockClient } from '../utils'
+import { getDefaultConfig, JiraConfig } from '../../src/config/config'
+import { workflowSchemeMigrationValidator } from '../../src/change_validators/workflow_scheme_migration'
+import { JIRA } from '../../src/constants'
+
+describe('workflow scheme migration', () => {
+  let workflowType: ObjectType
+  let projectType: ObjectType
+  let issueTypeSchemeType: ObjectType
+  let issueTypeSchemeInstance: InstanceElement
+  let projectInstance: InstanceElement
+  let workflowInstance: InstanceElement
+  let modifiedInstance: InstanceElement
+  let validator: ChangeValidator
+  let config: JiraConfig
+  let elementSource: ReadOnlyElementsSource
+
+  beforeEach(() => {
+    const { client, paginator } = mockClient()
+    workflowType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowScheme') })
+    issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeScheme') })
+    issueTypeSchemeInstance = new InstanceElement(
+      'instance',
+      issueTypeSchemeType,
+      {
+        issueTypeIds: [
+          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
+          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
+        ],
+      }
+    )
+    projectType = new ObjectType({ elemID: new ElemID(JIRA, 'Project') })
+    projectInstance = new InstanceElement(
+      'instance',
+      projectType,
+      {
+        name: 'instance',
+        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow')),
+      }
+    )
+    workflowInstance = new InstanceElement(
+      'workflow',
+      workflowType,
+      {
+        name: 'instance',
+        defaultWorkflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'default')),
+        items: [
+          {
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow1')),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
+          },
+          {
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow2')),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
+          },
+          {
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow3')),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')),
+          },
+        ],
+      }
+    )
+    modifiedInstance = new InstanceElement(
+      'workflow',
+      workflowType,
+      {
+        name: 'instance',
+        defaultWorkflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'default')),
+        items: [
+          {
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow1')),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
+          },
+          {
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow2')),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
+          },
+          {
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow3')),
+            issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')),
+          },
+        ],
+      }
+    )
+    elementSource = buildElementsSourceFromElements([workflowInstance, issueTypeSchemeInstance, projectInstance])
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    validator = workflowSchemeMigrationValidator(client, config, paginator)
+  })
+  it.only('should not return error for addition/removal changes', async () => {
+    const deletionErrors = await validator([toChange({ before: workflowInstance })], elementSource)
+    expect(deletionErrors).toHaveLength(0)
+    const additionErrors = await validator([toChange({ after: workflowInstance })], elementSource)
+    expect(additionErrors).toHaveLength(0)
+  })
+//   it('should not return error for inactive workflow scheme')
+//   it('should not return an error for active workflow scheme with no issues in assigned projects')
+//   it('should not return an error if the change of workflows did not require migration')
+//   it('should not return an error if the change was on an issue type that is not in issue type schemes')
+//   it('should not return an error if all status migrations are already in the workflow scheme')
+//   it('should return an error one of the items changed')
+//   it('should return an error if default workflow changed')
+})

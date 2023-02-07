@@ -115,6 +115,7 @@ import ticketFormDeploy from './filters/ticket_form'
 import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
+import hideAccountFeatures from './filters/hide_account_features'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -203,6 +204,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
+  hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   // defaultDeployFilter should be last!
   defaultDeployFilter,

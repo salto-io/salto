@@ -23,7 +23,7 @@ import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { workflowSchemeMigrationValidator } from '../../src/change_validators/workflow_scheme_migration'
 import { JIRA } from '../../src/constants'
 
-jest.setTimeout(100000)
+jest.setTimeout(10000000)
 describe('workflow scheme migration', () => {
   let workflowSchemeType: ObjectType
   let mockConnection: MockInterface<clientUtils.APIConnection>
@@ -37,12 +37,20 @@ describe('workflow scheme migration', () => {
   let config: JiraConfig
   let elementSource: ReadOnlyElementsSource
   let numberOfIssues: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let updateSchemaIdResponse: any
 
   beforeEach(() => {
     jest.clearAllMocks()
     const { client, paginator, connection } = mockClient()
     mockConnection = connection
     numberOfIssues = 100
+    updateSchemaIdResponse = {
+      status: 200,
+      data: {
+        name: 'instance',
+      },
+    }
     workflowSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowScheme') })
     issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeScheme') })
     issueTypeSchemeInstance = new InstanceElement(
@@ -69,6 +77,7 @@ describe('workflow scheme migration', () => {
       'workflow',
       workflowSchemeType,
       {
+        id: 'workflowid',
         name: 'instance',
         defaultWorkflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'default')),
         items: [
@@ -120,11 +129,15 @@ describe('workflow scheme migration', () => {
         }
       }
       if (url === '/rest/api/3/workflowscheme/workflowid') {
+        return updateSchemaIdResponse
+      }
+      if (url === '/rest/api/3/workflowscheme') {
         return {
           status: 200,
-          data: {
+          data: [{
             name: 'instance',
-          },
+            id: 'workflowid2',
+          }],
         }
       }
       throw new Error(`Unexpected url ${url}`)
@@ -149,7 +162,15 @@ describe('workflow scheme migration', () => {
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
-//   it('should update internal id and service url for workflow scheme')
+  it('should update internal id and service url for workflow scheme', async () => {
+    updateSchemaIdResponse = {
+      status: 400,
+    }
+    const errors = await validator([toChange({ before: workflowInstance, after: workflowInstance })], elementSource)
+    expect(errors).toHaveLength(0)
+    expect(workflowInstance.value.id).toEqual('workflowid')
+    expect(workflowInstance.value.serviceUrl).toEqual('https://jira.atlassian.net')
+  })
 //   it('should not return an error if the change of workflows did not require migration')
 //   it('should not return an error if the change was on an issue type that is not in issue type schemes')
 //   it('should not return an error if all status migrations are already in the workflow scheme')

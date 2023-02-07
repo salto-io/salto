@@ -39,7 +39,7 @@ import { createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError, MissingManifestFeaturesError } from '../errors'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { Graph, GraphNode } from './graph_utils'
+import { Graph, GraphNode, SDFObjectNode } from './graph_utils'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -66,13 +66,6 @@ const isSubsetOfArray = <T>(subsetArray: T[], setArray: T[]):boolean =>
   subsetArray.every(element => setArray.includes(element))
 
 const ADDITION = 'addition'
-
-type SDFObjectNode = {
-  elemIdFullName: string
-  scriptid: string
-  changeType: 'addition' | 'modification'
-  customizationInfos: CustomizationInfo[]
-}
 
 type DependencyInfo = {
   dependencyMap: Map<string, Set<string>>
@@ -374,7 +367,8 @@ export default class NetsuiteClient {
           () => this.sdfClient.deploy(
             customizationInfos,
             suiteAppId,
-            { additionalDependencies, validateOnly }
+            { additionalDependencies, validateOnly },
+            dependencyGraph
           ),
           'sdfDeploy'
         )

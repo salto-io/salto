@@ -26,6 +26,7 @@ import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { AdditionalDependencies } from '../../src/client/types'
+import { Graph, SDFObjectNode } from '../../src/client/graph_utils'
 
 
 describe('NetsuiteClient', () => {
@@ -52,6 +53,8 @@ describe('NetsuiteClient', () => {
       },
       mockElementsSourceIndex,
     ]
+
+    const testGraph = new Graph<SDFObjectNode>('elemIdFullName')
     describe('deploy', () => {
       beforeEach(() => {
         jest.resetAllMocks()
@@ -306,6 +309,9 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
 
 
       describe('custom record types', () => {
+        beforeEach(() => {
+          testGraph.nodes.clear()
+        })
         it('should transform type to customrecordtype instance', async () => {
           const change = toChange({
             after: new ObjectType({

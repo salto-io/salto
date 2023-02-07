@@ -54,6 +54,8 @@ import {
   mergeTypeToInstances,
 } from './utils'
 import { fixManifest } from './manifest_utils'
+import { Graph, SDFObjectNode } from './graph_utils'
+import { reorderDeployXml } from './deploy_xml_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -873,7 +875,8 @@ export default class SdfClient {
   async deploy(
     customizationInfos: CustomizationInfo[],
     suiteAppId: string | undefined,
-    { additionalDependencies, validateOnly = false }: SdfDeployParams
+    { additionalDependencies, validateOnly = false }: SdfDeployParams,
+    dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
@@ -895,7 +898,7 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project, customizationInfos, additionalDependencies, validateOnly)
+    await this.runDeployCommands(project, customizationInfos, additionalDependencies, validateOnly, dependencyGraph)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
@@ -954,14 +957,28 @@ export default class SdfClient {
     )
   }
 
+  private static async fixDeployXml(
+    dependencyGraph: Graph<SDFObjectNode>,
+    projectName: string
+  ): Promise<void> {
+    const deployFilePath = SdfClient.getDeployFilePath(projectName)
+    const deployXmlContent = (await readFile(deployFilePath)).toString()
+    await writeFile(
+      deployFilePath,
+      reorderDeployXml(deployXmlContent, dependencyGraph)
+    )
+  }
+
   private async runDeployCommands(
     { executor, projectName, type }: Project,
     customizationInfos: CustomizationInfo[],
     additionalDependencies: AdditionalDependencies,
-    validateOnly: boolean
+    validateOnly: boolean,
+    dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
+    await SdfClient.fixDeployXml(dependencyGraph, projectName)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
@@ -1044,6 +1061,10 @@ export default class SdfClient {
 
   private static getManifestFilePath(projectName: string): string {
     return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'manifest.xml')
+  }
+
+  private static getDeployFilePath(projectName: string): string {
+    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'deploy.xml')
   }
 
   private static getFeaturesXmlPath(projectName: string): string {

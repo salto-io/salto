@@ -61,10 +61,6 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const users = await getUsers(paginator)
-      if (_.isEmpty(users)) {
-        return
-      }
       const mapping = await getIdByEmail(paginator)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {

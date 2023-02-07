@@ -18,24 +18,19 @@ import {
 } from '@salto-io/adapter-api'
 import changeValidator from '../../src/change_validators/data_change'
 import { mockTypes } from '../mock_elements'
-// import { CUSTOM_OBJECT } from '../../src/constants'
 
-describe('dataChange deploy validator', () => {
+describe('dataChange ChangeValidator', () => {
   let changeErrors: ReadonlyArray<ChangeError>
   describe('with data instance change', () => {
     let change: Change
     beforeEach(async () => {
-      const customObj = mockTypes.Product2
       const beforeCustomObjInstance = new InstanceElement(
         'customObjInstance',
-        customObj,
+        mockTypes.Product2,
         { field: 'beforeValue' },
       )
-      const afterCustomObjInstance = new InstanceElement(
-        'customObjInstance',
-        customObj,
-        { field: 'afterValue' },
-      )
+      const afterCustomObjInstance = beforeCustomObjInstance.clone()
+      afterCustomObjInstance.value.field = 'afterValue'
       change = toChange({ before: beforeCustomObjInstance, after: afterCustomObjInstance })
       changeErrors = await changeValidator([
         change,
@@ -53,17 +48,13 @@ describe('dataChange deploy validator', () => {
 
   describe('with regular instance change', () => {
     beforeEach(async () => {
-      const typeObj = mockTypes.ApexClass
       const beforeInstance = new InstanceElement(
         'instance',
-        typeObj,
+        mockTypes.ApexClass,
         { field: 'beforeValue' }
       )
-      const afterInstance = new InstanceElement(
-        'instance',
-        typeObj,
-        { field: 'afterValue' }
-      )
+      const afterInstance = beforeInstance.clone()
+      afterInstance.value.field = 'afterValue'
       changeErrors = await changeValidator([
         toChange({ before: beforeInstance, after: afterInstance }),
       ])

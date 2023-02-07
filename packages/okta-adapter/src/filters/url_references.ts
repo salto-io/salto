@@ -53,6 +53,7 @@ const extractIdsFromUrls = (instance: InstanceElement): void => {
  * The filter extract ids from urls in _link object in application type
  */
 const filter: FilterCreator = () => ({
+  name: 'urlReferencesFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

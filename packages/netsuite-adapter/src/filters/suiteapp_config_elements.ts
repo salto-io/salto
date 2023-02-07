@@ -167,6 +167,7 @@ const transformValuesForDeploy = async (change: Change<InstanceElement>): Promis
   )
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'suiteAppConfigElementsFilter',
   onFetch: async elements => {
     const [selectOptionType] = elements
       .filter(isObjectType)

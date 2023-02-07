@@ -160,6 +160,7 @@ const removeRedundantColumns = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'boardColumnsFilter',
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

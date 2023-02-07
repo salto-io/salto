@@ -42,6 +42,7 @@ export const removeIdenticalValues = (change: ModificationChange<InstanceElement
 }
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
+  name: 'dataInstancesDiff',
   preDeploy: async changes => {
     await awu(changes)
       .filter(isModificationChange)

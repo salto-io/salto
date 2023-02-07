@@ -88,6 +88,7 @@ const deployFilter = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'boardDeploymentFilter',
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
       log.debug('Private API is not enabled, skipping board deployment filter')

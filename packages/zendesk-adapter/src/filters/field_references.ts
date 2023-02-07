@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   BRAND_TYPE_NAME,
@@ -36,7 +35,6 @@ import { FETCH_CONFIG } from '../config'
 import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
 
 const { neighborContextGetter } = referenceUtils
-const log = logger(module)
 
 const neighborContextFunc = (args: {
   contextFieldName: string
@@ -1044,7 +1042,8 @@ export const lookupFunc = referenceUtils.generateLookupFunc(
  * Convert field values into references, based on predefined rules.
  */
 const filter: FilterCreator = ({ config }) => ({
-  onFetch: async (elements: Element[]) => log.time(async () => {
+  name: 'fieldReferencesFilter',
+  onFetch: async (elements: Element[]) => {
     const addReferences = async (refDefs: ZendeskFieldReferenceDefinition[]):
     Promise<void> => {
       const fixedDefs = refDefs
@@ -1064,7 +1063,7 @@ const filter: FilterCreator = ({ config }) => ({
       [...firstIterationFieldNameToTypeMappingDefs, ...commonFieldNameToTypeMappingDefs]
     )
     await addReferences(secondIterationFieldNameToTypeMappingDefs)
-  }, 'Field reference filter'),
+  },
 
 })
 export default filter

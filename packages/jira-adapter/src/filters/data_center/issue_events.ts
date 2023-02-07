@@ -22,6 +22,7 @@ import { ISSUE_EVENT_TYPE_NAME } from '../../constants'
  * Filter to support deploy in DC, handles annotations of IssueEvents
  */
 const filter: FilterCreator = ({ client }) => ({
+  name: 'deployDcIssueEventsFilter',
   onFetch: async elements => {
     if (!client.isDataCenter) {
       return

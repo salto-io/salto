@@ -182,6 +182,7 @@ const filterCreator: FilterCreator = ({
   elementsSourceIndex,
   isPartial,
 }): FilterWith<'onFetch'> => ({
+  name: 'replaceElementReferences',
   onFetch: async elements => {
     const fetchedElementsServiceIdToElemID = await generateServiceIdToElemID(elements)
     const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(

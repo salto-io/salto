@@ -77,6 +77,7 @@ Promise<void> => {
  * Deploys business hours schedules and their intervals
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'businessHoursScheduleFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [scheduleChanges, leftoverChanges] = _.partition(
       changes,

@@ -192,6 +192,7 @@ const addRelationships = (
  * Custom objects filter.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'customObjectsFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     // ensure the custom object definition type was not accidentally renamed
     const customObjectDefType = elements.filter(isObjectType).find(

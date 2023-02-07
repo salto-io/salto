@@ -23,6 +23,7 @@ import { isDataObjectType } from '../types'
 const { awu } = collections.asynciterable
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
+  name: 'dataInstancesIdentifiers',
   preDeploy: async changes => {
     await awu(changes)
       .filter(isInstanceChange)

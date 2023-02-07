@@ -31,6 +31,7 @@ const { awu } = collections.asynciterable
  * instance type definition.
  */
 const filterCreator: LocalFilterCreator = () => ({
+  name: 'convertTypeFilter',
   /**
    * Upon fetch, convert all instance values to their correct type according to the
    * type definitions

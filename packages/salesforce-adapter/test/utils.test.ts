@@ -13,19 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { USER_FIELD_TYPE_NAME } from '../../constants'
-import { createReorderFilterCreator } from './creator'
+import { createCustomObjectType } from './utils'
 
-export const TYPE_NAME = USER_FIELD_TYPE_NAME
-
-/**
- * Add user field order element with all the user fields ordered
- */
-const filterCreator = createReorderFilterCreator({
-  filterName: 'userFieldOrderFilter',
-  typeName: TYPE_NAME,
-  orderFieldName: 'user_field_ids',
-  activeFieldName: 'active',
+describe('createCustomObjectType', () => {
+  it('should use the provided annotations', () => {
+    const objType = createCustomObjectType('SomeTypeName', { annotations: { someAnnotation: true } })
+    expect(objType.annotations.someAnnotation).toEqual(true)
+  })
 })
-
-export default filterCreator

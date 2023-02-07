@@ -167,6 +167,7 @@ const fieldNameToTypeMappingDefs: ZuoraFieldReferenceDefinition[] = [
  *
  */
 const filter: FilterCreator = () => ({
+  name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,

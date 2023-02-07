@@ -57,6 +57,7 @@ const filter: FilterCreator = () => {
   const originalChanges: Record<string, Change<InstanceElement>> = {}
 
   return {
+    name: 'workflowPropertiesFilter',
     onFetch: async (elements: Element[]) => {
       const propertyType = new ObjectType({
         elemID: new ElemID(JIRA, PROPERTY_TYPE_NAME),

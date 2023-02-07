@@ -36,6 +36,7 @@ const removeValidatorsWithoutConfiguration = (instance: InstanceElement): void =
 }
 
 const filter: FilterCreator = () => ({
+  name: 'emptyValidatorWorkflowFilter',
   preDeploy: async changes => {
     const relevantChanges = getWorkflowChanges(changes)
     relevantChanges

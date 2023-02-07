@@ -54,6 +54,7 @@ const objectDefToSplitElements = (customObject: ObjectType): ObjectType[] => {
 }
 
 const filterCreator: FilterCreator = () => ({
+  name: 'objectDefinitionSplitFilter',
   onFetch: async (elements: Element[]) => {
     const objectDefs = await removeAsync(elements, isObjectDef) as ObjectType[]
     const newSplitObjectDefs = objectDefs.flatMap(objectDefToSplitElements)

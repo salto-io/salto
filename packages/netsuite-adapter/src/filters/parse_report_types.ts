@@ -36,6 +36,7 @@ const typeNameToOldType: Record<string, ObjectType> = {
 }
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
+  name: 'parseReportTypes',
   onFetch: async elements => {
     const cloneReportInstance = (instance: InstanceElement, type: ObjectType): InstanceElement =>
     // We create another element not using element.clone because

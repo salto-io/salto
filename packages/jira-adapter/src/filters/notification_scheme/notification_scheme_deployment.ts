@@ -31,6 +31,7 @@ const log = logger(module)
 
 
 const filter: FilterCreator = ({ client, config, paginator }) => ({
+  name: 'notificationSchemeDeploymentFilter',
   onFetch: async (elements: Element[]) => {
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping notification scheme deployment filter because private API is not enabled')

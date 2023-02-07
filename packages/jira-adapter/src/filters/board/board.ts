@@ -28,6 +28,7 @@ const BOARD_LOCATION_TYPE = 'project'
  * Change Board type structure to fit the deployment endpoint
  */
 const filter: FilterCreator = () => ({
+  name: 'boardFilter',
   onFetch: async (elements: Element[]) => {
     const boardLocationType = findObject(elements, 'Board_location')
     if (boardLocationType !== undefined) {

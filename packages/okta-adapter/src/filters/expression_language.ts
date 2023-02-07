@@ -111,6 +111,7 @@ const stringToTemplate = (
  * Create template expressions for okta expression language references
  */
 const filter: FilterCreator = () => ({
+  name: 'oktaExpressionLanguageFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
     const potentialExpressionInstances = instances

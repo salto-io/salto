@@ -189,6 +189,7 @@ const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> =>
 
 export const getUsers = getUsersFunc()
 
+<<<<<<< HEAD
 /**
  * Get user fallback value that will replace missing users values
  * based on the user's deploy config
@@ -219,3 +220,27 @@ export const getUserFallbackValue = async (
   }
   return defaultMissingUserFallback
 }
+=======
+
+const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+  let idToEmail: Record<string, string>
+
+  const getIdByEmail = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+    if (idToEmail !== undefined) {
+      return idToEmail
+    }
+    const users = await getUsers(paginator)
+    if (_.isEmpty(users)) {
+      idToEmail = {}
+      return {}
+    }
+    idToEmail = Object.fromEntries(
+      users.map(user => [user.id.toString(), user.email])
+    ) as Record<string, string>
+    return idToEmail
+  }
+  return getIdByEmail
+}
+
+export const getIdByEmail = getIdByEmailFunc()
+>>>>>>> 043116892 (fix CR)

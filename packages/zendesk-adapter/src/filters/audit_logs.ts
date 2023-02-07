@@ -28,9 +28,10 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import moment from 'moment-timezone'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { AUDIT_TIME_TYPE_NAME, ZENDESK } from '../constants'
+import { AUDIT_TIME_TYPE_NAME, TRANSLATIONS, ZENDESK } from '../constants'
 import ZendeskClient from '../client/client'
-import { getUsers } from '../user_utils'
+import { getIdByEmail } from '../user_utils'
+import { FETCH_CONFIG, GUIDE_GLOBAL_TYPES, GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -54,27 +55,13 @@ const isValidAuditRes = createSchemeGuard<ValidAuditRes>(
   AUDIT_SCHEMA, 'Received an invalid value for audit_logs response'
 )
 
-type ValidUserRes = {
-  // eslint-disable-next-line camelcase
-  user: { iana_time_zone: string }
-}
-
-const USER_RES_SCHEMA = Joi.object({
-  user: Joi.object({
-    iana_time_zone: Joi.string().required(),
-  }).unknown(true).required(),
-}).unknown(true).required()
-
-const isValidUserRes = createSchemeGuard<ValidUserRes>(
-  USER_RES_SCHEMA, 'Received an invalid value for this user response'
-)
-
 const getLastAuditTime = async (client: ZendeskClient): Promise<string | undefined> => {
   try {
     const res = (await client.getSinglePage({
       url: '/api/v2/audit_logs',
       queryParams: {
         'page[size]': '1',
+        // this is the log creation time and not when the source was created
         sort: '-created_at',
       },
     })).data
@@ -112,21 +99,6 @@ const createTimeElements = async (lastAuditTime: string): Promise<Element[]> => 
   return [auditTimeType, instance]
 }
 
-const getTimezone = async (client: ZendeskClient): Promise<string | undefined> => {
-  try {
-    const res = (await client.getSinglePage({
-      url: '/api/v2/users/me',
-    })).data
-    if (isValidUserRes(res)) {
-      return res.user.iana_time_zone
-    }
-  } catch (e) {
-    log.error(`could not get the time zone, getSinglePage returned an error'. error: ${e}`)
-  }
-  log.error('could not get the time zone, the result of getSinglePage was not valid.')
-  return undefined
-}
-
 const getUpdatedByID = async (instance: InstanceElement, client: ZendeskClient): Promise<number | undefined> => {
   const { id } = instance.value
   if (id === undefined) {
@@ -138,6 +110,7 @@ const getUpdatedByID = async (instance: InstanceElement, client: ZendeskClient):
       url: '/api/v2/audit_logs',
       queryParams: {
         'page[size]': '1',
+        // this is the log creation time and not when the source was created
         sort: '-created_at',
         'filter[source_id]': id,
       },
@@ -152,23 +125,23 @@ const getUpdatedByID = async (instance: InstanceElement, client: ZendeskClient):
   return undefined
 }
 
-const filterCreator: FilterCreator = ({ elementsSource, client, paginator }) => ({
+// this filter adds changed_at and changed_by annotations
+const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const timezone = await getTimezone(client) // don't need?
+    // add update at for all the elements
+    const instances = elements.filter(isInstanceElement)
+    instances.forEach(elem => { elem.annotations[CORE_ANNOTATIONS.CHANGED_AT] = elem.value.updated_at })
+    if (config[FETCH_CONFIG].enableAudit === false) {
+      return
+    }
     // zendesk returns the time in UTC form so there is no need to convert by time zone
     const newLastAuditTime = await getLastAuditTime(client)
-    if (newLastAuditTime === undefined || timezone === undefined) {
+    if (newLastAuditTime === undefined) {
       // error logged earlier
       return
     }
-    // const newTime = moment.tz(newLastAuditTime, timezone).utc().format('YYYY-MM-DDTHH:mm:ss[Z]')
     const newTimeElements = await createTimeElements(newLastAuditTime)
     elements.push(...newTimeElements)
-    // add update at for all the elements
-    const instances = elements
-      .filter(isInstanceElement)
-    instances
-      .forEach(elem => { elem.annotations[CORE_ANNOTATIONS.CHANGED_AT] = elem.value.updated_at })
     // if this is a second fetch the elementSource should have the time instance already
     const auditTimeInstance = await elementsSource.get(AUDIT_TIME_INSTANCE_ID)
     if (auditTimeInstance === undefined) {
@@ -178,27 +151,32 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator }) => 
     const newLastAuditTimeMoment = moment.utc(newLastAuditTime)
     const prevLastAuditTimeMoment = moment.utc(auditTimeInstance.value.time)
     const updatedInstances = instances
+      // guide elements do not appear in the audit logs
+      .filter(inst =>
+        ![...GUIDE_TYPES_TO_HANDLE_BY_BRAND, ...Object.keys(GUIDE_GLOBAL_TYPES)].includes(inst.elemID.typeName))
       .filter(inst => {
         const instTime = moment.utc(inst.annotations[CORE_ANNOTATIONS.CHANGED_AT])
         const isAfter = instTime.isAfter(prevLastAuditTimeMoment)
         const isBefore = instTime.isSameOrBefore(newLastAuditTimeMoment)
+        if (!isBefore) {
+          // I think this can happen for changes in tickets for example
+          log.error('There is a change that happened after the last audit time received ')
+        }
         return isAfter && isBefore
       })
     if (_.isEmpty(updatedInstances)) {
       return
     }
-    const users = await getUsers(paginator)
-    if (_.isEmpty(users)) {
-      return
-    }
-    const idToEmail = Object.fromEntries(
-      users.map(user => [user.id.toString(), user.email])
-    ) as Record<string, string>
-
+    const idToEmail = await getIdByEmail(paginator)
+    // updated_by for translations
+    instances
+      .filter(elem => TRANSLATIONS.includes(elem.elemID.typeName))
+      .forEach(elem => { elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToEmail[elem.value.updated_by_id] })
+    // updated_by for everything else
     await awu(updatedInstances).forEach(async inst => {
       const id = await getUpdatedByID(inst, client)
       if (id === undefined) {
-        // error was loged earlier
+        // error was logged earlier
         return
       }
       inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToEmail[id]

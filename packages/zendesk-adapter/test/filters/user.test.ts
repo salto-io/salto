@@ -19,16 +19,26 @@ import { mockFunction } from '@salto-io/test-utils'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/user'
 import { createFilterCreatorParams } from '../utils'
+<<<<<<< HEAD
 import { getUsers } from '../../src/user_utils'
 import { DEFAULT_CONFIG } from '../../src/config'
+=======
+import { getIdByEmail, getUsers } from '../../src/user_utils'
+>>>>>>> 043116892 (fix CR)
 
 jest.mock('../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../src/user_utils'),
+  getIdByEmail: jest.fn(),
   getUsers: jest.fn(),
 }))
 
 describe('user filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+<<<<<<< HEAD
+=======
+  let filter: FilterType
+  let getIdByEmailMock: jest.MockedFunction<typeof getIdByEmail>
+>>>>>>> 043116892 (fix CR)
   let getUsersMock: jest.MockedFunction<typeof getUsers>
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, 'user_segment') })
@@ -80,6 +90,7 @@ describe('user filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
+    getIdByEmailMock = getIdByEmail as jest.MockedFunction<typeof getIdByEmail>
     getUsersMock = getUsers as jest.MockedFunction<typeof getUsers>
   })
 
@@ -88,12 +99,12 @@ describe('user filter', () => {
       createFilterCreatorParams({ paginator: mockPaginator })
     ) as FilterType
     it('should change the user ids to emails', async () => {
-      getUsersMock
-        .mockResolvedValueOnce([
-          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
-        ])
+      getIdByEmailMock
+        .mockResolvedValueOnce({
+          1: 'a@a.com',
+          2: 'b@b.com',
+          3: 'c@c.com',
+        },)
       const elements = [
         macroType, macroInstance, userSegmentType, userSegmentInstance,
         articleType, articleInstance,
@@ -133,10 +144,10 @@ describe('user filter', () => {
     it('should not replace anything if the user does not exist', async () => {
       const elements = [macroType.clone(), macroInstance.clone(),
         userSegmentType.clone(), userSegmentInstance.clone()]
-      getUsersMock
-        .mockResolvedValueOnce([
-          { id: 4, email: 'd@d.com', role: 'admin', custom_role_id: 123 },
-        ])
+      getIdByEmailMock
+        .mockResolvedValueOnce(
+          { 4: 'd@d.com' },
+        )
       const paginator = mockFunction<clientUtils.Paginator>()
       const newFilter = filterCreator(
         createFilterCreatorParams({ paginator })
@@ -168,7 +179,7 @@ describe('user filter', () => {
     })
     it('should not replace anything if the users response is invalid', async () => {
       const elements = [macroType.clone(), macroInstance.clone()]
-      getUsersMock.mockResolvedValueOnce([])
+      getIdByEmailMock.mockResolvedValueOnce({})
       const paginator = mockFunction<clientUtils.Paginator>()
       const newFilter = filterCreator(
         createFilterCreatorParams({ paginator })
@@ -204,6 +215,10 @@ describe('user filter', () => {
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
         ])
+      getIdByEmailMock
+        .mockResolvedValue({ 1: 'a@a.com',
+          2: 'b@b.com',
+          3: 'c@c.com' },)
       const instances = [macroInstance, userSegmentInstance, articleInstance].map(e => e.clone())
       await filter.onFetch(instances)
       const changes = instances.map(instance => toChange({ after: instance }))
@@ -271,11 +286,15 @@ describe('user filter', () => {
     ) as FilterType
     it('should change the user ids to emails', async () => {
       getUsersMock
-        .mockResolvedValueOnce([
+        .mockResolvedValue([
           { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
           { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
           { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
         ])
+      getIdByEmailMock
+        .mockResolvedValue({ 1: 'a@a.com',
+          2: 'b@b.com',
+          3: 'c@c.com' },)
       const instances = [macroInstance, userSegmentInstance, articleInstance].map(e => e.clone())
       const changes = instances.map(instance => toChange({ after: instance }))
       // We call preDeploy here because it sets the mappings
@@ -307,6 +326,9 @@ describe('user filter', () => {
       const instances = [macroInstance.clone()]
       const paginator = mockFunction<clientUtils.Paginator>()
       getUsersMock.mockResolvedValueOnce([])
+      getIdByEmailMock.mockResolvedValueOnce({
+
+      })
       const newFilter = filterCreator(
         createFilterCreatorParams({ paginator })
       ) as FilterType

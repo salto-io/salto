@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from '@salto-io/adapter-api'
+import { ChangeDataType, InstanceElement, isInstanceElement, isObjectType, Values } from '@salto-io/adapter-api'
+import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
+import { isCustomRecordType } from '../types'
 import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from '../query'
 
 export interface CustomizationInfo {
@@ -97,4 +99,14 @@ export class InvalidSuiteAppCredentialsError extends Error {
   constructor(message?: string) {
     super(message || 'Invalid SuiteApp credentials')
   }
+}
+
+export const getOrTransformCustomRecordTypeToInstance = (element: ChangeDataType): InstanceElement | undefined => {
+  if (isInstanceElement(element)) {
+    return element
+  }
+  if (isObjectType(element) && isCustomRecordType(element)) {
+    return toCustomRecordTypeInstance(element)
+  }
+  return undefined
 }

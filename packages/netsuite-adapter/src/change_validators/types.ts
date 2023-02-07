@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { Change, ChangeError } from '@salto-io/adapter-api'
-
+import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 export type NetsuiteChangeValidator = (
     changes: ReadonlyArray<Change>,
-    deployReferencedElements?: boolean
+    deployReferencedElements?: boolean,
+    elementsSourceIndex?: LazyElementsSourceIndexes,
   ) => Promise<ReadonlyArray<ChangeError>>

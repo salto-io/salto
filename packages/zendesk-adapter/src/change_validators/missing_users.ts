@@ -15,19 +15,21 @@
 */
 import _ from 'lodash'
 import { resolvePath, resolveValues } from '@salto-io/adapter-utils'
-import { ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { collections } from '@salto-io/lowerdash'
-import { getUsers, TYPE_NAME_TO_REPLACER } from '../user_utils'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { getUsers, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
 import { paginate } from '../client/pagination'
 import ZendeskClient from '../client/client'
 import { lookupFunc } from '../filters/field_references'
-
+import { ZedneskDeployConfig } from '../config'
 
 const { awu } = collections.asynciterable
 const { createPaginator } = clientUtils
-// system options that does not contain a specific user value
-const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
+const { isDefined } = lowerdashValues
+
+const MISSING_USERS_DOC_LINK = 'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
+const MISSING_USERS_ERROR_MSG = 'Instance references users which don\'t exist in target environment'
 
 const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>): string[] => {
   const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
@@ -38,11 +40,65 @@ const getMissingUsers = (instance: InstanceElement, existingUsers: Set<string>):
   return _.uniq(missingUsers)
 }
 
+const getDefaultMissingUsersError = (
+  instance: InstanceElement,
+  userEmails: Set<string>,
+): ChangeError | undefined => {
+  const missingUsers = getMissingUsers(instance, userEmails)
+  if (_.isEmpty(missingUsers)) {
+    return undefined
+  }
+  return {
+    elemID: instance.elemID,
+    severity: 'Error',
+    message: MISSING_USERS_ERROR_MSG,
+    detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
+  }
+}
+
+const getMissingUsersChangeWarning = (
+  instance: InstanceElement,
+  userEmails: Set<string>,
+  userFallbackValue: string
+): ChangeError | undefined => {
+  const missingUsers = getMissingUsers(instance, userEmails)
+  if (_.isEmpty(missingUsers)) {
+    return undefined
+  }
+  return {
+    elemID: instance.elemID,
+    severity: 'Warning',
+    message: `${missingUsers.length} usernames will be overridden to ${userFallbackValue}`,
+    detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${userFallbackValue} according to the environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
+  }
+}
+
+const getFallbackUserIsMissingError = (
+  instance: InstanceElement,
+  userEmails: Set<string>,
+  userFallbackValue: string
+): ChangeError | undefined => {
+  const missingUsers = getMissingUsers(instance, userEmails)
+  if (_.isEmpty(missingUsers)) {
+    return undefined
+  }
+  return {
+    elemID: instance.elemID,
+    severity: 'Error',
+    message: MISSING_USERS_ERROR_MSG,
+    detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn addition, we could not get the defined fallback user ${userFallbackValue}. In order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
+  }
+}
+
 /**
- * Verifies users exists before deployment of an element with user fields
+ * Verifies users exist before deployment of an instance with user references.
+ * Change error will vary based on the following scenarios:
+ *  1. If the config option 'defaultMissingUserFallback' exists, we will warn the user about missing users changes.
+ *  2. If 'defaultMissingUserFallback' isn't defined, or if we could not use user fallback value for some reason,
+ *     we will return an error.
  */
-export const missingUsersValidator: (client: ZendeskClient) =>
-  ChangeValidator = client => async changes => {
+export const missingUsersValidator: (client: ZendeskClient, deployConfig?: ZedneskDeployConfig) =>
+  ChangeValidator = (client, deployConfig) => async changes => {
     const relevantInstances = await awu(changes)
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
@@ -61,17 +117,20 @@ export const missingUsersValidator: (client: ZendeskClient) =>
     })
     const usersEmails = new Set((await getUsers(paginator)).map(user => user.email))
 
+    const missingUserFallback = deployConfig?.defaultMissingUserFallback
+    if (missingUserFallback !== undefined) {
+      try {
+        const fallbackValue = await getUserFallbackValue(missingUserFallback, usersEmails, client)
+        return relevantInstances
+          .map(instance => getMissingUsersChangeWarning(instance, usersEmails, fallbackValue))
+          .filter(isDefined)
+      } catch (e) {
+        return relevantInstances
+          .map(instance => getFallbackUserIsMissingError(instance, usersEmails, missingUserFallback))
+          .filter(isDefined)
+      }
+    }
     return relevantInstances
-      .flatMap(instance => {
-        const missingUsers = getMissingUsers(instance, usersEmails)
-        if (_.isEmpty(missingUsers)) {
-          return []
-        }
-        return [{
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: `${missingUsers.length} references to users that don't exist in the target environment.`,
-          detailedMessage: `The following users don't exist in the target environment: ${missingUsers.join(', ')}.\nPlease manually edit the element and set existing user emails or add users with this emails to the target environment.`,
-        }]
-      })
+      .map(instance => getDefaultMissingUsersError(instance, usersEmails))
+      .filter(isDefined)
   }

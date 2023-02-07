@@ -569,4 +569,8 @@ export default class SuiteAppClient {
   public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     return this.soapClient.deleteInstances(instances)
   }
+
+  public async deleteSdfInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    return this.soapClient.deleteSdfInstances(instances)
+  }
 }

@@ -35,6 +35,7 @@ import {
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, PATH, ROLE, SCRIPT_ID,
   CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE,
 } from '../src/constants'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
@@ -298,6 +299,16 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
+    const parentCustomRecordScriptId = `parent_record_slt_e2e_test_${randomNumber}`
+    const parentCustomRecordInstance = new InstanceElement(
+      parentCustomRecordScriptId,
+      customRecordTypeToCreate,
+      {
+        name: randomString,
+        scriptid: parentCustomRecordScriptId,
+      }
+    )
+
     const customRecordScriptId = `record_slt_e2e_test_${randomNumber}`
     const customRecordInstance = new InstanceElement(
       customRecordScriptId,
@@ -305,10 +316,7 @@ describe('Netsuite adapter E2E with real account', () => {
       {
         scriptid: customRecordScriptId,
         isInactive: false,
-        parent: new ReferenceExpression(
-          customRecordTypeToCreate.elemID.createNestedID('instance', 'parent_record'),
-          { internalId: '1' },
-        ),
+        parent: new ReferenceExpression(parentCustomRecordInstance.elemID, parentCustomRecordInstance),
         name: randomString,
         custom_custrecord_field1: 'test',
         custom_custrecord_field2: 10,
@@ -326,6 +334,7 @@ describe('Netsuite adapter E2E with real account', () => {
       ...withSuiteApp ? [
         subsidiaryInstance,
         accountInstance,
+        parentCustomRecordInstance,
         customRecordInstance,
       ] : [],
     ]
@@ -449,7 +458,7 @@ describe('Netsuite adapter E2E with real account', () => {
       let deployResult: DeployResult
       beforeAll(async () => {
         logMessage(`running deploy for group SDF with ${changes.length} changes`)
-        deployResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes } })
+        deployResult = await adapter.deploy({ changeGroup: { groupID: SDF_CREATE_OR_UPDATE_GROUP_ID, changes } })
       })
 
       it('should deploy new records that depend on existing ones', async () => {
@@ -730,7 +739,11 @@ describe('Netsuite adapter E2E with real account', () => {
           expect(fetchCustomRecord.value.name).toEqual(randomString)
           expect(fetchCustomRecord.value.internalId).toBeDefined()
           expect(fetchCustomRecord.value.scriptid).toEqual(customRecordScriptId)
-          expect(isReferenceExpression(fetchCustomRecord.value.parent)).toBeTruthy()
+          expect(
+            isReferenceExpression(fetchCustomRecord.value.parent)
+            && fetchCustomRecord.value.parent.elemID
+              .isEqual(parentCustomRecordInstance.elemID)
+          ).toBeTruthy()
           expect(fetchCustomRecord.value.custom_custrecord_field1).toEqual('test')
           expect(fetchCustomRecord.value.custom_custrecord_field2).toEqual(10)
           expect(
@@ -763,9 +776,11 @@ describe('Netsuite adapter E2E with real account', () => {
         index.toString(),
         toChange({ before: instanceToDelete }),
       ]))
-      const revertChangesWithDependencies: Map<ChangeId, Change<InstanceElement>> = new Map([
+      const revertChangesWithDependencies: Map<ChangeId, Change<InstanceElement | ObjectType>> = new Map([
         ...withSuiteApp ? [
+          parentCustomRecordInstance,
           accountInstance,
+          customRecordTypeToCreate,
         ] : [],
       ].map((instanceToDelete, index) => [
         index.toString(),

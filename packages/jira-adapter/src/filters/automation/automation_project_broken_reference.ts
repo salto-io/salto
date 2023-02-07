@@ -23,6 +23,7 @@ import { FilterCreator } from '../../filter'
 export const filter: FilterCreator = () => {
   const preDeployProjects: Record<string, ProjectType[]> = {}
   return {
+    name: 'automationProjectBrokenReferenceFilter',
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
       changes.filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)

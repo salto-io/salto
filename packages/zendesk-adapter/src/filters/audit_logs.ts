@@ -125,8 +125,11 @@ const getUpdatedByID = async (instance: InstanceElement, client: ZendeskClient):
   return undefined
 }
 
-// this filter adds changed_at and changed_by annotations
+/**
+ * this filter adds changed_at and changed_by annotations
+ */
 const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
+  name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
     // add update at for all the elements
     const instances = elements.filter(isInstanceElement)

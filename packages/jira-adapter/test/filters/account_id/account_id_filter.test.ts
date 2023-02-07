@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, ElemID, ElemIdGetter, Field, getChangeData, InstanceElement, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, ElemID, ElemIdGetter, Field, getChangeData, InstanceElement, ListType, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { filterUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
@@ -140,6 +140,11 @@ describe('account_id_filter', () => {
           BuiltinTypes.STRING
         )
       })
+      currentObjectType.fields.accountIds = new Field(
+        currentObjectType,
+        'accountIds',
+        new ListType(BuiltinTypes.STRING)
+      )
       await filter.onFetch([currentObjectType])
       await awu(ACCOUNT_IDS_FIELDS_NAMES).forEach(async fieldName => {
         const currentType = await currentObjectType.fields[fieldName].getType() as ObjectType
@@ -147,6 +152,7 @@ describe('account_id_filter', () => {
         expect(Object.prototype.hasOwnProperty.call(currentType.fields, 'displayName')).toBeTruthy()
         expect(currentType.elemID.getFullName()).toEqual('jira.AccountIdInfo')
       })
+      expect((await currentObjectType.fields.accountIds.getType()).elemID.getFullName()).toEqual('List<jira.AccountIdInfo>')
     })
     it('should not enhance types with account ids that are not part of the known types', async () => {
       const currentObjectType = new ObjectType({

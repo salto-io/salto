@@ -18,7 +18,7 @@ import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModif
   isInstanceElement, isListType, isObjectType, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import _, { isArray } from 'lodash'
+import _ from 'lodash'
 import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, AUTOMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { accountIdInfoType, accountIdInfoListType } from './types'
@@ -73,7 +73,7 @@ const callbackValueOrValues = (
   { value, path, callback }
   : { value: Value; path: ElemID; callback: WalkOnUsersCallback }
 ): void => {
-  if (isArray(value.values)) {
+  if (_.isArray(value.values)) {
     _.range(value.values.length).forEach(index => {
       callback({ value: value.values, path: path.createNestedID(VALUES_FIELD), fieldName: index.toString() })
     })
@@ -103,8 +103,7 @@ const accountIdsScenarios = (
     }
   })
   // main scenario, sub branch of multiple account ids
-  if (Object.prototype.hasOwnProperty.call(value, ACCOUNT_IDS)
-    && isArray(value[ACCOUNT_IDS])) {
+  if (_.isArray(value.accountIds)) {
     _.range(value[ACCOUNT_IDS].length).forEach(index => {
       callback({ value: value[ACCOUNT_IDS], path: path.createNestedID(ACCOUNT_IDS), fieldName: index.toString() })
     })
@@ -213,8 +212,7 @@ const convertType = async (objectType: ObjectType): Promise<void> => {
       )
     }
   })
-  if (Object.prototype.hasOwnProperty.call(objectType.fields, ACCOUNT_IDS)
-    && isListType(await objectType.fields.accountIds.getType())) {
+  if (isListType(await objectType.fields.accountIds?.getType())) {
     objectType.fields.accountIds.refType = new TypeReference(
       accountIdInfoListType.elemID,
       accountIdInfoListType

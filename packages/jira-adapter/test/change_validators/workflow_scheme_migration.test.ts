@@ -25,14 +25,24 @@ import { JIRA } from '../../src/constants'
 
 jest.setTimeout(10000000)
 describe('workflow scheme migration', () => {
-  const status1 = new ReferenceExpression(new ElemID(JIRA, 'status1'), new InstanceElement('status1', new ObjectType({ elemID: new ElemID(JIRA, 'status') }), { id: '1' }))
-  const status2 = new ReferenceExpression(new ElemID(JIRA, 'status2'), new InstanceElement('status2', new ObjectType({ elemID: new ElemID(JIRA, 'status') }), { id: '2' }))
-  const status3 = new ReferenceExpression(new ElemID(JIRA, 'status3'), new InstanceElement('status3', new ObjectType({ elemID: new ElemID(JIRA, 'status') }), { id: '3' }))
-  const status4 = new ReferenceExpression(new ElemID(JIRA, 'status4'), new InstanceElement('status4', new ObjectType({ elemID: new ElemID(JIRA, 'status') }), { id: '4' }))
+  const statusID = new ElemID(JIRA, 'status')
+  const status1Id = new ElemID(JIRA, 'Status', 'instance', 'status1')
+  const status2Id = new ElemID(JIRA, 'Status', 'instance', 'status2')
+  const status3Id = new ElemID(JIRA, 'Status', 'instance', 'status3')
+  const status4Id = new ElemID(JIRA, 'Status', 'instance', 'status4')
+  const status1 = new ReferenceExpression(status1Id, new InstanceElement('status1', new ObjectType({ elemID: statusID }), { id: '1' }))
+  const status2 = new ReferenceExpression(status2Id, new InstanceElement('status2', new ObjectType({ elemID: statusID }), { id: '2' }))
+  const status3 = new ReferenceExpression(status3Id, new InstanceElement('status3', new ObjectType({ elemID: statusID }), { id: '3' }))
+  const status4 = new ReferenceExpression(status4Id, new InstanceElement('status4', new ObjectType({ elemID: statusID }), { id: '4' }))
   const workflow1 = new ReferenceExpression(new ElemID(JIRA, 'workflow1'), new InstanceElement('workflow1', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '1', statuses: [{ id: status1 }, { id: status2 }] }))
   const workflow2 = new ReferenceExpression(new ElemID(JIRA, 'workflow2'), new InstanceElement('workflow2', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '2', statuses: [{ id: status3 }, { id: status4 }] }))
   const workflow3 = new ReferenceExpression(new ElemID(JIRA, 'workflow3'), new InstanceElement('workflow3', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '3', statuses: [{ id: status1 }, { id: status2 }] }))
   const workflow4 = new ReferenceExpression(new ElemID(JIRA, 'workflow4'), new InstanceElement('workflow4', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '4', statuses: [{ id: status1 }, { id: status4 }] }))
+  const issueType1Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')
+  const issueType2Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')
+  const issueType3Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')
+  const issueType4Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType4')
+  const issueType5Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')
   let workflowSchemeType: ObjectType
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let projectType: ObjectType
@@ -66,11 +76,11 @@ describe('workflow scheme migration', () => {
       issueTypeSchemeType,
       {
         issueTypeIds: [
-          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
-          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
-          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')),
-          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType4')),
-          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')),
+          new ReferenceExpression(issueType1Id),
+          new ReferenceExpression(issueType2Id),
+          new ReferenceExpression(issueType3Id),
+          new ReferenceExpression(issueType4Id),
+          new ReferenceExpression(issueType5Id),
         ],
       }
     )
@@ -224,7 +234,32 @@ describe('workflow scheme migration', () => {
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
-//   it('should not return an error if all status migrations are already in the workflow scheme')
+  it('should not return an error if all status migrations are already in the workflow scheme', async () => {
+    modifiedInstance.value.statusMigrations = [
+      {
+        issueTypeId: new ReferenceExpression(issueType1Id),
+        statusId: new ReferenceExpression(status3Id),
+        newStatusId: new ReferenceExpression(status4Id),
+      },
+      {
+        issueTypeId: new ReferenceExpression(issueType2Id),
+        statusId: new ReferenceExpression(status1Id),
+        newStatusId: new ReferenceExpression(status4Id),
+      },
+      {
+        issueTypeId: new ReferenceExpression(issueType2Id),
+        statusId: new ReferenceExpression(status2Id),
+        newStatusId: new ReferenceExpression(status4Id),
+      },
+      {
+        issueTypeId: new ReferenceExpression(issueType3Id),
+        statusId: new ReferenceExpression(status4Id),
+        newStatusId: new ReferenceExpression(status2Id),
+      },
+    ]
+    const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    expect(errors).toHaveLength(0)
+  })
 //   it('should return an error one of the items changed')
 //   it('should return an error if default workflow changed')
 })

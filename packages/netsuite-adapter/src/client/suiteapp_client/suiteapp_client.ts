@@ -47,6 +47,7 @@ const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
+export const MAX_SUPPORTED_RESULT_SIZE = 80000
 const AXIOS_TIMEOUT = 1000 * 60 * 12 // 12 minutes timeout
 
 const log = logger(module)
@@ -157,6 +158,10 @@ export default class SuiteAppClient {
       try {
         // eslint-disable-next-line no-await-in-loop
         const results = await this.sendSuiteQLRequest(query, offset, PAGE_SIZE)
+        if (results.totalResults && results.totalResults > MAX_SUPPORTED_RESULT_SIZE) {
+          log.warn(`SuiteQL stopped without processing query result, result size ${results.totalResults} exceeding max size ${MAX_SUPPORTED_RESULT_SIZE} for query: ${query}`)
+          return undefined
+        }
         // For some reason, a "links" field with empty array is returned regardless
         // to the SELECT values in the query.
         items.push(...results.items.map(item => _.omit(item, ['links'])))

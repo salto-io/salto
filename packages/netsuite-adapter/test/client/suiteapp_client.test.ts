@@ -19,7 +19,7 @@ import MockAdapter from 'axios-mock-adapter'
 import _ from 'lodash'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
-import SuiteAppClient, { PAGE_SIZE } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient, { MAX_SUPPORTED_RESULT_SIZE, PAGE_SIZE } from '../../src/client/suiteapp_client/suiteapp_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../src/types'
 
@@ -64,6 +64,7 @@ describe('SuiteAppClient', () => {
         mockAxiosAdapter.onPost().reply(200, {
           hasMore: false,
           items: [{ links: [], a: 1 }, { links: [], a: 2 }],
+          totalResults: 2,
         })
 
         const results = await client.runSuiteQL('query')
@@ -90,6 +91,7 @@ describe('SuiteAppClient', () => {
           mockAxiosAdapter.onPost(new RegExp(`.*limit=${PAGE_SIZE}.*offset=${offset}`)).reply(200, {
             hasMore: offset + PAGE_SIZE < items.length,
             items: items.slice(offset, offset + PAGE_SIZE).map(item => ({ ...item, links: [] })),
+            totalResults: items.length,
           })
         })
 
@@ -100,6 +102,27 @@ describe('SuiteAppClient', () => {
         const requests = mockAxiosAdapter.history.post
         expect(requests[0].url).toEqual('https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0')
         expect(requests[1].url).toEqual('https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=1000')
+      })
+
+      it('should not support result size exceeding max size', async () => {
+        const range = _.range(MAX_SUPPORTED_RESULT_SIZE + 1)
+        const items = range.map(i => ({ i }))
+        const chunks = range.filter(i => i % PAGE_SIZE === 0)
+
+        chunks.forEach(offset => {
+          mockAxiosAdapter.onPost(new RegExp(`.*limit=${PAGE_SIZE}.*offset=${offset}`)).reply(200, {
+            hasMore: offset + PAGE_SIZE < items.length,
+            items: items.slice(offset, offset + PAGE_SIZE).map(item => ({ ...item, links: [] })),
+            totalResults: items.length,
+          })
+        })
+
+        const results = await client.runSuiteQL('query')
+
+        expect(results).toEqual(undefined)
+        expect(mockAxiosAdapter.history.post.length).toBe(1)
+        const requests = mockAxiosAdapter.history.post
+        expect(requests[0].url).toEqual('https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0')
       })
 
       it('should throw InvalidSuiteAppCredentialsError', async () => {
@@ -123,6 +146,7 @@ describe('SuiteAppClient', () => {
             .replyOnce(200, {
               hasMore: false,
               items: [{ links: [], a: 1 }, { links: [], a: 2 }],
+              totalResults: 2,
             })
 
           expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])
@@ -141,6 +165,7 @@ describe('SuiteAppClient', () => {
             .replyOnce(200, {
               hasMore: false,
               items: [{ links: [], a: 1 }, { links: [], a: 2 }],
+              totalResults: 2,
             })
 
           expect(await client.runSuiteQL('query')).toEqual([{ a: 1 }, { a: 2 }])

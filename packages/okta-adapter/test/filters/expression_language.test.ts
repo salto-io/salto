@@ -21,7 +21,7 @@ import oktaExpressionLanguageFilter from '../../src/filters/expression_language'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
 describe('expression language filter', () => {
-      type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+      type FilterType = filterUtils.FilterWith<'onFetch'>
       let filter: FilterType
       const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
       const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
@@ -92,10 +92,8 @@ describe('expression language filter', () => {
       })
 
       describe('onFetch', () => {
-        let elements: (InstanceElement | ObjectType)[]
-
         it('should resolve templates in instances', async () => {
-          elements = [userSchemaType, groupType, groupRuleType, policyRuleInstance, policyRuleType,
+          const elements = [userSchemaType, groupType, groupRuleType, policyRuleInstance, policyRuleType,
             groupRuleWithTemplate, ...groupInstances, userSchemaInstance]
           await filter.onFetch(elements)
           const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleTest')
@@ -146,7 +144,7 @@ describe('expression language filter', () => {
               },
             }
           )
-          elements = [groupRuleType, groupType, groupRuleWithMissingId, ...groupInstances]
+          const elements = [groupRuleType, groupType, groupRuleWithMissingId, ...groupInstances]
           await filter.onFetch(elements)
           const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleWithMissingId')
           expect(groupRule).toBeDefined()
@@ -173,15 +171,34 @@ describe('expression language filter', () => {
               },
             }
           )
-          elements = [groupRuleType, groupType, groupRuleNoReferences]
+          const elements = [groupRuleType, groupType, groupRuleNoReferences]
           await filter.onFetch(elements)
           const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleNoReferences')
           expect(groupRule).toBeDefined()
           expect(groupRule?.value?.conditions?.expression?.value).toEqual('isMemberOfGroupNameRegex("/.*admin.*")')
         })
 
-        // it('should not create template expression if expression path does not exist', () => {
-
-        // })
+        it('should not create template expression if expression path does not exist', async () => {
+          const groupRuleWithNoExpression = new InstanceElement(
+            'groupRuleNoExpression',
+            groupRuleType,
+            {
+              conditions: {
+                people: { users: { exclude: ['123', '234'] } },
+              },
+            }
+          )
+          const elements = [groupRuleType, groupType, groupRuleWithNoExpression]
+          await filter.onFetch(elements)
+          const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleNoExpression')
+          expect(groupRule).toBeDefined()
+          expect(groupRule?.value).toEqual(
+            {
+              conditions: {
+                people: { users: { exclude: ['123', '234'] } },
+              },
+            }
+          )
+        })
       })
 })

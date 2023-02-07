@@ -14,31 +14,30 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { extractTemplate, resolvePath } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
 
-const log = logger(module)
-
-const USER_SCHEMA_REGEX = /(user\.[a-zA-Z]+)/g // pattern: user.someString
-const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z]+)/g // pattern: user.profile.someString
+const USER_SCHEMA_REGEX = /(user\.[a-zA-Z0-9_]+)/g // pattern: user.someString
+const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z0-9_]+)/g // pattern: user.profile.someString
 const ID_REGEX = /(["'][a-zA-Z0-9]+?['"])/g // pattern: "someId" or 'someId'
 const USER_SCHEMA_PREFIX = 'user.'
 const USER_SCHEMA_IE_PREFIX = 'user.profile.'
+const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
+const USER_SCHEMA_BASE_PATH = ['definitions', 'base', 'properties']
 
-type expressionDetails = {
+type ExpressionLanguageDef = {
   pathToContainer: string[]
   fieldName: string
   patterns: RegExp[]
 }
 
-const TYPE_TO_EXPRESSIONS: Record<string, expressionDetails> = {
+const TYPE_TO_DEF: Record<string, ExpressionLanguageDef> = {
   [GROUP_RULE_TYPE_NAME]: {
     pathToContainer: ['conditions', 'expression'],
     fieldName: 'value',
-    patterns: [USER_SCHEMA_REGEX, ID_REGEX],
+    patterns: [ID_REGEX, USER_SCHEMA_REGEX],
   },
   [POLICY_RULE_TYPE_NAME]: {
     pathToContainer: ['conditions', 'additionalProperties', 'elCondition'],
@@ -47,12 +46,12 @@ const TYPE_TO_EXPRESSIONS: Record<string, expressionDetails> = {
   },
 }
 
-const getUserSchemaReferences = (
+const getUserSchemaReference = (
   userAttribute: string,
   userSchemaInstance: InstanceElement,
-): TemplatePart | TemplatePart[] | undefined => {
-  const customPath = ['definitions', 'custom', 'properties', 'additionalProperties', userAttribute]
-  const basePath = ['definitions', 'base', 'properties', userAttribute]
+): ReferenceExpression | undefined => {
+  const customPath = [...USER_SCHEMA_CUSTOM_PATH, userAttribute]
+  const basePath = [...USER_SCHEMA_BASE_PATH, userAttribute]
   const customValue = resolvePath(userSchemaInstance, userSchemaInstance.elemID.createNestedID(...customPath))
   if (customValue !== undefined) {
     return new ReferenceExpression(
@@ -97,10 +96,10 @@ const stringToTemplate = (
         }
         if (expression.match(USER_SCHEMA_IE_REGEX)) {
           const userAttribute = expression.replace(USER_SCHEMA_IE_PREFIX, '')
-          return getUserSchemaReferences(userAttribute, userSchemaInstance) ?? expression
+          return getUserSchemaReference(userAttribute, userSchemaInstance) ?? expression
         }
         const userAttribute = expression.replace(USER_SCHEMA_PREFIX, '')
-        return getUserSchemaReferences(userAttribute, userSchemaInstance) ?? expression
+        return getUserSchemaReference(userAttribute, userSchemaInstance) ?? expression
       }
       return expression
     },
@@ -108,29 +107,30 @@ const stringToTemplate = (
   return template
 }
 
-const replaceExpressionsWithTemplates = (instances: InstanceElement[]): void => {
-  instances
-    .filter(instance => Object.keys(TYPE_TO_EXPRESSIONS).includes(instance.elemID.typeName))
-    .forEach(instance => {
-      const { pathToContainer, fieldName, patterns } = TYPE_TO_EXPRESSIONS[instance.elemID.typeName]
-      const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
-      const expressionValue = container?.[fieldName]
-      if (_.isString(expressionValue)) {
-        const template = stringToTemplate(expressionValue, patterns, instances)
-        if (isTemplateExpression(template)) {
-          _.set(container, fieldName, template)
-        }
-      }
-    })
-}
-
 /**
  * Create template expressions for okta expression language references
  */
 const filter: FilterCreator = () => ({
-  onFetch: async (elements: Element[]) => log.time(() => {
-    replaceExpressionsWithTemplates(elements.filter(isInstanceElement))
-  }, 'Expression language filter'),
+  onFetch: async (elements: Element[]) => {
+    const instances = elements.filter(isInstanceElement)
+    const potentialExpressionInstances = instances
+      .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
+    const potentialTargetInstances = instances
+      .filter(instance => [GROUP_TYPE_NAME, USER_SCHEMA_TYPE_NAME].includes(instance.elemID.typeName))
+
+    potentialExpressionInstances
+      .forEach(instance => {
+        const { pathToContainer, fieldName, patterns } = TYPE_TO_DEF[instance.elemID.typeName]
+        const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
+        const expressionValue = container?.[fieldName]
+        if (_.isString(expressionValue)) {
+          const template = stringToTemplate(expressionValue, patterns, potentialTargetInstances)
+          if (isTemplateExpression(template)) {
+            _.set(container, fieldName, template)
+          }
+        }
+      })
+  },
 })
 
 export default filter

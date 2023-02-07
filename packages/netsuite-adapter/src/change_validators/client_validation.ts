@@ -142,11 +142,11 @@ const changeValidator: ClientChangeValidator = async (
               }))
           }
           if (error instanceof ManifestValidationError) {
-            const failedElementsIds = NetsuiteClient.getFailedManifestErrorElemIds(
+            const failedTopLevelElemIds = NetsuiteClient.getFailedManifestErrorTopLevelElemIds(
               error, dependencyMap, topLevelChanges
             )
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
-              failedElementsIds, groupChanges, dependencyMap, error
+              failedTopLevelElemIds, groupChanges, dependencyMap, error
             )
             return failedChangesWithDependencies
               .map(changeAndMissingDependencies => {

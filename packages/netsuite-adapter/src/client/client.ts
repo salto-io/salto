@@ -217,7 +217,7 @@ export default class NetsuiteClient {
     return dependencyMap
   }
 
-  public static getFailedManifestErrorElemIds(
+  public static getFailedManifestErrorTopLevelElemIds(
     error: ManifestValidationError,
     dependencyMap: Map<string, Set<string>>,
     changes: ReadonlyArray<Change<InstanceElement | ObjectType>>
@@ -287,7 +287,7 @@ export default class NetsuiteClient {
       } catch (error) {
         errors.push(error)
         if (error instanceof ManifestValidationError) {
-          const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(
+          const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorTopLevelElemIds(
             error, dependencyMap, changesToDeploy
           )
           _.remove(

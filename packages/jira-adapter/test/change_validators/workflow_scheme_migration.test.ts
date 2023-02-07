@@ -68,6 +68,9 @@ describe('workflow scheme migration', () => {
         issueTypeIds: [
           new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
           new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
+          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')),
+          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType4')),
+          new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')),
         ],
       }
     )
@@ -199,7 +202,28 @@ describe('workflow scheme migration', () => {
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
-  // it('should not return an error if the change was on an issue type that is not in issue type schemes', async => {})
+  it('should not return an error if the change was on an issue type that is not in issue type schemes', async () => {
+    modifiedInstance.value.items = [
+      {
+        workflow: workflow2,
+        issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
+      },
+      {
+        workflow: workflow3,
+        issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
+      },
+      {
+        workflow: workflow4,
+        issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')),
+      },
+      {
+        workflow: workflow4,
+        issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType6')),
+      },
+    ]
+    const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    expect(errors).toHaveLength(0)
+  })
 //   it('should not return an error if all status migrations are already in the workflow scheme')
 //   it('should return an error one of the items changed')
 //   it('should return an error if default workflow changed')

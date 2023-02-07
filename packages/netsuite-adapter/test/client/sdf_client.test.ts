@@ -29,7 +29,8 @@ import SdfClient, {
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
+import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { Graph, SDFObjectNode } from '../../src/client/graph_utils'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
@@ -43,6 +44,8 @@ const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
     },
   },
 ]
+
+const testGraph = new Graph<SDFObjectNode>('elemIdFullName')
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
 const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
@@ -110,6 +113,22 @@ const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZ
 
 const MOCK_FEATURES_XML = '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
 
+const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
+    <configuration>
+        <path>~/AccountConfiguration/*</path>
+    </configuration>
+    <files>
+        <path>~/FileCabinet/*</path>
+    </files>
+    <objects>
+        <path>~/Objects/*</path>
+    </objects>
+    <translationimports>
+        <path>~/Translations/*</path>
+    </translationimports>
+</deploy>
+`
+
 jest.mock('@salto-io/file', () => ({
   readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
   readFile: jest.fn().mockImplementation(filePath => {
@@ -131,6 +150,9 @@ jest.mock('@salto-io/file', () => ({
     }
     if (filePath.endsWith('/features.xml')) {
       return MOCK_FEATURES_XML
+    }
+    if (filePath.endsWith('/deploy.xml')) {
+      return MOCK_ORIGINAL_DEPLOY_XML
     }
     return `<addressForm filename="${filePath.split('/').pop()}">`
   }),
@@ -1261,8 +1283,8 @@ describe('sdf client', () => {
           },
           scriptId,
         } as CustomTypeInfo
-        await client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        await client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1283,9 +1305,9 @@ describe('sdf client', () => {
           },
           scriptId,
         } as CustomTypeInfo
-        await client.deploy([customTypeInfo], 'a.b.c', DEFAULT_DEPLOY_PARAMS[1])
+        await client.deploy([customTypeInfo], 'a.b.c', DEFAULT_DEPLOY_PARAMS[1], testGraph)
         expect(renameMock).toHaveBeenCalled()
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1307,8 +1329,8 @@ describe('sdf client', () => {
           fileContent: MOCK_TEMPLATE_CONTENT,
           fileExtension: 'html',
         } as TemplateCustomTypeInfo
-        await client.deploy([templateCustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        await client.deploy([templateCustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
+        expect(writeFileMock).toHaveBeenCalledTimes(4)
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
         expect(writeFileMock)
@@ -1325,7 +1347,7 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw errorMessage
         })
-        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)).rejects
           .toThrow(new Error(errorMessage))
       })
 
@@ -1334,7 +1356,7 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw new Error(errorMessage)
         })
-        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)).rejects
           .toThrow(new Error(errorMessage))
       })
       it('should throw error when sdf result contain error in other language', async () => {
@@ -1397,7 +1419,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1497,7 +1519,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1552,7 +1574,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1608,7 +1630,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1665,7 +1687,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1724,7 +1746,7 @@ File: ~/AccountConfiguration/features.xml`
               key: 'val',
             },
             scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1745,11 +1767,11 @@ File: ~/AccountConfiguration/features.xml`
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
         }
-        await client.deploy([folderCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
+        await client.deploy([folderCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1773,13 +1795,13 @@ File: ~/AccountConfiguration/features.xml`
           path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           fileContent: dummyFileContent,
         }
-        await client.deploy([fileCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
+        await client.deploy([fileCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
         expect(mkdirpMock).toHaveBeenCalledTimes(2)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(4)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
@@ -1807,8 +1829,8 @@ File: ~/AccountConfiguration/features.xml`
       }
       it('should succeed', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
-        await client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        await client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(rmMock).toHaveBeenCalledTimes(2)
@@ -1821,7 +1843,7 @@ File: ~/AccountConfiguration/features.xml`
       it('should throw FeaturesDeployError on failed features deploy', async () => {
         const errorMessage = 'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
-        await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS))
+        await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS, testGraph))
           .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
       })
 
@@ -1850,8 +1872,8 @@ File: ~/AccountConfiguration/features.xml`
         values: { key: 'val' },
         scriptId: scriptId2,
       }
-      await client.deploy([customTypeInfo1, customTypeInfo2], ...DEFAULT_DEPLOY_PARAMS)
-      expect(writeFileMock).toHaveBeenCalledTimes(3)
+      await client.deploy([customTypeInfo1, customTypeInfo2], ...DEFAULT_DEPLOY_PARAMS, testGraph)
+      expect(writeFileMock).toHaveBeenCalledTimes(4)
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),
@@ -1862,6 +1884,7 @@ File: ~/AccountConfiguration/features.xml`
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
     })
+
     describe('validate only', () => {
       const failObject = 'fail_object'
       const deployParams: [CustomTypeInfo[], undefined, SdfDeployParams] = [
@@ -1877,7 +1900,7 @@ File: ~/AccountConfiguration/features.xml`
       })
       it('should validate without errors', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [''] })
-        await client.deploy(...deployParams)
+        await client.deploy(...deployParams, testGraph)
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
       })
       it('should throw ManifestValidationError', async () => {
@@ -1916,7 +1939,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         })
 
         try {
-          await client.deploy(...deployParams)
+          await client.deploy(...deployParams, testGraph)
           // should throw before this test
           expect(false).toBeTruthy()
         } catch (e) {
@@ -1941,7 +1964,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
           return Promise.resolve({ isSuccess: () => true })
         })
         try {
-          await client.deploy(...deployParams)
+          await client.deploy(...deployParams, testGraph)
           expect(false).toBeTruthy()
         } catch (e) {
           expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
@@ -1957,7 +1980,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
           }
           return Promise.resolve({ isSuccess: () => true })
         })
-        await expect(client.deploy(...deployParams)).rejects.toThrow(errorMessage)
+        await expect(client.deploy(...deployParams, testGraph)).rejects.toThrow(errorMessage)
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
       })
       it('should throw error when sdf result contain error in other language', async () => {

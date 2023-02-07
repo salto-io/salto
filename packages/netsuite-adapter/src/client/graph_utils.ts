@@ -16,6 +16,14 @@
 
 import _ from 'lodash'
 import wu from 'wu'
+import { CustomizationInfo } from './types'
+
+export type SDFObjectNode = {
+  elemIdFullName: string
+  scriptid: string
+  changeType: 'addition' | 'modification'
+  customizationInfos: CustomizationInfo[]
+}
 
 export class GraphNode<T> {
   edges: GraphNode<T>[]
@@ -43,19 +51,31 @@ export class Graph<T> {
 
   addNodes(nodes: GraphNode<T>[]): void {
     nodes.forEach(node => {
-      if (!this.nodes.get(node.value[this.key])) {
+      if (!this.nodes.has(node.value[this.key])) {
         this.nodes.set(node.value[this.key], node)
       }
     })
   }
 
-  private dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>): void {
+  dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>, resultArray: GraphNode<T>[]): void {
     visited.set(node.value[this.key], node)
     node.edges.forEach(dependency => {
-      if (!visited.get(dependency.value[this.key])) {
-        this.dfs(dependency, visited)
+      if (!visited.has(dependency.value[this.key])) {
+        this.dfs(dependency, visited, resultArray)
       }
     })
+    resultArray.push(node)
+  }
+
+  getTopologicalOrder(): GraphNode<T>[] {
+    const visited = new Map<T[keyof T], GraphNode<T>>()
+    const sortedNodes:GraphNode<T>[] = []
+    Array.from(this.nodes.values()).forEach(node => {
+      if (!visited.has(node.value[this.key])) {
+        this.dfs(node, visited, sortedNodes)
+      }
+    })
+    return sortedNodes.reverse()
   }
 
   getNodeDependencies(startNode: GraphNode<T>): GraphNode<T>[] {
@@ -63,8 +83,9 @@ export class Graph<T> {
       return [startNode]
     }
     const visited = new Map<T[keyof T], GraphNode<T>>()
-    this.dfs(startNode, visited)
-    return Array.from(visited.values())
+    const dependencies: GraphNode<T>[] = []
+    this.dfs(startNode, visited, dependencies)
+    return dependencies
   }
 
   findNode(value: T): GraphNode<T> | undefined {

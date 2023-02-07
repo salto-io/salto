@@ -35,7 +35,7 @@ import { APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
-import { Graph, GraphNode } from './graph_utils'
+import { Graph, GraphNode, SDFObjectNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
 
 const { isDefined } = values
@@ -66,6 +66,8 @@ type SDFObjectNode = {
   changeType: 'addition' | 'modification'
   customizationInfos: CustomizationInfo[]
 }
+const isSubsetOfArray = (subsetArray: unknown[], setArray: unknown[]):boolean =>
+  subsetArray.length === _.intersection(subsetArray, setArray).length
 
 type DependencyInfo = {
   dependencyMap: Map<string, Set<string>>
@@ -319,7 +321,8 @@ export default class NetsuiteClient {
           () => this.sdfClient.deploy(
             customizationInfos,
             suiteAppId,
-            { manifestDependencies, validateOnly }
+            { manifestDependencies, validateOnly },
+            dependencyGraph
           ),
           'sdfDeploy'
         )

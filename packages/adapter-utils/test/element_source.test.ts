@@ -155,7 +155,9 @@ describe('elementSource', () => {
       expect(resolvedElement.fields[UNRESOLVED_FIELD_NAME]?.refType)
         .toEqual(new TypeReference(unresolvedType.elemID, unresolvedType))
       expect(resolvedElement).toEqual(await elementsSource.get(objectType.elemID))
-      expect(resolveTypeShallowSpy).toHaveBeenCalledTimes(2)
+      const callsOnTheObjectType = resolveTypeShallowSpy.mock.calls
+        .filter(args => args[0] === objectType)
+      expect(callsOnTheObjectType).toHaveLength(1)
     })
   })
 })

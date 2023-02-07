@@ -24,6 +24,7 @@ import { FilterCreator } from '../../filter'
 import { accountIdInfoType, accountIdInfoListType } from './types'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
 export const NON_DEPLOYABLE_TYPES = ['Board']
@@ -103,11 +104,10 @@ const accountIdsScenarios = (
     }
   })
   // main scenario, sub branch of multiple account ids
-  if (_.isArray(value.accountIds)) {
-    _.range(value[ACCOUNT_IDS].length).forEach(index => {
+  makeArray(value[ACCOUNT_IDS])
+    .forEach((_value, index) => {
       callback({ value: value[ACCOUNT_IDS], path: path.createNestedID(ACCOUNT_IDS), fieldName: index.toString() })
     })
-  }
   // second scenario: the type has ACCOUNT_ID_STRING and the value holds the actual account id
   if (value.type === ACCOUNT_ID_STRING) {
     callback({ value, path, fieldName: VALUE_FIELD })

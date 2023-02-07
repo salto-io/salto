@@ -16,13 +16,17 @@
 import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression, ChangeValidator, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
 import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { workflowSchemeMigrationValidator } from '../../src/change_validators/workflow_scheme_migration'
 import { JIRA } from '../../src/constants'
 
+jest.setTimeout(100000)
 describe('workflow scheme migration', () => {
-  let workflowType: ObjectType
+  let workflowSchemeType: ObjectType
+  let mockConnection: MockInterface<clientUtils.APIConnection>
   let projectType: ObjectType
   let issueTypeSchemeType: ObjectType
   let issueTypeSchemeInstance: InstanceElement
@@ -32,10 +36,14 @@ describe('workflow scheme migration', () => {
   let validator: ChangeValidator
   let config: JiraConfig
   let elementSource: ReadOnlyElementsSource
+  let numberOfIssues: number
 
   beforeEach(() => {
-    const { client, paginator } = mockClient()
-    workflowType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowScheme') })
+    jest.clearAllMocks()
+    const { client, paginator, connection } = mockClient()
+    mockConnection = connection
+    numberOfIssues = 100
+    workflowSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowScheme') })
     issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeScheme') })
     issueTypeSchemeInstance = new InstanceElement(
       'issueTypeScheme',
@@ -59,7 +67,7 @@ describe('workflow scheme migration', () => {
     )
     workflowInstance = new InstanceElement(
       'workflow',
-      workflowType,
+      workflowSchemeType,
       {
         name: 'instance',
         defaultWorkflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'default')),
@@ -81,8 +89,9 @@ describe('workflow scheme migration', () => {
     )
     modifiedInstance = new InstanceElement(
       'workflow',
-      workflowType,
+      workflowSchemeType,
       {
+        id: 'workflowid',
         name: 'instance',
         defaultWorkflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'default')),
         items: [
@@ -101,6 +110,25 @@ describe('workflow scheme migration', () => {
         ],
       }
     )
+    mockConnection.get.mockImplementation(async url => {
+      if (url === '/rest/api/3/search') {
+        return {
+          status: 200,
+          data: {
+            total: numberOfIssues,
+          },
+        }
+      }
+      if (url === '/rest/api/3/workflowscheme/workflowid') {
+        return {
+          status: 200,
+          data: {
+            name: 'instance',
+          },
+        }
+      }
+      throw new Error(`Unexpected url ${url}`)
+    })
     elementSource = buildElementsSourceFromElements([workflowInstance, issueTypeSchemeInstance, projectInstance])
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     validator = workflowSchemeMigrationValidator(client, config, paginator)
@@ -116,7 +144,12 @@ describe('workflow scheme migration', () => {
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
-//   it('should not return an error for active workflow scheme with no issues in assigned projects')
+  it('should not return an error for active workflow scheme with no issues in assigned projects', async () => {
+    numberOfIssues = 0
+    const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    expect(errors).toHaveLength(0)
+  })
+//   it('should update internal id and service url for workflow scheme')
 //   it('should not return an error if the change of workflows did not require migration')
 //   it('should not return an error if the change was on an issue type that is not in issue type schemes')
 //   it('should not return an error if all status migrations are already in the workflow scheme')

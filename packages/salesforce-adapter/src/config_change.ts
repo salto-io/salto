@@ -31,7 +31,9 @@ import * as constants from './constants'
 import {
   DUPLICATE_VALUE,
   INVALID_CROSS_REFERENCE_KEY, INVALID_FIELD,
-  INVALID_ID_FIELD, INVALID_TYPE,
+  INVALID_ID_FIELD,
+  INVALID_QUERY_FILTER_OPERATOR,
+  INVALID_TYPE,
   SOCKET_TIMEOUT, UNKNOWN_EXCEPTION,
   UNLIMITED_INSTANCES_VALUE,
 } from './constants'
@@ -128,6 +130,7 @@ export const NON_TRANSIENT_SALESFORCE_ERRORS = [
   INVALID_FIELD,
   INVALID_TYPE,
   UNKNOWN_EXCEPTION,
+  INVALID_QUERY_FILTER_OPERATOR,
 ]
 
 const isNonTransientSalesforceError: CreateConfigSuggestionPredicate = (e: Error): boolean => (

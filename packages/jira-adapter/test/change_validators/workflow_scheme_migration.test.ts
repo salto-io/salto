@@ -38,7 +38,7 @@ describe('workflow scheme migration', () => {
     workflowType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowScheme') })
     issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeScheme') })
     issueTypeSchemeInstance = new InstanceElement(
-      'instance',
+      'issueTypeScheme',
       issueTypeSchemeType,
       {
         issueTypeIds: [
@@ -54,6 +54,7 @@ describe('workflow scheme migration', () => {
       {
         name: 'instance',
         workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow')),
+        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme')),
       }
     )
     workflowInstance = new InstanceElement(
@@ -86,15 +87,15 @@ describe('workflow scheme migration', () => {
         defaultWorkflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'default')),
         items: [
           {
-            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow1')),
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow2')),
             issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')),
           },
           {
-            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow2')),
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow3')),
             issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')),
           },
           {
-            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow3')),
+            workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow1')),
             issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')),
           },
         ],
@@ -104,13 +105,17 @@ describe('workflow scheme migration', () => {
     config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     validator = workflowSchemeMigrationValidator(client, config, paginator)
   })
-  it.only('should not return error for addition/removal changes', async () => {
+  it('should not return error for addition/removal changes', async () => {
     const deletionErrors = await validator([toChange({ before: workflowInstance })], elementSource)
     expect(deletionErrors).toHaveLength(0)
     const additionErrors = await validator([toChange({ after: workflowInstance })], elementSource)
     expect(additionErrors).toHaveLength(0)
   })
-//   it('should not return error for inactive workflow scheme')
+  it('should not return error for inactive workflow scheme', async () => {
+    projectInstance.value.workflowScheme = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
+    const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    expect(errors).toHaveLength(0)
+  })
 //   it('should not return an error for active workflow scheme with no issues in assigned projects')
 //   it('should not return an error if the change of workflows did not require migration')
 //   it('should not return an error if the change was on an issue type that is not in issue type schemes')

@@ -232,7 +232,7 @@ export const workflowSchemeMigrationValidator = (
       project => project.value.workflowScheme.elemID.getFullName(),
     )
     const activeWorkflowsChanges = await awu(relevantChanges)
-      .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()].length > 0)
+      .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()] !== undefined)
       .filter(async change => workflowLinkedToProjectWithIssues(
         workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
         client,

@@ -14,12 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, ReadOnlyElementsSource, Element } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  ObjectType,
+  ReadOnlyElementsSource,
+  TypeReference,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { buildElementsSourceFromElements, buildLazyShallowTypeResolverElementsSource } from '../src/element_source'
 import * as utilsModule from '../src/utils'
 
-const { awu, toArrayAsync } = collections.asynciterable
+const { toArrayAsync } = collections.asynciterable
 
 describe('elementSource', () => {
   describe('buildElementsSourceFromElements', () => {
@@ -124,31 +129,33 @@ describe('elementSource', () => {
     })
   })
   describe('buildLazyShallowTypeResolverElementsSource', () => {
+    const UNRESOLVED_FIELD_NAME = 'unresolvedField'
     let resolveTypeShallowSpy: jest.SpyInstance
-    let elements: Element[]
+    let unresolvedType: ObjectType
+    let objectType: ObjectType
     let elementsSource: ReadOnlyElementsSource
     beforeEach(() => {
+      unresolvedType = new ObjectType({
+        elemID: new ElemID('adapter', 'unresolvedType'),
+      })
       resolveTypeShallowSpy = jest.spyOn(utilsModule, 'resolveTypeShallow')
-      elements = [
-        new ObjectType({
-          elemID: new ElemID('adapter', 'type1'),
-          annotations: { fallback: true },
-        }),
-        new ObjectType({
-          elemID: new ElemID('adapter', 'type3'),
-        }),
-      ]
-      const originalElementsSource = buildElementsSourceFromElements(elements)
+      objectType = new ObjectType({
+        elemID: new ElemID('adapter', 'type1'),
+        fields: {
+          [UNRESOLVED_FIELD_NAME]: {
+            refType: new TypeReference(unresolvedType.elemID, undefined),
+          },
+        },
+      })
+      const originalElementsSource = buildElementsSourceFromElements([objectType, unresolvedType])
       elementsSource = buildLazyShallowTypeResolverElementsSource(originalElementsSource)
     })
-    it('should invoke resolveTypeShallow once per Element', async () => {
-      await awu(await elementsSource.getAll()).toArray()
-      await awu(await elementsSource.getAll()).toArray()
-      await awu(await elementsSource.getAll()).toArray()
-      expect(resolveTypeShallowSpy).toHaveBeenCalledTimes(elements.length)
-      elements.forEach(element => {
-        expect(resolveTypeShallowSpy).toHaveBeenCalledWith(element, expect.anything())
-      })
+    it('should resolve the type shallowly once', async () => {
+      const resolvedElement = await elementsSource.get(objectType.elemID)
+      expect(resolvedElement.fields[UNRESOLVED_FIELD_NAME]?.refType)
+        .toEqual(new TypeReference(unresolvedType.elemID, unresolvedType))
+      expect(resolvedElement).toEqual(await elementsSource.get(objectType.elemID))
+      expect(resolveTypeShallowSpy).toHaveBeenCalledTimes(2)
     })
   })
 })

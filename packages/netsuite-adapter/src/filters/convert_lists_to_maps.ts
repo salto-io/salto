@@ -30,6 +30,7 @@ const shouldTransformDataInstance = async (instance: InstanceElement): Promise<b
     .some(field => dataTypesToConvert.has(field.refType.elemID.name))
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'convertListsToMaps',
   /**
    * Upon fetch, do the following:
    * - convert ListType fields to MapType

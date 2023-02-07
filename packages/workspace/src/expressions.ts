@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { ElemID, Element, ReferenceExpression, TemplateExpression, isReferenceExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, BuiltinTypes, CoreAnnotationTypes, TypeReference, isType, PlaceholderObjectType, Expression, isTemplateExpression, isExpression, isField } from '@salto-io/adapter-api'
+import { ElemID, Element, ReferenceExpression, TemplateExpression, isReferenceExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, BuiltinTypes, CoreAnnotationTypes, TypeReference, isType, PlaceholderObjectType, Expression, isTemplateExpression, isExpression, isField, UnresolvedReference } from '@salto-io/adapter-api'
 import { resolvePath, safeJsonStringify, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { DataNodeMap } from '@salto-io/dag'
@@ -24,11 +24,6 @@ import { buildContainerType } from './workspace/elements_source'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-
-export class UnresolvedReference {
-  constructor(public target: ElemID) {
-  }
-}
 
 export class CircularReference {
   constructor(public ref: string) {}

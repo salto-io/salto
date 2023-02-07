@@ -20,6 +20,7 @@ import { FilterCreator } from '../../filter'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 
 const filter: FilterCreator = () => ({
+  name: 'contextReferencesFilter',
   onFetch: async (elements: Element[]) => {
     const parentToContext = _.groupBy(
       elements

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault } from '../../src/config'
+import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault, validateDeployConfig } from '../../src/config'
 
 describe('config_shared', () => {
   describe('createUserFetchConfigType', () => {
@@ -52,6 +52,23 @@ describe('config_shared', () => {
         undefined,
         { idFields: ['a', 'b'], standaloneFields: [{ fieldName: 'default' }] },
       )).toEqual({ idFields: ['a', 'b'], standaloneFields: [{ fieldName: 'default' }] })
+    })
+  })
+  describe('validateDeployConfig', () => {
+    it('should not throw if defaultMissingUserFallback is ##DEPLOYER##', () => {
+      expect(() => validateDeployConfig(
+        'deploy',
+        { defaultMissingUserFallback: '##DEPLOYER##' },
+        (): boolean => true,
+      )).not.toThrow()
+    })
+
+    it('should throw if validateUserFunc returns false', async () => {
+      expect(() => validateDeployConfig(
+        'deploy',
+        { defaultMissingUserFallback: 'invalid@user.name' },
+        (): boolean => false,
+      )).toThrow(new Error('Invalid user value in deploy.defaultMissingUserFallback: invalid@user.name. Value can be either ##DEPLOYER## or a valid user name'))
     })
   })
 })

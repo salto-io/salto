@@ -76,6 +76,7 @@ const filterCreator: FilterCreator = ({
   isPartial,
   config,
 }): FilterWith<'onFetch' | 'onDeploy'> => ({
+  name: 'customRecordTypesType',
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
     const customRecordTypeObjects = types.filter(isCustomRecordType)

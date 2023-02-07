@@ -254,6 +254,7 @@ export const deployWorkflowScheme = async (
 }
 
 const filter: FilterCreator = ({ config, client, paginator, elementsSource }) => ({
+  name: 'workflowSchemeFilter',
   onFetch: async elements => {
     const workflowSchemeType = findObject(elements, WORKFLOW_SCHEME_TYPE)
     if (workflowSchemeType !== undefined) {

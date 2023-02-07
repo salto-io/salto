@@ -342,6 +342,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['delete'],
     url: '/rest/api/3/securitylevel/.+',
   },
+  {
+    httpMethods: ['get', 'put'],
+    url: '/rest/api/3/field/.+/context/defaultValue',
+  },
 ]
 
 const replaceRestVersion = (url: string): string => url.replace(

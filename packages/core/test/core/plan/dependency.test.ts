@@ -396,5 +396,63 @@ describe('dependency changers', () => {
         )
       })
     })
+    describe('when reference target is a modified non-element value', () => {
+      beforeEach(async () => {
+        const testTypeAfter = testType.clone()
+        const testInstanceAfter = testInstance.clone()
+        testType.annotations.bla = 'value'
+        testTypeAfter.annotations.bla = 'updated'
+        testInstance.value.ref = new ReferenceExpression(testTypeId.createNestedID('attr', 'bla'), 'value')
+        testInstanceAfter.value.ref = new ReferenceExpression(testTypeId.createNestedID('attr', 'bla'), 'updated')
+        const inputChanges = new Map<number, Change>([
+          [0, toChange({ before: testType, after: testTypeAfter })],
+          [1, toChange({ before: testInstance, after: testInstanceAfter })],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+      it('should add dependency to the referenced element', () => {
+        expect(dependencyChanges).toEqual([
+          { action: 'add', dependency: { source: 1, target: 0 } },
+        ])
+      })
+    })
+    describe('when reference target is a modified non-element value in a field', () => {
+      beforeEach(async () => {
+        const testTypeAfter = testType.clone()
+        const testInstanceAfter = testInstance.clone()
+        testType.fields.ref.annotations.bla = 'value'
+        testTypeAfter.fields.ref.annotations.bla = 'updated'
+        testInstance.value.ref = new ReferenceExpression(testTypeId.createNestedID('field', 'ref', 'bla'), 'value')
+        testInstanceAfter.value.ref = new ReferenceExpression(testTypeId.createNestedID('field', 'ref', 'bla'), 'updated')
+        const inputChanges = new Map<number, Change>([
+          [0, toChange({ before: testType.fields.ref, after: testTypeAfter.fields.ref })],
+          [1, toChange({ before: testInstance, after: testInstanceAfter })],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+      it('should add dependency to the referenced element', () => {
+        expect(dependencyChanges).toEqual([
+          { action: 'add', dependency: { source: 1, target: 0 } },
+        ])
+      })
+    })
+    describe('when reference target is a modified element', () => {
+      beforeEach(async () => {
+        const testTypeAfter = testType.clone()
+        const testInstanceAfter = testInstance.clone()
+        testType.annotations.bla = 'value'
+        testTypeAfter.annotations.bla = 'updated'
+        testInstance.value.ref = new ReferenceExpression(testTypeId)
+        testInstanceAfter.value.ref = new ReferenceExpression(testTypeId)
+        const inputChanges = new Map<number, Change>([
+          [0, toChange({ before: testType, after: testTypeAfter })],
+          [1, toChange({ before: testInstance, after: testInstanceAfter })],
+        ])
+        dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
+      })
+      it('should add dependency to the referenced element', () => {
+        expect(dependencyChanges).toHaveLength(0)
+      })
+    })
   })
 })

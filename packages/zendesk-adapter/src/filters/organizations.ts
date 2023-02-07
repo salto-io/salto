@@ -145,7 +145,8 @@ const getOrganizationsByNames = async (
 const filterCreator: FilterCreator = ({ client }) => {
   let organizationIdToName: Record<string, string> = {}
   return {
-    onFetch: async elements => log.time(async () => {
+    name: 'organizationsFilter',
+    onFetch: async elements => {
       const relevantInstances = elements.filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
@@ -172,7 +173,7 @@ const filterCreator: FilterCreator = ({ client }) => {
         const orgName = mapping[org.id.toString()]
         relevantEntries.forEach(entry => setPath(entry.instance, entry.path, orgName))
       })
-    }, 'Organizations filter'),
+    },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       const relevantChanges = changes.filter(isRelevantChange)
       if (_.isEmpty(relevantChanges)) {

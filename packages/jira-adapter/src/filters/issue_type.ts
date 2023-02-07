@@ -30,6 +30,7 @@ const SUBTASK_HIERARCHY_LEVEL = -1
  * Align the DC issue types values with the Cloud
  */
 const filter: FilterCreator = ({ client }) => ({
+  name: 'issueTypeFilter',
   onFetch: async elements => {
     const issueTypes = elements
       .filter(isInstanceElement)

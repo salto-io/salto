@@ -121,6 +121,7 @@ export const getZoneAndFormat = async (
 }
 
 const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial }): FilterWith<'onFetch'> => ({
+  name: 'savedSearchesAuthorInformation',
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {

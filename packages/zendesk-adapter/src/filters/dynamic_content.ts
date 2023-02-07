@@ -30,6 +30,7 @@ export const DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME = 'dynamic_content_item__var
 const { makeArray } = collections.array
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'dynamicContentFilter',
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     const localeIdToVariant = Object.fromEntries(changes
       .filter(

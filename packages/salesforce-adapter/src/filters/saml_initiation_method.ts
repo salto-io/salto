@@ -31,6 +31,7 @@ export const SAML_INIT_METHOD_FIELD_NAME = 'samlInitiationMethod'
 * the names in the Salesforce UI
 */
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'samlInitMethodFilter',
   /**
    * Upon discover, rename assignment rules instances
    *

@@ -68,6 +68,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
  * add author information to sharing rules instances.
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: 'sharingRulesAuthorFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

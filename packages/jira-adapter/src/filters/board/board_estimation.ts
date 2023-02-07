@@ -88,6 +88,7 @@ export const deployEstimation = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'boardEstimationFilter',
   onFetch: async (elements: Element[]) => {
     const boardInstances = elements
       .filter(isInstanceElement)

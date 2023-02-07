@@ -26,6 +26,7 @@ export const ACCOUNT_SETTING_TYPE_NAME = 'account_setting'
  * Deploys account settings
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'accountSettingsFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [accountSettingChanges, leftoverChanges] = _.partition(
       changes,

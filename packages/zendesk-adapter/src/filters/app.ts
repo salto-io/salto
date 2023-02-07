@@ -84,6 +84,7 @@ Promise<void> => {
  * Deploys app installation
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'appsFilter',
   onFetch: async (elements: Element[]) =>
     elements
       .filter(isInstanceElement)

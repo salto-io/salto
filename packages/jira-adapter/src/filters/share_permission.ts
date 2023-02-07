@@ -100,6 +100,7 @@ const transformSharedPermissions = async (
  * Change SharePermission structure to fit the deployment endpoint
  */
 const filter: FilterCreator = ({ elementsSource }) => ({
+  name: 'sharePermissionFilter',
   onFetch: async (elements: Element[]) => {
     transformType(elements)
 

@@ -38,6 +38,7 @@ const TYPES_WITH_LOCALE = [
  * Converts locale fields to ReferenceExpression of the correct guide_language_settings by brand
  */
 const filterCreator: FilterCreator = ({ config }) => ({
+  name: 'guideLocalesFilter',
   onFetch: async elements => {
     if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return

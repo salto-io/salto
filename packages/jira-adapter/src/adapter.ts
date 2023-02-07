@@ -74,6 +74,7 @@ import duplicateIdsFilter from './filters/duplicate_ids'
 import unresolvedParentsFilter from './filters/unresolved_parents'
 import fieldNameFilter from './filters/fields/field_name_filter'
 import accountIdFilter from './filters/account_id/account_id_filter'
+import userFallbackFilter from './filters/account_id/user_fallback_filter'
 import userIdFilter from './filters/account_id/user_id_filter'
 import fieldStructureFilter from './filters/fields/field_structure_filter'
 import fieldDeploymentFilter from './filters/fields/field_deployment_filter'
@@ -112,7 +113,7 @@ import deployDcIssueEventsFilter from './filters/data_center/issue_events'
 import prioritySchemeFetchFilter from './filters/data_center/priority_scheme/priority_scheme_fetch'
 import prioritySchemeDeployFilter from './filters/data_center/priority_scheme/priority_scheme_deploy'
 import prioritySchemeProjectAssociationFilter from './filters/data_center/priority_scheme/priority_scheme_project_association'
-import { GetIdMapFunc, getIdMapFuncCreator } from './users_map'
+import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
@@ -223,6 +224,8 @@ export const DEFAULT_FILTERS = [
   // Must run after accountIdFilter
   userIdFilter,
   // Must run after accountIdFilter
+  userFallbackFilter,
+  // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
   // Must be last
@@ -250,7 +253,7 @@ export default class JiraAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
-  private getIdMapFunc: GetIdMapFunc
+  private getUserMapFunc: GetUserMapFunc
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -274,7 +277,7 @@ export default class JiraAdapter implements AdapterOperations {
     )
 
     this.paginator = paginator
-    this.getIdMapFunc = getIdMapFuncCreator(paginator, client.isDataCenter)
+    this.getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
 
     const filterContext = {}
     this.createFiltersRunner = () => (
@@ -287,7 +290,7 @@ export default class JiraAdapter implements AdapterOperations {
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
-          getIdMapFunc: this.getIdMapFunc,
+          getUserMapFunc: this.getUserMapFunc,
         },
         filterCreators,
         objects.concatObjects
@@ -408,7 +411,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig, this.getIdMapFunc, this.paginator),
+      changeValidator: changeValidator(this.client, this.userConfig, this.getUserMapFunc, this.paginator),
       dependencyChanger,
       getChangeGroupIds,
     }

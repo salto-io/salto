@@ -30,6 +30,7 @@ describe('fieldContextDeployment', () => {
   let contextType: ObjectType
   let optionType: ObjectType
   let defaultValueType: ObjectType
+  let userFilterType: ObjectType
 
   let client: JiraClient
   let paginator: clientUtils.Paginator
@@ -57,10 +58,18 @@ describe('fieldContextDeployment', () => {
       },
     })
 
+    userFilterType = new ObjectType({
+      elemID: new ElemID(JIRA, 'UserFilter'),
+      fields: {
+        groups: { refType: BuiltinTypes.STRING },
+      },
+    })
+
     defaultValueType = new ObjectType({
       elemID: new ElemID(JIRA, 'CustomFieldContextDefaultValue'),
       fields: {
         type: { refType: BuiltinTypes.STRING },
+        userFilter: { refType: userFilterType },
       },
     })
 
@@ -127,6 +136,11 @@ describe('fieldContextDeployment', () => {
       })
 
       expect(defaultValueType.fields.type.annotations).toEqual({
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
+      })
+
+      expect(userFilterType.fields.groups.annotations).toEqual({
         [CORE_ANNOTATIONS.CREATABLE]: true,
         [CORE_ANNOTATIONS.UPDATABLE]: true,
       })

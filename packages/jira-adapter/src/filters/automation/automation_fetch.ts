@@ -131,6 +131,7 @@ export const getAutomations = async (
  * Using the cloud id, we create the url to query the automations with
  */
 const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) => ({
+  name: 'automationFetchFilter',
   onFetch: async elements => {
     if (!fetchQuery.isTypeMatch(AUTOMATION_TYPE)) {
       return

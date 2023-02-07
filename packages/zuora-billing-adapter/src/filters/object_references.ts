@@ -85,6 +85,7 @@ const addObjectFieldDependency = (
  * Add references to fields that represent objects and fields.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'objectReferencesFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const objectDefs = await getObjectDefs(elements)
     const {

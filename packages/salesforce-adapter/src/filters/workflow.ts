@@ -169,6 +169,7 @@ const getWorkflowApiName = async (change: Change<InstanceElement>): Promise<stri
 const filterCreator: LocalFilterCreator = () => {
   let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> = {}
   return {
+    name: 'workflowFilter',
     /**
      * Upon fetch, modify the full_names of the inner types of the workflow to contain
      * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)

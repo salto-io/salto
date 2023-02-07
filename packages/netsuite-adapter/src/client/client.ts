@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange,
+  CredentialError, isInstanceElement, isField, ChangeDataType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -28,18 +29,21 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
-import { AdditionalDependencies, CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
+import { AdditionalDependencies, CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, getOrTransformCustomRecordTypeToInstance } from './types'
 import { getReferencedElements } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
-import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
-import { DeployResult, getElementValueOrAnnotations, isCustomRecordType } from '../types'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_SDF_DELETE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID,
+  SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID,
+  SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID,
+  SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
+import { DeployResult, getElementValueOrAnnotations } from '../types'
 import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError } from '../errors'
-import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 
+const { isDefined } = values
 const { awu } = collections.asynciterable
 const { lookupValue } = values
 const log = logger(module)
@@ -192,16 +196,8 @@ export default class NetsuiteClient {
     ))
       .map(element => resolveValues(element, getLookUpName))
       .map(convertElementMapsToLists)
-      .map(element => {
-        if (isInstanceElement(element)) {
-          return element
-        }
-        if (isObjectType(element) && isCustomRecordType(element)) {
-          return toCustomRecordTypeInstance(element)
-        }
-        return undefined
-      })
-      .filter(values.isDefined)
+      .map(getOrTransformCustomRecordTypeToInstance)
+      .filter(isDefined)
       .map(toCustomizationInfo)
       .toArray()
   }
@@ -349,7 +345,7 @@ export default class NetsuiteClient {
     additionalSdfDependencies: AdditionalDependencies,
     elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<ReadonlyArray<Error>> {
-    if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
+    if (groupID.startsWith(SDF_CREATE_OR_UPDATE_GROUP_ID)) {
       return (await this.sdfDeploy({
         changes,
         deployReferencedElements,
@@ -370,7 +366,7 @@ export default class NetsuiteClient {
     elementsSourceIndex: LazyElementsSourceIndexes,
   ):
     Promise<DeployResult> {
-    if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
+    if (groupID.startsWith(SDF_CREATE_OR_UPDATE_GROUP_ID)) {
       return this.sdfDeploy({
         changes,
         deployReferencedElements,
@@ -398,13 +394,14 @@ export default class NetsuiteClient {
   }
 
   private async deployRecords(changes: Change[], groupID: string): Promise<DeployResult> {
-    const instanceChanges = changes.filter(isInstanceChange)
-    const instances = instanceChanges.map(getChangeData)
+    const relevantInstances = changes.map(getChangeData).map(getOrTransformCustomRecordTypeToInstance).filter(isDefined)
+    const relevantChanges = changes.filter(
+      change => isDefined(getOrTransformCustomRecordTypeToInstance(getChangeData(change)))
+    )
 
-    const deployResults = await this.runDeployRecordsOperation(instances, groupID)
-
+    const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID)
     const results = deployResults
-      .map((result, index) => (typeof result === 'number' ? instanceChanges[index] : result))
+      .map((result, index) => (typeof result === 'number' ? relevantChanges[index] : result))
       .filter(values.isDefined)
 
     const [errors, appliedChanges] = _.partition(
@@ -412,7 +409,7 @@ export default class NetsuiteClient {
     ) as [Error[], Change[]]
 
     const elemIdToInternalId = Object.fromEntries(deployResults
-      .map((result, index) => (typeof result === 'number' ? [instances[index].elemID.getFullName(), result.toString()] : undefined))
+      .map((result, index) => (typeof result === 'number' ? [relevantInstances[index].elemID.getFullName(), result.toString()] : undefined))
       .filter(values.isDefined))
 
     return { errors, appliedChanges, elemIdToInternalId }
@@ -434,6 +431,10 @@ export default class NetsuiteClient {
 
     if (groupID.startsWith(SUITEAPP_DELETING_RECORDS_GROUP_ID)) {
       return this.suiteAppClient.deleteInstances(elements)
+    }
+
+    if (groupID.startsWith(SUITEAPP_SDF_DELETE_GROUP_ID)) {
+      return this.suiteAppClient.deleteSdfInstances(elements)
     }
 
     throw new Error(`Cannot deploy group ID: ${groupID}`)

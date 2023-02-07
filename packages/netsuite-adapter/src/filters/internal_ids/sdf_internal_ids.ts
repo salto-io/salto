@@ -242,7 +242,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const changesData = changes.map(getChangeData)
+    const changesData = changes.filter(isAdditionOrModificationChange).map(getChangeData)
     getSupportedInstances(changesData).forEach(inst => {
       delete inst.value[INTERNAL_ID]
     })

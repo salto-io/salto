@@ -194,7 +194,7 @@ File: ~/Objects/customrecord1.xml`
     expect(changeErrors[0]).toEqual({
       detailedMessage,
       elemID: getChangeData(changes[0]).elemID,
-      message: 'Validation Error on SDF',
+      message: 'Validation Error on SDF - create or update',
       severity: 'Error',
     })
   })

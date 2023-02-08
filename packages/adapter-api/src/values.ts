@@ -144,6 +144,7 @@ export class ReferenceExpression {
     this.resValue = value
   }
 
+  // why the same name ?!
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {
     return getResolvedValue(this.elemID, elementsSource, this.value)
   }

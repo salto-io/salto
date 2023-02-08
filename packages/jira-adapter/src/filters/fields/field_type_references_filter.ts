@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Field, isInstanceElement, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { Element, Field, InstanceElement, isInstanceElement, ListType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -32,45 +32,69 @@ export const getFieldsLookUpName: GetLookupNameFunc = ({
   return ref
 }
 
+const getDefaultOptions = (instance: InstanceElement) : {
+    referencedDefaultOptions: Values[]
+    referencedCascadingDefaultOption: Values | undefined } => {
+  let referencedDefaultOptions: Values[]
+  let referencedCascadingDefaultOption: Values | undefined
+
+  if (instance.value.defaultValue.type.endsWith('multiple')) {
+    referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])
+      .filter((option: Values) => (instance.value.defaultValue.optionIds ?? []).includes(option.id))
+  } else {
+    referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])
+      .filter((option: Values) => instance.value.defaultValue.optionId === option.id)
+    if (referencedDefaultOptions.length > 0) {
+      referencedCascadingDefaultOption = (
+        _.values(referencedDefaultOptions[0].cascadingOptions ?? {})
+      ).find((option: Values) => option.id === instance.value.defaultValue.cascadingOptionId)
+    }
+  }
+  return { referencedDefaultOptions,
+    referencedCascadingDefaultOption }
+}
+
 const filter: FilterCreator = () => ({
   name: 'fieldTypeReferencesFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(instance => instance.value.defaultValue?.type !== undefined)
+      .filter(instance => instance.value.defaultValue.type.startsWith('option'))
       .forEach(instance => {
         const optionsElemId = instance.elemID.createNestedID('options')
+        const { referencedDefaultOptions, referencedCascadingDefaultOption } = getDefaultOptions(instance)
 
-        const referencedDefaultOption = (Object.values(instance.value.options ?? {}) as Values[])
-          .find((option: Values) => option.id === instance.value.defaultValue?.optionId)
-
-        if (referencedDefaultOption === undefined) {
-          if (instance.value.defaultValue?.optionId !== undefined) {
-            log.warn(`Could not find reference for default option id ${instance.value.defaultValue.optionId} in instance ${instance.elemID.getFullName()}`)
+        if (referencedDefaultOptions.length === 0) {
+          if (instance.value.defaultValue.optionIds !== undefined
+              && instance.value.defaultValue.optionIds.length > 0) {
+            log.warn(`Could not find reference for default options ids ${instance.value.defaultValue.optionIds} in instance ${instance.elemID.getFullName()}`)
           }
           return
         }
-        const defaultOptionElemId = optionsElemId
-          .createNestedID(naclCase(referencedDefaultOption.value))
-        instance.value.defaultValue.optionId = new ReferenceExpression(
-          defaultOptionElemId,
-          referencedDefaultOption,
-        )
+        const optionIdsReferences = referencedDefaultOptions
+          .map(option => new ReferenceExpression(
+            optionsElemId.createNestedID(naclCase(option.value)),
+            option
+          ))
+        if (instance.value.defaultValue.type.endsWith('multiple')) {
+          instance.value.defaultValue.optionIds = optionIdsReferences
+        } else {
+          [instance.value.defaultValue.optionId] = optionIdsReferences
 
-        const referencedCascadingDefaultOption = (
-          _.values(referencedDefaultOption.cascadingOptions ?? {})
-        ).find((option: Values) => option.id === instance.value.defaultValue?.cascadingOptionId)
-
-        if (referencedCascadingDefaultOption === undefined) {
-          if (instance.value.defaultValue?.cascadingOptionId !== undefined) {
-            log.warn(`Could not find reference for default cascading option id ${instance.value.defaultValue.cascadingOptionId} in instance ${instance.elemID.getFullName()}`)
+          if (referencedCascadingDefaultOption === undefined) {
+            if (instance.value.defaultValue.cascadingOptionId !== undefined) {
+              log.warn(`Could not find reference for default cascading option id ${instance.value.defaultValue.cascadingOptionId} in instance ${instance.elemID.getFullName()}`)
+            }
+            return
           }
-          return
+          instance.value.defaultValue.cascadingOptionId = new ReferenceExpression(
+            optionsElemId.createNestedID(naclCase(referencedDefaultOptions[0].value))
+              .createNestedID('cascadingOptions', naclCase(referencedCascadingDefaultOption.value)),
+            referencedCascadingDefaultOption,
+          )
         }
-        instance.value.defaultValue.cascadingOptionId = new ReferenceExpression(
-          defaultOptionElemId.createNestedID('cascadingOptions', naclCase(referencedCascadingDefaultOption.value)),
-          referencedCascadingDefaultOption,
-        )
       })
 
     const optionType = findObject(elements, 'CustomFieldContextOption')
@@ -79,6 +103,7 @@ const filter: FilterCreator = () => ({
     if (optionType !== undefined && defaultValueType !== undefined) {
       defaultValueType.fields.optionId = new Field(defaultValueType, 'optionId', optionType)
       defaultValueType.fields.cascadingOptionId = new Field(defaultValueType, 'optionId', optionType)
+      defaultValueType.fields.optionIds = new Field(defaultValueType, 'optionIds', new ListType(optionType))
     }
   },
 })

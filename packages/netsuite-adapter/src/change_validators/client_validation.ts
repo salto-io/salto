@@ -22,8 +22,9 @@ import { AdditionalDependencies } from '../client/types'
 import { getChangeGroupIdsFunc } from '../group_changes'
 import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
 import { SCRIPT_ID } from '../constants'
-import { cloneChange, getElementValueOrAnnotations } from '../types'
+import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'
+import { cloneChange } from './utils'
 
 const { awu } = collections.asynciterable
 const VALIDATION_FAIL = 'Validation failed.'

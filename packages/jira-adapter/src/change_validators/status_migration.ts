@@ -28,7 +28,7 @@ const statusMigrationSchema = Joi.object({
 })
 
 const getRepeatingItem = (statusMigrations: StatusMigration[]): StatusMigration | undefined =>
-  statusMigrations.filter((item, index, arr) => arr.findIndex(i => isSameStatusMigration(i, item)) !== index)[0]
+  statusMigrations.find((item, index, arr) => arr.findIndex(i => isSameStatusMigration(i, item)) !== index)
 
 const generateStatusMigrationRepeatingItemError = (
   change: ModificationChange<InstanceElement>,

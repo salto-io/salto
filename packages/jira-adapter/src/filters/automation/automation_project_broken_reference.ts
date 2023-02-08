@@ -15,11 +15,12 @@
 */
 
 import { Change, ChangeDataType, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
-import { isProjectReferenceBroken, ProjectType } from '../../change_validators/automation_unresolved_references'
+import { isProjectReferenceBroken, ProjectType, isProjectType } from '../../change_validators/automation_unresolved_references'
 import { AUTOMATION_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
 
-
+// we allow broken references between Automation to Project,
+// so in this filter we remove those broken references in preDeploy and add them back in onDeploy
 export const filter: FilterCreator = () => {
   const preDeployProjects: Record<string, ProjectType[]> = {}
   return {
@@ -32,6 +33,7 @@ export const filter: FilterCreator = () => {
         .forEach(change => {
           preDeployProjects[getChangeData(change).elemID.getFullName()] = change.data.after.value.projects
           change.data.after.value.projects = change.data.after.value.projects
+            .filter(isProjectType)
             .filter((project: ProjectType) => !isProjectReferenceBroken(project))
         })
     },

@@ -15,18 +15,19 @@
 */
 
 import { isAdditionOrModificationChange, ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isReferenceExpression, UnresolvedReference, ReferenceExpression } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { AUTOMATION_TYPE } from '../constants'
 
 
 export type ProjectType = { projectId: ReferenceExpression }
 
-const isProjectType = (element: unknown): element is ProjectType =>
-  (element as ProjectType).projectId !== undefined
+export const isProjectType = (element: unknown): element is ProjectType => {
+  const projectId = _.get(element, 'projectId')
+  return projectId !== undefined && isReferenceExpression(projectId)
+}
 
 export const isProjectReferenceBroken = (project: ProjectType): boolean =>
-  project.projectId !== undefined
-    && isReferenceExpression(project.projectId)
-    && project.projectId.value instanceof UnresolvedReference
+  project.projectId.value instanceof UnresolvedReference
 
 
 export const automationProjectUnresolvedReferenceValidator: ChangeValidator = async changes =>

@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isField, isInstanceElement, isObjectType, ObjectType, PrimitiveType, TypeElement, TypeReference, Value, Values } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { Change, DeployResult as AdapterApiDeployResult, Element, InstanceElement, isField, isInstanceElement, isObjectType, ObjectType, PrimitiveType, TypeElement, TypeReference, Value, Values } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
@@ -179,3 +180,12 @@ export const getInternalId = (element: Element): Value =>
 
 export const hasInternalId = (element: Element): boolean =>
   isDefined(getInternalId(element))
+
+export const cloneChange = <T extends Change>(change: T): T => ({
+  action: change.action,
+  data: _.mapValues(change.data, (element: Element) => (
+    isField(element)
+      ? element.parent.clone().fields[element.name]
+      : element.clone()
+  )),
+}) as T

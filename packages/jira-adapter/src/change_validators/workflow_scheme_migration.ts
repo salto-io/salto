@@ -84,7 +84,11 @@ const getAllIssueTypesForWorkflowScheme = async (
     .filter(isDefined)
     .filter(issueTypeScheme => Array.isArray(issueTypeScheme.value.issueTypeIds))
     .flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
-  return _.uniqBy(issueTypes, (issueType: ReferenceExpression) => issueType.elemID.getFullName())
+  return _.uniqBy(
+    issueTypes
+      .filter((ref): ref is ReferenceExpression => ref instanceof ReferenceExpression),
+    (issueType: ReferenceExpression) => issueType.elemID.getFullName()
+  )
 }
 
 const getDefaultWorkflowIssueTypes = (

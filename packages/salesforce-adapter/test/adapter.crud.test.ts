@@ -1296,7 +1296,6 @@ describe('SalesforceAdapter CRUD', () => {
             unchanged: oldElement.fields.unchanged,
           },
           annotations: {
-            [constants.OBJECT_HISTORY_TRACKING_ENABLED]: false,
             label: 'test2 label',
             [constants.API_NAME]: 'Test__c',
             [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -1525,7 +1524,6 @@ describe('SalesforceAdapter CRUD', () => {
             [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
             label: 'test2 label',
             [constants.API_NAME]: 'Test__c',
-            [constants.OBJECT_HISTORY_TRACKING_ENABLED]: false,
           },
         })
 

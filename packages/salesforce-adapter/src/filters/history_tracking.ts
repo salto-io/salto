@@ -17,8 +17,20 @@ import _ from 'lodash'
 import { values as valueUtils } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  Change, Field, getChangeData, isAdditionOrModificationChange, isField, isModificationChange,
-  isObjectType, isObjectTypeChange, ModificationChange, ObjectType, ReferenceExpression, toChange,
+  Change,
+  Field,
+  getChangeData,
+  isAdditionOrModificationChange,
+  isField,
+  isFieldChange,
+  isModificationChange,
+  isObjectType,
+  isObjectTypeChange,
+  isRemovalOrModificationChange,
+  ModificationChange,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
 } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
 import { isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
@@ -189,6 +201,43 @@ const filter: LocalFilterCreator = () => ({
         delete objType.annotations[HISTORY_TRACKED_FIELDS]
       })
     changes.push(...additionalChanges)
+  },
+  onDeploy: async changes => {
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isObjectTypeChange)
+      .filter(change => isCustomObject(getChangeData(change)))
+      .forEach(change => centralizeHistoryTrackingAnnotations(getChangeData(change)))
+
+    changes
+      .filter(isAdditionOrModificationChange)
+      .filter(isFieldChange)
+      .filter(change => isFieldOfCustomObject(getChangeData(change)))
+      .forEach(change => {
+        delete change.data.after.annotations[FIELD_HISTORY_TRACKING_ENABLED]
+      })
+
+    changes
+      .filter(isRemovalOrModificationChange)
+      .filter(isFieldChange)
+      .filter(change => isFieldOfCustomObject(getChangeData(change)))
+      .forEach(change => {
+        delete change.data.before.annotations[FIELD_HISTORY_TRACKING_ENABLED]
+      })
+
+    _.remove(changes, change => (
+      isModificationChange(change)
+      && isObjectTypeChange(change)
+      && isCustomObject(getChangeData(change))
+      && change.data.before.isEqual(change.data.after)
+    ))
+
+    _.remove(changes, change => (
+      isModificationChange(change)
+      && isFieldChange(change)
+      && isFieldOfCustomObject(getChangeData(change))
+      && change.data.before.isEqual(change.data.after)
+    ))
   },
 })
 

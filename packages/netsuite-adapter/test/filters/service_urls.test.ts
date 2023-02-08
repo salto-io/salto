@@ -95,7 +95,7 @@ describe('serviceUrls', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
-      }).preDeploy?.([toChange({ after: instance }), toChange({ after: field })])
+      }).preDeploy?.([toChange({ after: instance }), toChange({ after: field }), toChange({ after: type })])
       expect(type.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
       expect(instance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
       expect(field.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()

@@ -17,7 +17,6 @@ import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS,
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { filters, client as clientUtils } from '@salto-io/adapter-components'
-import os from 'os'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
@@ -183,12 +182,18 @@ const getMigrationForChangedItem = (changedItem: ChangedItem): StatusMigration[]
 
 const formatStatusMigration = (statusMigration: StatusMigration): string => {
   const { issueTypeId, statusId, newStatusId } = statusMigration
-  return `{${os.EOL} \tissueTypeId = ${issueTypeId.elemID.getFullName()}${os.EOL} \tstatusId = ${statusId.elemID.getFullName()}${os.EOL} \tnewStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<NEW_STATUS>'}${os.EOL}}`
+  return `{
+    issueTypeId = ${issueTypeId.elemID.getFullName()}
+    statusId = ${statusId.elemID.getFullName()}
+    newStatusId = ${newStatusId ? newStatusId.elemID.getFullName() : 'jira.Status.instance.<NEW_STATUS>'}
+  }`
 }
 
 const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => {
   const formattedStatusMigrations = statusMigrations.map(formatStatusMigration)
-  return `statusMigrations = [\n${formattedStatusMigrations.join(',\n')},\n]`
+  return `statusMigrations = [
+  ${formattedStatusMigrations.join(',\n  ')},
+]`
 }
 export const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>
   statusMigration1.issueTypeId.elemID.isEqual(statusMigration2.issueTypeId.elemID)

@@ -112,10 +112,10 @@ const getOrganizationsByIds = async (
   return results.flatMap(orgResponse => orgResponse.organizations)
 }
 
+const organizationsCache: Record<string, Organization | undefined> = {}
 export const getOrganizationsByNames = async (
   organizationNames: string[],
   paginator: clientUtils.Paginator,
-  byRegex = false
 ): Promise<Organization[]> => {
   const paginationArgs = {
     url: '/api/v2/organizations/autocomplete',
@@ -124,6 +124,10 @@ export const getOrganizationsByNames = async (
   const organizations = (await Promise.all(
     organizationNames
       .map(async organizationName => {
+        // 'in' and not '!== undefined' because the value can be undefined
+        if (organizationName in organizationsCache) {
+          return organizationsCache[organizationName]
+        }
         _.set(paginationArgs, 'queryParams', { name: organizationName })
         const res = (await toArrayAsync(paginator(
           paginationArgs,
@@ -133,13 +137,17 @@ export const getOrganizationsByNames = async (
           log.error('invalid organization response')
           return undefined
         }
+
+        // Cache the results
+        res.forEach(org => { organizationsCache[org.name] = org })
+
         // the endpoint returns all organizations with names matching the wildcard `organizationName`
         const organization = res.find(org => org.name === organizationName)
         if (organization === undefined) {
           log.error(`could not find any organization with name ${organizationName}`)
+          organizationsCache[organizationName] = undefined
         }
-        // If we want to match by regex, we return all the organizations that match, even if it is not the exact name
-        return byRegex ? res : organization
+        return organization
       })
   )).filter(isDefined).flat()
 
@@ -147,8 +155,8 @@ export const getOrganizationsByNames = async (
 }
 
 // Returns the organization ids or names that are referenced in the instance
-export const createOrganizationPathEntryByOrgRef = (instances: InstanceElement[])
-    : Record<string, organizationIdInstanceAndPath[]> => {
+export const createOrganizationPathEntries = (instances: InstanceElement[])
+    : organizationIdInstanceAndPath[] => {
   const organizationPathsEntries = instances.flatMap(instance => {
     const organizationPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
     return organizationPaths
@@ -159,8 +167,7 @@ export const createOrganizationPathEntryByOrgRef = (instances: InstanceElement[]
       })
   })
     .filter(entry => !_.isEmpty(entry.id)) // organization id value might be an empty string
-
-  return _.groupBy(organizationPathsEntries, entry => entry.id)
+  return organizationPathsEntries
 }
 
 /**
@@ -173,7 +180,8 @@ const filterCreator: FilterCreator = ({ client }) => {
       const relevantInstances = elements.filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
-      const pathEntriesByOrgId = createOrganizationPathEntryByOrgRef(relevantInstances)
+      const pathEntries = createOrganizationPathEntries(relevantInstances)
+      const pathEntriesByOrgId = _.groupBy(pathEntries, entry => entry.id)
       const organizationIds = _.uniq(Object.keys(pathEntriesByOrgId))
 
       const organizations = await getOrganizationsByIds(organizationIds, client)

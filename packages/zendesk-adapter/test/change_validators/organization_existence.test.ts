@@ -20,12 +20,15 @@ import { ZENDESK } from '../../src/constants'
 import { SLA_POLICY_TYPE_NAME } from '../../src/filters/sla_policy'
 import ZendeskClient from '../../src/client/client'
 
-const getOrganizationsByNamesMock = jest.fn()
-jest.mock('../../src/filters/organizations', () => {
-  const actual = jest.requireActual('../../src/filters/organizations')
+const paginatorMock = jest.fn()
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
   return {
     ...actual,
-    getOrganizationsByNames: jest.fn(() => getOrganizationsByNamesMock()),
+    client: {
+      ...actual.client,
+      createPaginator: () => paginatorMock,
+    },
   }
 })
 
@@ -103,7 +106,7 @@ describe('OrganizationExistence', () => {
 
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
   const validator = organizationExistenceValidator(client)
-  getOrganizationsByNamesMock.mockResolvedValue([{ name: 'one' }, { name: 'two' }])
+  paginatorMock.mockReturnValue([{ organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] }])
 
   it('should return an error if the organization does not exist, and cache the results of the existence check', async () => {
     const errors = await validator(changes)
@@ -121,10 +124,10 @@ describe('OrganizationExistence', () => {
         detailedMessage: 'The following referenced organizations does not exist: three, four',
       },
     ])
-    // First call returns 'one' and 'two'
-    // Second call returns 'three'
-    // Third call returns 'four'
+    // First call returns and caches 'one' and 'two'
+    // Second call returns nothing and caches 'three'
+    // Third call returns nothing adn caches 'four'
     // triggerInstance called are all cached
-    expect(getOrganizationsByNamesMock).toHaveBeenCalledTimes(3)
+    expect(paginatorMock).toHaveBeenCalledTimes(3)
   })
 })

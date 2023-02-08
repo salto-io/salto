@@ -49,7 +49,7 @@ export type StatusMigration = {
 }
 
 const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
-  project.value.workflowScheme !== undefined && project.value.workflowScheme instanceof ReferenceExpression
+  project.value.workflowScheme instanceof ReferenceExpression
 
 const workflowLinkedToProjectWithIssues = async (
   assignedProjects: InstanceElement[],

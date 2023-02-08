@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
-import { SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_SDF_DELETE_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SDF_DELETE_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
@@ -198,34 +198,6 @@ describe('NetsuiteClient', () => {
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
-      })
-
-      it('should try to deploy again after ManifestValidationError from salto reference', async () => {
-        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'center') })
-        const manifestErrorMessage = 'Details: The manifest contains a dependency on custcenter1'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['custcenter1'])
-        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
-        const successChange = toChange({
-          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
-        })
-        const centerInstance = new InstanceElement('name', type, { scriptid: 'custcenter1' })
-        const saltoRefExp = new ReferenceExpression(
-          centerInstance.elemID.createNestedID(SCRIPT_ID),
-          centerInstance.value.scriptid,
-          centerInstance
-        )
-        const failedChange = toChange({
-          after: new InstanceElement('failInstance', type, { scriptid: 'otherObject', ref: saltoRefExp }),
-        })
-        expect(await client.deploy(
-          [successChange, failedChange],
-          SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
-        )).toEqual({
-          errors: [manifestValidationError],
-          appliedChanges: [successChange],
-        })
-        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
       it('should try to deploy again after removing instance and its dependencies due to ManifestValidationError', async () => {
@@ -455,7 +427,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         })
       })
       it('should call sdfValidate', async () => {
-        await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, ...deployParams)
+        await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           [{
             scriptId: 'someObject',
@@ -467,7 +439,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         )
       })
       it('should skip validation', async () => {
-        await client.validate([change], SUITEAPP_SDF_DELETE_GROUP_ID, ...deployParams)
+        await client.validate([change], SDF_DELETE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).not.toHaveBeenCalled()
       })
     })
@@ -566,10 +538,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         })
         expect(await clientWithoutSuiteApp.deploy(
           [change1, change2],
-          SUITEAPP_SDF_DELETE_GROUP_ID,
+          SDF_DELETE_GROUP_ID,
           ...deployParams
         )).toEqual({
-          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_SDF_DELETE_GROUP_ID}" cannot be deployed`)],
+          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SDF_DELETE_GROUP_ID}" cannot be deployed`)],
           elemIdToInternalId: {},
           appliedChanges: [],
         })
@@ -653,7 +625,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             toChange({ before: instance1 }),
             toChange({ before: instance2 }),
           ],
-          SUITEAPP_SDF_DELETE_GROUP_ID,
+          SDF_DELETE_GROUP_ID,
           ...deployParams
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])

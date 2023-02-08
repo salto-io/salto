@@ -50,8 +50,8 @@ export class ManifestValidationError extends Error {
 }
 
 export class MissingManifestFeaturesError extends Error {
-  missingFeatures: Set<string>
-  constructor(message: string, missingFeatures: Set<string>) {
+  missingFeatures: string[]
+  constructor(message: string, missingFeatures: string[]) {
     super(message)
     this.name = 'MissingManifestFeaturesError'
     this.missingFeatures = missingFeatures

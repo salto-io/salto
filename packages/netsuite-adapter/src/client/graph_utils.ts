@@ -15,6 +15,7 @@
 */
 
 import _ from 'lodash'
+import wu from 'wu'
 
 export class GraphNode<T> {
   edges: GraphNode<T>[]
@@ -48,7 +49,7 @@ export class Graph<T> {
     })
   }
 
-  dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>): void {
+  private dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>): void {
     visited.set(node.value[this.key], node)
     node.edges.forEach(dependency => {
       if (!visited.get(dependency.value[this.key])) {
@@ -58,6 +59,9 @@ export class Graph<T> {
   }
 
   getNodeDependencies(startNode: GraphNode<T>): GraphNode<T>[] {
+    if (_.isEmpty(startNode.edges)) {
+      return [startNode]
+    }
     const visited = new Map<T[keyof T], GraphNode<T>>()
     this.dfs(startNode, visited)
     return Array.from(visited.values())
@@ -68,6 +72,6 @@ export class Graph<T> {
   }
 
   findNodeByField(key: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
-    return Array.from(this.nodes.values()).find(node => _.isEqual(node.value[key], value))
+    return wu(this.nodes.values()).find(node => _.isEqual(node.value[key], value))
   }
 }

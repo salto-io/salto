@@ -65,8 +65,8 @@ const getScriptIdFromElement = (changeData: ChangeDataType): string => {
 const getChangeType = (change: Change): 'addition' | 'modification' =>
   (isAdditionChange(change) ? 'addition' : 'modification')
 
-const isSubsetOfArray = <T>(subsetArray: T[], setArray: T[]):boolean =>
-  subsetArray.every(element => setArray.includes(element))
+const isSubsetOfArray = (subsetArray: unknown[], setArray: unknown[]):boolean =>
+  subsetArray.length === _.intersection(subsetArray, setArray).length
 
 const ADDITION = 'addition'
 
@@ -231,7 +231,7 @@ export default class NetsuiteClient {
       .toArray()
   }
 
-  private static async getElemIdsAndCustInfos(
+  private static async getSDFObjectNodes(
     changes: ReadonlyArray<Change>,
     deployReferencedElements: boolean,
     elementsSourceIndex: LazyElementsSourceIndexes,
@@ -262,7 +262,7 @@ export default class NetsuiteClient {
     elementsSourceIndex: LazyElementsSourceIndexes,
   ):Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
-    const elemIdsAndCustInfos = await NetsuiteClient.getElemIdsAndCustInfos(
+    const elemIdsAndCustInfos = await NetsuiteClient.getSDFObjectNodes(
       changes, deployReferencedElements, elementsSourceIndex
     )
     const dependencyGraph = new Graph<SDFObjectNode>(
@@ -381,7 +381,7 @@ export default class NetsuiteClient {
           )
         } else if (error instanceof MissingManifestFeaturesError) {
           if (_.isEmpty(error.missingFeatures)
-          || isSubsetOfArray(Array.from(error.missingFeatures.values()), additionalDependencies.include.features)) {
+          || isSubsetOfArray(error.missingFeatures, additionalDependencies.include.features)) {
             return { errors, appliedChanges: [] }
           }
           additionalDependencies.include.features.push(...error.missingFeatures)

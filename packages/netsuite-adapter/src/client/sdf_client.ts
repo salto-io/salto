@@ -110,7 +110,7 @@ const FEATURE_NAME = 'featureName'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
 export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
-const objectValidationFeatureErrorRegex = RegExp(`Details: You must specify the (?<${FEATURE_NAME}>[A-Z_]+)\\([a-zA-Z ]+\\) feature in the project manifest`, 'gm')
+const objectValidationFeatureErrorRegex = RegExp(`Details: You must specify the (?<${FEATURE_NAME}>[A-Z_]+)\\(.*?\\) feature in the project manifest`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 const manifestErrorDetailsRegex = RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm')
@@ -926,7 +926,7 @@ export default class SdfClient {
       // in this case we're looking for validation error message lines.
       const missingFeatureNames = getGroupItemFromRegex(errorMessage, objectValidationFeatureErrorRegex, FEATURE_NAME)
       if (missingFeatureNames.length > 0) {
-        return new MissingManifestFeaturesError(errorMessage, new Set(missingFeatureNames))
+        return new MissingManifestFeaturesError(errorMessage, missingFeatureNames)
       }
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID

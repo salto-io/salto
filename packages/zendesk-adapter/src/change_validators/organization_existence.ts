@@ -24,7 +24,7 @@ import {
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  createOrganizationPathEntryByOrgId, getOrganizationsByNames,
+  createOrganizationPathEntryByOrgRef, getOrganizationsByNames,
   TYPE_NAME_TO_REPLACER,
 } from '../filters/organizations'
 import ZendeskClient from '../client/client'
@@ -51,12 +51,15 @@ export const doesOrganizationExists = async (paginator: clientUtils.Paginator, o
   return organizationsCache[orgName]
 }
 
+/**
+ * Validates the existence of organizations that are referenced in added or modified elements
+ */
 export const organizationExistenceValidator: (client: ZendeskClient) =>
     ChangeValidator = client => async changes => {
       const relevantChanges = changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).filter(change =>
         Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName))
 
-      const organizationPathEntryByOrgId = createOrganizationPathEntryByOrgId(relevantChanges.map(getChangeData))
+      const organizationPathEntryByOrgId = createOrganizationPathEntryByOrgRef(relevantChanges.map(getChangeData))
 
       const instancesToOrganizations: Record<string, {orgs: Set<string>; instance: InstanceElement}> = {}
       // Organize the results by instance to all organizations that exists in it
@@ -80,7 +83,7 @@ export const organizationExistenceValidator: (client: ZendeskClient) =>
             elemID: instance.elemID,
             severity: 'Error',
             message: 'Referenced organizations do not exist',
-            detailedMessage: `Unable to deploy ${instance.elemID.name} because it refers to the following organizations that do not exist: ${nonExistingOrgs.join(', ')}`,
+            detailedMessage: `The following referenced organizations does not exist: ${nonExistingOrgs.join(', ')}`,
           }
         }
         return undefined

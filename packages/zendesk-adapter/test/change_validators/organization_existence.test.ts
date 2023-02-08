@@ -112,13 +112,13 @@ describe('OrganizationExistence', () => {
         elemID: slaInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: `Unable to deploy ${slaInstance.elemID.name} because it refers to the following organizations that do not exist: three, four`,
+        detailedMessage: 'The following referenced organizations does not exist: three, four',
       },
       {
         elemID: triggerInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: `Unable to deploy ${triggerInstance.elemID.name} because it refers to the following organizations that do not exist: three, four`,
+        detailedMessage: 'The following referenced organizations does not exist: three, four',
       },
     ])
     // First call returns 'one' and 'two'

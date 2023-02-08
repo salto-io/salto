@@ -146,8 +146,8 @@ export const getOrganizationsByNames = async (
   return organizations
 }
 
-// Returns the organization ids that are referenced in the instance
-export const createOrganizationPathEntryByOrgId = (instances: InstanceElement[])
+// Returns the organization ids or names that are referenced in the instance
+export const createOrganizationPathEntryByOrgRef = (instances: InstanceElement[])
     : Record<string, organizationIdInstanceAndPath[]> => {
   const organizationPathsEntries = instances.flatMap(instance => {
     const organizationPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
@@ -173,7 +173,7 @@ const filterCreator: FilterCreator = ({ client }) => {
       const relevantInstances = elements.filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
-      const pathEntriesByOrgId = createOrganizationPathEntryByOrgId(relevantInstances)
+      const pathEntriesByOrgId = createOrganizationPathEntryByOrgRef(relevantInstances)
       const organizationIds = _.uniq(Object.keys(pathEntriesByOrgId))
 
       const organizations = await getOrganizationsByIds(organizationIds, client)

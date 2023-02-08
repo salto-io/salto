@@ -17,6 +17,7 @@ import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS,
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { filters, client as clientUtils } from '@salto-io/adapter-components'
+import os from 'os'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
@@ -192,7 +193,7 @@ const formatStatusMigration = (statusMigration: StatusMigration): string => {
 const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => {
   const formattedStatusMigrations = statusMigrations.map(formatStatusMigration)
   return `statusMigrations = [
-  ${formattedStatusMigrations.join(',\n  ')},
+  ${formattedStatusMigrations.join(`,${os.EOF}  `)},
 ]`
 }
 export const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>

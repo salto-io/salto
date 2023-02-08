@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, ModificationChange } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, ModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { getRelevantChanges, isSameStatusMigration, StatusMigration } from './workflow_scheme_migration'
+import { ISSUE_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 
 const { isDefined } = values
 
@@ -26,6 +27,15 @@ const statusMigrationSchema = Joi.object({
   statusId: Joi.required(),
   newStatusId: Joi.required(),
 })
+
+const validateStatusMigration = (statusMigration: StatusMigration): boolean =>
+  statusMigrationSchema.validate(statusMigration).error === undefined
+  && statusMigration.issueTypeId instanceof ReferenceExpression
+  && statusMigration.issueTypeId.elemID.typeName === ISSUE_TYPE_NAME
+  && statusMigration.statusId instanceof ReferenceExpression
+  && statusMigration.statusId.elemID.typeName === STATUS_TYPE_NAME
+  && statusMigration.newStatusId instanceof ReferenceExpression
+  && statusMigration.newStatusId.elemID.typeName === STATUS_TYPE_NAME
 
 const getRepeatingItem = (statusMigrations: StatusMigration[]): StatusMigration | undefined =>
   statusMigrations.find((item, index, arr) => arr.findIndex(i => isSameStatusMigration(i, item)) !== index)
@@ -57,7 +67,7 @@ const statusMigrationHasInvalidItem = (change: ModificationChange<InstanceElemen
   if (!Array.isArray(statusMigrations)) {
     return true
   }
-  return statusMigrations.some(item => statusMigrationSchema.validate(item).error !== undefined)
+  return statusMigrations.some(item => !validateStatusMigration(item))
 }
 
 /**

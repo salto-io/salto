@@ -36,8 +36,8 @@ describe('status migration', () => {
     instance.value.statusMigrations = [
       {
         issueTypeId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        statusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+        statusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
+        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
       },
     ]
     const errors = await statusMigrationChangeValidator([toChange({ before: instance, after: instance })])
@@ -47,7 +47,7 @@ describe('status migration', () => {
     instance.value.statusMigrations = [
       {
         issueTypeId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
       },
     ]
     const additionErrors = await statusMigrationChangeValidator([toChange({ after: instance })])
@@ -59,14 +59,14 @@ describe('status migration', () => {
     instance.value.statusMigrations = [
       {
         issueTypeId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
       },
     ]
     const missingFieldErrors = await statusMigrationChangeValidator([toChange({ before: instance, after: instance })])
     expect(missingFieldErrors).toHaveLength(1)
     instance.value.statusMigrations = {
       issueTypeId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-      newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+      newStatusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
     }
     const invalidListErrors = await statusMigrationChangeValidator([toChange({ before: instance, after: instance })])
     expect(invalidListErrors).toHaveLength(1)
@@ -75,13 +75,13 @@ describe('status migration', () => {
     instance.value.statusMigrations = [
       {
         issueTypeId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        statusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+        statusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
+        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
       },
       {
         issueTypeId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        statusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
-        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'somename')),
+        statusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
+        newStatusId: new ReferenceExpression(new ElemID(JIRA, 'Status', 'instance', 'somename')),
       },
     ]
     const errors = await statusMigrationChangeValidator([toChange({ before: instance, after: instance })])

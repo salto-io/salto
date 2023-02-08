@@ -14,46 +14,45 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values as valueUtils } from '@salto-io/lowerdash'
+import { values as valueUtils } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { Change, Field, getChangeData, isAdditionOrModificationChange, isField, isModificationChange,
-  isObjectType, isObjectTypeChange, ObjectType, toChange } from '@salto-io/adapter-api'
+import {
+  Change, Field, getChangeData, isAdditionOrModificationChange, isField, isModificationChange,
+  isObjectType, isObjectTypeChange, ModificationChange, ObjectType, ReferenceExpression, toChange,
+} from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
-import { apiName, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
+import { isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
 import { FIELD_HISTORY_TRACKING_ENABLED, HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_TRACKING_ENABLED } from '../constants'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
-const trackedFields = (type: ObjectType): string[] => type.annotations[HISTORY_TRACKED_FIELDS] ?? []
-
-const isHistoryTrackingEnabled = (type: ObjectType): boolean => (
-  !!type.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
-  || type.annotations[HISTORY_TRACKED_FIELDS] !== undefined
+const trackedFields = (type: ObjectType): string[] => (
+  type.annotations[HISTORY_TRACKED_FIELDS]?.map((ref: ReferenceExpression) => ref.elemID.getFullName()) ?? []
 )
 
-const centralizeHistoryTrackingAnnotations = async (customObject: ObjectType): Promise<void> => {
+const isHistoryTrackingEnabled = (type: ObjectType): boolean => (
+  (type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] === true)
+  || (type.annotations[HISTORY_TRACKED_FIELDS] !== undefined)
+)
+
+const isHistoryTrackedField = (field: Field): boolean => (
+  (field.annotations[FIELD_HISTORY_TRACKING_ENABLED] === true)
+  || trackedFields(field.parent).includes(field.elemID.getFullName())
+)
+
+const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void => {
   if (!isHistoryTrackingEnabled(customObject)) {
     delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
     return
   }
 
-  customObject.annotations[HISTORY_TRACKED_FIELDS] = (await awu(Object.values(customObject.fields))
-    .filter(field => !!field.annotations.trackHistory)
-    .map(field => apiName(field))
-    .toArray())
+  customObject.annotations[HISTORY_TRACKED_FIELDS] = Object.values(customObject.fields)
+    .filter(field => (field.annotations[FIELD_HISTORY_TRACKING_ENABLED] === true))
+    .map(field => new ReferenceExpression(field.elemID))
     .sort()
 
-  Object.values(customObject.fields).forEach(field => delete field.annotations.trackHistory)
+  Object.values(customObject.fields).forEach(field => delete field.annotations[FIELD_HISTORY_TRACKING_ENABLED])
   delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
-}
-
-const distributeHistoryTrackingAnnotations = async (field: Field): Promise<void> => {
-  if (!isHistoryTrackingEnabled(field.parent)) {
-    return
-  }
-
-  field.annotations[FIELD_HISTORY_TRACKING_ENABLED] = trackedFields(field.parent).includes(await apiName(field))
 }
 
 const createFieldChanges = (typeBefore: ObjectType,
@@ -64,12 +63,12 @@ const createFieldChanges = (typeBefore: ObjectType,
   const shouldProcessField = (fieldName: string): boolean => (
     !fieldsToIgnore.includes(fieldName)
   )
-  const fieldByApiName = (type: ObjectType, name: string): Field | undefined => (
-    Object.values(type.fields).find(async fieldDef => (await apiName(fieldDef)) === name)
+  const fieldByName = (type: ObjectType, fieldName: string): Field | undefined => (
+    Object.values(type.fields).find(fieldDef => (fieldDef.elemID.getFullName() === fieldName))
   )
   const historyTrackingAddedChange = (fieldName: string): Change<Field> | undefined => {
-    const before = fieldByApiName(typeBefore, fieldName)?.clone()
-    const after = fieldByApiName(typeAfter, fieldName)?.clone()
+    const before = fieldByName(typeBefore, fieldName)?.clone()
+    const after = fieldByName(typeAfter, fieldName)?.clone()
     if (after === undefined) {
       log.error('The field %o was added to %o\'s history tracking, but does not exist', fieldName, typeAfter.elemID.getFullName())
       return undefined
@@ -85,8 +84,8 @@ const createFieldChanges = (typeBefore: ObjectType,
   }
 
   const historyTrackingRemovedChange = (fieldName: string): Change<Field> | undefined => {
-    const before = fieldByApiName(typeBefore, fieldName)?.clone()
-    const after = fieldByApiName(typeAfter, fieldName)?.clone()
+    const before = fieldByName(typeBefore, fieldName)?.clone()
+    const after = fieldByName(typeAfter, fieldName)?.clone()
     if (before !== undefined) {
       log.warn('The field %o was removed from %o\'s history tracking, but did not exist', fieldName, typeAfter.elemID.getFullName())
       before.annotations[FIELD_HISTORY_TRACKING_ENABLED] = true
@@ -116,13 +115,29 @@ const createFieldChanges = (typeBefore: ObjectType,
  * *before* these types are split up into different elements (custom_type_split)
  * */
 const filter: LocalFilterCreator = () => ({
+  name: 'history_tracking',
   onFetch: async elements => {
-    await awu(elements)
+    elements
       .filter(isObjectType)
       .filter(isCustomObject)
       .forEach(centralizeHistoryTrackingAnnotations)
   },
   preDeploy: async changes => {
+    const changedTrackedFields = (change: ModificationChange<ObjectType>):
+      {
+        typeBefore: ObjectType
+        typeAfter: ObjectType
+        added: string[]
+        removed: string[]
+      } => (
+      {
+        typeBefore: change.data.before,
+        typeAfter: getChangeData(change),
+        added: _.difference(trackedFields(change.data.after), trackedFields(change.data.before)),
+        removed: _.difference(trackedFields(change.data.before), trackedFields(change.data.after)),
+      }
+    )
+
     const changedCustomObjectFields = changes
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
@@ -141,8 +156,10 @@ const filter: LocalFilterCreator = () => ({
       })
 
     // 2. For all changed fields, make sure they have the expected 'trackHistory' value
-    await awu(changedCustomObjectFields)
-      .forEach(distributeHistoryTrackingAnnotations)
+    changedCustomObjectFields
+      .forEach(field => {
+        field.annotations[FIELD_HISTORY_TRACKING_ENABLED] = isHistoryTrackedField(field)
+      })
 
     // 3. If an object's historyTrackedFields changed:
     //  3.1 for every field that was added/removed in historyTrackedFields:
@@ -156,17 +173,10 @@ const filter: LocalFilterCreator = () => ({
     // Note: if an object was added we assume we'll get an AdditionChange for every one of its fields, so that case will
     //       be handled in (1)
 
-    const changedFieldNames = await awu(changedCustomObjectFields).map(field => apiName(field)).toArray()
+    const changedFieldNames = changedCustomObjectFields.map(field => field.elemID.getFullName())
     const additionalChanges = objectTypeChanges
       .filter(isModificationChange)
-      .map((change):{typeBefore: ObjectType; typeAfter: ObjectType; added: string[]; removed: string[]} => (
-        {
-          typeBefore: change.data.before,
-          typeAfter: getChangeData(change),
-          added: _.difference(trackedFields(change.data.after), trackedFields(change.data.before)),
-          removed: _.difference(trackedFields(change.data.before), trackedFields(change.data.after)),
-        }
-      ))
+      .map(changedTrackedFields)
       .filter(({ added, removed }) => (added.length > 0 || removed.length > 0))
       .flatMap(({ typeBefore, typeAfter, added, removed }) => (
         createFieldChanges(typeBefore, typeAfter, added, removed, changedFieldNames)

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
-import { getChangeGroupIdsFunc, SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_SDF_DELETE_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
+import { getChangeGroupIdsFunc, SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SDF_DELETE_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
 import { APPLICATION_ID, CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../src/constants'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../src/types/file_cabinet_types'
@@ -349,11 +349,11 @@ describe('Group Changes with Salto suiteApp', () => {
 
   it('should set correct group id for custom record type', () => {
     expect(changeGroupIds.get(deletedCustomRecordType.elemID.getFullName()))
-      .toEqual(SUITEAPP_SDF_DELETE_GROUP_ID)
+      .toEqual(SDF_DELETE_GROUP_ID)
   })
 
   it('should set correct group id for instance with non custom object type', () => {
     expect(changeGroupIds.get(deletedStandardInstance.elemID.getFullName()))
-      .toEqual(SUITEAPP_SDF_DELETE_GROUP_ID)
+      .toEqual(SDF_DELETE_GROUP_ID)
   })
 })

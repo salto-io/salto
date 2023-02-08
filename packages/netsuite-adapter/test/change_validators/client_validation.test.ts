@@ -21,7 +21,6 @@ import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
 import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
-import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 
 describe('client validation', () => {
   let changes: Change[]
@@ -32,14 +31,10 @@ describe('client validation', () => {
     validate: mockValidate,
   } as unknown as NetsuiteClient
 
-  const mockFiltersRunner = {
+  const mockFiltersRunner: () => Required<Filter> = () => ({
     onFetch: jest.fn(),
     preDeploy: jest.fn(),
-  } as unknown as Required<Filter>
-
-  const mockElementsSourceIndex = {
-    getIndexes: () => ({ mapKeyFieldsIndex: {} }),
-  } as unknown as LazyElementsSourceIndexes
+  }) as unknown as Required<Filter>
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -69,7 +64,6 @@ describe('client validation', () => {
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -91,7 +85,6 @@ File: ~/Objects/object_name.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -119,7 +112,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -150,7 +142,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -171,7 +162,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -199,7 +189,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors.map(changeErr => changeErr.elemID.getFullName())).toEqual([
@@ -215,7 +204,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
@@ -234,7 +222,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -252,7 +239,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors).toEqual(changes.map(change => ({

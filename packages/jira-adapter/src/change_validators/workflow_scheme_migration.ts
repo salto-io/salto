@@ -182,7 +182,7 @@ const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => 
   const formattedStatusMigrations = statusMigrations.map(formatStatusMigration)
   return `statusMigrations = [\n${formattedStatusMigrations.join(',\n')},\n]`
 }
-const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>
+export const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>
   statusMigration1.issueTypeId.elemID.isEqual(statusMigration2.issueTypeId.elemID)
     && statusMigration1.statusId.elemID.isEqual(statusMigration2.statusId.elemID)
 

@@ -17,7 +17,7 @@ import { ChangeError, ChangeValidator, getChangeData, InstanceElement, Modificat
 import Joi from 'joi'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { getRelevantChanges, StatusMigration } from './workflow_scheme_migration'
+import { getRelevantChanges, isSameStatusMigration, StatusMigration } from './workflow_scheme_migration'
 
 const { isDefined } = values
 
@@ -26,11 +26,6 @@ const statusMigrationSchema = Joi.object({
   statusId: Joi.required(),
   newStatusId: Joi.required(),
 })
-
-const isSameStatusMigration = (
-  a: StatusMigration,
-  b: StatusMigration,
-): boolean => a.issueTypeId.elemID.isEqual(b.issueTypeId.elemID) && a.statusId.elemID.isEqual(b.statusId.elemID)
 
 const getRepeatingItem = (statusMigrations: StatusMigration[]): StatusMigration | undefined =>
   statusMigrations.filter((item, index, arr) => arr.findIndex(i => isSameStatusMigration(i, item)) !== index)[0]

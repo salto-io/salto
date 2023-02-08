@@ -193,7 +193,7 @@ const formatStatusMigration = (statusMigration: StatusMigration): string => {
 const formatStatusMigrations = (statusMigrations: StatusMigration[]): string => {
   const formattedStatusMigrations = statusMigrations.map(formatStatusMigration)
   return `statusMigrations = [
-  ${formattedStatusMigrations.join(`,${os.EOF}  `)},
+  ${formattedStatusMigrations.join(`,${os.EOL}  `)},
 ]`
 }
 export const isSameStatusMigration = (statusMigration1: StatusMigration, statusMigration2: StatusMigration): boolean =>

@@ -79,6 +79,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
   guide?: Guide
+  resolveOrganizationIDs?: boolean
 }
 export type ZedneskDeployConfig = configUtils.UserDeployConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
@@ -2508,6 +2509,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     ],
     hideTypes: true,
     enableMissingReferences: true,
+    resolveOrganizationIDs: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2583,6 +2585,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
+          resolveOrganizationIDs: { refType: BuiltinTypes.BOOLEAN },
         },
       ),
     },
@@ -2600,6 +2603,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.guide`,
+      `${FETCH_CONFIG}.resolveOrganizationIDs`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

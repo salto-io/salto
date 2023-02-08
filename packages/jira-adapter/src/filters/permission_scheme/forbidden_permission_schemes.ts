@@ -29,6 +29,7 @@ const UnsupportedPermissionSchemes = [
  * Remove unsupported permissions from permission schemes
  */
 const filter: FilterCreator = () => ({
+  name: 'forbiddenPermissionSchemeFilter',
   onFetch: async (elements: Element[]) => {
     elements.filter(isPermissionScheme).filter(isInstanceElement).forEach(element => {
       _.remove(element.value.permissions,

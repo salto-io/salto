@@ -106,6 +106,7 @@ export const addRemovalChangesId = (changes: Change<InstanceElement>[]): void =>
  * discards the 'name' and 'description' fields from the section again.
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'guideSectionCategoryFilter',
   preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
     changes
       .filter(change => TRANSLATION_PARENT_TYPE_NAMES.includes(

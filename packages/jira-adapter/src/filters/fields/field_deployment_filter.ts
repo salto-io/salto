@@ -55,6 +55,7 @@ const deployField = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'fieldDeploymentFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

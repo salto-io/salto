@@ -29,7 +29,8 @@ import {
 } from './types'
 import * as constants from './constants'
 import {
-  SALESFORCE_ERRORS, SalesforceErrorName,
+  SALESFORCE_ERRORS,
+  SalesforceErrorName,
   SOCKET_TIMEOUT,
   UNLIMITED_INSTANCES_VALUE,
 } from './constants'
@@ -44,6 +45,7 @@ const {
   INVALID_ID_FIELD,
   INVALID_TYPE,
   UNKNOWN_EXCEPTION,
+  INVALID_QUERY_FILTER_OPERATOR,
 } = SALESFORCE_ERRORS
 
 const MESSAGE_INTRO = 'Salto failed to fetch some items from salesforce. '
@@ -135,6 +137,7 @@ export const NON_TRANSIENT_SALESFORCE_ERRORS: SalesforceErrorName[] = [
   INVALID_FIELD,
   INVALID_TYPE,
   UNKNOWN_EXCEPTION,
+  INVALID_QUERY_FILTER_OPERATOR,
 ]
 
 const isNonTransientSalesforceError: CreateConfigSuggestionPredicate = (e: Error): boolean => (

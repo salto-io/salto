@@ -58,9 +58,10 @@ import {
   customStatusCategoryChangeValidator,
   customStatusCategoryValidator,
   defaultCustomStatusesValidator,
-  customStatusActiveDefaultValidator,
+  customStatusActiveDefaultValidator, defaultGroupChangeValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
+import { ZedneskDeployConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -72,11 +73,13 @@ const {
 export default ({
   client,
   apiConfig,
+  deployConfig,
   typesDeployedViaParent,
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
   apiConfig: configUtils.AdapterDuckTypeApiConfig
+  deployConfig?: ZedneskDeployConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
 }): ChangeValidator => {
@@ -113,7 +116,7 @@ export default ({
     defaultCustomStatusesValidator,
     customRoleRemovalValidator(client),
     sideConversationsValidator,
-    missingUsersValidator(client),
+    missingUsersValidator(client, deployConfig),
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
@@ -125,6 +128,7 @@ export default ({
     helpCenterActivationValidator,
     helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook,
+    defaultGroupChangeValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

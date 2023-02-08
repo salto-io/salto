@@ -86,6 +86,7 @@ const returnValidInstance = (inst: InstanceElement): InstanceElement => {
  * required_on_statuses then it removes the statuses field.
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'ticketFormDeploy',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [TicketFormChanges, leftoverChanges] = _.partition(
       changes,

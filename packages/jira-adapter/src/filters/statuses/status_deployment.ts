@@ -104,6 +104,7 @@ const deployStatus = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'statusDeploymentFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

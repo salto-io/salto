@@ -25,6 +25,7 @@ import { GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
  * Deploys Guide types which relate to a certain brand
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'deployBrandedGuideTypesFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [guideBrandedTypesChanges, leftoverChanges] = _.partition(
       changes,

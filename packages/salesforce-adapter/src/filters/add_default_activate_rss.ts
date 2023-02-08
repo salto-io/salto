@@ -30,6 +30,7 @@ const setDefaultActivateRSSValue = ({ value }: InstanceElement): void => {
  * Salesforce never returns this value, and instead `{ xsi:nil: true }` is returned
  */
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'defaultActiveRSSFilter',
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

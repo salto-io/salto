@@ -16,16 +16,22 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { Values } from '@salto-io/adapter-api'
+import ZendeskClient from './client/client'
 import { ValueReplacer, replaceConditionsAndActionsCreator, fieldReplacer } from './replacers_utils'
 
 const log = logger(module)
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
-export type User = {
+const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback does not exist in the target environemt'
+// system options that do not contain a specific user value
+export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
+
+type User = {
   id: number
   email: string
   role: string
@@ -33,15 +39,27 @@ export type User = {
   custom_role_id: number
 }
 
-const EXPECTED_USER_SCHEMA = Joi.array().items(Joi.object({
+type CurrentUserResponse = {
+  user: User
+}
+
+const EXPECTED_USER_SCHEMA = Joi.object({
   id: Joi.number().required(),
   email: Joi.string().required(),
   role: Joi.string(),
   custom_role_id: Joi.number(),
-}).unknown(true)).required()
+}).unknown(true)
+
+const EXPECTED_USERS_SCHEMA = Joi.array().items(EXPECTED_USER_SCHEMA).required()
+
+const CURRENT_USER_RESPONSE_SCHEME = Joi.object({
+  user: EXPECTED_USER_SCHEMA,
+}).required()
+
+const isCurrentUserResponse = createSchemeGuard<CurrentUserResponse>(CURRENT_USER_RESPONSE_SCHEME, 'Received an invalid current user response')
 
 const areUsers = (values: unknown): values is User[] => {
-  const { error } = EXPECTED_USER_SCHEMA.validate(values)
+  const { error } = EXPECTED_USERS_SCHEMA.validate(values)
   if (error !== undefined) {
     log.warn(`Received an invalid response for the users values: ${error.message}`)
     return false
@@ -170,3 +188,34 @@ const getUsersFunc = ():(paginator: clientUtils.Paginator) => Promise<User[]> =>
 }
 
 export const getUsers = getUsersFunc()
+
+/**
+ * Get user fallback value that will replace missing users values
+ * based on the user's deploy config
+ */
+export const getUserFallbackValue = async (
+  defaultMissingUserFallback: string,
+  existingUsers: Set<string>,
+  client: ZendeskClient
+): Promise<string> => {
+  if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
+    try {
+      const response = (await client.getSinglePage({
+        url: '/api/v2/users/me',
+      })).data
+      if (isCurrentUserResponse(response)) {
+        return response.user.email
+      }
+      log.error('Received invalid response from endpoint \'/api/v2/users/me\'')
+      throw new Error('Received invalid user response')
+    } catch (e) {
+      log.error('Attempt to get current user details has failed with error: %o', e)
+      throw new Error('Failed to get current user from endpoint \'/api/v2/users/me\'')
+    }
+  }
+  if (!existingUsers.has(defaultMissingUserFallback)) {
+    log.error(MISSING_DEPLOY_CONFIG_USER)
+    throw new Error(MISSING_DEPLOY_CONFIG_USER)
+  }
+  return defaultMissingUserFallback
+}

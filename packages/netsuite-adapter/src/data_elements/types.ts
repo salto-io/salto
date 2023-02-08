@@ -209,6 +209,7 @@ const MANUALLY_MAPPED_TYPES_TO_INTERNAL_IDS: Record<string, string> = {
   restlet: SCRIPT_TYPE,
   massupdatescript: SCRIPT_TYPE,
   mapreducescript: SCRIPT_TYPE,
+  customSegment: FIELD_TYPE,
   customsegment: FIELD_TYPE,
   usereventscript: SCRIPT_TYPE,
   sdfinstallationscript: SCRIPT_TYPE,

@@ -20,6 +20,7 @@ import { FilterWith } from '../filter'
 const HIDDEN_FIELDS = ['internalId']
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'hiddenFields',
   onFetch: async elements => {
     elements
       .filter(isObjectType)

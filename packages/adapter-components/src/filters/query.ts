@@ -31,6 +31,7 @@ export const queryFilterCreator: <
   TResult extends void | filter.FilterResult,
   TAdditional extends { fetchQuery: ElementQuery }
 >() => FilterCreator<TClient, TContext, TResult, TAdditional> = () => ({ fetchQuery }) => ({
+  name: 'queryFilter',
   onFetch: async elements => {
     const removedInstances = _.remove(
       elements,

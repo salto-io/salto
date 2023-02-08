@@ -26,6 +26,7 @@ import mapKeysValidator from './change_validators/map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import omitDataValidator from './change_validators/omit_data'
+import dataChangeValidator from './change_validators/data_change'
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
@@ -35,6 +36,7 @@ import invalidListViewFilterScope from './change_validators/invalid_listview_fil
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
+import currencyIsoCodes from './change_validators/currency_iso_codes'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
@@ -70,8 +72,10 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   invalidListViewFilterScope: { creator: () => invalidListViewFilterScope, ...defaultAlwaysRun },
   caseAssignmentRulesValidator: { creator: () => caseAssignmentRulesValidator, ...defaultAlwaysRun },
   omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
+  dataChange: { creator: () => dataChangeValidator, defaultInDeploy: true, defaultInValidate: false },
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
+  currencyIsoCodes: { creator: () => currencyIsoCodes, ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

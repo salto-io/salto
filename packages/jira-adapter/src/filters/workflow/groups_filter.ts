@@ -72,6 +72,7 @@ export const fixGroupNames = (
  * able to still create references to the right group
  */
 const filter: FilterCreator = () => ({
+  name: 'workflowGroupsFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
 

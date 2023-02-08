@@ -28,6 +28,9 @@ jira {
       }
     ]
   }
+  deploy = {
+    defaultMissingUserFallback = "##DEPLOYER##"
+  }
 }
 ```
 
@@ -35,9 +38,17 @@ jira {
 
 | Name                                                     | Default when undefined        | Description
 | ---------------------------------------------------------| ------------------------------| -----------
-| [client](#client-configuration-options)                  | `{}` (no overrides)             | Configuration relating to the client used to interact with JIRA
-| [fetch](#fetch-configuration-options)                    | `{}` (no overrides)             | Configuration relating to the endpoints that will be queried during fetch
+| [client](#client-configuration-options)                  | `{}` (no overrides)           | Configuration relating to the client used to interact with JIRA
+| [fetch](#fetch-configuration-options)                    | `{}` (no overrides)           | Configuration relating to the endpoints that will be queried during fetch
 | [masking](#masking-configuration-options)                | `{}` (mask nothing)           | Configuration to mask sensitive data from the NaCls
+| [deploy](#deploy-configuration-options)                | `{}` (mask nothing)             | Configuration for elements deployment
+
+
+### Deploy configuration options
+
+| Name                                                          | Default when undefined   | Description
+|---------------------------------------------------------------|--------------------------|------------
+| defaultMissingUserFallback                                    | No fallback              | Configure replacement for missing users during deploy, can be user email for Jira Cloud, or username for Jira DC, or ##DEPLOYER## to fallback to deployer's user
 
 ### Client configuration options
 

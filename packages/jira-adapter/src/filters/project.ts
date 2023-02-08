@@ -182,6 +182,7 @@ const deleteFieldConfigurationScheme = async (
  * Restructures Project type to fit the deployment endpoint
  */
 const filter: FilterCreator = ({ config, client, elementsSource }) => ({
+  name: 'projectFilter',
   onFetch: async (elements: Element[]) => {
     const projectType = findObject(elements, PROJECT_TYPE_NAME)
     if (projectType !== undefined) {

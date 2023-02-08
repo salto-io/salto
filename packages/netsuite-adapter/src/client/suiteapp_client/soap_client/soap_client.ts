@@ -31,7 +31,7 @@ import { CustomRecordTypeRecords, DeployListResults, GetAllResponse, GetResult, 
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
-import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING } from '../../../data_elements/types'
+import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
@@ -555,7 +555,22 @@ export default class SoapClient {
         })
       }).toArray(),
     }
+    return this.runDeployAction(instances, body, 'deleteList')
+  }
 
+  public async deleteSdfInstances(instances: InstanceElement[]):
+  Promise<(number | Error)[]> {
+    const body = {
+      baseRef: await awu(instances).map(async instance => {
+        const instanceTypeFromMap = Object.keys(TYPES_TO_INTERNAL_ID)
+          .find(key => key.toLowerCase() === instance.elemID.typeName.toLowerCase())
+        return SoapClient.convertToDeletionRecord({
+          id: instance.value.internalId,
+          type: instanceTypeFromMap ?? instance.elemID.typeName,
+          isCustomRecord: false,
+        })
+      }).toArray(),
+    }
     return this.runDeployAction(instances, body, 'deleteList')
   }
 

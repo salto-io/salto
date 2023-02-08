@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import {
   getChangeData, isReferenceExpression, ChangeDataType, Change, ChangeEntry, DependencyChange,
   addReferenceDependency, addParentDependency, isDependentAction, DependencyChanger, isObjectType,
-  ElemID,
+  ElemID, isModificationChange, isField, isEqualValues, dependencyChange,
 } from '@salto-io/adapter-api'
-import { getAllReferencedIds, getParents } from '@salto-io/adapter-utils'
+import { getAllReferencedIds, getParents, resolvePath } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 
@@ -32,6 +32,19 @@ const getParentIds = (elem: ChangeDataType): Set<string> => new Set(
 const getChangeElemId = (change: Change<ChangeDataType>): string => (
   getChangeData(change).elemID.getFullName()
 )
+
+const isReferenceValueChanged = (change: Change<ChangeDataType>, refElemId: ElemID): boolean => {
+  if (!isModificationChange(change) || refElemId.isBaseID()) {
+    return false
+  }
+  const beforeTopLevel = isField(change.data.before) ? change.data.before.parent : change.data.before
+  const afterTopLevel = isField(change.data.after) ? change.data.after.parent : change.data.after
+  return !isEqualValues(
+    resolvePath(beforeTopLevel, refElemId),
+    resolvePath(afterTopLevel, refElemId),
+    { compareReferencesByValue: true }
+  )
+}
 
 export const addReferencesDependency: DependencyChanger = async changes => {
   const changesById = collections.iterable.groupBy(
@@ -50,15 +63,30 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     const onlyAnnotations = isObjectType(elem)
     // Not using ElementsSource here is legit because it's ran
     // after resolve
-    return (wu(getAllReferencedIds(elem, onlyAnnotations))
-      .map(targetId => ElemID.fromFullName(targetId).createBaseID().parent.getFullName())
-      .filter(targetId => targetId !== elemId) // Ignore self references
-      .map(targetId => changesById.get(targetId) ?? [])
-      .flatten(true) as wu.WuIterable<ChangeEntry>)
-      .filter(([_id, targetChange]) => isDependentAction(change.action, targetChange.action))
-      .map(([targetId, targetChange]) => (parents.has(getChangeElemId(targetChange))
-        ? addParentDependency(id, targetId)
-        : addReferenceDependency(targetChange.action, id, targetId)))
+    return wu(getAllReferencedIds(elem, onlyAnnotations))
+      .map(targetRefIdFullName => {
+        const targetRefId = ElemID.fromFullName(targetRefIdFullName)
+        const targetElemId = targetRefId.createBaseID().parent.getFullName()
+        // Ignore self references
+        if (targetElemId === elemId) {
+          return undefined
+        }
+        const [targetChangeEntry] = changesById.get(targetElemId) ?? []
+        if (targetChangeEntry === undefined) {
+          return undefined
+        }
+        const [targetId, targetChange] = targetChangeEntry
+        if (isDependentAction(change.action, targetChange.action)) {
+          return parents.has(getChangeElemId(targetChange))
+            ? addParentDependency(id, targetId)
+            : addReferenceDependency(targetChange.action, id, targetId)
+        }
+        if (isReferenceValueChanged(targetChange, targetRefId)) {
+          return dependencyChange('add', id, targetId)
+        }
+        return undefined
+      })
+      .filter(values.isDefined)
   }
 
   return awu(changes).flatMap(addChangeDependency).toArray()

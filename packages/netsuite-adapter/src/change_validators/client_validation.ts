@@ -66,7 +66,7 @@ const getFailedChangesWithDependencies = (
       || (isFieldChange(change)
       && dependencyMap.get(getChangeData(change).parent.elemID.getFullName())?.has(scriptid))),
   }))
-  .filter(elemAndDependency => !(elemAndDependency.dependencies.length === 0))
+  .filter(({ dependencies }) => dependencies.length > 0)
 
 
 export type ClientChangeValidator = (

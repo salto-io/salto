@@ -71,6 +71,10 @@ export class Graph<T> {
     return this.nodes.get(value[this.key])
   }
 
+  findNodeByKey(key: T[keyof T]): GraphNode<T> | undefined {
+    return this.nodes.get(key)
+  }
+
   findNodeByField(key: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
     return wu(this.nodes.values()).find(node => _.isEqual(node.value[key], value))
   }

@@ -44,6 +44,10 @@ describe('graph utils tests', () => {
     expect(testGraph.findNode({ name: 'unexistingNode', num: 4 })).toBeUndefined()
   })
 
+  it('should find node by key', async () => {
+    expect(testGraph.findNodeByKey('node1')).toEqual(testNode1)
+  })
+
   it('should find node by field', async () => {
     expect(testGraph.findNodeByField('name', 'node3')).toEqual(testNode3)
   })

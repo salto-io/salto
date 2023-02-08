@@ -67,8 +67,6 @@ const getChangeType = (change: Change): 'addition' | 'modification' =>
 const isSubsetOfArray = (subsetArray: unknown[], setArray: unknown[]):boolean =>
   subsetArray.length === _.intersection(subsetArray, setArray).length
 
-const ADDITION = 'addition'
-
 type SDFObjectNode = {
   elemIdFullName: string
   scriptid: string
@@ -183,7 +181,7 @@ export default class NetsuiteClient {
 
   private static getFailedSdfDeployChangesElemIDs(
     error: ObjectsDeployError,
-    changes: ReadonlyArray<Change>,
+    changes: ReadonlyArray<Change<InstanceElement | ObjectType>>,
     dependencyGraph: Graph<SDFObjectNode>,
   ): Set<string> {
     const changeData = changes.map(getChangeData)
@@ -238,17 +236,13 @@ export default class NetsuiteClient {
       .filter(isAdditionOrModificationChange)
       .map(change =>
         ({ element: getChangeData(change), changeType: getChangeType(change) }))
-    const elemIdSet = new Set(elementsAndChangeTypes.map(elementsAndChangeType =>
-      elementsAndChangeType.element.elemID.getFullName()))
     return awu(elementsAndChangeTypes)
-      .filter(elementsAndChangeType => !isField(elementsAndChangeType.element)
-      || !elemIdSet.has(elementsAndChangeType.element.parent.elemID.getFullName()))
-      .map(async elementsAndChangeType => ({
-        elemIdFullName: elementsAndChangeType.element.elemID.getFullName(),
-        scriptid: getScriptIdFromElement(elementsAndChangeType.element),
-        changeType: elementsAndChangeType.changeType,
+      .map(async ({ element, changeType }) => ({
+        elemIdFullName: element.elemID.getFullName(),
+        scriptid: getScriptIdFromElement(element),
+        changeType,
         customizationInfos: await NetsuiteClient.toCustomizationInfos(
-          [elementsAndChangeType.element], elementsSourceIndex
+          [element], elementsSourceIndex
         ),
       }))
       .toArray()
@@ -277,7 +271,7 @@ export default class NetsuiteClient {
           serviceIdInfoArray.forEach(serviceIdInfo => {
             currSet.add(serviceIdInfo.serviceId)
             const startNode = dependencyGraph.findNodeByField(SCRIPT_ID, serviceIdInfo.serviceId)
-            if (startNode && endNode && startNode.value.changeType === ADDITION) {
+            if (startNode && endNode && startNode.value.changeType === 'addition') {
               startNode.addEdge(endNode)
             }
           })
@@ -290,7 +284,7 @@ export default class NetsuiteClient {
     elemIds: string[],
     dependencyGraph: Graph<SDFObjectNode>
   ):string[] {
-    return elemIds.map(elementName => dependencyGraph.findNodeByField('elemIdFullName', elementName))
+    return elemIds.map(elementName => dependencyGraph.findNodeByKey(elementName))
       .filter(values.isDefined)
       .flatMap(node => dependencyGraph.getNodeDependencies(node))
       .map(node => node.value.elemIdFullName)
@@ -299,7 +293,7 @@ export default class NetsuiteClient {
   public static getFailedManifestErrorElemIds(
     error: ManifestValidationError,
     dependencyInfo: DependencyInfo,
-    changes: ReadonlyArray<Change>
+    changes: ReadonlyArray<Change<InstanceElement | ObjectType>>
   ): Set<string> {
     const { dependencyMap, dependencyGraph } = dependencyInfo
     const changeData = changes.map(getChangeData)
@@ -370,7 +364,7 @@ export default class NetsuiteClient {
         errors.push(error)
         if (error instanceof ManifestValidationError) {
           const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(
-            error, { dependencyMap, dependencyGraph }, changes
+            error, { dependencyMap, dependencyGraph }, changesToDeploy
           )
           _.remove(
             changesToDeploy,

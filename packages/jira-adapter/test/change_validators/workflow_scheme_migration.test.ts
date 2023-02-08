@@ -237,6 +237,7 @@ describe('workflow scheme migration', () => {
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(1)
     expect(errors[0].deployActions?.postAction).toBeDefined()
+    expect(errors[0].detailedMessage).toEqual('This workflow scheme change requires an issue migration, as some issue statuses do not exist in the new workflow. If you continue with the deployment, the changes will be pushed as a workflow scheme draft but will not be published. You will have to publish them manually from Jira. Alternatively, you can add the following NACL code to this workflow’s scheme code. Make sure to specific, for each issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/…ance.<NEW_STATUS>\n  },\n  {\n    issueTypeId = jira.IssueType.instance.issueType2\n    statusId = jira.Status.instance.status1\n    newStatusId = jira.Status.instance.<NEW_STATUS>\n  },\n  {\n    issueTypeId = jira.IssueType.instance.issueType2\n    statusId = jira.Status.instance.status2\n    newStatusId = jira.Status.instance.<NEW_STATUS>\n  },\n  {\n    issueTypeId = jira.IssueType.instance.issueType3\n    statusId = jira.Status.instance.status4\n    newStatusId = jira.Status.instance.<NEW_STATUS>\n  },\n]')
   })
   it('should return an error if default workflow changed', async () => {
     modifiedInstance.value.defaultWorkflow = workflow2

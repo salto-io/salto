@@ -30,7 +30,7 @@ import { isPathAllowedBySdf } from './types/file_cabinet_types'
 const { awu } = collections.asynciterable
 
 export const SDF_CREATE_OR_UPDATE_GROUP_ID = 'SDF - create or update'
-export const SUITEAPP_SDF_DELETE_GROUP_ID = 'SDF - Delete'
+export const SDF_DELETE_GROUP_ID = 'SDF - Delete'
 export const SUITEAPP_CREATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Creating Files'
 export const SUITEAPP_UPDATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Updating Files'
 export const SUITEAPP_DELETING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Deleting Files'
@@ -38,6 +38,24 @@ export const SUITEAPP_CREATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Cr
 export const SUITEAPP_UPDATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Updating Records'
 export const SUITEAPP_DELETING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Deleting Records'
 export const SUITEAPP_UPDATING_CONFIG_GROUP_ID = 'Salto SuiteApp - Updating Config'
+
+export const isSdfCreateOrUpdateGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SDF_CREATE_OR_UPDATE_GROUP_ID)
+
+export const isSdfDeleteGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SDF_DELETE_GROUP_ID)
+
+export const isSuiteAppCreateRecordsGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_CREATING_RECORDS_GROUP_ID)
+
+export const isSuiteAppUpdateRecordsGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_UPDATING_RECORDS_GROUP_ID)
+
+export const isSuiteAppDeleteRecordsGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_DELETING_RECORDS_GROUP_ID)
+
+export const isSuiteAppUpdateConfigGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_UPDATING_CONFIG_GROUP_ID)
 
 export const SUITEAPP_FILE_CABINET_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,
@@ -191,7 +209,7 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
     { condition: isSuiteAppRecordDeletion, group: SUITEAPP_DELETING_RECORDS_GROUP_ID },
     { condition: isSuiteAppConfigChange, group: SUITEAPP_UPDATING_CONFIG_GROUP_ID },
     { condition: isSdfCreateOrUpdate, group: SDF_CREATE_OR_UPDATE_GROUP_ID },
-    { condition: isSdfDelete, group: SUITEAPP_SDF_DELETE_GROUP_ID },
+    { condition: isSdfDelete, group: SDF_DELETE_GROUP_ID },
   ]
 
   const changesWithGroups = await awu(changes.entries())

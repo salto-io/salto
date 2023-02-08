@@ -16,7 +16,7 @@
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
-  ElemID, InstanceElement, ObjectType, ReferenceExpression,
+  ElemID, InstanceElement, isReferenceExpression, ObjectType, ReferenceExpression, StaticFile, toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/element_references'
@@ -25,11 +25,13 @@ import { customsegmentType } from '../../src/autogen/types/standard_types/custom
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
+import { FilterOpts } from '../../src/filter'
 import { getDefaultAdapterConfig } from '../utils'
 
 
 describe('instance_references filter', () => {
-  describe('replace values', () => {
+  describe('onFetch', () => {
     let fileInstance: InstanceElement
     let customSegmentInstance: InstanceElement
     let instanceInElementsSource: InstanceElement
@@ -463,6 +465,69 @@ describe('instance_references filter', () => {
         .toEqual('[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]')
 
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    })
+  })
+  describe('preDeploy', () => {
+    let instanceWithReferences: InstanceElement
+    let customRecordTypeWithReferences: ObjectType
+    let fileInstanceWithContent: InstanceElement
+
+    const filterOpts = { changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as FilterOpts
+
+    beforeEach(() => {
+      const { type } = workflowType()
+      const instance = new InstanceElement('customworkflow1', type, {
+        [SCRIPT_ID]: 'customworkflow1',
+        workflowstate: {
+          workflowstate1: {
+            [SCRIPT_ID]: 'workflowstate1',
+          },
+        },
+      })
+      instanceWithReferences = new InstanceElement(
+        'customworkflow_test',
+        type,
+        {
+          [SCRIPT_ID]: 'customworkflow_test',
+          ref: new ReferenceExpression(instance.elemID.createNestedID(SCRIPT_ID), 'customworkflow1', instance),
+        }
+      )
+      customRecordTypeWithReferences = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        fields: {
+          custom_field: { refType: BuiltinTypes.STRING },
+        },
+        annotations: {
+          [SCRIPT_ID]: 'customrecord1',
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          ref: new ReferenceExpression(instance.elemID.createNestedID('workflowstate', 'workflowstate1', SCRIPT_ID), 'workflowstate1', instance),
+        },
+      })
+      customRecordTypeWithReferences.fields.custom_field.annotate({
+        ref: new ReferenceExpression(customRecordTypeWithReferences.elemID.createNestedID('attr', SCRIPT_ID), 'customrecord1', customRecordTypeWithReferences),
+      })
+      fileInstanceWithContent = new InstanceElement(
+        'file',
+        fileType(),
+        { content: new StaticFile({ filepath: '/file.txt', content: Buffer.from('some content') }) }
+      )
+    })
+    it('should resolve references in instance', async () => {
+      await filterCreator(filterOpts).preDeploy?.([toChange({ after: instanceWithReferences })])
+      expect(instanceWithReferences.value.ref).toEqual('[scriptid=customworkflow1]')
+    })
+    it('should resolve references in custom record type', async () => {
+      await filterCreator(filterOpts).preDeploy?.([toChange({ after: customRecordTypeWithReferences })])
+      expect(customRecordTypeWithReferences.annotations.ref).toEqual('[scriptid=customworkflow1.workflowstate1]')
+      expect(customRecordTypeWithReferences.fields.custom_field.annotations.ref).toEqual('[scriptid=customrecord1]')
+    })
+    it('should resolve static file', async () => {
+      await filterCreator(filterOpts).preDeploy?.([toChange({ after: fileInstanceWithContent })])
+      expect(fileInstanceWithContent.value.content).toEqual(Buffer.from('some content'))
+    })
+    it('should not resolve when groupID is not SDF', async () => {
+      await filterCreator({} as FilterOpts).preDeploy?.([toChange({ after: instanceWithReferences })])
+      expect(isReferenceExpression(instanceWithReferences.value.ref)).toBeTruthy()
     })
   })
 })

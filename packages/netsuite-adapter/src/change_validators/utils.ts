@@ -15,7 +15,7 @@
 */
 
 import _ from 'lodash'
-import { Element } from '@salto-io/adapter-api'
+import { Change, Element, isField } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
 export const isElementContainsStringValue = (
@@ -35,3 +35,12 @@ export const isElementContainsStringValue = (
   })
   return foundValue
 }
+
+export const cloneChange = <T extends Change>(change: T): T => ({
+  action: change.action,
+  data: _.mapValues(change.data, (element: Element) => (
+    isField(element)
+      ? element.parent.clone().fields[element.name]
+      : element.clone()
+  )),
+}) as T

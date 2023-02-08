@@ -80,7 +80,10 @@ const getAllIssueTypesForWorkflowScheme = async (
     .filter((ref): ref is ReferenceExpression => ref instanceof ReferenceExpression)
     .map((ref: ReferenceExpression) => elementSource.get(ref.elemID))
     .toArray()
-  const issueTypes = issueTypeSchemes.flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
+  const issueTypes = issueTypeSchemes
+    .filter(isDefined)
+    .filter(issueTypeScheme => Array.isArray(issueTypeScheme.value.issueTypeIds))
+    .flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
   return _.uniqBy(issueTypes, (issueType: ReferenceExpression) => issueType.elemID.getFullName())
 }
 

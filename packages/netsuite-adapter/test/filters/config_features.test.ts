@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, Change, ElemID, getChangeData, InstanceElement, isListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/config_features'
-import { FeaturesDeployError } from '../../src/errors'
+import { FeaturesDeployError } from '../../src/client/errors'
 import { CONFIG_FEATURES, NETSUITE } from '../../src/constants'
 import { featuresType } from '../../src/types/configuration_types'
 

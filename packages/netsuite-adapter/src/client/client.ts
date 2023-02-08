@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, ChangeDataType, isAdditionChange, isAdditionOrModificationChange, ObjectType, isObjectTypeChange, isFieldChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isField, ChangeDataType, isAdditionChange, isAdditionOrModificationChange, ObjectType, isObjectTypeChange, isFieldChange, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -35,11 +35,11 @@ import { SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_SDF_DELETE_GROUP_ID, SUITEAPP_C
   SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID,
   SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations } from '../types'
-import { CONFIG_FEATURES, APPLICATION_ID, SCRIPT_ID } from '../constants'
+import { APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
-import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError, MissingManifestFeaturesError } from '../errors'
+import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
 
 const { isDefined } = values
@@ -156,63 +156,6 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query)
   }
 
-  private static toFeaturesDeployPartialSuccessResult(
-    error: FeaturesDeployError,
-    changes: ReadonlyArray<Change<InstanceElement | ObjectType>>
-  ): Change<InstanceElement | ObjectType>[] {
-    // this case happens when all changes where deployed successfully,
-    // except of some features in config_features
-    const [[featuresChange], successfullyDeployedChanges] = _.partition(
-      changes, change => getChangeData(change).elemID.typeName === CONFIG_FEATURES
-    )
-
-    // if some changed features are not in errors.ids we want to include the change
-    if (isInstanceChange(featuresChange) && isModificationChange(featuresChange) && !_.isEqual(
-      _(featuresChange.data.before.value.feature)
-        .keyBy(feature => feature.id).omit(error.ids).value(),
-      _(featuresChange.data.after.value.feature)
-        .keyBy(feature => feature.id).omit(error.ids).value(),
-    )) {
-      successfullyDeployedChanges.push(featuresChange)
-    }
-
-    return successfullyDeployedChanges
-  }
-
-  private static getFailedSdfDeployChangesElemIDs(
-    error: ObjectsDeployError,
-    changes: ReadonlyArray<Change<InstanceElement | ObjectType>>,
-    dependencyGraph: Graph<SDFObjectNode>,
-  ): Set<string> {
-    const changeData = changes.map(getChangeData)
-    const failedElemIDs = changeData
-      .filter(elem => (
-        isInstanceElement(elem) && error.failedObjects.has(elem.value[SCRIPT_ID])
-      ) || (
-        error.failedObjects.has(elem.annotations[SCRIPT_ID])
-      ))
-      .map(elem => elem.elemID.getFullName())
-    const failedElemIDsWithDependencies = new Set(
-      NetsuiteClient.getDependenciesFromGraph(failedElemIDs, dependencyGraph)
-    )
-
-    // in case we cannot find the failed instances we return all as failed
-    return failedElemIDsWithDependencies.size === 0
-      ? new Set(changeData.map(elem => elem.elemID.getFullName()))
-      : failedElemIDsWithDependencies
-  }
-
-  private static getFailedSettingsErrorChanges(
-    changesToDeploy: Change[],
-    dependencyGraph: Graph<SDFObjectNode>,
-    failedConfigTypes: Set<string>
-  ): Set<string> {
-    const failedElemIdsByType = changesToDeploy
-      .filter(change => failedConfigTypes.has(getChangeData(change).elemID.typeName))
-      .map(change => getChangeData(change).elemID.getFullName())
-    return new Set(NetsuiteClient.getDependenciesFromGraph(failedElemIdsByType, dependencyGraph))
-  }
-
   private static async toCustomizationInfos(
     elements: (InstanceElement | ObjectType)[],
     elementsSourceIndex: LazyElementsSourceIndexes
@@ -251,7 +194,7 @@ export default class NetsuiteClient {
   public static async createDependencyMapAndGraph(
     changes: Change<InstanceElement | ObjectType>[],
     elementsSourceIndex: LazyElementsSourceIndexes,
-  ):Promise<DependencyInfo> {
+  ): Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
     const elemIdsAndCustInfos = await NetsuiteClient.getSDFObjectNodes(
       changes, elementsSourceIndex
@@ -281,33 +224,13 @@ export default class NetsuiteClient {
   }
 
   private static getDependenciesFromGraph(
-    elemIds: string[],
+    elemIds: ElemID[],
     dependencyGraph: Graph<SDFObjectNode>
-  ):string[] {
-    return elemIds.map(elementName => dependencyGraph.findNodeByKey(elementName))
+  ): Set<string> {
+    return new Set(elemIds.map(id => dependencyGraph.findNodeByKey(id.getFullName()))
       .filter(values.isDefined)
       .flatMap(node => dependencyGraph.getNodeDependencies(node))
-      .map(node => node.value.elemIdFullName)
-  }
-
-  public static getFailedManifestErrorElemIds(
-    error: ManifestValidationError,
-    dependencyInfo: DependencyInfo,
-    changes: ReadonlyArray<Change<InstanceElement | ObjectType>>
-  ): Set<string> {
-    const { dependencyMap, dependencyGraph } = dependencyInfo
-    const changeData = changes.map(getChangeData)
-    const baseElemIds = Array.from(dependencyMap.keys())
-      .filter(topLevelChangedElement =>
-        error.missingDependencyScriptIds.some(scriptid => dependencyMap.get(topLevelChangedElement)?.has(scriptid)))
-    const elementsToRemoveElemIDs = new Set(
-      NetsuiteClient.getDependenciesFromGraph(baseElemIds, dependencyGraph)
-    )
-
-    log.debug('remove elements which contain a scriptid that doesnt exist in target account: %o', elementsToRemoveElemIDs)
-    return elementsToRemoveElemIDs.size === 0
-      ? new Set(changeData.map(elem => elem.elemID.getFullName()))
-      : elementsToRemoveElemIDs
+      .map(node => node.value.elemIdFullName))
   }
 
   private async sdfDeploy({
@@ -342,6 +265,11 @@ export default class NetsuiteClient {
         changesToDeploy.map(getChangeData),
         elementsSourceIndex,
       )
+      const changesToApply = changesToDeploy.flatMap(change => [
+        change,
+        ...(fieldChangesByType[getChangeData(change).elemID.getFullName()] ?? []),
+      ])
+
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
         // eslint-disable-next-line no-await-in-loop
@@ -353,24 +281,16 @@ export default class NetsuiteClient {
           ),
           'sdfDeploy'
         )
-        return {
-          errors,
-          appliedChanges: changesToDeploy.flatMap(change => [
-            change,
-            ...(fieldChangesByType[getChangeData(change).elemID.getFullName()] ?? []),
-          ]),
-        }
+        return { errors, appliedChanges: changesToApply }
       } catch (error) {
         errors.push(error)
-        if (error instanceof ManifestValidationError) {
-          const elemIdNamesToRemove = NetsuiteClient.getFailedManifestErrorElemIds(
-            error, { dependencyMap, dependencyGraph }, changesToDeploy
-          )
-          _.remove(
-            changesToDeploy,
-            change => elemIdNamesToRemove.has(getChangeData(change).elemID.getFullName())
-          )
-        } else if (error instanceof MissingManifestFeaturesError) {
+        if (error instanceof FeaturesDeployError) {
+          return {
+            errors,
+            appliedChanges: toFeaturesDeployPartialSuccessResult(error, changesToApply),
+          }
+        }
+        if (error instanceof MissingManifestFeaturesError) {
           if (_.isEmpty(error.missingFeatures)
           || isSubsetOfArray(error.missingFeatures, additionalDependencies.include.features)) {
             return { errors, appliedChanges: [] }
@@ -378,39 +298,27 @@ export default class NetsuiteClient {
           additionalDependencies.include.features.push(...error.missingFeatures)
           // remove error because if the deploy succeeds there shouldn't be a change error
           errors.pop()
-        } else if (error instanceof FeaturesDeployError) {
-          const successfullyDeployedChanges = NetsuiteClient.toFeaturesDeployPartialSuccessResult(
-            error, changesToDeploy
-          )
-          return { errors, appliedChanges: successfullyDeployedChanges }
-        } else if (error instanceof ObjectsDeployError) {
-          const failedElemIDs = NetsuiteClient.getFailedSdfDeployChangesElemIDs(
-            error, changesToDeploy, dependencyGraph
-          )
-          log.debug('objects deploy error: sdf failed to deploy: %o', Array.from(failedElemIDs))
-          _.remove(
-            changesToDeploy,
-            change => failedElemIDs.has(getChangeData(change).elemID.getFullName())
-          )
-        } else if (error instanceof SettingsDeployError) {
-          const { failedConfigTypes } = error
-          if (!changesToDeploy.some(change =>
-            failedConfigTypes.has(getChangeData(change).elemID.typeName))) {
-            log.debug('settings deploy error: no changes matched the failedConfigType list: %o', Array.from(failedConfigTypes))
-            return { errors, appliedChanges: [] }
-          }
-          log.debug('settings deploy error: sdf failed to deploy: %o', Array.from(failedConfigTypes))
-          const failedElemIDs = NetsuiteClient.getFailedSettingsErrorChanges(
-            changesToDeploy, dependencyGraph, failedConfigTypes
-          )
-          _.remove(
-            changesToDeploy,
-            change => failedElemIDs.has(getChangeData(change).elemID.getFullName())
-          )
-        } else {
-          // unknown error
+          // eslint-disable-next-line no-continue
+          continue
+        }
+        const elemIdsToRemove = NetsuiteClient.getDependenciesFromGraph(
+          getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy),
+          dependencyGraph
+        )
+        const removedChanges = _.remove(
+          changesToDeploy,
+          change => elemIdsToRemove.has(getChangeData(change).elemID.getFullName())
+        )
+        if (removedChanges.length === 0) {
+          log.error('no changes were removed from error: %o', error)
           return { errors, appliedChanges: [] }
         }
+        log.debug(
+          'removed %d changes (%o) from error: %o',
+          removedChanges.length,
+          removedChanges.map(change => getChangeData(change).elemID.getFullName()),
+          error
+        )
       }
     }
     return { errors, appliedChanges: [] }

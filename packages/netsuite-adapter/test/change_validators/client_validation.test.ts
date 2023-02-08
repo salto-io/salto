@@ -19,7 +19,7 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../sr
 import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
-import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 

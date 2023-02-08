@@ -38,20 +38,26 @@ const TASK_CHECK_INTERVAL_MILLI = 1000
 
 const log = logger(module)
 
-class InvalidResponseError extends Error {
+class PublishDraftError extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+class InvalidResponseError extends PublishDraftError {
   constructor() {
     super('Failed to publish workflow scheme draft due to invalid response')
   }
 }
 
-class TooManyRetriesError extends Error {
+class TooManyRetriesError extends PublishDraftError {
   constructor() {
     super('Failed to publish workflow scheme draft after too many retries')
   }
 }
 
 const shouldThrowError = (error: Error): boolean =>
-  error instanceof InvalidResponseError || error instanceof TooManyRetriesError
+  error instanceof PublishDraftError
 
 function validateTaskResponse(
   response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>

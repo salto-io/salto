@@ -150,7 +150,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
     name: 'organizationsFilter',
     onFetch: async elements => {
       if (resolveOrganizationIDs === false) {
-        log.debug('Resolving organization IDs to organization names was disabled')
+        log.debug('Resolving organization IDs to organization names was disabled (onFetch)')
         return
       }
       const relevantInstances = elements.filter(isInstanceElement)
@@ -182,6 +182,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       if (resolveOrganizationIDs === false) {
+        log.debug('Resolving organization IDs to organization names was disabled (preDeploy)')
         return
       }
       const relevantChanges = changes.filter(isRelevantChange)
@@ -215,6 +216,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
       if (resolveOrganizationIDs === false) {
+        log.debug('Resolving organization IDs to organization names was disabled (onDeploy)')
         return
       }
       const relevantChanges = changes.filter(isRelevantChange)

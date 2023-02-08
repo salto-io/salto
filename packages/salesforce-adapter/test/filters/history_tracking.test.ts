@@ -36,7 +36,7 @@ import {
 } from '../../src/constants'
 
 describe('History tracking filter', () => {
-  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
   describe('onFetch', () => {
     describe('When fetching an object with history tracking disabled', () => {
@@ -60,14 +60,14 @@ describe('History tracking filter', () => {
             refType: Types.primitiveDataTypes.Text,
             annotations: {
               apiName: 'fieldWithHistoryTracking',
-              trackHistory: true,
+              [FIELD_HISTORY_TRACKING_ENABLED]: true,
             },
           },
           fieldWithoutHistoryTracking: {
             refType: Types.primitiveDataTypes.Text,
             annotations: {
               apiName: 'fieldWithoutHistoryTracking',
-              trackHistory: false,
+              [FIELD_HISTORY_TRACKING_ENABLED]: false,
             },
           },
         },
@@ -81,9 +81,15 @@ describe('History tracking filter', () => {
         const trackedFieldNames = elements[0].annotations[HISTORY_TRACKED_FIELDS]
         expect(trackedFieldNames).toBeDefined()
         expect(trackedFieldNames).toEqual([referenceForField('fieldWithHistoryTracking')])
-        expect(elements[0].fields.fieldWithHistoryTracking.annotations.trackHistory).not.toBeDefined()
-        expect(elements[0].fields.fieldWithoutHistoryTracking.annotations.trackHistory).not.toBeDefined()
-        expect(elements[0].annotations[OBJECT_HISTORY_TRACKING_ENABLED]).not.toBeDefined()
+        expect(elements[0].fields.fieldWithHistoryTracking.annotations)
+          .not
+          .toHaveProperty(FIELD_HISTORY_TRACKING_ENABLED)
+        expect(elements[0].fields.fieldWithoutHistoryTracking.annotations)
+          .not
+          .toHaveProperty([FIELD_HISTORY_TRACKING_ENABLED])
+        expect(elements[0].annotations)
+          .not
+          .toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED)
       })
     })
   })
@@ -272,6 +278,95 @@ describe('History tracking filter', () => {
           expectFieldTrackingRemovalChange(changes[1])
         })
       })
+    })
+  })
+  describe('End to end', () => {
+    const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking', {
+      annotations: {
+        [OBJECT_HISTORY_TRACKING_ENABLED]: true,
+      },
+      fields: {
+        fieldWithHistoryTracking: {
+          refType: Types.primitiveDataTypes.Text,
+          annotations: {
+            apiName: 'FieldWithHistoryTracking',
+            [FIELD_HISTORY_TRACKING_ENABLED]: true,
+          },
+        },
+        fieldWithoutHistoryTracking: {
+          refType: Types.primitiveDataTypes.Text,
+          annotations: {
+            apiName: 'FieldWithoutHistoryTracking',
+            [FIELD_HISTORY_TRACKING_ENABLED]: false,
+          },
+        },
+      },
+    })
+    it('should have the same output between onFetch and preDeploy=>onDeploy when adding an object', async () => {
+      const elements = [typeWithHistoryTrackedFields.clone()]
+      await filter.onFetch(elements)
+
+      const changes = [toChange({ after: elements[0] })]
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      expect(changes).toHaveLength(1)
+      expect(getChangeData(changes[0])).toEqual(elements[0])
+    })
+    it('should have the same output between onFetch and preDeploy=>onDeploy when adding a tracked field', async () => {
+      const elements = [typeWithHistoryTrackedFields.clone()]
+      await filter.onFetch(elements)
+
+      const after = elements[0].clone()
+      after.annotations[HISTORY_TRACKED_FIELDS]
+        .push(new ReferenceExpression(typeWithHistoryTrackedFields.fields.fieldWithoutHistoryTracking.elemID))
+      const changes = [toChange({ before: elements[0], after })]
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      expect(changes).toHaveLength(1)
+      expect(getChangeData(changes[0])).toEqual(after)
+    })
+    it('should have the same output between onFetch and preDeploy=>onDeploy when removing a tracked field', async () => {
+      const elements = [typeWithHistoryTrackedFields.clone()]
+      await filter.onFetch(elements)
+
+      const after = elements[0].clone()
+      after.annotations[HISTORY_TRACKED_FIELDS] = []
+      const changes = [toChange({ before: elements[0], after })]
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      expect(changes).toHaveLength(1)
+      expect(getChangeData(changes[0])).toEqual(after)
+    })
+    it('should have the same output between onFetch and preDeploy=>onDeploy when disabling history tracking', async () => {
+      const elements = [typeWithHistoryTrackedFields.clone()]
+      await filter.onFetch(elements)
+
+      const after = elements[0].clone()
+      delete after.annotations[HISTORY_TRACKED_FIELDS]
+      const changes = [toChange({ before: elements[0], after })]
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      expect(changes).toHaveLength(1)
+      expect(getChangeData(changes[0])).toEqual(after)
+    })
+
+    it('should have the same output between onFetch and preDeploy=>onDeploy when enabling history tracking', async () => {
+      const type = typeWithHistoryTrackedFields.clone()
+      type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = false
+      type.fields.fieldWithHistoryTracking.annotations[FIELD_HISTORY_TRACKING_ENABLED] = false
+      const elements = [type]
+      await filter.onFetch(elements)
+
+      const after = elements[0].clone()
+      after.annotations[HISTORY_TRACKED_FIELDS] = [
+        new ReferenceExpression(typeWithHistoryTrackedFields.fields.fieldWithoutHistoryTracking.elemID),
+      ]
+
+      const changes = [toChange({ before: elements[0], after })]
+      await filter.preDeploy(changes)
+      await filter.onDeploy(changes)
+      expect(changes).toHaveLength(1)
+      expect(getChangeData(changes[0])).toEqual(after)
     })
   })
 })

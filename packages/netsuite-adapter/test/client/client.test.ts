@@ -52,7 +52,7 @@ describe('NetsuiteClient', () => {
     describe('deploy', () => {
       beforeEach(() => {
         jest.resetAllMocks()
-        deployParams[1].include.features = []
+        deployParams[0].include.features = []
       })
 
       it('should try again to deploy after ObjectsDeployError', async () => {
@@ -244,7 +244,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange, failedChangeDependency],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [manifestValidationError],
@@ -270,7 +270,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange, failedChangeDependency],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [manifestValidationError],
@@ -291,13 +291,13 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         })
         expect(await client.deploy(
           [change],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [],
           appliedChanges: [change],
         })
-        expect(deployParams[1].include.features).toContain('SUBSCRIPTIONBILLING')
+        expect(deployParams[0].include.features).toContain('SUBSCRIPTIONBILLING')
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 

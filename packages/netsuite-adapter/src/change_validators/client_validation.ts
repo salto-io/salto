@@ -59,12 +59,12 @@ const getFailedChangesWithDependencies = (
   dependencyMap: Map<string, Set<string>>,
   error: ManifestValidationError,
 ): FailedChangeWithDependencies[] => groupChanges
-  .filter(change => failedElementsIds.has(getChangeData(change).elemID.getFullName())
-    || (isFieldChange(change) && failedElementsIds.has(getChangeData(change).parent.elemID.getFullName())))
   .map(change => ({
     change,
     dependencies: error.missingDependencyScriptIds.filter(scriptid =>
-      dependencyMap.get(getChangeData(change).elemID.getFullName())?.has(scriptid)),
+      dependencyMap.get(getChangeData(change).elemID.getFullName())?.has(scriptid)
+      || (isFieldChange(change)
+      && dependencyMap.get(getChangeData(change).parent.elemID.getFullName())?.has(scriptid))),
   }))
   .filter(elemAndDependency => !(elemAndDependency.dependencies.length === 0))
 
@@ -84,7 +84,6 @@ const changeValidator: ClientChangeValidator = async (
   additionalDependencies,
   filtersRunner,
   elementsSourceIndex,
-  deployReferencedElements,
 ) => {
   const clonedChanges = changes.map(change => ({
     action: change.action,
@@ -117,7 +116,7 @@ const changeValidator: ClientChangeValidator = async (
           change => isInstanceChange(change) || isObjectTypeChange(change)
         ) as Change<InstanceElement | ObjectType>[]
         const { dependencyMap } = await NetsuiteClient.createDependencyMapAndGraph(
-          topLevelChanges, deployReferencedElements, elementsSourceIndex
+          topLevelChanges, elementsSourceIndex
         )
         return awu(errors).flatMap(async error => {
           if (error instanceof ObjectsDeployError) {
@@ -158,7 +157,7 @@ const changeValidator: ClientChangeValidator = async (
               .map(changeAndMissingDependencies => ({
                 message: 'This element depends on missing elements',
                 severity: 'Error' as const,
-                elemID: getChangeData(changeAndMissingDependencies.element).elemID,
+                elemID: getChangeData(changeAndMissingDependencies.change).elemID,
                 detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. Please make sure that all the bundles from the source account are installed and updated in the target account.`,
               }))
           }

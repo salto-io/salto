@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, isObjectType, ChangeDataType, isAdditionChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isInstanceElement, isField, ChangeDataType, isAdditionChange, isAdditionOrModificationChange, ObjectType, isObjectTypeChange, isFieldChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -40,7 +40,6 @@ import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, ObjectsDeployError, SettingsDeployError, ManifestValidationError, MissingManifestFeaturesError } from '../errors'
-import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 import { Graph, GraphNode } from './graph_utils'
 
 const { isDefined } = values
@@ -232,8 +231,7 @@ export default class NetsuiteClient {
   }
 
   private static async getSDFObjectNodes(
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
+    changes: Change<InstanceElement | ObjectType>[],
     elementsSourceIndex: LazyElementsSourceIndexes,
   ): Promise<SDFObjectNode[]> {
     const elementsAndChangeTypes = changes
@@ -250,20 +248,19 @@ export default class NetsuiteClient {
         scriptid: getScriptIdFromElement(elementsAndChangeType.element),
         changeType: elementsAndChangeType.changeType,
         customizationInfos: await NetsuiteClient.toCustomizationInfos(
-          [elementsAndChangeType.element], deployReferencedElements, elementsSourceIndex
+          [elementsAndChangeType.element], elementsSourceIndex
         ),
       }))
       .toArray()
   }
 
   public static async createDependencyMapAndGraph(
-    changes: ReadonlyArray<Change>,
-    deployReferencedElements: boolean,
+    changes: Change<InstanceElement | ObjectType>[],
     elementsSourceIndex: LazyElementsSourceIndexes,
   ):Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
     const elemIdsAndCustInfos = await NetsuiteClient.getSDFObjectNodes(
-      changes, deployReferencedElements, elementsSourceIndex
+      changes, elementsSourceIndex
     )
     const dependencyGraph = new Graph<SDFObjectNode>(
       'elemIdFullName', elemIdsAndCustInfos.map(elemIdsAndCustInfo => new GraphNode(elemIdsAndCustInfo))
@@ -343,7 +340,7 @@ export default class NetsuiteClient {
 
     const errors: Error[] = []
     const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(
-      changes, deployReferencedElements, elementsSourceIndex
+      changesToDeploy, elementsSourceIndex
     )
     while (changesToDeploy.length > 0) {
       // eslint-disable-next-line no-await-in-loop

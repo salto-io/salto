@@ -48,7 +48,7 @@ const generateStatusMigrationInvalidError = (change: ModificationChange<Instance
   detailedMessage: "The provided statusMigration is invalid. One of the objects is not formatted properly, with an issue type, status and new status. Please make sure it's well formatted and includes all required issue types and statuses. Learn more: https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes",
 })
 
-const StatusMigrationHasInvalidItem = (change: ModificationChange<InstanceElement>): boolean => {
+const statusMigrationHasInvalidItem = (change: ModificationChange<InstanceElement>): boolean => {
   const instance = getChangeData(change)
   const { statusMigrations } = instance.value
   if (statusMigrations === undefined) {
@@ -65,7 +65,7 @@ const StatusMigrationHasInvalidItem = (change: ModificationChange<InstanceElemen
  */
 export const statusMigrationChangeValidator: ChangeValidator = async changes => {
   const relevantChanges = getRelevantChanges(changes)
-  const invalidItemErrors = _.remove(relevantChanges, StatusMigrationHasInvalidItem)
+  const invalidItemErrors = _.remove(relevantChanges, statusMigrationHasInvalidItem)
     .map(generateStatusMigrationInvalidError)
   const repeatingItemErrors = relevantChanges.map(change => {
     if (getChangeData(change).value.statusMigrations === undefined) {

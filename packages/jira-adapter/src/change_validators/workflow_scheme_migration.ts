@@ -77,6 +77,7 @@ const getAllIssueTypesForWorkflowScheme = async (
 ): Promise<ReferenceExpression[]> => {
   const issueTypeSchemes = await awu(assignedProjects)
     .map(instance => instance.value.issueTypeScheme)
+    .filter((ref): ref is ReferenceExpression => ref instanceof ReferenceExpression)
     .map((ref: ReferenceExpression) => elementSource.get(ref.elemID))
     .toArray()
   const issueTypes = issueTypeSchemes.flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)

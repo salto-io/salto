@@ -158,6 +158,7 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   organizationsFilter,
   tagsFilter,
+  // supportAddress should run before referencedIdFieldsFilter
   supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,

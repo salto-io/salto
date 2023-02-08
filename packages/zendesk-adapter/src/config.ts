@@ -643,6 +643,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   support_address: {
     transformation: {
       sourceTypeName: 'support_addresses__recipient_addresses',
+      idFields: ['name', '&email'],
       fieldTypeOverrides: [
         {
           fieldName: 'cname_status',

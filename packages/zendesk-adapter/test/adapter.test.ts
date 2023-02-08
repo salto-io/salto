@@ -448,7 +448,7 @@ describe('adapter', () => {
           'zendesk.sla_policy_order',
           'zendesk.sla_policy_order.instance',
           'zendesk.support_address',
-          'zendesk.support_address.instance.myBrand',
+          'zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv',
           'zendesk.support_addresses',
           'zendesk.tag',
           'zendesk.tag.instance.Social',
@@ -621,7 +621,7 @@ describe('adapter', () => {
           'zendesk.workspaces',
         ])
 
-        const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand'))
+        const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'))
         const brand = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
         expect(brand).toBeDefined()
         if (brand === undefined) {

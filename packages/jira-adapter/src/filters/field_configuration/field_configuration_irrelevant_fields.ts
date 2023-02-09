@@ -22,6 +22,7 @@ import { FIELD_TYPE_NAME } from '../fields/constants'
 const log = logger(module)
 
 const filter: FilterCreator = ({ fetchQuery }) => ({
+  name: 'fieldConfigurationIrrelevantFields',
   onFetch: async elements => {
     if (!fetchQuery.isTypeMatch(FIELD_TYPE_NAME)) {
       log.warn('Field type is not included in the fetch list so we cannot know what fields is in trash. Skipping the field_configuration_trashed_fields')

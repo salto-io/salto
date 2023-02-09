@@ -33,6 +33,7 @@ export const DEFAULT_CUSTOM_FIELD_OPTION_FIELD_NAME = 'default_custom_field_opti
 const log = logger(module)
 
 type CustomFieldOptionsFilterCreatorParams = {
+  filterName: string
   parentTypeName: string
   childTypeName: string
 }
@@ -40,8 +41,9 @@ type CustomFieldOptionsFilterCreatorParams = {
 const { makeArray } = collections.array
 
 export const createCustomFieldOptionsFilterCreator = (
-  { parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams
+  { filterName, parentTypeName, childTypeName }: CustomFieldOptionsFilterCreatorParams
 ): FilterCreator => ({ config, client, elementsSource }) => ({
+  name: filterName,
   onFetch: async (elements: Element[]): Promise<void> => {
     const parentType = elements
       .filter(isObjectType)

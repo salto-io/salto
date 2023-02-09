@@ -119,6 +119,7 @@ const deployIssueTypeScreenSchema = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'issueTypeScreenSchemeFilter',
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
     const issueTypeScreenSchemaType = types

@@ -51,6 +51,7 @@ const alignNonRawWithRaw = (change: Change<InstanceElement>): void => {
 }
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'customStatus',
   onFetch: async (elements: Element[]): Promise<void> => {
     const defaultCustomStatuses = elements
       .filter(isInstanceElement)

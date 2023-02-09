@@ -146,6 +146,7 @@ const createCustomLabelsChange = async (customLabelChanges: Change[]): Promise<C
 const filterCreator: LocalFilterCreator = () : FilterWith<'onFetch'> & FilterWith<'onDeploy'> => {
   let customLabelChanges: Change[]
   return {
+    name: 'splitCustomLabels',
     onFetch: async elements => {
       const customLabelType = await awu(elements)
         .filter(isObjectType)

@@ -23,6 +23,7 @@ export const TYPE_NAME = VIEW_TYPE_NAME
  * Add view order element with all the views ordered
  */
 const filterCreator = createReorderFilterCreator({
+  filterName: 'viewOrderFilter',
   typeName: TYPE_NAME,
   orderFieldName: ORDER_FIELD_NAME,
   iterateesToSortBy: [

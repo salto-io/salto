@@ -13,15 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, Element, ElemID, isElement } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, Element, ElemID, Value, isElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { resolveTypeShallow } from './utils'
 
 const { awu } = collections.asynciterable
 
 const { findDuplicates } = collections.array
+const { isDefined } = values
 const log = logger(module)
 
 export const buildElementsSourceFromElements = (
@@ -79,19 +80,23 @@ export const buildElementsSourceFromElements = (
 export const buildLazyShallowTypeResolverElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
-  const resolved: Set<ElemID> = new Set()
-  const getElementWithResolvedShallowType = async (id: ElemID): ReturnType<ReadOnlyElementsSource['get']> => {
-    const element = await elementsSource.get(id)
-    if (!isElement(element) || resolved.has(id)) {
-      return element
+  const resolved: Record<string, Element> = {}
+  const getElementWithResolvedShallowType = async (value: Value): ReturnType<ReadOnlyElementsSource['get']> => {
+    if (!isElement(value)) {
+      return value
     }
-    await resolveTypeShallow(element, elementsSource)
-    resolved.add(id)
-    return element
+    const id = value.elemID.getFullName()
+    const resolvedElement = resolved[id]
+    if (isDefined(resolvedElement)) {
+      return resolvedElement
+    }
+    await resolveTypeShallow(value, elementsSource)
+    resolved[id] = value
+    return value
   }
   return {
-    get: async (id: ElemID) => getElementWithResolvedShallowType(id),
-    getAll: async () => awu(await elementsSource.list())
+    get: async (id: ElemID) => getElementWithResolvedShallowType(await elementsSource.get(id)),
+    getAll: async () => awu(await elementsSource.getAll())
       .map(getElementWithResolvedShallowType),
     list: async () => elementsSource.list(),
     has: async (id: ElemID) => elementsSource.has(id),

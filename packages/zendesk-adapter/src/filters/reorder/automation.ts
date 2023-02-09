@@ -22,6 +22,7 @@ export const TYPE_NAME = 'automation'
  * Add automation order element with all the automations ordered
  */
 const filterCreator = createReorderFilterCreator({
+  filterName: 'automationOrderFilter',
   typeName: TYPE_NAME,
   orderFieldName: ORDER_FIELD_NAME,
   iterateesToSortBy: [

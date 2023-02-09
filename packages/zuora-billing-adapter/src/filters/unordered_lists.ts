@@ -41,6 +41,7 @@ const sortCards = (gateway: InstanceElement): void => {
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'sortUnorderedListFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const roleInstances = (elements
       .filter(isInstanceElement)

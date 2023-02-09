@@ -15,6 +15,7 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
+import { deployment } from '@salto-io/adapter-components'
 import createSalesforceChangeValidator, { changeValidators } from '../src/change_validator'
 import mockAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
@@ -51,10 +52,15 @@ describe('createSalesforceChangeValidator', () => {
         expect(validator).toBeDefined()
       })
       it('should create a validator with all internal validators enabled', () => {
-        expect(createChangeValidator).toHaveBeenCalledTimes(1)
+        expect(createChangeValidator).toHaveBeenCalledTimes(
+          1
+        )
         expect(
           createChangeValidatorMock.mock.calls[0][0]
-        ).toHaveLength(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length)
+        ).toHaveLength(
+          Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length
+          + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
+        )
       })
     })
     describe('with a disabled validator config', () => {
@@ -73,7 +79,10 @@ describe('createSalesforceChangeValidator', () => {
       it('should customFieldType in the disabled validator list', () => {
         const disabledValidators = [changeValidators.customFieldType.creator({}, false, client)]
         expect(createChangeValidator).toHaveBeenCalledWith(
-          expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1),
+          expect.toBeArrayOfSize(
+            Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1
+            + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
+          ),
           disabledValidators
         )
       })
@@ -99,8 +108,11 @@ describe('createSalesforceChangeValidator', () => {
           validator = createValidatorWithConfig(true)
           expect(validator).toBeDefined()
           expect(createChangeValidator).toHaveBeenCalledWith(
-            expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInValidate).length),
-            expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => !cv.defaultInValidate).length)
+            expect.toBeArrayOfSize(
+              Object.values(changeValidators).filter(cv => cv.defaultInValidate).length
+              + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
+            ),
+            []
           )
         })
       })
@@ -109,7 +121,10 @@ describe('createSalesforceChangeValidator', () => {
           validator = createValidatorWithConfig(false)
           expect(validator).toBeDefined()
           expect(createChangeValidator).toHaveBeenCalledWith(
-            expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length),
+            expect.toBeArrayOfSize(
+              Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length
+              + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
+            ),
             []
           )
         })
@@ -128,8 +143,11 @@ describe('createSalesforceChangeValidator', () => {
     it('should create validator according to the defaultInValidate field', () => {
       expect(validator).toBeDefined()
       expect(createChangeValidator).toHaveBeenCalledWith(
-        expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => cv.defaultInValidate).length),
-        expect.toBeArrayOfSize(Object.values(changeValidators).filter(cv => !cv.defaultInValidate).length)
+        expect.toBeArrayOfSize(
+          Object.values(changeValidators).filter(cv => cv.defaultInValidate).length
+          + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
+        ),
+        []
       )
     })
   })

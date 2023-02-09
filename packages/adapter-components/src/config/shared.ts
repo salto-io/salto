@@ -221,3 +221,20 @@ export const validateSupportedTypes = (
     throw Error(`Invalid type names in ${fetchConfigPath}: ${invalidIncludedTypes} does not match any of the supported types.`)
   }
 }
+
+/**
+ * Verify defaultMissingUserFallback value in deployConfig is valid
+ */
+export const validateDeployConfig = (
+  deployConfigPath: string,
+  userDeployConfig: UserDeployConfig,
+  userValidationFunc: (userValue: string) => boolean
+): void => {
+  const { defaultMissingUserFallback } = userDeployConfig
+  if (defaultMissingUserFallback !== undefined && defaultMissingUserFallback !== DEPLOYER_FALLBACK_VALUE) {
+    const isValidUserValue = userValidationFunc(defaultMissingUserFallback)
+    if (!isValidUserValue) {
+      throw Error(`Invalid user value in ${deployConfigPath}.defaultMissingUserFallback: ${defaultMissingUserFallback}. Value can be either ${DEPLOYER_FALLBACK_VALUE} or a valid user name`)
+    }
+  }
+}

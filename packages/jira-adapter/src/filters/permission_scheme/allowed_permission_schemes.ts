@@ -23,6 +23,7 @@ const log = logger(module)
 const filter: FilterCreator = ({ elementsSource }) => {
   let unsupportedPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
+    name: 'allowedPermissionsSchemeFilter',
     preDeploy: async changes => {
       const allowedPermissions = await getAllowedPermissionTypes(elementsSource)
       if (!allowedPermissions) {

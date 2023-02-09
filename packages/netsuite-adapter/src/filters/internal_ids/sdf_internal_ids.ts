@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isField, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
@@ -221,6 +221,7 @@ const addInternalIdToCustomListValues = async (
  * that are returned from SOAP API (e.g., Employee)
  */
 const filterCreator: FilterCreator = ({ client }) => ({
+  name: 'SDFInternalIds',
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return
@@ -241,18 +242,12 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const changesData = changes.map(getChangeData)
+    const changesData = changes.filter(isAdditionOrModificationChange).map(getChangeData)
     getSupportedInstances(changesData).forEach(inst => {
       delete inst.value[INTERNAL_ID]
     })
     changesData.filter(isObjectType).filter(isCustomRecordType).forEach(type => {
       delete type.annotations[INTERNAL_ID]
-    })
-    _.uniqBy(
-      changesData.filter(isField).map(field => field.parent),
-      type => type.elemID.name
-    ).filter(type => isCustomRecordType(type)).forEach(customRecordType => {
-      delete customRecordType.annotations[INTERNAL_ID]
     })
     changesData.filter(isInstanceElement).filter(isCustomListInstance).forEach(instance => {
       getCustomListValues(instance).forEach(([value]) => {

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
@@ -21,7 +20,6 @@ import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { DeployResult } from './types'
 import { NetsuiteConfig } from './config'
 
-const log = logger(module)
 
 export type Filter = filter.Filter<void, DeployResult>
 
@@ -33,6 +31,7 @@ export type FilterOpts = {
   elementsSource: ReadOnlyElementsSource
   isPartial: boolean
   config: NetsuiteConfig
+  changesGroupId?: string
 }
 
 export type FilterCreator = filter.FilterCreator<
@@ -40,38 +39,3 @@ export type FilterCreator = filter.FilterCreator<
   FilterOpts,
   DeployResult
 >
-
-const wrapFilterWithLog = (filterName: string, filterCreator: FilterCreator): FilterCreator => {
-  const wrap: FilterCreator = opts => {
-    const {
-      onFetch: originalOnFetch,
-      preDeploy: originalPreDeploy,
-      deploy: originalDeploy,
-      onDeploy: originalOnDeploy,
-      onPostFetch: originalOnPostFetch,
-    } = filterCreator(opts)
-    const onFetch: typeof originalOnFetch = originalOnFetch
-      ? elements => log.time(() => originalOnFetch(elements), `onFetch.${filterName}`)
-      : undefined
-    const preDeploy: typeof originalPreDeploy = originalPreDeploy
-      ? changes => log.time(() => originalPreDeploy(changes), `preDeploy.${filterName}`)
-      : undefined
-    const deploy: typeof originalDeploy = originalDeploy
-      ? changes => log.time(() => originalDeploy(changes), `deploy.${filterName}`)
-      : undefined
-    const onDeploy: typeof originalOnDeploy = originalOnDeploy
-      ? (changes, deployInfo) => log.time(() => originalOnDeploy(changes, deployInfo), `onDeploy.${filterName}`)
-      : undefined
-    const onPostFetch: typeof originalOnPostFetch = originalOnPostFetch
-      ? changes => log.time(() => originalOnPostFetch(changes), `onPostFetch.${filterName}`)
-      : undefined
-
-    return { onFetch, preDeploy, deploy, onDeploy, onPostFetch }
-  }
-  return wrap
-}
-
-export const createFilterCreatorsWithLogs = (
-  filtersCreators: Record<string, FilterCreator>
-): FilterCreator[] => Object.entries(filtersCreators)
-  .map(([filterName, filterCreator]) => wrapFilterWithLog(filterName, filterCreator))

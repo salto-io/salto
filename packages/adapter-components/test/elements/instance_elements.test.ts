@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { generateInstanceNameFromConfig } from '../../src/elements/instance_elements'
+import { ElemID } from '@salto-io/adapter-api'
+import { generateInstanceNameFromConfig, getInstanceNaclName } from '../../src/elements/instance_elements'
 import { NameMappingOptions } from '../../src/config'
-
 
 describe('generateInstanceNameFromConfig', () => {
   it('should return the name of the instance based on the type config', () => {
@@ -114,5 +114,26 @@ describe('generateInstanceNameFromConfig', () => {
         supportedTypes: {},
       }
     )).toBe('Id')
+  })
+})
+
+describe('getInstanceNaclName', () => {
+  it('should return a naclName of the parentName without __ suffix, when the name is empty', () => {
+    const naclNameEmptyName = getInstanceNaclName({
+      entry: {},
+      name: '',
+      parentName: 'parent',
+      adapterName: 'zendesk',
+      typeElemId: new ElemID('zendesk', 'test'),
+    })
+    const naclNameRegular = getInstanceNaclName({
+      entry: {},
+      name: 'name',
+      parentName: 'parent',
+      adapterName: 'zendesk',
+      typeElemId: new ElemID('zendesk', 'test'),
+    })
+    expect(naclNameEmptyName).toBe('parent')
+    expect(naclNameRegular).toBe('parent__name')
   })
 })

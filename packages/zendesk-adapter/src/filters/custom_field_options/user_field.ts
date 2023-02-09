@@ -20,6 +20,7 @@ import { USER_FIELD_TYPE_NAME } from '../../constants'
  * Deploys user field and user field options
  */
 const filterCreator = createCustomFieldOptionsFilterCreator({
+  filterName: 'userFieldFilter',
   parentTypeName: USER_FIELD_TYPE_NAME,
   childTypeName: 'user_field__custom_field_options',
 })

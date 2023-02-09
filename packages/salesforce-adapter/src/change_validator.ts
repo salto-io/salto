@@ -28,6 +28,7 @@ import mapKeysValidator from './change_validators/map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_defaults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
 import omitDataValidator from './change_validators/omit_data'
+import dataChangeValidator from './change_validators/data_change'
 import cpqValidator from './change_validators/cpq_trigger'
 import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
@@ -39,8 +40,8 @@ import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
 import duplicateRulesSortOrder from './change_validators/duplicate_rules_sort_order'
 import lastLayoutRemoval from './change_validators/last_layout_removal'
+import currencyIsoCodes from './change_validators/currency_iso_codes'
 import SalesforceClient from './client/client'
-
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
@@ -74,9 +75,11 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   invalidListViewFilterScope: { creator: () => invalidListViewFilterScope, ...defaultAlwaysRun },
   caseAssignmentRulesValidator: { creator: () => caseAssignmentRulesValidator, ...defaultAlwaysRun },
   omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
+  dataChange: { creator: () => dataChangeValidator, defaultInDeploy: true, defaultInValidate: false },
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
   duplicateRulesSortOrder: { creator: () => duplicateRulesSortOrder, ...defaultAlwaysRun },
+  currencyIsoCodes: { creator: () => currencyIsoCodes, ...defaultAlwaysRun },
   lastLayoutRemoval: { creator: () => lastLayoutRemoval, ...defaultAlwaysRun },
 }
 
@@ -95,10 +98,13 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
     ([name]) => config.validators?.[name as ChangeValidatorName] === false
   )
   const changeValidator = createChangeValidator(
-    activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
+    activeValidators
+      .map(([_name, validator]) => validator.creator(config, isSandbox, client))
+      .concat(deployment.changeValidators.getDefaultChangeValidators()),
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
-  // Resolve the types of all the elements before the ChangeValidator runs.
+  // Returns a change validator with elementsSource that lazily resolves types using resolveTypeShallow
+  // upon usage. This is relevant to Change Validators that get instances from the elementsSource.
   return async (changes, elementSource) => ((elementSource === undefined)
     ? changeValidator(changes, elementSource)
     : changeValidator(changes, buildLazyShallowTypeResolverElementsSource(elementSource)))

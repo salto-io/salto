@@ -25,6 +25,7 @@ import { LOGO_FIELD } from './brand_logo'
  * for they are covered as brand_logo instances
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'removeBrandLogoFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandChanges, leftoverChanges] = _.partition(
       changes,

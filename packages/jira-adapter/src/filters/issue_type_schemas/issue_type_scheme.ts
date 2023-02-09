@@ -104,6 +104,7 @@ const deployIssueTypeSchema = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'issueTypeSchemeFilter',
   onFetch: async elements => {
     const issueTypeSchemaType = elements.find(
       element => isObjectType(element)

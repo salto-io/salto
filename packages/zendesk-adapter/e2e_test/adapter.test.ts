@@ -165,7 +165,7 @@ const cleanup = async (adapterAttr: Reals): Promise<void> => {
   expect(fetchResult.errors).toEqual([
     {
       severity: 'Warning',
-      message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
+      message: "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
     },
   ])
   const { elements } = fetchResult
@@ -239,7 +239,7 @@ describe('Zendesk adapter E2E', () => {
       expect(fetchResult.errors).toEqual([
         {
           severity: 'Warning',
-          message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
+          message: "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         },
       ])
       adapterAttr = realAdapter(
@@ -254,7 +254,7 @@ describe('Zendesk adapter E2E', () => {
      */
     const getElementsAfterFetch = (originalInstances: InstanceElement[]):
       Record<string, InstanceElement | undefined> => {
-      const nameToElemId = _.keyBy(originalInstances, instance => instance.elemID.name)
+      const nameToElemId = _.keyBy(originalInstances, instance => instance.elemID.getFullName())
       return _.mapValues(
         nameToElemId,
         instance => {
@@ -658,7 +658,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: categoryInstance,
-        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}__`,
+        name: `${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
       const insideSectionName = createName('section')
@@ -896,7 +896,7 @@ describe('Zendesk adapter E2E', () => {
           brand: new ReferenceExpression(brandInstanceE2eHelpCenter.elemID, brandInstanceE2eHelpCenter),
         },
         parent: sectionInstance,
-        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}__`,
+        name: `${sectionName}_${categoryName}_${HELP_CENTER_BRAND_NAME}`,
       })
 
 
@@ -1141,7 +1141,9 @@ describe('Zendesk adapter E2E', () => {
     it('should handel guide elements correctly ', async () => {
       const fetchedElements = getElementsAfterFetch(guideInstances)
       guideInstances
-        .forEach(elem => verifyInstanceValues(fetchedElements[elem.elemID.name], elem, Object.keys(elem.value)))
+        .forEach(
+          elem => verifyInstanceValues(fetchedElements[elem.elemID.getFullName()], elem, Object.keys(elem.value))
+        )
     })
   })
 })

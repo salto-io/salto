@@ -56,6 +56,7 @@ const needToOmit = (change: Change<InstanceElement>): boolean =>
  * The rest of the translations will be deployed in the default deploy filter.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'guideTranslationFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [translationChangesToIgnore, leftoverChanges] = _.partition(
       changes,

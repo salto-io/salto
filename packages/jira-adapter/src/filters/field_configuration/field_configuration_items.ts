@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { AdditionChange, DeployResult, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ModificationChange } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { getParent, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -22,12 +21,13 @@ import { FilterCreator } from '../../filter'
 import { JiraConfig } from '../../config/config'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME } from '../../constants'
 import { getLookUpName } from '../../reference_mapping'
+import JiraClient from '../../client/client'
 
 const { awu } = collections.asynciterable
 
 const deployFieldConfigurationItems = async (
   changes: Array<AdditionChange<InstanceElement> | ModificationChange<InstanceElement>>,
-  client: clientUtils.HTTPWriteClientInterface,
+  client: JiraClient,
   config: JiraConfig
 ): Promise<void> => {
   const fields = await awu(changes)
@@ -54,6 +54,7 @@ const deployFieldConfigurationItems = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'fieldConfigurationItemsFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

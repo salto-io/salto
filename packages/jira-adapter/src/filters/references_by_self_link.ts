@@ -82,6 +82,7 @@ const transformSelfLinkToReference = (
  * to a top level element with the same self link
  */
 const filter: FilterCreator = () => ({
+  name: 'referenceBySelfLinkFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
 

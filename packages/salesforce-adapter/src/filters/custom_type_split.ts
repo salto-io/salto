@@ -95,6 +95,7 @@ const customObjectToSplitElements = async (
 }
 
 const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+  name: 'customTypeSplit',
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements)
       .filter(isObjectType)

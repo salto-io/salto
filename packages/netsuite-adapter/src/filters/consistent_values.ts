@@ -129,6 +129,7 @@ const setConsistentValues = async (element: Element): Promise<void> => {
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'consistentValues',
   /**
    * Upon fetch, set fields that are randomly returned with different values but have the same
    * meaning to have a consistent equivalent value so there won't be irrelevant changes upon fetch

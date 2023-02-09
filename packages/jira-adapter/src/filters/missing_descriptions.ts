@@ -25,6 +25,7 @@ const RELEVANT_TYPES = [
 ]
 
 const filter: FilterCreator = () => ({
+  name: 'missingDescriptionsFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

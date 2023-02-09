@@ -91,6 +91,7 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
  * Extract emailTemplate with attachments and save their content in a static file.
  */
 const filter: LocalFilterCreator = () => ({
+  name: 'emailTemplateFilter',
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

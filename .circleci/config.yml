@@ -47,7 +47,7 @@ commands:
 jobs:
   build:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -114,7 +114,7 @@ jobs:
 
   unit_test:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -128,6 +128,8 @@ jobs:
           command: yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
+            # https://github.com/pinojs/koa-pino-logger/issues/16
+            FORCE_COLOR: 1
 
       - store_test_results:
           path: reports
@@ -136,7 +138,7 @@ jobs:
 
   publish_on_version_change:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -169,6 +171,18 @@ jobs:
           at: .
 
       - run:
+          name: configure sources.list
+          command: |
+            if curl -sL https://salto-cli-releases.s3.eu-central-1.amazonaws.com/build_artifacts/apt/sources.list -o /tmp/sources.list; then
+              echo "found sources.list file"
+              sudo mv /tmp/sources.list /etc/apt/sources.list
+              sudo apt update
+            else
+              echo "did not find sources.list file, using the default one"
+            fi
+            echo "using sources.list:"
+            cat /etc/apt/sources.list
+      - run:
           name: Install java
           command: sudo apt update && sudo apt install -y openjdk-17-jdk --no-install-recommends
       - run:
@@ -190,13 +204,15 @@ jobs:
 
   package_cli:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
           at: .
 
       - run:
+          environment:
+            PYTHON: "/usr/bin/python3"
           name: Build native executables
           command: yarn workspace @salto-io/cli package
 
@@ -228,7 +244,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - set_s3_pkg_urls
@@ -276,7 +292,7 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:
@@ -313,7 +329,7 @@ jobs:
 
   publish_canary:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.12
 
     steps:
       - attach_workspace:

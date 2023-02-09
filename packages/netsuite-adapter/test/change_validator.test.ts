@@ -33,9 +33,9 @@ const DEFAULT_OPTIONS = {
     exclude: { features: [], objects: [] },
   },
   deployReferencedElements: false,
-  filtersRunner: {
+  filtersRunner: () => ({
     preDeploy: jest.fn(),
-  } as unknown as Required<Filter>,
+  }) as unknown as Required<Filter>,
   elementsSourceIndex: jest.fn() as unknown as LazyElementsSourceIndexes,
   fetchByQuery: jest.fn(),
 }
@@ -157,7 +157,6 @@ describe('change validator', () => {
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,
-        DEFAULT_OPTIONS.elementsSourceIndex,
         DEFAULT_OPTIONS.deployReferencedElements,
       )
     })
@@ -183,7 +182,6 @@ describe('change validator', () => {
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,
-        DEFAULT_OPTIONS.elementsSourceIndex,
         DEFAULT_OPTIONS.deployReferencedElements,
       )
     })

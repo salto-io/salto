@@ -215,9 +215,9 @@ describe('adapters config', () => {
   })
 
   it('getElementNaclFiles should return the configuration files', async () => {
-    mockNaclFilesSource.getElementNaclFiles.mockResolvedValue(['salto.config/adapters/a/b', 'salto.config/adapters/c'])
+    mockNaclFilesSource.listNaclFiles.mockResolvedValue(['salto.config/adapters/salesforce/a/b', 'salto.config/adapters/salesforce/c', 'salto.config/adapters/dummy/d'])
     const paths = await configSource.getElementNaclFiles('salesforce')
-    expect(paths).toEqual(['salto.config/adapters/a/b', 'salto.config/adapters/c'])
+    expect(paths).toEqual(['salto.config/adapters/salesforce/a/b', 'salto.config/adapters/salesforce/c'])
   })
 
   describe('configOverrides', () => {

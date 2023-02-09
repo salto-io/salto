@@ -226,6 +226,7 @@ export const makeFilter = (
 ): RemoteFilterCreator => ({ client, config }) => {
   let originalChanges: Record<string, Change>
   return {
+    name: 'standardValueSetFilter',
     /**
      * Upon fetch, retrieve standard value sets and
      * modify references to them in fetched elements

@@ -56,6 +56,7 @@ const removeAttributePrefix = async (instance: InstanceElement): Promise<void> =
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'xmlAttributesFilter',
   /**
    * Upon fetch remove the XML_ATTRIBUTE_PREFIX from the instance.value keys so it'll match the type
    */

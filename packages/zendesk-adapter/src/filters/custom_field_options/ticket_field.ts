@@ -20,6 +20,7 @@ import { TICKET_FIELD_TYPE_NAME } from '../../constants'
  * Deploys ticket field and ticket field options
  */
 const filterCreator = createCustomFieldOptionsFilterCreator({
+  filterName: 'ticketFieldFilter',
   parentTypeName: TICKET_FIELD_TYPE_NAME,
   childTypeName: 'ticket_field__custom_field_options',
 })

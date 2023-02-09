@@ -68,6 +68,7 @@ const getProjectUsedFieldConfigItems = (
 }
 
 const filter: FilterCreator = () => ({
+  name: 'fieldConfigurationDependenciesFilter',
   onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
     const fieldConfigurationItems = _(instances)

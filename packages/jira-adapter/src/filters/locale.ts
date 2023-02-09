@@ -13,46 +13,35 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
 import { FilterCreator } from '../filter'
+import { getCurrentUserInfo } from '../users'
 
 const log = logger(module)
-
-type LocaleResponse = {
-  locale: string
-}
-
-const LOCALE_GET_RESPONSE_SCHEME = Joi.object({
-  locale: Joi.string().allow('').required(),
-}).unknown(true)
-
-const isLocaleResponse = createSchemeGuard<LocaleResponse>(LOCALE_GET_RESPONSE_SCHEME, 'Failed to get locale, received invalid response')
 
 /**
  * Check whether user locale is en_US to make sure we're only pulling Jira information in English
  */
 const filter: FilterCreator = ({ client }) => ({
+  name: 'localeFilter',
   onFetch: async () => {
     if (!client.isDataCenter) {
       return undefined
     }
 
     try {
-      const response = await client.getSinglePage({
-        url: '/rest/api/2/myself',
-      })
+      const userInfo = await getCurrentUserInfo(client)
 
-      if (!isLocaleResponse(response.data)) {
-        throw new Error('Failed to get locale, received invalid response')
+      if (userInfo?.locale === undefined) {
+        log.error('Failed to get current user locale')
+        return undefined
       }
 
-      if (response.data.locale !== 'en_US') {
+      if (userInfo?.locale !== 'en_US') {
         return {
           errors: [
             {
-              message: 'Your Jira Data Center instance is set to a non-English language. Salto currently only supports accessing Jira DC through users with their default language set to English. Please change the user’s language, or create another user with English as its Jira language, and change Salto\'s credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users\' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html',
+              message: 'Your Jira Data Center instance is not set to English-US language. Salto currently only supports accessing Jira DC through users with their default language set to English-US. Please change the user’s language, or create another user with English as its Jira language, and change Salto\'s credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users\' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html',
               severity: 'Warning',
             },
           ],

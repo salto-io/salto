@@ -48,3 +48,12 @@ export class ManifestValidationError extends Error {
     this.missingDependencyScriptIds = missingDependencyScriptIds
   }
 }
+
+export class MissingManifestFeaturesError extends Error {
+  missingFeatures: string[]
+  constructor(message: string, missingFeatures: string[]) {
+    super(message)
+    this.name = 'MissingManifestFeaturesError'
+    this.missingFeatures = missingFeatures
+  }
+}

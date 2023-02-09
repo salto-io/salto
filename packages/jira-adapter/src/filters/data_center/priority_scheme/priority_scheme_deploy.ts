@@ -96,6 +96,7 @@ const deleteScheme = async (change: RemovalChange<InstanceElement>, client: Jira
 }
 
 const filter: FilterCreator = ({ client }) => ({
+  name: 'prioritySchemeDeployFilter',
   onFetch: async elements => {
     if (!client.isDataCenter) {
       return

@@ -19,6 +19,7 @@ import { PRIORITY_TYPE_NAME } from '../constants'
 import { removeDomainPrefix } from './avatars'
 
 const filter: FilterCreator = ({ client }) => ({
+  name: 'priorityFilter',
   onFetch: async elements => {
     elements
       .filter(isInstanceElement)

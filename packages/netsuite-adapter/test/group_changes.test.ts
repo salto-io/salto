@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
-import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
-import { APPLICATION_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../src/constants'
+import { getChangeGroupIdsFunc, SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SDF_DELETE_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
+import { APPLICATION_ID, CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../src/constants'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../src/types/file_cabinet_types'
 import { SUITEAPP_CONFIG_TYPE_NAMES } from '../src/types'
@@ -84,21 +84,21 @@ describe('Group Changes without Salto suiteApp', () => {
 
   it('should set correct group id for custom types instances', () => {
     expect(changeGroupIds.get(customFieldInstance.elemID.getFullName()))
-      .toEqual(SDF_CHANGE_GROUP_ID)
+      .toEqual(SDF_CREATE_OR_UPDATE_GROUP_ID)
   })
 
   it('should set correct group id for custom types elements from suiteapps', () => {
     expect(changeGroupIds.get(customFieldFromSuiteAppInstance.elemID.getFullName()))
-      .toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
+      .toEqual(`${SDF_CREATE_OR_UPDATE_GROUP_ID} - a.b.c`)
     expect(changeGroupIds.get(customRecordTypeFromSuiteApp.elemID.getFullName()))
-      .toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
+      .toEqual(`${SDF_CREATE_OR_UPDATE_GROUP_ID} - a.b.c`)
     expect(changeGroupIds.get(
       customRecordTypeFromSuiteApp.fields.custom_field.elemID.getFullName()
-    )).toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
+    )).toEqual(`${SDF_CREATE_OR_UPDATE_GROUP_ID} - a.b.c`)
   })
 
   it('should set correct group id for file cabinet types instances', () => {
-    expect(changeGroupIds.get(fileInstance.elemID.getFullName())).toEqual(SDF_CHANGE_GROUP_ID)
+    expect(changeGroupIds.get(fileInstance.elemID.getFullName())).toEqual(SDF_CREATE_OR_UPDATE_GROUP_ID)
   })
 
   it('should not set group id for non SDF types instances', () => {
@@ -227,6 +227,13 @@ describe('Group Changes with Salto suiteApp', () => {
     subsidiaryType,
   )
 
+  const deletedCustomRecordType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'customrecord1'),
+    annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [INTERNAL_ID]: '1' },
+  })
+
+  const deletedStandardInstance = new InstanceElement('test', entitycustomfieldType().type, { [INTERNAL_ID]: '11' })
+
   const configType = new ObjectType({
     elemID: new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPE_NAMES[0]),
   })
@@ -270,17 +277,19 @@ describe('Group Changes with Salto suiteApp', () => {
       })],
       [deletedDataInstance.elemID.getFullName(), toChange({ before: deletedDataInstance })],
       [configInstance.elemID.getFullName(), toChange({ after: configInstance })],
+      [deletedCustomRecordType.elemID.getFullName(), toChange({ before: deletedCustomRecordType })],
+      [deletedStandardInstance.elemID.getFullName(), toChange({ before: deletedStandardInstance })],
     ]))).changeGroupIdMap
   })
 
   it('should set correct group id for custom types instances', () => {
     expect(changeGroupIds.get(customFieldInstance.elemID.getFullName()))
-      .toEqual(SDF_CHANGE_GROUP_ID)
+      .toEqual(SDF_CREATE_OR_UPDATE_GROUP_ID)
   })
 
   it('should set correct group id for custom types instances from suiteapps', () => {
     expect(changeGroupIds.get(customFieldFromSuiteAppInstance.elemID.getFullName()))
-      .toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
+      .toEqual(`${SDF_CREATE_OR_UPDATE_GROUP_ID} - a.b.c`)
   })
 
   it('should set correct group id for new suiteApp file instances', () => {
@@ -303,10 +312,10 @@ describe('Group Changes with Salto suiteApp', () => {
 
   it('should set correct group id for SDF file instances', () => {
     expect(changeGroupIds.get(sdfFileInstance1.elemID.getFullName()))
-      .toEqual(SDF_CHANGE_GROUP_ID)
+      .toEqual(SDF_CREATE_OR_UPDATE_GROUP_ID)
 
     expect(changeGroupIds.get(sdfFileInstance2.elemID.getFullName()))
-      .toEqual(SDF_CHANGE_GROUP_ID)
+      .toEqual(SDF_CREATE_OR_UPDATE_GROUP_ID)
   })
 
   it('should set correct group id for data instances', () => {
@@ -336,5 +345,15 @@ describe('Group Changes with Salto suiteApp', () => {
 
   it('should not set group id for non SDF types instances', () => {
     expect(changeGroupIds.has(nonSdfInstance.elemID.getFullName())).toBe(false)
+  })
+
+  it('should set correct group id for custom record type', () => {
+    expect(changeGroupIds.get(deletedCustomRecordType.elemID.getFullName()))
+      .toEqual(SDF_DELETE_GROUP_ID)
+  })
+
+  it('should set correct group id for instance with non custom object type', () => {
+    expect(changeGroupIds.get(deletedStandardInstance.elemID.getFullName()))
+      .toEqual(SDF_DELETE_GROUP_ID)
   })
 })

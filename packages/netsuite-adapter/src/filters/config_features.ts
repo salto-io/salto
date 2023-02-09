@@ -27,6 +27,7 @@ const ENABLED = 'ENABLED'
 const DISABLED = 'DISABLED'
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
+  name: 'configFeaturesFilter',
   onFetch: async elements => {
     const featuresInstance = elements.filter(isInstanceElement)
       .find(instance => instance.elemID.typeName === CONFIG_FEATURES)

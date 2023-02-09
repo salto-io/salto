@@ -78,6 +78,7 @@ const removeValuesFromInstances = async (
 export const makeFilter = (
   typeNameToFieldRemovals: Map<string, string[]>,
 ): LocalFilterCreator => () => ({
+  name: 'removeFieldsAndValuesFilter',
   onFetch: async (elements: Element[]) => {
     await removeValuesFromInstances(elements, typeNameToFieldRemovals)
     await removeFieldsFromTypes(elements, typeNameToFieldRemovals)

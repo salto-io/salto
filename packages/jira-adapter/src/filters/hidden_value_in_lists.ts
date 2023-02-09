@@ -26,6 +26,7 @@ const isStringNumber = (value: string): boolean => !Number.isNaN(Number(value))
  * Remove hidden value from lists, since core does not support it
  */
 const filter: FilterCreator = () => ({
+  name: 'hiddenValuesInListsFilter',
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)

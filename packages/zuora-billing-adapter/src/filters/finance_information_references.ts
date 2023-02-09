@@ -70,6 +70,7 @@ const addFinanceInformationDependencies = (
  * (an object field in ProductRatePlan->ProductRatePlanCharges)
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'addFinanceInformationReferencesFilter',
   // TODO: in preDeploy - create the deleted fields in the pattern of '.*AccountingCodeType'
   // from the 'type' value of the referred AccountingCodeItem in the fields in the pattern of
   // '.*AccountingCode'.

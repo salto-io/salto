@@ -97,6 +97,7 @@ const getReferenceInternalId = (reference: ReferenceExpression): Value => (
 ).internalId
 
 const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
+  name: 'dataInstancesReferences',
   onFetch: async elements => {
     const elementsMap: Record<string, ElemID> = isPartial ? _.clone(
       (await elementsSourceIndex.getIndexes()).internalIdsIndex ?? {}

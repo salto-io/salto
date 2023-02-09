@@ -34,6 +34,7 @@ const createFieldItemInstance = (
 )
 
 const filter: FilterCreator = () => ({
+  name: 'fieldConfigurationSplitFilter',
   onFetch: async elements => {
     const fieldConfigurationType = findObject(elements, FIELD_CONFIGURATION_TYPE_NAME)
     const fieldConfigurationItemType = findObject(elements, FIELD_CONFIGURATION_ITEM_TYPE_NAME)

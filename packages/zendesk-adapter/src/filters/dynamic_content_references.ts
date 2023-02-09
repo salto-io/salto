@@ -26,7 +26,6 @@ import {
   TemplatePart,
 } from '@salto-io/adapter-api'
 import { extractTemplate, transformValues } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
@@ -40,7 +39,6 @@ const PLACEHOLDER_REGEX = /({{.+?}})/g
 const INNER_PLACEHOLDER_REGEX = /{{(.+?)}}/g
 const OPEN_BRACKETS = '{{'
 const CLOSE_BRACKETS = '}}'
-const log = logger(module)
 
 const transformDynamicContentDependencies = async (
   instance: InstanceElement,
@@ -138,7 +136,8 @@ const returnDynamicContentsToApiValue = async (
 const filterCreator: FilterCreator = ({ config }) => {
   const templateMapping: Record<string, TemplateExpression> = {}
   return ({
-    onFetch: async (elements: Element[]): Promise<void> => log.time(async () => {
+    name: 'dynamicContentReferencesFilter',
+    onFetch: async (elements: Element[]): Promise<void> => {
       const instances = elements.filter(isInstanceElement)
 
       const placeholderToItem = _(instances)
@@ -149,12 +148,12 @@ const filterCreator: FilterCreator = ({ config }) => {
       await Promise.all(instances.map(instance =>
         transformDynamicContentDependencies(instance, placeholderToItem,
           config[FETCH_CONFIG].enableMissingReferences)))
-    }, 'Dynamic content references filter'),
-    preDeploy: (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () => {
+    },
+    preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
       await Promise.all(changes.map(getChangeData).map(instance =>
         returnDynamicContentsToApiValue(instance, templateMapping)))
-    }, 'Dynamic content references filter'),
-    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => log.time(async () =>
+    },
+    onDeploy: async (changes: Change<InstanceElement>[]): Promise<void> =>
       awu(changes.map(getChangeData)).forEach(async instance => {
         instance.value = await transformValues({
           values: instance.value,
@@ -170,7 +169,7 @@ const filterCreator: FilterCreator = ({ config }) => {
           allowEmpty: true,
           strict: false,
         }) ?? instance.value
-      }), 'Dynamic content references filter'),
+      }),
   })
 }
 

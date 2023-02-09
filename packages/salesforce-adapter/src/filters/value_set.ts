@@ -90,6 +90,7 @@ const restrictValueSet = (field: ValueSetField): void => {
  *  - Restricted custom value set
  */
 const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
+  name: 'valueSetFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     await awu(elements)
       .filter(isObjectType)

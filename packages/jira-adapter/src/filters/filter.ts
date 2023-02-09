@@ -17,6 +17,7 @@ import { getChangeData, isAdditionOrModificationChange, isInstanceChange, Change
 import { FilterCreator } from '../filter'
 
 const filter: FilterCreator = () => ({
+  name: 'filtersFilter',
   preDeploy: async (changes: Change<ChangeDataType>[]) => {
     changes.filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)

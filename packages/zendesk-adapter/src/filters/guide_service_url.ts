@@ -77,6 +77,7 @@ const createServiceUrl = (instance: InstanceElement, baseUrl:string): void => {
  * filter replaces url params and creates the service url accordingly.
  */
 const filterCreator: FilterCreator = ({ client }) => ({
+  name: 'guideServiceUrl',
   onFetch: async (elements: Element[]): Promise<void> => {
     const brandList = elements
       .filter(isInstanceElement)

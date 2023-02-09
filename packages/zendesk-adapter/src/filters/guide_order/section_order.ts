@@ -30,6 +30,7 @@ import { FETCH_CONFIG, isGuideEnabled } from '../../config'
  * Handles the section orders inside category
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'sectionOrderFilter',
   /** Create an InstanceElement of the sections order inside the categories */
   onFetch: async (elements: Element[]) => {
     // If Guide is not enabled in Salto, we don't need to do anything

@@ -46,7 +46,7 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   typesToFallbackToInternalId: string[]
 }
 
-type JiraDeployConfig = {
+type JiraDeployConfig = configUtils.UserDeployConfig & {
   forceDelete: boolean
 }
 
@@ -167,15 +167,12 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
-const jiraDeployConfigType = new ObjectType({
-  elemID: new ElemID(JIRA, 'DeployConfig'),
-  fields: {
+const jiraDeployConfigType = configUtils.createUserDeployConfigType(
+  JIRA,
+  {
     forceDelete: { refType: BuiltinTypes.BOOLEAN },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-  },
-})
+  }
+)
 
 const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   elemID: new ElemID(JIRA, 'FetchFilters'),

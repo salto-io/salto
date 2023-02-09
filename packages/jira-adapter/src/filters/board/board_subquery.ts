@@ -42,6 +42,7 @@ export const deploySubQuery = async (
 }
 
 const filter: FilterCreator = ({ config }) => ({
+  name: 'boardSubQueryFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

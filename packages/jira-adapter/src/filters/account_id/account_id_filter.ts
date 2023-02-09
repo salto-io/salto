@@ -18,14 +18,12 @@ import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModif
   isInstanceElement, isObjectType, ObjectType, TypeReference, Value } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import _, { isArray } from 'lodash'
 import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, AUTOMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { accountIdInfoType } from './types'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
 export const NON_DEPLOYABLE_TYPES = ['Board']
@@ -217,7 +215,8 @@ const convertType = async (objectType: ObjectType): Promise<void> => {
 const filter: FilterCreator = () => {
   const cache: AccountIdsCache = {}
   return {
-    onFetch: async elements => log.time(async () => {
+    name: 'accountIdFilter',
+    onFetch: async elements => {
       elements
         .filter(isInstanceElement)
         .forEach(element => {
@@ -229,7 +228,7 @@ const filter: FilterCreator = () => {
         .forEach(async objectType => {
           await convertType(objectType)
         })
-    }, 'fetch account_id_filter'),
+    },
     preDeploy: async changes => {
       changes
         .filter(isInstanceChange)
@@ -239,7 +238,7 @@ const filter: FilterCreator = () => {
         .forEach(element =>
           walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache)) }))
     },
-    onDeploy: async changes => log.time(() => {
+    onDeploy: async changes => {
       changes
         .filter(isInstanceChange)
         .filter(isAdditionOrModificationChange)
@@ -250,7 +249,7 @@ const filter: FilterCreator = () => {
           })
           return element
         })
-    }, 'account_id_filter'),
+    },
   }
 }
 export default filter

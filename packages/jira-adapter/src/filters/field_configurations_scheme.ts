@@ -80,6 +80,7 @@ const deployFieldConfigScheme = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'fieldConfigurationSchemeFilter',
   onFetch: async elements => {
     const fieldConfigurationSchemeType = findObject(elements, FIELD_CONFIG_SCHEME_NAME)
 

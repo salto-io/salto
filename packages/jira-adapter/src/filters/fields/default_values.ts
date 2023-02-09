@@ -14,35 +14,13 @@
 * limitations under the License.
 */
 
-import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isEqualValues, isObjectType, isReferenceExpression, isRemovalChange, isRemovalOrModificationChange, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
+import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isEqualValues, isObjectType, isReferenceExpression, isRemovalChange, isRemovalOrModificationChange, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getParents, resolveChangeElement, resolvePath, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getLookUpName } from '../../reference_mapping'
-import { setFieldDeploymentAnnotations } from '../../utils'
+import { addAnnotationRecursively, setFieldDeploymentAnnotations } from '../../utils'
 
-const EDITABLE_FIELD_NAMES = [
-  'type',
-  'optionId',
-  'cascadingOptionId',
-  'optionIds',
-  'accountId',
-  'userFilter',
-  'accountIds',
-  'groupId',
-  'groupIds',
-  'date',
-  'useCurrent',
-  'dateTime',
-  'url',
-  'projectId',
-  'number',
-  'labels',
-  'text',
-  'versionId',
-  'versionOrder',
-  'versionIds',
-]
 
 const resolveDefaultOption = (
   contextChange: Change<InstanceElement>,
@@ -123,10 +101,6 @@ export const setDefaultValueTypeDeploymentAnnotations = async (
   }
 
   setFieldDeploymentAnnotations(fieldContextType, 'defaultValue')
-
-  EDITABLE_FIELD_NAMES.forEach((fieldName: string) => {
-    if (fieldName in defaultValueType.fields) {
-      setFieldDeploymentAnnotations(defaultValueType, fieldName)
-    }
-  })
+  await addAnnotationRecursively(defaultValueType, CORE_ANNOTATIONS.CREATABLE)
+  await addAnnotationRecursively(defaultValueType, CORE_ANNOTATIONS.UPDATABLE)
 }

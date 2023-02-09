@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ChangeValidator, ElemID, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { AdapterOperations, ChangeValidator, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
-import { expressions } from '@salto-io/workspace'
 import getChangeValidators from '../../../../src/core/plan/change_validators'
 
 describe('getChangeValidators', () => {
@@ -26,10 +25,16 @@ describe('getChangeValidators', () => {
   const type = new ObjectType({
     elemID: new ElemID('adapter', 'type'),
     annotations: {
-      value: new ReferenceExpression(new ElemID('adapter', 'someId'), new expressions.UnresolvedReference(new ElemID('adapter', 'someId'))),
+      [CORE_ANNOTATIONS.CREATABLE]: false,
     },
   })
-  const changes = [toChange({ after: type })]
+
+  const instance = new InstanceElement(
+    'instance',
+    type,
+  )
+
+  const changes = [toChange({ after: instance })]
 
   beforeEach(() => {
     deployChangeValidator = mockFunction<ChangeValidator>().mockResolvedValue([
@@ -66,7 +71,7 @@ describe('getChangeValidators', () => {
       const changesValidators = getChangeValidators(adapters, false)
       const errors = await changesValidators.adapter(changes)
       expect(errors).toHaveLength(2)
-      expect(errors[0].message).toBe('Element has unresolved references')
+      expect(errors[0].message).toBe('Operation not supported')
       expect(deployChangeValidator).toHaveBeenCalledWith(changes, undefined)
       expect(validateChangeValidator).not.toHaveBeenCalled()
       expect(errors[1].message).toBe('message')
@@ -78,7 +83,7 @@ describe('getChangeValidators', () => {
       const changesValidators = getChangeValidators(adapters, true)
       const errors = await changesValidators.adapter(changes)
       expect(errors).toHaveLength(2)
-      expect(errors[0].message).toBe('Element has unresolved references')
+      expect(errors[0].message).toBe('Operation not supported')
       expect(validateChangeValidator).toHaveBeenCalledWith(changes, undefined)
       expect(deployChangeValidator).not.toHaveBeenCalled()
       expect(errors[1].message).toBe('message')

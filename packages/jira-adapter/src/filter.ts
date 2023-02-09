@@ -17,7 +17,7 @@ import { ReadOnlyElementsSource, SaltoError, Values } from '@salto-io/adapter-ap
 import { filterUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import JiraClient from './client/client'
 import { JiraConfig } from './config/config'
-import { GetIdMapFunc } from './users_map'
+import { GetUserMapFunc } from './users'
 
 export const { filtersRunner } = filterUtils
 
@@ -34,7 +34,7 @@ export type FilterAdditionParams = {
   // Note that deployment steps can be executed in parallel so use this cautiously
   // and only when needed.
   adapterContext: Values
-  getIdMapFunc: GetIdMapFunc
+  getUserMapFunc: GetUserMapFunc
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

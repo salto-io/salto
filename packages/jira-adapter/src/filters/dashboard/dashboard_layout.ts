@@ -70,6 +70,7 @@ export const deployLayout = async (
 }
 
 const filter: FilterCreator = ({ client, config }) => ({
+  name: 'dashboardLayoutFilter',
   onFetch: async elements => {
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping dashboard layout filter because private API is not enabled')

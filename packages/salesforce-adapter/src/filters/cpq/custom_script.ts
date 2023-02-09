@@ -155,6 +155,7 @@ const applyFuncOnCustomScriptFieldChange = async (
 }
 
 const filter: LocalFilterCreator = () => ({
+  name: 'cpqCustomScriptFilter',
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     const cpqCustomScriptObject = await awu(customObjects)

@@ -28,6 +28,7 @@ import { FETCH_CONFIG, isGuideEnabled } from '../../config'
  * Handles the sections and articles orders inside section
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'articleOrderFilter',
   /** Create an InstanceElement of the sections and articles order inside the sections */
   onFetch: async (elements: Element[]) => {
     // If Guide is not enabled in Salto, we don't need to do anything

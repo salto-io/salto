@@ -18,6 +18,7 @@ import {
   buildLazyShallowTypeResolverElementsSource,
   createChangeValidator,
 } from '@salto-io/adapter-utils'
+import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'

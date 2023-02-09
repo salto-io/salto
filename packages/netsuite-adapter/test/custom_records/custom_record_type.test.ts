@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { CUSTOM_RECORDS_PATH, CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { createCustomRecordTypes, toCustomRecordTypeInstance } from '../../src/custom_records/custom_record_type'
@@ -57,6 +57,8 @@ describe('custom record type transformer', () => {
         },
         annotations: {
           [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [CORE_ANNOTATIONS.CHANGED_AT]: '2023-02-02T10:52:20Z',
+          [CORE_ANNOTATIONS.CHANGED_BY]: 'Salto User',
           source: 'soup',
           [SCRIPT_ID]: 'customrecord1',
         },
@@ -93,6 +95,8 @@ describe('custom record type transformer', () => {
         },
         annotations: {
           [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [CORE_ANNOTATIONS.CHANGED_AT]: '2023-02-02T10:52:20Z',
+          [CORE_ANNOTATIONS.CHANGED_BY]: 'Salto User',
           source: 'soup',
           [SCRIPT_ID]: 'customrecord1',
         },

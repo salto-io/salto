@@ -201,13 +201,6 @@ describe('sdf internal ids tests', () => {
       expect(customRecordType.annotations.internalId).toBe(undefined)
       expect(customScriptInstance.value.internalId).toBe(undefined)
     })
-    it('should remove internal ids from field parent', async () => {
-      customRecordType.annotations.internalId = '2'
-      await filterCreator(filterOpts).preDeploy?.(
-        [toChange({ after: customRecordType.fields.custom_field })]
-      )
-      expect(customRecordType.annotations.internalId).toBe(undefined)
-    })
   })
   describe('deploy', () => {
     describe('success', () => {

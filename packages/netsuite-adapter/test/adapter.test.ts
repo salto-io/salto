@@ -26,16 +26,16 @@ import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANS
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { FilterCreator } from '../src/filter'
+import resolveValuesFilter from '../src/filters/element_references'
 import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
-import * as referenceDependenciesModule from '../src/reference_dependencies'
 import NetsuiteClient from '../src/client/client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import * as suiteAppFileCabinet from '../src/suiteapp_file_cabinet'
-import { SDF_CHANGE_GROUP_ID } from '../src/group_changes'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
@@ -71,15 +71,6 @@ getChangeValidatorMock.mockImplementation(({}: {
   fetchByQuery: FetchByQueryFunc
   deployReferencedElements?: boolean
 }) => (_changes: ReadonlyArray<Change>) => Promise.resolve([]))
-
-jest.mock('../src/reference_dependencies')
-const getReferencedInstancesMock = referenceDependenciesModule
-  .getReferencedElements as jest.Mock
-getReferencedInstancesMock
-  .mockImplementation((
-    sourceInstances: ReadonlyArray<InstanceElement>,
-    _deployAllReferencedElements: boolean
-  ) => sourceInstances)
 
 jest.mock('../src/changes_detector/changes_detector')
 
@@ -124,7 +115,7 @@ describe('Adapter', () => {
   const netsuiteAdapter = new NetsuiteAdapter({
     client: new NetsuiteClient(client),
     elementsSource: buildElementsSourceFromElements([]),
-    filtersCreators: [firstDummyFilter, secondDummyFilter],
+    filtersCreators: [firstDummyFilter, secondDummyFilter, resolveValuesFilter],
     config,
     getElemIdFunc: mockGetElemIdFunc,
   })
@@ -588,7 +579,7 @@ describe('Adapter', () => {
 
     const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => netsuiteAdapter.deploy({
       changeGroup: {
-        groupID: SDF_CHANGE_GROUP_ID,
+        groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
         changes: [{ action: 'add', data: { after } }],
       },
     })
@@ -640,7 +631,7 @@ describe('Adapter', () => {
       it('should support deploying multiple changes at once', async () => {
         const result = await netsuiteAdapter.deploy({
           changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [
               { action: 'add', data: { after: fileInstance } },
               { action: 'add', data: { after: folderInstance } },
@@ -663,7 +654,7 @@ describe('Adapter', () => {
         client.deploy = jest.fn().mockRejectedValue(clientError)
         const result = await netsuiteAdapter.deploy({
           changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [
               { action: 'add', data: { after: fileInstance } },
               { action: 'add', data: { after: folderInstance } },
@@ -688,7 +679,7 @@ describe('Adapter', () => {
         before: ChangeDataType, after: ChangeDataType
       ): Promise<DeployResult> => netsuiteAdapter.deploy({
         changeGroup: {
-          groupID: SDF_CHANGE_GROUP_ID,
+          groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
           changes: [{ action: 'modify', data: { before, after } }],
         },
       })
@@ -759,38 +750,6 @@ describe('Adapter', () => {
       })
     })
 
-    describe('deployReferencedElements', () => {
-      it('should call getReferencedInstances with deployReferencedElements=true', async () => {
-        const configWithDeployReferencedElements = {
-          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
-          fetchAllTypesAtOnce: true,
-          deploy: {
-            deployReferencedElements: true,
-          },
-        }
-        const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
-          client: new NetsuiteClient(client),
-          elementsSource: buildElementsSourceFromElements([]),
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
-          config: configWithDeployReferencedElements,
-          getElemIdFunc: mockGetElemIdFunc,
-        })
-
-        await netsuiteAdapterWithDeployReferencedElements.deploy({
-          changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
-            changes: [{ action: 'add', data: { after: instance } }],
-          },
-        })
-
-        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], true)
-      })
-
-      it('should call getReferencedInstances with deployReferencedElements=false', async () => {
-        await adapterAdd(instance)
-        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], false)
-      })
-    })
     describe('additional sdf dependencies', () => {
       let custInfo: CustomizationInfo
       beforeAll(async () => {
@@ -814,14 +773,14 @@ describe('Adapter', () => {
         const netsuiteAdapterWithAdditionalSdfDependencies = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
           elementsSource: buildElementsSourceFromElements([]),
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          filtersCreators: [firstDummyFilter, secondDummyFilter, resolveValuesFilter],
           config: configWithAdditionalSdfDependencies,
           getElemIdFunc: mockGetElemIdFunc,
         })
 
         await netsuiteAdapterWithAdditionalSdfDependencies.deploy({
           changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [{ action: 'add', data: { after: instance } }],
           },
         })

@@ -106,7 +106,7 @@ export const toCustomRecordTypeInstance = (
   element.elemID.name,
   customrecordtypeType().type,
   {
-    ..._.omit(element.annotations, [SOURCE, METADATA_TYPE]),
+    ..._.omit(element.annotations, [SOURCE, METADATA_TYPE, ...Object.values(CORE_ANNOTATIONS)]),
     [CUSTOM_FIELDS]: {
       [CUSTOM_FIELDS_LIST]: _(Object.values(element.fields))
         .filter(field => isCustomFieldName(field.name))

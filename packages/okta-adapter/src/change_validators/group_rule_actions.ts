@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, ModificationChange, isEqualValues } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { GROUP_RULE_TYPE_NAME } from '../constants'
 
@@ -24,7 +23,7 @@ const isGroupRuleActionsChange = (
   change: ModificationChange<InstanceElement>
 ): boolean => {
   const { before, after } = change.data
-  return !_.isEqual(before.value.actions, after.value.actions)
+  return !isEqualValues(before.value.actions, after.value.actions)
 }
 
 /**

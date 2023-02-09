@@ -13,13 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, Element, ElemID, Value, isElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { resolveTypeShallow } from './utils'
 
+const { awu } = collections.asynciterable
+
 const { findDuplicates } = collections.array
+const { isDefined } = values
 const log = logger(module)
 
 export const buildElementsSourceFromElements = (
@@ -72,4 +75,30 @@ export const buildElementsSourceFromElements = (
     has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
   }
   return self
+}
+
+export const buildLazyShallowTypeResolverElementsSource = (
+  elementsSource: ReadOnlyElementsSource
+): ReadOnlyElementsSource => {
+  const resolved: Record<string, Element> = {}
+  const getElementWithResolvedShallowType = async (value: Value): ReturnType<ReadOnlyElementsSource['get']> => {
+    if (!isElement(value)) {
+      return value
+    }
+    const id = value.elemID.getFullName()
+    const resolvedElement = resolved[id]
+    if (isDefined(resolvedElement)) {
+      return resolvedElement
+    }
+    await resolveTypeShallow(value, elementsSource)
+    resolved[id] = value
+    return value
+  }
+  return {
+    get: async (id: ElemID) => getElementWithResolvedShallowType(await elementsSource.get(id)),
+    getAll: async () => awu(await elementsSource.getAll())
+      .map(getElementWithResolvedShallowType),
+    list: async () => elementsSource.list(),
+    has: async (id: ElemID) => elementsSource.has(id),
+  }
 }

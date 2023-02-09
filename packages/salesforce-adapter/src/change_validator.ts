@@ -14,7 +14,11 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import {
+  buildLazyShallowTypeResolverElementsSource,
+  createChangeValidator,
+} from '@salto-io/adapter-utils'
+
 import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
@@ -37,9 +41,9 @@ import caseAssignmentRulesValidator from './change_validators/case_assignmentRul
 import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
 import currencyIsoCodes from './change_validators/currency_iso_codes'
+import duplicateRulesSortOrder from './change_validators/duplicate_rules_sort_order'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, SalesforceConfig } from './types'
-
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
@@ -75,6 +79,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   dataChange: { creator: () => dataChangeValidator, defaultInDeploy: true, defaultInValidate: false },
   unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
+  duplicateRulesSortOrder: { creator: () => duplicateRulesSortOrder, ...defaultAlwaysRun },
   currencyIsoCodes: { creator: () => currencyIsoCodes, ...defaultAlwaysRun },
 }
 
@@ -92,13 +97,17 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   const disabledValidators = Object.entries(changeValidators).filter(
     ([name]) => config.validators?.[name as ChangeValidatorName] === false
   )
-  return createChangeValidator(
-    [
-      ...deployment.changeValidators.getDefaultChangeValidators(),
-      ...activeValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
-    ],
+  const changeValidator = createChangeValidator(
+    activeValidators
+      .map(([_name, validator]) => validator.creator(config, isSandbox, client))
+      .concat(deployment.changeValidators.getDefaultChangeValidators()),
     disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
   )
+  // Returns a change validator with elementsSource that lazily resolves types using resolveTypeShallow
+  // upon usage. This is relevant to Change Validators that get instances from the elementsSource.
+  return async (changes, elementSource) => ((elementSource === undefined)
+    ? changeValidator(changes, elementSource)
+    : changeValidator(changes, buildLazyShallowTypeResolverElementsSource(elementSource)))
 }
 
 export default createSalesforceChangeValidator

@@ -40,10 +40,8 @@ import {
 } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import {
-  ERROR_HTTP_502_MESSAGE,
+  ERROR_HTTP_502_MESSAGE, ERROR_MAPPERS, ErrorMappers,
   INVALID_GRANT_MESSAGE,
-  MAPPABLE_ERROR_NAME,
-  MappableErrorName,
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
 } from '../src/client/user_facing_errors'
@@ -344,7 +342,7 @@ describe('salesforce client', () => {
       errorProperties: Partial<Record<ErrorProperty, unknown>>
     }
 
-    const mappableErrorToTestInputs: Record<MappableErrorName, types.NonEmptyArray<TestInput> | TestInput> = {
+    const mappableErrorToTestInputs: Record<keyof ErrorMappers, types.NonEmptyArray<TestInput> | TestInput> = {
       [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: [
         {
           errorProperties: {
@@ -367,7 +365,7 @@ describe('salesforce client', () => {
           [ERROR_PROPERTIES.CODE]: ENOTFOUND,
         },
         expectedMessage: `Unable to communicate with the salesforce org at ${TEST_HOSTNAME}.`
-          + 'This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
+          + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
       },
       [ERROR_HTTP_502]: {
         errorProperties: {
@@ -383,8 +381,8 @@ describe('salesforce client', () => {
       },
     }
 
-    describe.each(MAPPABLE_ERROR_NAME)('%p', mappableError => {
-      const testInputs = mappableErrorToTestInputs[mappableError]
+    describe.each(Object.keys(ERROR_MAPPERS))('%p', mappableError => {
+      const testInputs = mappableErrorToTestInputs[mappableError as keyof ErrorMappers]
       const withTestName = (testInput: TestInput): TestInput & {name: string} => ({
         name: isDefined(testInput.errorProperties)
           ? safeJsonStringify(testInput.errorProperties)

@@ -15,7 +15,7 @@
 */
 
 import { DeployMessage } from 'jsforce'
-import { decorators, values } from '@salto-io/lowerdash'
+import { decorators } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
@@ -23,22 +23,10 @@ import {
   ERROR_HTTP_502,
   ERROR_PROPERTIES,
   INVALID_GRANT,
-  isSalesforceError, SALESFORCE_ERRORS,
+  isSalesforceError, SALESFORCE_ERRORS, SalesforceError,
 } from '../constants'
 
 const log = logger(module)
-const { isDefined } = values
-
-export const MAPPABLE_ERROR_NAME = [
-  ERROR_HTTP_502,
-  SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
-  INVALID_GRANT,
-  ENOTFOUND,
-] as const
-
-export type MappableErrorName = typeof MAPPABLE_ERROR_NAME[number]
-
-type GetUserFriendlyErrorFunc = (error: Error) => string | undefined
 
 export const REQUEST_LIMIT_EXCEEDED_MESSAGE = 'Your Salesforce org has limited API calls for a 24-hour period. '
     + 'We are unable to connect to your org because this limit has been exceeded. '
@@ -61,31 +49,46 @@ const isDNSException = (error: Error): error is DNSException => (
   _.isString(_.get(error, ERROR_PROPERTIES.CODE)) && _.isString(_.get(error, ERROR_PROPERTIES.HOSTNAME))
 )
 
-const ERROR_MAPPERS: Record<MappableErrorName, GetUserFriendlyErrorFunc> = {
-  [ERROR_HTTP_502]: (error: Error) => (
-    error.message === ERROR_HTTP_502
-      ? ERROR_HTTP_502_MESSAGE
-      : undefined
-  ),
-  [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: (error: Error) => {
-    if (!isSalesforceError(error) || error[ERROR_PROPERTIES.ERROR_CODE] !== SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED) {
-      return undefined
-    }
-    return error.message.includes('TotalRequests Limit exceeded')
-      ? REQUEST_LIMIT_EXCEEDED_MESSAGE
-      : MAX_CONCURRENT_REQUESTS_MESSAGE
+type ErrorMapper<T extends Error> = {
+  test: (error: Error) => error is T
+  map: (error: T) => string
+}
+
+export type ErrorMappers = {
+  [ERROR_HTTP_502]: ErrorMapper<Error>
+  [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: ErrorMapper<SalesforceError>
+  [INVALID_GRANT]: ErrorMapper<Error>
+  [ENOTFOUND]: ErrorMapper<DNSException>
+}
+
+export const ERROR_MAPPERS: ErrorMappers = {
+  [ERROR_HTTP_502]: {
+    test: (error: Error): error is Error => error.message === ERROR_HTTP_502,
+    map: (_error: Error): string => ERROR_HTTP_502_MESSAGE,
   },
-  [INVALID_GRANT]: (error: Error) => (
-    error.name === INVALID_GRANT
-      ? INVALID_GRANT_MESSAGE
-      : undefined
-  ),
-  [ENOTFOUND]: (error: Error) => (
-    isDNSException(error) && error.code === ENOTFOUND
-      ? `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
-      + 'This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.'
-      : undefined
-  ),
+  [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: {
+    test: (error: Error): error is SalesforceError => (
+      isSalesforceError(error) && error[ERROR_PROPERTIES.ERROR_CODE] === SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED
+    ),
+    map: (error: SalesforceError): string => (
+      error.message.includes('TotalRequests Limit exceeded')
+        ? REQUEST_LIMIT_EXCEEDED_MESSAGE
+        : MAX_CONCURRENT_REQUESTS_MESSAGE
+    ),
+  },
+  [INVALID_GRANT]: {
+    test: (error: Error): error is Error => error.name === INVALID_GRANT,
+    map: (_error: Error): string => INVALID_GRANT_MESSAGE,
+  },
+  [ENOTFOUND]: {
+    test: (error: Error): error is DNSException => (
+      isDNSException(error) && error.code === ENOTFOUND
+    ),
+    map: (error: DNSException) => (
+      `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
+      + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.'
+    ),
+  },
 }
 
 // Deploy Errors Mapping
@@ -120,21 +123,27 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(
     try {
       return await Promise.resolve(original.call())
     } catch (e) {
-      const userVisibleErrorByMapper = _(ERROR_MAPPERS)
-        .mapValues(func => func(e))
-        .pickBy(isDefined)
-        .valueOf()
-      if (_.isEmpty(userVisibleErrorByMapper)) {
+      if (!_.isError(e)) {
         throw e
       }
-      const matchedMapperNames = Object.keys(userVisibleErrorByMapper)
-      if (matchedMapperNames.length > 1) {
-        log.error('The error %o matched on more than one mapper. Mapper names: %o', e, matchedMapperNames)
+      const userFriendlyMessageByMapperName = _.mapValues(
+        _.pickBy(
+          ERROR_MAPPERS,
+          mapper => mapper.test(e)
+        ),
+        mapper => mapper.map(e)
+      )
+
+      const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
+      if (_.isEmpty(matchedMapperNames)) {
+        throw e
+      } else if (matchedMapperNames.length > 1) {
+        log.error('The error %o matched on more than one mapper. Matcher mappers: %o', e, matchedMapperNames)
         throw e
       }
-      const [errorName, userVisibleErrorMessage] = Object.entries(userVisibleErrorByMapper)[0]
-      log.debug('Replacing error %s message to %s. Original error: %o', errorName, userVisibleErrorMessage, e)
-      e.message = userVisibleErrorMessage
+      const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
+      log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, e)
+      e.message = userFriendlyMessage
       throw e
     }
   }

@@ -55,6 +55,8 @@ export const OPEN_CATEGORY = 'open'
 export const ROUTING_ATTRIBUTE_VALUE_TYPE = 'routing_attribute_value'
 export const GROUP_TYPE_NAME = 'group'
 export const AUDIT_TIME_TYPE_NAME = 'audit_time'
+export const AUTOMATION_TYPE_NAME = 'automation'
+export const TICKET_FIELD_CUSTOM_FIELD_OPTION = 'ticket_field__custom_field_options'
 
 export const CATEGORY_ORDER_TYPE_NAME = 'category_order'
 export const SECTION_ORDER_TYPE_NAME = 'section_order'

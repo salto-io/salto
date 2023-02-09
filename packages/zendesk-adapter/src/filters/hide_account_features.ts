@@ -14,26 +14,26 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { ACCOUNT_FEATURES_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
 /**
- * Hide account_features settings instance
+ * Hide account_features settings
  */
 const filterCreator: FilterCreator = () => ({
-  name: 'hideAccountFeaturesInstance',
+  name: 'hideAccountFeatures',
   onFetch: async elements => {
-    const accountFeaturesInstance = elements
-      .filter(isInstanceElement)
-      .find(i => i.elemID.typeName === ACCOUNT_FEATURES_TYPE_NAME)
-    if (accountFeaturesInstance === undefined) {
-      log.warn('Could not find account_features instance')
+    const accountFeaturesType = elements
+      .filter(isObjectType)
+      .find(t => t.elemID.typeName === ACCOUNT_FEATURES_TYPE_NAME)
+    if (accountFeaturesType === undefined) {
+      log.warn('Could not find account_features type')
       return
     }
-    accountFeaturesInstance.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    accountFeaturesType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
   },
 })
 

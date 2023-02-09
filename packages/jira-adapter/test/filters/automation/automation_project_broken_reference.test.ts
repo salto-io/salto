@@ -107,6 +107,32 @@ describe('automationProjectBrokenReferenceFilter', () => {
       expect(deletedInstance.value.projects)
         .toEqual([resolvedProject, resolvedProject])
     })
+    it('should not remove project type key elements', async () => {
+      const projectTypeKey = { projectTypeKey: 'business' }
+      automationInstance.value.projects = [
+        resolvedProject,
+        unresolvedProject,
+        projectTypeKey,
+      ]
+      expect(automationInstance.value.projects).toHaveLength(3)
+      const modificationInstance = automationInstance.clone()
+      const deletedInstance = automationInstance.clone()
+      await filter.preDeploy([
+        toChange({ after: automationInstance }),
+        toChange({ before: automationInstance, after: modificationInstance }),
+        toChange({ before: deletedInstance })])
+
+      expect(automationInstance.value.projects).toHaveLength(2)
+      expect(modificationInstance.value.projects).toHaveLength(2)
+      expect(deletedInstance.value.projects).toHaveLength(3)
+
+      expect(automationInstance.value.projects)
+        .toEqual([resolvedProject, projectTypeKey])
+      expect(modificationInstance.value.projects)
+        .toEqual([resolvedProject, projectTypeKey])
+      expect(deletedInstance.value.projects)
+        .toEqual([resolvedProject, unresolvedProject, projectTypeKey])
+    })
   })
 
   describe('onDeploy', () => {

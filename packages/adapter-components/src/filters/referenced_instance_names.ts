@@ -58,11 +58,6 @@ const createInstanceReferencedNameParts = (
       return _.get(instance.value, fieldName)
     }
     const dereferenceFieldValue = (fieldValue: ReferenceExpression): string => {
-      if (!fieldValue.elemID.isTopLevel()) {
-        log.warn(`In instance: ${instance.elemID.getFullName()},
-          the reference expression: ${fieldValue.elemID.getFullName()},
-          of field ${fieldName} doesn't point to an element`)
-      }
       const { parent, path } = fieldValue.elemID.createTopLevelParentID()
       return [parent.name, ...path].join('.')
     }

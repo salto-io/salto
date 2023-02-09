@@ -448,7 +448,7 @@ describe('adapter', () => {
           'zendesk.sla_policy_order',
           'zendesk.sla_policy_order.instance',
           'zendesk.support_address',
-          'zendesk.support_address.instance.myBrand',
+          'zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv',
           'zendesk.support_addresses',
           'zendesk.tag',
           'zendesk.tag.instance.Social',
@@ -621,7 +621,7 @@ describe('adapter', () => {
           'zendesk.workspaces',
         ])
 
-        const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand'))
+        const supportAddress = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.support_address.instance.myBrand_support_myBrand_subdomain_zendesk_com@umvvv'))
         const brand = elements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('zendesk.brand.instance.myBrand'))
         expect(brand).toBeDefined()
         if (brand === undefined) {
@@ -673,7 +673,7 @@ describe('adapter', () => {
         expect(errors).toEqual([
           {
             severity: 'Warning',
-            message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
+            message: "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
           },
         ])
         const elementsNames = elements.map(e => e.elemID.getFullName())

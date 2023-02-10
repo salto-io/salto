@@ -13,24 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const deepMerge = require('../../build_utils/deep_merge')
-
-module.exports = deepMerge(
-  require('../../jest.base.config.js'),
-  {
-    name: 'lowerdash',
-    displayName: 'lowerdash',
-    rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/index.ts',
-    ],
-    coverageThreshold: {
-      global: {
-        branches: 99,
-        functions: 100,
-        lines: 100,
-        statements: 100,
-      },
-    },
-  },
-)
+require('leaked-handles');

@@ -8865,6 +8865,15 @@ lazy@^1.0.11:
   resolved "https://registry.yarnpkg.com/lazy/-/lazy-1.0.11.tgz#daa068206282542c088288e975c297c1ae77b690"
   integrity sha1-2qBoIGKCVCwIgojpdcKXwa53tpA=
 
+leaked-handles@^5.2.0:
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/leaked-handles/-/leaked-handles-5.2.0.tgz#67228e90293b7e0ee36c4190e1f541cddece627f"
+  integrity sha512-H96tZP5iXGw/t34Hhb8+ttcPXb/w1y5d3T4DTb81021UNI6LbtxylQBtiOuUwCiPbnKggykEmHc38hX+E41eag==
+  dependencies:
+    process "^0.10.0"
+    weakmap-shim "^1.1.0"
+    xtend "^4.0.0"
+
 lerna@^5.6.2:
   version "5.6.2"
   resolved "https://registry.yarnpkg.com/lerna/-/lerna-5.6.2.tgz#cdcdfe4e8bf07eccb4ecff1c216def9c67e62af2"
@@ -10792,6 +10801,11 @@ process-warning@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/process-warning/-/process-warning-1.0.0.tgz#980a0b25dc38cd6034181be4b7726d89066b4616"
   integrity sha512-du4wfLyj4yCZq1VupnVSZmRsPJsNuxoDQFdCFHLaYiEbFBD7QE0a+I4D7hOxrVnh78QE/YipFAj9lXHiXocV+Q==
+
+process@^0.10.0:
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/process/-/process-0.10.1.tgz#842457cc51cfed72dc775afeeafb8c6034372725"
+  integrity sha512-dyIett8dgGIZ/TXKUzeYExt7WA6ldDzys9vTDU/cCA9L17Ypme+KzS+NjQCjpn9xsvi/shbMC+yP/BcFMBz0NA==
 
 progress@^2.0.0:
   version "2.0.3"
@@ -12956,6 +12970,11 @@ wcwidth@>=1.0.1, wcwidth@^1.0.0, wcwidth@^1.0.1:
   integrity sha1-8LDc+RW8X/FSivrbLA4XtTLaL+g=
   dependencies:
     defaults "^1.0.3"
+
+weakmap-shim@^1.1.0:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/weakmap-shim/-/weakmap-shim-1.1.1.tgz#d65afd784109b2166e00ff571c33150ec2a40b49"
+  integrity sha512-/wNyG+1FpiHhnfQo+TuA/XAUpvOOkKVl0A4qpT+oGcj5SlZCLmM+M1Py/3Sj8sy+YrEauCVITOxCsZKo6sPbQg==
 
 webidl-conversions@^3.0.0:
   version "3.0.1"

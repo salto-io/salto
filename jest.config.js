@@ -56,4 +56,3 @@ module.exports = Object.assign(
     coverageThreshold,
   }
 )
-

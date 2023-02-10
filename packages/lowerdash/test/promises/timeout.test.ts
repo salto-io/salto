@@ -87,8 +87,14 @@ describe('withTimeout', () => {
     })
 
     it('should reject with a PromiseTimedOutError', async () => {
-      expect(await p).toBeInstanceOf(PromiseTimedOutError)
-      expect(await p).toMatchObject({ message: 'Promise timed out after 1 ms' })
+      try {
+        expect(await p).toBeInstanceOf(PromiseTimedOutError)
+        expect(await p).toMatchObject({ message: 'Promise timed out after 1 ms' })
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.log('+++ Huh? +++ %o', await p)
+        throw e
+      }
     })
   })
 

@@ -29,7 +29,7 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterResult, FilterWith } from '../filter'
-import { getNamespaceFromString, isInstanceOfType } from './utils'
+import { getNamespace, getNamespaceFromString, isInstanceOfType } from './utils'
 import { INSTALLED_PACKAGE_METADATA } from '../constants'
 import { apiName, isCustomObject } from '../transformers/transformer'
 
@@ -37,7 +37,7 @@ import { apiName, isCustomObject } from '../transformers/transformer'
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
-const { DefaultMap } = collections.map
+const { makeArray } = collections.array
 
 const getNamespacesFromReferences = async (references: ReferenceExpression[]): Promise<string[]> => (
   _.uniq(
@@ -55,11 +55,8 @@ const addReferencedPackagesAnnotation = async (
   installedPackageElemIDByName: Record<string, ElemID>
 ): Promise<Set<string>> => {
   const existingReferences: ReferenceExpression[] = []
-  const pathsByReferencedPackageNames = new DefaultMap<string, ElemID[]>(Array)
-  const elementNamespace = getNamespaceFromString(await apiName(
-    isField(element) ? element.parent : element,
-    true
-  ) ?? '')
+  const pathsByReferencedPackageNames: Record<string, ElemID[]> = {}
+  const elementNamespace = await getNamespace(isField(element) ? element.parent : element)
   walkOnElement({
     element,
     func: ({ value, path }) => {
@@ -69,7 +66,7 @@ const addReferencedPackagesAnnotation = async (
         const namespace = getNamespaceFromString(value)
         // No reason to add the current namespace, since reference to this Element should create the link by itself
         if (isDefined(namespace) && namespace !== elementNamespace) {
-          pathsByReferencedPackageNames.get(namespace).push(path)
+          pathsByReferencedPackageNames[namespace] = makeArray(pathsByReferencedPackageNames[namespace]).concat(path)
         }
       }
       return WALK_NEXT_STEP.RECURSE
@@ -99,7 +96,7 @@ const createNonFetchedPackagesWarning = (nonFetchedPackages: types.NonEmptyArray
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
-  name: 'referencedPackages',
+  name: 'referencedPackagesFilter',
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const installedPackageElemIDByName = _.mapValues(
       await keyByAsync(

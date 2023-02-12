@@ -32,7 +32,7 @@ import { FilterResult } from '../../src/filter'
 
 const { makeArray } = collections.array
 
-describe(`${filterCreator.name} filter`, () => {
+describe(filterCreator.name, () => {
   const filter = filterCreator()
   describe('onFetch', () => {
     const FIELD_NAME = 'field'

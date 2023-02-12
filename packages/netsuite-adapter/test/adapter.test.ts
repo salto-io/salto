@@ -838,48 +838,15 @@ describe('Adapter', () => {
         expect(post).toEqual(after)
       })
     })
-
-    describe('deployReferencedElements', () => {
-      beforeEach(() => {
-        testGraph.nodes.clear()
-      })
-      it('should call getReferencedInstances with deployReferencedElements=true', async () => {
-        const configWithDeployReferencedElements = {
-          typesToSkip: [SAVED_SEARCH, TRANSACTION_FORM],
-          fetchAllTypesAtOnce: true,
-          deploy: {
-            deployReferencedElements: true,
-          },
-        }
-        const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
-          client: new NetsuiteClient(client),
-          elementsSource: buildElementsSourceFromElements([]),
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
-          config: configWithDeployReferencedElements,
-          getElemIdFunc: mockGetElemIdFunc,
-        })
-
-        await netsuiteAdapterWithDeployReferencedElements.deploy({
-          changeGroup: {
-            groupID: SDF_CHANGE_GROUP_ID,
-            changes: [{ action: 'add', data: { after: instance } }],
-          },
-        })
-
-        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], true)
-      })
-
-      it('should call getReferencedInstances with deployReferencedElements=false', async () => {
-        await adapterAdd(instance)
-        expect(getReferencedInstancesMock).toHaveBeenCalledWith([instance], false)
-      })
-    })
     describe('additional sdf dependencies', () => {
       let custInfo: CustomizationInfo
       beforeAll(async () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         custInfo = await toCustomizationInfo(expectedResolvedInstance)
+      })
+      beforeEach(() => {
+        testGraph.nodes.clear()
       })
       it('should call deploy with additional dependencies', async () => {
         const configWithAdditionalSdfDependencies = {

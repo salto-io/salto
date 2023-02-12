@@ -646,7 +646,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           values: { scriptid: 'someObject' },
         }
         testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', scriptid: 'someObject', changeType: 'addition', customizationInfos: [customizationInfo] })])
-        await client.validate([change], SDF_CHANGE_GROUP_ID, ...deployParams)
+        await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           [{
             scriptId: 'someObject',

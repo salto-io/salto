@@ -1497,7 +1497,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   ApplicationRole: {
     transformation: {
       fieldsToOmit: [
-        { fieldName: 'userCount' },
         { fieldName: 'remainingSeats' },
         { fieldName: 'groupDetails' },
         { fieldName: 'defaultGroupsDetails' },

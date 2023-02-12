@@ -22,6 +22,7 @@ import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME } fro
 const log = logger(module)
 
 const filter: FilterCreator = () => ({
+  name: 'fieldConfigurationFilter',
   onFetch: async elements => {
     const types = elements.filter(isObjectType)
 

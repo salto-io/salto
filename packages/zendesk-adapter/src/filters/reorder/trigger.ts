@@ -88,6 +88,7 @@ const filterCreator: FilterCreator = ({
   fetchQuery,
   elementsSource,
 }) => ({
+  name: 'triggerOrderFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const orderTypeName = createOrderTypeName(TYPE_NAME)
     const triggerObjType = elements
@@ -170,6 +171,8 @@ const filterCreator: FilterCreator = ({
     elements.push(type, entryOrderType, instance)
   },
   deploy: createReorderFilterCreator({
+    // todoadi fix this reuse of the name
+    filterName: 'triggerOrderFilter',
     typeName: TYPE_NAME,
     orderFieldName: 'order',
     deployFunc,

@@ -85,6 +85,7 @@ const getRenamedInstance = (
  * Remove uuid suffix from group names.
  */
 const filter: FilterCreator = ({ config, getElemIdFunc }) => ({
+  name: 'groupNameFilter',
   onFetch: async (elements: Element[]) => {
     const instances = _.remove(elements,
       element => isGroupElement(element) && isInstanceElement(element))

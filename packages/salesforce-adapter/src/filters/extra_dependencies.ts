@@ -189,6 +189,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to query your 
  * Add references using the tooling API.
  */
 const creator: RemoteFilterCreator = ({ client, config }) => ({
+  name: 'extraDependenciesFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

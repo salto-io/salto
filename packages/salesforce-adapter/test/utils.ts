@@ -72,6 +72,7 @@ export const createCustomObjectType = (
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     [constants.API_NAME]: typeName,
+    ...(params.annotations ?? {}),
   },
   elemID: new ElemID(constants.SALESFORCE, typeName),
 })

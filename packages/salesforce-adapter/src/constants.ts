@@ -311,7 +311,7 @@ export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const MAX_QUERY_LENGTH = 2000
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
-  maxAttempts: 3,
+  maxAttempts: 5,
   retryDelay: 1000,
   retryableFailures: [
     'FIELD_CUSTOM_VALIDATION_EXCEPTION',
@@ -462,6 +462,7 @@ export const INVALID_ID_FIELD = 'sf:INVALID_ID_FIELD'
 export const INVALID_FIELD = 'sf:INVALID_FIELD'
 export const INVALID_TYPE = 'sf:INVALID_TYPE'
 export const UNKNOWN_EXCEPTION = 'sf:UNKNOWN_EXCEPTION'
+export const INVALID_QUERY_FILTER_OPERATOR = 'sf:INVALID_QUERY_FILTER_OPERATOR'
 export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
 export const SF_REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
 export const INVALID_GRANT = 'invalid_grant'

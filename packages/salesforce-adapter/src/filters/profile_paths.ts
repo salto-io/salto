@@ -61,6 +61,7 @@ export const WARNING_MESSAGE = 'Failed to update the NaCl file names for some of
  * replace paths for profile instances upon fetch
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  name: 'profilePathsFilter',
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

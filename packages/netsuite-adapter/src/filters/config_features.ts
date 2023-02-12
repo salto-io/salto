@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { BuiltinTypes, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 import { CONFIG_FEATURES } from '../constants'
-import { FeaturesDeployError } from '../errors'
+import { FeaturesDeployError } from '../client/errors'
 import { featuresType } from '../types/configuration_types'
 
 const log = logger(module)
@@ -27,6 +27,7 @@ const ENABLED = 'ENABLED'
 const DISABLED = 'DISABLED'
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
+  name: 'configFeaturesFilter',
   onFetch: async elements => {
     const featuresInstance = elements.filter(isInstanceElement)
       .find(instance => instance.elemID.typeName === CONFIG_FEATURES)

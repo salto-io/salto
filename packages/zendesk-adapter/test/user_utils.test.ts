@@ -17,6 +17,8 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { mockFunction } from '@salto-io/test-utils'
+import ZendeskClient from '../src/client/client'
+import { ZedneskDeployConfig } from '../src/config'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
 import * as usersUtilsModule from '../src/user_utils'
 
@@ -602,6 +604,80 @@ describe('userUtils', () => {
           policy_metrics: [],
         },
       )
+    })
+  })
+
+  describe('getUserFallbackValue', () => {
+    let deployConfig: ZedneskDeployConfig
+    let client: ZendeskClient
+    let mockGet: jest.SpyInstance
+    const { getUserFallbackValue } = usersUtilsModule
+    const existingUsers = new Set(['salto@io', 'saltoo@io', 'saltooo@io'])
+
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      client = new ZendeskClient({
+        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+      })
+      mockGet = jest.spyOn(client, 'getSinglePage')
+    })
+
+    it('should return specific user value in case the user exists', async () => {
+      deployConfig = {
+        defaultMissingUserFallback: 'salto@io',
+      }
+      const fallbackValue = await getUserFallbackValue(
+        deployConfig.defaultMissingUserFallback as string,
+        existingUsers,
+        client
+      )
+      expect(fallbackValue).toEqual('salto@io')
+    })
+    it('should not return specific user value if it is missing from target env', async () => {
+      deployConfig = {
+        defaultMissingUserFallback: 'useruser@zendesk.com',
+      }
+      await expect(getUserFallbackValue(
+        deployConfig.defaultMissingUserFallback as string,
+        existingUsers,
+        client
+      )).rejects.toThrow(new Error('User provided in defaultMissingUserFallback does not exist in the target environemt'))
+    })
+    it('should return deployer user email', async () => {
+      mockGet
+        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' } } })
+      deployConfig = {
+        defaultMissingUserFallback: '##DEPLOYER##',
+      }
+      const fallbackValue = await getUserFallbackValue(
+        deployConfig.defaultMissingUserFallback as string,
+        existingUsers,
+        client
+      )
+      expect(fallbackValue).toEqual('saltoo@io')
+    })
+    it('should throw in case of fallback to deployer and invalid user reponse', async () => {
+      mockGet
+        .mockResolvedValueOnce({ status: 200, data: { users: [{ id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' }] } })
+      deployConfig = {
+        defaultMissingUserFallback: '##DEPLOYER##',
+      }
+      await expect(getUserFallbackValue(
+        deployConfig.defaultMissingUserFallback as string,
+        existingUsers,
+        client
+      )).rejects.toThrow(new Error('Failed to get current user from endpoint \'/api/v2/users/me\''))
+    })
+    it('should throw in case of an error in current user request', async () => {
+      mockGet.mockRejectedValue({ status: 400, data: {} })
+      deployConfig = {
+        defaultMissingUserFallback: '##DEPLOYER##',
+      }
+      await expect(getUserFallbackValue(
+        deployConfig.defaultMissingUserFallback as string,
+        existingUsers,
+        client
+      )).rejects.toThrow(new Error('Failed to get current user from endpoint \'/api/v2/users/me\''))
     })
   })
 })

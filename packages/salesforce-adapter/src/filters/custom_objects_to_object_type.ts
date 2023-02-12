@@ -820,6 +820,7 @@ const removeDuplicateElements = <T extends Element>(elements: T[]): T[] => {
 const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
+    name: 'customObjectsToObjectTypeFilter',
     onFetch: async (elements: Element[]): Promise<void> => {
       log.debug('Replacing custom object instances with object types')
       const typesFromInstance = await typesToMergeFromInstance(elements)

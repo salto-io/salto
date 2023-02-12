@@ -36,6 +36,7 @@ export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
  * onDeploy: Removes the authentication data from webhook if it wasn't changed
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'webhookFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [webhookModificationChanges, leftoverChanges] = _.partition(
       changes,

@@ -23,6 +23,7 @@ const log = logger(module)
  * Check whether user locale is en_US to make sure we're only pulling Jira information in English
  */
 const filter: FilterCreator = ({ client }) => ({
+  name: 'localeFilter',
   onFetch: async () => {
     if (!client.isDataCenter) {
       return undefined
@@ -40,7 +41,7 @@ const filter: FilterCreator = ({ client }) => ({
         return {
           errors: [
             {
-              message: 'Your Jira Data Center instance is set to a non-English language. Salto currently only supports accessing Jira DC through users with their default language set to English. Please change the user’s language, or create another user with English as its Jira language, and change Salto\'s credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users\' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html',
+              message: 'Your Jira Data Center instance is not set to English-US language. Salto currently only supports accessing Jira DC through users with their default language set to English-US. Please change the user’s language, or create another user with English as its Jira language, and change Salto\'s credentials to use it. After doing that, make sure you re-fetch your environment using an advanced fetch, with “Regenerate Salto IDs” turned on. You only need to do this once. For help on how to change Jira users\' language, go to https://confluence.atlassian.com/adminjiraserver/choosing-a-default-language-938847001.html',
               severity: 'Warning',
             },
           ],

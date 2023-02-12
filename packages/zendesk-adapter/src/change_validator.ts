@@ -64,6 +64,7 @@ import {
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ZendeskConfig } from './config'
+import { ZedneskDeployConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -76,12 +77,14 @@ export default ({
   client,
   config,
   apiConfig,
+  deployConfig,
   typesDeployedViaParent,
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
   config: ZendeskConfig
   apiConfig: configUtils.AdapterDuckTypeApiConfig
+  deployConfig?: ZedneskDeployConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
 }): ChangeValidator => {
@@ -118,7 +121,7 @@ export default ({
     defaultCustomStatusesValidator,
     customRoleRemovalValidator(client),
     sideConversationsValidator,
-    missingUsersValidator(client),
+    missingUsersValidator(client, deployConfig),
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,

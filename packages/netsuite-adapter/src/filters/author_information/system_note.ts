@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -24,8 +24,8 @@ import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
-import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
-import { CUSTOM_RECORD_TYPE, INTERNAL_ID } from '../../constants'
+import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
+import { CUSTOM_RECORD_TYPE } from '../../constants'
 import { changeDateFormat, getZoneAndFormat } from './saved_searches'
 
 const { isDefined } = lowerDashValues
@@ -198,12 +198,6 @@ const fetchSystemNotes = async (
   return indexSystemNotes(distinctSortedSystemNotes(systemNotes))
 }
 
-const getInternalId = (element: Element): Value =>
-  getElementValueOrAnnotations(element)[INTERNAL_ID]
-
-const hasInternalId = (element: Element): boolean =>
-  isDefined(getInternalId(element))
-
 const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
   elements
     .filter(isInstanceElement)
@@ -224,6 +218,7 @@ const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceE
     .toArray()
 
 const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
+  name: 'systemNoteAuthorInformation',
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {

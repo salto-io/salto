@@ -24,6 +24,7 @@ import { FilterCreator } from '../filter'
 import { ValueReplacer, deployModificationFunc, replaceConditionsAndActionsCreator, fieldReplacer } from '../replacers_utils'
 import ZendeskClient from '../client/client'
 import { paginate } from '../client/pagination'
+import { FETCH_CONFIG } from '../config'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
@@ -162,12 +163,18 @@ export const createOrganizationPathEntries = (instances: InstanceElement[])
 }
 
 /**
- * Replaces organization ids with organization names
+ * Replaces organization ids with organization names when 'resolveOrganizationIDs' config flag is enabled
  */
-const filterCreator: FilterCreator = ({ client }) => {
+const filterCreator: FilterCreator = ({ client, config }) => {
   let organizationIdToName: Record<string, string> = {}
+  const resolveOrganizationIDs = config[FETCH_CONFIG].resolveOrganizationIDs ?? false
   return {
-    onFetch: async elements => log.time(async () => {
+    name: 'organizationsFilter',
+    onFetch: async elements => {
+      if (resolveOrganizationIDs === false) {
+        log.debug('Resolving organization IDs to organization names was disabled (onFetch)')
+        return
+      }
       const relevantInstances = elements.filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
@@ -184,8 +191,12 @@ const filterCreator: FilterCreator = ({ client }) => {
         const orgName = mapping[org.id.toString()]
         relevantEntries.forEach(entry => setPath(entry.instance, entry.path, orgName))
       })
-    }, 'Organizations filter'),
+    },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (resolveOrganizationIDs === false) {
+        log.debug('Resolving organization IDs to organization names was disabled (preDeploy)')
+        return
+      }
       const relevantChanges = changes.filter(isRelevantChange)
       if (_.isEmpty(relevantChanges)) {
         return
@@ -216,6 +227,10 @@ const filterCreator: FilterCreator = ({ client }) => {
       await deployModificationFunc(changes, organizationNameToId, TYPE_NAME_TO_REPLACER)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (resolveOrganizationIDs === false) {
+        log.debug('Resolving organization IDs to organization names was disabled (onDeploy)')
+        return
+      }
       const relevantChanges = changes.filter(isRelevantChange)
       if (_.isEmpty(relevantChanges)) {
         return

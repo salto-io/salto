@@ -57,19 +57,20 @@ const createInstanceReferencedNameParts = (
     if (!isReferencedIdField(fieldName)) {
       return _.get(instance.value, fieldName)
     }
+    const dereferenceFieldValue = (fieldValue: ReferenceExpression): string => {
+      const { parent, path } = fieldValue.elemID.createTopLevelParentID()
+      return [parent.name, ...path].join('.')
+    }
+
     const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
     if (isReferenceExpression(fieldValue)) {
-      if (isInstanceElement(fieldValue.value)) {
-        return fieldValue.elemID.name
-      }
-      log.warn(`In instance: ${instance.elemID.getFullName()},
-        the reference expression: ${fieldValue.elemID.getFullName},
-        of field ${fieldName} doesn't point to an instance element`)
-    } else {
-      log.warn(`In instance: ${instance.elemID.getFullName()},
-      could not find reference for referenced idField: ${fieldName}, falling back to original value`)
+      return dereferenceFieldValue(fieldValue)
     }
-    return fieldValue
+    if (isTemplateExpression(fieldValue)) {
+      return fieldValue.parts.map(part => (isReferenceExpression(part) ? dereferenceFieldValue(part) : _.toString(part))).join('')
+    }
+    log.warn(`In instance: ${instance.elemID.getFullName()}, could not find reference for referenced idField: ${fieldName}, falling back to original value`)
+    return _.toString(fieldValue)
   }
 )
 
@@ -83,8 +84,8 @@ const getInstanceNameDependencies = (
     .filter(isReferencedIdField)
     .map(fieldName => {
       const fieldValue = _.get(instance.value, dereferenceFieldName(fieldName))
-      if (isReferenceExpression(fieldValue) && isInstanceElement(fieldValue.value)) {
-        return fieldValue.elemID.getFullName()
+      if (isReferenceExpression(fieldValue) && fieldValue.elemID.idType === 'instance') {
+        return fieldValue.elemID.createTopLevelParentID().parent.getFullName()
       }
       return undefined
     })
@@ -387,7 +388,8 @@ export const referencedInstanceNamesFilterCreator: <
   TContext extends { apiDefinitions: AdapterApiConfig },
   TResult extends void | filter.FilterResult = void
 >() => FilterCreator<TClient, TContext, TResult> = () => ({ config, getElemIdFunc }) => ({
-  onFetch: async (elements: Element[]) => log.time(async () => {
+  name: 'referencedInstanceNames',
+  onFetch: async (elements: Element[]) => {
     const transformationDefault = config.apiDefinitions.typeDefaults.transformation
     const configByType = config.apiDefinitions.types
     const transformationByType = getTransformationConfigByType(configByType)
@@ -397,5 +399,5 @@ export const referencedInstanceNamesFilterCreator: <
       transformationDefault,
       getElemIdFunc
     )
-  }, 'referencedInstanceNamesFilter'),
+  },
 })

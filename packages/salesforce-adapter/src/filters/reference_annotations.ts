@@ -70,6 +70,7 @@ const convertAnnotationsToReferences = async (
  * Convert referenceTo and foreignKeyDomain annotations into reference expressions.
  */
 const filter: LocalFilterCreator = ({ config }) => ({
+  name: 'referenceAnnotationsFilter',
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const typeToElemID = await multiIndex.keyByAsync({

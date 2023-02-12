@@ -99,6 +99,8 @@ export type ChangeValidatorName = (
   | 'unknownUser'
   | 'animationRuleRecordType'
   | 'currencyIsoCodes'
+  | 'dataChange'
+  | 'duplicateRulesSortOrder'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -586,9 +588,11 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
     caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
     omitData: { refType: BuiltinTypes.BOOLEAN },
+    dataChange: { refType: BuiltinTypes.BOOLEAN },
     unknownUser: { refType: BuiltinTypes.BOOLEAN },
     animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
     currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
+    duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

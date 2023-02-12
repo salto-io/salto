@@ -33,6 +33,7 @@ const ROOT_FOLDER_PATH = 'Root'
  * Add root folder instance, since it is not returned from the service but can contain resources.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'addRootFolderFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const folderType = elements.filter(isObjectType).find(e => e.elemID.typeName === FOLDER_TYPE)
     if (folderType === undefined) {

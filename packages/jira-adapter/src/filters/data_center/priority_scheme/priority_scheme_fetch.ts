@@ -61,6 +61,7 @@ const transformInstance = (instance: InstanceElement): void => {
 
 
 const filter: FilterCreator = ({ paginator, client, fetchQuery, getElemIdFunc }) => ({
+  name: 'prioritySchemeFetchFilter',
   onFetch: async elements => {
     if (!client.isDataCenter || !fetchQuery.isTypeMatch(PRIORITY_SCHEME_TYPE_NAME)) {
       return

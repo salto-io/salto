@@ -37,6 +37,7 @@ export const wrongUserPermissionSchemePredicateCreator = (userMap: UserMap): Omi
 const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
   let erroneousPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
+    name: 'wrongUserPermissionSchemeFilter',
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
       if (!(config.fetch.convertUsersIds ?? true)) {
         return

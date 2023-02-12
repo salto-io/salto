@@ -30,6 +30,7 @@ const getInstanceName = (instance: InstanceElement): string =>
  * This filter assumes the adapter does not split the same element into multiple files
  */
 const filter: FilterCreator = ({ config }) => ({
+  name: 'duplicateIdsFilter',
   onFetch: async elements => {
     const relevantInstances = elements
       .filter(isInstanceElement)

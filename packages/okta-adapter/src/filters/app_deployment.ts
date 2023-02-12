@@ -137,6 +137,7 @@ const deployApp = async (
  * application's assigned group and application's policies
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'appDeploymentFilter',
   deploy: async changes => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

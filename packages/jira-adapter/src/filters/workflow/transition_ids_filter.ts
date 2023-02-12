@@ -23,6 +23,7 @@ import { isWorkflowInstance } from './types'
  * (since we implement modification of a workflow with addition and removal)
  */
 const filter: FilterCreator = () => ({
+  name: 'transitionIdsFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

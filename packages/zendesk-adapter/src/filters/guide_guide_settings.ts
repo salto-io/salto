@@ -77,6 +77,7 @@ const addGeneralSettingsAttributesToObjectType = (objects: ObjectType[]): void =
  * 'settings' field. This is done as this arrangement of the instance is necessary for deploy.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'guideGuideSettings',
   onFetch: async (elements: Element[]): Promise<void> => {
     elements
       .filter(isInstanceElement)

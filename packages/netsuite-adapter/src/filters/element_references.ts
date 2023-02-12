@@ -13,12 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS,
-  ReadOnlyElementsSource,
-  isObjectType,
-} from '@salto-io/adapter-api'
-import { extendGeneratedDependencies, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData } from '@salto-io/adapter-api'
+import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { SCRIPT_ID, PATH } from '../constants'
@@ -26,6 +22,8 @@ import { FilterCreator, FilterWith } from '../filter'
 import { isCustomRecordType, isStandardType, isFileCabinetType } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
+import { isSdfCreateOrUpdateGroupId } from '../group_changes'
+import { getLookUpName } from '../transformer'
 
 const { awu } = collections.asynciterable
 
@@ -178,10 +176,26 @@ const createElementsSourceServiceIdToElemID = async (
     : {}
 )
 
+const applyValuesAndAnnotationsToElement = (element: Element, newElement: Element): void => {
+  if (isInstanceElement(element) && isInstanceElement(newElement)) {
+    element.value = newElement.value
+  }
+  if (isObjectType(element) && isObjectType(newElement)) {
+    Object.entries(newElement.fields).forEach(([fieldName, field]) => {
+      if (element.fields[fieldName]) {
+        element.fields[fieldName].annotations = field.annotations
+      }
+    })
+  }
+  element.annotations = newElement.annotations
+}
+
 const filterCreator: FilterCreator = ({
   elementsSourceIndex,
   isPartial,
-}): FilterWith<'onFetch'> => ({
+  changesGroupId,
+}): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'replaceElementReferences',
   onFetch: async elements => {
     const fetchedElementsServiceIdToElemID = await generateServiceIdToElemID(elements)
     const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
@@ -196,17 +210,16 @@ const filterCreator: FilterCreator = ({
         fetchedElementsServiceIdToElemID,
         elementsSourceServiceIdToElemID
       )
-      if (isInstanceElement(element) && isInstanceElement(newElement)) {
-        element.value = newElement.value
-      }
-      if (isObjectType(element) && isObjectType(newElement)) {
-        Object.entries(newElement.fields).forEach(([fieldName, field]) => {
-          if (element.fields[fieldName]) {
-            element.fields[fieldName].annotations = field.annotations
-          }
-        })
-      }
-      element.annotations = newElement.annotations
+      applyValuesAndAnnotationsToElement(element, newElement)
+    })
+  },
+  preDeploy: async changes => {
+    if (!changesGroupId || !isSdfCreateOrUpdateGroupId(changesGroupId)) {
+      return
+    }
+    await awu(changes).map(getChangeData).forEach(async element => {
+      const newElement = await resolveValues(element, getLookUpName)
+      applyValuesAndAnnotationsToElement(element, newElement)
     })
   },
 })

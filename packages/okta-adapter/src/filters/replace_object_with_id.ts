@@ -46,6 +46,7 @@ const replaceObjectWithId = (instance: InstanceElement): void => {
  * the filter replaces the object with its id so we can use fieldReferences filter
  */
 const filter: FilterCreator = () => ({
+  name: 'replaceObjectWithIdFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

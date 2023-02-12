@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { ACCOUNT_ID_INFO_TYPE, JIRA } from '../../constants'
 
@@ -38,3 +38,5 @@ export const accountIdInfoType = new ObjectType({
   },
   path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, ACCOUNT_ID_INFO_TYPE],
 })
+
+export const accountIdInfoListType = new ListType(accountIdInfoType)

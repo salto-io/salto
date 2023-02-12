@@ -47,6 +47,8 @@ import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
 import { permissionSchemeDeploymentValidator } from './permission_scheme'
 import { statusMigrationChangeValidator } from './status_migration'
 import { activeWorkflowSchemeChangeValidator } from './active_workflow_scheme_change'
+import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
+import { unresolvedReferenceValidator } from './unresolved_references'
 
 const {
   deployTypesNotSupportedValidator,
@@ -57,7 +59,9 @@ export default (
   client: JiraClient, config: JiraConfig, getUserMapFunc: GetUserMapFunc, paginator: clientUtils.Paginator
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
-    ...deployment.changeValidators.getDefaultChangeValidators(),
+    ...deployment.changeValidators.getDefaultChangeValidators(['unresolvedReferencesValidator']),
+    unresolvedReferenceValidator,
+    automationProjectUnresolvedReferenceValidator,
     deployTypesNotSupportedValidator,
     readOnlyProjectRoleChangeValidator,
     defaultFieldConfigurationValidator,
@@ -74,6 +78,7 @@ export default (
     permissionTypeValidator,
     automationsValidator,
     statusMigrationChangeValidator,
+    // Must run after statusMigrationChangeValidator
     workflowSchemeMigrationValidator(client, config, paginator),
     activeWorkflowSchemeChangeValidator(client),
     maskingValidator(client),

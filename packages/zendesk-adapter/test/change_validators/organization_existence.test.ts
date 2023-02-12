@@ -60,6 +60,11 @@ describe('OrganizationExistence', () => {
         operator: 'is',
         value: ids ? 4 : 'four',
       },
+      {
+        field: 'organization_id',
+        operator: 'is',
+        value: ids ? 4 : 'four', // Twice to make sure it is not duplicated in the error message
+      },
     ],
   })
 

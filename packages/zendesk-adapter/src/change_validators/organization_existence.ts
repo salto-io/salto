@@ -41,12 +41,12 @@ const { isDefined } = lowerDashValues
  */
 export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) =>
     ChangeValidator = (client, fetchConfig) => async changes => {
-      // If the organizations were resolved, they are stored as a name instead of an id
+      // If the organizations were resolved, they are stored as names instead of ids
       const orgIdsResolved = fetchConfig.resolveOrganizationIDs === true
-      const relevantChanges = changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).filter(change =>
-        Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName))
+      const relevantChanges = changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
+        .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
-      const organizationPathEntries = createOrganizationPathEntries(relevantChanges.map(getChangeData))
+      const organizationPathEntries = createOrganizationPathEntries(relevantChanges)
       const entriesByInstance = _.groupBy(organizationPathEntries, entry => entry.instance.elemID.getFullName())
 
       const paginator = clientUtils.createPaginator({ client, paginationFuncCreator: paginate })
@@ -64,15 +64,15 @@ export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig
       // Because 'entriesByInstance' is already grouped by instance, we can run over it instead of over the changes
       const errors = await awu(Object.values(entriesByInstance)).map(async (entries)
           : Promise<ChangeError | undefined> => {
-        const nonExistingOrgs = entries.filter(({ id }) => !existingOrgsSet.has(id))
+        const nonExistingOrgs = new Set<string>(entries.filter(({ id }) => !existingOrgsSet.has(id)).map(org => org.id))
 
         // If the instance includes an organization that does not exist, we won't allow a change to that instance
-        if (nonExistingOrgs.length > 0) {
+        if (nonExistingOrgs.size > 0) {
           return {
             elemID: entries[0].instance.elemID,
             severity: 'Error',
             message: 'Referenced organizations do not exist',
-            detailedMessage: `The following referenced organizations do not exist: ${nonExistingOrgs.map(org => org.id).join(', ')}`,
+            detailedMessage: `The following referenced organizations do not exist: ${Array.from(nonExistingOrgs).join(', ')}`,
           }
         }
         return undefined

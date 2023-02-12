@@ -41,8 +41,8 @@ const getChangeErrorForChange = (change: ModificationChange<InstanceElement>): C
   ({
     elemID: getChangeData(change).elemID,
     severity: 'Error',
-    message: 'Can’t change workflow scheme of project with issues',
-    detailedMessage: 'This project has issues and can’t change workflow scheme',
+    message: 'Can’t replace non-empty project workflow scheme',
+    detailedMessage: 'Salto cannot change the workflow scheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.',
   })
 
 export const activeWorkflowSchemeChangeValidator = (

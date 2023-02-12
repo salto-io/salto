@@ -23,7 +23,6 @@ describe('workflow scheme migration', () => {
   let projectType: ObjectType
   let projectInstance: InstanceElement
   let workflowInstance: InstanceElement
-  let modifiedInstance: InstanceElement
   let elementSource: ReadOnlyElementsSource
 
   beforeEach(() => {
@@ -39,14 +38,6 @@ describe('workflow scheme migration', () => {
       }
     )
     workflowInstance = new InstanceElement(
-      'workflow',
-      workflowSchemeType,
-      {
-        id: 'workflowid',
-        name: 'instance',
-      }
-    )
-    modifiedInstance = new InstanceElement(
       'workflow',
       workflowSchemeType,
       {

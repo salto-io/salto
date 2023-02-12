@@ -14,54 +14,93 @@
 * limitations under the License.
 */
 import {
-  Element, ElemID,
-  isInstanceElement,
-  isObjectType,
-  ReferenceExpression,
+  Element, ElemID, Field, InstanceElement, isField, isInstanceElement,
+  isObjectType, isReferenceExpression,
+  ReferenceExpression, SaltoError,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { DetailedDependency, extendGeneratedDependencies, WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
+import { collections, values, types } from '@salto-io/lowerdash'
+import {
+  createWarningFromMsg,
+  extendGeneratedDependencies,
+  safeJsonStringify,
+  WALK_NEXT_STEP,
+  walkOnElement,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FilterWith, LocalFilterCreator } from '../filter'
+import { FilterResult, FilterWith } from '../filter'
 import { getNamespaceFromString, isInstanceOfType } from './utils'
 import { INSTALLED_PACKAGE_METADATA } from '../constants'
-import { apiName } from '../transformers/transformer'
+import { apiName, isCustomObject } from '../transformers/transformer'
 
 
 const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
+const { DefaultMap } = collections.map
 
-const addReferencedPackagesAnnotation = (
-  element: Element,
+const getNamespacesFromReferences = async (references: ReferenceExpression[]): Promise<string[]> => (
+  _.uniq(
+    await awu(references)
+      .map(reference => reference.getResolvedValue())
+      .filter(_.isString)
+      .map(getNamespaceFromString)
+      .filter(isDefined)
+      .toArray()
+  )
+)
+
+const addReferencedPackagesAnnotation = async (
+  element: InstanceElement | Field,
   installedPackageElemIDByName: Record<string, ElemID>
-): Set<string> => {
-  const missingPackageNames = new Set<string>()
-  const detailedDependencies: DetailedDependency[] = []
+): Promise<Set<string>> => {
+  const existingReferences: ReferenceExpression[] = []
+  const pathsByReferencedPackageNames = new DefaultMap<string, ElemID[]>(Array)
+  const elementNamespace = getNamespaceFromString(await apiName(
+    isField(element) ? element.parent : element,
+    true
+  ) ?? '')
   walkOnElement({
     element,
-    func: ({ value }) => {
-      if (_.isString(value)) {
+    func: ({ value, path }) => {
+      if (isReferenceExpression(value)) {
+        existingReferences.push(value)
+      } else if (_.isString(value)) {
         const namespace = getNamespaceFromString(value)
-        if (isDefined(namespace)) {
-          const installedPackageElemID = installedPackageElemIDByName[namespace]
-          if (Object.keys(installedPackageElemIDByName).includes(namespace)) {
-            detailedDependencies.push({ reference: new ReferenceExpression(installedPackageElemID) })
-          } else {
-            missingPackageNames.add(namespace)
-          }
+        // No reason to add the current namespace, since reference to this Element should create the link by itself
+        if (isDefined(namespace) && namespace !== elementNamespace) {
+          pathsByReferencedPackageNames.get(namespace).push(path)
         }
       }
-      extendGeneratedDependencies(element, detailedDependencies)
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return missingPackageNames
+  const pathsByNonReferencedPackageNames = _.omit(
+    pathsByReferencedPackageNames,
+    await getNamespacesFromReferences(existingReferences)
+  )
+  log.debug('Element %s had missing references. pathsByNonReferencedPackageNames: %s', element.elemID.getFullName(), safeJsonStringify(pathsByNonReferencedPackageNames))
+  const nonReferencedPackages = new Set(Object.keys(pathsByNonReferencedPackageNames))
+  nonReferencedPackages.forEach(nonReferencedPackage => {
+    const installedPackageElemID = installedPackageElemIDByName[nonReferencedPackage]
+    if (installedPackageElemID === undefined) {
+      log.warn('No InstalledPackage instance found for package %s', nonReferencedPackage)
+    } else {
+      extendGeneratedDependencies(element, [{ reference: new ReferenceExpression(installedPackageElemID) }])
+    }
+  })
+  return nonReferencedPackages
 }
 
-const filterCreator: LocalFilterCreator = (): FilterWith<'onFetch'> => ({
-  onFetch: async (elements: Element[]): Promise<void> => {
+const createNonFetchedPackagesWarning = (nonFetchedPackages: types.NonEmptyArray<string>): SaltoError => {
+  log.debug('Created dependencies to non fetched packages : %o', nonFetchedPackages)
+  return createWarningFromMsg('Some of your Elements has missing references to Elements from installed packages. '
+  + `Please make sure the following packages are included in your fetch config: ${safeJsonStringify(nonFetchedPackages)}`)
+}
+
+const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'referencedPackages',
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const installedPackageElemIDByName = _.mapValues(
       await keyByAsync(
         await awu(elements)
@@ -71,11 +110,22 @@ const filterCreator: LocalFilterCreator = (): FilterWith<'onFetch'> => ({
       ),
       instance => instance.elemID,
     )
-    const missingPackageNames = elements
-      .filter(e => isInstanceElement(e) || isObjectType(e))
-      .flatMap(e => addReferencedPackagesAnnotation(e, installedPackageElemIDByName))
-    if (!_.isEmpty(missingPackageNames)) {
-      log.warn('Missing packages: %o', missingPackageNames)
+    const nonReferencedPackages = _.uniq([
+      ...await awu(elements)
+        .filter(isInstanceElement)
+        .flatMap(e => addReferencedPackagesAnnotation(e, installedPackageElemIDByName))
+        .toArray(),
+      ...await awu(elements)
+        .filter(isObjectType)
+        .filter(isCustomObject)
+        .flatMap(e => Object.values(e.fields))
+        .flatMap(e => addReferencedPackagesAnnotation(e, installedPackageElemIDByName))
+        .toArray(),
+    ])
+    return {
+      errors: types.isNonEmptyArray(nonReferencedPackages)
+        ? [createNonFetchedPackagesWarning(nonReferencedPackages)]
+        : [],
     }
   },
 })

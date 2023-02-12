@@ -145,13 +145,25 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
   }
 }
 
-export const getNamespaceFromString = (name: string): string | undefined => name
-  .replace(CUSTOM_METADATA_SUFFIX, '')
-  .replace(SALESFORCE_CUSTOM_SUFFIX, '')
-  .split(NAMESPACE_SEPARATOR)[0]
+/**
+ * Splitting by `/` for service urls and by `.` for relative api names
+ */
+const getRelativeName = (name: string): string => (
+  _.last(name.split(/[./]/)) ?? name
+)
+
+export const getNamespaceFromString = (name: string): string | undefined => {
+  const parts = getRelativeName(name)
+    .replace(CUSTOM_METADATA_SUFFIX, '')
+    .replace(SALESFORCE_CUSTOM_SUFFIX, '')
+    .split(NAMESPACE_SEPARATOR)
+  return parts.length === 1
+    ? undefined
+    : parts[0]
+}
 
 export const getNamespace = async (
-  customElement: Field | ObjectType
+  customElement: Field | ObjectType | InstanceElement
 ): Promise<string | undefined> =>
   getNamespaceFromString(await apiName(customElement, true))
 

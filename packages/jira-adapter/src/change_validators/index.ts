@@ -46,6 +46,7 @@ import { fieldContextValidator } from './field_contexts/field_contexts'
 import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
 import { permissionSchemeDeploymentValidator } from './permission_scheme'
 import { statusMigrationChangeValidator } from './status_migration'
+import { activeWorkflowSchemeChangeValidator } from './active_workflow_schemes'
 
 const {
   deployTypesNotSupportedValidator,
@@ -72,6 +73,7 @@ export default (
     dashboardLayoutValidator,
     permissionTypeValidator,
     automationsValidator,
+    activeWorkflowSchemeChangeValidator,
     statusMigrationChangeValidator,
     workflowSchemeMigrationValidator(client, config, paginator),
     maskingValidator(client),

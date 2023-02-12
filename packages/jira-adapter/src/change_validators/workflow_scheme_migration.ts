@@ -48,7 +48,7 @@ export type StatusMigration = {
   newStatusId?: ReferenceExpression
 }
 
-const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
+export const projectHasWorkflowSchemeReference = (project: InstanceElement): boolean =>
   project.value.workflowScheme instanceof ReferenceExpression
 
 const workflowLinkedToProjectWithIssues = async (

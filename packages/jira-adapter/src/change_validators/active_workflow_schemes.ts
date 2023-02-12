@@ -13,14 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, ElemID, getChangeData, isRemovalChange, SeverityLevel } from '@salto-io/adapter-api'
-import { WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
+import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isRemovalChange, SeverityLevel } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
+import { projectHasWorkflowSchemeReference } from './workflow_scheme_migration'
 
-const getActiveWorkflowSchemeRemovalError = (elemID: ElemID): ChangeError => ({
+
+const { awu } = collections.asynciterable
+
+const getActiveWorkflowSchemeRemovalError = (elemID: ElemID, projects: InstanceElement[]): ChangeError => ({
   elemID,
   severity: 'Error' as SeverityLevel,
-  message: 'Cannot remove active workflow scheme',
-  detailedMessage: 'Cannot remove active workflow scheme',
+  message: 'Can’t remove schemes that are being used',
+  detailedMessage: `This scheme is currently used by ${projects.length === 1 ? 'project' : 'projects'} ${projects.map(project => project.elemID.name).join(', ')}, and can’t be deleted`,
 })
 
 export const activeWorkflowSchemeChangeValidator: ChangeValidator = async (changes, elementSource) => {
@@ -28,5 +34,23 @@ export const activeWorkflowSchemeChangeValidator: ChangeValidator = async (chang
     .filter(isRemovalChange)
     .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
     .filter(change => getChangeData(change).elemID.idType === 'instance')
-  return relevantChanges.map(change => getActiveWorkflowSchemeRemovalError(getChangeData(change).elemID))
+  if (elementSource === undefined || relevantChanges.length === 0) {
+    return []
+  }
+  const idsIterator = awu(await elementSource.list())
+  const projects = await awu(idsIterator)
+    .filter(id => id.typeName === PROJECT_TYPE)
+    .filter(id => id.idType === 'instance')
+    .map(id => elementSource.get(id))
+    .toArray()
+  const workflowSchemesToProjects = _.groupBy(
+    projects.filter(projectHasWorkflowSchemeReference),
+    project => project.value.workflowScheme.elemID.getFullName(),
+  )
+  return relevantChanges
+    .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()] !== undefined)
+    .map(change => getActiveWorkflowSchemeRemovalError(
+      getChangeData(change).elemID,
+      workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
+    ))
 }

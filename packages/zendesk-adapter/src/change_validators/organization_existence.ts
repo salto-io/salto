@@ -56,7 +56,7 @@ export const organizationExistenceValidator: (client: ZendeskClient, config: Zen
         Object.values(entriesByInstance).map(entries => entries.map(entry => entry.id)).flat()
       ))
       const existingOrgs = orgIdsResolved
-        ? await getOrganizationsByNames()(orgIdentifiers, paginator)
+        ? await getOrganizationsByNames(orgIdentifiers, paginator)
         : await getOrganizationsByIds(orgIdentifiers, client)
 
       const existingOrgsSet = new Set(existingOrgs.map(org => (orgIdsResolved ? org.name : org.id.toString())))

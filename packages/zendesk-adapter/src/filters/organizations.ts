@@ -150,7 +150,7 @@ export const getOrganizationsByNames = async (
 export const createOrganizationPathEntries = (instances: InstanceElement[])
     : organizationIdInstanceAndPath[] => {
   const organizationPathsEntries = instances.flatMap(instance => {
-    const organizationPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
+    const organizationPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance) ?? []
     return organizationPaths
       .map(path => {
         const orgId = resolvePath(instance, path)

@@ -31,7 +31,7 @@ import {
 } from '../filters/organizations'
 import ZendeskClient from '../client/client'
 import { paginate } from '../client/pagination'
-import { FETCH_CONFIG, ZendeskConfig } from '../config'
+import { ZendeskFetchConfig } from '../config'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
@@ -39,10 +39,10 @@ const { isDefined } = lowerDashValues
 /**
  * Validates the existence of organizations that are referenced in added or modified elements
  */
-export const organizationExistenceValidator: (client: ZendeskClient, config: ZendeskConfig) =>
-    ChangeValidator = (client, config) => async changes => {
-      // If the organization were resolved, they are stored as a name instead of an id
-      const orgIdsResolved = config[FETCH_CONFIG].resolveOrganizationIDs === true
+export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) =>
+    ChangeValidator = (client, fetchConfig) => async changes => {
+      // If the organizations were resolved, they are stored as a name instead of an id
+      const orgIdsResolved = fetchConfig.resolveOrganizationIDs === true
       const relevantChanges = changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).filter(change =>
         Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName))
 

@@ -28,7 +28,7 @@ export const getFieldsLookUpName: GetLookupNameFunc = ({
 }) => {
   if (path !== undefined
     && (['optionId', 'cascadingOptionId'].includes(path.name)
-      || path.getFullNameParts()[path.getFullNameParts().length - 2] === 'optionIds')) {
+      || (path.typeName === 'CustomFieldContext' && path.getFullNameParts()[path.getFullNameParts().length - 2] === 'optionIds'))) {
     return ref.value.id
   }
   return ref

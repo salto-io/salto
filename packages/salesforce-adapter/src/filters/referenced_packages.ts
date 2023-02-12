@@ -89,10 +89,11 @@ const addReferencedPackagesAnnotation = async (
   return nonReferencedPackages
 }
 
-const createNonFetchedPackagesWarning = (nonFetchedPackages: types.NonEmptyArray<string>): SaltoError => {
-  log.debug('Created dependencies to non fetched packages : %o', nonFetchedPackages)
-  return createWarningFromMsg('Some of your Elements has missing references to Elements from installed packages. '
-  + `Please make sure the following packages are included in your fetch config: ${safeJsonStringify(nonFetchedPackages)}`)
+const createNonReferencedPackagesWarning = (nonReferencedPackages: types.NonEmptyArray<string>): SaltoError => {
+  const message = 'Some of your Elements has missing references to Elements from installed packages. '
+    + `We suggest you include them in your fetch config: ${safeJsonStringify(nonReferencedPackages)}`
+  log.debug(message)
+  return createWarningFromMsg(message)
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
@@ -121,7 +122,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     ])
     return {
       errors: types.isNonEmptyArray(nonReferencedPackages)
-        ? [createNonFetchedPackagesWarning(nonReferencedPackages)]
+        ? [createNonReferencedPackagesWarning(nonReferencedPackages)]
         : [],
     }
   },

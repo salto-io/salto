@@ -80,7 +80,7 @@ describe('OrganizationExistence', () => {
   client.getSinglePage = getSinglePageMock
 
   it('should return an error if the organization does not exist, with resolved Ids', async () => {
-    const fetchConfig = { ...DEFAULT_CONFIG[FETCH_CONFIG], [FETCH_CONFIG]: { resolveOrganizationIDs: true } }
+    const fetchConfig = { ...DEFAULT_CONFIG[FETCH_CONFIG], resolveOrganizationIDs: true }
     const validator = organizationExistenceValidator(client, fetchConfig)
     paginatorMock.mockReturnValue([{ organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] }])
 

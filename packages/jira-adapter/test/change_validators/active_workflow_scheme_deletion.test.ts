@@ -16,9 +16,9 @@
 import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
-import { activeWorkflowSchemeChangeValidator } from '../../src/change_validators/active_workflow_schemes'
+import { activeWorkflowSchemeDeletionValidator } from '../../src/change_validators/active_workflow_scheme_deletion'
 
-describe('workflow scheme migration', () => {
+describe('active workflow scheme deletion', () => {
   let workflowSchemeType: ObjectType
   let projectType: ObjectType
   let projectInstance: InstanceElement
@@ -48,12 +48,12 @@ describe('workflow scheme migration', () => {
     elementSource = buildElementsSourceFromElements([workflowInstance, projectInstance])
   })
   it('should not return error for addition/modification changes', async () => {
-    const additionErrors = await activeWorkflowSchemeChangeValidator(
+    const additionErrors = await activeWorkflowSchemeDeletionValidator(
       [toChange({ after: workflowInstance })],
       elementSource,
     )
     expect(additionErrors).toHaveLength(0)
-    const modificationErrors = await activeWorkflowSchemeChangeValidator(
+    const modificationErrors = await activeWorkflowSchemeDeletionValidator(
       [toChange({ before: workflowInstance, after: workflowInstance })],
       elementSource,
     )
@@ -61,11 +61,11 @@ describe('workflow scheme migration', () => {
   })
   it('should not return error for inactive workflow scheme', async () => {
     projectInstance.value.workflowScheme = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
-    const errors = await activeWorkflowSchemeChangeValidator([toChange({ before: workflowInstance })], elementSource)
+    const errors = await activeWorkflowSchemeDeletionValidator([toChange({ before: workflowInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
   it('should return singular error for workflow scheme linked to one project', async () => {
-    const errors = await activeWorkflowSchemeChangeValidator(
+    const errors = await activeWorkflowSchemeDeletionValidator(
       [toChange({ before: workflowInstance })],
       elementSource,
     )
@@ -75,7 +75,7 @@ describe('workflow scheme migration', () => {
   })
   it('should return plural error for workflow scheme linked to multiple projects', async () => {
     elementSource = buildElementsSourceFromElements([workflowInstance, projectInstance, projectInstance])
-    const errors = await activeWorkflowSchemeChangeValidator(
+    const errors = await activeWorkflowSchemeDeletionValidator(
       [toChange({ before: workflowInstance })],
       elementSource,
     )

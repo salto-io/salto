@@ -29,7 +29,7 @@ const getActiveWorkflowSchemeRemovalError = (elemID: ElemID, projects: InstanceE
   detailedMessage: `This scheme is currently used by ${projects.length === 1 ? 'project' : 'projects'} ${projects.map(project => project.elemID.name).join(', ')}, and can’t be deleted`,
 })
 
-export const activeWorkflowSchemeChangeValidator: ChangeValidator = async (changes, elementSource) => {
+export const activeWorkflowSchemeDeletionValidator: ChangeValidator = async (changes, elementSource) => {
   const relevantChanges = changes
     .filter(isRemovalChange)
     .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)

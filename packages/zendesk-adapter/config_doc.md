@@ -68,7 +68,8 @@ zendesk {
 |---------------------------------------------|-----------------------------------|------------
 | [include](#fetch-entry-options)             | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
 | [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
-| [guide](#fetch-entry-options)               | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
+| [guide]                                     | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
+| [resolveOrganizationIDs]                    | false                             | When enabled, organization IDs will be replaced with organization names
 
 ## Fetch entry options
 

@@ -19,6 +19,7 @@ import { organizationExistenceValidator } from '../../src/change_validators'
 import { ZENDESK } from '../../src/constants'
 import { SLA_POLICY_TYPE_NAME } from '../../src/filters/sla_policy'
 import ZendeskClient from '../../src/client/client'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const paginatorMock = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -36,98 +37,107 @@ describe('OrganizationExistence', () => {
   const slaType = new ObjectType({ elemID: new ElemID(ZENDESK, SLA_POLICY_TYPE_NAME) })
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
 
-  const slaInstance = new InstanceElement(
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  const createOrgsList = (ids = true) => ({
+    all: [
+      {
+        field: 'organization_id',
+        operator: 'is',
+        value: ids ? 1 : 'one',
+      },
+      {
+        field: 'organization_id',
+        operator: 'is',
+        value: ids ? 2 : 'two',
+      },
+      {
+        field: 'organization_id',
+        operator: 'is',
+        value: ids ? 3 : 'three',
+      },
+      {
+        field: 'organization_id',
+        operator: 'is',
+        value: ids ? 4 : 'four',
+      },
+    ],
+  })
+
+  const createSlaInstance = (ids = true): InstanceElement => new InstanceElement(
     'sla',
     slaType,
-    {
-      filter: {
-        all: [
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'one',
-          },
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'two',
-          },
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'three',
-          },
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'four',
-          },
-        ],
-      },
-    }
+    { filter: createOrgsList(ids) }
   )
 
-  const triggerInstance = new InstanceElement(
+  const createTriggerInstance = (ids = true): InstanceElement => new InstanceElement(
     'trigger',
     triggerType,
-    {
-      conditions: {
-        all: [
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'one',
-          },
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'two',
-          },
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'three',
-          },
-          {
-            field: 'organization_id',
-            operator: 'is',
-            value: 'four',
-          },
-        ],
-      },
-    }
+    { conditions: createOrgsList(ids) }
   )
 
-  const changes = [
-    toChange({ after: slaInstance }),
-    toChange({ before: triggerInstance, after: triggerInstance }),
-    toChange({ before: slaInstance }), // Should do nothing because we don't care about removals
-  ]
-
   const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
-  const validator = organizationExistenceValidator(client)
-  paginatorMock.mockReturnValue([{ organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] }])
+  const getSinglePageMock = jest.fn()
+  client.getSinglePage = getSinglePageMock
 
-  it('should return an error if the organization does not exist, and cache the results of the existence check', async () => {
+  it('should return an error if the organization does not exist, with resolved Ids', async () => {
+    const config = { ...DEFAULT_CONFIG, [FETCH_CONFIG]: { resolveOrganizationIDs: true } }
+    const validator = organizationExistenceValidator(client, config)
+    paginatorMock.mockReturnValue([{ organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] }])
+
+    const slaInstance = createSlaInstance(false)
+    const triggerInstance = createTriggerInstance(false)
+
+    const changes = [
+      toChange({ after: slaInstance }),
+      toChange({ before: triggerInstance, after: triggerInstance }),
+      toChange({ before: slaInstance }), // Should do nothing because we don't care about removals
+    ]
+
     const errors = await validator(changes)
     expect(errors).toMatchObject([
       {
         elemID: slaInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations does not exist: three, four',
+        detailedMessage: 'The following referenced organizations do not exist: three, four',
       },
       {
         elemID: triggerInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations does not exist: three, four',
+        detailedMessage: 'The following referenced organizations do not exist: three, four',
       },
     ])
-    // First call returns and caches 'one' and 'two'
-    // Second call returns nothing and caches 'three'
-    // Third call returns nothing adn caches 'four'
-    // triggerInstance called are all cached
-    expect(paginatorMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('should return an error if the organization does not exist, and request all orgs in one request, with unresolved Ids', async () => {
+    const validator = organizationExistenceValidator(client, DEFAULT_CONFIG)
+    getSinglePageMock.mockReturnValue({ data: { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] } })
+
+    const slaInstance = createSlaInstance()
+    const triggerInstance = createTriggerInstance()
+
+    const changes = [
+      toChange({ after: slaInstance }),
+      toChange({ before: triggerInstance, after: triggerInstance }),
+      toChange({ before: slaInstance }), // Should do nothing because we don't care about removals
+    ]
+
+    const errors = await validator(changes)
+    expect(errors).toMatchObject([
+      {
+        elemID: slaInstance.elemID,
+        severity: 'Error',
+        message: 'Referenced organizations do not exist',
+        detailedMessage: 'The following referenced organizations do not exist: 3, 4',
+      },
+      {
+        elemID: triggerInstance.elemID,
+        severity: 'Error',
+        message: 'Referenced organizations do not exist',
+        detailedMessage: 'The following referenced organizations do not exist: 3, 4',
+      },
+    ])
+    expect(getSinglePageMock).toHaveBeenCalledTimes(1)
   })
 })

@@ -92,7 +92,7 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => (
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
 )
 
-const getOrganizationsByIds = async (
+export const getOrganizationsByIds = async (
   organizationIds: string[],
   client: ZendeskClient,
 ): Promise<Organization[]> => {
@@ -112,46 +112,53 @@ const getOrganizationsByIds = async (
   return results.flatMap(orgResponse => orgResponse.organizations)
 }
 
-const organizationsCache: Record<string, Organization | undefined> = {}
-export const getOrganizationsByNames = async (
-  organizationNames: string[],
-  paginator: clientUtils.Paginator,
-): Promise<Organization[]> => {
-  const paginationArgs = {
-    url: '/api/v2/organizations/autocomplete',
-    paginationField: 'next_page',
+export const getOrganizationsByNames = ():(organizationNames: string[], paginator: clientUtils.Paginator)
+    => Promise<Organization[]> => {
+  const organizationsCache: Record<string, Organization | undefined> = {}
+
+  const getOrganizationsByNamesFunc = async (
+    organizationNames: string[],
+    paginator: clientUtils.Paginator,
+  ): Promise<Organization[]> => {
+    const paginationArgs = {
+      url: '/api/v2/organizations/autocomplete',
+      paginationField: 'next_page',
+    }
+    const organizations = (await Promise.all(
+      organizationNames
+        .map(async organizationName => {
+          // 'in' and not '!== undefined' because the value can be undefined
+          if (organizationName in organizationsCache) {
+            return organizationsCache[organizationName]
+          }
+          _.set(paginationArgs, 'queryParams', { name: organizationName })
+          const res = (await toArrayAsync(paginator(
+            paginationArgs,
+            page => makeArray(page) as clientUtils.ResponseValue[],
+          ))).flat().flatMap(response => response.organizations)
+          if (!areOrganizations(res)) {
+            log.error('invalid organization response')
+            return undefined
+          }
+
+          // Cache the results
+          res.forEach(org => {
+            organizationsCache[org.name] = org
+          })
+
+          // the endpoint returns all organizations with names matching the wildcard `organizationName`
+          const organization = res.find(org => org.name === organizationName)
+          if (organization === undefined) {
+            log.error(`could not find any organization with name ${organizationName}`)
+            organizationsCache[organizationName] = undefined
+          }
+          return organization
+        })
+    )).filter(isDefined).flat()
+
+    return organizations
   }
-  const organizations = (await Promise.all(
-    organizationNames
-      .map(async organizationName => {
-        // 'in' and not '!== undefined' because the value can be undefined
-        if (organizationName in organizationsCache) {
-          return organizationsCache[organizationName]
-        }
-        _.set(paginationArgs, 'queryParams', { name: organizationName })
-        const res = (await toArrayAsync(paginator(
-          paginationArgs,
-          page => makeArray(page) as clientUtils.ResponseValue[],
-        ))).flat().flatMap(response => response.organizations)
-        if (!areOrganizations(res)) {
-          log.error('invalid organization response')
-          return undefined
-        }
-
-        // Cache the results
-        res.forEach(org => { organizationsCache[org.name] = org })
-
-        // the endpoint returns all organizations with names matching the wildcard `organizationName`
-        const organization = res.find(org => org.name === organizationName)
-        if (organization === undefined) {
-          log.error(`could not find any organization with name ${organizationName}`)
-          organizationsCache[organizationName] = undefined
-        }
-        return organization
-      })
-  )).filter(isDefined).flat()
-
-  return organizations
+  return getOrganizationsByNamesFunc
 }
 
 // Returns the organization ids or names that are referenced in the instance
@@ -212,7 +219,7 @@ const filterCreator: FilterCreator = ({ client }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const organizations = await getOrganizationsByNames(organizationNames, paginator)
+      const organizations = await getOrganizationsByNames()(organizationNames, paginator)
       if (_.isEmpty(organizations)) {
         return
       }

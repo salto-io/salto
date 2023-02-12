@@ -58,9 +58,12 @@ import {
   customStatusCategoryChangeValidator,
   customStatusCategoryValidator,
   defaultCustomStatusesValidator,
-  customStatusActiveDefaultValidator, defaultGroupChangeValidator, organizationExistenceValidator,
+  customStatusActiveDefaultValidator,
+  defaultGroupChangeValidator,
+  organizationExistenceValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
+import { ZendeskConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -71,11 +74,13 @@ const {
 
 export default ({
   client,
+  config,
   apiConfig,
   typesDeployedViaParent,
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
+  config: ZendeskConfig
   apiConfig: configUtils.AdapterDuckTypeApiConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
@@ -126,7 +131,7 @@ export default ({
     helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook,
     defaultGroupChangeValidator,
-    organizationExistenceValidator(client),
+    organizationExistenceValidator(client, config),
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

@@ -20,7 +20,7 @@ import { CustomizationInfo } from './types'
 
 export type SDFObjectNode = {
   elemIdFullName: string
-  scriptid: string
+  scriptid: string | undefined
   changeType: 'addition' | 'modification'
   customizationInfos: CustomizationInfo[]
 }

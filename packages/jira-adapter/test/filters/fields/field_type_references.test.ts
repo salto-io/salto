@@ -162,6 +162,33 @@ describe('fields_references', () => {
     expect(instance.value.defaultValue.optionIds[1]).toBe('2')
   })
 
+  it('should convert only the optionIds that found to references - multiple options', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        options: {
+          a1: {
+            id: '1',
+            value: 'a1',
+          },
+        },
+        defaultValue: {
+          type: 'option.multiple',
+          optionIds: ['1', '2'],
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue.optionIds).toHaveLength(2)
+    expect(instance.value.defaultValue.optionIds[0]).toBeInstanceOf(ReferenceExpression)
+    expect(instance.value.defaultValue.optionIds[0].elemID.getFullName()).toBe('jira.CustomFieldContext.instance.instance.options.a1')
+    expect(instance.value.defaultValue.optionIds[1]).toBe('2')
+  })
+
   it('should do nothing if there is no options - multiple options', async () => {
     const instance = new InstanceElement(
       'instance',
@@ -170,7 +197,6 @@ describe('fields_references', () => {
         name: 'name',
         defaultValue: {
           type: 'option.multiple',
-          // optionIds: ['3', '2'],
         },
       },
     )

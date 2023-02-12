@@ -26,7 +26,9 @@ const log = logger(module)
 export const getFieldsLookUpName: GetLookupNameFunc = ({
   ref, path,
 }) => {
-  if (path !== undefined && ['optionId', 'cascadingOptionId'].includes(path.name)) {
+  if (path !== undefined
+    && (['optionId', 'cascadingOptionId'].includes(path.name)
+      || path.getFullNameParts()[path.getFullNameParts().length - 2] === 'optionIds')) {
     return ref.value.id
   }
   return ref
@@ -34,25 +36,27 @@ export const getFieldsLookUpName: GetLookupNameFunc = ({
 
 const getDefaultOptions = (instance: InstanceElement) : {
     referencedDefaultOptions: Values[]
-    referencedCascadingDefaultOption: Values | undefined } => {
-  let referencedDefaultOptions: Values[]
-  let referencedCascadingDefaultOption: Values | undefined
-
-  if (instance.value.defaultValue.type.endsWith('multiple')) {
-    referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])
-      .filter((option: Values) => (instance.value.defaultValue.optionIds ?? []).includes(option.id))
-  } else {
-    referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])
-      .filter((option: Values) => instance.value.defaultValue.optionId === option.id)
-    if (referencedDefaultOptions.length > 0) {
-      referencedCascadingDefaultOption = (
-        _.values(referencedDefaultOptions[0].cascadingOptions ?? {})
-      ).find((option: Values) => option.id === instance.value.defaultValue.cascadingOptionId)
-    }
+    referencedCascadingDefaultOption?: Values } => {
+  if (instance.value.defaultValue.optionIds !== undefined) {
+    const optionsById = _.keyBy(instance.value.defaultValue?.optionIds)
+    const referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])
+      .filter((option: Values) => optionsById[option.id] !== undefined)
+    return { referencedDefaultOptions }
   }
+  const referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])
+    .filter((option: Values) => instance.value.defaultValue.optionId === option.id)
+  const referencedCascadingDefaultOption = referencedDefaultOptions.length > 0
+    ? (_.values(referencedDefaultOptions[0].cascadingOptions ?? {}))
+      .find((option: Values) => option.id === instance.value.defaultValue.cascadingOptionId)
+    : undefined
   return { referencedDefaultOptions,
     referencedCascadingDefaultOption }
 }
+
+const hasOptionValue = (defaultValue :Values): boolean =>
+  defaultValue !== undefined
+  && (defaultValue.optionId !== undefined
+    || defaultValue.optionIds !== undefined)
 
 const filter: FilterCreator = () => ({
   name: 'fieldTypeReferencesFilter',
@@ -60,15 +64,15 @@ const filter: FilterCreator = () => ({
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-      .filter(instance => instance.value.defaultValue?.type !== undefined)
-      .filter(instance => instance.value.defaultValue.type.startsWith('option'))
+      .filter(instance => hasOptionValue(instance.value.defaultValue))
       .forEach(instance => {
         const optionsElemId = instance.elemID.createNestedID('options')
         const { referencedDefaultOptions, referencedCascadingDefaultOption } = getDefaultOptions(instance)
 
         if (referencedDefaultOptions.length === 0) {
-          if (instance.value.defaultValue.optionIds !== undefined
-              && instance.value.defaultValue.optionIds.length > 0) {
+          if ((instance.value.defaultValue.optionIds !== undefined
+              && instance.value.defaultValue.optionIds.length > 0)
+              || instance.value.defaultValue.optionId !== undefined) {
             log.warn(`Could not find reference for default options ids ${instance.value.defaultValue.optionIds} in instance ${instance.elemID.getFullName()}`)
           }
           return
@@ -78,8 +82,11 @@ const filter: FilterCreator = () => ({
             optionsElemId.createNestedID(naclCase(option.value)),
             option
           ))
-        if (instance.value.defaultValue.type.endsWith('multiple')) {
+        if (instance.value.defaultValue.optionIds !== undefined) {
+          const optionRefIds = _.keyBy(optionIdsReferences, ref => ref.value.id)
           instance.value.defaultValue.optionIds = optionIdsReferences
+            .concat(instance.value.defaultValue.optionIds
+              .filter((id: string) => optionRefIds[id] === undefined))
         } else {
           [instance.value.defaultValue.optionId] = optionIdsReferences
 

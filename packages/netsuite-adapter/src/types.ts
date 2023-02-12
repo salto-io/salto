@@ -17,11 +17,12 @@ import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isFie
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
-import { StandardType, getStandardTypes, isStandardTypeName } from './autogen/types'
+import { StandardType, getStandardTypes, isStandardTypeName, getStandardTypesNames } from './autogen/types'
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
 import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID } from './constants'
+import { SUPPORTED_TYPES } from './data_elements/types'
 
 const { isDefined } = lowerDashValues
 
@@ -179,3 +180,10 @@ export const getInternalId = (element: Element): Value =>
 
 export const hasInternalId = (element: Element): boolean =>
   isDefined(getInternalId(element))
+
+export const netsuiteSupportedTypes = [
+  ...getStandardTypesNames(),
+  ...SUPPORTED_TYPES,
+  ...SUITEAPP_CONFIG_TYPE_NAMES,
+  CONFIG_FEATURES,
+]

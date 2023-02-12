@@ -129,6 +129,26 @@ describe('accountIdValidator', () => {
       displayName: 'disp1list2',
       locale: 'en_US',
       emailAddress: 'email1list2',
+    }, {
+      accountId: '0Ids1',
+      displayName: 'disp0Ids1',
+      locale: 'en_US',
+      emailAddress: 'email0Ids1',
+    }, {
+      accountId: '0Ids2',
+      displayName: 'disp0Ids2',
+      locale: 'en_US',
+      emailAddress: 'email0Ids2',
+    }, {
+      accountId: '1Ids1',
+      displayName: 'disp1Ids1',
+      locale: 'en_US',
+      emailAddress: 'email1Ids1',
+    }, {
+      accountId: '1Ids2',
+      displayName: 'disp1Ids2',
+      locale: 'en_US',
+      emailAddress: 'email1Ids2',
     }],
   })
 

@@ -261,9 +261,12 @@ export const workflowSchemeMigrationValidator = (
         elementSource,
       )
       const statusMigrations = changedItems.flatMap(changedItem => getMigrationForChangedItem(changedItem))
-      const existingStatusMigrations = instance.value.statusMigrations ?? []
+      const existingStatusMigrations: StatusMigration[] = instance.value.statusMigrations ?? []
       const newStatusMigrations = _.differenceWith(statusMigrations, existingStatusMigrations, isSameStatusMigration)
-      return getErrorMessageForStatusMigration(instance, newStatusMigrations)
+      if (newStatusMigrations.length === 0) {
+        return undefined
+      }
+      return getErrorMessageForStatusMigration(instance, [...existingStatusMigrations, ...newStatusMigrations])
     }).filter(isDefined).toArray()
     return errors
   }

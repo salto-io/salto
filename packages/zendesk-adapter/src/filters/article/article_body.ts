@@ -220,7 +220,8 @@ const getWarningsForMissingBrands = (
 const filterCreator: FilterCreator = ({ config }) => {
   const deployTemplateMapping: Record<string, TemplateExpression> = {}
   return {
-    onFetch: async (elements: Element[]) => log.time(async () => {
+    name: 'articleBodyFilter',
+    onFetch: async (elements: Element[]) => {
       const instances = elements.filter(isInstanceElement)
       const additionalInstances = {
         [BRAND_TYPE_NAME]:
@@ -254,7 +255,7 @@ const filterCreator: FilterCreator = ({ config }) => {
         ? []
         : getWarningsForMissingBrands(translationToMissingBrands)
       return { errors: warnings }
-    }, 'articleBodyFilter'),
+    },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)

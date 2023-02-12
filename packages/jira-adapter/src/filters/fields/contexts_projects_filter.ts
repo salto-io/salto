@@ -98,6 +98,7 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
   }
 
   return {
+    name: 'contextsProjectsFilter',
     onFetch: async elements => {
       elements
         .filter(isInstanceElement)

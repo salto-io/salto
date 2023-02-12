@@ -38,6 +38,7 @@ const trimKeys: MapKeyFunc = ({ key }) => {
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
+  name: 'trimKeysFilter',
   /**
    * Remove the leading and trailing whitespaces and new line chars from the
    * LightningComponentBundle keys to fix potential parsing error

@@ -33,6 +33,7 @@ export const getFieldsLookUpName: GetLookupNameFunc = ({
 }
 
 const filter: FilterCreator = () => ({
+  name: 'fieldTypeReferencesFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

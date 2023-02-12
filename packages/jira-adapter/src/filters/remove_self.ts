@@ -24,6 +24,7 @@ const { awu } = collections.asynciterable
  * Removes 'self' values from types and instances
  */
 const filter: FilterCreator = () => ({
+  name: 'removeSelfFilter',
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

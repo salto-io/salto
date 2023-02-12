@@ -22,6 +22,7 @@ import { FilterCreator } from '../filter'
  *
  */
 const filter: FilterCreator = () => ({
+  name: 'appStructureFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

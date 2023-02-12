@@ -43,6 +43,7 @@ const DEFAULT_LOCALE = 'default_locale'
  On deploy - send and api request to update the default language if it was changed
  */
 const filterCreator: FilterCreator = ({ config, client, brandIdToClient = {} }) => ({
+  name: 'guideDefaultLanguage',
   onFetch: async elements => {
     if (!isGuideEnabled(config[FETCH_CONFIG])) {
       return

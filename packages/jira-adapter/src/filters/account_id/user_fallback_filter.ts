@@ -53,6 +53,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
   const fallbackPathToUser: Record<string, string> = {}
 
   return {
+    name: 'userFallbackFilter',
     preDeploy: async changes => {
       if (config.deploy.defaultMissingUserFallback === undefined) {
         return

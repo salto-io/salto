@@ -31,6 +31,7 @@ import { getBrandsForGuide } from '../utils'
  * Handle the order of categories in brand
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'categoryOrderFilter',
   /** Create an InstanceElement of the categories order inside the brands */
   onFetch: async (elements: Element[]) => {
     // If Guide is not enabled in Salto, we don't need to do anything

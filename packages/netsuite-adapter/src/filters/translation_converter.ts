@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Field, isInstanceElement, isField, ElemID, isObjectType, TypeElement, isType, Element } from '@salto-io/adapter-api'
+import { BuiltinTypes, Field, isInstanceElement, isField, ElemID, isObjectType, TypeElement, isType, Element, getChangeData } from '@salto-io/adapter-api'
 import { elementAnnotationTypes, getPath, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -96,6 +96,7 @@ const transformAnnotationsAndValues = async (
 }
 
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+  name: 'translationConverter',
   onFetch: async elements => {
     addTranslateFields(elements.filter(isType))
 
@@ -121,19 +122,8 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   },
 
   preDeploy: async changes => {
-    const [fields, typesAndInstances] = _.partition(
-      changes.flatMap(change => Object.values(change.data)),
-      isField
-    )
-    const elemIdSet = new Set(typesAndInstances.map(element => element.elemID.getFullName()))
-    const fieldParents = _.uniqBy(
-      fields
-        .map(field => field.parent)
-        .filter(parent => !elemIdSet.has(parent.elemID.getFullName())),
-      parent => parent.elemID.name
-    )
-    const elementsToTransform = typesAndInstances
-      .concat(fieldParents)
+    const elementsToTransform = changes
+      .map(getChangeData)
       .filter(element => isInstanceElement(element) || (
         isObjectType(element) && isCustomRecordType(element)
       ))

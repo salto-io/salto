@@ -29,6 +29,7 @@ const { isFullRegexMatch } = regex
 const FIELDS_TO_OMIT: FieldToOmitParams[] = []
 
 const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+  name: 'omitFieldsFilter',
   onFetch: async elements => {
     const fieldsToOmit = FIELDS_TO_OMIT.concat(config.fetch?.fieldsToOmit ?? [])
 

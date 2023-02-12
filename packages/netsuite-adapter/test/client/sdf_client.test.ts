@@ -29,7 +29,7 @@ import SdfClient, {
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
@@ -1846,6 +1846,26 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
           expect(e instanceof ManifestValidationError).toBeTruthy()
           expect(e.message).toContain(manifestErrorMessage)
           expect(e.missingDependencyScriptIds).toContain(errorReferenceName)
+        }
+      })
+
+      it('should throw MissingManifestFeaturesError', async () => {
+        mockExecuteAction.mockImplementation(context => {
+          const errorMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
+        Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
+        File: ~/Objects/custimport_xepi_subscriptionimport.xml`
+          if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
+            throw new Error(errorMessage)
+          }
+          return Promise.resolve({ isSuccess: () => true })
+        })
+        try {
+          await client.deploy(...deployParams)
+          expect(false).toBeTruthy()
+        } catch (e) {
+          expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
+          expect(e.message).toContain('Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)')
+          expect(e.missingFeatures).toContain('SUBSCRIPTIONBILLING')
         }
       })
       it('should throw error', async () => {

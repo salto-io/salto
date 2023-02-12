@@ -40,6 +40,7 @@ const FIELDS_TO_REMOVE_RESTRICTION_FROM_BY_TYPE: Record<string, string[]> = {
 export const makeFilter = (
   typeNameToFieldMapping: Record<string, string[]>,
 ): LocalFilterCreator => () => ({
+  name: 'removeRestrictionAnnotationsFilter',
   onFetch: async (elements: Element[]) => {
     const removeRestrictionsFromTypeFields = async (type: ObjectType): Promise<void> => {
       const relevantFields = typeNameToFieldMapping[await metadataType(type)]

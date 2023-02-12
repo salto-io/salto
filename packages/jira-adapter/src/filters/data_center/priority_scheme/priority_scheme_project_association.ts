@@ -30,6 +30,7 @@ const getProjectPriorityScheme = async (instance: InstanceElement, client: JiraC
 }
 
 const filter: FilterCreator = ({ client }) => ({
+  name: 'prioritySchemeProjectAssociationFilter',
   onFetch: async elements => {
     if (!client.isDataCenter) {
       return

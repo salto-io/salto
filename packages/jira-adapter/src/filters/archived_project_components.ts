@@ -22,6 +22,7 @@ import { PROJECT_COMPONENT_TYPE, PROJECT_TYPE } from '../constants'
  * Remove archived project components
  */
 const filter: FilterCreator = () => ({
+  name: 'archivedProjectComponentsFilter',
   onFetch: async (elements: Element[]) => {
     const removedComponents = _.remove(
       elements,

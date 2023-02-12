@@ -84,6 +84,7 @@ const deployScreen = async (
 }
 
 const filter: FilterCreator = ({ config, client }) => ({
+  name: 'screenFilter',
   onFetch: async elements => {
     const screenType = findObject(elements, SCREEN_TYPE_NAME)
     const screenTabType = findObject(elements, SCREEN_TAB_TYPE_NAME)

@@ -25,6 +25,7 @@ export const CUSTOM_FIELD_OPTIONS_FIELD_NAME = 'custom_field_options'
 export const ORG_FIELD_OPTION_TYPE_NAME = 'organization_field__custom_field_options'
 
 const filterCreator: FilterCreator = ({ config, client }) => ({
+  name: 'organizationFieldFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

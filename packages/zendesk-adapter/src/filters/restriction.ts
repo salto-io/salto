@@ -29,6 +29,7 @@ const removeIdField = (instanceValue: Values): void => {
  * Fix the restriction object on multiple types
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'restrictionFilter',
   onFetch: async (elements: Element[]) => {
     const instances = elements.filter(isInstanceElement)
     instances

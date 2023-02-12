@@ -179,6 +179,7 @@ const addTaskDependencies = (
  * Add references to fields used as parameters in workflow tasks.
  */
 const filterCreator: FilterCreator = () => ({
+  name: 'workflowAndTaskReferencesFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const workflowTopType = elements.filter(isObjectType)
       .find(e => e.elemID.name === WORKFLOW_EXPORT_TYPE)

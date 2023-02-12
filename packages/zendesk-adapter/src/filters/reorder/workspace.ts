@@ -21,6 +21,7 @@ export const TYPE_NAME = 'workspace'
  * Add workspace order element with all the workspaces ordered
  */
 const filterCreator = createReorderFilterCreator({
+  filterName: 'workspaceOrderFilter',
   typeName: TYPE_NAME,
   orderFieldName: 'ids',
   activeFieldName: 'activated',

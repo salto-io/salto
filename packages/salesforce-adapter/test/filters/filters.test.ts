@@ -34,6 +34,7 @@ describe('SalesforceAdapter filters', () => {
 
     beforeEach(() => {
       filter = {
+        name: 'salesforceTestFilters',
         onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
         preDeploy: mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
         deploy: mockFunction<(typeof filter)['deploy']>(),

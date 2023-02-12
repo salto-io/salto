@@ -23,6 +23,7 @@ import { SUPPORTED_TYPES } from '../data_elements/types'
 
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+  name: 'removeUnsupportedTypes',
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return

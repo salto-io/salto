@@ -46,6 +46,7 @@ export const createObjectedType = (
       accountId: { refType: accountIdInfoType },
       leadAccountId: { refType: accountIdInfoType },
       authorAccountId: { refType: accountIdInfoType },
+      accountIds: { refType: new ListType(BuiltinTypes.STRING) },
       nested: { refType: nestedType },
     },
   })
@@ -297,6 +298,10 @@ export const createInstance = (
         },
       ],
     },
+    accountIds: [
+      `${id}Ids1`,
+      `${id}Ids2`,
+    ],
     ...overrides,
   }
 )
@@ -501,6 +506,14 @@ export const createObjectedInstance = (id: string, objectType: ObjectType): Inst
         },
       ],
     },
+    accountIds: [
+      {
+        id: `${id}Ids1`,
+      },
+      {
+        id: `${id}Ids2`,
+      },
+    ],
   })
   return object
 }
@@ -532,6 +545,8 @@ export const checkObjectedInstanceIds = (
     expect(objInstance.value.automation7.compareFieldValue[0].value.conditions[1].criteria[0].value.id).toEqual(`${id}automation7`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[0].id).toEqual(`${id}automation8a`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[1].id).toEqual(`${id}automation8b`)
+    expect(objInstance.value.accountIds[0].id).toEqual(`${id}Ids1`)
+    expect(objInstance.value.accountIds[1].id).toEqual(`${id}Ids2`)
   }
 }
 
@@ -561,6 +576,8 @@ export const checkSimpleInstanceIds = (
     expect(objInstance.value.automation7.compareFieldValue[0].value.conditions[1].criteria[0].value).toEqual(`${id}automation7`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[0]).toEqual(`${id}automation8a`)
     expect(objInstance.value.automation8.compareFieldValue[0].value.assignee.values[1]).toEqual(`${id}automation8b`)
+    expect(objInstance.value.accountIds[0]).toEqual(`${id}Ids1`)
+    expect(objInstance.value.accountIds[1]).toEqual(`${id}Ids2`)
   }
 }
 export const checkDisplayNames = (
@@ -599,6 +616,8 @@ export const checkDisplayNames = (
     expect(instance.value.automation8.compareFieldValue[0].value.assignee.values[0].displayName).toEqual(`disp${id}automation8a`)
     expect(instance.value.automation8.compareFieldValue[0].value.assignee.values[1].displayName).toEqual(`disp${id}automation8b`)
   }
+  expect(instance.value.accountIds[0].displayName).toEqual(`disp${id}Ids1`)
+  expect(instance.value.accountIds[1].displayName).toEqual(`disp${id}Ids2`)
 }
 export const checkInstanceUserIds = (
   instance: InstanceElement,
@@ -618,6 +637,8 @@ export const checkInstanceUserIds = (
     expect(instance.value.holder.parameter.id).toEqual(`${prefix}${id}h`)
   }
   expect(instance.value.value.operations[3].value.value.id).toEqual(`${id}operations1`)
+  expect(instance.value.accountIds[0].id).toEqual(`${prefix}${id}Ids1`)
+  expect(instance.value.accountIds[1].id).toEqual(`${prefix}${id}Ids2`)
 }
 
 export const createInstanceElementArrayWithDisplayNames = (
@@ -640,6 +661,8 @@ export const createInstanceElementArrayWithDisplayNames = (
     elements[i].value.owner.displayName = `disp${i}owner`
     elements[i].value.users[0].displayName = `disp${i}users1`
     elements[i].value.users[1].displayName = `disp${i}users2`
+    elements[i].value.accountIds[0].displayName = `disp${i}Ids1`
+    elements[i].value.accountIds[1].displayName = `disp${i}Ids2`
   }
   return elements
 }

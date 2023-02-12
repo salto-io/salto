@@ -30,6 +30,7 @@ const transformFunc: TransformFunc = ({ value }) => (
 )
 
 const filterCreator = (): FilterWith<'preDeploy'> => ({
+  name: 'accountSpecificValues',
   preDeploy: async changes => {
     await awu(changes)
       .forEach(async change =>

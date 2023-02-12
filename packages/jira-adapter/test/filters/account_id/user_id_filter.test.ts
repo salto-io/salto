@@ -153,6 +153,14 @@ describe('add_display_name_filter', () => {
         accountId: '2users2',
         displayName: 'disp2users2',
         locale: 'en_US',
+      }, {
+        accountId: '2Ids1',
+        displayName: 'disp2Ids1',
+        locale: 'en_US',
+      }, {
+        accountId: '2Ids2',
+        displayName: 'disp2Ids2',
+        locale: 'en_US',
       }],
     })
   })

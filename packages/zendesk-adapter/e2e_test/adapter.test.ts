@@ -165,7 +165,7 @@ const cleanup = async (adapterAttr: Reals): Promise<void> => {
   expect(fetchResult.errors).toEqual([
     {
       severity: 'Warning',
-      message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
+      message: "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
     },
   ])
   const { elements } = fetchResult
@@ -239,7 +239,7 @@ describe('Zendesk adapter E2E', () => {
       expect(fetchResult.errors).toEqual([
         {
           severity: 'Warning',
-          message: 'Salto was forbidden from accessing the custom_statuses resource. Elements from that type were not fetched. Please make sure that the supplied user credentials have sufficient permissions to access this data, and try again. Learn more at https://help.salto.io/en/articles/6947061-salto-was-forbidden-from-accessing-the-resource',
+          message: "Salto could not access the custom_statuses resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         },
       ])
       adapterAttr = realAdapter(

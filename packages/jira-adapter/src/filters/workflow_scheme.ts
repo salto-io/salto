@@ -38,12 +38,33 @@ const TASK_CHECK_INTERVAL_MILLI = 1000
 
 const log = logger(module)
 
+class PublishDraftError extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+class InvalidResponseError extends PublishDraftError {
+  constructor() {
+    super('Failed to publish workflow scheme draft due to invalid response')
+  }
+}
+
+class TooManyRetriesError extends PublishDraftError {
+  constructor() {
+    super('Failed to publish workflow scheme draft after too many retries')
+  }
+}
+
+const shouldThrowError = (error: Error): boolean =>
+  error instanceof PublishDraftError
+
 function validateTaskResponse(
   response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
 ): asserts response is clientUtils.Response<clientUtils.ResponseValue & { self: string }> {
   if (Array.isArray(response.data) || !_.isString(response.data.self)) {
     log.warn(`Received unexpected response from when attempted to publish workflow scheme: ${safeJsonStringify(response.data, undefined, 2)}`)
-    throw new Error('Failed to publish workflow scheme draft')
+    throw new InvalidResponseError()
   }
 }
 
@@ -64,7 +85,7 @@ const waitForWorkflowSchemePublish = async (
 
   if (checksLeft === 0) {
     log.warn(`Publish draft operation did not finish, last response: ${safeJsonStringify(taskResponse.data, undefined, 2)}`)
-    throw new Error('Failed to publish workflow scheme draft')
+    throw new TooManyRetriesError()
   }
 
   await new Promise(resolve => {
@@ -95,7 +116,7 @@ const publishDraft = async (
   await waitForWorkflowSchemePublish(response, client, MAX_TASK_CHECKS)
 }
 
-const updateSchemeId = async (
+export const updateSchemeId = async (
   change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
   paginator: clientUtils.Paginator,
@@ -221,17 +242,19 @@ export const deployWorkflowScheme = async (
     try {
       await publishDraft(change, client, statusMigrations)
     } catch (err) {
+      if (shouldThrowError(err)) {
+        throw err
+      }
       try {
         err.message = 'Failed to publish draft with error: '
         err.response.data.errorMessages = await reformatMigrationErrorMessages(
           err.response.data.errorMessages, elementsSource
         )
         handleDeploymentError(err)
+        log.warn(`failed to publish draft for workflow scheme ${getChangeData(change).elemID.name}, error: ${err.message}`)
       } catch (error) {
         log.warn(`failed to reformat the workflow scheme ${getChangeData(change).elemID.getFullName()} migration error `)
-        throw (err)
       }
-      throw (err)
     }
   }
 }

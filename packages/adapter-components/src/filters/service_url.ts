@@ -20,7 +20,7 @@ import { createUrl } from '../elements'
 import { AdapterApiConfig } from '../config'
 
 
-const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(
+export const addUrlToInstance = <TContext extends { apiDefinitions: AdapterApiConfig }>(
   instance: InstanceElement, baseUrl: string, config: TContext
 ): void => {
   const serviceUrl = config.apiDefinitions

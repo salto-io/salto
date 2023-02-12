@@ -21,14 +21,13 @@ import {
   isAdditionChange,
   isAdditionOrModificationChange,
   isInstanceChange,
-  ModificationChange,
-  toChange,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID } from '../constants'
 import { NetsuiteChangeValidator } from './types'
+import { cloneChange } from './utils'
 
 
 const { awu } = collections.asynciterable
@@ -60,10 +59,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
       if (isAdditionChange(change)) {
         return change
       }
-      const modificationChange = toChange({
-        before: change.data.before.clone(),
-        after: change.data.after.clone(),
-      }) as ModificationChange<InstanceElement>
+      const modificationChange = cloneChange(change)
       removeIdenticalValues(modificationChange)
       return modificationChange
     })

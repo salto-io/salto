@@ -142,6 +142,47 @@ describe('adapter creator', () => {
     })).toBeDefined()
   })
 
+  it('should throw error when deploy config is invalid', () => {
+    expect(() => adapter.operations({
+      credentials: new InstanceElement(ZENDESK,
+        adapter.authenticationMethods.basic.credentialsType),
+      config: new InstanceElement(
+        ZENDESK,
+        adapter.configType as ObjectType,
+        {
+          fetch: { include: [{ type: '.*' }], exclude: [] },
+          apiDefinitions: {
+            types: { c: { request: { url: '/api/v2/c' } } },
+            supportedTypes: { c: ['c'] },
+          },
+          deploy: {
+            defaultMissingUserFallback: 'invalid@user',
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toThrow(new Error('Invalid user value in deploy.defaultMissingUserFallback: invalid@user. Value can be either ##DEPLOYER## or a valid user name'))
+    expect(() => adapter.operations({
+      credentials: new InstanceElement(ZENDESK,
+        adapter.authenticationMethods.basic.credentialsType),
+      config: new InstanceElement(
+        ZENDESK,
+        adapter.configType as ObjectType,
+        {
+          fetch: { include: [{ type: '.*' }], exclude: [] },
+          apiDefinitions: {
+            types: { c: { request: { url: '/api/v2/c' } } },
+            supportedTypes: { c: ['c'] },
+          },
+          deploy: {
+            defaultMissingUserFallback: '#DEPLOYER#',
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toThrow(new Error('Invalid user value in deploy.defaultMissingUserFallback: #DEPLOYER#. Value can be either ##DEPLOYER## or a valid user name'))
+  })
+
   it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
     expect(() => adapter.operations({
       credentials: new InstanceElement(ZENDESK,

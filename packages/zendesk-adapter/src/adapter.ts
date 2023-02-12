@@ -36,7 +36,7 @@ import {
   ZendeskConfig,
   CLIENT_CONFIG,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, isGuideEnabled,
+  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, isGuideEnabled, DEPLOY_CONFIG,
 } from './config'
 import {
   ZENDESK,
@@ -158,6 +158,7 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   organizationsFilter,
   tagsFilter,
+  // supportAddress should run before referencedIdFieldsFilter
   supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
@@ -452,6 +453,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           paginator: paginator ?? this.paginator,
           config: {
             fetch: config.fetch,
+            deploy: config.deploy,
             apiDefinitions: config.apiDefinitions,
           },
           getElemIdFunc,
@@ -694,6 +696,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         // article_attachment additions supported in a filter
         typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],

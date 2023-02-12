@@ -22,9 +22,16 @@ import {
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
+import {
+  getParents,
+  buildElementsSourceFromElements,
+  createSchemeGuard,
+  applicableToParent,
+  isHidden,
+  isHiddenValue,
+} from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections } from '@salto-io/lowerdash'
+import { chunks, collections, functions } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
@@ -32,12 +39,13 @@ import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
+  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, FIELD_ANNOTATIONS,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
+const { not, lambdaOf } = functions
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
@@ -341,7 +349,7 @@ export const ensureSafeFilterFetch = ({
   warningMessage: string
   filterName: keyof OptionalFeatures
   config : FilterContext
-}): Required<Filter>['onFetch'] =>
+}): Required<Filter>['onFetch'] => (
   async elements => {
     if (!config.fetchProfile.isFeatureEnabled(filterName)) {
       log.debug('skipping %s filter due to configuration', filterName)
@@ -361,3 +369,17 @@ export const ensureSafeFilterFetch = ({
       }
     }
   }
+)
+
+/**
+ * Remove after https://salto-io.atlassian.net/browse/SALTO-3626, and use adapter_utils.isUpdatable
+ */
+export const isUpdatable = ({ annotations }: Element): boolean => (
+  annotations[FIELD_ANNOTATIONS.UPDATEABLE] === true && (annotations[CORE_ANNOTATIONS.UPDATABLE] ?? true)
+)
+
+export const isRestrictableField = (field: Field): boolean => (
+  !isHiddenValue(field)
+  && isUpdatable(field)
+  && applicableToParent(field, lambdaOf(not(isHidden)))
+)

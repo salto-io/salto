@@ -15,19 +15,19 @@
 */
 import {
   Element,
-  ObjectType,
   Field,
   ReferenceExpression,
   isObjectType,
   CORE_ANNOTATIONS,
   createRestriction,
   InstanceElement,
-  isInstanceElement, Values,
+  isInstanceElement,
+  Values,
 } from '@salto-io/adapter-api'
-import { collections, functions, multiIndex } from '@salto-io/lowerdash'
+import { collections, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { hiddenValues } from '@salto-io/workspace'
+import { isRequired } from '@salto-io/adapter-utils'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import {
   FIELD_ANNOTATIONS,
@@ -36,13 +36,11 @@ import {
   VALUE_SET_FIELDS,
 } from '../constants'
 import { isCustomObject, apiName } from '../transformers/transformer'
-import { isInstanceOfType, buildElementsSourceForFetch } from './utils'
+import { isInstanceOfType, buildElementsSourceForFetch, isRestrictableField } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
-const { notAsync } = functions
-const { isHidden } = hiddenValues
 
 export const MASTER_LABEL = 'master_label'
 
@@ -59,34 +57,30 @@ const isGlobalValueSetValue = (value: Values): value is GlobalValueSetValue => (
 )
 
 const addRefAndRestrict = (
-  object: ObjectType,
+  field: Field,
   globalValueSetInstanceByName: multiIndex.Index<[string], InstanceElement>
 ): void => {
-  const getValueSetName = (field: Field): string | undefined =>
-    field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
-
-  Object.values(object.fields)
-    .forEach(f => {
-      const valueSetName = getValueSetName(f)
-      if (valueSetName === undefined) {
-        return
-      }
-      const globalValueSetInstance = globalValueSetInstanceByName.get(valueSetName)
-      if (globalValueSetInstance === undefined) {
-        log.warn('Could not find GlobalValueSet instance with name: %s', valueSetName)
-        return
-      }
-      f.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(globalValueSetInstance.elemID)
-      const { value: globalValueSetValue } = globalValueSetInstance
-      if (!isGlobalValueSetValue(globalValueSetValue)) {
-        log.warn('Could not create restriction for GlobalValueSet %s, due to unknown value format: %o', valueSetName, globalValueSetValue)
-        return
-      }
-      f.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-        enforce_value: f.annotations[CORE_ANNOTATIONS.REQUIRED] ?? false,
-        values: globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
-      })
+  const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  if (valueSetName === undefined) {
+    return
+  }
+  const globalValueSetInstance = globalValueSetInstanceByName.get(valueSetName)
+  if (globalValueSetInstance === undefined) {
+    log.warn('Could not find GlobalValueSet instance with name: %s', valueSetName)
+    return
+  }
+  field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(globalValueSetInstance.elemID)
+  const { value: globalValueSetValue } = globalValueSetInstance
+  if (!isGlobalValueSetValue(globalValueSetValue)) {
+    log.warn('Could not create restriction for GlobalValueSet %s, due to unknown value format: %o', valueSetName, globalValueSetValue)
+    return
+  }
+  if (isRestrictableField(field)) {
+    field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
+      enforce_value: isRequired(field),
+      values: globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
     })
+  }
 }
 
 /**
@@ -109,8 +103,8 @@ const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> =>
     await awu(elements)
       .filter(isObjectType)
       .filter(isCustomObject)
-      .filter(customObject => notAsync(isHidden)(customObject))
-      .forEach(object => addRefAndRestrict(object, valueSetNameToRef))
+      .flatMap(customObject => Object.values(customObject.fields))
+      .forEach(field => addRefAndRestrict(field, valueSetNameToRef))
   },
 })
 

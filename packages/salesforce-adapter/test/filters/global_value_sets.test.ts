@@ -21,6 +21,7 @@ import filterCreator,
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE } from '../../src/constants'
+import * as utilsModule from '../../src/filters/utils'
 
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
@@ -73,6 +74,8 @@ const createPicklistObjectType = (
 })
 
 describe('Global Value Sets filter', () => {
+  let isRestrictableFieldSpy: jest.SpyInstance
+
   const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
   const GLOBAL_VALUE_SET_VALUES = ['val1', 'val2']
@@ -80,14 +83,16 @@ describe('Global Value Sets filter', () => {
   let elements: Element[] = []
 
   beforeEach(() => {
+    isRestrictableFieldSpy = jest.spyOn(utilsModule, 'isRestrictableField')
     elements = [
       createGlobalValueSetInstanceElement('test1', GLOBAL_VALUE_SET_VALUES),
     ]
   })
 
   describe('on fetch', () => {
-    describe('when CustomObject is not hidden', () => {
+    describe('when field is restrictable', () => {
       beforeEach(async () => {
+        isRestrictableFieldSpy.mockReturnValue(true)
         elements.push(createPicklistObjectType(mockElemID, 'test', 'test1'))
         await filter.onFetch(elements)
       })
@@ -102,17 +107,19 @@ describe('Global Value Sets filter', () => {
         })
       })
     })
-    describe('when CustomObject is hidden', () => {
+    describe('when field is not restrictable', () => {
       beforeEach(async () => {
+        isRestrictableFieldSpy.mockReturnValue(false)
         const picklistObjectType = createPicklistObjectType(mockElemID, 'test', 'test1')
         picklistObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
         elements.push(picklistObjectType)
         await filter.onFetch(elements)
       })
-      it('should do nothing', () => {
+      it('should only replace value set with references', () => {
+        const globalValueSetInstance = elements[0] as InstanceElement
         const customObjectType = elements[1] as ObjectType
         expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-          .toBeString()
+          .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
         expect(customObjectType.fields.state.annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeUndefined()
       })
     })

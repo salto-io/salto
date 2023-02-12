@@ -17,18 +17,53 @@ import wu from 'wu'
 import _ from 'lodash'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
+import { collections, promises, types, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
-  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, ChangeDataType,
-  ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
-  CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
-  ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
-  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues, getChangeData, isTemplateExpression,
+  Change,
+  ChangeData,
+  ChangeDataType,
+  compareSpecialValues,
+  CORE_ANNOTATIONS,
+  CoreAnnotationTypes,
+  createRefToElmWithValue,
+  Element,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceAnnotationTypes,
+  InstanceElement,
+  isAdditionChange,
+  isContainerType,
+  isElement,
+  isField,
+  isInstanceElement,
+  isListType,
+  isMapType,
+  isModificationChange,
+  isObjectType,
+  isPrimitiveType,
+  isReferenceExpression,
+  isRemovalChange,
+  isStaticFile,
+  isTemplateExpression,
+  isType,
+  isTypeReference,
+  ListType,
+  MapType,
+  ObjectType,
+  PrimitiveType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  ReferenceMap,
+  StaticFile,
+  TypeElement,
+  TypeMap,
+  TypeReference,
+  Value,
+  Values,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
+import { WALK_NEXT_STEP, walkOnElement, WalkOnFunc } from './walk_element'
 
 const { mapValuesAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -1107,3 +1142,39 @@ export const createSchemeGuardForInstance = <T extends InstanceElement>(
     }
     return true
   }
+
+export const isHidden = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+)
+
+export const isHiddenValue = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
+
+export const isUpdatable = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.UPDATABLE] === true
+)
+
+export const isCreatable = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.CREATABLE] === true
+)
+
+export const isDeletable = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.DELETABLE] === true
+)
+
+export const isRestricted = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.RESTRICTION] === true
+)
+
+export const isRequired = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.REQUIRED] === true
+)
+
+export const applicableToParent = (field: Field, func: types.Predicate<Element>): boolean => (
+  func(field) && func(field.parent)
+)
+
+export const applicableToParentAsync = async (field: Field, func: types.AsyncPredicate<Element>): Promise<boolean> => (
+  await func(field) && func(field.parent)
+)

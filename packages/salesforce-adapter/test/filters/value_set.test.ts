@@ -17,10 +17,12 @@ import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange } from 
 import filterCreator from '../../src/filters/value_set'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
+import * as utilsModule from '../../src/filters/utils'
 import { Types } from '../../src/transformers/transformer'
 import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE } from '../../src/constants'
 
 describe('value set filter', () => {
+  let isRestrictableFieldSpy: jest.SpyInstance
   const filter = filterCreator() as FilterWith<'onFetch' | 'onDeploy'>
 
   const customObjectName = 'PicklistTest'
@@ -54,6 +56,10 @@ describe('value set filter', () => {
       },
     })
 
+  beforeEach(() => {
+    isRestrictableFieldSpy = jest.spyOn(utilsModule, 'isRestrictableField')
+  })
+
   describe('on fetch', () => {
     const PICKLIST_VALUES = ['val1', 'val2', 'val3']
     let objectWithPicklistField: ObjectType
@@ -62,8 +68,9 @@ describe('value set filter', () => {
       objectWithPicklistField = createObjectWithPicklistField(PICKLIST_VALUES)
     })
 
-    describe('when object is not hidden', () => {
+    describe('when field is restrictable', () => {
       beforeEach(async () => {
+        isRestrictableFieldSpy.mockReturnValue(true)
         await filter.onFetch([objectWithPicklistField])
       })
       it('should add restrictions', () => {
@@ -75,9 +82,9 @@ describe('value set filter', () => {
       })
     })
 
-    describe('when object is hidden', () => {
+    describe('when field is not restrictable', () => {
       beforeEach(async () => {
-        objectWithPicklistField.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+        isRestrictableFieldSpy.mockReturnValue(false)
         await filter.onFetch([objectWithPicklistField])
       })
       it('should not add restrictions', () => {

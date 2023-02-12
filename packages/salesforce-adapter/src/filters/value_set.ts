@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, functions, values } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import {
   Field,
   getChangeData,
@@ -30,8 +30,7 @@ import {
   isObjectType,
   CORE_ANNOTATIONS, createRestriction,
 } from '@salto-io/adapter-api'
-
-import { hiddenValues } from '@salto-io/workspace'
+import { isRequired } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
 import {
   FIELD_ANNOTATIONS,
@@ -41,12 +40,11 @@ import {
 } from '../constants'
 import { PicklistValue } from '../client/types'
 import { Types, metadataType, isCustomObject } from '../transformers/transformer'
+import { isRestrictableField } from './utils'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 const { isDefined } = values
-const { notAsync } = functions
-const { isHidden } = hiddenValues
 
 export const isPicklistField = (changedElement: ChangeDataType): changedElement is Field =>
   isField(changedElement)
@@ -79,7 +77,7 @@ const isFieldWithValueSet = (field: Field): field is ValueSetField => {
 
 const restrictValueSet = (field: ValueSetField): void => {
   field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-    enforce_value: field.annotations[CORE_ANNOTATIONS.REQUIRED] ?? false,
+    enforce_value: isRequired(field),
     values: field.annotations[FIELD_ANNOTATIONS.VALUE_SET].map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
   })
 }
@@ -95,9 +93,9 @@ const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
     await awu(elements)
       .filter(isObjectType)
       .filter(isCustomObject)
-      .filter(customObject => notAsync(isHidden)(customObject))
       .flatMap(customObject => Object.values(customObject.fields))
       .filter(isFieldWithValueSet)
+      .filter(isRestrictableField)
       .forEach(restrictValueSet)
   },
   onDeploy: async changes => {

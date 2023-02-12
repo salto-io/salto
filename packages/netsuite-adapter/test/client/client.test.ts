@@ -26,7 +26,7 @@ import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { AdditionalDependencies } from '../../src/client/types'
-import { Graph, SDFObjectNode } from '../../src/client/graph_utils'
+import { Graph, GraphNode, SDFObjectNode } from '../../src/client/graph_utils'
 
 
 describe('NetsuiteClient', () => {
@@ -312,6 +312,11 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         beforeEach(() => {
           testGraph.nodes.clear()
         })
+        const customizationInfo = {
+          scriptId: 'customrecord1',
+          typeName: 'customrecordtype',
+          values: { '@_scriptid': 'customrecord1' },
+        }
         it('should transform type to customrecordtype instance', async () => {
           const change = toChange({
             after: new ObjectType({
@@ -322,6 +327,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               },
             }),
           })
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1', scriptid: 'customrecord1', changeType: 'addition', customizationInfos: [customizationInfo] })])
           expect(await client.deploy(
             [change],
             SDF_CHANGE_GROUP_ID,
@@ -331,11 +337,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             appliedChanges: [change],
           })
           expect(mockSdfDeploy).toHaveBeenCalledWith(
-            [{
-              scriptId: 'customrecord1',
-              typeName: 'customrecordtype',
-              values: { '@_scriptid': 'customrecord1' },
-            }],
+            [customizationInfo],
             undefined,
             {
               additionalDependencies: {
@@ -343,6 +345,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               },
               validateOnly: false,
             },
+            testGraph,
           )
         })
         it('should transform field to customrecordtype instance', async () => {
@@ -359,6 +362,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           const change = toChange({
             after: customRecordType.fields.custom_field,
           })
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1.field.custom_field', scriptid: 'customrecord1', changeType: 'addition', customizationInfos: [customizationInfo] })])
           expect(await client.deploy(
             [change],
             SDF_CHANGE_GROUP_ID,
@@ -380,6 +384,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               },
               validateOnly: false,
             },
+            testGraph
           )
         })
         it('should try again to deploy after ObjectsDeployError field fail', async () => {
@@ -496,8 +501,15 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
+        testGraph.nodes.clear()
       })
       it('should call sdfValidate', async () => {
+        const customizationInfo = {
+          scriptId: 'someObject',
+          typeName: 'type',
+          values: { scriptid: 'someObject' },
+        }
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', scriptid: 'someObject', changeType: 'addition', customizationInfos: [customizationInfo] })])
         await client.validate([change], SDF_CHANGE_GROUP_ID, ...deployParams)
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           [{
@@ -506,7 +518,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             values: { scriptid: 'someObject' },
           }],
           undefined,
-          { additionalDependencies: deployParams[1], validateOnly: true }
+          { additionalDependencies: deployParams[1], validateOnly: true },
+          testGraph
         )
       })
       it('should skip validation', async () => {

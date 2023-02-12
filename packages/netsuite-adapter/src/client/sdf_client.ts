@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -106,9 +106,11 @@ const FEATURE_ID = 'featureId'
 const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_ID}>\\w+)\\(.*?\\) feature has FAILED`)
 
 export const OBJECT_ID = 'objectId'
+const FEATURE_NAME = 'featureName'
 const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
 const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
 export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
+const objectValidationFeatureErrorRegex = RegExp(`Details: You must specify the (?<${FEATURE_NAME}>[A-Z_]+)\\(.*?\\) feature in the project manifest`, 'gm')
 const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 const manifestErrorDetailsRegex = RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm')
@@ -922,6 +924,10 @@ export default class SdfClient {
     if (!deployStartMessageRegex.test(errorMessage)) {
       // we'll get here when the deploy failed in the validation phase.
       // in this case we're looking for validation error message lines.
+      const missingFeatureNames = getGroupItemFromRegex(errorMessage, objectValidationFeatureErrorRegex, FEATURE_NAME)
+      if (missingFeatureNames.length > 0) {
+        return new MissingManifestFeaturesError(errorMessage, missingFeatureNames)
+      }
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID
       )

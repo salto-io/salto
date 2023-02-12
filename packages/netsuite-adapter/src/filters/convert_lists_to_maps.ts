@@ -15,11 +15,12 @@
 */
 import { InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
-import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, convertDataInstanceMapsToLists } from '../mapped_lists/utils'
-import { FilterWith } from '../filter'
+import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, convertDataInstanceMapsToLists, createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
+import { FilterCreator, FilterWith } from '../filter'
 import { isStandardType, getInnerStandardTypes, isCustomRecordType } from '../types'
 import { getStandardTypes } from '../autogen/types'
 import { dataTypesToConvert } from '../mapped_lists/mapping'
+import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 
 const { mapValuesAsync } = promises.object
 
@@ -29,7 +30,10 @@ const shouldTransformDataInstance = async (instance: InstanceElement): Promise<b
   Object.values((await instance.getType()).fields)
     .some(field => dataTypesToConvert.has(field.refType.elemID.name))
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: FilterCreator = ({
+  elementsSourceIndex,
+  changesGroupId,
+}): FilterWith<'onFetch' | 'preDeploy'> => ({
   name: 'convertListsToMaps',
   /**
    * Upon fetch, do the following:
@@ -85,13 +89,21 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
    * The reverse conversion of standard instances & custom record types happens in sdfDeploy
    */
   preDeploy: async changes => {
+    const convertElementMapsToLists = changesGroupId && isSdfCreateOrUpdateGroupId(changesGroupId)
+      ? await createConvertStandardElementMapsToLists(elementsSourceIndex)
+      : undefined
+
     await awu(changes)
       .forEach(async change => {
-        const transformedData = await mapValuesAsync(change.data, async changeData => (
-          isInstanceElement(changeData) && await shouldTransformDataInstance(changeData)
-            ? convertDataInstanceMapsToLists(changeData)
-            : changeData
-        ))
+        const transformedData = await mapValuesAsync(change.data, async changeData => {
+          if (convertElementMapsToLists) {
+            return convertElementMapsToLists(changeData)
+          }
+          if (isInstanceElement(changeData) && await shouldTransformDataInstance(changeData)) {
+            return convertDataInstanceMapsToLists(changeData)
+          }
+          return changeData
+        })
         Object.assign(change.data, transformedData)
       })
   },

@@ -31,6 +31,7 @@ export type FilterOpts = {
   elementsSource: ReadOnlyElementsSource
   isPartial: boolean
   config: NetsuiteConfig
+  changesGroupId?: string
 }
 
 export type FilterCreator = filter.FilterCreator<

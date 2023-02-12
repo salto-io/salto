@@ -26,13 +26,17 @@ import {
   API_NAME,
   METADATA_TYPE,
   CUSTOM_OBJECT,
-  CPQ_QUOTE, ACTIVATE_RSS, INSTALLED_PACKAGE_METADATA,
+  CPQ_QUOTE,
+  DUPLICATE_RULE_METADATA_TYPE,
+  ACTIVATE_RSS,
+  INSTALLED_PACKAGE_METADATA,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
 import { createCustomObjectType } from './utils'
+import { SORT_ORDER } from '../src/change_validators/duplicate_rules_sort_order'
 
 
 export const mockTypes = {
@@ -317,6 +321,17 @@ export const mockTypes = {
     },
     fields: {
       filter: { refType: BuiltinTypes.STRING },
+    },
+  }),
+  [DUPLICATE_RULE_METADATA_TYPE]: createMetadataObjectType({
+    annotations: {
+      metadataType: DUPLICATE_RULE_METADATA_TYPE,
+      suffix: 'rule',
+      dirName: 'rules',
+    },
+    fields: {
+      [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
+      [SORT_ORDER]: { refType: BuiltinTypes.NUMBER },
     },
   }),
   // CustomMetadataRecordType with name MDType__mdt

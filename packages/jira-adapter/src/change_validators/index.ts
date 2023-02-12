@@ -73,6 +73,7 @@ export default (
     permissionTypeValidator,
     automationsValidator,
     statusMigrationChangeValidator,
+    // Must run after statusMigrationChangeValidator
     workflowSchemeMigrationValidator(client, config, paginator),
     maskingValidator(client),
     lockedFieldsValidator,

@@ -48,6 +48,30 @@ statusMigrations = [
   },
 ]`
 
+const WITH_PARTIAL_MIGRATION_ERROR = `This workflow scheme change requires an issue migration, as some issue statuses do not exist in the new workflow. If you continue with the deployment, the changes will be pushed as a workflow scheme draft but will not be published. You will have to publish them manually from Jira. Alternatively, you can add the following NACL code to this workflow’s scheme code. Make sure to specific, for each issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes .
+statusMigrations = [
+  {
+    issueTypeId = jira.IssueType.instance.issueType1
+    statusId = jira.Status.instance.status3
+    newStatusId = jira.Status.instance.status4
+  },
+  {
+    issueTypeId = jira.IssueType.instance.issueType2
+    statusId = jira.Status.instance.status1
+    newStatusId = jira.Status.instance.status4
+  },
+  {
+    issueTypeId = jira.IssueType.instance.issueType2
+    statusId = jira.Status.instance.status2
+    newStatusId = jira.Status.instance.status4
+  },
+  {
+    issueTypeId = jira.IssueType.instance.issueType3
+    statusId = jira.Status.instance.status4
+    newStatusId = jira.Status.instance.<NEW_STATUS>
+  },
+]`
+
 describe('workflow scheme migration', () => {
   const statusID = new ElemID(JIRA, 'status')
   const status1Id = new ElemID(JIRA, 'Status', 'instance', 'status1')
@@ -208,6 +232,29 @@ describe('workflow scheme migration', () => {
     ]
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
+  })
+  it('should return status migrations with users current one on partial status migration', async () => {
+    modifiedInstance.value.statusMigrations = [
+      {
+        issueTypeId: new ReferenceExpression(issueType1Id),
+        statusId: new ReferenceExpression(status3Id),
+        newStatusId: new ReferenceExpression(status4Id),
+      },
+      {
+        issueTypeId: new ReferenceExpression(issueType2Id),
+        statusId: new ReferenceExpression(status1Id),
+        newStatusId: new ReferenceExpression(status4Id),
+      },
+      {
+        issueTypeId: new ReferenceExpression(issueType2Id),
+        statusId: new ReferenceExpression(status2Id),
+        newStatusId: new ReferenceExpression(status4Id),
+      },
+    ]
+    const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].deployActions?.postAction).toBeDefined()
+    expect(errors[0].detailedMessage).toEqual(WITH_PARTIAL_MIGRATION_ERROR)
   })
   it('should not return an error if the change was on an issue type that is not in issue type schemes', async () => {
     modifiedInstance.value.items = [

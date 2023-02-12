@@ -443,6 +443,7 @@ describe('adapter', () => {
           'zendesk.sla_policy.instance.SLA_502@s',
           'zendesk.sla_policy__filter',
           'zendesk.sla_policy__filter__all',
+          'zendesk.sla_policy__filter__any',
           'zendesk.sla_policy__policy_metrics',
           'zendesk.sla_policy_definition',
           'zendesk.sla_policy_order',

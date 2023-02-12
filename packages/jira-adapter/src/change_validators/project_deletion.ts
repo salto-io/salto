@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const doesProjectHaveIssues = async (
+export const doesProjectHaveIssues = async (
   instance: InstanceElement,
   client: JiraClient
 ): Promise<boolean> => {

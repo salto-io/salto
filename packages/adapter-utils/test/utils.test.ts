@@ -424,7 +424,7 @@ describe('Test utils.ts', () => {
               )
               expect(calls).toHaveLength(1)
               expect(calls[0].path).toBeUndefined()
-              expect(calls[0].field?.getType()).toEqual(field.getType())
+              expect(await calls[0].field?.getType()).toEqual(await field.getType())
               expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
             }
           )
@@ -505,7 +505,7 @@ describe('Test utils.ts', () => {
           expect(result).toBeDefined()
           resp = result as Values
         })
-        it('should call transform func on all defined types', () => {
+        it('should call transform func on all defined types', async () => {
           const primitiveTypes = ['str', 'num', 'bool']
           primitiveTypes.forEach(
             name => expect(transformFunc).toHaveBeenCalledWith({
@@ -521,8 +521,8 @@ describe('Test utils.ts', () => {
               field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
             })
           )
-          Object.entries(origValue.numMap).forEach(
-            ([key, value]) => {
+          await awu(Object.entries(origValue.numMap)).forEach(
+            async ([key, value]) => {
               const field = new Field(
                 toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
                 key,
@@ -534,7 +534,7 @@ describe('Test utils.ts', () => {
               )
               expect(calls).toHaveLength(1)
               expect(calls[0].path).toBeUndefined()
-              expect(calls[0].field?.getType()).toEqual(field.getType())
+              expect(await calls[0].field?.getType()).toEqual(await field.getType())
               expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
             }
           )
@@ -1311,10 +1311,10 @@ describe('Test utils.ts', () => {
       })
 
 
-      it('should transform field', () => {
+      it('should transform field', async () => {
         expect(resolvedField).not.toEqual(field)
 
-        expect(resolvedField.getType()).toEqual(field.getType())
+        expect(await resolvedField.getType()).toEqual(await field.getType())
         expect(resolvedField.name).toEqual(field.name)
         expect(resolvedField.elemID).toEqual(field.elemID)
         expect(resolvedField.path).toEqual(field.path)

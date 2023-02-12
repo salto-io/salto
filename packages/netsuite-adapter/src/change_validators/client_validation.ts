@@ -20,7 +20,7 @@ import { getGroupItemFromRegex, objectValidationErrorRegex, OBJECT_ID } from '..
 import NetsuiteClient from '../client/client'
 import { AdditionalDependencies } from '../client/types'
 import { getChangeGroupIdsFunc } from '../group_changes'
-import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../client/errors'
 import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'

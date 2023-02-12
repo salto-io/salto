@@ -51,7 +51,7 @@ export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig
 
       const paginator = clientUtils.createPaginator({ client, paginationFuncCreator: paginate })
 
-      // Will be either a list of ids or a list of names
+      // Will be either a list of ids or a list of names, depends on the resolveOrganizationIDs config
       const orgIdentifiers = Array.from(new Set<string>(
         Object.values(entriesByInstance).map(entries => entries.map(entry => entry.id)).flat()
       ))

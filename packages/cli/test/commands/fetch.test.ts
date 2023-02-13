@@ -885,8 +885,13 @@ describe('fetch command', () => {
     })
 
     describe('success', () => {
-      describe('when called with fromState false', () => {
-        it('should invoke the fetch from workspace method with fromState false', async () => {
+      describe.each([
+        { fromState: true, elementsScope: undefined },
+        { fromState: true, elementsScope: ['adapter.type'] },
+        { fromState: false, elementsScope: undefined },
+        { fromState: false, elementsScope: ['adapter.type'] },
+      ])('when called with %o', params => {
+        it('should invoke the fetch from workspace method with the right params', async () => {
           const workspace = mocks.mockWorkspace({ uid: 'target' })
           const sourceWS = mocks.mockWorkspace({ uid: 'source' })
           const sourcePath = 'path/to/source'
@@ -899,10 +904,10 @@ describe('fetch command', () => {
               mode: 'default',
               accounts,
               stateOnly: false,
-              fromState: false,
               regenerateSaltoIds: false,
               fromEnv: env,
               fromWorkspace: sourcePath,
+              ...params,
             },
             workspace,
           })
@@ -914,41 +919,8 @@ describe('fetch command', () => {
           expect(usedArgs.workspace).toEqual(workspace)
           expect(usedArgs.otherWorkspace).toEqual(sourceWS)
           expect(usedArgs.accounts).toEqual(accounts)
-          expect(usedArgs.fromState).toBeFalsy()
-          expect(usedArgs.env).toEqual(env)
-        })
-      })
-
-      describe('when called with fromState true', () => {
-        it('should invoke the fetch from workspace method with fromState false', async () => {
-          const workspace = mocks.mockWorkspace({ uid: 'target' })
-          const sourceWS = mocks.mockWorkspace({ uid: 'source' })
-          const sourcePath = 'path/to/source'
-          const env = 'sourceEnv'
-          mockLoadLocalWorkspace.mockResolvedValueOnce(sourceWS)
-          await action({
-            ...cliCommandArgs,
-            input: {
-              force: true,
-              mode: 'default',
-              accounts,
-              stateOnly: false,
-              fromState: true,
-              regenerateSaltoIds: false,
-              fromEnv: env,
-              fromWorkspace: sourcePath,
-            },
-            workspace,
-          })
-          expect(mockLoadLocalWorkspace).toHaveBeenCalledWith(
-            { path: sourcePath, persistent: false }
-          )
-          expect(mockFetchFromWorkspace).toHaveBeenCalled()
-          const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
-          expect(usedArgs.workspace).toEqual(workspace)
-          expect(usedArgs.otherWorkspace).toEqual(sourceWS)
-          expect(usedArgs.accounts).toEqual(accounts)
-          expect(usedArgs.fromState).toBeTruthy()
+          expect(usedArgs.fromState).toBe(params.fromState)
+          expect(usedArgs.elementsScope).toBe(params.elementsScope)
           expect(usedArgs.env).toEqual(env)
         })
       })
@@ -1005,6 +977,65 @@ describe('fetch command', () => {
             fromState: false,
             regenerateSaltoIds: false,
             fromWorkspace: 'path/to/nowhere',
+          },
+          workspace,
+        })
+        expect(retValue).toEqual(CliExitCode.UserInputError)
+      })
+
+      it('should return user input error if the elementsScope argument is provided without fromWorkspace and fromEnv', async () => {
+        const workspace = mocks.mockWorkspace({ uid: 'target' })
+        const retValue = await action({
+          ...cliCommandArgs,
+          input: {
+            force: true,
+            mode: 'default',
+            accounts,
+            stateOnly: false,
+            fromState: false,
+            regenerateSaltoIds: false,
+            fromWorkspace: 'path/to/nowhere',
+            elementsScope: ['adapter.type'],
+          },
+          workspace,
+        })
+        expect(retValue).toEqual(CliExitCode.UserInputError)
+      })
+
+      it('should return user input error if elementsScope argument includes a non-valid elemID', async () => {
+        const workspace = mocks.mockWorkspace({ uid: 'target' })
+        const retValue = await action({
+          ...cliCommandArgs,
+          input: {
+            force: true,
+            mode: 'default',
+            accounts,
+            stateOnly: false,
+            fromState: false,
+            regenerateSaltoIds: false,
+            fromWorkspace: 'path/to/nowhere',
+            fromEnv: 'env',
+            elementsScope: ['adapter.type', 'adapter.type.inst'],
+          },
+          workspace,
+        })
+        expect(retValue).toEqual(CliExitCode.UserInputError)
+      })
+
+      it('should return user input error if elementsScope argument includes a non-topLevel elemID', async () => {
+        const workspace = mocks.mockWorkspace({ uid: 'target' })
+        const retValue = await action({
+          ...cliCommandArgs,
+          input: {
+            force: true,
+            mode: 'default',
+            accounts,
+            stateOnly: false,
+            fromState: false,
+            regenerateSaltoIds: false,
+            fromWorkspace: 'path/to/nowhere',
+            fromEnv: 'env',
+            elementsScope: ['adapter.type', 'adapter.type.instance.name.val'],
           },
           workspace,
         })

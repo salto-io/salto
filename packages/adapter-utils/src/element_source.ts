@@ -38,28 +38,32 @@ export const buildElementsSourceFromElements = (
 
   let self: ReadOnlyElementsSource
 
-  async function *getIds(): AsyncIterable<ElemID> {
+  async function *getIds(filter?: (key: string) => boolean): AsyncIterable<ElemID> {
     for (const element of elements) {
-      yield element.elemID
+      if (!filter || filter(element.elemID.getFullName())) {
+        yield element.elemID
+      }
     }
     if (fallbackSource === undefined) {
       return
     }
-    for await (const elemID of await fallbackSource.list()) {
+    for await (const elemID of await fallbackSource.list(filter)) {
       if (!isIDInElementsMap(elemID)) {
         yield elemID
       }
     }
   }
 
-  async function *getElements(): AsyncIterable<Element> {
+  async function *getElements(filter?: (key: string) => boolean): AsyncIterable<Element> {
     for (const element of elements) {
-      yield element
+      if (!filter || filter(element.elemID.getFullName())) {
+        yield element
+      }
     }
     if (fallbackSource === undefined) {
       return
     }
-    for await (const element of await fallbackSource.getAll()) {
+    for await (const element of await fallbackSource.getAll(filter)) {
       if (!isIDInElementsMap(element.elemID)) {
         const clonedElement = element.clone()
         await resolveTypeShallow(clonedElement, self)
@@ -69,9 +73,9 @@ export const buildElementsSourceFromElements = (
   }
 
   self = {
-    getAll: async () => getElements(),
+    getAll: async (filter?: (key: string) => boolean) => getElements(filter),
     get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
-    list: async () => getIds(),
+    list: async (filter?: (key: string) => boolean) => getIds(filter),
     has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
   }
   return self
@@ -96,9 +100,9 @@ export const buildLazyShallowTypeResolverElementsSource = (
   }
   return {
     get: async (id: ElemID) => getElementWithResolvedShallowType(await elementsSource.get(id)),
-    getAll: async () => awu(await elementsSource.getAll())
+    getAll: async (filter?: (key: string) => boolean) => awu(await elementsSource.getAll(filter))
       .map(getElementWithResolvedShallowType),
-    list: async () => elementsSource.list(),
+    list: async (filter?: (key: string) => boolean) => elementsSource.list(filter),
     has: async (id: ElemID) => elementsSource.has(id),
   }
 }

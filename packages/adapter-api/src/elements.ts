@@ -627,10 +627,10 @@ export const placeholderReadonlyElementsSource = {
       elemID: id,
     })
   },
-  async list(): Promise<AsyncIterable<ElemID>> {
+  async list(_filter?: (key: string) => boolean): Promise<AsyncIterable<ElemID>> {
     return awu([])
   },
-  async getAll(): Promise<AsyncIterable<Element>> {
+  async getAll(_filter?: (key: string) => boolean): Promise<AsyncIterable<Element>> {
     return awu([])
   },
   async has(_id: ElemID): Promise<boolean> {

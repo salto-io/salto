@@ -29,9 +29,12 @@ const { toArrayAsync } = collections.asynciterable
 describe('elementSource', () => {
   describe('buildElementsSourceFromElements', () => {
     describe('when built from elements', () => {
+      const typeOne = new ObjectType({ elemID: new ElemID('adapter', 'type1') })
+      const typeTwo = new ObjectType({ elemID: new ElemID('adapter', 'type2') })
+      const filterToIncludeOnlyTypeOne = (key: string): boolean => key.includes('type1')
       const elements = [
-        new ObjectType({ elemID: new ElemID('adapter', 'type1') }),
-        new ObjectType({ elemID: new ElemID('adapter', 'type2') }),
+        typeOne,
+        typeTwo,
       ]
       const elementsSource = buildElementsSourceFromElements(elements)
 
@@ -39,6 +42,13 @@ describe('elementSource', () => {
         it('should return all the elements', async () => {
           const receivedElements = await toArrayAsync(await elementsSource.getAll())
           expect(receivedElements).toEqual(elements)
+        })
+
+        it('should return filtered getAll if used with filter', async () => {
+          const receivedElements = await toArrayAsync(await elementsSource.getAll(
+            (key: string) => key.includes('type1'),
+          ))
+          expect(receivedElements).toEqual([typeOne])
         })
       })
 
@@ -58,6 +68,12 @@ describe('elementSource', () => {
             .toArrayAsync(await elementsSource.list())
           expect(receivedElementsIds).toEqual(elements.map(e => e.elemID))
         })
+
+        it('should return all filtered element ids when used with filter', async () => {
+          const receivedElementsIds = await collections.asynciterable
+            .toArrayAsync(await elementsSource.list(filterToIncludeOnlyTypeOne))
+          expect(receivedElementsIds).toEqual([typeOne.elemID])
+        })
       })
 
       describe('has', () => {
@@ -74,57 +90,89 @@ describe('elementSource', () => {
     describe('with fallback element source', () => {
       let fallbackSource: ReadOnlyElementsSource
       let elementSource: ReadOnlyElementsSource
+      const filterToIncludeOneAndTwo = (key: string): boolean => (key.includes('2') || key.includes('1'))
+      const typeOneFallback = new ObjectType({
+        elemID: new ElemID('adapter', 'type1'),
+        annotations: { fallback: true },
+      })
+      const typeOneNotFallback = new ObjectType({
+        elemID: new ElemID('adapter', 'type1'),
+        annotations: { fallback: false },
+      })
+      const typeTwo = new ObjectType({
+        elemID: new ElemID('adapter', 'type2'),
+      })
+      const typeThree = new ObjectType({
+        elemID: new ElemID('adapter', 'type3'),
+      })
       beforeEach(() => {
         fallbackSource = buildElementsSourceFromElements([
-          new ObjectType({
-            elemID: new ElemID('adapter', 'type1'),
-            annotations: { fallback: true },
-          }),
-          new ObjectType({
-            elemID: new ElemID('adapter', 'type3'),
-          }),
+          typeOneFallback,
+          typeThree,
         ])
         elementSource = buildElementsSourceFromElements(
           [
-            new ObjectType({
-              elemID: new ElemID('adapter', 'type1'),
-              annotations: { fallback: false },
-            }),
-            new ObjectType({
-              elemID: new ElemID('adapter', 'type2'),
-            }),
+            typeOneNotFallback,
+            typeTwo,
           ],
           fallbackSource,
         )
       })
-      it('should combine elements from both sources in list', async () => {
-        const allIds = await toArrayAsync(await elementSource.list())
-        expect(allIds).toContainEqual(new ElemID('adapter', 'type1'))
-        expect(allIds).toContainEqual(new ElemID('adapter', 'type2'))
-        expect(allIds).toContainEqual(new ElemID('adapter', 'type3'))
-        expect(allIds).toHaveLength(3)
+
+      describe('list', () => {
+        it('should combine elements from both sources in list', async () => {
+          const allIds = await toArrayAsync(await elementSource.list())
+          expect(allIds).toContainEqual(new ElemID('adapter', 'type1'))
+          expect(allIds).toContainEqual(new ElemID('adapter', 'type2'))
+          expect(allIds).toContainEqual(new ElemID('adapter', 'type3'))
+          expect(allIds).toHaveLength(3)
+        })
+
+        it('should combine elements and filter from both sources in list', async () => {
+          const filteredIds = await toArrayAsync(await elementSource.list(filterToIncludeOneAndTwo))
+          expect(filteredIds).toContainEqual(typeOneNotFallback.elemID)
+          expect(filteredIds).toContainEqual(typeTwo.elemID)
+          expect(filteredIds).toHaveLength(2)
+        })
       })
-      it('should return element from element list over fallback source in get', async () => {
-        const elem = await elementSource.get(new ElemID('adapter', 'type1'))
-        expect(elem).toBeDefined()
-        expect(elem?.annotations.fallback).toEqual(false)
+
+      describe('get', () => {
+        it('should return element from element list over fallback source in get', async () => {
+          const elem = await elementSource.get(new ElemID('adapter', 'type1'))
+          expect(elem).toBeDefined()
+          expect(elem?.annotations.fallback).toEqual(false)
+        })
       })
-      it('should return elements from element list over fallback source in getAll', async () => {
-        const elements = await toArrayAsync(await elementSource.getAll())
-        expect(elements).toHaveLength(3)
-        const elementsByName = _.keyBy(elements, elem => elem.elemID.typeName)
-        expect(elementsByName).toHaveProperty('type1')
-        expect(elementsByName.type1.annotations.fallback).toEqual(false)
+
+      describe('has', () => {
+        it('should contain elements that exist only in elements list', async () => {
+          await expect(elementSource.has(new ElemID('adapter', 'type2'))).resolves.toEqual(true)
+        })
+        it('should contain elements that exist only in fallback source', async () => {
+          await expect(elementSource.has(new ElemID('adapter', 'type3'))).resolves.toEqual(true)
+        })
+        it('should not contain elements that do not exist', async () => {
+          await expect(elementSource.get(new ElemID('adapter', 'none'))).resolves.toBeUndefined()
+          await expect(elementSource.has(new ElemID('adapter', 'none'))).resolves.toEqual(false)
+        })
       })
-      it('should contain elements that exist only in elements list', async () => {
-        await expect(elementSource.has(new ElemID('adapter', 'type2'))).resolves.toEqual(true)
-      })
-      it('should contain elements that exist only in fallback source', async () => {
-        await expect(elementSource.has(new ElemID('adapter', 'type3'))).resolves.toEqual(true)
-      })
-      it('should not contain elements that do not exist', async () => {
-        await expect(elementSource.get(new ElemID('adapter', 'none'))).resolves.toBeUndefined()
-        await expect(elementSource.has(new ElemID('adapter', 'none'))).resolves.toEqual(false)
+
+      describe('getAll', () => {
+        it('should return elements from element list over fallback source in getAll', async () => {
+          const elements = await toArrayAsync(await elementSource.getAll())
+          expect(elements).toHaveLength(3)
+          const elementsByName = _.keyBy(elements, elem => elem.elemID.typeName)
+          expect(elementsByName).toHaveProperty('type1')
+          expect(elementsByName.type1.annotations.fallback).toEqual(false)
+        })
+
+        it('should return elements from list over fallback and filter in getAll', async () => {
+          const elements = await toArrayAsync(await elementSource.getAll(filterToIncludeOneAndTwo))
+          expect(elements).toHaveLength(2)
+          const elementsByName = _.keyBy(elements, elem => elem.elemID.typeName)
+          expect(elementsByName).toHaveProperty('type1')
+          expect(elementsByName.type1.annotations.fallback).toEqual(false)
+        })
       })
     })
   })

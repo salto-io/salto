@@ -882,7 +882,7 @@ const fixStaticFilesForFromStateChanges = async (
 * This filter only applies to the Read functionality of the ElementsSource
 * and does not work properly for isEmpty
 */
-export const filteredElementsSource = (
+const filteredElementsSource = (
   source: elementSource.ElementsSource,
   filter: (key: string) => boolean
 ): elementSource.ElementsSource => ({

@@ -16,7 +16,7 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
-import { getChangeData, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
+import { getChangeData, isInstanceElement, AdapterOperationName, Progress, ElemID } from '@salto-io/adapter-api'
 import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter,
   PlanItem, FetchFromWorkspaceFunc, loadLocalWorkspace, fetchFromWorkspace } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
@@ -250,6 +250,28 @@ const shouldRecommendAlignMode = async (
   )
 }
 
+const isElementsScopeValid = (
+  elementsScope: string[],
+  cliOutput: CliOutput,
+): boolean => {
+  const invalidScopes = elementsScope.map(scope => {
+    try {
+      const elemID = ElemID.fromFullName(scope)
+      if (!elemID.isTopLevel()) {
+        return scope
+      }
+    } catch (error) {
+      return scope
+    }
+    return undefined
+  }).filter(values.isDefined)
+  if (invalidScopes.length > 0) {
+    errorOutputLine(`ElementScopes must be a valid Top Level Element ID, these are not - ${invalidScopes.join(', ')}`, cliOutput)
+    return false
+  }
+  return true
+}
+
 type FetchArgs = {
   force: boolean
   stateOnly: boolean
@@ -283,6 +305,9 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   if (elementsScope && !fromEnv) {
     errorOutputLine('elementsScope can only be used together with fromEnv and fromWorkspace.', output)
     outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
+  if (elementsScope !== undefined && !isElementsScopeValid(elementsScope, output)) {
     return CliExitCode.UserInputError
   }
   const { shouldCalcTotalSize } = config

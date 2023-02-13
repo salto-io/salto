@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
+  Adapter, AdapterAuthentication, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -125,8 +125,8 @@ export const createElemIDReplacedElementsSource = (
 ): ReadOnlyElementsSource => (
   account === adapter
     ? elementsSource : ({
-      getAll: async () =>
-        awu(await elementsSource.getAll()).map(async element => {
+      getAll: async (filter?: (key: string) => boolean) =>
+        awu(await elementsSource.getAll(filter)).map(async element => {
           const ret = element.clone()
           await updateElementsWithAlternativeAccount(
             [ret], adapter, account, elementsSource
@@ -142,8 +142,8 @@ export const createElemIDReplacedElementsSource = (
         }
         return element
       },
-      list: async () =>
-        awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
+      list: async (filter?: (key: string) => boolean) =>
+        awu(await elementsSource.list(filter)).map(id => createAdapterReplacedID(id, adapter)),
       has: async id => {
         const transformedId = createAdapterReplacedID(id, account)
         return elementsSource.has(transformedId)
@@ -154,31 +154,15 @@ const filterElementsSource = (
   elementsSource: ReadOnlyElementsSource,
   adapterName: string,
 ): ReadOnlyElementsSource => {
-  const isRelevantID = (elemID: ElemID): boolean =>
-    (elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER)
+  const isRelevantID = (key: string): boolean => {
+    const elemID = ElemID.fromFullName(key)
+    return (elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER)
+  }
   return {
-    getAll: async () => {
-      async function *getElements(): AsyncIterable<Element> {
-        for await (const element of await elementsSource.getAll()) {
-          if (isRelevantID(element.elemID)) {
-            yield element
-          }
-        }
-      }
-      return getElements()
-    },
-    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
-    list: async () => {
-      async function *getIds(): AsyncIterable<ElemID> {
-        for await (const element of await elementsSource.getAll()) {
-          if (isRelevantID(element.elemID)) {
-            yield element.elemID
-          }
-        }
-      }
-      return getIds()
-    },
-    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
+    getAll: async () => elementsSource.getAll(isRelevantID),
+    get: async id => (isRelevantID(id.getFullName()) ? elementsSource.get(id) : undefined),
+    list: async () => elementsSource.list(isRelevantID),
+    has: async id => (isRelevantID(id.getFullName()) ? elementsSource.has(id) : false),
   }
 }
 

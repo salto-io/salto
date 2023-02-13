@@ -58,8 +58,9 @@ export const sameIssueTypeNameChangeValidator: ChangeValidator = async (changes,
       const otherInstance = issuesByNames[getChangeData(change).value.name].find(
         issueType => !issueType.elemID.isEqual(getChangeData(change).elemID)
       )
-      if (otherInstance !== undefined) {
-        return getSameIssueTypeNameError(change, otherInstance)
+      if (otherInstance === undefined) {
+        return undefined
       }
+      return getSameIssueTypeNameError(change, otherInstance)
     }).filter(isDefined)
 }

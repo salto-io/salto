@@ -40,9 +40,12 @@ describe('workflow scheme migration', () => {
     expect(deletionErrors).toHaveLength(0)
   })
   it('should not return error for unique issue type names', async () => {
-    const deletionErrors = await sameIssueTypeNameChangeValidator([toChange({ before: issueTypeInstance1 })], elementSource)
+    elementSource = buildElementsSourceFromElements([issueTypeInstance1, issueTypeInstance2])
+    const deletionErrors = await sameIssueTypeNameChangeValidator([toChange({ after: issueTypeInstance3 })], elementSource)
     expect(deletionErrors).toHaveLength(0)
   })
   it('should return an error for same issue type names', async () => {
+    const deletionErrors = await sameIssueTypeNameChangeValidator([toChange({ after: issueTypeInstance3 })], elementSource)
+    expect(deletionErrors).toHaveLength(1)
   })
 })

@@ -45,7 +45,7 @@ import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
-const { not, lambdaOf } = functions
+const { not } = functions
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
@@ -381,5 +381,5 @@ export const isUpdatable = ({ annotations }: Element): boolean => (
 export const isRestrictableField = (field: Field): boolean => (
   !isHiddenValue(field)
   && isUpdatable(field)
-  && applicableToParent(field, lambdaOf(not(isHidden)))
+  && applicableToParent(field, not(isHidden))
 )

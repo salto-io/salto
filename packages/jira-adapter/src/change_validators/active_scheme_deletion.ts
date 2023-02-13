@@ -22,14 +22,14 @@ import { projectHasWorkflowSchemeReference } from './workflow_scheme_migration'
 
 const { awu } = collections.asynciterable
 
-const getActiveWorkflowSchemeRemovalError = (elemID: ElemID, projects: InstanceElement[]): ChangeError => ({
+const getActiveSchemeRemovalError = (elemID: ElemID, projects: InstanceElement[]): ChangeError => ({
   elemID,
   severity: 'Error' as SeverityLevel,
   message: 'Can’t remove schemes that are being used',
   detailedMessage: `This scheme is currently used by ${projects.length === 1 ? 'project' : 'projects'} ${projects.map(project => project.elemID.name).join(', ')}, and can’t be deleted`,
 })
 
-export const activeWorkflowSchemeDeletionValidator: ChangeValidator = async (changes, elementSource) => {
+export const activeSchemeDeletionValidator: ChangeValidator = async (changes, elementSource) => {
   const relevantChanges = changes
     .filter(isRemovalChange)
     .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
@@ -49,7 +49,7 @@ export const activeWorkflowSchemeDeletionValidator: ChangeValidator = async (cha
   )
   return relevantChanges
     .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()] !== undefined)
-    .map(change => getActiveWorkflowSchemeRemovalError(
+    .map(change => getActiveSchemeRemovalError(
       getChangeData(change).elemID,
       workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
     ))

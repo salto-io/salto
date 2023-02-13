@@ -16,7 +16,7 @@
 import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
-import { activeWorkflowSchemeDeletionValidator } from '../../src/change_validators/active_workflow_scheme_deletion'
+import { activeSchemeDeletionValidator } from '../../src/change_validators/active_scheme_deletion'
 
 describe('active workflow scheme deletion', () => {
   let workflowSchemeType: ObjectType
@@ -48,12 +48,12 @@ describe('active workflow scheme deletion', () => {
     elementSource = buildElementsSourceFromElements([workflowInstance, projectInstance])
   })
   it('should not return error for addition/modification changes', async () => {
-    const additionErrors = await activeWorkflowSchemeDeletionValidator(
+    const additionErrors = await activeSchemeDeletionValidator(
       [toChange({ after: workflowInstance })],
       elementSource,
     )
     expect(additionErrors).toHaveLength(0)
-    const modificationErrors = await activeWorkflowSchemeDeletionValidator(
+    const modificationErrors = await activeSchemeDeletionValidator(
       [toChange({ before: workflowInstance, after: workflowInstance })],
       elementSource,
     )
@@ -61,11 +61,11 @@ describe('active workflow scheme deletion', () => {
   })
   it('should not return error for inactive workflow scheme', async () => {
     projectInstance.value.workflowScheme = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
-    const errors = await activeWorkflowSchemeDeletionValidator([toChange({ before: workflowInstance })], elementSource)
+    const errors = await activeSchemeDeletionValidator([toChange({ before: workflowInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
   it('should return singular error for workflow scheme linked to one project', async () => {
-    const errors = await activeWorkflowSchemeDeletionValidator(
+    const errors = await activeSchemeDeletionValidator(
       [toChange({ before: workflowInstance })],
       elementSource,
     )
@@ -75,7 +75,7 @@ describe('active workflow scheme deletion', () => {
   })
   it('should return plural error for workflow scheme linked to multiple projects', async () => {
     elementSource = buildElementsSourceFromElements([workflowInstance, projectInstance, projectInstance])
-    const errors = await activeWorkflowSchemeDeletionValidator(
+    const errors = await activeSchemeDeletionValidator(
       [toChange({ before: workflowInstance })],
       elementSource,
     )

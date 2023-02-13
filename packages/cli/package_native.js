@@ -49,7 +49,7 @@ const BUILD_NODE_EXECUTABLE = false
 const TARGET_FILE_BASENAME = 'salto'
 const TARGET_DIR = 'pkg'
 const TARGET_ARCH = BUILD_NODE_EXECUTABLE ? os.arch() : 'x64'
-const TARGET_NODE_VERSION = '18.12.1'
+const TARGET_NODE_VERSION = '18.14.0'
 const TARGET_PLATFORMS = {
   win: { ext: '.exe' },
   linux: {},

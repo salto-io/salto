@@ -50,10 +50,29 @@ describe('workflow scheme migration', () => {
     expect(deletionErrors).toHaveLength(0)
   })
   it('should return an error for same issue type names', async () => {
+    const issueTypeInstance4 = new InstanceElement('issueType4', issueTypeObject, {
+      name: 'issueType3',
+    })
     const deletionErrors = await sameIssueTypeNameChangeValidator(
-      [toChange({ after: issueTypeInstance3 })],
+      [toChange({ after: issueTypeInstance4 })],
       elementSource,
     )
     expect(deletionErrors).toHaveLength(1)
+  })
+  it('should return an error for multiple changes for the same name', async () => {
+    const issueTypeInstance4 = new InstanceElement('issueType4', issueTypeObject, {
+      name: 'issueType3',
+    })
+    const issueTypeInstance5 = new InstanceElement('issueType5', issueTypeObject, {
+      name: 'issueType3',
+    })
+    const deletionErrors = await sameIssueTypeNameChangeValidator(
+      [
+        toChange({ before: issueTypeInstance1, after: issueTypeInstance4 }),
+        toChange({ before: issueTypeInstance2, after: issueTypeInstance5 }),
+      ],
+      elementSource,
+    )
+    expect(deletionErrors).toHaveLength(2)
   })
 })

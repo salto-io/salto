@@ -31,7 +31,7 @@ import {
   isHiddenValue,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections, functions } from '@salto-io/lowerdash'
+import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
@@ -45,7 +45,6 @@ import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
-const { not } = functions
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
 const log = logger(module)
@@ -381,5 +380,5 @@ export const isUpdatable = ({ annotations }: Element): boolean => (
 export const isRestrictableField = (field: Field): boolean => (
   !isHiddenValue(field)
   && isUpdatable(field)
-  && applicableToParent(field, not(isHidden))
+  && applicableToParent(field, element => !isHidden(element))
 )

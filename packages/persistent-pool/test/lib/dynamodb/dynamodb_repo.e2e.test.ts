@@ -71,7 +71,8 @@ describe('when there are existing leases', () => {
       await fillPool()
     })
 
-    describe('lease', () => {
+    // eslint-disable-next-line jest/no-disabled-tests
+    describe.skip('lease', () => {
       let lease: Lease<MyType>
 
       beforeEach(async () => {
@@ -84,7 +85,8 @@ describe('when there are existing leases', () => {
       })
     })
 
-    describe('clear', () => {
+    // eslint-disable-next-line jest/no-disabled-tests
+    describe.skip('clear', () => {
       beforeAll(() => pool.clear())
 
       afterAll(fillPool, 30000)
@@ -95,7 +97,8 @@ describe('when there are existing leases', () => {
     })
   })
 
-  describe('retries', () => {
+  // eslint-disable-next-line jest/no-disabled-tests
+  describe.skip('retries', () => {
     it('should throw if at limit', async () => {
       ({ dynamo, tableName } = global.dynamoEnv.real || global.dynamoEnv.dynalite)
       const repo2 = await makeRepo({

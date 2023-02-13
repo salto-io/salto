@@ -47,7 +47,7 @@ commands:
 jobs:
   build:
     docker:
-      - image: cimg/node:17.6
+      - image: cimg/node:18.14
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -114,7 +114,7 @@ jobs:
 
   unit_test:
     docker:
-      - image: cimg/node:17.6
+      - image: cimg/node:18.14
 
     resource_class: xlarge
     working_directory: /mnt/ramdisk/project
@@ -138,7 +138,7 @@ jobs:
 
   publish_on_version_change:
     docker:
-      - image: cimg/node:17.6
+      - image: cimg/node:18.14
 
     steps:
       - attach_workspace:
@@ -204,7 +204,7 @@ jobs:
 
   package_cli:
     docker:
-      - image: cimg/node:17.6
+      - image: cimg/node:18.14
 
     steps:
       - attach_workspace:
@@ -244,7 +244,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: cimg/node:17.6
+      - image: cimg/node:18.14
 
     steps:
       - set_s3_pkg_urls
@@ -292,7 +292,7 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: cimg/node:17.6
+      - image: cimg/node:18.14
 
     steps:
       - attach_workspace:
@@ -329,7 +329,7 @@ jobs:
 
   publish_canary:
     docker:
-      - image: cimg/node:17.6
+      - image: cimg/node:18.14
 
     steps:
       - attach_workspace:

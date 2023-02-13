@@ -18,7 +18,6 @@ import {
   buildLazyShallowTypeResolverElementsSource,
   createChangeValidator,
 } from '@salto-io/adapter-utils'
-
 import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
@@ -40,8 +39,9 @@ import invalidListViewFilterScope from './change_validators/invalid_listview_fil
 import caseAssignmentRulesValidator from './change_validators/case_assignmentRules'
 import unknownUser from './change_validators/unknown_users'
 import animationRuleRecordType from './change_validators/animation_rule_recordtype'
-import currencyIsoCodes from './change_validators/currency_iso_codes'
 import duplicateRulesSortOrder from './change_validators/duplicate_rules_sort_order'
+import lastLayoutRemoval from './change_validators/last_layout_removal'
+import currencyIsoCodes from './change_validators/currency_iso_codes'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
@@ -81,6 +81,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
   duplicateRulesSortOrder: { creator: () => duplicateRulesSortOrder, ...defaultAlwaysRun },
   currencyIsoCodes: { creator: () => currencyIsoCodes, ...defaultAlwaysRun },
+  lastLayoutRemoval: { creator: () => lastLayoutRemoval, ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

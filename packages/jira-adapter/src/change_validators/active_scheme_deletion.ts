@@ -13,14 +13,36 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isRemovalChange, SeverityLevel } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { Change, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isRemovalChange, ReferenceExpression, RemovalChange, SeverityLevel } from '@salto-io/adapter-api'
+import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { PROJECT_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
-import { projectHasWorkflowSchemeReference } from './workflow_scheme_migration'
-
+import { ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PERMISSION_SCHEME_TYPE_NAME, PROJECT_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+
+const SCHEME_TYPE_TO_PROJECT_FIELD: Record<string, string> = {
+  [WORKFLOW_SCHEME_TYPE_NAME]: 'workflowScheme',
+  [PERMISSION_SCHEME_TYPE_NAME]: 'permissionScheme',
+  [NOTIFICATION_SCHEME_TYPE_NAME]: 'notificationScheme',
+  [ISSUE_TYPE_SCHEMA_NAME]: 'issueTypeScheme',
+  IssueTypeScreenScheme: 'issueTypeScreenScheme',
+  ScreenScheme: 'screenScheme',
+  [SECURITY_SCHEME_TYPE]: 'issueSecurityScheme',
+}
+const RELEVANT_TYPES = new Set(Object.keys(SCHEME_TYPE_TO_PROJECT_FIELD))
+
+const getRelevantChanges = (changes: ReadonlyArray<Change>): ReadonlyArray<RemovalChange<InstanceElement>> =>
+  changes
+    .filter(isInstanceChange)
+    .filter(isRemovalChange)
+    .filter(change => RELEVANT_TYPES.has(getChangeData(change).elemID.typeName))
+
+const isProjectUsingScheme = (project: InstanceElement, schemeId: ElemID): boolean => {
+  const projectField = SCHEME_TYPE_TO_PROJECT_FIELD[schemeId.typeName]
+  return project.value[projectField] instanceof ReferenceExpression
+    && project.value[projectField].elemID.isEqual(schemeId)
+}
 
 const getActiveSchemeRemovalError = (elemID: ElemID, projects: InstanceElement[]): ChangeError => ({
   elemID,
@@ -30,27 +52,21 @@ const getActiveSchemeRemovalError = (elemID: ElemID, projects: InstanceElement[]
 })
 
 export const activeSchemeDeletionValidator: ChangeValidator = async (changes, elementSource) => {
-  const relevantChanges = changes
-    .filter(isRemovalChange)
-    .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_SCHEME_TYPE_NAME)
-    .filter(change => getChangeData(change).elemID.idType === 'instance')
+  const relevantChanges = getRelevantChanges(changes)
   if (elementSource === undefined || relevantChanges.length === 0) {
     return []
   }
   const idsIterator = awu(await elementSource.list())
-  const projects = await awu(idsIterator)
+  const projects: InstanceElement[] = await awu(idsIterator)
     .filter(id => id.typeName === PROJECT_TYPE)
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .toArray()
-  const workflowSchemesToProjects = _.groupBy(
-    projects.filter(projectHasWorkflowSchemeReference),
-    project => project.value.workflowScheme.elemID.getFullName(),
-  )
-  return relevantChanges
-    .filter(change => workflowSchemesToProjects[getChangeData(change).elemID.getFullName()] !== undefined)
-    .map(change => getActiveSchemeRemovalError(
-      getChangeData(change).elemID,
-      workflowSchemesToProjects[getChangeData(change).elemID.getFullName()],
-    ))
+  return relevantChanges.map(change => {
+    const linkedProjects = projects.filter(project => isProjectUsingScheme(project, getChangeData(change).elemID))
+    if (linkedProjects.length === 0) {
+      return undefined
+    }
+    return getActiveSchemeRemovalError(getChangeData(change).elemID, linkedProjects)
+  }).filter(isDefined)
 }

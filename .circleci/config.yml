@@ -125,11 +125,12 @@ jobs:
 
       - run:
           name: Run unit tests
+          no_output_timeout: 20m
           command: yarn test --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
             # https://github.com/pinojs/koa-pino-logger/issues/16
-            FORCE_COLOR: 1
+            # FORCE_COLOR: 1
 
       - store_test_results:
           path: reports

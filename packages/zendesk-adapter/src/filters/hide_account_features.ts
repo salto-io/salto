@@ -30,7 +30,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(isObjectType)
       .find(t => t.elemID.typeName === ACCOUNT_FEATURES_TYPE_NAME)
     if (accountFeaturesType === undefined) {
-      log.warn('Could not find account_features type')
+      log.warn(`Could not find ${ACCOUNT_FEATURES_TYPE_NAME} type`)
       return
     }
     accountFeaturesType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true

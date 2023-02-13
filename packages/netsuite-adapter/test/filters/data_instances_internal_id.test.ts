@@ -105,11 +105,11 @@ describe('data_instances_internal_id', () => {
   describe('preDeploy', () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } }, annotations: { source: 'soap' } })
 
-    it('should replace internalId with id', async () => {
+    it('should replace internalId with id and remove name', async () => {
       const instance = new InstanceElement(
         'instance',
         type,
-        { recordRef: { internalId: '1', id: '2' } }
+        { recordRef: { internalId: '1', id: '2', name: 'Some Name' } }
       )
 
       await filterCreator().preDeploy?.([
@@ -119,17 +119,30 @@ describe('data_instances_internal_id', () => {
       expect(instance.value).toEqual({ recordRef: { internalId: '2' } })
     })
 
-    it('should use internalId when id not set', async () => {
+    it('should use internalId when id not set and remove name', async () => {
       const instance = new InstanceElement(
         'instance',
         type,
-        { recordRef: { internalId: '1', id: ACCOUNT_SPECIFIC_VALUE } }
+        { recordRef: { internalId: '1', id: ACCOUNT_SPECIFIC_VALUE, name: 'Some Name' } }
       )
 
       await filterCreator().preDeploy?.([
         toChange({ before: instance.clone(), after: instance }),
       ])
       expect(instance.value).toEqual({ recordRef: { internalId: '1' } })
+    })
+
+    it('should not remove additional properties', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { recordRef: { internalId: '1', name: 'Some Name', anotherField: 'value' } }
+      )
+
+      await filterCreator().preDeploy?.([
+        toChange({ before: instance.clone(), after: instance }),
+      ])
+      expect(instance.value).toEqual({ recordRef: { internalId: '1', name: 'Some Name', anotherField: 'value' } })
     })
   })
 })

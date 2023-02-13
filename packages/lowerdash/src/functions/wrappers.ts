@@ -26,15 +26,6 @@ export const notAsync = <TArgs extends unknown[]> (func: (...args: TArgs) => Pro
   )
 )
 
-export const withFirst = <First, Rest extends unknown[], RType> (
-  func: (first: First, ...rest: Rest) => RType,
-  ...rest: Rest
-): (arg: First) => RType => (
-    (arg): RType => (
-      func(arg, ...rest)
-    )
-  )
-
 export const lambdaOf = <First, RType> (
   func: (first: First, ...rest: undefined[]) => RType
 ): (first: First) => RType => (

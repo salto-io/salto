@@ -52,10 +52,13 @@ export const sameIssueTypeNameChangeValidator: ChangeValidator = async (changes,
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .toArray()
-  const issuesByNames = _.groupBy(issueTypes, issueType => issueType.value.name)
+  const issuesByNames = _.groupBy(
+    [...issueTypes, ...relevantChanges.map(getChangeData)],
+    issueType => issueType.value.name,
+  )
   return relevantChanges
     .map(change => {
-      const otherInstance = issuesByNames[getChangeData(change).value.name].find(
+      const otherInstance = issuesByNames[getChangeData(change).value.name]?.find(
         issueType => !issueType.elemID.isEqual(getChangeData(change).elemID)
       )
       if (otherInstance === undefined) {

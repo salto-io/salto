@@ -15,7 +15,6 @@
 */
 import { Change, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isRemovalChange, ReferenceExpression, RemovalChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PERMISSION_SCHEME_TYPE_NAME, PROJECT_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable

@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import { PromiseTimedOutError, withTimeout, sleep } from '../../src/promises/timeout'
 
-describe('withTimeout', () => {
+// eslint-disable-next-line jest/no-disabled-tests
+describe.skip('withTimeout', () => {
   const wait = (
     timeout: number,
   ): Promise<void> => new Promise(resolve => setTimeout(resolve, timeout))

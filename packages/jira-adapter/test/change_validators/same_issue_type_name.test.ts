@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression,, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { toChange, ObjectType, ElemID, InstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { sameIssueTypeNameChangeValidator } from '../../src/change_validators/same_issue_type_name'
 import { JIRA } from '../../src/constants'
@@ -36,16 +35,25 @@ describe('workflow scheme migration', () => {
     elementSource = buildElementsSourceFromElements([issueTypeInstance1, issueTypeInstance2, issueTypeInstance3])
   })
   it('should not return error for removal changes', async () => {
-    const deletionErrors = await sameIssueTypeNameChangeValidator([toChange({ before: issueTypeInstance1 })], elementSource)
+    const deletionErrors = await sameIssueTypeNameChangeValidator(
+      [toChange({ before: issueTypeInstance1 })],
+      elementSource,
+    )
     expect(deletionErrors).toHaveLength(0)
   })
   it('should not return error for unique issue type names', async () => {
     elementSource = buildElementsSourceFromElements([issueTypeInstance1, issueTypeInstance2])
-    const deletionErrors = await sameIssueTypeNameChangeValidator([toChange({ after: issueTypeInstance3 })], elementSource)
+    const deletionErrors = await sameIssueTypeNameChangeValidator(
+      [toChange({ after: issueTypeInstance3 })],
+      elementSource,
+    )
     expect(deletionErrors).toHaveLength(0)
   })
   it('should return an error for same issue type names', async () => {
-    const deletionErrors = await sameIssueTypeNameChangeValidator([toChange({ after: issueTypeInstance3 })], elementSource)
+    const deletionErrors = await sameIssueTypeNameChangeValidator(
+      [toChange({ after: issueTypeInstance3 })],
+      elementSource,
+    )
     expect(deletionErrors).toHaveLength(1)
   })
 })

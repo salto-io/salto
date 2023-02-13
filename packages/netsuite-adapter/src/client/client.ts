@@ -31,7 +31,7 @@ import { CustomizationInfo, FeaturesMap, GetCustomObjectsResult, getOrTransformC
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations } from '../types'
-import { APPLICATION_ID, SCRIPT_ID } from '../constants'
+import { APPLICATION_ID, SCRIPT_ID, SERVICE_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
@@ -50,7 +50,10 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
 }
 
-const getScriptIdFromElement = (changeData: ChangeDataType): string => {
+const getServiceIdFromElement = (changeData: ChangeDataType): string => {
+  if (changeData.elemID.typeName === 'file' || changeData.elemID.typeName === 'folder') {
+    return getElementValueOrAnnotations(changeData).path
+  }
   if (isField(changeData)) {
     return changeData.parent.annotations[SCRIPT_ID]
   }
@@ -171,9 +174,9 @@ export default class NetsuiteClient {
     return awu(elementsAndChangeTypes)
       .map(async ({ element, changeType }) => ({
         elemIdFullName: element.elemID.getFullName(),
-        scriptid: getScriptIdFromElement(element),
+        serviceid: getServiceIdFromElement(element),
         changeType,
-        customizationInfos: await NetsuiteClient.toCustomizationInfos([element]),
+        customizationInfo: (await NetsuiteClient.toCustomizationInfos([element]))[0],
       }))
       .toArray()
   }
@@ -189,20 +192,19 @@ export default class NetsuiteClient {
     elemIdsAndCustInfos.forEach(elemIdAndCustInfo => {
       const currSet = dependencyMap.get(elemIdAndCustInfo.elemIdFullName)
       const endNode = dependencyGraph.findNode(elemIdAndCustInfo)
-      elemIdAndCustInfo.customizationInfos.forEach(custInfo =>
-        lookupValue(custInfo.values, val => {
-          if (!_.isString(val)) {
-            return
+      lookupValue(elemIdAndCustInfo.customizationInfo.values, val => {
+        if (!_.isString(val)) {
+          return
+        }
+        const serviceIdInfoArray = captureServiceIdInfo(val)
+        serviceIdInfoArray.forEach(serviceIdInfo => {
+          currSet.add(serviceIdInfo.serviceId)
+          const startNode = dependencyGraph.findNodeByField(SERVICE_ID, serviceIdInfo.serviceId)
+          if (startNode && endNode && startNode.value.changeType === 'addition') {
+            startNode.addEdge(endNode)
           }
-          const serviceIdInfoArray = captureServiceIdInfo(val)
-          serviceIdInfoArray.forEach(serviceIdInfo => {
-            currSet.add(serviceIdInfo.serviceId)
-            const startNode = dependencyGraph.findNodeByField(SCRIPT_ID, serviceIdInfo.serviceId)
-            if (startNode && endNode && startNode.value.changeType === 'addition') {
-              startNode.addEdge(endNode)
-            }
-          })
-        }))
+        })
+      })
     })
     return { dependencyMap, dependencyGraph }
   }

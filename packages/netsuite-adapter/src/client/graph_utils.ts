@@ -20,9 +20,9 @@ import { CustomizationInfo } from './types'
 
 export type SDFObjectNode = {
   elemIdFullName: string
-  scriptid: string | undefined
+  serviceid: string
   changeType: 'addition' | 'modification'
-  customizationInfos: CustomizationInfo[]
+  customizationInfo: CustomizationInfo
 }
 
 export class GraphNode<T> {

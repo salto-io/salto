@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { JIRA } from '../../src/constants'
 import { activeSchemeDeletionValidator } from '../../src/change_validators/active_scheme_deletion'
 
-describe('active workflow scheme deletion', () => {
+describe('active scheme deletion', () => {
   let workflowSchemeType: ObjectType
   let projectType: ObjectType
   let projectInstance: InstanceElement
@@ -59,12 +59,12 @@ describe('active workflow scheme deletion', () => {
     )
     expect(modificationErrors).toHaveLength(0)
   })
-  it('should not return error for inactive workflow scheme', async () => {
+  it('should not return error for inactive scheme', async () => {
     projectInstance.value.workflowScheme = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
     const errors = await activeSchemeDeletionValidator([toChange({ before: workflowInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
-  it('should return singular error for workflow scheme linked to one project', async () => {
+  it('should return singular error for scheme linked to one project', async () => {
     const errors = await activeSchemeDeletionValidator(
       [toChange({ before: workflowInstance })],
       elementSource,
@@ -73,7 +73,7 @@ describe('active workflow scheme deletion', () => {
     expect(errors[0].elemID).toEqual(workflowInstance.elemID)
     expect(errors[0].detailedMessage).toEqual('This scheme is currently used by project instance, and can’t be deleted')
   })
-  it('should return plural error for workflow scheme linked to multiple projects', async () => {
+  it('should return plural error for scheme linked to multiple projects', async () => {
     elementSource = buildElementsSourceFromElements([workflowInstance, projectInstance, projectInstance])
     const errors = await activeSchemeDeletionValidator(
       [toChange({ before: workflowInstance })],

@@ -39,7 +39,7 @@ module.exports = {
     '!test/**',
     '!e2e_test/**',
   ],
-  setupFilesAfterEnv: [
-      `${__dirname}/jest-setup.js`,
-  ],
+  // setupFilesAfterEnv: [
+  //     `${__dirname}/jest-setup.js`,
+  // ],
 }

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
+  Adapter, AdapterAuthentication, ReadOnlyElementsSource, ObjectType, BuiltinTypesByFullName,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -154,15 +154,18 @@ const filterElementsSource = (
   elementsSource: ReadOnlyElementsSource,
   adapterName: string,
 ): ReadOnlyElementsSource => {
-  const isRelevantID = (key: string): boolean => {
-    const elemID = ElemID.fromFullName(key)
-    return (elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER)
-  }
+  const isRelevantID = (elemID: ElemID): boolean =>
+    (elemID.adapter === adapterName
+      || (Object.keys(BuiltinTypesByFullName).includes(elemID.getFullName())))
+
+  const isRelevantFullName = (key: string): boolean =>
+    (isRelevantID(ElemID.fromFullName(key)))
+
   return {
-    getAll: async () => elementsSource.getAll(isRelevantID),
-    get: async id => (isRelevantID(id.getFullName()) ? elementsSource.get(id) : undefined),
-    list: async () => elementsSource.list(isRelevantID),
-    has: async id => (isRelevantID(id.getFullName()) ? elementsSource.has(id) : false),
+    getAll: async () => elementsSource.getAll(isRelevantFullName),
+    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
+    list: async () => elementsSource.list(isRelevantFullName),
+    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
   }
 }
 

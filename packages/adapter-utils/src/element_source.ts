@@ -34,13 +34,23 @@ export const buildElementsSourceFromElements = (
     const duplicateNames = findDuplicates(elements.map(e => e.elemID.getFullName()))
     log.warn(`duplicate ElemIDs of elementSource found. the duplicates are ${duplicateNames}`)
   }
-  const isIDInElementsMap = (id: ElemID): boolean => id.getFullName() in elementsMap
+  const shouldUseFromFallback = (
+    id: ElemID,
+    filter?: (key: string) => boolean,
+  ): boolean => {
+    const fullName = id.getFullName()
+    if (filter === undefined) {
+      return !(fullName in elementsMap)
+    }
+    return filter(fullName) && !(fullName in elementsMap)
+  }
+
 
   let self: ReadOnlyElementsSource
 
   async function *getIds(filter?: (key: string) => boolean): AsyncIterable<ElemID> {
     for (const element of elements) {
-      if (!filter || filter(element.elemID.getFullName())) {
+      if (filter === undefined || filter(element.elemID.getFullName())) {
         yield element.elemID
       }
     }
@@ -48,7 +58,7 @@ export const buildElementsSourceFromElements = (
       return
     }
     for await (const elemID of await fallbackSource.list(filter)) {
-      if (!isIDInElementsMap(elemID)) {
+      if (shouldUseFromFallback(elemID, filter)) {
         yield elemID
       }
     }
@@ -56,7 +66,7 @@ export const buildElementsSourceFromElements = (
 
   async function *getElements(filter?: (key: string) => boolean): AsyncIterable<Element> {
     for (const element of elements) {
-      if (!filter || filter(element.elemID.getFullName())) {
+      if (filter === undefined || filter(element.elemID.getFullName())) {
         yield element
       }
     }
@@ -64,7 +74,7 @@ export const buildElementsSourceFromElements = (
       return
     }
     for await (const element of await fallbackSource.getAll(filter)) {
-      if (!isIDInElementsMap(element.elemID)) {
+      if (shouldUseFromFallback(element.elemID)) {
         const clonedElement = element.clone()
         await resolveTypeShallow(clonedElement, self)
         yield clonedElement
@@ -76,7 +86,7 @@ export const buildElementsSourceFromElements = (
     getAll: async (filter?: (key: string) => boolean) => getElements(filter),
     get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
     list: async (filter?: (key: string) => boolean) => getIds(filter),
-    has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
+    has: async id => (id.getFullName() in elementsMap) || (fallbackSource?.has(id) ?? false),
   }
   return self
 }

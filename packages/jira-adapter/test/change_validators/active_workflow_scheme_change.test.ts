@@ -17,7 +17,7 @@ import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression, Cha
 import { MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
-import { activeWorkflowSchemeChangeValidator } from '../../src/change_validators/active_workflow_scheme_change'
+import { activeSchemeChangeValidator } from '../../src/change_validators/active_scheme_change'
 import { JIRA } from '../../src/constants'
 
 describe('active workflow scheme change', () => {
@@ -61,7 +61,7 @@ describe('active workflow scheme change', () => {
       }
       throw new Error(`Unexpected url ${url}`)
     })
-    validator = activeWorkflowSchemeChangeValidator(client)
+    validator = activeSchemeChangeValidator(client)
   })
   it('should not return error for addition/removal changes', async () => {
     const deletionErrors = await validator([toChange({ before: projectInstance })])

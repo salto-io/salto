@@ -15,10 +15,9 @@
 */
 import _ from 'lodash'
 import { collections, regex, strings, types as lowerdashTypes } from '@salto-io/lowerdash'
-import { getStandardTypesNames } from './autogen/types'
-import { CONFIG_FEATURES, CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from './constants'
-import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { removeCustomRecordTypePrefix, SUITEAPP_CONFIG_TYPE_NAMES } from './types'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from './constants'
+import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
+import { netsuiteSupportedTypes, removeCustomRecordTypePrefix } from './types'
 
 const { makeArray } = collections.array
 
@@ -159,12 +158,7 @@ export const validateFetchParameters = ({
   if (corruptedCustomRecordsIds.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} Expected custom record ids to be an array of strings, but found:\n${JSON.stringify(corruptedCustomRecordsIds, null, 4)}}.`)
   }
-  const existingTypes = [
-    ...getStandardTypesNames(),
-    ...SUPPORTED_TYPES,
-    ...SUITEAPP_CONFIG_TYPE_NAMES,
-    CONFIG_FEATURES,
-  ]
+
   const receivedTypes = types.map(obj => obj.name)
   const receivedCustomRecords = customRecords.map(obj => obj.name)
   const idsRegexes = types.concat(customRecords)
@@ -183,7 +177,7 @@ export const validateFetchParameters = ({
 
   const invalidTypes = receivedTypes
     .filter(recivedTypeName =>
-      !existingTypes
+      !netsuiteSupportedTypes
         .some(existTypeName => checkTypeNameRegMatch({ name: recivedTypeName }, existTypeName)
           // This is to support the adapter configuration before the migration of
           // the SuiteApp type names from PascalCase to camelCase

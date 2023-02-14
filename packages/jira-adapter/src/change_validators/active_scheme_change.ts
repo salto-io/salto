@@ -21,11 +21,11 @@ import { doesProjectHaveIssues } from './project_deletion'
 
 const { awu } = collections.asynciterable
 
-const RELEVANT_TYPES = ['priorityScheme', 'workflowScheme']
+const RELEVANT_FIELDS = ['priorityScheme', 'workflowScheme']
 
 const projectSchemeChanged = (change : ModificationChange<InstanceElement>): string[] => {
   const { before, after } = change.data
-  const changedFields = RELEVANT_TYPES
+  const changedFields = RELEVANT_FIELDS
     .filter(field => before.value[field] instanceof ReferenceExpression
       && after.value[field] instanceof ReferenceExpression)
     .filter(type => !before.value[type].elemID.isEqual(after.value[type].elemID))

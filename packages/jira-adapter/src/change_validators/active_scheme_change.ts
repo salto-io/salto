@@ -26,9 +26,9 @@ const RELEVANT_TYPES = ['priorityScheme', 'workflowScheme']
 const projectSchemeChanged = (change : ModificationChange<InstanceElement>): string[] => {
   const { before, after } = change.data
   const changedFields = RELEVANT_TYPES
-    .filter(type => before.value[type] instanceof ReferenceExpression
-      && after.value[type] instanceof ReferenceExpression)
-    .filter(type => before.value[type].elemID.isEqual(after.value[type].elemID))
+    .filter(field => before.value[field] instanceof ReferenceExpression
+      && after.value[field] instanceof ReferenceExpression)
+    .filter(type => !before.value[type].elemID.isEqual(after.value[type].elemID))
   return changedFields
 }
 

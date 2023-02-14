@@ -21,6 +21,10 @@ import { activeSchemeChangeValidator } from '../../src/change_validators/active_
 import { JIRA } from '../../src/constants'
 
 describe('active scheme change', () => {
+  const workflowSchemeReference1 = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow1'))
+  const workflowSchemeReference2 = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
+  const prioritySchemeReference1 = new ReferenceExpression(new ElemID(JIRA, 'PriorityScheme', 'instance', 'priority1'))
+  const prioritySchemeReference2 = new ReferenceExpression(new ElemID(JIRA, 'PriorityScheme', 'instance', 'priority2'))
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let projectType: ObjectType
   let projectInstance: InstanceElement
@@ -39,7 +43,7 @@ describe('active scheme change', () => {
       projectType,
       {
         name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow1')),
+        workflowScheme: workflowSchemeReference1,
       }
     )
     modifiedInstance = new InstanceElement(
@@ -47,7 +51,7 @@ describe('active scheme change', () => {
       projectType,
       {
         name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2')),
+        workflowScheme: workflowSchemeReference2,
       }
     )
     mockConnection.get.mockImplementation(async url => {
@@ -81,5 +85,12 @@ describe('active scheme change', () => {
   it('should return an error when there are issues', async () => {
     const errors = await validator([toChange({ before: projectInstance, after: modifiedInstance })])
     expect(errors).toHaveLength(1)
+  })
+  it('should return an error for both fields if both changed', async () => {
+    projectInstance.value.priorityScheme = prioritySchemeReference1
+    modifiedInstance.value.priorityScheme = prioritySchemeReference2
+    const errors = await validator([toChange({ before: projectInstance, after: modifiedInstance })])
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toEqual('Can’t replace non-empty project priorityScheme, workflowScheme')
   })
 })

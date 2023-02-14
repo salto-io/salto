@@ -46,6 +46,7 @@ import { fieldContextValidator } from './field_contexts/field_contexts'
 import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
 import { permissionSchemeDeploymentValidator } from './permission_scheme'
 import { statusMigrationChangeValidator } from './status_migration'
+import { activeSchemeDeletionValidator } from './active_scheme_deletion'
 import { activeWorkflowSchemeChangeValidator } from './active_workflow_scheme_change'
 import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
@@ -78,6 +79,7 @@ export default (
     dashboardLayoutValidator,
     permissionTypeValidator,
     automationsValidator,
+    activeSchemeDeletionValidator,
     sameIssueTypeNameChangeValidator,
     statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator

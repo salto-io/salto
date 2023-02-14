@@ -965,13 +965,14 @@ export default class SdfClient {
 
   private static async fixDeployXml(
     dependencyGraph: Graph<SDFObjectNode>,
-    projectName: string
+    projectName: string,
+    customizationInfos: CustomizationInfo[]
   ): Promise<void> {
     const deployFilePath = SdfClient.getDeployFilePath(projectName)
     const deployXmlContent = (await readFile(deployFilePath)).toString()
     await writeFile(
       deployFilePath,
-      reorderDeployXml(deployXmlContent, dependencyGraph)
+      reorderDeployXml(deployXmlContent, dependencyGraph, customizationInfos)
     )
   }
 
@@ -984,6 +985,7 @@ export default class SdfClient {
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectName, customizationInfos, manifestDependencies)
+    await SdfClient.fixDeployXml(dependencyGraph, projectName, customizationInfos)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),

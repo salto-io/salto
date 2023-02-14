@@ -60,18 +60,21 @@ describe('deploy xml utils tests', () => {
     <path>~/Objects/scriptid3.xml</path>
     <path>~/Objects/scriptid1.xml</path>
     <path>~/Objects/scriptid2.xml</path>
+    <path>~/Objects/*</path>
   </objects>
   <translationimports>
     <path>~/Translations/*</path>
   </translationimports>
 </deploy>
 `
-    expect(reorderDeployXml(originalDeployXml, testGraph)).toEqual(fixedDeployXml)
+    expect(reorderDeployXml(originalDeployXml, testGraph, [emptyCustInfo])).toEqual(fixedDeployXml)
   })
 
   it('should write files and folders to deploy xml according to ref level', async () => {
-    const fileTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFileName', serviceid: '/SuiteScripts/shalomTest.js', customizationInfo: { typeName: FILE, values: {} }, changeType: 'addition' })
-    const folderTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFolderName', serviceid: '/SuiteScripts/InnerFolder', customizationInfo: { typeName: FOLDER, values: {} }, changeType: 'addition' })
+    const emptyFileCustInfo = { typeName: FILE, values: {} }
+    const emptyFolderCustInfo = { typeName: FOLDER, values: {} }
+    const fileTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFileName', serviceid: '/SuiteScripts/shalomTest.js', customizationInfo: emptyFileCustInfo, changeType: 'addition' })
+    const folderTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFolderName', serviceid: '/SuiteScripts/InnerFolder', customizationInfo: emptyFolderCustInfo, changeType: 'addition' })
     fileTestNode.addEdge(folderTestNode)
     testGraph.addNodes([fileTestNode, folderTestNode])
     const fixedDeployXml = `<deploy>
@@ -80,18 +83,21 @@ describe('deploy xml utils tests', () => {
   </configuration>
   <files>
     <path>~/FileCabinet/SuiteScripts/shalomTest.js</path>
-    <path>~/FileCabinet/SuiteScripts/InnerFolder</path>
+    <path>~/FileCabinet/SuiteScripts/InnerFolder/*</path>
   </files>
   <objects>
     <path>~/Objects/scriptid3.xml</path>
     <path>~/Objects/scriptid1.xml</path>
     <path>~/Objects/scriptid2.xml</path>
+    <path>~/Objects/*</path>
   </objects>
   <translationimports>
     <path>~/Translations/*</path>
   </translationimports>
 </deploy>
 `
-    expect(reorderDeployXml(originalDeployXml, testGraph)).toEqual(fixedDeployXml)
+    expect(reorderDeployXml(
+      originalDeployXml, testGraph, [emptyCustInfo, emptyFileCustInfo, emptyFolderCustInfo]
+    )).toEqual(fixedDeployXml)
   })
 })

@@ -23,21 +23,34 @@ import { isFileCustomizationInfo, isFolderCustomizationInfo } from './utils'
 const isFileOrFolder = (customizationInfo: CustomizationInfo): boolean =>
   isFileCustomizationInfo(customizationInfo) || isFolderCustomizationInfo(customizationInfo)
 
+const getFileOrFolderString = (fileCabinetNode: SDFObjectNode): string => {
+  if (isFolderCustomizationInfo(fileCabinetNode.customizationInfo)) {
+    return `~/FileCabinet${fileCabinetNode.serviceid}/*`
+  }
+  return `~/FileCabinet${fileCabinetNode.serviceid}`
+}
+
 export const reorderDeployXml = (
   deployContent: string,
   dependencyGraph: Graph<SDFObjectNode>,
+  customizationInfos: CustomizationInfo[]
 ): string => {
   const nodesInTopologicalOrder = dependencyGraph.getTopologicalOrder()
+    .map(node => node.value)
+    .filter(node => node.customizationInfo.typeName !== 'companyFeatures')
+    // remove nodes which were removed from deployment in previous iterations
+    .filter(node => customizationInfos.some(custInfo => _.isEqual(custInfo, node.customizationInfo)))
   const orderedFileCabinetNodes = _.remove(
-    nodesInTopologicalOrder, node => isFileOrFolder(node.value.customizationInfo)
+    nodesInTopologicalOrder, node => isFileOrFolder(node.customizationInfo)
   )
   const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })
   const { objects, files } = deployXml.deploy
   if (nodesInTopologicalOrder.length > 0) {
-    objects.path = nodesInTopologicalOrder.map(node => `~/Objects/${node.value.serviceid}.xml`)
+    objects.path = nodesInTopologicalOrder.map(node => `~/Objects/${node.serviceid}.xml`)
+    objects.path.push('~/Objects/*')
   }
   if (orderedFileCabinetNodes.length > 0) {
-    files.path = orderedFileCabinetNodes.map(node => `~/FileCabinet${node.value.serviceid}`)
+    files.path = orderedFileCabinetNodes.map(node => getFileOrFolderString(node))
   }
 
   // eslint-disable-next-line new-cap

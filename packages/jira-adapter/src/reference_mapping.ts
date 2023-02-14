@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
@@ -66,7 +66,11 @@ export const contextStrategyLookup: Record<
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
   (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id)
 
-type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName'
+const groupIdSerialize: GetLookupNameFunc = ({ ref }) =>
+  (isInstanceElement(ref.value) ? ref.value.value.groupId : ref.value)
+
+
+type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | 'groupId'
 const JiraReferenceSerializationStrategyLookup: Record<
   JiraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
@@ -76,6 +80,11 @@ const JiraReferenceSerializationStrategyLookup: Record<
     serialize: groupNameSerialize,
     lookup: basicLookUp,
     lookupIndexName: 'id',
+  },
+  groupId: {
+    serialize: groupIdSerialize,
+    lookup: basicLookUp,
+    lookupIndexName: 'groupId',
   },
   groupStrategyByOriginalName: {
     serialize: groupNameSerialize,
@@ -572,6 +581,31 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     src: { field: 'roleIds', parentTypes: ['UserFilter'] },
     serializationStrategy: 'id',
     target: { type: 'ProjectRole' },
+  },
+  { // for cloud
+    src: { field: 'groupIds', parentTypes: ['CustomFieldContextDefaultValue'] },
+    JiraSerializationStrategy: 'groupId',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  { // for cloud
+    src: { field: 'groupId', parentTypes: ['CustomFieldContextDefaultValue'] },
+    JiraSerializationStrategy: 'groupId',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  { // for DC
+    src: { field: 'groupIds', parentTypes: ['CustomFieldContextDefaultValue'] },
+    serializationStrategy: 'nameWithPath',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  { // for DC
+    src: { field: 'groupId', parentTypes: ['CustomFieldContextDefaultValue'] },
+    serializationStrategy: 'nameWithPath',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'projectId', parentTypes: ['CustomFieldContextDefaultValue'] },
+    serializationStrategy: 'id',
+    target: { type: PROJECT_TYPE },
   },
 ]
 

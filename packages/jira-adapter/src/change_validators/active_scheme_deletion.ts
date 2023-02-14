@@ -28,6 +28,8 @@ const SCHEME_TYPE_TO_PROJECT_FIELD: Record<string, string> = {
   IssueTypeScreenScheme: 'issueTypeScreenScheme',
   ScreenScheme: 'screenScheme',
   [SECURITY_SCHEME_TYPE]: 'issueSecurityScheme',
+  FieldConfigurationScheme: 'fieldConfigurationScheme',
+  PriorityScheme: 'priorityScheme',
 }
 const RELEVANT_TYPES = new Set(Object.keys(SCHEME_TYPE_TO_PROJECT_FIELD))
 

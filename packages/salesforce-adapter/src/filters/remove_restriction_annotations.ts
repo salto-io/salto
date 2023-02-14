@@ -28,7 +28,6 @@ const FIELDS_TO_REMOVE_RESTRICTION_FROM_BY_TYPE: Record<string, string[]> = {
   ProfileActionOverride: ['pageOrSobjectType'],
   QueueSobject: ['sobjectType'],
   RestrictionRule: ['targetEntity'],
-  FieldRestrictionRule: ['targetEntity'],
   Territory2RuleItem: ['field'],
 }
 

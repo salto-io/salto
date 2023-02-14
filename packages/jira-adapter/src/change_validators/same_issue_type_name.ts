@@ -29,7 +29,7 @@ const getSameIssueTypeNameError = (
   elemID: getChangeData(change).elemID,
   severity: 'Error' as SeverityLevel,
   message: 'Issue type must have unique name',
-  detailedMessage: `The issue type ${existingIssueType.elemID.getFullName()} is already using the name "${existingIssueType.value.name}", please use a different one.`,
+  detailedMessage: `This issue type name ${existingIssueType.value.name} is already being used by another issue type ${existingIssueType.elemID.getFullName()}, and can not be deployed.`,
 })
 
 const getRelevantChanges = (

@@ -38,9 +38,9 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com' },
-              { id: 2, email: 'b@b.com' },
-              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
+              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
             ] },
           ]
         })
@@ -48,9 +48,9 @@ describe('userUtils', () => {
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
-          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+          { id: 1, email: 'a@a.com', name: 'a' },
+          { id: 2, email: 'b@b.com', name: 'b' },
+          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
         ]
       )
     })
@@ -59,23 +59,23 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com' },
-              { id: 2, email: 'b@b.com' },
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
             ] },
           ]
         })
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
+          { id: 1, email: 'a@a.com', name: 'a' },
+          { id: 2, email: 'b@b.com', name: 'b' },
         ]
       )
       const getUsersAfterCache = await userUtils.getUsers(mockPaginator)
       expect(getUsersAfterCache).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
+          { id: 1, email: 'a@a.com', name: 'a' },
+          { id: 2, email: 'b@b.com', name: 'b' },
         ]
       )
       await userUtils.getUsers(mockPaginator)
@@ -645,7 +645,7 @@ describe('userUtils', () => {
     })
     it('should return deployer user email', async () => {
       mockGet
-        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' } } })
+        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234', name: 'saltoo' } } })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }

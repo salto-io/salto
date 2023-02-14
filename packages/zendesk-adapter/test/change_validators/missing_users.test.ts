@@ -66,11 +66,11 @@ describe('missingUsersValidator', () => {
         status: 200,
         data: {
           users: [
-            { id: 1, email: '1@salto.io', role: 'agent', custom_role_id: 123 },
-            { id: 2, email: '2@salto.io', role: 'agent', custom_role_id: 234 },
-            { id: 3, email: '3@salto.io', role: 'admin', custom_role_id: 234 },
-            { id: 4, email: '4@salto.io', role: 'agent' },
-            { id: 5, email: '5@salto.io', role: 'agent', custom_role_id: 123 },
+            { id: 1, email: '1@salto.io', role: 'agent', custom_role_id: 123, name: '1' },
+            { id: 2, email: '2@salto.io', role: 'agent', custom_role_id: 234, name: '2' },
+            { id: 3, email: '3@salto.io', role: 'admin', custom_role_id: 234, name: '3' },
+            { id: 4, email: '4@salto.io', role: 'agent', name: '4' },
+            { id: 5, email: '5@salto.io', role: 'agent', custom_role_id: 123, name: '5' },
           ],
         },
       }

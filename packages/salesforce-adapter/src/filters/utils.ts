@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections } from '@salto-io/lowerdash'
+import { chunks, collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
@@ -40,6 +40,7 @@ import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 const METADATA_VALUES_SCHEME = Joi.object({
@@ -146,26 +147,31 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
 }
 
 /**
- * Splitting by `/` for service urls and by `.` for relative api names
+ * Splitting by the following characters:
+ * '-' for Layout names
+ * '/' for Service Urls
+ * '.' for Relative Api Names
  */
 const getRelativeName = (name: string): string => (
-  _.last(name.split(/[./]/)) ?? name
+  _.last(name.split(/[./-]/)) ?? name
 )
 
 export const getNamespaceFromString = (name: string): string | undefined => {
-  const parts = getRelativeName(name)
-    .replace(CUSTOM_METADATA_SUFFIX, '')
-    .replace(SALESFORCE_CUSTOM_SUFFIX, '')
-    .split(NAMESPACE_SEPARATOR)
-  return parts.length === 1
-    ? undefined
-    : parts[0]
+  const parts = getRelativeName(name).split(NAMESPACE_SEPARATOR)
+  return parts.length > 1
+    ? parts[0]
+    : undefined
 }
 
 export const getNamespace = async (
   customElement: Field | ObjectType | InstanceElement
-): Promise<string | undefined> =>
-  getNamespaceFromString(await apiName(customElement, true))
+): Promise<string | undefined> => {
+  // apiName can be undefined in some cases. See https://salto-io.atlassian.net/browse/SALTO-3635
+  const elementApiName = await apiName(customElement, true) as string | undefined
+  return isDefined(elementApiName)
+    ? getNamespaceFromString(elementApiName)
+    : undefined
+}
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
@@ -373,3 +379,8 @@ export const ensureSafeFilterFetch = ({
       }
     }
   }
+
+export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
+  await isCustomObject(objectType)
+  && !(await apiName(objectType)).includes(SALESFORCE_CUSTOM_SUFFIX)
+)

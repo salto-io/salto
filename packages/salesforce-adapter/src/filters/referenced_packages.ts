@@ -14,92 +14,56 @@
 * limitations under the License.
 */
 import {
-  Element, ElemID, Field, InstanceElement, isField, isInstanceElement,
-  isObjectType, isReferenceExpression,
-  ReferenceExpression, SaltoError,
+  Element,
+  Field,
+  InstanceElement,
+  isInstanceElement,
+  isObjectType,
+  isReferenceExpression,
+  ObjectType,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections, values, types } from '@salto-io/lowerdash'
-import {
-  createWarningFromMsg,
-  extendGeneratedDependencies,
-  safeJsonStringify,
-  WALK_NEXT_STEP,
-  walkOnElement,
-} from '@salto-io/adapter-utils'
+import { collections, values } from '@salto-io/lowerdash'
+import { extendGeneratedDependencies, WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
-import { FilterResult, FilterWith } from '../filter'
-import { getNamespace, getNamespaceFromString, isInstanceOfType } from './utils'
+import { FilterWith } from '../filter'
+import { getNamespace, getNamespaceFromString, isInstanceOfType, isStandardObject } from './utils'
 import { INSTALLED_PACKAGE_METADATA } from '../constants'
 import { apiName, isCustomObject } from '../transformers/transformer'
 
-
-const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
 const { isDefined } = values
-const { makeArray } = collections.array
 
-const getNamespacesFromReferences = async (references: ReferenceExpression[]): Promise<string[]> => (
-  _.uniq(
-    await awu(references)
-      .map(reference => reference.getResolvedValue())
-      .filter(_.isString)
-      .map(getNamespaceFromString)
-      .filter(isDefined)
-      .toArray()
-  )
-)
-
-const addReferencedPackagesAnnotation = async (
-  element: InstanceElement | Field,
-  installedPackageElemIDByName: Record<string, ElemID>
+const getNonReferencedPackageNames = async (
+  element: Element,
 ): Promise<Set<string>> => {
-  const existingReferences: ReferenceExpression[] = []
-  const pathsByReferencedPackageNames: Record<string, ElemID[]> = {}
-  const elementNamespace = await getNamespace(isField(element) ? element.parent : element)
+  const references: ReferenceExpression[] = []
+  const packageNamesFromValues = new Set<string>()
   walkOnElement({
     element,
-    func: ({ value, path }) => {
+    func: ({ value }) => {
       if (isReferenceExpression(value)) {
-        existingReferences.push(value)
+        references.push(value)
       } else if (_.isString(value)) {
         const namespace = getNamespaceFromString(value)
-        // No reason to add the current namespace, since reference to this Element should create the link by itself
-        if (isDefined(namespace) && namespace !== elementNamespace) {
-          pathsByReferencedPackageNames[namespace] = makeArray(pathsByReferencedPackageNames[namespace]).concat(path)
+        if (isDefined(namespace)) {
+          packageNamesFromValues.add(namespace)
         }
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  const pathsByNonReferencedPackageNames = _.omit(
-    pathsByReferencedPackageNames,
-    await getNamespacesFromReferences(existingReferences)
-  )
-  log.debug('Element %s had missing references. pathsByNonReferencedPackageNames: %s', element.elemID.getFullName(), safeJsonStringify(pathsByNonReferencedPackageNames))
-  const nonReferencedPackages = new Set(Object.keys(pathsByNonReferencedPackageNames))
-  nonReferencedPackages.forEach(nonReferencedPackage => {
-    const installedPackageElemID = installedPackageElemIDByName[nonReferencedPackage]
-    if (installedPackageElemID === undefined) {
-      log.warn('No InstalledPackage instance found for package %s', nonReferencedPackage)
-    } else {
-      extendGeneratedDependencies(element, [{ reference: new ReferenceExpression(installedPackageElemID) }])
-    }
-  })
-  return nonReferencedPackages
-}
-
-const createNonReferencedPackagesWarning = (nonReferencedPackages: types.NonEmptyArray<string>): SaltoError => {
-  const message = 'Some of your Elements has missing references to Elements from installed packages. '
-    + `We suggest you include them in your fetch config: ${safeJsonStringify(nonReferencedPackages)}`
-  log.debug(message)
-  return createWarningFromMsg(message)
+  const packageNamesFromRefs = new Set(references
+    .map(reference => reference.elemID.name)
+    .map(getNamespaceFromString)
+    .filter(isDefined))
+  return new Set([...packageNamesFromValues].filter(packageName => !packageNamesFromRefs.has(packageName)))
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   name: 'referencedPackagesFilter',
-  onFetch: async (elements: Element[]): Promise<FilterResult> => {
-    const installedPackageElemIDByName = _.mapValues(
+  onFetch: async (elements: Element[]): Promise<void> => {
+    const packageElemIDByName = _.mapValues(
       await keyByAsync(
         await awu(elements)
           .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
@@ -108,23 +72,35 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       ),
       instance => instance.elemID,
     )
-    const nonReferencedPackages = _.uniq([
-      ...await awu(elements)
-        .filter(isInstanceElement)
-        .flatMap(e => addReferencedPackagesAnnotation(e, installedPackageElemIDByName))
-        .toArray(),
-      ...await awu(elements)
-        .filter(isObjectType)
-        .filter(isCustomObject)
-        .flatMap(e => Object.values(e.fields))
-        .flatMap(e => addReferencedPackagesAnnotation(e, installedPackageElemIDByName))
-        .toArray(),
-    ])
-    return {
-      errors: types.isNonEmptyArray(nonReferencedPackages)
-        ? [createNonReferencedPackagesWarning(nonReferencedPackages)]
-        : [],
+
+    const addDependencies = async (element: ObjectType | Field | InstanceElement): Promise<void> => {
+      const packagesToReference = await getNonReferencedPackageNames(element)
+      const elementNamespace = await getNamespace(element)
+      if (isDefined(elementNamespace)) {
+        packagesToReference.add(elementNamespace)
+      }
+      const dependencies = Object.entries(packageElemIDByName)
+        .filter(([packageName]) => packagesToReference.has(packageName))
+        .map(([_name, elemID]) => ({ reference: new ReferenceExpression(elemID) }))
+
+      extendGeneratedDependencies(element, dependencies)
     }
+
+    const customObjects = await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomObject)
+      .toArray()
+    // CustomObjects from InstalledPackages
+    await awu(customObjects).forEach(addDependencies)
+    // CustomFields on StandardObjects from InstalledPackages
+    await awu(customObjects)
+      .filter(isStandardObject)
+      .flatMap(standardObject => Object.values(standardObject.fields))
+      .forEach(addDependencies)
+    // Instances from InstalledPackages
+    await awu(elements)
+      .filter(isInstanceElement)
+      .forEach(addDependencies)
   },
 })
 

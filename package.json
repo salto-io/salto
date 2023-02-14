@@ -20,7 +20,8 @@
     "concurrently": "^5.2.0",
     "jsonc-parser": "^2.2.1",
     "lerna": "^5.6.2",
-    "leaked-handles": "^5.2.0"
+    "leaked-handles": "^5.2.0",
+    "wtfnode": "0.9.1"
   },
   "scripts": {
     "preinstall": "./build_utils/find_conflicting_versions.js",
@@ -33,7 +34,7 @@
     "build-ts": "lerna run build-ts",
     "build-all": "lerna run build",
     "clean": "lerna run --parallel clean",
-    "test": "jest -i --detectOpenHandles --coverage=false --silent=false",
+    "test": "jest --coverage=false --silent=false",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-version": "lerna version --no-git-tag-version --exact",
     "lerna-version-pr": "./build_utils/create_version_pr.sh",

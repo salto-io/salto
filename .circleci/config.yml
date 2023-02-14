@@ -129,8 +129,9 @@ jobs:
           command: yarn test --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
-            # https://github.com/pinojs/koa-pino-logger/issues/16
-            # FORCE_COLOR: 1
+            # Several of our tests (including logger colorization) assume a terminal that supports ANSI color codes.
+            # By default, the CircleCI terminal doesn't support them (TERM=dumb).
+            TERM: vt100
 
       - store_test_results:
           path: reports

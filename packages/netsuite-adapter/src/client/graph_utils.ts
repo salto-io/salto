@@ -57,7 +57,7 @@ export class Graph<T> {
     })
   }
 
-  dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>, resultArray: GraphNode<T>[]): void {
+  private dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>, resultArray: GraphNode<T>[]): void {
     visited.set(node.value[this.key], node)
     node.edges.forEach(dependency => {
       if (!visited.has(dependency.value[this.key])) {

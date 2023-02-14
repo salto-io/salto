@@ -152,7 +152,7 @@ describe('audit_logs filter', () => {
     })
   })
   describe('onFetch', () => {
-    it('should only add changed_at when flag is false', async () => {
+    it('should do nothing when flag is false', async () => {
       filter = filterCreator(createFilterCreatorParams({
         client,
         config: {
@@ -178,6 +178,19 @@ describe('audit_logs filter', () => {
         articleTranslationInstance,
       ].map(e => e.clone())
       await filter.onFetch(elements)
+      expect(mockGet).toHaveBeenCalledTimes(0)
+      expect(elements).toHaveLength(4)
+      expect(elements
+        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === undefined)).toHaveLength(4)
+    })
+    it('should only add changed_at correctly', async () => {
+      const elements = [
+        automationInstance,
+        ticketFieldInstance,
+        ticketFieldCustomOptionInstance,
+        articleTranslationInstance,
+      ].map(e => e.clone())
+      await filter.onFetch(elements)
       expect(mockGet).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(6)
       expect(elements.filter(e => e.elemID.typeName === AUDIT_TIME_TYPE_NAME)).toEqual([
@@ -187,24 +200,6 @@ describe('audit_logs filter', () => {
         .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === BEFORE_TIME)).toHaveLength(4)
     })
     it('should do nothing if there is no updated_at in the instance or parent does not exist', async () => {
-      filter = filterCreator(createFilterCreatorParams({
-        client,
-        config: {
-          ...DEFAULT_CONFIG,
-          [FETCH_CONFIG]: {
-            include: [{
-              type: '.*',
-            }],
-            exclude: [],
-            guide: {
-              brands: ['.*'],
-            },
-            enableAudit: false,
-          },
-        },
-        paginator: mockPaginator,
-        elementsSource: buildElementsSourceFromElements([]),
-      })) as FilterType
       const elements = [
         createInstance({ type: automationType, id: 1 }),
         createInstance({ type: ticketFieldCustomOptionType, id: 2 }),

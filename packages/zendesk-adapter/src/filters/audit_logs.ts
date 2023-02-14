@@ -137,13 +137,10 @@ const getUpdatedByName = async (instance: InstanceElement, client: ZendeskClient
 }
 
 const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string, InstanceElement>): void => {
-  const noUpdatedAt = new Set() // todo delete!
   // add update at for all the elements
   instances.forEach(elem => {
     if (elem.value.updated_at !== undefined) {
       elem.annotations[CORE_ANNOTATIONS.CHANGED_AT] = elem.value.updated_at
-    } else {
-      noUpdatedAt.add(elem.elemID.typeName)
     }
   })
   // update for elements with parent to be exactly like their parents
@@ -158,8 +155,6 @@ const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string,
         log.error(`getParent returned an error: ${e}`)
       }
     })
-  // eslint-disable-next-line no-console
-  console.log(noUpdatedAt)
 }
 
 const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, idByInstance: Record<string, InstanceElement>)
@@ -181,6 +176,9 @@ const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, idByInst
 const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
   name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
+    if (config[FETCH_CONFIG].enableAudit === false) { // temporary
+      return
+    }
     if (elementsSource === undefined) {
       log.error('Failed to run changeByAndChangedAt filter because no element source was provided')
       return
@@ -199,10 +197,6 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     }
     const newTimeElements = await createTimeElements(newLastAuditTime)
     elements.push(...newTimeElements)
-
-    if (config[FETCH_CONFIG].enableAudit === false) {
-      return
-    }
 
     // if this is a second fetch the elementSource should have the time instance already
     const auditTimeInstance = await elementsSource.get(AUDIT_TIME_INSTANCE_ID)

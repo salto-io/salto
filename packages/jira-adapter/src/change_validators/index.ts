@@ -49,6 +49,7 @@ import { statusMigrationChangeValidator } from './status_migration'
 import { activeWorkflowSchemeChangeValidator } from './active_workflow_scheme_change'
 import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
+import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 
 const {
   deployTypesNotSupportedValidator,
@@ -77,6 +78,7 @@ export default (
     dashboardLayoutValidator,
     permissionTypeValidator,
     automationsValidator,
+    sameIssueTypeNameChangeValidator,
     statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigrationValidator(client, config, paginator),

@@ -42,7 +42,10 @@ const { isDefined } = lowerDashValues
 export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) =>
     ChangeValidator = (client, fetchConfig) => async changes => {
       // If the organizations were resolved, they are stored as names instead of ids
+      // If the user change this between a fetch and a deploy, organization_existence.ts will fail
+      // This is a known issue and is ok because handling it is not trivial and the use case shouldn't be common
       const orgIdsResolved = fetchConfig.resolveOrganizationIDs === true
+
       const relevantChanges = changes.filter(isAdditionOrModificationChange).filter(isInstanceChange).map(getChangeData)
         .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
@@ -53,30 +56,35 @@ export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig
 
       // Will be either a list of ids or a list of names, depends on the resolveOrganizationIDs config
       const orgIdentifiers = Array.from(new Set<string>(
-        Object.values(entriesByInstance).map(entries => entries.map(entry => entry.id)).flat()
+        Object.values(entriesByInstance).flatMap(entries => entries.map(entry => entry.identifier))
       ))
       const existingOrgs = orgIdsResolved
         ? await getOrganizationsByNames(orgIdentifiers, paginator)
         : await getOrganizationsByIds(orgIdentifiers, client)
 
-      const existingOrgsSet = new Set(existingOrgs.map(org => (orgIdsResolved ? org.name : org.id.toString())))
+      const existingOrgsSet = new Set(
+        existingOrgs.map(org => (orgIdsResolved ? org.name : org.id.toString())).filter(org => !_.isEmpty(org))
+      )
 
       // Because 'entriesByInstance' is already grouped by instance, we can run over it instead of over the changes
-      const errors = await awu(Object.values(entriesByInstance)).map(async (entries)
-          : Promise<ChangeError | undefined> => {
-        const nonExistingOrgs = new Set<string>(entries.filter(({ id }) => !existingOrgsSet.has(id)).map(org => org.id))
+      const errors = await awu(Object.values(entriesByInstance)).map(
+        async (entries): Promise<ChangeError | undefined> => {
+          const nonExistingOrgs = new Set<string>(
+            entries.filter(({ identifier }) => !existingOrgsSet.has(identifier)).map(org => org.identifier)
+          )
 
-        // If the instance includes an organization that does not exist, we won't allow a change to that instance
-        if (nonExistingOrgs.size > 0) {
-          return {
-            elemID: entries[0].instance.elemID,
-            severity: 'Error',
-            message: 'Referenced organizations do not exist',
-            detailedMessage: `The following referenced organizations do not exist: ${Array.from(nonExistingOrgs).join(', ')}`,
+          // If the instance includes an organization that does not exist, we won't allow a change to that instance
+          if (nonExistingOrgs.size > 0) {
+            return {
+              elemID: entries[0].instance.elemID,
+              severity: 'Error',
+              message: 'Referenced organizations do not exist',
+              detailedMessage: `The following referenced organizations do not exist: ${Array.from(nonExistingOrgs).join(', ')}`,
+            }
           }
+          return undefined
         }
-        return undefined
-      }).filter(isDefined).toArray()
+      ).filter(isDefined).toArray()
 
       return errors
     }

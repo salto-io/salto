@@ -79,8 +79,6 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
   guide?: Guide
-  // If the user change this between a fetch and a deploy, organization_existence.ts will fail
-  // This is a known issue and is ok because handling it is not trivial and the use case shouldn't be common
   resolveOrganizationIDs?: boolean
 }
 export type ZedneskDeployConfig = configUtils.UserDeployConfig

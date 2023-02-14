@@ -45,7 +45,7 @@ type OrganizationResponse = {
 type organizationIdInstanceAndPath = {
     instance: InstanceElement
     path: ElemID
-    id: string
+    identifier: string
 }
 
 const ORGANIZATIONS_SCHEMA = Joi.array().items(Joi.object({
@@ -141,7 +141,7 @@ export const getOrganizationsByNames = async (
         }
         return organization
       })
-  )).filter(isDefined).flat()
+  )).filter(isDefined)
 
   return organizations
 }
@@ -155,10 +155,10 @@ export const createOrganizationPathEntries = (instances: InstanceElement[])
       .map(path => {
         const orgId = resolvePath(instance, path)
         const stringOrgId = !_.isString(orgId) ? orgId.toString() : orgId
-        return { id: stringOrgId, instance, path }
+        return { identifier: stringOrgId, instance, path }
       })
   })
-    .filter(entry => !_.isEmpty(entry.id)) // organization id value might be an empty string
+    .filter(entry => !_.isEmpty(entry.identifier)) // organization id value might be an empty string
   return organizationPathsEntries
 }
 
@@ -179,7 +179,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
       const pathEntries = createOrganizationPathEntries(relevantInstances)
-      const pathEntriesByOrgId = _.groupBy(pathEntries, entry => entry.id)
+      const pathEntriesByOrgId = _.groupBy(pathEntries, entry => entry.identifier)
       const organizationIds = _.uniq(Object.keys(pathEntriesByOrgId))
 
       const organizations = await getOrganizationsByIds(organizationIds, client)

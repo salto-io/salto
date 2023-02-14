@@ -20,7 +20,7 @@ import { mockClient } from '../utils'
 import { activeSchemeChangeValidator } from '../../src/change_validators/active_scheme_change'
 import { JIRA } from '../../src/constants'
 
-describe('active workflow scheme change', () => {
+describe('active scheme change', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let projectType: ObjectType
   let projectInstance: InstanceElement

@@ -203,9 +203,9 @@ describe('user filter', () => {
       ) as FilterType
       getUsersMock
         .mockResolvedValue([
-          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
+          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a' },
+          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b' },
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c' },
         ])
       getIdByEmailMock
         .mockResolvedValue({ 1: 'a@a.com',
@@ -247,9 +247,9 @@ describe('user filter', () => {
       })) as FilterType
       getUsersMock
         .mockResolvedValue([
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
-          { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12 },
+          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b' },
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c' },
+          { id: 4, email: 'fallback@.com', role: 'agent', custom_role_id: 12, name: 'fallback' },
         ])
       const instances2 = [macroInstance, articleInstance].map(e => e.clone())
       await filter.onFetch(instances2)
@@ -279,9 +279,9 @@ describe('user filter', () => {
     it('should change the user ids to emails', async () => {
       getUsersMock
         .mockResolvedValue([
-          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123 },
-          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123 },
-          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123 },
+          { id: 1, email: 'a@a.com', role: 'admin', custom_role_id: 123, name: 'a' },
+          { id: 2, email: 'b@b.com', role: 'admin', custom_role_id: 123, name: 'b' },
+          { id: 3, email: 'c@c.com', role: 'admin', custom_role_id: 123, name: 'c' },
         ])
       getIdByEmailMock
         .mockResolvedValue({ 1: 'a@a.com',

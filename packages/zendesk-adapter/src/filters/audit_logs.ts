@@ -31,7 +31,7 @@ import { FilterCreator } from '../filter'
 import { AUDIT_TIME_TYPE_NAME, TRANSLATIONS, ZENDESK } from '../constants'
 import ZendeskClient from '../client/client'
 import { getIdByName } from '../user_utils'
-import { FETCH_CONFIG } from '../config'
+import { FETCH_CONFIG, GUIDE_GLOBAL_TYPES, GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -55,7 +55,7 @@ const AUDIT_SCHEMA = Joi.object({
   audit_logs: Joi.array().items(Joi.object({
     created_at: Joi.string().required(),
     actor_name: Joi.string().required(),
-  }).unknown(true).required()),
+  }).unknown(true)).required(),
 }).unknown(true).required()
 
 const isValidAuditRes = createSchemeGuard<ValidAuditRes>(
@@ -123,6 +123,10 @@ const getUpdatedByName = async (instance: InstanceElement, client: ZendeskClient
       },
     })).data
     if (isValidAuditRes(res)) {
+      if (_.isEmpty(res.audit_logs)) {
+        log.error(`there was no change for id ${id} between the times specified`) // TODO
+        return undefined
+      }
       return res.audit_logs[0].actor_name
     }
   } catch (e) {
@@ -132,11 +136,14 @@ const getUpdatedByName = async (instance: InstanceElement, client: ZendeskClient
   return undefined
 }
 
-const addChangedAt = (instances: InstanceElement[]): void => {
+const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string, InstanceElement>): void => {
+  const noUpdatedAt = new Set() // todo delete!
   // add update at for all the elements
   instances.forEach(elem => {
     if (elem.value.updated_at !== undefined) {
       elem.annotations[CORE_ANNOTATIONS.CHANGED_AT] = elem.value.updated_at
+    } else {
+      noUpdatedAt.add(elem.elemID.typeName)
     }
   })
   // update for elements with parent to be exactly like their parents
@@ -144,15 +151,19 @@ const addChangedAt = (instances: InstanceElement[]): void => {
     .filter(inst => ELEMENTS_WITH_PARENTS.includes(inst.elemID.typeName))
     .forEach(child => {
       try {
-        child.annotations[CORE_ANNOTATIONS.CHANGED_AT] = getParent(child).annotations[CORE_ANNOTATIONS.CHANGED_AT]
+        const parent = idByInstance[getParent(child).elemID.getFullName()]
+        child.annotations[CORE_ANNOTATIONS.CHANGED_AT] = parent.annotations[CORE_ANNOTATIONS.CHANGED_AT]
         // eslint-disable-next-line no-empty
-      } catch (e) {}// in case the 'getParent' doesn't work
+      } catch (e) {
+        log.error(`getParent returned an error: ${e}`)
+      }
     })
+  // eslint-disable-next-line no-console
+  console.log(noUpdatedAt)
 }
 
-const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, instances: InstanceElement[])
+const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, idByInstance: Record<string, InstanceElement>)
   : Promise<void> => {
-  const idByInstance = _.keyBy(instances, inst => inst.elemID.getFullName())
   const prevInstances = await (awu(await elementsSource.getAll()).filter(isInstanceElement).toArray())
   prevInstances.forEach(prevInst => {
     if (prevInst.annotations[CORE_ANNOTATIONS.CHANGED_BY] !== undefined) {
@@ -170,9 +181,14 @@ const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, instance
 const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
   name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
+    if (elementsSource === undefined) {
+      log.error('Failed to run changeByAndChangedAt filter because no element source was provided')
+      return
+    }
     // add update at for all the elements
     const instances = elements.filter(isInstanceElement)
-    addChangedAt(instances)
+    const idByInstance = _.keyBy(instances, inst => inst.elemID.getFullName())
+    addChangedAt(instances, idByInstance)
 
     // create time elements
     // zendesk returns the time in UTC form so there is no need to convert by time zone
@@ -187,20 +203,18 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     if (config[FETCH_CONFIG].enableAudit === false) {
       return
     }
-    if (elementsSource === undefined) {
-      log.error('Failed to run changeByAndChangedAt filter because no element source was provided')
-      return
-    }
-    await addPrevChangedBy(elementsSource, instances)
+
     // if this is a second fetch the elementSource should have the time instance already
     const auditTimeInstance = await elementsSource.get(AUDIT_TIME_INSTANCE_ID)
     if (auditTimeInstance === undefined) {
       log.debug('could not find audit time instance in elementSource')
       return
     }
+    await addPrevChangedBy(elementsSource, idByInstance)
     const newLastAuditTimeMoment = moment.utc(newLastAuditTime)
     const prevLastAuditTimeMoment = moment.utc(auditTimeInstance.value.time)
     const updatedInstances = instances
+      .filter(inst => inst.annotations[CORE_ANNOTATIONS.CHANGED_AT] !== undefined)
       .filter(inst => {
         const instTime = moment.utc(inst.annotations[CORE_ANNOTATIONS.CHANGED_AT])
         const isAfter = instTime.isAfter(prevLastAuditTimeMoment)
@@ -223,18 +237,22 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
         if (name === undefined) {
           elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'deleted user'
           log.error(`could not find user with id ${elem.value.updated_by_id} `)
+        } else {
+          elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToName[elem.value.updated_by_id]
         }
-        elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToName[elem.value.updated_by_id]
       })
     // updated_by for everything else (some types are not supported by zendesk - listed above)
-    await awu(updatedInstances).forEach(async inst => {
-      const name = await getUpdatedByName(inst, client)
-      if (name === undefined) {
+    await awu(updatedInstances)
+      .filter(inst =>
+        ![...GUIDE_TYPES_TO_HANDLE_BY_BRAND, ...Object.keys(GUIDE_GLOBAL_TYPES)].includes(inst.elemID.typeName))
+      .forEach(async inst => {
+        const name = await getUpdatedByName(inst, client)
+        if (name === undefined) {
         // error was logged earlier
-        return
-      }
-      inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = name
-    })
+          return
+        }
+        inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = name
+      })
   },
 })
 export default filterCreator

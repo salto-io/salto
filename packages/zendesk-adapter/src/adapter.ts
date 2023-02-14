@@ -155,6 +155,7 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
+  auditTimeFilter,
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   usersFilter,
@@ -208,7 +209,6 @@ export const DEFAULT_FILTERS = [
   hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   // defaultDeployFilter should be last!
-  auditTimeFilter,
   defaultDeployFilter,
 ]
 

@@ -106,7 +106,8 @@ const createTimeElements = async (lastAuditTime: string): Promise<Element[]> => 
   return [auditTimeType, instance]
 }
 
-const getUpdatedByName = async (instance: InstanceElement, client: ZendeskClient): Promise<string | undefined> => {
+const getUpdatedByName = async (instance: InstanceElement, client: ZendeskClient, start: string, end: string)
+  : Promise<string | undefined> => {
   const { id } = instance.value
   if (id === undefined) {
     log.error(`the instance ${instance.elemID.getFullName()}, does not have an id`)
@@ -120,6 +121,7 @@ const getUpdatedByName = async (instance: InstanceElement, client: ZendeskClient
         // this is the log creation time and not when the source was created
         sort: '-created_at',
         'filter[source_id]': id,
+        'filter[created_at]': [start, end],
       },
     })).data
     if (isValidAuditRes(res)) {
@@ -160,14 +162,17 @@ const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string,
 const addPrevChangedBy = async (elementsSource: ReadOnlyElementsSource, idByInstance: Record<string, InstanceElement>)
   : Promise<void> => {
   const prevInstances = await (awu(await elementsSource.getAll()).filter(isInstanceElement).toArray())
-  prevInstances.forEach(prevInst => {
-    if (prevInst.annotations[CORE_ANNOTATIONS.CHANGED_BY] !== undefined) {
-      const id = prevInst.elemID.getFullName()
-      if (idByInstance[id] !== undefined) {
-        idByInstance[id].annotations[CORE_ANNOTATIONS.CHANGED_BY] = prevInst.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+  prevInstances
+    .filter(inst =>
+      ![...GUIDE_TYPES_TO_HANDLE_BY_BRAND, ...Object.keys(GUIDE_GLOBAL_TYPES)].includes(inst.elemID.typeName))
+    .forEach(prevInst => {
+      if (prevInst.annotations[CORE_ANNOTATIONS.CHANGED_BY] !== undefined) {
+        const id = prevInst.elemID.getFullName()
+        if (idByInstance[id] !== undefined) {
+          idByInstance[id].annotations[CORE_ANNOTATIONS.CHANGED_BY] = prevInst.annotations[CORE_ANNOTATIONS.CHANGED_BY]
+        }
       }
-    }
-  })
+    })
 }
 
 /**
@@ -205,6 +210,21 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
       return
     }
     await addPrevChangedBy(elementsSource, idByInstance)
+
+    const idToName = await getIdByName(paginator)
+    // updated_by for translations which have updated_by_id field in the instance are not dependent on newLastAuditTime
+    instances
+      .filter(elem => TRANSLATIONS.includes(elem.elemID.typeName))
+      .forEach(elem => {
+        const name = idToName[elem.value.updated_by_id]
+        if (name === undefined) {
+          elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'deleted user'
+          log.error(`could not find user with id ${elem.value.updated_by_id} `)
+        } else {
+          elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToName[elem.value.updated_by_id]
+        }
+      })
+
     const newLastAuditTimeMoment = moment.utc(newLastAuditTime)
     const prevLastAuditTimeMoment = moment.utc(auditTimeInstance.value.time)
     const updatedInstances = instances
@@ -222,25 +242,15 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     if (_.isEmpty(updatedInstances)) {
       return
     }
-    const idToName = await getIdByName(paginator)
-    // updated_by for translations which have updated_by_id field in the instance
-    updatedInstances
-      .filter(elem => TRANSLATIONS.includes(elem.elemID.typeName))
-      .forEach(elem => {
-        const name = idToName[elem.value.updated_by_id]
-        if (name === undefined) {
-          elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'deleted user'
-          log.error(`could not find user with id ${elem.value.updated_by_id} `)
-        } else {
-          elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToName[elem.value.updated_by_id]
-        }
-      })
+
     // updated_by for everything else (some types are not supported by zendesk - listed above)
     await awu(updatedInstances)
       .filter(inst =>
         ![...GUIDE_TYPES_TO_HANDLE_BY_BRAND, ...Object.keys(GUIDE_GLOBAL_TYPES)].includes(inst.elemID.typeName))
       .forEach(async inst => {
-        const name = await getUpdatedByName(inst, client)
+        const name = await getUpdatedByName(
+          inst, client, prevLastAuditTimeMoment.format(), newLastAuditTimeMoment.format()
+        )
         if (name === undefined) {
         // error was logged earlier
           return

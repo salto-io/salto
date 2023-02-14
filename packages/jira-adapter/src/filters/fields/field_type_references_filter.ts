@@ -27,8 +27,9 @@ export const getFieldsLookUpName: GetLookupNameFunc = ({
   ref, path,
 }) => {
   if (path !== undefined
+    && path.typeName === 'CustomFieldContext'
     && (['optionId', 'cascadingOptionId'].includes(path.name)
-      || (path.typeName === 'CustomFieldContext' && path.getFullNameParts()[path.getFullNameParts().length - 2] === 'optionIds'))) {
+      || path.createParentID().name === 'optionIds')) {
     return ref.value.id
   }
   return ref
@@ -38,9 +39,9 @@ const getDefaultOptions = (instance: InstanceElement) : {
     referencedDefaultOptions: Values[]
     referencedCascadingDefaultOption?: Values } => {
   if (instance.value.defaultValue.optionIds !== undefined) {
-    const optionsById = _.keyBy(instance.value.defaultValue?.optionIds)
+    const optionsSet = new Set(instance.value.defaultValue?.optionIds)
     const referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])
-      .filter((option: Values) => optionsById[option.id] !== undefined)
+      .filter((option: Values) => optionsSet.has(option.id))
     return { referencedDefaultOptions }
   }
   const referencedDefaultOptions = (Object.values(instance.value.options ?? {}) as Values[])

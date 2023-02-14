@@ -165,7 +165,8 @@ File: ~/Objects/customrecord1.xml`
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage: 'This element depends on the following missing elements: some_scriptid. Please make sure that all the bundles from the source account are installed and updated in the target account.',
+      detailedMessage: `This element depends on the following missing elements: some_scriptid. The missing dependencies might be locked elements in the source environment which does exist in the target environment. Moreover, the dependencies might be a part of a 3rd party bundle or SuiteApp. 
+If so, please make sure that all the bundles from the source account are installed and updated in the target account.`,
       elemID: getChangeData(changes[0]).elemID,
       message: 'This element depends on missing elements',
       severity: 'Error',

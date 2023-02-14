@@ -135,12 +135,14 @@ const changeValidator: ClientChangeValidator = async (
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
               groupChanges, dependencyMap, error
             )
+            const lockedElemsMessage = `The missing dependencies might be locked elements in the source environment which does exist in the target environment. Moreover, the dependencies might be a part of a 3rd party bundle or SuiteApp. 
+If so, please make sure that all the bundles from the source account are installed and updated in the target account.`
             if (failedChangesWithDependencies.length === 0) {
               return groupChanges.map(change => ({
                 message: 'Some elements in this deployment have missing dependencies',
                 severity: 'Error' as const,
                 elemID: getChangeData(change).elemID,
-                detailedMessage: `Cannot deploy elements because of missing dependencies: ${error.missingDependencyScriptIds.join(', ')}. Please make sure that all the bundles from the source account are installed and updated in the target account.`,
+                detailedMessage: `Cannot deploy elements because of missing dependencies: ${error.missingDependencyScriptIds.join(', ')}. ${lockedElemsMessage}`,
               }))
             }
             return failedChangesWithDependencies
@@ -148,7 +150,7 @@ const changeValidator: ClientChangeValidator = async (
                 message: 'This element depends on missing elements',
                 severity: 'Error' as const,
                 elemID: getChangeData(changeAndMissingDependencies.change).elemID,
-                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. Please make sure that all the bundles from the source account are installed and updated in the target account.`,
+                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. ${lockedElemsMessage}`,
               }))
           }
           return groupChanges

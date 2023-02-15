@@ -135,7 +135,7 @@ const changeValidator: ClientChangeValidator = async (
             const failedChangesWithDependencies = getFailedChangesWithDependencies(
               groupChanges, dependencyMap, error
             )
-            const lockedElemsMessage = `The missing dependencies might be locked elements in the source environment which does exist in the target environment. Moreover, the dependencies might be a part of a 3rd party bundle or SuiteApp. 
+            const lockedElemsMessage = `The missing dependencies might be locked elements in the source environment which do not exist in the target environment. Moreover, the dependencies might be part of a 3rd party bundle or SuiteApp.
 If so, please make sure that all the bundles from the source account are installed and updated in the target account.`
             if (failedChangesWithDependencies.length === 0) {
               return groupChanges.map(change => ({

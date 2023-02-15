@@ -129,10 +129,10 @@ jobs:
 
       - run:
           name: Run unit tests
-          no_output_timeout: 2h
-          command: yarn test --reporters=default --reporters=jest-junit
+          no_output_timeout: 10m
+          command: yarn test
           environment:
-            JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
+            # JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
             # Several of our tests (including logger colorization) assume a terminal that supports ANSI color codes.
             # By default, the CircleCI terminal doesn't support them (TERM=dumb).
             TERM: vt100

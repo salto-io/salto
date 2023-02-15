@@ -34,7 +34,7 @@
     "build-ts": "lerna run build-ts",
     "build-all": "lerna run build",
     "clean": "lerna run --parallel clean",
-    "test": "wtfnode node_modules/.bin/jest --coverage=false --silent=false -i",
+    "test": "wtfnode node_modules/.bin/jest --coverage=false --silent=false -i --detectOpenHandles",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-version": "lerna version --no-git-tag-version --exact",
     "lerna-version-pr": "./build_utils/create_version_pr.sh",

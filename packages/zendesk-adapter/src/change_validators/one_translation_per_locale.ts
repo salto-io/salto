@@ -25,11 +25,10 @@ import {
   isInstanceElement,
   ReferenceExpression,
   isReferenceExpression,
-  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { createSchemeGuardForInstance, getParents } from '@salto-io/adapter-utils'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 
 const log = logger(module)
@@ -90,7 +89,7 @@ const findDuplicateTranslations = async (
 
 export const oneTranslationPerLocaleValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
-    log.error('Failed to run findDuplicateTranslations because no element source was provided')
+    log.error('Failed to run oneTranslationPerLocale because no element source was provided')
     return []
   }
   const relevantInstances = changes
@@ -102,21 +101,20 @@ export const oneTranslationPerLocaleValidator: ChangeValidator = async (changes,
         CATEGORY_TRANSLATION_TYPE_NAME,
         SECTION_TRANSLATION_TYPE_NAME].includes(instance.elemID.typeName))
 
-  const parentInstancesId = relevantInstances
+  const parentInstanceIds = _.uniqBy(relevantInstances
     .filter(instance => isTranslation(instance))
-    .flatMap(instance => instance.annotations[CORE_ANNOTATIONS.PARENT])
+    .flatMap(getParents)
     .flatMap(parent => (isReferenceExpression(parent) ? parent.elemID : undefined))
-    .filter(isDefined)
+    .filter(isDefined), id => id.getFullName())
 
-  const parentInstances = await awu(parentInstancesId)
+  const parentInstances = await awu(parentInstanceIds)
     .map(async id => elementSource.get(id))
     .filter(isInstanceElement)
     .toArray()
 
   // it is a record to avoid duplicate of parents from translations which have the same parent
-  const parentInstancesObj = _.keyBy(parentInstances, instance => instance.elemID.getFullName())
 
-  return awu(Object.values(parentInstancesObj))
+  return awu(parentInstances)
     .map(async parentInstance => ({
       elemID: parentInstance.elemID,
       duplicatedLocales: await findDuplicateTranslations(parentInstance, elementSource),

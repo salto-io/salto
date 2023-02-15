@@ -141,7 +141,7 @@ describe('oneTranslationPerLocalValidator',
         },
       )
       enTranslation2.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
-        articleType.elemID.createNestedID('instance', 'Test2'), article
+        articleType.elemID.createNestedID('instance', 'Test2')
       )]
       enTranslation.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
         articleType.elemID.createNestedID('instance', 'Test2'), article

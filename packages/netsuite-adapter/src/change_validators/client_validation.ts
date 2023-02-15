@@ -142,7 +142,7 @@ If so, please make sure that all the bundles from the source account are install
                 message: 'Some elements in this deployment have missing dependencies',
                 severity: 'Error' as const,
                 elemID: getChangeData(change).elemID,
-                detailedMessage: `Cannot deploy elements because of missing dependencies: ${error.missingDependencyScriptIds.join(', ')}. ${lockedElemsMessage}`,
+                detailedMessage: `Cannot deploy elements because of missing dependencies: (${error.missingDependencyScriptIds.join(', ')}).\n${lockedElemsMessage}`,
               }))
             }
             return failedChangesWithDependencies
@@ -150,7 +150,7 @@ If so, please make sure that all the bundles from the source account are install
                 message: 'This element depends on missing elements',
                 severity: 'Error' as const,
                 elemID: getChangeData(changeAndMissingDependencies.change).elemID,
-                detailedMessage: `This element depends on the following missing elements: ${changeAndMissingDependencies.dependencies.join(', ')}. ${lockedElemsMessage}`,
+                detailedMessage: `This element depends on the following missing elements: (${changeAndMissingDependencies.dependencies.join(', ')}).\n${lockedElemsMessage}`,
               }))
           }
           return groupChanges

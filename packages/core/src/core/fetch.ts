@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import _ from 'lodash'
+import _, { isUndefined } from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
@@ -377,6 +377,7 @@ const fetchAndProcessMergeErrors = async (
   accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangeDetection?: boolean
 ):
   Promise<{
     accountElements: Element[]
@@ -439,10 +440,21 @@ const fetchAndProcessMergeErrors = async (
       accountsToAdapters,
       (_adapter, accountName) => createAdapterProgressReporter(accountName, 'fetch', progressEmitter)
     )
+    const accountNameToFetchFunction = Object.fromEntries(
+      Object.entries(accountsToAdapters).map(([accountName, adapter]) =>
+        ([accountName, withChangeDetection ? adapter.fetchWithChangeDetection : adapter.fetch]))
+    )
+    const adapterWithoutFetchFunction = Object.entries(accountNameToFetchFunction)
+      .filter(([, fetchFunction]) => isUndefined(fetchFunction))
+      .map(([accountName]) => accountToServiceNameMap[accountName])
+    if (adapterWithoutFetchFunction.length > 0) {
+      throw new Error(`${adapterWithoutFetchFunction.join(', ')} adapters do not support quick fetch operation`)
+    }
+
     const fetchResults = await Promise.all(
-      Object.entries(accountsToAdapters)
-        .map(async ([accountName, adapter]) => {
-          const fetchResult = await adapter.fetch({
+      Object.entries(_.pickBy(accountNameToFetchFunction, isDefined))
+        .map(async ([accountName, fetchFunction]) => {
+          const fetchResult = await fetchFunction({
             progressReporter: progressReporters[accountName],
           })
           const { updatedConfig, errors } = fetchResult
@@ -714,7 +726,8 @@ export const fetchChanges = async (
   // As part of SALTO-1661, parameters here should be replaced with named parameters
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
-  progressEmitter?: EventEmitter<FetchProgressEvents>
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangeDetection?: boolean
 ): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
@@ -728,7 +741,8 @@ export const fetchChanges = async (
     stateElements,
     accountToServiceNameMap,
     getChangesEmitter,
-    progressEmitter
+    progressEmitter,
+    withChangeDetection
   )
 
   const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(

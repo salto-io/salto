@@ -27,12 +27,26 @@ import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient from '../client/client'
-import { OptionalFeatures } from '../types'
+import { LookupField, OptionalFeatures, ToolingField, ToolingObjectType } from '../types'
 import {
-  API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
+  API_NAME,
+  LABEL,
+  CUSTOM_OBJECT,
+  METADATA_TYPE,
+  NAMESPACE_SEPARATOR,
+  API_NAME_SEPARATOR,
+  INSTANCE_FULL_NAME_FIELD,
+  SALESFORCE,
+  INTERNAL_ID_FIELD,
+  INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
+  MAX_QUERY_LENGTH,
+  CUSTOM_METADATA_SUFFIX,
+  TYPES_PATH,
+  TOOLING_PATH,
+  SupportedToolingObject,
+  SupportedToolingObjectName,
+  ToolingFieldAnnotation, TOOLING_FIELDS_ANNOTATIONS_REF_TYPES,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
@@ -361,3 +375,72 @@ export const ensureSafeFilterFetch = ({
       }
     }
   }
+
+export const createToolingField = (toolingType: ToolingObjectType, field: Field): ToolingField => {
+  const toolingAnnotations: ToolingField['annotations'] = {
+    [ToolingFieldAnnotation.originalApiName]: field.name,
+    [ToolingFieldAnnotation.isLookup]: false,
+  }
+  const newField = field.clone()
+  return Object.assign(
+    newField,
+    {
+      annotations: Object.assign(
+        _.omitBy(newField.annotations, _.isNil),
+        toolingAnnotations,
+      ),
+      parent: toolingType,
+      annotationRefTypes: TOOLING_FIELDS_ANNOTATIONS_REF_TYPES,
+    }
+  )
+}
+
+export const createLookupToolingField = (
+  field: LookupField,
+  parentType: ToolingObjectType,
+  lookupType: ToolingObjectType,
+): ToolingField => {
+  const toolingAnnotations: ToolingField['annotations'] = {
+    [ToolingFieldAnnotation.originalApiName]: field.name,
+    [ToolingFieldAnnotation.isLookup]: true,
+  }
+  return Object.assign(
+    new Field(
+      parentType,
+      field.name.replace(/Id$/, ''),
+      lookupType,
+    ),
+    {
+      annotations: Object.assign(
+        _.omitBy(field.annotations, _.isNil),
+        toolingAnnotations,
+      ),
+      parent: parentType,
+      annotationRefTypes: TOOLING_FIELDS_ANNOTATIONS_REF_TYPES,
+    }
+  )
+}
+
+export const createToolingObject = (objectName: SupportedToolingObjectName, fields: ToolingObjectType['fields'] = {}): ToolingObjectType => (
+  Object.assign(
+    new ObjectType({
+      elemID: new ElemID(SALESFORCE, objectName),
+      path: [SALESFORCE, TYPES_PATH, TOOLING_PATH, objectName],
+      annotations: {
+        [CORE_ANNOTATIONS.CREATABLE]: false,
+        [CORE_ANNOTATIONS.UPDATABLE]: false,
+        [CORE_ANNOTATIONS.DELETABLE]: false,
+      },
+    }),
+    {
+      annotations: {
+        [API_NAME]: objectName,
+      },
+      fields,
+    }
+  )
+)
+
+export const isSupportedToolingObjectName = (objectName: string): objectName is SupportedToolingObjectName => (
+  (Object.values(SupportedToolingObject) as ReadonlyArray<string>).includes(objectName)
+)

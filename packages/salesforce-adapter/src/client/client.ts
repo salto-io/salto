@@ -46,7 +46,7 @@ import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-  SALESFORCE,
+  SALESFORCE, SupportedToolingObjectName,
 } from '../constants'
 import { CompleteSaveResult, SalesforceRecord, SfError } from './types'
 import {
@@ -645,6 +645,22 @@ export default class SalesforceClient {
       operationInfo: 'describeSObjects',
       input: objectNames,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.soap.describeSObjects(chunk)),
+      chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
+    })
+  }
+
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
+  @logDecorator()
+  @requiresLogin()
+  @mapToUserFriendlyErrorMessages
+  public async describeToolingObject(objectName: SupportedToolingObjectName):
+    Promise<SendChunkedResult<string, DescribeSObjectResult>> {
+    return sendChunked({
+      operationInfo: 'describeSObjects',
+      input: objectName,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.tooling.describeSObject(chunk[0])),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
     })
   }

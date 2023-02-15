@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { BuiltinTypes } from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -291,6 +292,7 @@ export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
 export const OBJECT_FIELDS_PATH = 'Fields'
+export const TOOLING_PATH = 'Tooling'
 
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
@@ -309,6 +311,7 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 500
 export const MAXIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 export const MAX_QUERY_LENGTH = 2000
+export const MAX_QUERY_LIMIT = 200
 export const DEFAULT_ENUM_FIELD_PERMISSIONS = true
 export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS = {
   maxAttempts: 5,
@@ -322,6 +325,25 @@ export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 
 // Fields
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
+
+// Tooling Objects
+export const SupportedToolingObject = {
+  InstalledSubscriberPackage: 'InstalledSubscriberPackage',
+  SubscriberPackage: 'SubscriberPackage',
+  SubscriberPackageVersion: 'SubscriberPackageVersion',
+} as const
+
+export type SupportedToolingObjectName = typeof SupportedToolingObject[keyof typeof SupportedToolingObject]
+
+export const ToolingFieldAnnotation = {
+  originalApiName: 'originalName',
+  isLookup: 'isLookup',
+} as const
+
+export const TOOLING_FIELDS_ANNOTATIONS_REF_TYPES = {
+  [ToolingFieldAnnotation.originalApiName]: BuiltinTypes.HIDDEN_STRING,
+  [ToolingFieldAnnotation.isLookup]: BuiltinTypes.HIDDEN_BOOLEAN,
+} as const
 
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'

@@ -18,7 +18,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   createRestriction,
-  ElemID,
+  ElemID, Field,
   FieldDefinition,
   InstanceElement,
   ListType,
@@ -27,7 +27,13 @@ import {
 } from '@salto-io/adapter-api'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
+import {
+  API_NAME,
+  DEFAULT_MAX_INSTANCES_PER_TYPE,
+  FIELD_ANNOTATIONS,
+  SupportedToolingObjectName, TOOLING_FIELDS_ANNOTATIONS_REF_TYPES,
+  ToolingFieldAnnotation,
+} from './constants'
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -704,3 +710,28 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+
+type _ToolingField = Field & {
+  annotations: Field['annotations'] & {
+    [ToolingFieldAnnotation.originalApiName]: string
+    [ToolingFieldAnnotation.isLookup]: boolean
+  }
+  annotationRefTypes: Field['annotationRefTypes'] & typeof TOOLING_FIELDS_ANNOTATIONS_REF_TYPES
+}
+
+export type ToolingObjectType = ObjectType & {
+  annotations: ObjectType['annotations'] & {
+    [API_NAME]: SupportedToolingObjectName
+  }
+  fields: Record<string, _ToolingField & {parent: ToolingObjectType}>
+}
+
+export type ToolingField = ToolingObjectType['fields'] extends Record<string, infer U>
+  ? U
+  : never
+
+export type LookupField = Field & {
+  annotations: Field['annotations'] & {
+    [FIELD_ANNOTATIONS.REFERENCE_TO]: [string]
+  }
+}

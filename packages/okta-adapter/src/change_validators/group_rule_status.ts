@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, Change, isRemovalChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, Change, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { GROUP_RULE_TYPE_NAME } from '../constants'
 
@@ -26,47 +26,51 @@ const getGroupRuleStatusError = (
   change: Change<InstanceElement>
 ): ChangeError | undefined => {
   const instance = getChangeData(change)
-  const statusActiveChange: ChangeError = {
-    elemID: instance.elemID,
-    severity: 'Error',
-    message: `Cannot change ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
-    detailedMessage: `Cannot change ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}. Please change instance status to ${INACTIVE_STATUS} and try again.`,
-  }
-
-  if (isRemovalChange(change)) {
-    return instance.value.status === ACTIVE_STATUS ? statusActiveChange : undefined
+  if (isRemovalChange(change) && instance.value.status === ACTIVE_STATUS) {
+    return {
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: `Cannot remove ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
+      detailedMessage: `Cannot remove ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}. Please change instance status to ${INACTIVE_STATUS} and try again.`,
+    }
   }
   if (isModificationChange(change)) {
     const { before, after } = change.data
-    const { status } = before.value
     if (before.value.status !== after.value.status) {
       // TODO remove after SALTO-3591
       return {
         elemID: instance.elemID,
         severity: 'Error',
-        message: `Cannot change ${GROUP_RULE_TYPE_NAME} status`,
-        detailedMessage: `Cannot change ${GROUP_RULE_TYPE_NAME} status, please make this change in Okta.`,
+        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} status`,
+        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} status, please make this change in Okta.`,
       }
     }
     if (before.value.status === ACTIVE_STATUS) {
-      return statusActiveChange
-    }
-    if (status === INVALID_STATUS) {
       return {
         elemID: instance.elemID,
         severity: 'Error',
-        message: `Cannot change ${GROUP_RULE_TYPE_NAME} with status ${INVALID_STATUS}`,
+        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
+        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}. Please change instance status to ${INACTIVE_STATUS} and try again.`,
+      }
+    }
+    if (before.value.status === INVALID_STATUS) {
+      return {
+        elemID: instance.elemID,
+        severity: 'Error',
+        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${INVALID_STATUS}`,
         detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${INVALID_STATUS}. You can remove this instance and create a new one.`,
       }
     }
   }
-  // AdditionChange
-  if (instance.value.status === ACTIVE_STATUS) {
-    return {
-      elemID: instance.elemID,
-      severity: 'Error',
-      message: `Cannot add ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
-      detailedMessage: `${GROUP_RULE_TYPE_NAME} must be craeted with status ${INACTIVE_STATUS}`,
+  if (isAdditionChange(change)) {
+    // TODO remove after SALTO-3591
+    if (instance.value.status === ACTIVE_STATUS) {
+      return {
+        elemID: instance.elemID,
+        severity: 'Error',
+        message: `Cannot add ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
+        detailedMessage: `${GROUP_RULE_TYPE_NAME} must be created with status ${INACTIVE_STATUS}`,
+      }
     }
   }
   return undefined

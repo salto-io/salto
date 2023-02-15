@@ -598,6 +598,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       add: {
         url: '/api/v1/groups/rules',
         method: 'post',
+        // status update is not supported in this endpoint
         fieldsToIgnore: ['status', 'allGroupsValid'],
       },
       modify: {
@@ -606,6 +607,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         urlParamsToFields: {
           ruleId: 'id',
         },
+        // status update is not supported in this endpoint
         fieldsToIgnore: ['status', 'allGroupsValid'],
       },
       remove: {

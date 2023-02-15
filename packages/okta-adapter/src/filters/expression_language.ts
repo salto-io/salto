@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Change, Element, getChangeData, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
-import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
+import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
@@ -78,11 +78,18 @@ const getUserSchemaReference = (
 const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression) => TemplatePart => {
   const prepRef = (part: ReferenceExpression): TemplatePart => {
     if (part.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
-      const userSchemaField = part.elemID.getFullNameParts().pop()
-      if (!_.isString(userSchemaField)) {
-        throw new Error(`Received an invalid value inside a template expression ${part.elemID.getFullName()}: ${safeJsonStringify(part.value)}`)
+      const topLevelParentId = part.elemID.createTopLevelParentID().parent
+      const parentId = part.elemID.createParentID()
+      if (
+        (topLevelParentId.createNestedID(...USER_SCHEMA_CUSTOM_PATH).isEqual(parentId))
+        || (topLevelParentId.createNestedID(...USER_SCHEMA_BASE_PATH).isEqual(parentId))
+      ) {
+        const userSchemaField = part.elemID.getFullNameParts().pop()
+        if (!_.isString(userSchemaField)) {
+          throw new Error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${part.elemID.getFullName()}`)
+        }
+        return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
       }
-      return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
     }
     if (part.elemID.isTopLevel()) {
       return `"${part.value.value.id}"`

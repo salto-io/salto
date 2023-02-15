@@ -59,14 +59,14 @@ describe('groupRuleStatusValidator', () => {
       {
         elemID: groupRule1.elemID,
         severity: 'Error',
-        message: `Cannot change ${GROUP_RULE_TYPE_NAME} with status ACTIVE`,
-        detailedMessage: `Cannot change ${GROUP_RULE_TYPE_NAME} with status ACTIVE. Please change instance status to INACTIVE and try again.`,
+        message: `Cannot remove ${GROUP_RULE_TYPE_NAME} with status ACTIVE`,
+        detailedMessage: `Cannot remove ${GROUP_RULE_TYPE_NAME} with status ACTIVE. Please change instance status to INACTIVE and try again.`,
       },
       {
         elemID: groupRule2.elemID,
         severity: 'Error',
-        message: `Cannot change ${GROUP_RULE_TYPE_NAME} with status ACTIVE`,
-        detailedMessage: `Cannot change ${GROUP_RULE_TYPE_NAME} with status ACTIVE. Please change instance status to INACTIVE and try again.`,
+        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ACTIVE`,
+        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ACTIVE. Please change instance status to INACTIVE and try again.`,
       },
     ])
   })
@@ -79,7 +79,7 @@ describe('groupRuleStatusValidator', () => {
       {
         elemID: groupRule3.elemID,
         severity: 'Error',
-        message: `Cannot change ${GROUP_RULE_TYPE_NAME} with status INVALID`,
+        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status INVALID`,
         detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status INVALID. You can remove this instance and create a new one.`,
       },
     ])
@@ -94,7 +94,7 @@ describe('groupRuleStatusValidator', () => {
         elemID: groupRule1.elemID,
         severity: 'Error',
         message: `Cannot add ${GROUP_RULE_TYPE_NAME} with status ACTIVE`,
-        detailedMessage: `${GROUP_RULE_TYPE_NAME} must be craeted with status INACTIVE`,
+        detailedMessage: `${GROUP_RULE_TYPE_NAME} must be created with status INACTIVE`,
       },
     ])
   })
@@ -110,8 +110,8 @@ describe('groupRuleStatusValidator', () => {
       {
         elemID: groupRule1.elemID,
         severity: 'Error',
-        message: `Cannot change ${GROUP_RULE_TYPE_NAME} status`,
-        detailedMessage: `Cannot change ${GROUP_RULE_TYPE_NAME} status, please make this change in Okta.`,
+        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} status`,
+        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} status, please make this change in Okta.`,
       },
     ])
   })

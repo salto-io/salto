@@ -49,7 +49,7 @@ const getChangeErrorForChange = (change: ModificationChange<InstanceElement>): C
     elemID: getChangeData(change).elemID,
     severity: 'Error',
     message: `Can’t replace non-empty project ${changedFields.join(', ')}`,
-    detailedMessage: 'Salto cannot change the workflow scheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.',
+    detailedMessage: `Salto cannot change ${changedFields.join(', ')} for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.`,
   }
 }
 

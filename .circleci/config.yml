@@ -124,6 +124,10 @@ jobs:
           at: .
 
       - run:
+          name: Install why-is-node-running
+          command: sudo npm i why-is-node-running -g
+
+      - run:
           name: Run unit tests
           no_output_timeout: 2h
           command: yarn test --reporters=default --reporters=jest-junit

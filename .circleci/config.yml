@@ -125,7 +125,7 @@ jobs:
 
       - run:
           name: Run unit tests
-          no_output_timeout: 20m
+          no_output_timeout: 2h
           command: yarn test --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"

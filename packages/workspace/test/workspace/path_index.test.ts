@@ -124,6 +124,8 @@ const multiPathInstanceFull = new InstanceElement(
   },
 )
 
+// TODO: Add the case of old that should not maintain
+// TODO: Add the case of overriding things that exist but should maintain
 describe('updatePathIndex', () => {
   let index: PathIndex
   beforeAll(async () => {
@@ -175,7 +177,7 @@ describe('updatePathIndex', () => {
     ])
   })
 
-  it('should maintatin old elements', async () => {
+  it('should maintain old elements according to the shouldMaintain logic', async () => {
     expect(await index.get(singlePathObject.elemID.getFullName()))
       .toEqual([singlePathObject.path])
   })

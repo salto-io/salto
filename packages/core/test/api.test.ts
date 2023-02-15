@@ -689,6 +689,8 @@ describe('api.ts', () => {
 
       it('should call fetch changes with first account only', () => {
         expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
+        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
+        expect(accountsUsed).toEqual([mockService])
       })
     })
 
@@ -711,6 +713,29 @@ describe('api.ts', () => {
       it('should use accounts that are in the current workspace as defaults', () => {
         const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
         expect(accountsUsed).toEqual(['salto', 'netsuite'])
+      })
+    })
+
+    // TODO: (not sure) Add tests for the applyToState part
+    describe('with elementsScope', () => {
+      let ws: workspace.Workspace
+      let ows: workspace.Workspace
+      beforeAll(async () => {
+        ws = mockWorkspace({})
+        ows = mockWorkspace({})
+        mockFetchChangesFromWorkspace.mockClear()
+        await api.fetchFromWorkspace({
+          otherWorkspace: ws,
+          workspace: ows,
+          env: 'default',
+          elementsScope: ['salto.type'],
+        })
+      })
+
+      it('should call fetch changes with elementsScope', () => {
+        expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
+        const elementsScopeUsed = mockFetchChangesFromWorkspace.mock.calls[0][8]
+        expect(elementsScopeUsed).toEqual(['salto.type'])
       })
     })
   })

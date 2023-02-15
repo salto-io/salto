@@ -1422,6 +1422,18 @@ describe('fetch', () => {
   })
 })
 
+describe('elem id getter test', () => {
+  it('translated id to new account name', async () => {
+    const objID = new ElemID('salesforce', 'obj')
+    const obj = new ObjectType({
+      elemID: new ElemID('salesforceaccountName', 'obj'),
+    })
+    const idGetter = await createElemIdGetter(awu([obj]), createElementSource([]))
+    expect(idGetter('salesforce', { [OBJECT_SERVICE_ID]: objID.getFullName() },
+      'obj')).toEqual(objID)
+  })
+})
+
 describe('fetch from workspace', () => {
   describe('workspace mismatch errors', () => {
     it('should fail when attempting to fetch an env not present in the source workspace', async () => {
@@ -1823,28 +1835,28 @@ describe('fetch from workspace', () => {
             .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
               .toHaveLength(1))
         })
-      })
 
-      it('should return changes with static files content from the elements', async () => {
-        const changes = [...fetchRes.changes]
-        const newStaticInst = changes
-          .filter(change => change.change.id.isEqual(newNaclStaticInstance.elemID))
-          .map(change => getChangeData(change.change))
-        expect(newStaticInst).toHaveLength(1)
-        expect(await newStaticInst[0].value.staticFileField.getContent())
-          .toEqual(await fileOne.getContent())
-        expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
-          .toEqual(await fileTwo.getContent())
-        expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
-          .toEqual(await fileThree.getContent())
-        const modifyStaticVals = changes
-          .filter(change =>
-            change.change.id.createTopLevelParentID().parent
-              .isEqual(editNaclExistingInstance.elemID))
-          .map(change => getChangeData(change.change))
-        expect(modifyStaticVals).toHaveLength(3)
-        const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
-        expect(staticFileModifies).toHaveLength(3)
+        it('should return changes with static files content from the elements', async () => {
+          const changes = [...fetchRes.changes]
+          const newStaticInst = changes
+            .filter(change => change.change.id.isEqual(newNaclStaticInstance.elemID))
+            .map(change => getChangeData(change.change))
+          expect(newStaticInst).toHaveLength(1)
+          expect(await newStaticInst[0].value.staticFileField.getContent())
+            .toEqual(await fileOne.getContent())
+          expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
+            .toEqual(await fileTwo.getContent())
+          expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
+            .toEqual(await fileThree.getContent())
+          const modifyStaticVals = changes
+            .filter(change =>
+              change.change.id.createTopLevelParentID().parent
+                .isEqual(editNaclExistingInstance.elemID))
+            .map(change => getChangeData(change.change))
+          expect(modifyStaticVals).toHaveLength(3)
+          const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
+          expect(staticFileModifies).toHaveLength(3)
+        })
       })
 
       describe('With warnings', () => {
@@ -2000,18 +2012,6 @@ describe('fetch from workspace', () => {
           expect(fetchRes.errors).toHaveLength(2)
         })
       })
-    })
-  })
-
-  describe('elem id getter test', () => {
-    it('translated id to new account name', async () => {
-      const objID = new ElemID('salesforce', 'obj')
-      const obj = new ObjectType({
-        elemID: new ElemID('salesforceaccountName', 'obj'),
-      })
-      const idGetter = await createElemIdGetter(awu([obj]), createElementSource([]))
-      expect(idGetter('salesforce', { [OBJECT_SERVICE_ID]: objID.getFullName() },
-        'obj')).toEqual(objID)
     })
   })
 })

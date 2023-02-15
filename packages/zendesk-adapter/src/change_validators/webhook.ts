@@ -27,15 +27,15 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
   detailedMessage: '',
   deployActions: {
     preAction: {
-      title: 'Current authentication data for a webhook will be overridden',
-      description: `Current authentication data for the webhook ${instanceElemId.name} will be overridden`,
+      title: 'Webhook\'s authentication credentails will not be set',
+      description: `Webhook ${instanceElemId.name} will be deployed with dummy credentials. Salto will guide you on modifying it post deploy`,
       subActions: [],
     },
     postAction: {
-      title: 'Change webhook authentication data',
-      description: `Please change the authentication data for the webhook ${instanceElemId.name} in the service`,
+      title: 'Set webhook authentication credentails',
+      description: `Please manually set the authentication credetials for webhook ${instanceElemId.name} via the Zendesk UI`,
       subActions: [
-        `Go to zendesk Webhooks panel ${baseUrl}${WEBHOOKS_SERVICE_URL}`,
+        `Go to Zendesk Webhooks panel at ${baseUrl}${WEBHOOKS_SERVICE_URL}`,
         'Click on the modified webhook',
         'Click on Actions > Edit',
         'Enter the authentication data',

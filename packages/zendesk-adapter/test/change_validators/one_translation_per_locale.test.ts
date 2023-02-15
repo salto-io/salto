@@ -96,7 +96,7 @@ describe('oneTranslationPerLocalValidator',
 
       const errors = await oneTranslationPerLocaleValidator(
         [toChange({ after: heTranslation })],
-        elementSource.createInMemoryElementSource([esLocale])
+        elementSource.createInMemoryElementSource([esLocale, article])
       )
       expect(errors).toHaveLength(0)
     })
@@ -149,7 +149,7 @@ describe('oneTranslationPerLocalValidator',
 
       const errors = await oneTranslationPerLocaleValidator(
         [toChange({ after: enTranslation }), toChange({ after: enTranslation2 })],
-        elementSource.createInMemoryElementSource([enusLocale]),
+        elementSource.createInMemoryElementSource([enusLocale, article]),
       )
       expect(errors).toEqual([{
         elemID: article.elemID,

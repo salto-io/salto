@@ -16,18 +16,26 @@
 
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeData, InstanceElement, ReadOnlyElementsSource, ChangeError,
-  isAdditionOrModificationChange, isInstanceElement, ReferenceExpression, isReferenceExpression,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  ChangeError,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  ReferenceExpression,
+  isReferenceExpression,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { createSchemeGuardForInstance, getParents } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 
 const log = logger(module)
 const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable
-
+const { isDefined } = lowerdashValues
 
 const ARTICLE_TRANSLATION_TYPE_NAME = 'article_translation'
 const CATEGORY_TRANSLATION_TYPE_NAME = 'category_translation'
@@ -81,6 +89,10 @@ const findDuplicateTranslations = async (
 }
 
 export const oneTranslationPerLocaleValidator: ChangeValidator = async (changes, elementSource) => {
+  if (elementSource === undefined) {
+    log.error('Failed to run findDuplicateTranslations because no element source was provided')
+    return []
+  }
   const relevantInstances = changes
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
@@ -90,18 +102,19 @@ export const oneTranslationPerLocaleValidator: ChangeValidator = async (changes,
         CATEGORY_TRANSLATION_TYPE_NAME,
         SECTION_TRANSLATION_TYPE_NAME].includes(instance.elemID.typeName))
 
-  // it is a set to avoid duplicate of parents from translations which have the same parent
-  const parentInstances = relevantInstances
+  const parentInstancesId = relevantInstances
     .filter(instance => isTranslation(instance))
-    .flatMap(getParents)
-    .map(translationParentInstance => translationParentInstance.value)
+    .flatMap(instance => instance.annotations[CORE_ANNOTATIONS.PARENT])
+    .flatMap(parent => (isReferenceExpression(parent) ? parent.elemID : undefined))
+    .filter(isDefined)
 
+  const parentInstances = await awu(parentInstancesId)
+    .map(async id => elementSource.get(id))
+    .filter(isInstanceElement)
+    .toArray()
+
+  // it is a record to avoid duplicate of parents from translations which have the same parent
   const parentInstancesObj = _.keyBy(parentInstances, instance => instance.elemID.getFullName())
-
-  if (elementSource === undefined) {
-    log.error('Failed to run findDuplicateTranslations because no element source was provided')
-    return []
-  }
 
   return awu(Object.values(parentInstancesObj))
     .map(async parentInstance => ({

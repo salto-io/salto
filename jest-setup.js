@@ -17,5 +17,6 @@
 var wtf = require('wtfnode');
 
 module.exports = function () {
+    wtf.init()
     global.wtf = wtf
 }

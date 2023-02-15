@@ -342,17 +342,17 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   const {
     changes, elements, mergeErrors, errors,
     configChanges, accountNameToConfigMessage, unmergedElements,
-  } = await fetchChangesFromWorkspace(
+  } = await fetchChangesFromWorkspace({
     otherWorkspace,
     fetchAccounts,
-    await workspace.elements(),
-    workspace.state(),
+    workspaceElements: await workspace.elements(),
+    stateElements: workspace.state(),
     currentConfigs,
     env,
     fromState,
     progressEmitter,
     elementsScope,
-  )
+  })
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
   const shouldMaintain = (elemID: ElemID): boolean => (

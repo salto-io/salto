@@ -689,7 +689,7 @@ describe('api.ts', () => {
 
       it('should call fetch changes with first account only', () => {
         expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
-        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
+        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][0].fetchAccounts
         expect(accountsUsed).toEqual([mockService])
       })
     })
@@ -711,7 +711,7 @@ describe('api.ts', () => {
       })
 
       it('should use accounts that are in the current workspace as defaults', () => {
-        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
+        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][0].fetchAccounts
         expect(accountsUsed).toEqual(['salto', 'netsuite'])
       })
     })
@@ -734,7 +734,7 @@ describe('api.ts', () => {
 
       it('should call fetch changes with elementsScope', () => {
         expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
-        const elementsScopeUsed = mockFetchChangesFromWorkspace.mock.calls[0][8]
+        const elementsScopeUsed = mockFetchChangesFromWorkspace.mock.calls[0][0].elementsScope
         expect(elementsScopeUsed).toEqual(['salto.type'])
       })
     })

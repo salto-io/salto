@@ -933,16 +933,29 @@ const getElementsSources = async (
   }
 }
 
-export const fetchChangesFromWorkspace = async (
-  otherWorkspace: Workspace,
-  fetchAccounts: string[],
-  workspaceElements: elementSource.ElementsSource,
-  stateElements: elementSource.ElementsSource,
-  currentConfigs: InstanceElement[],
-  env: string,
-  fromState: boolean,
-  progressEmitter?: EventEmitter<FetchProgressEvents>,
-  elementsScope?: string[],
+export type FetchChangesFromWorkspaceParams = {
+  otherWorkspace: Workspace
+  fetchAccounts: string[]
+  workspaceElements: elementSource.ElementsSource
+  stateElements: elementSource.ElementsSource
+  currentConfigs: InstanceElement[]
+  env: string
+  fromState: boolean
+  progressEmitter?: EventEmitter<FetchProgressEvents>
+  elementsScope?: string[]
+}
+
+export const fetchChangesFromWorkspace = async ({
+  otherWorkspace,
+  fetchAccounts,
+  workspaceElements,
+  stateElements,
+  currentConfigs,
+  env,
+  fromState,
+  progressEmitter,
+  elementsScope,
+}: FetchChangesFromWorkspaceParams
 ): Promise<FetchChangesResult> => {
   const splitElementByFile = async (element: Element): Promise<Element[]> => {
     const elementNaclFiles = await otherWorkspace.getElementNaclFiles(element.elemID)

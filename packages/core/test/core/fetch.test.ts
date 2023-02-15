@@ -1440,16 +1440,15 @@ describe('fetch from workspace', () => {
       const sourceWS = mockWorkspace({
         accounts: ['salto'],
       })
-
-      const fetchRes = await fetchChangesFromWorkspace(
-        sourceWS,
-        ['salto'],
-        createInMemoryElementSource([]),
-        createInMemoryElementSource([]),
-        [],
-        'nonexisiting',
-        false,
-      )
+      const fetchRes = await fetchChangesFromWorkspace({
+        otherWorkspace: sourceWS,
+        fetchAccounts: ['salto'],
+        workspaceElements: createInMemoryElementSource([]),
+        stateElements: createInMemoryElementSource([]),
+        currentConfigs: [],
+        env: 'nonexisiting',
+        fromState: false,
+      })
       expect([...fetchRes.changes]).toHaveLength(0)
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
@@ -1463,15 +1462,15 @@ describe('fetch from workspace', () => {
         accounts: ['salto'],
       })
 
-      const fetchRes = await fetchChangesFromWorkspace(
-        sourceWS,
-        ['salto', 'salesforce'],
-        createInMemoryElementSource([]),
-        createInMemoryElementSource([]),
-        [],
-        'default',
-        false,
-      )
+      const fetchRes = await fetchChangesFromWorkspace({
+        otherWorkspace: sourceWS,
+        fetchAccounts: ['salto', 'salesforce'],
+        workspaceElements: createInMemoryElementSource([]),
+        stateElements: createInMemoryElementSource([]),
+        currentConfigs: [],
+        env: 'default',
+        fromState: false,
+      })
       expect([...fetchRes.changes]).toHaveLength(0)
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
@@ -1486,15 +1485,15 @@ describe('fetch from workspace', () => {
         errors: [{ message: 'A glitch', severity: 'Error' }],
       })
 
-      const fetchRes = await fetchChangesFromWorkspace(
-        sourceWS,
-        ['salto'],
-        createInMemoryElementSource([]),
-        createInMemoryElementSource([]),
-        [],
-        'default',
-        false,
-      )
+      const fetchRes = await fetchChangesFromWorkspace({
+        otherWorkspace: sourceWS,
+        fetchAccounts: ['salto'],
+        workspaceElements: createInMemoryElementSource([]),
+        stateElements: createInMemoryElementSource([]),
+        currentConfigs: [],
+        env: 'default',
+        fromState: false,
+      })
       expect([...fetchRes.changes]).toHaveLength(0)
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
@@ -1781,8 +1780,8 @@ describe('fetch from workspace', () => {
     describe('with fromState false', () => {
       describe('With no errors and warnings', () => {
         beforeEach(async () => {
-          fetchRes = await fetchChangesFromWorkspace(
-            mockWorkspace({
+          fetchRes = await fetchChangesFromWorkspace({
+            otherWorkspace: mockWorkspace({
               elements: mergedElements,
               index: await awu(pi.entries()).toArray(),
               accountConfigs: { salto: configs[0] },
@@ -1793,13 +1792,13 @@ describe('fetch from workspace', () => {
               },
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
-            ['salto'],
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            configs,
-            'default',
-            false,
-          )
+            fetchAccounts: ['salto'],
+            workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            currentConfigs: configs,
+            env: 'default',
+            fromState: false,
+          })
           resElements = [...fetchRes.elements]
         })
 
@@ -1861,8 +1860,8 @@ describe('fetch from workspace', () => {
 
       describe('With warnings', () => {
         beforeEach(async () => {
-          fetchRes = await fetchChangesFromWorkspace(
-            mockWorkspace({
+          fetchRes = await fetchChangesFromWorkspace({
+            otherWorkspace: mockWorkspace({
               elements: mergedElements,
               index: await awu(pi.entries()).toArray(),
               accountConfigs: { salto: configs[0] },
@@ -1870,13 +1869,13 @@ describe('fetch from workspace', () => {
               errors: [{ message: 'A warnings', severity: 'Warning' }],
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
-            ['salto'],
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            configs,
-            'default',
-            false,
-          )
+            fetchAccounts: ['salto'],
+            workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            currentConfigs: configs,
+            env: 'default',
+            fromState: false,
+          })
           resElements = [...fetchRes.elements]
         })
 
@@ -1892,21 +1891,21 @@ describe('fetch from workspace', () => {
     describe('with fromState true', () => {
       describe('With no errors and warnings', () => {
         beforeEach(async () => {
-          fetchRes = await fetchChangesFromWorkspace(
-            mockWorkspace({
+          fetchRes = await fetchChangesFromWorkspace({
+            otherWorkspace: mockWorkspace({
               elements: mergedElements,
               index: await awu(pi.entries()).toArray(),
               accountConfigs: { salto: configs[0] },
               stateElements,
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
-            ['salto'],
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            configs,
-            'default',
-            true,
-          )
+            fetchAccounts: ['salto'],
+            workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            currentConfigs: configs,
+            env: 'default',
+            fromState: true,
+          })
           resElements = [...fetchRes.elements]
         })
 
@@ -1983,8 +1982,8 @@ describe('fetch from workspace', () => {
 
       describe('With errors and warnings', () => {
         beforeEach(async () => {
-          fetchRes = await fetchChangesFromWorkspace(
-            mockWorkspace({
+          fetchRes = await fetchChangesFromWorkspace({
+            otherWorkspace: mockWorkspace({
               elements: mergedElements,
               index: await awu(pi.entries()).toArray(),
               accountConfigs: { salto: configs[0] },
@@ -1995,13 +1994,13 @@ describe('fetch from workspace', () => {
               ],
               staticFilesSource: otherWorkspaceStaticFilesSource,
             }),
-            ['salto'],
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            configs,
-            'default',
-            true,
-          )
+            fetchAccounts: ['salto'],
+            workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+            currentConfigs: configs,
+            env: 'default',
+            fromState: true,
+          })
           resElements = [...fetchRes.elements]
         })
 

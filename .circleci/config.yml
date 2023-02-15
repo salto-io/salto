@@ -125,7 +125,7 @@ jobs:
 
       - run:
           name: Install why-is-node-running
-          command: sudo npm i why-is-node-running -g
+          command: sudo npm i wtfnode -g
 
       - run:
           name: Run unit tests

@@ -42,6 +42,6 @@ module.exports = {
   // setupFilesAfterEnv: [
   //     `${__dirname}/jest-setup.js`,
   // ],
-  globalSetup: `${__dirname}/jest-setup.js`,
-  globalTeardown: `${__dirname}/jest-teardown.js`,
+  // globalSetup: `${__dirname}/jest-setup.js`,
+  // globalTeardown: `${__dirname}/jest-teardown.js`,
 }

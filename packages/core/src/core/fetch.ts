@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import _, { isUndefined } from 'lodash'
+import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
@@ -445,7 +445,7 @@ const fetchAndProcessMergeErrors = async (
         ([accountName, withChangeDetection ? adapter.fetchWithChangeDetection : adapter.fetch]))
     )
     const adapterWithoutFetchFunction = Object.entries(accountNameToFetchFunction)
-      .filter(([, fetchFunction]) => isUndefined(fetchFunction))
+      .filter(([, fetchFunction]) => !isDefined(fetchFunction))
       .map(([accountName]) => accountToServiceNameMap[accountName])
     if (adapterWithoutFetchFunction.length > 0) {
       throw new Error(`${adapterWithoutFetchFunction.join(', ')} adapters do not support quick fetch operation`)

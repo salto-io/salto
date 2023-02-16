@@ -20,18 +20,18 @@ const path = require('path')
 
 
 const testsToRun = [
-    'adapter-api',
-    'adapter-components',
-    'adapter-utils',
-    'aws-utils',
-    'cli',
-    'core',
-    'dag',
-    'dummy-adapter',
-    'e2e-credentials-store',
-    'file',
-    'jira-adapter',
-    'lang-server',
+    'logging',
+    'lowerdash',
+    'netsuite-adapter',
+    'okta-adapter',
+    'persistent-pool',
+    'salesforce-adapter',
+    'stripe-adapter',
+    'test-utils',
+    'workato-adapter',
+    'workspace',
+    'zendesk-adapter',
+    'zuora-billing-adapter',
 ]
 
 const packagesDir = `${__dirname}/packages`

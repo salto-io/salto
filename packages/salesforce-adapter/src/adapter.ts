@@ -78,7 +78,8 @@ import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
-import getInstalledPackagesFilter from './filters/fetch_tooling_types'
+import fetchToolingTypesFilter from './filters/fetch_tooling_types'
+import subscriberPackageInstancesFilter from './filters/subscriber_package_instances'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -107,7 +108,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
-  { creator: getInstalledPackagesFilter, addsNewInformation: true },
+  { creator: fetchToolingTypesFilter, addsNewInformation: true },
+  { creator: subscriberPackageInstancesFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },

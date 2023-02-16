@@ -20,6 +20,18 @@ const path = require('path')
 
 
 const testsToRun = [
+    'adapter-api',
+    'adapter-components',
+    'adapter-utils',
+    'aws-utils',
+    'cli',
+    'core',
+    'dag',
+    'dummy-adapter',
+    'e2e-credentials-store',
+    'file',
+    'jira-adapter',
+    'lang-server',
     'logging',
     'lowerdash',
     'netsuite-adapter',

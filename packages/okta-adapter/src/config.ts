@@ -291,6 +291,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
+  'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu': {
+    request: {
+      url: '/api/v1/policies/{policyId}/rules',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
   // Policy type is splitted to different kinds of policies
   // The full list of policy types is taken from here:
   // https://developer.okta.com/docs/reference/api/policy/#policy-types
@@ -411,7 +419,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'policyRules', fieldType: 'list<PolicyRule>' },
-        { fieldName: 'settings', fieldType: 'map<unknown>' },
+        { fieldName: 'conditions', fieldType: 'PolicyRuleConditions' },
       ],
       idFields: ['name', 'type'],
       standaloneFields: [{ fieldName: 'policyRules' }],
@@ -725,13 +733,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  PolicyRuleConditions: {
-    transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'userType', fieldType: 'UserTypePolicyRuleCondition' },
-      ],
-    },
-  },
   OAuth2Scope: {
     transformation: {
       fieldTypeOverrides: [
@@ -770,10 +771,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
+  ApplicationLinks: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'profileEnrollment', fieldType: 'HrefObject' }],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
-  url: 'https://raw.githubusercontent.com/okta/okta-management-openapi-spec/master/dist/spec.yaml',
+  // TODO change this to adapter swagger repo path
+  url: 'file:/Users/shirreifenberg/shirWorkspaces/oktaForDemo/managmentAfterEdit_5.0.0.yml',
   additionalTypes: [
     { typeName: 'AuthenticatorEnrollmentPolicies', cloneFrom: 'api__v1__policies' },
     { typeName: 'GlobalSessionPolicies', cloneFrom: 'api__v1__policies' },
@@ -783,8 +790,9 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     { typeName: 'PasswordPolicies', cloneFrom: 'api__v1__policies' },
     // TODO SALTO-2735 this is not the right type to clone from
     { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
-    // This type is missing from the swagger but both have the same structure
-    { typeName: 'UserTypePolicyRuleCondition', cloneFrom: 'GroupPolicyRuleCondition' },
+  ],
+  typeNameOverrides: [
+    { originalName: 'DomainResponse', newName: 'Domain' },
   ],
 }
 

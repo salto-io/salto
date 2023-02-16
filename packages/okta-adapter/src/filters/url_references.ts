@@ -32,7 +32,7 @@ const LINK_PROPERTY_SCHEME = Joi.object({
 const isLinkProperty = createSchemeGuard<linkProperty>(LINK_PROPERTY_SCHEME, 'Received invalid link property')
 
 const RELEVAT_FIELDS = ['profileEnrollment', 'accessPolicy']
-const INSTANCE_LINKS_PATH = ['_links', 'additionalProperties']
+const INSTANCE_LINKS_PATH = '_links'
 
 const extractIdsFromUrls = (instance: InstanceElement): void => {
   const linksObject = _.get(instance.value, INSTANCE_LINKS_PATH)
@@ -50,7 +50,7 @@ const extractIdsFromUrls = (instance: InstanceElement): void => {
 }
 
 /**
- * The filter extract ids from urls in _link object in application type
+ * The filter extract ids from urls in _links object in application type
  */
 const filter: FilterCreator = () => ({
   name: 'urlReferencesFilter',

@@ -21,6 +21,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
+import { flattenDiscriminatorFields } from './discriminator'
 
 const log = logger(module)
 
@@ -73,8 +74,8 @@ export const defaultDeployChange = async (
   fieldsToIgnore?: string[],
   queryParams?: Record<string, string>,
 ): Promise<deployment.ResponseResult> => {
-  const changeToDeploy = await elementUtils.swagger.flattenAdditionalProperties(
-    _.cloneDeep(change)
+  const changeToDeploy = await flattenDiscriminatorFields(
+    await elementUtils.swagger.flattenAdditionalProperties(_.cloneDeep(change))
   )
 
   if (isModificationChange(changeToDeploy)) {

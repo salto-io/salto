@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, POLICY_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, APP_USER_TYPE_NAME, ROLE_TYPE_NAME } from './constants'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, POLICY_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, APP_USER_TYPE_NAME, ROLE_TYPE_NAME, INLINE_HOOK_TYPE_NAME } from './constants'
 
 
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
@@ -73,12 +73,12 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: USER_TYPE_NAME },
   },
   {
-    src: { field: 'include', parentTypes: ['UserTypePolicyRuleCondition'] },
+    src: { field: 'include', parentTypes: ['UserTypeCondition'] },
     serializationStrategy: 'id',
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
-    src: { field: 'exclude', parentTypes: ['UserTypePolicyRuleCondition'] },
+    src: { field: 'exclude', parentTypes: ['UserTypeCondition'] },
     serializationStrategy: 'id',
     target: { type: USERTYPE_TYPE_NAME },
   },
@@ -136,6 +136,16 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'accessPolicy', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: POLICY_TYPE_NAME },
+  },
+  {
+    src: { field: 'targetGroupIds', parentTypes: ['ProfileEnrollmentPolicyRuleAction'] },
+    serializationStrategy: 'id',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'inlineHookId', parentTypes: ['PreRegistrationInlineHook'] },
+    serializationStrategy: 'id',
+    target: { type: INLINE_HOOK_TYPE_NAME },
   },
 ]
 

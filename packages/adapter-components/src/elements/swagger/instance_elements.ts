@@ -39,6 +39,7 @@ const { toArrayAsync, awu } = collections.asynciterable
 const { isPlainRecord } = lowerdashValues
 const log = logger(module)
 
+export type EntriesFunc = (entry: Values[], type: ObjectType) => Promise<Values[]>
 
 class InvalidTypeConfig extends Error {}
 
@@ -267,6 +268,7 @@ type GetEntriesParams = {
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
   getElemIdFunc?: ElemIdGetter
+  entriesFunc?: EntriesFunc
 }
 
 export const extractPageEntriesByNestedField = (fieldName?: string): PageEntriesExtractor => (
@@ -287,7 +289,7 @@ const getEntriesForType = async (
 ): Promise<{ entries: Values[]; objType: ObjectType }> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
-    requestContext, nestedFieldFinder, computeGetArgs,
+    requestContext, nestedFieldFinder, computeGetArgs, entriesFunc,
   } = params
   const type = await normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
@@ -359,7 +361,7 @@ const getEntriesForType = async (
         ? Object.values(result as object)
         : makeArray(result))))
 
-    return entries
+    return await entriesFunc?.(entries, objType) ?? entries
   }
 
   const entries = await getEntries()
@@ -468,6 +470,7 @@ export const getAllInstances = async ({
   nestedFieldFinder = findDataField,
   computeGetArgs = defaultComputeGetArgs,
   getElemIdFunc,
+  entriesFunc,
 }: {
   paginator: Paginator
   apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
@@ -477,6 +480,7 @@ export const getAllInstances = async ({
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
   getElemIdFunc?: ElemIdGetter
+  entriesFunc?: EntriesFunc
 }): Promise<FetchElements<InstanceElement[]>> => {
   const { types, typeDefaults } = apiConfig
 
@@ -488,6 +492,7 @@ export const getAllInstances = async ({
     nestedFieldFinder,
     computeGetArgs,
     getElemIdFunc,
+    entriesFunc,
   }
 
   return getElementsWithContext<InstanceElement>({

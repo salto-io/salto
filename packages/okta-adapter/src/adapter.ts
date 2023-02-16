@@ -23,6 +23,7 @@ import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
 import { paginate } from './client/pagination'
+import { getDiscriminatorTypeEntries, getDiscriminatorFields } from './discriminator'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import commonFilters from './filters/common'
 import replaceObjectWithIdFilter from './filters/replace_object_with_id'
@@ -129,6 +130,9 @@ export default class OktaAdapter implements AdapterOperations {
     return generateTypes(
       OKTA,
       this.userConfig[API_DEFINITIONS_CONFIG],
+      undefined,
+      undefined,
+      getDiscriminatorFields,
     )
   }
 
@@ -154,6 +158,7 @@ export default class OktaAdapter implements AdapterOperations {
       fetchQuery: this.fetchQuery,
       supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
+      entriesFunc: getDiscriminatorTypeEntries,
     })
   }
 

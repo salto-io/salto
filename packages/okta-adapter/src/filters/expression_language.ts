@@ -45,7 +45,7 @@ const TYPE_TO_DEF: Record<string, ExpressionLanguageDef> = {
     isIdentityEngine: false,
   },
   [POLICY_RULE_TYPE_NAME]: {
-    pathToContainer: ['conditions', 'additionalProperties', 'elCondition'],
+    pathToContainer: ['ACCESS_POLICY', 'conditions', 'elCondition'],
     fieldName: 'condition',
     patterns: [ID_REGEX, USER_SCHEMA_IE_REGEX],
     isIdentityEngine: true,

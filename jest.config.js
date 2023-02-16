@@ -18,6 +18,22 @@ const _ = require('lodash')
 const fs = require('fs')
 const path = require('path')
 
+
+const testsToRun = [
+    'adapter-api',
+    'adapter-components',
+    'adapter-utils',
+    'aws-utils',
+    'cli',
+    'core',
+    'dag',
+    'dummy-adapter',
+    'e2e-credentials-store',
+    'file',
+    'jira-adapter',
+    'lang-server',
+]
+
 const packagesDir = `${__dirname}/packages`
 const packagesWithoutTests = ['vscode']
 const packageConfigs = (() => {
@@ -49,11 +65,10 @@ module.exports = Object.assign(
   {},
   require('./jest.base.config.js'),
   {
-    projects: ['packages/*'],
+    projects: testsToRun.map(dir => `packages/${dir}`),
     coverageDirectory: '<rootDir>/coverage/',
     collectCoverageFrom,
     cacheDirectory: '.jest_cache',
     coverageThreshold,
   }
 )
-

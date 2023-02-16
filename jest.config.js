@@ -78,7 +78,7 @@ module.exports = Object.assign(
   {},
   require('./jest.base.config.js'),
   {
-    projects: testsToRun.map(dir => `packages/${dir}`),
+    projects: ['packages/*'],
     coverageDirectory: '<rootDir>/coverage/',
     collectCoverageFrom,
     cacheDirectory: '.jest_cache',

@@ -568,10 +568,28 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     },
   },
   OrgSetting: {
+    request: {
+      url: '/api/v1/org',
+      recurseInto: [{
+        type: 'api__v1__org__contacts',
+        toField: 'contactTypes',
+        context: [],
+      }],
+    },
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
+      dataField: '.',
+      fieldTypeOverrides: [{ fieldName: 'contactTypes', fieldType: 'list<OrgContactTypeObj>' }],
+    },
+  },
+  api__v1__org__contacts: {
+    request: {
+      url: '/api/v1/org/contacts',
+    },
+    transformation: {
+      dataField: '.',
     },
   },
   Brand: {
@@ -819,7 +837,7 @@ export const SUPPORTED_TYPES = {
   GroupSchema: ['GroupSchema'],
   UserSchema: ['UserSchema'],
   UserType: ['api__v1__meta__types__user'],
-  OrgContactTypeObj: ['api__v1__org__contacts'],
+  // OrgContactTypeObj: ['api__v1__org__contacts'],
   OrgSettings: ['OrgSetting'],
   Policy: [
     'AuthenticatorEnrollmentPolicies',

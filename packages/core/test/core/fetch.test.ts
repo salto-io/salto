@@ -1169,7 +1169,7 @@ describe('fetch', () => {
           [],
           undefined,
           true,
-        )).rejects.toThrow('adapter1, adapter2 adapters do not support quick fetch operation')
+        )).rejects.toThrow('Adapters: adapter1, adapter2 do not support fetch with change detection operation')
       })
       it('should call fetchWithChangeDetection function', async () => {
         mockFetch.mockClear()

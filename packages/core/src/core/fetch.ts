@@ -445,10 +445,10 @@ const fetchAndProcessMergeErrors = async (
         ([accountName, withChangeDetection ? adapter.fetchWithChangeDetection : adapter.fetch]))
     )
     const adaptersWithoutFetchFunction = Object.entries(accountNameToFetchFunction)
-      .filter(([, fetchFunction]) => !isDefined(fetchFunction))
+      .filter(([, fetchFunction]) => fetchFunction === undefined)
       .map(([accountName]) => accountToServiceNameMap[accountName])
     if (adaptersWithoutFetchFunction.length > 0) {
-      throw new Error(`${adaptersWithoutFetchFunction.join(', ')} adapters do not support quick fetch operation`)
+      throw new Error(`Adapters: ${adaptersWithoutFetchFunction.join(', ')} do not support fetch with change detection operation`)
     }
 
     const fetchResults = await Promise.all(

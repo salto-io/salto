@@ -32,7 +32,7 @@ import {
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
-  COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
+  COMPOUND_FIELDS_SOAP_TYPE_NAMES, SALESFORCE_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION, KEY_PREFIX,
   SALESFORCE_DATE_PLACEHOLDER,
@@ -110,7 +110,7 @@ export const defaultApiName = (element: Readonly<Element>): string => {
 const fullApiName = async (elem: Readonly<Element>): Promise<string> => {
   if (isInstanceElement(elem)) {
     return (await isCustomObject(await elem.getType()))
-      ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
+      ? elem.value[SALESFORCE_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }
@@ -937,7 +937,7 @@ const toRecord = async (
     ...instance.value,
   }
   const filteredRecordValues = {
-    [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
+    [SALESFORCE_OBJECT_ID_FIELD]: instance.value[SALESFORCE_OBJECT_ID_FIELD],
     ..._.pickBy(
       valsWithNulls,
       (_v, k) => (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
@@ -957,7 +957,7 @@ export const instancesToCreateRecords = (
   Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE)))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
-  instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
+  instances.map(instance => ({ Id: instance.value[SALESFORCE_OBJECT_ID_FIELD] }))
 
 export const toCustomField = async (
   field: Field,

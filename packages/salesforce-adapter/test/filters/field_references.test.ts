@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
 import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
-import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
+import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, SALESFORCE_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
 import { metadataType, apiName, createInstanceElement } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
 import { defaultFilterContext } from '../utils'
@@ -70,7 +70,7 @@ const generateObjectAndInstance = ({
       ...(contextFieldName ? { [contextFieldName]: createField(contextFieldName) } : {}),
     }
     if (objType === CUSTOM_OBJECT) {
-      obj.fields[CUSTOM_OBJECT_ID_FIELD] = createField(CUSTOM_OBJECT_ID_FIELD)
+      obj.fields[SALESFORCE_OBJECT_ID_FIELD] = createField(SALESFORCE_OBJECT_ID_FIELD)
     }
   }
   if (objType === CUSTOM_OBJECT || fieldValue === undefined) {

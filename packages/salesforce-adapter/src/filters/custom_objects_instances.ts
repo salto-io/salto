@@ -25,8 +25,8 @@ import {
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
-  SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE,
+  SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, SALESFORCE_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE, ATTRIBUTES,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -53,7 +53,7 @@ export type CustomObjectFetchSetting = {
   invalidIdFields?: string[]
 }
 
-const defaultRecordKeysToOmit = ['attributes']
+const defaultRecordKeysToOmit = [ATTRIBUTES]
 const nameSeparator = '___'
 const detectsParentsIndicator = '##allMasterDetailFields##'
 
@@ -99,7 +99,7 @@ const getRecords = async (
   log.debug(`Fetched ${records.length} records of type ${typeName}`)
   return _.keyBy(
     records,
-    record => record[CUSTOM_OBJECT_ID_FIELD]
+    record => record[SALESFORCE_OBJECT_ID_FIELD]
   )
 }
 
@@ -122,14 +122,14 @@ const transformCompoundNameValues = async (
     : {
       ..._.omit(recordValue, nameSubFields),
       [nameFieldName]: subNameValues,
-      [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
+      [SALESFORCE_OBJECT_ID_FIELD]: recordValue[SALESFORCE_OBJECT_ID_FIELD],
     }
 }
 
 const omitDefaultKeys = (recordValue: SalesforceRecord): SalesforceRecord =>
   ({
     ..._.omit(recordValue, defaultRecordKeysToOmit),
-    [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
+    [SALESFORCE_OBJECT_ID_FIELD]: recordValue[SALESFORCE_OBJECT_ID_FIELD],
   })
 
 export const transformRecordToValues = async (
@@ -155,7 +155,7 @@ const recordToInstance = async (
   const { name } = Types.getElemId(
     instanceSaltoName,
     true,
-    createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
+    createInstanceServiceIds(_.pick(record, SALESFORCE_OBJECT_ID_FIELD), type),
   )
   return new InstanceElement(
     name,
@@ -212,7 +212,7 @@ const typesRecordsToInstances = async (
       }
       return referencedName
     }
-    const saltoName = getSaltoName(typeName, record[CUSTOM_OBJECT_ID_FIELD])
+    const saltoName = getSaltoName(typeName, record[SALESFORCE_OBJECT_ID_FIELD])
     if (saltoName !== undefined) {
       return saltoName
     }
@@ -222,7 +222,7 @@ const typesRecordsToInstances = async (
       .filter(isDefined)
       .toArray()
     const fullName = saltoIdsValues.join(nameSeparator)
-    setSaltoName(typeName, record[CUSTOM_OBJECT_ID_FIELD], fullName)
+    setSaltoName(typeName, record[SALESFORCE_OBJECT_ID_FIELD], fullName)
     return fullName
   }
 

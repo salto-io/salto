@@ -16,7 +16,7 @@
 import { ChangeError, Field, ObjectType, toChange, BuiltinTypes } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import customFieldTypeValidator from '../../src/change_validators/custom_field_type'
-import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
+import { SALESFORCE_OBJECT_ID_FIELD } from '../../src/constants'
 import { createField, createCustomObjectType } from '../utils'
 
 describe('custom field type change validator', () => {
@@ -84,7 +84,7 @@ describe('custom field type change validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
     it('should have no error when trying to create custom object with system fields', async () => {
-      const field = new Field(customObj, CUSTOM_OBJECT_ID_FIELD, BuiltinTypes.SERVICE_ID)
+      const field = new Field(customObj, SALESFORCE_OBJECT_ID_FIELD, BuiltinTypes.SERVICE_ID)
       const changeErrors = await runChangeValidator(undefined, field)
       expect(changeErrors).toHaveLength(0)
     })

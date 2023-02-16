@@ -15,18 +15,20 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { isObjectType, Element } from '@salto-io/adapter-api'
-import { FilterResult, RemoteFilterCreator } from '../filter'
-import { ensureSafeFilterFetch } from './utils'
-import SalesforceClient from '../client/client'
-import { toolingFieldApiName } from '../tooling/utils'
+import { FilterResult, RemoteFilterCreator } from '../../filter'
+import { ensureSafeFilterFetch } from '../utils'
+import SalesforceClient from '../../client/client'
 import {
   isInstalledSubscriberPackage,
   isSubscriberPackage,
   isToolingObject,
   ToolingObject,
-} from '../tooling/types'
+} from '../../tooling/types'
+import { ToolingObjectInfo } from '../../tooling/constants'
+import { SalesforceRecord } from '../../client/types'
+import { createToolingInstance } from '../../tooling/utils'
 
-const { toArrayAsync } = collections.asynciterable
+const { awu, toArrayAsync } = collections.asynciterable
 
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch info about the installed packages'
 
@@ -34,19 +36,28 @@ const getSubscriberPackageIds = async (
   installedSubscriberPackageType: ToolingObject['InstalledSubscriberPackage'],
   client: SalesforceClient
 ): Promise<string[]> => {
-  const subscriberPackageIdField = installedSubscriberPackageType.fields.SubscriberPackageId
   const queryIterable = await client.queryToolingObject({
     toolingObject: installedSubscriberPackageType,
-    fields: [subscriberPackageIdField],
+    fields: [installedSubscriberPackageType.fields.SubscriberPackageId],
   })
-  return (await toArrayAsync(queryIterable)).flat()
-    .map(record => record[toolingFieldApiName(subscriberPackageIdField)])
+  const records = (await toArrayAsync(queryIterable)).flat()
+  return records
+    .map(record => record[ToolingObjectInfo.InstalledSubscriberPackage.Field.SubscriberPackageId])
+}
+
+const getSubscriberPackageRecord = async (
+  subscriberPackageType: ToolingObject['SubscriberPackage'],
+  client: SalesforceClient,
+  recordId: string,
+): Promise<SalesforceRecord> => {
+  const queryIterable = await client.queryToolingObject({ toolingObject: subscriberPackageType, recordId })
+  return (await toArrayAsync(queryIterable)).flat()[0]
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
-  name: 'subscriberPackageInstancesFilter',
+  name: 'fetchSubscriberPackageInstancesFilter',
   onFetch: ensureSafeFilterFetch({
-    filterName: 'describeSObjects',
+    filterName: 'tooling',
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<void | FilterResult> => {
@@ -58,8 +69,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       if (subscriberPackageType === undefined || installedSubscriberPackageType === undefined) {
         return
       }
-      const subscriberPackageIds = await getSubscriberPackageIds(installedSubscriberPackageType, client)
-      console.log(subscriberPackageIds)
+      await awu(await getSubscriberPackageIds(installedSubscriberPackageType, client))
+        .map(subscriberPackageId => getSubscriberPackageRecord(subscriberPackageType, client, subscriberPackageId))
+        .map(record => createToolingInstance(record, subscriberPackageType))
+        .forEach(instance => elements.push(instance))
     },
   }),
 })

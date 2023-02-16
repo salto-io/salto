@@ -13,13 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { values } from '@salto-io/lowerdash'
 import {
   TOOLING_PATH,
   ToolingObjectAnnotation,
 } from './constants'
 import { SupportedToolingObjectName, ToolingField, ToolingObjectType } from './types'
-import { API_NAME, SALESFORCE } from '../constants'
+import { API_NAME, ATTRIBUTES, RECORDS_PATH, SALESFORCE } from '../constants'
+import { SalesforceRecord } from '../client/types'
+import { DEFAULT_ID_FIELDS, ID_FIELDS_BY_TYPE } from './id_fields'
+
+const { isDefined } = values
+
+export const toolingObjectApiName = (toolingObject: ToolingObjectType): SupportedToolingObjectName => (
+  toolingObject.annotations[API_NAME]
+)
+
+export const toolingFieldApiName = (toolingField: ToolingField): string => (
+  toolingField.annotations[API_NAME]
+)
 
 export const createToolingObject = (
   objectName: SupportedToolingObjectName,
@@ -45,11 +60,19 @@ export const createToolingObject = (
   )
 )
 
-
-export const toolingObjectApiName = (toolingObject: ToolingObjectType): SupportedToolingObjectName => (
-  toolingObject.annotations[API_NAME]
-)
-
-export const toolingFieldApiName = (toolingField: ToolingField): string => (
-  toolingField.annotations[API_NAME]
-)
+export const createToolingInstance = async (
+  salesforceRecord: SalesforceRecord,
+  toolingObject: ToolingObjectType
+): Promise<InstanceElement> => {
+  const typeName = toolingObjectApiName(toolingObject)
+  const idFields = ID_FIELDS_BY_TYPE[typeName] ?? DEFAULT_ID_FIELDS
+  const instanceName = Object.values(_.pick(salesforceRecord, idFields))
+    .filter(isDefined)
+    .join('_')
+  return new InstanceElement(
+    naclCase(instanceName),
+    toolingObject,
+    _.omit(salesforceRecord, ATTRIBUTES),
+    [SALESFORCE, RECORDS_PATH, typeName, pathNaclCase(instanceName)],
+  )
+}

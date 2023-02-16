@@ -17,7 +17,7 @@ import { BuiltinTypes, Change, ChangeValidator, getChangeData, InstanceElement, 
 import mockAdapter from '../adapter'
 import changeValidator from '../../src/change_validators/unknown_users'
 import { createInstanceElement } from '../../src/transformers/transformer'
-import { CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
+import { CUSTOM_OBJECT, SALESFORCE_OBJECT_ID_FIELD } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
@@ -32,7 +32,7 @@ const mockedFilterUtils = jest.mocked(filterUtilsModule)
 
 const setupClientMock = (userNames: string[]): void => {
   const mockQueryResult = userNames.map((userName): SalesforceRecord => ({
-    [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
+    [SALESFORCE_OBJECT_ID_FIELD]: 'SomeId',
     Username: userName,
   }))
 

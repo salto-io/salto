@@ -22,7 +22,6 @@ export const TOOLING_MAX_QUERY_LIMIT = 200
 export const SupportedToolingObject = {
   InstalledSubscriberPackage: 'InstalledSubscriberPackage',
   SubscriberPackage: 'SubscriberPackage',
-  SubscriberPackageVersion: 'SubscriberPackageVersion',
 } as const
 
 export const ToolingObjectAnnotation = {

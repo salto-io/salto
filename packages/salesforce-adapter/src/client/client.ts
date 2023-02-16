@@ -43,7 +43,7 @@ import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
 import {
-  CUSTOM_OBJECT_ID_FIELD,
+  SALESFORCE_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
   SALESFORCE,
@@ -869,7 +869,7 @@ export default class SalesforceClient {
     const batch = this.conn.bulk.load(
       type,
       operation,
-      { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
+      { extIdField: SALESFORCE_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
       records
     )
     const { job } = batch

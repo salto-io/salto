@@ -13,22 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import { FilterResult, RemoteFilterCreator } from '../filter'
+import { FilterResult, RemoteFilterCreator } from '../../filter'
 import {
   ensureSafeFilterFetch,
-} from './utils'
+} from '../utils'
 import {
-  API_NAME,
-} from '../constants'
-import { getSObjectFieldElement } from '../transformers/transformer'
-import SalesforceClient from '../client/client'
-import { isToolingField, SupportedToolingObjectName, ToolingObjectType } from '../tooling/types'
-import { createToolingObject } from '../tooling/utils'
-import { SupportedToolingObject } from '../tooling/constants'
+  API_NAME, SALESFORCE_OBJECT_ID_FIELD,
+} from '../../constants'
+import { getSObjectFieldElement } from '../../transformers/transformer'
+import SalesforceClient from '../../client/client'
+import { isToolingField, SupportedToolingObjectName, ToolingObjectType } from '../../tooling/types'
+import { createToolingObject } from '../../tooling/utils'
+import { SupportedToolingObject } from '../../tooling/constants'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -65,16 +65,18 @@ const createToolingObjectTypeFromDescribe = async (
       sObjectField,
       { [API_NAME]: objectName },
       objCompoundFieldNames
-    )).filter(isToolingField)
-  toolingFields.forEach(field => _.omitBy(field.annotations, _.isNil))
+    ))
+    .map(field => Object.assign(field, { annotations: _.omitBy(field.annotations, _.isNil) }))
+    .filter(isToolingField)
   toolingType.fields = keyBy(toolingFields, field => field.name)
+  toolingType.fields[SALESFORCE_OBJECT_ID_FIELD].annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
   return toolingType
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'fetchToolingTypesFilter',
   onFetch: ensureSafeFilterFetch({
-    filterName: 'describeSObjects',
+    filterName: 'tooling',
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<void | FilterResult> => {

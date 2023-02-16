@@ -32,7 +32,7 @@
     "build-ts": "lerna run build-ts",
     "build-all": "lerna run build",
     "clean": "lerna run --parallel clean",
-    "test": "jest",
+    "test": "jest --coverage=false",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-version": "lerna version --no-git-tag-version --exact",
     "lerna-version-pr": "./build_utils/create_version_pr.sh",

@@ -40,6 +40,7 @@ const testsToRun = [
     'salesforce-adapter',
     'stripe-adapter',
     'test-utils',
+    'vscode',
     'workato-adapter',
     'workspace',
     'zendesk-adapter',

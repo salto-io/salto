@@ -444,11 +444,11 @@ const fetchAndProcessMergeErrors = async (
       Object.entries(accountsToAdapters).map(([accountName, adapter]) =>
         ([accountName, withChangeDetection ? adapter.fetchWithChangeDetection : adapter.fetch]))
     )
-    const adapterWithoutFetchFunction = Object.entries(accountNameToFetchFunction)
+    const adaptersWithoutFetchFunction = Object.entries(accountNameToFetchFunction)
       .filter(([, fetchFunction]) => !isDefined(fetchFunction))
       .map(([accountName]) => accountToServiceNameMap[accountName])
-    if (adapterWithoutFetchFunction.length > 0) {
-      throw new Error(`${adapterWithoutFetchFunction.join(', ')} adapters do not support quick fetch operation`)
+    if (adaptersWithoutFetchFunction.length > 0) {
+      throw new Error(`${adaptersWithoutFetchFunction.join(', ')} adapters do not support quick fetch operation`)
     }
 
     const fetchResults = await Promise.all(

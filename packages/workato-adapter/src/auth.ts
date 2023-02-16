@@ -28,7 +28,7 @@ export const usernameTokenCredentialsType = createMatchingObjectType<UsernameTok
     username: {
       refType: BuiltinTypes.STRING,
       annotations: {
-        message: 'message (optional) - keep empty if using token-based authentication',
+        message: 'username (optional) - keep empty if using token-based authentication',
       },
     },
     token: {

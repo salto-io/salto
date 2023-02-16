@@ -134,7 +134,7 @@ jobs:
       - store_test_results:
           path: reports
 
-      # - coveralls/upload
+      - coveralls/upload
 
   publish_on_version_change:
     docker:

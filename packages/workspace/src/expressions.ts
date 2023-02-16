@@ -265,7 +265,7 @@ const getClonedElements = (elements: Element[]): Element[] => {
     const fieldFromClonedParent = clonedTypesMap.get(field.parent.elemID.getFullName())?.fields[field.name]
       ?? clonedMissingParentsMap.get(field.parent.elemID.getFullName())?.fields[field.name]
     if (fieldFromClonedParent === undefined) {
-      log.error(
+      log.warn(
         'field %s does not exists on its parent type %s (fields: %o)',
         field.name,
         field.parent.elemID.getFullName(),

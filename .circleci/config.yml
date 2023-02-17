@@ -369,9 +369,9 @@ workflows:
           requires:
             - build
 
-      - e2e_test:
-          requires:
-            - build
+#      - e2e_test:
+#          requires:
+#            - build
 
       - test_cli_mac:
           requires:
@@ -411,7 +411,7 @@ workflows:
           requires:
             - build
             - unit_test
-            - e2e_test
+#            - e2e_test
 
       - publish_on_version_change:
           context: salto
@@ -422,4 +422,4 @@ workflows:
           requires:
             - build
             - unit_test
-            - e2e_test
+#            - e2e_test

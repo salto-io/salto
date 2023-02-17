@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2022 Salto Labs Ltd.
+*                      Copyright 2023 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { Element, isObjectType, isInstanceElement } from '@salto-io/adapter-api'
-import { config as configUtils } from '@salto-io/adapter-components'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import _ from 'lodash'
 import { Credentials } from '../src/auth'
@@ -33,8 +32,7 @@ describe('Okta E2E', () => {
 
   beforeAll(async () => {
     credLease = await credsLease()
-    const config = _.cloneDeep(DEFAULT_CONFIG);
-    (config.apiDefinitions.types.Application.transformation as configUtils.TransformationConfig).idFields = ['name', 'status']
+    const config = _.cloneDeep(DEFAULT_CONFIG)
     const adapterAttr = realAdapter({ credentials: credLease.value }, config)
     adapter = adapterAttr.adapter
     const { elements } = await adapter.fetch({

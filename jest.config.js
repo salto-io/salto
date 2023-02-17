@@ -18,6 +18,34 @@ const _ = require('lodash')
 const fs = require('fs')
 const path = require('path')
 
+const packagesToTest = [
+    'adapter-api',
+    'adapter-components',
+    'adapter-utils',
+    'aws-utils',
+    'cli',
+    'core',
+    'dag',
+    'dummy-adapter',
+    'e2e-credentials-store',
+    'file',
+    'jira-adapter',
+    'lang-server',
+    'logging',
+    'lowerdash',
+    'netsuite-adapter',
+    'okta-adapter',
+    'persistent-pool',
+    'salesforce-adapter',
+    'stripe-adapter',
+    'test-utils',
+    'vscode',
+    'workato-adapter',
+    'workspace',
+    'zendesk-adapter',
+    'zuora-billing-adapter',
+]
+
 const packagesDir = `${__dirname}/packages`
 const packagesWithoutTests = ['vscode']
 const packageConfigs = (() => {
@@ -49,11 +77,10 @@ module.exports = Object.assign(
   {},
   require('./jest.base.config.js'),
   {
-    projects: ['packages/*'],
+    projects: packagesToTest.map(pkg => `packages/${pkg}`),
     coverageDirectory: '<rootDir>/coverage/',
     collectCoverageFrom,
     cacheDirectory: '.jest_cache',
     coverageThreshold,
   }
 )
-

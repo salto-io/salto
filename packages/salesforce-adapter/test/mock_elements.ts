@@ -29,7 +29,7 @@ import {
   CPQ_QUOTE,
   DUPLICATE_RULE_METADATA_TYPE,
   ACTIVATE_RSS,
-  INSTALLED_PACKAGE_METADATA,
+  INSTALLED_PACKAGE_METADATA, CONNECTED_APP_OAUTH_CONFIG_METADATA_TYPE, CONNECTED_APP_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -397,6 +397,28 @@ export const mockTypes = {
       },
     }
   ),
+  [CONNECTED_APP_METADATA_TYPE]: createMetadataObjectType({
+    fields: {
+      oauthConfig: {
+        refType: createMetadataObjectType({
+          fields: {
+            consumerKey: {
+              refType: BuiltinTypes.STRING,
+            },
+            consumerSecret: {
+              refType: BuiltinTypes.STRING,
+            },
+          },
+          annotations: {
+            [METADATA_TYPE]: CONNECTED_APP_OAUTH_CONFIG_METADATA_TYPE,
+          },
+        }),
+      },
+    },
+    annotations: {
+      [METADATA_TYPE]: CONNECTED_APP_METADATA_TYPE,
+    },
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

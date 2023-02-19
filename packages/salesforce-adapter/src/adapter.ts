@@ -76,7 +76,7 @@ import currencyIsoCodeFilter from './filters/currency_iso_code'
 import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
-import hideConnectedAppOauthConfigSecretsFilter from './filters/hide_connected_app_oauth_config_secrets'
+import removeConnectedAppOauthConfigConsumerKeyFilter from './filters/remove_connected_app_oauth_config_consumer_key'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import { FetchElements, SalesforceConfig } from './types'
@@ -98,7 +98,7 @@ const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
   { creator: addDefaultActivateRSSFilter },
-  { creator: hideConnectedAppOauthConfigSecretsFilter },
+  { creator: removeConnectedAppOauthConfigConsumerKeyFilter },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },

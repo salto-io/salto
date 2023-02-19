@@ -14,12 +14,15 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { elementSource } from '@salto-io/workspace'
 import { ZENDESK, ARTICLE_TYPE_NAME } from '../../src/constants'
-import { missingUsersValidator } from '../../src/change_validators/missing_users'
+import { usersValidator } from '../../src/change_validators'
 import ZendeskClient from '../../src/client/client'
 import { ZedneskDeployConfig } from '../../src/config'
 
-describe('missingUsersValidator', () => {
+const { createInMemoryElementSource } = elementSource
+
+describe('usersValidator', () => {
   let client: ZendeskClient
   let mockGet: jest.SpyInstance
   let deployConfig: ZedneskDeployConfig
@@ -55,6 +58,8 @@ describe('missingUsersValidator', () => {
     },
   )
 
+  const testsElementSource = createInMemoryElementSource([])
+
   beforeAll(async () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -79,8 +84,8 @@ describe('missingUsersValidator', () => {
 
   it('should return errors if users are missing and there is no deploy config', async () => {
     const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
-    const changeValidator = missingUsersValidator(client)
-    const errors = await changeValidator(changes)
+    const changeValidator = usersValidator(client)
+    const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(2)
     expect(errors).toEqual([
       {
@@ -100,8 +105,8 @@ describe('missingUsersValidator', () => {
   it('should return warning in case of overriding missing users with user from deploy config', async () => {
     const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
     deployConfig = { defaultMissingUserFallback: '4@salto.io' }
-    const changeValidator = missingUsersValidator(client, deployConfig)
-    const errors = await changeValidator(changes)
+    const changeValidator = usersValidator(client, deployConfig)
+    const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(2)
     expect(errors).toEqual([
       {
@@ -121,8 +126,8 @@ describe('missingUsersValidator', () => {
   it('should return error in case of user provided in deploy config does not exist', async () => {
     const changes = [toChange({ after: articleInstance }), toChange({ after: macroInstance })]
     deployConfig = { defaultMissingUserFallback: '9@salto.io' }
-    const changeValidator = missingUsersValidator(client, deployConfig)
-    const errors = await changeValidator(changes)
+    const changeValidator = usersValidator(client, deployConfig)
+    const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(2)
     expect(errors).toEqual([
       {
@@ -144,8 +149,8 @@ describe('missingUsersValidator', () => {
     deployConfig = { defaultMissingUserFallback: '##DEPLOYER##' }
     jest.clearAllMocks()
     mockGet.mockRejectedValue({ status: 400, data: {} })
-    const changeValidator = missingUsersValidator(client, deployConfig)
-    const errors = await changeValidator(changes)
+    const changeValidator = usersValidator(client, deployConfig)
+    const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(2)
     expect(errors).toEqual([
       {
@@ -169,8 +174,8 @@ describe('missingUsersValidator', () => {
       { author_id: '1@salto.io', draft: false },
     )
     const changes = [toChange({ after: articleWithValidUser })]
-    const changeValidator = missingUsersValidator(client, deployConfig)
-    const errors = await changeValidator(changes)
+    const changeValidator = usersValidator(client, deployConfig)
+    const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(0)
   })
   it('should not return an error if user values are valid', async () => {
@@ -212,8 +217,8 @@ describe('missingUsersValidator', () => {
       }
     )
     const changes = [toChange({ after: macroWithValidUserFields }), toChange({ after: triggerInstance })]
-    const changeValidator = missingUsersValidator(client, deployConfig)
-    const errors = await changeValidator(changes)
+    const changeValidator = usersValidator(client, deployConfig)
+    const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(0)
   })
 })

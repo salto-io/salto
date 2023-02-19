@@ -80,7 +80,7 @@ describe('screenValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Fields cannot be used more than once in the same screen instance',
+        message: 'Can’t deploy screen which uses fields more than once',
         detailedMessage: 'This screen uses the following field more than once: 1. Make sure each field is used only once, and try again.',
       },
     ])

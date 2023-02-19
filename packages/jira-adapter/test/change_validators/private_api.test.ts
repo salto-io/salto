@@ -39,7 +39,7 @@ describe('privateApiValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Deploying Status is not supported when private API usage is disabled',
+        message: 'Deploying this element requires Jira Private API',
         detailedMessage: 'To deploy this element, private Jira API usage must be enabled. Enable it by setting the jira.client.usePrivateAPI flag to “true” in your Jira environment configuration.',
       },
     ])

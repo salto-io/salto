@@ -145,7 +145,7 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
     }
 
     const { timeZone, timeFormat, dateFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
-
+    const now = moment().tz(timeZone)
     savedSearchesInstances.forEach(search => {
       if (isDefined(savedSearchesMap[search.value.scriptid])) {
         const { name, date } = savedSearchesMap[search.value.scriptid]
@@ -155,6 +155,10 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
           )
         }
         if (isDefined(date) && isDefined(dateFormat)) {
+          if (now.isBefore(moment.tz(date, timeZone))) {
+            // Check if the date is in the future.
+            return
+          }
           const annotationDate = changeDateFormat(date, { dateFormat, timeZone, timeFormat })
           search.annotate(
             { [CORE_ANNOTATIONS.CHANGED_AT]: annotationDate }

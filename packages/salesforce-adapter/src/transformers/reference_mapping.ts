@@ -155,6 +155,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Flow' },
   },
   {
+    src: { field: 'flowDefinition', parentTypes: ['QuickAction'] },
+    target: { type: 'Flow' },
+  },
+  {
     src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
     target: { type: 'Letterhead' },
   },

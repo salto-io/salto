@@ -50,10 +50,12 @@ const extractStandaloneFields = async (
   {
     transformationConfigByType,
     transformationDefaultConfig,
+    nestedPath,
     getElemIdFunc,
   }: {
     transformationConfigByType: Record<string, TransformationConfig>
     transformationDefaultConfig: TransformationDefaultConfig
+    nestedPath: string[]
     getElemIdFunc?: ElemIdGetter
   },
 ): Promise<InstanceElement[]> => {
@@ -62,10 +64,11 @@ const extractStandaloneFields = async (
   }
   const additionalInstances: InstanceElement[] = []
 
-  const replaceWithReference = async ({ values, parent, objType }: {
+  const replaceWithReference = async ({ values, parent, objType, nestedPath2 }: {
     values: Values[]
     parent: InstanceElement
     objType: ObjectType
+    nestedPath2?: string[]
   }): Promise<ReferenceExpression[]> => {
     // eslint-disable-next-line no-use-before-define
     const refInstances = await generateInstancesForType({
@@ -76,6 +79,7 @@ const extractStandaloneFields = async (
       transformationConfigByType,
       transformationDefaultConfig,
       normalized: true,
+      nestedPath: nestedPath2,
       getElemIdFunc,
     })
     additionalInstances.push(...refInstances)
@@ -112,12 +116,14 @@ const extractStandaloneFields = async (
         values: value,
         parent: inst,
         objType: refType,
+        nestedPath2: [...nestedPath, field.name],
       })
     }
     return (await replaceWithReference({
       values: [value],
       parent: inst,
       objType: refType,
+      nestedPath2: [...nestedPath, field.name],
     }))[0]
   }
 
@@ -203,6 +209,7 @@ const generateInstancesForType = ({
   transformationConfigByType,
   transformationDefaultConfig,
   normalized,
+  nestedPath,
   getElemIdFunc,
 }: {
   entries: Values[]
@@ -212,6 +219,7 @@ const generateInstancesForType = ({
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   normalized?: boolean
+  nestedPath?: string[]
   getElemIdFunc?: ElemIdGetter
 }): Promise<InstanceElement[]> => {
   const standaloneFields = transformationConfigByType[objType.elemID.name]?.standaloneFields
@@ -224,6 +232,7 @@ const generateInstancesForType = ({
       transformationConfigByType,
       transformationDefaultConfig,
       normalized,
+      nestedPath,
       defaultName: `unnamed_${index}`, // TODO improve
       getElemIdFunc,
     }))
@@ -233,6 +242,7 @@ const generateInstancesForType = ({
         : extractStandaloneFields(inst, {
           transformationConfigByType,
           transformationDefaultConfig,
+          nestedPath: [...(nestedPath ?? [objType.elemID.name]), inst.elemID.name],
           getElemIdFunc,
         })
     )).toArray()

@@ -20,11 +20,13 @@ import {
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
   RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions } from '../config'
 
 const log = logger(module)
+const { isDefined } = lowerDashValues
 
 const ID_SEPARATOR = '__'
 
@@ -35,6 +37,7 @@ export type InstanceCreationParams = {
   transformationDefaultConfig: TransformationDefaultConfig
   defaultName: string
   nestName?: boolean
+  nestedPath?: string[]
   parent?: InstanceElement
   normalized?: boolean
   getElemIdFunc?: ElemIdGetter
@@ -76,6 +79,7 @@ export const getInstanceFilePath = ({
   isSettingType,
   nameMapping,
   adapterName,
+  nestedTypes,
 }: {
   fileNameFields: string[] | undefined
   entry: Values
@@ -84,6 +88,7 @@ export const getInstanceFilePath = ({
   isSettingType: boolean
   nameMapping?: NameMappingOptions
   adapterName: string
+  nestedTypes?: string[]
 }): string[] => {
   const fileNameParts = (fileNameFields !== undefined
     ? fileNameFields.map(field => _.get(entry, field))
@@ -92,7 +97,7 @@ export const getInstanceFilePath = ({
     ? fileNameParts.join('_')
     : undefined))
   const naclCaseFileName = fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)
-  return isSettingType
+  return (isSettingType
     ? [
       adapterName,
       RECORDS_PATH,
@@ -102,10 +107,10 @@ export const getInstanceFilePath = ({
     : [
       adapterName,
       RECORDS_PATH,
-      pathNaclCase(typeName),
+      nestedTypes ? nestedTypes.map(pathNaclCase) : pathNaclCase(typeName),
       nameMapping
         ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName,
-    ]
+    ]).flat().filter(isDefined)
 }
 
 export const generateInstanceNameFromConfig = (
@@ -192,6 +197,7 @@ export const toBasicInstance = async ({
   transformationConfigByType,
   transformationDefaultConfig,
   nestName,
+  nestedPath,
   parent,
   defaultName,
   getElemIdFunc,
@@ -239,7 +245,6 @@ export const toBasicInstance = async ({
     typeElemId: type.elemID,
     nameMapping,
   })
-
   const filePath = getInstanceFilePath({
     fileNameFields,
     entry,
@@ -248,7 +253,12 @@ export const toBasicInstance = async ({
     isSettingType: type.isSettings,
     nameMapping,
     adapterName,
+    nestedTypes: nestedPath,
   })
+  if (transformationConfigByType[type.elemID.name]?.standaloneFields !== undefined) {
+    // If standaloneFields is defined, we need to make the instance name into a folder with itself.
+    filePath.push(filePath[filePath.length - 1])
+  }
 
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : naclName,

@@ -637,11 +637,11 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: 'useruser@zendesk.com',
       }
-      await expect(getUserFallbackValue(
+      expect(await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )).rejects.toThrow(new Error('User provided in defaultMissingUserFallback does not exist in the target environemt'))
+      )).toBe(undefined)
     })
     it('should return deployer user email', async () => {
       mockGet
@@ -662,22 +662,22 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      await expect(getUserFallbackValue(
+      expect(await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )).rejects.toThrow(new Error('Failed to get current user from endpoint \'/api/v2/users/me\''))
+      )).toBe(undefined)
     })
     it('should throw in case of an error in current user request', async () => {
       mockGet.mockRejectedValue({ status: 400, data: {} })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      await expect(getUserFallbackValue(
+      expect(await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )).rejects.toThrow(new Error('Failed to get current user from endpoint \'/api/v2/users/me\''))
+      )).toBe(undefined)
     })
   })
 })

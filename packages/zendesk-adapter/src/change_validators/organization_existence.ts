@@ -42,7 +42,7 @@ const { isDefined } = lowerDashValues
 export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig: ZendeskFetchConfig) =>
     ChangeValidator = (client, fetchConfig) => async changes => {
       // If the organizations were resolved, they are stored as names instead of ids
-      // If the user change this between a fetch and a deploy, organization_existence.ts will fail
+      // If the user change this config between a fetch and a deploy, this validator will fail
       // This is a known issue and is ok because handling it is not trivial and the use case shouldn't be common
       const orgIdsResolved = fetchConfig.resolveOrganizationIDs === true
 

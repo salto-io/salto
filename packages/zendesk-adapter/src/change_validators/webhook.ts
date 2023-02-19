@@ -28,7 +28,7 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
   deployActions: {
     preAction: {
       title: 'Webhook\'s authentication credentails will not be set',
-      description: `Webhook ${instanceElemId.name} will be deployed with dummy credentials. Salto will guide you on modifying it post deploy`,
+      description: `Webhook ${instanceElemId.name} will be deployed with placeholder credentials. Salto will guide you on modifying it post deploy`,
       subActions: [],
     },
     postAction: {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { serviceUrlFilterCreator } from './service_url'
+export { serviceUrlFilterCreator, addUrlToInstance } from './service_url'
 export { referencedInstanceNamesFilterCreator } from './referenced_instance_names'
 export { queryFilterCreator } from './query'
 export { hideTypesFilterCreator } from './hide_types'

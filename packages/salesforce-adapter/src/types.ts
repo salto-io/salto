@@ -100,6 +100,8 @@ export type ChangeValidatorName = (
   | 'animationRuleRecordType'
   | 'currencyIsoCodes'
   | 'dataChange'
+  | 'duplicateRulesSortOrder'
+  | 'lastLayoutRemoval'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -591,6 +593,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     unknownUser: { refType: BuiltinTypes.BOOLEAN },
     animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
     currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
+    duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
+    lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

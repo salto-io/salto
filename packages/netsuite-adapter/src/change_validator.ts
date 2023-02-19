@@ -123,7 +123,7 @@ const getChangeValidator: ({
   fetchByQuery: FetchByQueryFunc
   deployReferencedElements?: boolean
   additionalDependencies: AdditionalDependencies
-  filtersRunner: Required<Filter>
+  filtersRunner: (groupID: string) => Required<Filter>
   elementsSourceIndex: LazyElementsSourceIndexes
   }) => ChangeValidator = (
     {
@@ -166,7 +166,6 @@ const getChangeValidator: ({
         client,
         additionalDependencies,
         filtersRunner,
-        elementsSourceIndex,
         deployReferencedElements,
       ) : []
 

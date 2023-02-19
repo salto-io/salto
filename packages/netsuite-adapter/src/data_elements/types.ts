@@ -286,4 +286,4 @@ export const getTypeIdentifier = (type: ObjectType): string => (
     : TYPE_TO_IDENTIFIER[type.elemID.name]
 )
 
-export const SUPPORTED_TYPES = Object.keys(TYPES_TO_INTERNAL_ID)
+export const SUPPORTED_TYPES = Object.keys(TYPE_TO_IDENTIFIER)

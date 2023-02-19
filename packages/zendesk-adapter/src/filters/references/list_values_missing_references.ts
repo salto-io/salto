@@ -82,6 +82,7 @@ const filter: FilterCreator = ({ config }) => ({
           if (fieldRefTypes.includes(obj.field)
             && !isReferenceExpression(valueToRedefine)
             && !VALUES_TO_SKIP_BY_TYPE[valueType]?.includes(valueToRedefine)
+            && _.isArray(obj.value) // INCIDENT-3157, Handle cases when for some reason the value is a string
             && (isNumberStr(valueToRedefine)
               || NON_NUMERIC_MISSING_VALUES_TYPES.includes(valueType)
             )) {

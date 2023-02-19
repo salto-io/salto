@@ -26,6 +26,7 @@ import {
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { AdditionalDependencies, AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
+import { netsuiteSupportedTypes } from './types'
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
@@ -176,6 +177,7 @@ const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
       refType: new MapType(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {},
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: netsuiteSupportedTypes, enforce_value: false }),
       },
     },
     filePaths: {
@@ -188,6 +190,7 @@ const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
       refType: new MapType(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {},
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customrecord[0-9a-z_]+', enforce_value: false }),
       },
     },
   },

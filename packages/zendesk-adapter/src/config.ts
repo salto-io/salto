@@ -79,6 +79,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
   guide?: Guide
+  resolveOrganizationIDs?: boolean
 }
 export type ZedneskDeployConfig = configUtils.UserDeployConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
@@ -398,6 +399,18 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  sla_policy__filter__all: {
+    transformation: {
+      // value can be number or string
+      fieldTypeOverrides: [{ fieldName: 'value', fieldType: 'unknown' }],
+    },
+  },
+  sla_policy__filter__any: {
+    transformation: {
+      // value can be number or string
+      fieldTypeOverrides: [{ fieldName: 'value', fieldType: 'unknown' }],
+    },
+  },
   sla_policy_order: {
     deployRequests: {
       modify: {
@@ -643,6 +656,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   support_address: {
     transformation: {
       sourceTypeName: 'support_addresses__recipient_addresses',
+      idFields: ['name', '&email'],
       fieldTypeOverrides: [
         {
           fieldName: 'cname_status',
@@ -2321,7 +2335,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [
         { fieldName: 'id', fieldType: 'number' },
-        { fieldName: 'added_user_ids', fieldType: 'unknown' },
+        // list items can be user IDs (number) or user email (string)
+        { fieldName: 'added_user_ids', fieldType: 'List<unknown>' },
+        // list items can be organization IDs (number) or organization names (email)
+        { fieldName: 'organization_ids', fieldType: 'List<unknown>' },
         // everyone user type is added as a type we created for user_segment
         {
           fieldName: 'user_type',
@@ -2508,6 +2525,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     ],
     hideTypes: true,
     enableMissingReferences: true,
+    resolveOrganizationIDs: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2583,6 +2601,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
+          resolveOrganizationIDs: { refType: BuiltinTypes.BOOLEAN },
         },
       ),
     },
@@ -2600,6 +2619,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.guide`,
+      `${FETCH_CONFIG}.resolveOrganizationIDs`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

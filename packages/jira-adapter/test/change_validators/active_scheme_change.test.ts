@@ -17,10 +17,14 @@ import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression, Cha
 import { MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockClient } from '../utils'
-import { activeWorkflowSchemeChangeValidator } from '../../src/change_validators/active_workflow_scheme_change'
+import { activeSchemeChangeValidator } from '../../src/change_validators/active_scheme_change'
 import { JIRA } from '../../src/constants'
 
-describe('active workflow scheme change', () => {
+describe('active scheme change', () => {
+  const workflowSchemeReference1 = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow1'))
+  const workflowSchemeReference2 = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
+  const prioritySchemeReference1 = new ReferenceExpression(new ElemID(JIRA, 'PriorityScheme', 'instance', 'priority1'))
+  const prioritySchemeReference2 = new ReferenceExpression(new ElemID(JIRA, 'PriorityScheme', 'instance', 'priority2'))
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let projectType: ObjectType
   let projectInstance: InstanceElement
@@ -39,7 +43,7 @@ describe('active workflow scheme change', () => {
       projectType,
       {
         name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow1')),
+        workflowScheme: workflowSchemeReference1,
       }
     )
     modifiedInstance = new InstanceElement(
@@ -47,7 +51,7 @@ describe('active workflow scheme change', () => {
       projectType,
       {
         name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2')),
+        workflowScheme: workflowSchemeReference2,
       }
     )
     mockConnection.get.mockImplementation(async url => {
@@ -61,7 +65,7 @@ describe('active workflow scheme change', () => {
       }
       throw new Error(`Unexpected url ${url}`)
     })
-    validator = activeWorkflowSchemeChangeValidator(client)
+    validator = activeSchemeChangeValidator(client)
   })
   it('should not return error for addition/removal changes', async () => {
     const deletionErrors = await validator([toChange({ before: projectInstance })])
@@ -81,5 +85,15 @@ describe('active workflow scheme change', () => {
   it('should return an error when there are issues', async () => {
     const errors = await validator([toChange({ before: projectInstance, after: modifiedInstance })])
     expect(errors).toHaveLength(1)
+  })
+  it('should return an error for both fields if both changed', async () => {
+    projectInstance.value.priorityScheme = prioritySchemeReference1
+    modifiedInstance.value.priorityScheme = prioritySchemeReference2
+    const errors = await validator([toChange({ before: projectInstance, after: modifiedInstance })])
+    expect(errors).toHaveLength(2)
+    expect(errors[0].message).toEqual('Can’t replace non-empty project priority scheme')
+    expect(errors[0].detailedMessage).toEqual('Salto cannot change priority scheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.')
+    expect(errors[1].message).toEqual('Can’t replace non-empty project workflow scheme')
+    expect(errors[1].detailedMessage).toEqual('Salto cannot change workflow scheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.')
   })
 })

@@ -42,8 +42,8 @@ describe('workflowValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Cannot remove or modify a read-only workflow',
-        detailedMessage: `Cannot remove or modify the read-only workflow ${instance.elemID.getFullName()}`,
+        message: 'Cannot remove or modify system workflows',
+        detailedMessage: 'Cannot remove or modify this system workflow, as it is a read-only one.',
       },
     ])
   })

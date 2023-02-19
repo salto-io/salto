@@ -15,19 +15,40 @@
 */
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { getFilterParams } from '../../utils'
-import workflowPostFunctionsFilter from '../../../src/filters/script_runner/workflow_scripts'
+import workflowPostFunctionsFilter, { isCompressedObject } from '../../../src/filters/script_runner/workflow_scripts'
 import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { getDefaultConfig } from '../../../src/config/config'
+
+// done as the zip contains an OS byte that can differ between environments
+const compareScripts = (script1: string, script2: string): void => {
+  const compressedObject1 = JSON.parse(Buffer.from(script1, 'base64').toString('utf8'))
+  expect(isCompressedObject(compressedObject1)).toBeTruthy()
+  const zipBuffer1 = Buffer.from(compressedObject1.compressed)
+  const compressedObject2 = JSON.parse(Buffer.from(script2, 'base64').toString('utf8'))
+  expect(isCompressedObject(compressedObject2)).toBeTruthy()
+  const zipBuffer2 = Buffer.from(compressedObject1.compressed)
+  // 9 is the index of the operating system byte in the gzip buffer
+  zipBuffer1[9] = 0
+  zipBuffer2[9] = 0
+  expect(zipBuffer1).toEqual(zipBuffer2)
+}
 
 describe('Workflow post functions', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
 
   const workflowType = new ObjectType({
     elemID: new ElemID('jira', WORKFLOW_TYPE_NAME),
   })
   beforeEach(() => {
-    filter = workflowPostFunctionsFilter(getFilterParams()) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.supportScriptRunner = true
+    filter = workflowPostFunctionsFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filterOff = workflowPostFunctionsFilter(getFilterParams({ config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   })
   describe('post functions', () => {
     const goodBase64 = 'eyJjb21wcmVzc2VkIjpbMzEsMTM5LDgsMCwwLDAsMCwwLDAsMTksMTcxLDg2LDc0LDg0LDE3OCw1MCwxNzIsNSwwLDE3NSwxNzIsMjcsODYsNywwLDAsMF19'
@@ -81,23 +102,35 @@ describe('Workflow post functions', () => {
         await filter.onFetch([instance])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toBeUndefined()
       })
+      it('should not decode if script runner not supported', async () => {
+        await filterOff.onFetch([instance])
+        compareScripts(instance.value.transitions[0].rules.postFunctions[0].configuration.value, goodBase64)
+      })
     })
     describe('pre deploy', () => {
       it('should encode properly', async () => {
         instance.value.transitions[0].rules.postFunctions[0].configuration.value = { a: 1 }
         await filter.preDeploy([toChange({ after: instance })])
-        expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toEqual(goodBase64)
+        compareScripts(instance.value.transitions[0].rules.postFunctions[0].configuration.value, goodBase64)
       })
-      it('should not fail if undefined', async () => {
+      it('should fail if undefined', async () => {
         instance.value.transitions[0].rules.postFunctions[0].configuration.value = undefined
         await filter.preDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toBeUndefined()
+      })
+      it('should not encode if script runner not supported', async () => {
+        await filterOff.preDeploy([toChange({ after: instance })])
+        compareScripts(instance.value.transitions[0].rules.postFunctions[0].configuration.value, goodBase64)
       })
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toEqual({ a: 1 })
+      })
+      it('should not decode if script runner not supported', async () => {
+        await filterOff.onDeploy([toChange({ after: instance })])
+        compareScripts(instance.value.transitions[0].rules.postFunctions[0].configuration.value, goodBase64)
       })
     })
   })

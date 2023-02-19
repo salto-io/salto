@@ -14,41 +14,18 @@
 * limitations under the License.
 */
 
-import { gzip, gunzip } from 'zlib'
+import { gzip, ungzip } from 'pako'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createSchemeGuard, safeJsonStringify, WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import Joi from 'joi'
-import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, InstanceElement, Value } from '@salto-io/adapter-api'
+import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Value } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 
-const { awu } = collections.asynciterable
-const { makeArray } = collections.array
 const log = logger(module)
-const scriptRunnerPostFunctionType = 'com.onresolve.jira.groovy.groovyrunner__script-postfunction'
-const scriptRunnerValidatorType = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators'
-const scriptRunnerConditionType = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions'
-
-const unzip = async (buffer: Buffer): Promise<Buffer> => new Promise((resolve, reject) => {
-  gunzip(buffer, (err, result) => {
-    if (err) {
-      reject(err)
-    } else {
-      resolve(result)
-    }
-  })
-})
-
-const zip = async (buffer: Buffer): Promise<Buffer> => new Promise((resolve, reject) => {
-  gzip(buffer, (err, result) => {
-    if (err) {
-      reject(err)
-    } else {
-      resolve(result)
-    }
-  })
-})
+const SCRIPT_RUNNER_POST_FUNCTION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-postfunction'
+const SCRIPT_RUNNER_VALIDATOR_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators'
+const SCRIPT_RUNNER_CONDITION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions'
 
 type CompressedObject = {
   compressed: number[]
@@ -58,15 +35,9 @@ const COMPRESSED_OBJECT_SCHEME = Joi.object({
   compressed: Joi.array().items(Joi.number()).required(),
 })
 
-const isCompressedObject = createSchemeGuard<CompressedObject>(COMPRESSED_OBJECT_SCHEME, 'ScriptRunner object not as expected')
+export const isCompressedObject = createSchemeGuard<CompressedObject>(COMPRESSED_OBJECT_SCHEME, 'ScriptRunner object not as expected')
 
-// the script runner decode path
-// stringBase64=>serializedString=>compressedObject=>dataString=>dataObject
-// it starts with a base64 string. Decoding it turns into a json serialized string
-// the json is in format of {"compressed: Array<number>"}. The array is a gzip compressed buffer
-// decompressing the buffer turns it into a json string of the data object
-
-const decodeScriptRunner = async (scriptRunnerString: string | undefined): Promise<Value> => {
+const decodeScriptRunner = (scriptRunnerString: string | undefined): Value => {
   if (scriptRunnerString === undefined) {
     return undefined
   }
@@ -76,31 +47,34 @@ const decodeScriptRunner = async (scriptRunnerString: string | undefined): Promi
       return scriptRunnerString
     }
     const zipBuffer = Buffer.from(compressedObject.compressed)
-    const dataString = (await unzip(zipBuffer)).toString()
+    const dataString: string = ungzip(zipBuffer, { to: 'string' })
     return JSON.parse(dataString)
   } catch (e) {
-    log.warn('Could not decode script runner')
+    log.error('Could not decode script runner')
     if (e instanceof Error) {
-      log.warn('Error due to  %s', e.message)
+      log.error('Error due to  %s', e.message)
     }
     return scriptRunnerString
   }
 }
 
-const encodeScriptRunner = async (object: Value): Promise<Value> => {
+const encodeScriptRunner = (object: Value): Value => {
+  if (object === undefined) {
+    return undefined
+  }
   try {
     const dataString = safeJsonStringify(object)
-    const zipBuffer = await zip(Buffer.from(dataString))
+    const zipBuffer = Buffer.from(gzip(dataString))
     const compressedObject = {
       compressed: zipBuffer.toJSON().data,
     }
     return Buffer.from(safeJsonStringify(compressedObject)).toString('base64')
   } catch (e) {
-    log.warn('Could not encode script runner object')
+    log.error('Could not encode script runner object')
     if (e instanceof Error) {
-      log.warn('error due to  %s', e.message)
+      log.error('error due to  %s', e.message)
     }
-    return object
+    throw e
   }
 }
 
@@ -108,9 +82,9 @@ const fallBackJsonParse = (scriptRunnerString: string): Value => {
   try {
     return JSON.parse(scriptRunnerString)
   } catch (e) {
-    log.warn('Could not parse script runner object')
+    log.error('Could not parse script runner object')
     if (e instanceof Error) {
-      log.warn('error due to  %s', e.message)
+      log.error('error due to  %s', e.message)
     }
     return scriptRunnerString
   }
@@ -123,58 +97,72 @@ const fallBackJsonStringify = (object: Value): Value => {
   return safeJsonStringify(object)
 }
 
-const applyOnScriptRunnersFields = async ({ instance, func, field, typeName } : {
-  instance: InstanceElement
-  func: (current: Value) => Promise<Value>
-  field: string
-  typeName: string
-}
-): Promise<void> => {
-  await awu(makeArray(instance.value.transitions))
-    .forEach(async transition => {
-      await awu(makeArray(transition.rules?.[field]))
-        .filter(scriptRunnerField => scriptRunnerField.type === typeName)
-        .filter(scriptRunnerField => scriptRunnerField.configuration !== undefined)
-        .forEach(async scriptRunnerField => {
-          scriptRunnerField.configuration.value = await func(scriptRunnerField.configuration.value)
-        })
-    })
-}
+type TypeToCodeFuncMap = Map<string, Value>
 
-const filter: FilterCreator = () => ({
+const typeToEncodeFuncMap: TypeToCodeFuncMap = new Map([
+  [SCRIPT_RUNNER_POST_FUNCTION_TYPE, encodeScriptRunner],
+  [SCRIPT_RUNNER_VALIDATOR_TYPE, fallBackJsonStringify],
+  [SCRIPT_RUNNER_CONDITION_TYPE, fallBackJsonStringify],
+])
+
+const typeToDecodeFuncMap: TypeToCodeFuncMap = new Map([
+  [SCRIPT_RUNNER_POST_FUNCTION_TYPE, decodeScriptRunner],
+  [SCRIPT_RUNNER_VALIDATOR_TYPE, fallBackJsonParse],
+  [SCRIPT_RUNNER_CONDITION_TYPE, fallBackJsonParse],
+])
+
+const walkOnWorkflow = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
+  ({ value }): WALK_NEXT_STEP => {
+    if (Array.from(typeMap.keys()).includes(value.type) && value.configuration !== undefined) {
+      value.configuration.value = typeMap.get(value.type)(value.configuration.value)
+      return WALK_NEXT_STEP.SKIP
+    }
+    return WALK_NEXT_STEP.RECURSE
+  })
+
+const filter: FilterCreator = ({ config }) => ({
   name: 'scriptRunnerWorkflowFilter',
   onFetch: async (elements: Element[]) => {
-    await awu(elements)
+    if (!config.fetch.supportScriptRunner) {
+      return
+    }
+    elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(async instance => {
-        await applyOnScriptRunnersFields({ instance, func: decodeScriptRunner, field: 'postFunctions', typeName: scriptRunnerPostFunctionType })
-        await applyOnScriptRunnersFields({ instance, func: fallBackJsonParse, field: 'validators', typeName: scriptRunnerValidatorType })
-        await applyOnScriptRunnersFields({ instance, func: fallBackJsonParse, field: 'conditions', typeName: scriptRunnerConditionType })
+      .forEach(instance => {
+        walkOnValue({ elemId: instance.elemID,
+          value: instance.value.transitions,
+          func: walkOnWorkflow(typeToDecodeFuncMap) })
       })
   },
   preDeploy: async changes => {
-    await awu(changes)
+    if (!config.fetch.supportScriptRunner) {
+      return
+    }
+    changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(async instance => {
-        await applyOnScriptRunnersFields({ instance, func: encodeScriptRunner, field: 'postFunctions', typeName: scriptRunnerPostFunctionType })
-        await applyOnScriptRunnersFields({ instance, func: fallBackJsonStringify, field: 'validators', typeName: scriptRunnerValidatorType })
-        await applyOnScriptRunnersFields({ instance, func: fallBackJsonStringify, field: 'conditions', typeName: scriptRunnerConditionType })
+      .forEach(instance => {
+        walkOnValue({ elemId: instance.elemID,
+          value: instance.value.transitions,
+          func: walkOnWorkflow(typeToEncodeFuncMap) })
       })
   },
   onDeploy: async changes => {
-    await awu(changes)
+    if (!config.fetch.supportScriptRunner) {
+      return
+    }
+    changes
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(async instance => {
-        await applyOnScriptRunnersFields({ instance, func: decodeScriptRunner, field: 'postFunctions', typeName: scriptRunnerPostFunctionType })
-        await applyOnScriptRunnersFields({ instance, func: fallBackJsonParse, field: 'validators', typeName: scriptRunnerValidatorType })
-        await applyOnScriptRunnersFields({ instance, func: fallBackJsonParse, field: 'conditions', typeName: scriptRunnerConditionType })
+      .forEach(instance => {
+        walkOnValue({ elemId: instance.elemID,
+          value: instance.value.transitions,
+          func: walkOnWorkflow(typeToDecodeFuncMap) })
       })
   },
 })

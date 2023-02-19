@@ -59,6 +59,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   addTypeToFieldName?: boolean
   convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
+  supportScriptRunner?: boolean
 }
 
 export type MaskingConfig = {

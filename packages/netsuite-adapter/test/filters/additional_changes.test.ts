@@ -93,7 +93,7 @@ describe('additional changes filter', () => {
       expect(changes).toHaveLength(2)
       const [requiredInstanceChange] = changes.filter(isInstanceChange)
       expect(requiredInstanceChange.action).toEqual('modify')
-      expect(getChangeData(requiredInstanceChange)).toBe(customSegmentInstance)
+      expect(getChangeData(requiredInstanceChange)).toEqual(customSegmentInstance)
     })
     it('should add field parent and required referenced element', async () => {
       const changes: Change[] = [

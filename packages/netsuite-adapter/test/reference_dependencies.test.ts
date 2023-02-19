@@ -71,7 +71,7 @@ describe('reference dependencies', () => {
   describe('getAllReferencedInstances', () => {
     it('should return all depending instances', async () => {
       const result = await getReferencedElements([instanceWithManyRefs], true)
-      expect(result).toEqual([instanceWithManyRefs, dependsOn1Instance, fileInstance])
+      expect(result).toEqual([dependsOn1Instance, fileInstance])
     })
   })
   describe('getRequiredReferencedInstances', () => {
@@ -119,29 +119,29 @@ describe('reference dependencies', () => {
 
     it('should not add dependencies that are not required', async () => {
       const result = await getReferencedElements([instanceWithManyRefs], false)
-      expect(result).toEqual([instanceWithManyRefs])
+      expect(result).toEqual([])
     })
 
     it('should add CUSTOM_SEGMENT dependency of CUSTOM_RECORD_TYPE', async () => {
       const result = await getReferencedElements([customRecordType], false)
-      expect(result).toEqual([customRecordType, customSegmentInstance])
+      expect(result).toEqual([customSegmentInstance])
     })
 
     it('should add CUSTOM_RECORD_TYPE dependency of CUSTOM_SEGMENT', async () => {
       const result = await getReferencedElements([customSegmentInstance], false)
-      expect(result).toEqual([customSegmentInstance, customRecordType])
+      expect(result).toEqual([customRecordType])
     })
 
     it('should add DATASET dependency of WORKBOOK', async () => {
       const result = await getReferencedElements([workbookInstance], false)
-      expect(result).toEqual([workbookInstance, datasetInstance])
+      expect(result).toEqual([datasetInstance])
     })
 
     it('should not add dependencies that already exist', async () => {
       const input = [customRecordType, customSegmentInstance, workbookInstance,
         datasetInstance, instance]
       const result = await getReferencedElements(input, false)
-      expect(result).toEqual(input)
+      expect(result).toEqual([])
     })
 
     it('should not add new dependencies more then once', async () => {
@@ -161,7 +161,7 @@ describe('reference dependencies', () => {
         false
       )
       expect(result)
-        .toEqual([customRecordType, customRecordType2, customSegmentInstance])
+        .toEqual([customSegmentInstance])
     })
 
     it('should add translation collection instances when referenced', async () => {
@@ -182,9 +182,8 @@ describe('reference dependencies', () => {
       )
 
       const result = await getReferencedElements([customRecordType], false)
-      expect(result).toHaveLength(4)
+      expect(result).toHaveLength(3)
       expect(result).toEqual(expect.arrayContaining([
-        customRecordType,
         customSegmentInstance,
         translationCollectionInstanceReferencedInInstance,
         translationCollectionInstanceReferencedInType,

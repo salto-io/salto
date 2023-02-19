@@ -990,6 +990,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborReferenceTicketField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -1001,6 +1002,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborReferenceUserAndOrgField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'group_ids', parentTypes: ['user_segment'] },

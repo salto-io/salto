@@ -89,6 +89,7 @@ const handleNonExistingUsers = async ({ missingUserFallback, existingUsersEmails
       // Warn about users that do not exist because they will be replaced by the fallback user
       // Update the paths to contain the default user that is going to be used
       return {
+        // TODO: No need to filter missing users because they were already filtered
         notExistingUsersErrors: Object.values(pathsByInstance).map(paths =>
           getMissingUsersChangeWarning(paths[0].instance, paths.map(path => path.user), fallbackValue)),
         defaultUserPaths: nonExistingUsersPaths.map(path => ({ ...path, user: fallbackValue })),

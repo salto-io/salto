@@ -32,6 +32,10 @@ describe('usersValidator', () => {
   const macroType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'macro'),
   })
+  const customRoleType = new ObjectType({
+    elemID: new ElemID(ZENDESK, 'custom_role'),
+  })
+
   const articleInstance = new InstanceElement(
     'article',
     articleType,
@@ -58,7 +62,30 @@ describe('usersValidator', () => {
     },
   )
 
-  const testsElementSource = createInMemoryElementSource([])
+  const permissionsCustomRole = new InstanceElement(
+    'permissions_custom_role',
+    customRoleType,
+    {
+      id: 1,
+      configuration: {
+        ticket_editing: true,
+      },
+    }
+  )
+
+  const noPermissionsCustomRole = new InstanceElement(
+    'no_permissions_custom_role',
+    customRoleType,
+    {
+      id: 2,
+      configuration: {
+        ticket_editing: false,
+      },
+    }
+  )
+
+
+  const testsElementSource = createInMemoryElementSource([permissionsCustomRole, noPermissionsCustomRole])
 
   beforeAll(async () => {
     client = new ZendeskClient({
@@ -71,11 +98,13 @@ describe('usersValidator', () => {
         status: 200,
         data: {
           users: [
-            { id: 1, email: '1@salto.io', role: 'agent', custom_role_id: 123 },
-            { id: 2, email: '2@salto.io', role: 'agent', custom_role_id: 234 },
-            { id: 3, email: '3@salto.io', role: 'admin', custom_role_id: 234 },
-            { id: 4, email: '4@salto.io', role: 'agent' },
-            { id: 5, email: '5@salto.io', role: 'agent', custom_role_id: 123 },
+            { id: 1, email: '1@salto.io', role: 'agent', custom_role_id: 1 },
+            { id: 2, email: '2@salto.io', role: 'agent', custom_role_id: 1 },
+            { id: 3, email: '3@salto.io', role: 'admin', custom_role_id: 1 },
+            { id: 4, email: '4@salto.io', role: 'agent', custom_role_id: 1 },
+            { id: 5, email: '5@salto.io', role: 'agent', custom_role_id: 1 },
+            { id: 6, email: '6@salto.io', role: 'agent', custom_role_id: 2 },
+            { id: 7, email: '7@salto.io', role: 'agent', custom_role_id: 2 },
           ],
         },
       }
@@ -220,5 +249,102 @@ describe('usersValidator', () => {
     const changeValidator = usersValidator(client, deployConfig)
     const errors = await changeValidator(changes, testsElementSource)
     expect(errors).toHaveLength(0)
+  })
+
+  it('should warn if the user does not have the right permissions for its field', async () => {
+    const triggerInstance = new InstanceElement(
+      'trigger',
+      new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') }),
+      {
+        conditions: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: 'non@salto.io',
+            },
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: '7@salto.io',
+            },
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: 'non@salto.io',
+            },
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: '7@salto.io',
+            },
+          ],
+        },
+      }
+    )
+    const triggerInstance2 = new InstanceElement(
+      'trigger2',
+      new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') }),
+      {
+        conditions: {
+          all: [
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: 'non@salto.io',
+            },
+            {
+              field: 'assignee_id',
+              operator: 'is',
+              value: '7@salto.io',
+            },
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: 'non@salto.io',
+            },
+            {
+              field: 'requester_id',
+              operator: 'is',
+              value: '7@salto.io',
+            },
+          ],
+        },
+      }
+    )
+    deployConfig = { defaultMissingUserFallback: '6@salto.io' }
+    const changes = [toChange({ after: triggerInstance }), toChange({ after: triggerInstance2 })]
+    const changeValidator = usersValidator(client, deployConfig)
+    const errors = await changeValidator(changes, testsElementSource)
+    expect(errors).toMatchObject([
+      {
+        elemID: triggerInstance.elemID,
+        severity: 'Warning',
+        message: '2 usernames will be overridden to 6@salto.io',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: non@salto.io, non@salto.io.\n'
+            + 'If you continue, they will be set to 6@salto.io according to the environment\'s user fallback options.\n'
+            + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+      },
+      {
+        elemID: triggerInstance2.elemID,
+        severity: 'Warning',
+        message: '2 usernames will be overridden to 6@salto.io',
+        detailedMessage: 'The following users are referenced by this instance, but do not exist in the target environment: non@salto.io, non@salto.io.\n'
+            + 'If you continue, they will be set to 6@salto.io according to the environment\'s user fallback options.\n'
+            + 'Learn more: https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk',
+      },
+      {
+        elemID: triggerInstance.elemID,
+        severity: 'Warning',
+        message: 'Users does not have the right permissions',
+        detailedMessage: '7@salto.io,6@salto.io',
+      },
+      {
+        elemID: triggerInstance2.elemID,
+        severity: 'Warning',
+        message: 'Users does not have the right permissions',
+        detailedMessage: '7@salto.io,6@salto.io',
+      },
+    ])
   })
 })

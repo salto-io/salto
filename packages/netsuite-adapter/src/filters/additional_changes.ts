@@ -34,12 +34,12 @@ const filterCreator: FilterCreator = ({ config }) => ({
       .uniqBy(parent => parent.elemID.getFullName())
       .value()
 
-    const allElementsToDeploy = await getReferencedElements(
+    const requiredElements = (await getReferencedElements(
       typeAndInstanceChanges.map(getChangeData).concat(fieldsParents),
       config.deploy?.deployReferencedElements ?? config.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS
-    )
-    const additionalChanges = allElementsToDeploy
-      .filter(elem => !elemIdSet.has(elem.elemID.getFullName()))
+    )).map(elem => elem.clone())
+
+    const additionalChanges = requiredElements.concat(fieldsParents)
       .map(elem => toChange({ before: elem, after: elem }))
 
     changes.push(...additionalChanges)

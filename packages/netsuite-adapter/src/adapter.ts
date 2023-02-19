@@ -249,7 +249,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? await getOrCreateServerTimeElements(
         serverTime,
         this.elementsSource,
-        this.isPartialFetch(),
+        isPartial,
       )
       : undefined
 

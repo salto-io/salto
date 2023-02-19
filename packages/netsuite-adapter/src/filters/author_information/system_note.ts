@@ -201,7 +201,7 @@ const fetchSystemNotes = async (
   return indexSystemNotes(
     distinctSortedSystemNotes(
       systemNotes.filter(
-        systemNote => systemNote.date !== null && !now.isBefore(moment.tz(systemNote.date, timeZone))
+        systemNote => isDefined(systemNote.date) && !now.isBefore(moment.tz(systemNote.date, timeZone))
       )
     )
   )

@@ -66,7 +66,7 @@ const getSavedSearchesMap = async (
   const now = moment.tz(timeZone)
   return Object.fromEntries(savedSearches
     .filter(savedSearch =>
-      savedSearch.datemodified !== undefined
+      isDefined(savedSearch.datemodified)
       && !now.isBefore(moment.tz(savedSearch.datemodified, timeZone)))
     .map(savedSearch => [
       savedSearch.id,

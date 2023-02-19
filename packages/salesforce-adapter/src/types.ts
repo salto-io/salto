@@ -103,7 +103,7 @@ export type ChangeValidatorName = (
   | 'dataChange'
   | 'duplicateRulesSortOrder'
   | 'lastLayoutRemoval'
-  | 'elementsFromInstalledPackage'
+  | 'elementsDependentOnInstalledPackage'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -598,7 +598,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
     duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
     lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
-    elementsFromInstalledPackage: { refType: BuiltinTypes.BOOLEAN },
+    elementsDependentOnInstalledPackage: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

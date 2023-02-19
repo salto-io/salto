@@ -82,29 +82,32 @@ const handleNonExistingUsers = async ({ missingUserFallback, existingUsersEmails
     client: ZendeskClient
     nonExistingUsersPaths: userPathAndInstance[]
 }): Promise<{ defaultUserPaths?: userPathAndInstance[]; notExistingUsersErrors?: ChangeError[] }> => {
-  const pathsByInstance = _.groupBy(nonExistingUsersPaths, pathInstance => pathInstance.instance.elemID.getFullName())
+  // Group each instance with its missing users, to create one error per instance
+  const instancesAndUsers = Object.values(
+    _.groupBy(nonExistingUsersPaths, pathInstance => pathInstance.instance.elemID.getFullName())
+  ).map(paths => ({ instance: paths[0].instance, users: paths.map(path => path.user) }))
+
   if (missingUserFallback !== undefined) {
     const fallbackValue = await getUserFallbackValue(missingUserFallback, existingUsersEmails, client)
     if (fallbackValue !== undefined) {
       // Warn about users that do not exist because they will be replaced by the fallback user
-      // Update the paths to contain the default user that is going to be used
+      // return the paths with, now with the fallback user that is going to be used
       return {
-        // TODO: No need to filter missing users because they were already filtered
-        notExistingUsersErrors: Object.values(pathsByInstance).map(paths =>
-          getMissingUsersChangeWarning(paths[0].instance, paths.map(path => path.user), fallbackValue)),
+        notExistingUsersErrors: instancesAndUsers.map(instanceAndUsers =>
+          getMissingUsersChangeWarning(instanceAndUsers.instance, instanceAndUsers.users, fallbackValue)),
         defaultUserPaths: nonExistingUsersPaths.map(path => ({ ...path, user: fallbackValue })),
       }
     }
     // Error about users that do not exist because the chosen fallback user is missing
     return {
-      notExistingUsersErrors: Object.values(pathsByInstance).map(paths =>
-        getFallbackUserIsMissingError(paths[0].instance, paths.map(path => path.user), missingUserFallback)),
+      notExistingUsersErrors: instancesAndUsers.map(instanceAndUsers =>
+        getFallbackUserIsMissingError(instanceAndUsers.instance, instanceAndUsers.users, missingUserFallback)),
     }
   }
   // Error about users that do not exist because no fallback user was provided
   return {
-    notExistingUsersErrors: Object.values(pathsByInstance).map(paths =>
-      getDefaultMissingUsersError(paths[0].instance, paths.map(path => path.user))),
+    notExistingUsersErrors: instancesAndUsers.map(instanceAndUsers =>
+      getDefaultMissingUsersError(instanceAndUsers.instance, instanceAndUsers.users)),
   }
 }
 
@@ -130,8 +133,8 @@ const handleExistingUsers = ({ existingUsersPaths, customRolesById, usersByEmail
   return Object.values(pathsByInstance).map(paths => ({
     elemID: paths[0].instance.elemID,
     severity: 'Warning',
-    message: 'Message',
-    detailedMessage: `${paths.map(path => path.user)}`,
+    message: 'Some users do not have the required permissions to be set as assignees',
+    detailedMessage: `The users ${paths.map(path => path.user).join(', ')} cannot be set as assignees because they don't have the ticket editing permission.`,
   }))
 }
 

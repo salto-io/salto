@@ -336,14 +336,14 @@ describe('usersValidator', () => {
       {
         elemID: triggerInstance.elemID,
         severity: 'Warning',
-        message: 'Users does not have the right permissions',
-        detailedMessage: '7@salto.io,6@salto.io',
+        message: 'Some users do not have the required permissions to be set as assignees',
+        detailedMessage: 'The users 7@salto.io, 6@salto.io cannot be set as assignees because they don\'t have the ticket editing permission.',
       },
       {
         elemID: triggerInstance2.elemID,
         severity: 'Warning',
-        message: 'Users does not have the right permissions',
-        detailedMessage: '7@salto.io,6@salto.io',
+        message: 'Some users do not have the required permissions to be set as assignees',
+        detailedMessage: 'The users 7@salto.io, 6@salto.io cannot be set as assignees because they don\'t have the ticket editing permission.',
       },
     ])
   })

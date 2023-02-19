@@ -22,8 +22,13 @@ import { doesProjectHaveIssues } from './project_deletion'
 const { awu } = collections.asynciterable
 
 const RELEVANT_FIELDS = ['priorityScheme', 'workflowScheme']
+type RelevantField = typeof RELEVANT_FIELDS[number]
+const FIELD_FORMATS: Record<RelevantField, string> = {
+  priorityScheme: 'priority scheme',
+  workflowScheme: 'workflow scheme',
+}
 
-const projectSchemeChanged = (change : ModificationChange<InstanceElement>): string[] => {
+const projectSchemeChanged = (change : ModificationChange<InstanceElement>): RelevantField[] => {
   const { before, after } = change.data
   const changedFields = RELEVANT_FIELDS
     .filter(field => before.value[field] instanceof ReferenceExpression
@@ -43,14 +48,14 @@ const getRelevantChanges = async (
     .filter(async change => doesProjectHaveIssues(getChangeData(change), client))
     .toArray()
 
-const getChangeErrorForChange = (change: ModificationChange<InstanceElement>): ChangeError => {
+const getChangeErrorForChange = (change: ModificationChange<InstanceElement>): ChangeError[] => {
   const changedFields = projectSchemeChanged(change)
-  return {
+  return changedFields.map(field => ({
     elemID: getChangeData(change).elemID,
     severity: 'Error',
-    message: `Can’t replace non-empty project ${changedFields.join(', ')}`,
-    detailedMessage: `Salto cannot change ${changedFields.join(', ')} for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.`,
-  }
+    message: `Can’t replace non-empty project ${FIELD_FORMATS[field]}`,
+    detailedMessage: `Salto cannot change ${FIELD_FORMATS[field]} for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.`,
+  }))
 }
 
 export const activeSchemeChangeValidator = (
@@ -58,5 +63,5 @@ export const activeSchemeChangeValidator = (
 ): ChangeValidator =>
   async changes => {
     const relevantChanges = await getRelevantChanges(changes, client)
-    return relevantChanges.map(getChangeErrorForChange)
+    return relevantChanges.flatMap(getChangeErrorForChange)
   }

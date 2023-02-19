@@ -90,8 +90,10 @@ describe('active scheme change', () => {
     projectInstance.value.priorityScheme = prioritySchemeReference1
     modifiedInstance.value.priorityScheme = prioritySchemeReference2
     const errors = await validator([toChange({ before: projectInstance, after: modifiedInstance })])
-    expect(errors).toHaveLength(1)
-    expect(errors[0].message).toEqual('Can’t replace non-empty project priorityScheme, workflowScheme')
-    expect(errors[0].detailedMessage).toEqual('Salto cannot change priorityScheme, workflowScheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.')
+    expect(errors).toHaveLength(2)
+    expect(errors[0].message).toEqual('Can’t replace non-empty project priority scheme')
+    expect(errors[0].detailedMessage).toEqual('Salto cannot change priority scheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.')
+    expect(errors[1].message).toEqual('Can’t replace non-empty project workflow scheme')
+    expect(errors[1].detailedMessage).toEqual('Salto cannot change workflow scheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.')
   })
 })

@@ -27,12 +27,13 @@ import { collections, values } from '@salto-io/lowerdash'
 import { extendGeneratedDependencies, WALK_NEXT_STEP, walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterWith } from '../filter'
-import { getNamespace, getNamespaceFromString, isInstanceOfType, isStandardObject } from './utils'
-import { INSTALLED_PACKAGE_METADATA } from '../constants'
-import { apiName, isCustomObject } from '../transformers/transformer'
+import { getNamespace, getNamespaceFromString, isStandardObject } from './utils'
+import { isCustomObject } from '../transformers/transformer'
+import { isSubscriberPackageInstance, isToolingInstance } from '../tooling/types'
 
-const { awu, keyByAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 const { isDefined } = values
+const { keyBy } = collections.array
 
 const getNonReferencedPackageNames = async (
   element: Element,
@@ -63,14 +64,15 @@ const getNonReferencedPackageNames = async (
 const filterCreator = (): FilterWith<'onFetch'> => ({
   name: 'referencedPackagesFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
-    const packageElemIDByName = _.mapValues(
-      await keyByAsync(
-        await awu(elements)
-          .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
-          .toArray(),
-        apiName,
+    const subscriberPackageRefByNamespace = _.mapValues(
+      keyBy(
+        elements
+          .filter(isInstanceElement)
+          .filter(isToolingInstance)
+          .filter(isSubscriberPackageInstance),
+        subscriberPackageInstance => subscriberPackageInstance.value.NamespacePrefix,
       ),
-      instance => instance.elemID,
+      instance => new ReferenceExpression(instance.elemID),
     )
 
     const addDependencies = async (element: ObjectType | Field | InstanceElement): Promise<void> => {
@@ -79,9 +81,9 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       if (isDefined(elementNamespace)) {
         packagesToReference.add(elementNamespace)
       }
-      const dependencies = Object.entries(packageElemIDByName)
+      const dependencies = Object.entries(subscriberPackageRefByNamespace)
         .filter(([packageName]) => packagesToReference.has(packageName))
-        .map(([_name, elemID]) => ({ reference: new ReferenceExpression(elemID) }))
+        .map(([_name, reference]) => ({ reference }))
 
       extendGeneratedDependencies(element, dependencies)
     }

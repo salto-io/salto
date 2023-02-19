@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, ObjectType } from '@salto-io/adapter-api'
+import { Field, InstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { types, values } from '@salto-io/lowerdash'
 import { SupportedToolingObject, TOOLING_PATH, ToolingObjectAnnotation, ToolingObjectInfo } from './constants'
 import { API_NAME } from '../constants'
@@ -36,6 +36,12 @@ export type ToolingObjectType = ObjectType & {
   }>
 }
 
+export type ToolingInstanceType = InstanceElement & {
+  refType: InstanceElement['refType'] & {
+    type: ToolingObjectType
+  }
+}
+
 export type ToolingField = types.ValueOf<ToolingObjectType['fields']>
 
 export type ToolingObject = {
@@ -44,6 +50,14 @@ export type ToolingObject = {
   }
   SubscriberPackage: ToolingObjectType & {
     fields: ToolingObjectType['fields'] & Record<keyof typeof ToolingObjectInfo.SubscriberPackage.Field, ToolingField>
+  }
+}
+
+export type ToolingInstance = {
+  SubscriberPackage: ToolingInstanceType & {
+    value: InstanceElement['value'] & {
+      [ToolingObjectInfo.SubscriberPackage.Field.NamespacePrefix]: string
+    }
   }
 }
 
@@ -77,4 +91,14 @@ export const isSubscriberPackage = (
   toolingObject.annotations[API_NAME] === SupportedToolingObject.SubscriberPackage
   && Object.keys(ToolingObjectInfo.SubscriberPackage.Field)
     .every(fieldName => isDefined(toolingObject.fields[fieldName]))
+)
+
+// ToolingInstanceType TypeGuards
+
+export const isToolingInstance = (instance: InstanceElement): instance is ToolingInstanceType => (
+  isObjectType(instance.refType.type) && isToolingObject(instance.refType.type)
+)
+
+export const isSubscriberPackageInstance = (toolingInstance: ToolingInstanceType): toolingInstance is ToolingInstance['SubscriberPackage'] => (
+  isSubscriberPackage(toolingInstance.refType.type)
 )

@@ -156,9 +156,13 @@ const getRelativeName = (name: string): string => (
   _.last(name.split(/[./-]/)) ?? name
 )
 
+const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`(${SALESFORCE_CUSTOM_SUFFIX}|${CUSTOM_METADATA_SUFFIX})$`)
+
 export const getNamespaceFromString = (name: string): string | undefined => {
-  const parts = getRelativeName(name).split(NAMESPACE_SEPARATOR)
-  return parts.length > 1
+  const parts = getRelativeName(name)
+    .replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
+    .split(NAMESPACE_SEPARATOR)
+  return parts.length !== 1
     ? parts[0]
     : undefined
 }

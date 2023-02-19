@@ -662,9 +662,7 @@ export default class SalesforceClient {
     return sendChunked({
       operationInfo: 'describeSObjects',
       input: objectName,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.tooling.describeSObject(chunk[0])),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.tooling.describe(chunk[0])),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
     })
   }

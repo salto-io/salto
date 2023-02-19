@@ -440,6 +440,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
     DailyApiRequests: { Remaining: 10000 },
   }),
   tooling: {
+    describe: mockFunction<Tooling['describe']>().mockResolvedValue(mockSObjectDescribe({})),
     query: mockFunction<Tooling['query']>().mockResolvedValue(mockQueryResult({})),
     queryMore: mockFunction<Tooling['queryMore']>().mockResolvedValue(mockQueryResult({})),
   },

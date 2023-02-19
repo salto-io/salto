@@ -46,8 +46,8 @@ import { fieldContextValidator } from './field_contexts/field_contexts'
 import { workflowSchemeMigrationValidator } from './workflow_scheme_migration'
 import { permissionSchemeDeploymentValidator } from './permission_scheme'
 import { statusMigrationChangeValidator } from './status_migration'
+import { activeSchemeChangeValidator } from './active_scheme_change'
 import { activeSchemeDeletionValidator } from './active_scheme_deletion'
-import { activeWorkflowSchemeChangeValidator } from './active_workflow_scheme_change'
 import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
@@ -84,7 +84,7 @@ export default (
     statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigrationValidator(client, config, paginator),
-    activeWorkflowSchemeChangeValidator(client),
+    activeSchemeChangeValidator(client),
     maskingValidator(client),
     lockedFieldsValidator,
     fieldContextValidator,

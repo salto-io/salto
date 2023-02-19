@@ -21,7 +21,7 @@ import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils
 import { collections, strings } from '@salto-io/lowerdash'
 import { NETSUITE, RECORDS_PATH, SOAP } from '../constants'
 import { NetsuiteQuery } from '../query'
-import { getTypeIdentifier, TYPE_TO_IDENTIFIER } from './types'
+import { getTypeIdentifier, SUPPORTED_TYPES } from './types'
 import NetsuiteClient from '../client/client'
 import { castFieldValue } from './custom_fields'
 import { addIdentifierToValues, addIdentifierToType } from './multi_fields_identifiers'
@@ -139,7 +139,7 @@ export const getDataElements = async (
 ): Promise<(ObjectType | InstanceElement)[]> => {
   const types = await getDataTypes(client)
 
-  const typesToFetch = Object.keys(TYPE_TO_IDENTIFIER).filter(query.isTypeMatch)
+  const typesToFetch = SUPPORTED_TYPES.filter(query.isTypeMatch)
   if (typesToFetch.length === 0) {
     return types
   }

@@ -27,6 +27,7 @@ describe('remove_unsupported_types', () => {
   let elements: TypeElement[]
   const sdfType = customrecordtypeType().type
   const supportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary'), annotations: { source: 'soap' } })
+  const additionlaSupportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'salesOrder'), annotations: { source: 'soap' } })
   const unsupportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType'), annotations: { source: 'soap' } })
   const sdfSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'CustomRecordType'), annotations: { source: 'soap' } })
   const customRecordType = new ObjectType({
@@ -39,7 +40,14 @@ describe('remove_unsupported_types', () => {
   const isSuiteAppConfiguredMock = jest.fn()
 
   beforeEach(async () => {
-    elements = [sdfType, supportedSoapType, unsupportedSoapType, sdfSoapType, customRecordType]
+    elements = [
+      sdfType,
+      supportedSoapType,
+      additionlaSupportedSoapType,
+      unsupportedSoapType,
+      sdfSoapType,
+      customRecordType,
+    ]
     isSuiteAppConfiguredMock.mockReset()
     isSuiteAppConfiguredMock.mockReturnValue(true)
     filterOpts = {
@@ -55,7 +63,7 @@ describe('remove_unsupported_types', () => {
 
   it('should remove the unsupported types', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'custrecord', 'subsidiary'])
+    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'custrecord', 'subsidiary', 'salesOrder'])
   })
 
   it('should not add custom record types that are field types but not in elements (partial fetch)', async () => {
@@ -81,6 +89,6 @@ describe('remove_unsupported_types', () => {
   it('should do nothing if suiteApp is not installed', async () => {
     isSuiteAppConfiguredMock.mockReturnValue(false)
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary', 'someType', 'CustomRecordType', 'custrecord'])
+    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary', 'salesOrder', 'someType', 'CustomRecordType', 'custrecord'])
   })
 })

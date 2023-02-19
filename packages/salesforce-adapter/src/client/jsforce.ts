@@ -76,6 +76,7 @@ export interface Bulk {
 export interface Tooling {
   query(soql: string): Promise<QueryResult<Value>>
   queryMore(locator: string): Promise<QueryResult<Value>>
+  describe(type: string, callback?: Callback<DescribeSObjectResult>): Promise<DescribeSObjectResult>
 }
 
 export default interface Connection {

@@ -77,8 +77,9 @@ import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
-import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import referencedPackagesFilter from './filters/referenced_packages'
+import fetchToolingTypesFilter from './filters/tooling/fetch_tooling_types'
+import subscriberPackageInstancesFilter from './filters/tooling/fetch_subscriber_package_instances'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -97,7 +98,6 @@ const { concatObjects } = objects
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
-  { creator: addDefaultActivateRSSFilter },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },
@@ -107,6 +107,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
+  { creator: fetchToolingTypesFilter, addsNewInformation: true },
+  { creator: subscriberPackageInstancesFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },
@@ -237,7 +239,6 @@ const METADATA_TO_RETRIEVE = [
   'SiteDotCom', // contains encoded zip content
   'StaticResource', // contains encoded zip content
   // Other types that need retrieve / deploy to work
-  'InstalledPackage', // listMetadataObjects of this types returns duplicates
   'Territory2', // All Territory2 types do not support CRUD
   'Territory2Model', // All Territory2 types do not support CRUD
   'Territory2Rule', // All Territory2 types do not support CRUD

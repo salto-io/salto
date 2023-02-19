@@ -28,7 +28,7 @@ import {
   API_NAME,
   CPQ_FILTER_SOURCE_FIELD,
   CPQ_FILTER_SOURCE_OBJECT, CPQ_HIDDEN_SOURCE_FIELD,
-  CPQ_HIDDEN_SOURCE_OBJECT, CPQ_QUOTE, CPQ_TARGET_FIELD, CPQ_TARGET_OBJECT, CUSTOM_OBJECT_ID_FIELD,
+  CPQ_HIDDEN_SOURCE_OBJECT, CPQ_QUOTE, CPQ_TARGET_FIELD, CPQ_TARGET_OBJECT, SALESFORCE_OBJECT_ID_FIELD,
   SALESFORCE,
 } from '../../../src/constants'
 import { mockTypes } from '../../mock_elements'
@@ -137,14 +137,14 @@ describe('cpqReferencableFieldReferences', () => {
       const enrichedInstance = afterPreDeployInstance.clone()
       enrichedInstance.value = {
         ...enrichedInstance.value,
-        [CUSTOM_OBJECT_ID_FIELD]: CUSTOM_OBJECT_ID,
+        [SALESFORCE_OBJECT_ID_FIELD]: CUSTOM_OBJECT_ID,
       }
       const afterOnDeployChanges = [toChange({ after: enrichedInstance })]
       await filter.onDeploy(afterOnDeployChanges)
       const afterOnDeployInstance = getChangeData(afterOnDeployChanges[0])
       expect(afterOnDeployInstance.value).toEqual({
         ...getChangeData(originalChange).value,
-        [CUSTOM_OBJECT_ID_FIELD]: CUSTOM_OBJECT_ID,
+        [SALESFORCE_OBJECT_ID_FIELD]: CUSTOM_OBJECT_ID,
       })
     })
   })

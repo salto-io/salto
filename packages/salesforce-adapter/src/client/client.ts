@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies, RetryStrategy } from 'requestretry'
 import Bottleneck from 'bottleneck'
-import { collections, decorators, hash } from '@salto-io/lowerdash'
+import { collections, decorators, hash, types, values } from '@salto-io/lowerdash'
 import {
   BatchResultInfo,
   BulkLoadOperation,
@@ -43,7 +43,7 @@ import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
 import {
-  CUSTOM_OBJECT_ID_FIELD,
+  SALESFORCE_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
   DEFAULT_MAX_CONCURRENT_API_REQUESTS,
   SALESFORCE,
@@ -63,12 +63,16 @@ import {
 import Connection from './jsforce'
 import { mapToUserFriendlyErrorMessages } from './user_facing_errors'
 import { HANDLED_ERROR_PREDICATES } from '../config_change'
+import { SupportedToolingObjectName, ToolingObjectType } from '../tooling/types'
+import { toolingFieldApiName, toolingObjectApiName } from '../tooling/utils'
+import { TOOLING_MAX_QUERY_LIMIT } from '../tooling/constants'
 
 const { makeArray } = collections.array
 const { toMD5 } = hash
 
 const log = logger(module)
 const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
+const { isDefined } = values
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
@@ -649,6 +653,20 @@ export default class SalesforceClient {
     })
   }
 
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
+  @logDecorator()
+  @requiresLogin()
+  @mapToUserFriendlyErrorMessages
+  public async describeToolingObject(objectName: SupportedToolingObjectName):
+    Promise<SendChunkedResult<string, DescribeSObjectResult>> {
+    return sendChunked({
+      operationInfo: 'describeSObjects',
+      input: objectName,
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.tooling.describe(chunk[0])),
+      chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
+    })
+  }
+
   /**
    * Create or update a salesforce object
    * @param type The metadata type of the components to be created or updated
@@ -813,6 +831,29 @@ export default class SalesforceClient {
     return this.getQueryAllIterable(queryString, useToolingApi)
   }
 
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
+  @logDecorator()
+  @requiresLogin()
+  @mapToUserFriendlyErrorMessages
+  public async queryToolingObject<T extends ToolingObjectType>({ toolingObject, fields, recordId }: {
+    toolingObject: T
+    fields?: types.NonEmptyArray<types.ValueOf<T['fields']>>
+    recordId?: string
+  }): Promise<AsyncIterable<SalesforceRecord[]>> {
+    const fieldsToQuery = Object.values(
+      isDefined(fields)
+        ? fields
+        : toolingObject.fields
+    ).map(toolingFieldApiName)
+    const soqlQuery = [
+      `SELECT ${fieldsToQuery.join(', ')}`,
+      `FROM ${toolingObjectApiName(toolingObject)}`,
+      isDefined(recordId) ? `WHERE Id = '${recordId}'` : undefined,
+      `LIMIT ${TOOLING_MAX_QUERY_LIMIT}`,
+    ].filter(isDefined).join('\n')
+    return this.queryAll(soqlQuery, true)
+  }
+
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
@@ -826,7 +867,7 @@ export default class SalesforceClient {
     const batch = this.conn.bulk.load(
       type,
       operation,
-      { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
+      { extIdField: SALESFORCE_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
       records
     )
     const { job } = batch

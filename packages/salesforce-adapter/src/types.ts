@@ -76,6 +76,7 @@ export type OptionalFeatures = {
   addMissingIds?: boolean
   authorInformation?: boolean
   describeSObjects?: boolean
+  tooling?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -563,6 +564,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     addMissingIds: { refType: BuiltinTypes.BOOLEAN },
     authorInformation: { refType: BuiltinTypes.BOOLEAN },
     describeSObjects: { refType: BuiltinTypes.BOOLEAN },
+    tooling: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

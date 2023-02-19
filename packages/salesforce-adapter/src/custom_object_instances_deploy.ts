@@ -30,7 +30,7 @@ import {
   instancesToDeleteRecords, instancesToUpdateRecords, Types,
 } from './transformers/transformer'
 import SalesforceClient from './client/client'
-import { CUSTOM_OBJECT_ID_FIELD } from './constants'
+import { SALESFORCE_OBJECT_ID_FIELD } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import { buildSelectQueries, getFieldNamesForQuery } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
@@ -141,8 +141,8 @@ const getRecordsBySaltoIds = async (
 
   // Should always query Id together with the SaltoIdFields to match it to instances
   const saltoIdFieldsWithIdField = (saltoIdFields
-    .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
-    ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
+    .find(field => field.name === SALESFORCE_OBJECT_ID_FIELD) === undefined)
+    ? [type.fields[SALESFORCE_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
 
   const fieldNames = await awu(saltoIdFieldsWithIdField).flatMap(getFieldNamesForQuery).toArray()
   const queries = await buildSelectQueries(
@@ -248,7 +248,7 @@ const insertInstances: CrudFn = async (
   // Add IDs to success instances
   instancesAndResults.filter(instAndRes => instAndRes.result.success)
     .forEach(({ instance, result }) => {
-      instance.value[CUSTOM_OBJECT_ID_FIELD] = result.id
+      instance.value[SALESFORCE_OBJECT_ID_FIELD] = result.id
     })
   return instancesAndResults
 }
@@ -344,8 +344,8 @@ const deployAddInstances = async (
   )
   existingInstances.forEach(instance => {
     instance.value[
-      CUSTOM_OBJECT_ID_FIELD
-    ] = existingRecordsLookup[computeSaltoIdHash(instance.value)][CUSTOM_OBJECT_ID_FIELD]
+      SALESFORCE_OBJECT_ID_FIELD
+    ] = existingRecordsLookup[computeSaltoIdHash(instance.value)][SALESFORCE_OBJECT_ID_FIELD]
   })
   const {
     successInstances: successUpdateInstances,

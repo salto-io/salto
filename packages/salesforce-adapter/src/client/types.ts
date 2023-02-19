@@ -16,7 +16,7 @@
 import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
-import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, isRelationshipFieldName } from '../constants'
+import { FIELD_TYPE_NAMES, SALESFORCE_OBJECT_ID_FIELD, isRelationshipFieldName } from '../constants'
 
 export type JSONBool = boolean | 'true' | 'false'
 
@@ -271,6 +271,6 @@ export interface CompleteSaveResult extends SaveResult {
 }
 
 export type SalesforceRecord = {
-  [CUSTOM_OBJECT_ID_FIELD]: string
+  [SALESFORCE_OBJECT_ID_FIELD]: string
   [attr: string]: Value
 }

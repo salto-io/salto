@@ -371,6 +371,28 @@ const runPostFetch = async ({
   )
 }
 
+type CreateAdapterToFetchFunctionMapParams = {
+  accountsToAdapters: Record<string, AdapterOperations>
+  accountToServiceNameMap: Record<string, string>
+  withChangeDetection: boolean | undefined
+}
+
+const createAdapterToFetchFunctionMap = (
+  { accountsToAdapters, accountToServiceNameMap, withChangeDetection }: CreateAdapterToFetchFunctionMapParams
+): Record<string, AdapterOperations['fetch']> => {
+  const accountNameToFetchFunction = Object.fromEntries(
+    Object.entries(accountsToAdapters).map(([accountName, adapter]) =>
+      ([accountName, withChangeDetection ? adapter.fetchWithChangeDetection : adapter.fetch]))
+  )
+  const adaptersWithoutFetchFunction = Array.from(new Set(Object.entries(accountNameToFetchFunction)
+    .filter(([, fetchFunction]) => fetchFunction === undefined)
+    .map(([accountName]) => accountToServiceNameMap[accountName])))
+  if (adaptersWithoutFetchFunction.length > 0) {
+    throw new Error(`Adapters: ${adaptersWithoutFetchFunction.join(', ')} do not support fetch with change detection operation`)
+  }
+  return _.pickBy(accountNameToFetchFunction, isDefined)
+}
+
 const fetchAndProcessMergeErrors = async (
   accountsToAdapters: Record<string, AdapterOperations>,
   stateElements: elementSource.ElementsSource,
@@ -440,19 +462,11 @@ const fetchAndProcessMergeErrors = async (
       accountsToAdapters,
       (_adapter, accountName) => createAdapterProgressReporter(accountName, 'fetch', progressEmitter)
     )
-    const accountNameToFetchFunction = Object.fromEntries(
-      Object.entries(accountsToAdapters).map(([accountName, adapter]) =>
-        ([accountName, withChangeDetection ? adapter.fetchWithChangeDetection : adapter.fetch]))
-    )
-    const adaptersWithoutFetchFunction = Object.entries(accountNameToFetchFunction)
-      .filter(([, fetchFunction]) => fetchFunction === undefined)
-      .map(([accountName]) => accountToServiceNameMap[accountName])
-    if (adaptersWithoutFetchFunction.length > 0) {
-      throw new Error(`Adapters: ${adaptersWithoutFetchFunction.join(', ')} do not support fetch with change detection operation`)
-    }
-
+    const accountNameToFetchFunction = createAdapterToFetchFunctionMap({
+      accountsToAdapters, accountToServiceNameMap, withChangeDetection,
+    })
     const fetchResults = await Promise.all(
-      Object.entries(_.pickBy(accountNameToFetchFunction, isDefined))
+      Object.entries((accountNameToFetchFunction))
         .map(async ([accountName, fetchFunction]) => {
           const fetchResult = await fetchFunction({
             progressReporter: progressReporters[accountName],

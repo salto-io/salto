@@ -485,6 +485,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'ApexPage' },
   },
   {
+    src: { field: 'value', parentTypes: ['ComponentInstanceProperty'] },
+    target: { type: 'Flow' },
+  },
+  {
     src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },

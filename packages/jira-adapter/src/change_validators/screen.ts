@@ -40,8 +40,8 @@ export const screenValidator: ChangeValidator = async changes => (
         return {
           elemID: instance.elemID,
           severity: 'Error' as SeverityLevel,
-          message: 'Fields cannot be used more than once in the same screen instance',
-          detailedMessage: `The ${duplicateFields.length > 1 ? 'fields' : 'field'} ${duplicateFields.join(', ')} can only be used once in the tabs of screen ${instance.elemID.getFullName()}`,
+          message: 'Can’t deploy screen which uses fields more than once',
+          detailedMessage: `This screen uses the following ${duplicateFields.length > 1 ? 'fields' : 'field'} more than once: ${duplicateFields.join(', ')}. Make sure each field is used only once, and try again.`,
         }
       }
       return undefined

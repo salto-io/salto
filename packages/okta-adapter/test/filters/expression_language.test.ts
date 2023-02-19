@@ -21,7 +21,7 @@ import oktaExpressionLanguageFilter from '../../src/filters/expression_language'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
 describe('expression language filter', () => {
-      type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
+      type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy'>
       let filter: FilterType
       const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
       const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
@@ -259,6 +259,41 @@ describe('expression language filter', () => {
             expect(policyRuleInstance?.value?.conditions?.additionalProperties?.elCondition?.condition)
               .toEqual(policyRuleTemplate)
           })
+        })
+      })
+
+      describe('deploy', () => {
+        const groupRuleWithTemplate = new InstanceElement(
+          'groupRuleTest',
+          groupRuleType,
+          { conditions: { expression: { value: groupRuleTemplate } } }
+        )
+        const groupWithoutId = groupInstances[0].clone()
+        delete groupWithoutId.value.id
+        const groupRuleInvalidTemplate = new InstanceElement(
+          'groupRuleTest2',
+          groupRuleType,
+          { conditions: { expression: {
+            value: new TemplateExpression({
+              parts: [
+                new ReferenceExpression(groupWithoutId.elemID, groupWithoutId),
+                ' == \'salto\'',
+              ],
+            }),
+          } } }
+        )
+        it('should return error for changes with tmeplate expression we could not resolve', async () => {
+          const changes = [
+            toChange({ after: groupRuleWithTemplate.clone() }), toChange({ after: groupRuleInvalidTemplate.clone() }),
+          ]
+          // call preDeploy to set the mapping
+          await filter.preDeploy(changes)
+          const res = await filter.deploy(changes)
+          expect(res.leftoverChanges.length).toEqual(1)
+          expect(res.deployResult.errors.length).toEqual(1)
+          expect(res.deployResult.errors[0]).toEqual(
+            new Error('Error parsing Okta expression language expression for instance groupRuleTest2 of type GroupRule')
+          )
         })
       })
 })

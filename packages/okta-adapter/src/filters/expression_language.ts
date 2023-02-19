@@ -92,9 +92,12 @@ const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression
       }
     }
     if (part.elemID.isTopLevel()) {
-      return `"${part.value.value.id}"`
+      const { id } = part.value.value
+      if (id !== undefined) {
+        return `"${id}"`
+      }
     }
-    return part
+    throw new Error(`Could not resolve reference to: ${part.elemID.getFullName()}`)
   }
   return prepRef
 }
@@ -142,6 +145,7 @@ const stringToTemplate = (
  */
 const filter: FilterCreator = () => {
   const changeToTemplateMapping: Record<string, TemplateExpression> = {}
+  const ErrorByChangeId: Record<string, Error> = {}
   return ({
     name: 'oktaExpressionLanguageFilter',
     onFetch: async (elements: Element[]) => {
@@ -182,14 +186,27 @@ const filter: FilterCreator = () => {
                   changeToTemplateMapping,
                   createPrepRefFunc(isIdentityEngine),
                 )
-              } catch (e) {
-                log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment`, e)
+              } catch (error) {
+                if (_.isError(error)) {
+                  log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment: ${error.message}`)
+                  ErrorByChangeId[instance.elemID.getFullName()] = new Error(`Error parsing Okta expression language expression for instance ${instance.elemID.name} of type ${instance.elemID.typeName}`)
+                }
               }
             }
           }
         )
     },
 
+    deploy: async changes => {
+      // Return deploy errors for changes with template expressions we chould not resolve during 'preDeploy'
+      const leftoverChanges = changes.filter(
+        change => ErrorByChangeId[getChangeData(change).elemID.getFullName()] === undefined
+      )
+      return {
+        leftoverChanges,
+        deployResult: { appliedChanges: [], errors: Object.values(ErrorByChangeId) },
+      }
+    },
 
     onDeploy: async (changes: Change<InstanceElement>[]) => {
       changes

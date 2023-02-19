@@ -41,7 +41,7 @@ export const dashboardLayoutValidator: ChangeValidator = async changes =>
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,
         message: 'Dashboard gadget positions are out of bounds',
-        detailedMessage: `Dashboard ${instance.elemID.getFullName()} has gadgets with positions that do not match the dashboard layout ${instance.value.layout}: ${invalidGadgets.map((gadget: ReferenceExpression) => gadget.elemID.getFullName()).join(', ')}`,
+        detailedMessage: `This dashboard has gadgets with a column position which exceeds the number of columns (${instance.value.layout.length}) in the ${instance.value.layout} layout: ${invalidGadgets.map((gadget: ReferenceExpression) => gadget.elemID.getFullName()).join(', ')}. Please change the layout or re-position the gadgets to deploy this dashboard.`,
       }
     })
     .filter(values.isDefined)

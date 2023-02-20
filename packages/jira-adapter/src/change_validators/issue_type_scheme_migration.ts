@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
@@ -40,6 +40,19 @@ const getRelevantChanges = (changes: ReadonlyArray<Change>): ModificationChange<
     .filter(change => getChangeData(change).elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
     .filter(change => getRemovedIssueTypeIds(change).length > 0)
 
+const getIssueTypeSchemeMigrationError = (
+  issueTypeScheme: InstanceElement,
+  removedIssueTypeNames: string[],
+): ChangeError => {
+  const plural = removedIssueTypeNames.length > 1
+  return {
+    elemID: issueTypeScheme.elemID,
+    severity: 'Error' as SeverityLevel,
+    message: `Cannot remove issue ${plural ? 'types' : 'type'} from scheme`,
+    detailedMessage: `The issue ${plural ? 'types' : 'type'} ${removedIssueTypeNames.join(', ')} have assigned issues and cannot be removed from this issue type scheme`,
+  }
+}
+
 const areIssueTypesUsed = async (
   client: JiraClient,
   issueTypes: string[],
@@ -63,7 +76,8 @@ const areIssueTypesUsed = async (
   }
   return response.data.total !== 0
 }
-export const issueTypeSchemeValidator = (
+
+export const issueTypeSchemeMigrationValidator = (
   client: JiraClient,
 ): ChangeValidator =>
   async (changes, elementSource) => {
@@ -82,18 +96,13 @@ export const issueTypeSchemeValidator = (
       project => project.value.issueTypeScheme.elemID.getFullName(),
     )
     const errors = await awu(relevantChanges).map(async change => {
-      const removedIssueTypeIds = getRemovedIssueTypeIds(change)
+      const removedIssueTypeNames = getRemovedIssueTypeIds(change)
         .map(issueTypeId => issueTypeId.elemID.name)
       const issueTypeScheme = getChangeData(change)
       const linkedProjectNames = issueTypeSchemesToProjects[issueTypeScheme.elemID.getFullName()]
         .map(project => project.value.name)
-      if (await areIssueTypesUsed(client, removedIssueTypeIds, linkedProjectNames)) {
-        return {
-          elemID: issueTypeScheme.elemID,
-          severity: 'Error' as SeverityLevel,
-          message: 'Issue type is used in a project',
-          detailedMessage: `The issue type ${removedIssueTypeIds.join(', ')} is used in the following projects: ${linkedProjectNames.join(', ')}`,
-        }
+      if (await areIssueTypesUsed(client, removedIssueTypeNames, linkedProjectNames)) {
+        return getIssueTypeSchemeMigrationError(issueTypeScheme, removedIssueTypeNames)
       }
       return undefined
     }).filter(isDefined).toArray()

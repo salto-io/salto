@@ -26,7 +26,7 @@ const getReadOnlyFields = (instance: InstanceElement): string[] => {
   if (instance.value.licensing !== undefined) {
     fields.push('licensing')
   }
-  const signing = _.get(instance.value, ['credentials', 'signing'])
+  const signing = _.get(instance.value, [instance.value.signOnMode, 'credentials', 'signing'])
   if (_.isPlainObject(signing)) {
     fields.push(...Object.keys(signing))
   }
@@ -34,7 +34,7 @@ const getReadOnlyFields = (instance: InstanceElement): string[] => {
 }
 
 const isNameOverride = (instance: InstanceElement): boolean => (
-  instance.value.signOnMode === AUTO_LOGIN_APP && instance.value.name !== undefined
+  instance.value.signOnMode === AUTO_LOGIN_APP && instance.value?.[AUTO_LOGIN_APP]?.name !== undefined
 )
 
 /**

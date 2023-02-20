@@ -34,14 +34,16 @@ describe('applicationFieldsChangeValidator', () => {
         licensing: {
           seatCount: 0,
         },
-        credentials: {
-          userNameTemplate: {
-            template: 'user.login',
-            type: 'CUSTOM',
-            pushStatus: 'DONT_PUSH',
-          },
-          signing: {
-            kid: '123123123',
+        SAML_2_0: {
+          credentials: {
+            userNameTemplate: {
+              template: 'user.login',
+              type: 'CUSTOM',
+              pushStatus: 'DONT_PUSH',
+            },
+            signing: {
+              kid: '123123123',
+            },
           },
         },
       },
@@ -65,12 +67,14 @@ describe('applicationFieldsChangeValidator', () => {
       'swa',
       type,
       {
-        name: 'swa autologin',
         label: 'swa app',
         status: 'ACTIVE',
         signOnMode: 'AUTO_LOGIN',
-        settings: {
-          loginUrl: '213123',
+        AUTO_LOGIN: {
+          name: 'swa autologin',
+          settings: {
+            loginUrl: '213123',
+          },
         },
       },
     )

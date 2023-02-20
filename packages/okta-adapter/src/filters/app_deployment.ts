@@ -77,13 +77,16 @@ const assignCreatedFieldsToApp = (
 ): void => {
   const instance = getChangeData(change)
   const signing = _.get(response, ['credentials', 'signing'])
-  if (_.isPlainObject(signing)) {
-    _.set(instance, ['value', 'credentials', 'signing'], signing)
+  if (_.isPlainObject(signing) && !_.isEmpty(signing)) {
+    const { signOnMode } = instance.value
+    if (_.isString(signOnMode)) {
+      _.set(instance, ['value', signOnMode, 'credentials', 'signing'], signing)
+    }
   }
   if (instance.value.signOnMode === AUTO_LOGIN_APP) {
     const createdAppName = _.get(response, ['name'])
     if (_.isString(createdAppName)) {
-      _.set(instance, ['value', 'name'], createdAppName)
+      _.set(instance, ['value', AUTO_LOGIN_APP, 'name'], createdAppName)
     }
   }
   if (instance.value.licensing !== undefined) {
@@ -93,7 +96,6 @@ const assignCreatedFieldsToApp = (
     }
   }
 }
-
 
 // TODO SALTO-2736 : adjust to support addition of more application types
 const deployApp = async (

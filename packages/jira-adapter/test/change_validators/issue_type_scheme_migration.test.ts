@@ -136,6 +136,22 @@ describe('issue type scheme migration validator', () => {
     })
     expect(await callValidator()).toHaveLength(1)
   })
+  it('should assume there are issues bad response from server', async () => {
+    mockConnection.get.mockResolvedValueOnce({
+      status: 200,
+      data: [],
+    })
+    mockConnection.get.mockResolvedValueOnce({
+      status: 200,
+      data: {
+        something: 'else',
+      },
+    })
+    const errors = await callValidator()
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toEqual('Cannot remove issue types from scheme')
+    expect(errors[0].detailedMessage).toEqual('The issue types issueType2, issueType3 have assigned issues and cannot be removed from this issue type scheme')
+  })
   it('should return a error if there are linked issues', async () => {
     const errors = await callValidator()
     expect(errors).toHaveLength(1)

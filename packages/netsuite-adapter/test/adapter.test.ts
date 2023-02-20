@@ -550,6 +550,50 @@ describe('Adapter', () => {
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
   })
+  describe('fetchWithChangeDetection', () => {
+    const conf = {
+      fetch: {
+        exclude: {
+          types: [
+            { name: SAVED_SEARCH },
+            { name: TRANSACTION_FORM },
+          ],
+          fileCabinet: ['Some/File/Regex'],
+          customRecords: [],
+        },
+      },
+    }
+    const adapter = new NetsuiteAdapter({
+      client: new NetsuiteClient(client),
+      elementsSource: buildElementsSourceFromElements([]),
+      filtersCreators: [firstDummyFilter, secondDummyFilter],
+      config: conf,
+      getElemIdFunc: mockGetElemIdFunc,
+    })
+
+    it('isPartial should be true', async () => {
+      const { isPartial } = await adapter.fetchWithChangeDetection(mockFetchOpts)
+      expect(isPartial).toBeTruthy()
+    })
+
+    it('should match the types but the ones in exclude', async () => {
+      await adapter.fetchWithChangeDetection(mockFetchOpts)
+
+      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+      expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
+      expect(customObjectsQuery.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
+      expect(customObjectsQuery.isTypeMatch(TRANSACTION_FORM)).toBeFalsy()
+    })
+
+    it('should match the files that not in filePathRegexSkipList', async () => {
+      await adapter.fetchWithChangeDetection(mockFetchOpts)
+
+      const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
+      expect(fileCabinetQuery.isFileMatch('Some/AnotherFile/another')).toBeTruthy()
+      expect(fileCabinetQuery.isFileMatch('Some/File/another')).toBeTruthy()
+      expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
+    })
+  })
 
 
   describe('deploy', () => {

@@ -26,9 +26,7 @@ import {
   getParents,
   buildElementsSourceFromElements,
   createSchemeGuard,
-  applicableToParent,
-  isHidden,
-  isHiddenValue,
+  core,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
@@ -371,14 +369,15 @@ export const ensureSafeFilterFetch = ({
 )
 
 /**
- * Remove after https://salto-io.atlassian.net/browse/SALTO-3626, and use adapter_utils.isUpdatable
+ * Remove after https://salto-io.atlassian.net/browse/SALTO-3626, and use adapter_utils.core.isUpdatable
  */
 export const isUpdatable = ({ annotations }: Element): boolean => (
-  annotations[FIELD_ANNOTATIONS.UPDATEABLE] === true && (annotations[CORE_ANNOTATIONS.UPDATABLE] ?? true)
+  annotations[FIELD_ANNOTATIONS.UPDATEABLE] === true && core.isUpdatable(annotations[CORE_ANNOTATIONS.UPDATABLE])
 )
 
 export const isRestrictableField = (field: Field): boolean => (
-  !isHiddenValue(field)
+  !core.isHiddenValue(field)
   && isUpdatable(field)
-  && applicableToParent(field, element => !isHidden(element))
+  && !core.isHidden(field)
+  && !core.isHidden(field.parent)
 )

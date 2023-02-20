@@ -22,7 +22,7 @@ import {
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
   ContainerType, TypeReference, createRefToElmWithValue, VariableExpression, getChangeData,
 } from '@salto-io/adapter-api'
-import { collections, types } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import Joi from 'joi'
 import {
@@ -34,8 +34,7 @@ import {
   transformElement, toObjectType, getParents, resolveTypeShallow,
   elementExpressionStringifyReplacer,
   createSchemeGuard,
-  getParent, applicableToParent, applicableToParentAsync, isHidden, isHiddenValue, isUpdatable,
-  isCreatable, isDeletable, isRestricted, isRequired,
+  getParent,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2470,83 +2469,6 @@ describe('Test utils.ts', () => {
       const schemeGuard = createSchemeGuard<{a: string}>(scheme, 'message')
       expect(schemeGuard({ a: 'string' })).toBeTruthy()
       expect(schemeGuard({ a: 2 })).toBeFalsy()
-    })
-  })
-  describe('isCoreAnnotation methods', () => {
-    type TestInput = {
-      method: types.Predicate<Element>
-      annotation: string
-    }
-    const withName = (testInput: TestInput): TestInput & {name: string} => (
-      {
-        ...testInput,
-        name: testInput.method.name,
-      }
-    )
-    describe.each([
-      { method: isHidden, annotation: CORE_ANNOTATIONS.HIDDEN },
-      { method: isHiddenValue, annotation: CORE_ANNOTATIONS.HIDDEN_VALUE },
-      { method: isUpdatable, annotation: CORE_ANNOTATIONS.UPDATABLE },
-      { method: isCreatable, annotation: CORE_ANNOTATIONS.CREATABLE },
-      { method: isDeletable, annotation: CORE_ANNOTATIONS.DELETABLE },
-      { method: isRestricted, annotation: CORE_ANNOTATIONS.RESTRICTION },
-      { method: isRequired, annotation: CORE_ANNOTATIONS.REQUIRED },
-    ].map(withName))('$name', ({ method, annotation }) => {
-      let field: Field
-      beforeEach(() => {
-        field = new Field(mockType, 'testField', BuiltinTypes.STRING)
-      })
-      describe.each([
-        { annotationValue: true, expected: true },
-        { annotationValue: false, expected: false },
-        { annotationValue: undefined, expected: false },
-      ])('when annotation value is $annotationValue', ({ annotationValue, expected }) => {
-        beforeEach(() => {
-          field.annotations[annotation] = annotationValue
-        })
-        it(`should return ${expected}`, () => {
-          expect(method(field)).toEqual(expected)
-        })
-      })
-    })
-  })
-  describe('isApplicableToParent and isApplicableToParentAsync', () => {
-    const FIELD_NAME = 'testField'
-    let field: Field
-
-    beforeEach(() => {
-      const parent = new ObjectType({
-        elemID: new ElemID('adapter', 'TestObject'),
-        fields: {
-          [FIELD_NAME]: {
-            refType: BuiltinTypes.STRING,
-            annotations: {
-              [CORE_ANNOTATIONS.UPDATABLE]: true,
-              [CORE_ANNOTATIONS.DELETABLE]: false,
-            },
-          },
-        },
-        annotations: {
-          [CORE_ANNOTATIONS.UPDATABLE]: true,
-          [CORE_ANNOTATIONS.DELETABLE]: true,
-        },
-      })
-      field = parent.fields[FIELD_NAME]
-    })
-    it('should return true when the given predicate applies to both', async () => {
-      expect(applicableToParent(field, e => e.annotations[CORE_ANNOTATIONS.UPDATABLE] === true)).toEqual(true)
-      expect(await applicableToParentAsync(
-        field,
-        async e => e.annotations[CORE_ANNOTATIONS.UPDATABLE] === true
-      )).toEqual(true)
-    })
-
-    it('should return false when the given predicate does not apply to both', async () => {
-      expect(applicableToParent(field, e => e.annotations[CORE_ANNOTATIONS.DELETABLE] === true)).toEqual(false)
-      expect(await applicableToParentAsync(
-        field,
-        async e => e.annotations[CORE_ANNOTATIONS.DELETABLE] === true
-      )).toEqual(false)
     })
   })
 })

@@ -17,12 +17,14 @@
 import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { CONFIG_FEATURES } from '../constants'
 import { Graph, SDFObjectNode } from './graph_utils'
 import { CustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from './utils'
 
 type FileCabinetCustomType = FileCustomizationInfo | FolderCustomizationInfo
+const log = logger(module)
 
 export const XML_FILE_SUFFIX = '.xml'
 export const FILE_CABINET_DIR = 'FileCabinet'
@@ -49,9 +51,9 @@ export const getFileCabinetTypesPath = (dirPath: string, fileCabinetCustTypeInfo
 const getFileOrFolderString = (fileCabinetCusTypeInfo: FileCabinetCustomType): string => {
   const filename = fileCabinetCusTypeInfo.path.slice(-1)[0]
   if (isFolderCustomizationInfo(fileCabinetCusTypeInfo)) {
-    return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}/*`
+    return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}${osPath.sep}*`
   }
-  return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}/${filename}`
+  return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}${osPath.sep}${filename}`
 }
 
 export const reorderDeployXml = (
@@ -66,12 +68,15 @@ export const reorderDeployXml = (
   )
   const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })
   const { objects, files } = deployXml.deploy
+
+  log.debug('Deploying %d objects in the following order: %o', objectNodes.length, objectNodes.map(node => node.serviceid))
   if (objectNodes.length > 0) {
     objects.path = objectNodes
       .map(node => getCustomTypeInfoPath(PROJECT_ROOT_TILDE_PREFIX, node.serviceid, XML_FILE_SUFFIX))
       .map(path => path.slice(1)) // remove the '/' prefix
     objects.path.push(`~/${OBJECTS_DIR}/*`)
   }
+  log.debug('Deploying %d file cabinet objects in the following order: %o', fileCabinetNodes.length, fileCabinetNodes.map(node => node.serviceid))
   if (fileCabinetNodes.length > 0) {
     files.path = fileCabinetNodes
       .map(node => node.customizationInfo)

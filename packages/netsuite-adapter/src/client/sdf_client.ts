@@ -172,7 +172,6 @@ export const convertToXmlContent = (customizationInfo: CustomizationInfo): strin
 const writeFileInFolder = async (folderPath: string, filename: string, content: string | Buffer):
   Promise<void> => {
   await mkdirp(folderPath)
-  osPath.resolve(folderPath, filename)
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
 

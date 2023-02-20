@@ -55,10 +55,10 @@ const getIssueTypeSchemeMigrationError = (
 
 const areIssueTypesUsed = async (
   client: JiraClient,
-  issueTypes: string[],
+  issueType: string,
   linkedProjectNames: string[],
 ): Promise<boolean> => {
-  const jql = `project in (${linkedProjectNames.join(',')}) AND issuetype in (${issueTypes.join(',')})`
+  const jql = `project in (${linkedProjectNames.join(',')}) AND issuetype = ${issueType}`
   let response: clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   try {
     response = await client.getSinglePage({
@@ -101,8 +101,11 @@ export const issueTypeSchemeMigrationValidator = (
       const issueTypeScheme = getChangeData(change)
       const linkedProjectNames = issueTypeSchemesToProjects[issueTypeScheme.elemID.getFullName()]
         .map(project => project.value.name)
-      if (await areIssueTypesUsed(client, removedIssueTypeNames, linkedProjectNames)) {
-        return getIssueTypeSchemeMigrationError(issueTypeScheme, removedIssueTypeNames)
+      const removedTypesWithIssues = await awu(removedIssueTypeNames).filter(async issueType => (
+        areIssueTypesUsed(client, issueType, linkedProjectNames)
+      )).toArray()
+      if (removedTypesWithIssues.length > 0) {
+        return getIssueTypeSchemeMigrationError(issueTypeScheme, removedTypesWithIssues)
       }
       return undefined
     }).filter(isDefined).toArray()

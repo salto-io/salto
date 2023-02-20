@@ -159,6 +159,14 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Flow' },
   },
   {
+    src: { field: 'lightningComponent', parentTypes: ['QuickAction'] },
+    target: { type: 'AuraDefinitionBundle' },
+  },
+  {
+    src: { field: 'lightningComponent', parentTypes: ['QuickAction'] },
+    target: { type: 'ApexPage' },
+  },
+  {
     src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
     target: { type: 'Letterhead' },
   },

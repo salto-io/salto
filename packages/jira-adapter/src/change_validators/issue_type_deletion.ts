@@ -61,8 +61,8 @@ const getRelevantChanges = (changes: ReadonlyArray<Change>): RemovalChange<Insta
 const getRemovedIssueTypeUsedError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error' as SeverityLevel,
-  message: 'Cannot remove used issue type.',
-  detailedMessage: 'Cannot remove issue type that has issues.',
+  message: 'Cannot remove issue type with existing issues.',
+  detailedMessage: 'This issue type has existing issues across all projects. You must delete all issues of this type before you can delete the issue type.',
 })
 
 export const issueTypeDeletionValidator: (client: JiraClient) =>

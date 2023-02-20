@@ -74,6 +74,7 @@ describe('issue type deletion validator', () => {
       status: 200,
       data: [],
     })
+    expect(await validator([toChange({ before: instance })])).toHaveLength(1)
     mockConnection.get.mockResolvedValueOnce({
       status: 200,
       data: {
@@ -81,13 +82,11 @@ describe('issue type deletion validator', () => {
       },
     })
     expect(await validator([toChange({ before: instance })])).toHaveLength(1)
-    expect(await validator([toChange({ before: instance })])).toHaveLength(1)
-    // check for logs??
   })
   it('should return a error if there are linked issues', async () => {
     const errors = await validator([toChange({ before: instance })])
     expect(errors).toHaveLength(1)
-    expect(errors[0].message).toEqual('Cannot remove used issue type.')
-    expect(errors[0].detailedMessage).toEqual('Cannot remove issue type that has issues.')
+    expect(errors[0].message).toEqual('Cannot remove issue type with existing issues.')
+    expect(errors[0].detailedMessage).toEqual('This issue type has existing issues across all projects. You must delete all issues of this type before you can delete the issue type.')
   })
 })

@@ -28,7 +28,7 @@ const getCpqError = (
   elemID,
   severity: 'Info',
   message: 'CPQ data changes detected',
-  detailedMessage: '',
+  detailedMessage: 'CPQ data changes detected',
   deployActions: {
     preAction: {
       title: 'Disable CPQ Triggers',

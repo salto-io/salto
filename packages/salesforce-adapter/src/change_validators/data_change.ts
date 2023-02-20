@@ -23,8 +23,8 @@ const { isDefined } = values
 const createChangeError = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
   severity: 'Info',
-  message: 'Data instances were changed in deployment.',
-  detailedMessage: 'Data instances were changed in this deployment.',
+  message: 'Data instances will be changed in deployment.',
+  detailedMessage: 'Data instances will be changed in this deployment.',
 })
 
 /**

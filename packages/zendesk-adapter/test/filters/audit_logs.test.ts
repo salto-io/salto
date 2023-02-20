@@ -18,7 +18,7 @@ import { elements as elementsUtils, client as clientUtils, filterUtils } from '@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import ZendeskClient from '../../src/client/client'
-import filterCreator, { AUDIT_TIME_TYPE_ID } from '../../src/filters/audit_logs'
+import filterCreator, { AUDIT_TIME_TYPE_ID, DELETED_USER } from '../../src/filters/audit_logs'
 import { createFilterCreatorParams } from '../utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { getIdByName } from '../../src/user_utils'
@@ -543,11 +543,11 @@ describe('audit_logs filter', () => {
         })
 
       await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(1) // time, 1 automation, ticket_field, custom_field
+      expect(mockGet).toHaveBeenCalledTimes(1) // time
       expect(elements).toHaveLength(3)
       // automation and translation
       expect(elements.filter(e => e.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'deleted user')).toHaveLength(1)
+        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === DELETED_USER)).toHaveLength(1)
     })
   })
 })

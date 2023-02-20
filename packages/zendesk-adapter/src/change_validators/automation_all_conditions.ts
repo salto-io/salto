@@ -24,10 +24,10 @@ import { resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isConditions } from '../filters/utils'
 import { lookupFunc } from '../filters/field_references'
+import { AUTOMATION_TYPE_NAME } from '../constants'
 
 
 const { awu } = collections.asynciterable
-export const AUTOMATION_TYPE_NAME = 'automation'
 
 const fieldExist = (field: string): boolean =>
   ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)

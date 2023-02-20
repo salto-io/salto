@@ -25,7 +25,7 @@ export const SECTION_TYPE_NAME = 'section'
 export const SECTION_TRANSLATION_TYPE_NAME = 'section_translation'
 export const CATEGORY_TYPE_NAME = 'category'
 export const CATEGORY_TRANSLATION_TYPE_NAME = 'category_translation'
-export const TRANSLATIONS = [
+export const TRANSLATION_TYPE_NAMES = [
   CATEGORY_TRANSLATION_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME,

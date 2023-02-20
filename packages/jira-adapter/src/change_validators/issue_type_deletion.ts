@@ -20,7 +20,6 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ISSUE_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config/config'
 
 const { awu } = collections.asynciterable
 
@@ -66,7 +65,7 @@ const getRemovedIssueTypeUsedError = (instance: InstanceElement): ChangeError =>
   detailedMessage: 'Cannot remove issue type that has issues.',
 })
 
-export const projectDeletionValidator: (client: JiraClient, config: JiraConfig) =>
+export const issueTypeDeletionValidator: (client: JiraClient) =>
   ChangeValidator = client => async changes => {
     const relevantChanges = getRelevantChanges(changes)
     return awu(relevantChanges)

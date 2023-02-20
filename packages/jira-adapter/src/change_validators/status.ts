@@ -33,7 +33,7 @@ export const statusValidator: ChangeValidator = async changes => (
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'statusCategory can not have No_Category value',
-      detailedMessage: `This status has an invalid statusCategory ${instance.value.statusCategory.elemID.getFullName()}. statusCategory should be one of the following: Done, In_Progress or To_Do.`,
+      detailedMessage: `This status has an invalid statusCategory ${instance.value.statusCategory.elemID.name}. statusCategory should be one of the following: Done, In_Progress or To_Do.`,
     }))
     .toArray()
 )

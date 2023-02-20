@@ -62,7 +62,7 @@ describe('statusValidator', () => {
         elemID: instance.elemID,
         severity: 'Error',
         message: 'statusCategory can not have No_Category value',
-        detailedMessage: 'This status has an invalid statusCategory jira.StatusCategory.instance.No_Category@s. statusCategory should be one of the following: Done, In_Progress or To_Do.',
+        detailedMessage: 'This status has an invalid statusCategory No_Category@s. statusCategory should be one of the following: Done, In_Progress or To_Do.',
       },
     ])
   })

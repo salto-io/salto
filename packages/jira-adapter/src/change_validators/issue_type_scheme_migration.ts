@@ -17,10 +17,13 @@ import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement, i
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import JiraClient from '../client/client'
 import { ISSUE_TYPE_SCHEMA_NAME, PROJECT_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 const { isDefined } = values
 
 const isSameRef = (ref1: ReferenceExpression, ref2: ReferenceExpression): boolean =>
@@ -69,9 +72,12 @@ const areIssueTypesUsed = async (
       },
     })
   } catch (e) {
+    log.error(`Received an error Jira search API, ${e.message}. Assuming issue type "${issueType}" has issues.`)
     return true
   }
+
   if (Array.isArray(response.data) || response.data.total === undefined) {
+    log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming issue type "${issueType}" has issues.`)
     return true
   }
   return response.data.total !== 0

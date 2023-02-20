@@ -797,8 +797,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
-  // TODO change this to adapter swagger repo path
-  url: 'file:/Users/shirreifenberg/shirWorkspaces/oktaForDemo/managmentAfterEdit_5.0.0.yml',
+  url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/5c352e8236fdced0ccd2caed13bf26b608c8ab03/okta/management-swagger-v3.yaml',
   additionalTypes: [
     { typeName: 'AuthenticatorEnrollmentPolicies', cloneFrom: 'api__v1__policies' },
     { typeName: 'GlobalSessionPolicies', cloneFrom: 'api__v1__policies' },
@@ -837,7 +836,6 @@ export const SUPPORTED_TYPES = {
   GroupSchema: ['GroupSchema'],
   UserSchema: ['UserSchema'],
   UserType: ['api__v1__meta__types__user'],
-  // OrgContactTypeObj: ['api__v1__org__contacts'],
   OrgSettings: ['OrgSetting'],
   Policy: [
     'AuthenticatorEnrollmentPolicies',

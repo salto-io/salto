@@ -2,9 +2,9 @@
 ## Default Configuration
 ```hcl
 okta {
-  apiDefinitions = {
+apiDefinitions = {
     swagger = {
-      url = "https://raw.githubusercontent.com/okta/okta-management-openapi-spec/master/dist/spec.yaml"
+      url = "https://raw.githubusercontent.com/salto-io/adapter-swaggers/5c352e8236fdced0ccd2caed13bf26b608c8ab03/okta/management-swagger-v3.yaml"
       additionalTypes = [
         {
           typeName = "AuthenticatorEnrollmentPolicies"
@@ -31,12 +31,14 @@ okta {
           cloneFrom = "api__v1__policies"
         },
         {
-          typeName = "OAuthAuthorizationPolicies"
-          cloneFrom = "api__v1__policies"
-        },
-        {
           typeName = "RolePage"
           cloneFrom = "api__v1__groups___groupId___roles@uuuuuu_00123_00125uu"
+        },
+      ]
+      typeNameOverrides = [
+        {
+          originalName = "DomainResponse"
+          newName = "Domain"
         },
       ]
     }
@@ -51,6 +53,12 @@ okta {
           },
           {
             fieldName = "lastUpdated"
+          },
+          {
+            fieldName = "createdBy"
+          },
+          {
+            fieldName = "lastUpdatedBy"
           },
         ]
       }
@@ -163,6 +171,28 @@ okta {
             "label",
           ]
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       api__v1__apps = {
@@ -233,8 +263,7 @@ okta {
             },
           ]
           idFields = [
-            "name",
-            "status",
+            "label",
           ]
           serviceIdField = "id"
           fieldsToHide = [
@@ -363,16 +392,6 @@ okta {
           url = "/api/v1/idps"
           recurseInto = [
             {
-              type = "api__v1__idps___idpId___users@uuuuuu_00123_00125uu"
-              toField = "users"
-              context = [
-                {
-                  name = "idpId"
-                  fromField = "id"
-                },
-              ]
-            },
-            {
               type = "api__v1__idps___idpId___credentials__csrs@uuuuuu_00123_00125uuuu"
               toField = "CSRs"
               context = [
@@ -398,6 +417,28 @@ okta {
             },
           ]
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       api__v1__features = {
@@ -426,6 +467,36 @@ okta {
             },
           ]
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      api__v1__policies___policyId___rules@uuuuuu_00123_00125uu = {
+        request = {
+          url = "/api/v1/policies/{policyId}/rules"
+        }
+        transformation = {
+          dataField = "."
         }
       }
       AuthenticatorEnrollmentPolicies = {
@@ -548,32 +619,40 @@ okta {
           ]
         }
       }
-      OAuthAuthorizationPolicies = {
-        request = {
-          url = "/api/v1/policies"
-          queryParams = {
-            type = "OAUTH_AUTHORIZATION_POLICY"
-          }
-          recurseInto = [
-            {
-              type = "api__v1__policies___policyId___rules@uuuuuu_00123_00125uu"
-              toField = "policyRules"
-              context = [
-                {
-                  name = "policyId"
-                  fromField = "id"
-                },
-              ]
-            },
-          ]
-        }
-      }
       UserSchema = {
         request = {
           url = "/api/v1/meta/schemas/user/default"
         }
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "description"
+              fieldType = "string"
+            },
+          ]
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       User = {
@@ -604,8 +683,8 @@ okta {
               fieldType = "list<PolicyRule>"
             },
             {
-              fieldName = "settings"
-              fieldType = "map<unknown>"
+              fieldName = "conditions"
+              fieldType = "PolicyRuleConditions"
             },
           ]
           idFields = [
@@ -667,6 +746,23 @@ okta {
         transformation = {
           idFields = [
             "contactType",
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
           ]
         }
       }
@@ -761,7 +857,24 @@ okta {
           ]
           fieldsToOmit = [
             {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
               fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
             },
           ]
           serviceIdField = "id"
@@ -776,6 +889,23 @@ okta {
             },
           ]
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
         }
       }
       api__v1__brands = {
@@ -824,59 +954,268 @@ okta {
             "title",
           ]
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       Domain = {
         transformation = {
           isSingleton = true
           serviceIdField = "id"
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       OrgSetting = {
+        request = {
+          url = "/api/v1/org"
+          recurseInto = [
+            {
+              type = "api__v1__org__contacts"
+              toField = "contactTypes"
+              context = [
+              ]
+            },
+          ]
+        }
         transformation = {
           isSingleton = true
           serviceIdField = "id"
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+          dataField = "."
+          fieldTypeOverrides = [
+            {
+              fieldName = "contactTypes"
+              fieldType = "list<OrgContactTypeObj>"
+            },
+          ]
+        }
+      }
+      api__v1__org__contacts = {
+        request = {
+          url = "/api/v1/org/contacts"
+        }
+        transformation = {
+          dataField = "."
         }
       }
       Brand = {
         transformation = {
           isSingleton = true
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       Authenticator = {
         transformation = {
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       EventHook = {
         transformation = {
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       GroupRule = {
         transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "allGroupsValid"
+              fieldType = "boolean"
+            },
+          ]
           serviceIdField = "id"
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       InlineHook = {
         transformation = {
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       NetworkZone = {
         transformation = {
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       TrustedOrigin = {
         transformation = {
           serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       UserType = {
         transformation = {
           serviceIdField = "id"
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
         }
       }
       GroupSchemaAttribute = {
@@ -924,6 +1263,11 @@ okta {
             },
           ]
           serviceIdField = "id"
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
         }
       }
       AppUserCredentials = {
@@ -949,6 +1293,140 @@ okta {
           fieldsToOmit = [
             {
               fieldName = "credentials"
+            },
+          ]
+        }
+      }
+      IdentityProviderCredentialsClient = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "client_secret"
+            },
+          ]
+        }
+      }
+      AuthenticatorProviderConfiguration = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "secretKey"
+            },
+            {
+              fieldName = "sharedSecret"
+            },
+          ]
+        }
+      }
+      OAuth2Scope = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "_links"
+              fieldType = "map<unknown>"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "_links"
+            },
+          ]
+        }
+      }
+      OAuth2Claim = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "_links"
+            },
+          ]
+        }
+      }
+      AuthorizationServerPolicyRule = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "_links"
+              fieldType = "map<unknown>"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+        }
+      }
+      ProfileMapping = {
+        transformation = {
+          idFields = [
+            "source.name",
+            "target.name",
+          ]
+          serviceIdField = "id"
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+            },
+          ]
+        }
+      }
+      ProfileMappingSource = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "created"
+            },
+            {
+              fieldName = "lastUpdated"
+            },
+            {
+              fieldName = "createdBy"
+            },
+            {
+              fieldName = "lastUpdatedBy"
+            },
+            {
+              fieldName = "_links"
+            },
+          ]
+        }
+      }
+      ApplicationLinks = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "profileEnrollment"
+              fieldType = "HrefObject"
             },
           ]
         }
@@ -1000,9 +1478,6 @@ okta {
       UserType = [
         "api__v1__meta__types__user",
       ]
-      OrgContactTypeObj = [
-        "api__v1__org__contacts",
-      ]
       OrgSettings = [
         "OrgSetting",
       ]
@@ -1013,7 +1488,6 @@ okta {
         "ProfileEnrollmentPolicies",
         "IdentityProviderRoutingRules",
         "PasswordPolicies",
-        "OAuthAuthorizationPolicies",
       ]
       SmsTemplate = [
         "api__v1__templates__sms",

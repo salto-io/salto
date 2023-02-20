@@ -1779,82 +1779,171 @@ describe('fetch from workspace', () => {
 
     describe('with fromState false', () => {
       describe('With no errors and warnings', () => {
-        beforeEach(async () => {
-          fetchRes = await fetchChangesFromWorkspace({
-            otherWorkspace: mockWorkspace({
-              elements: mergedElements,
-              index: await awu(pi.entries()).toArray(),
-              accountConfigs: { salto: configs[0] },
-              stateElements,
-              parsedNaclFiles: {
-                'salto/nopath.nacl': [noPathElementNACL],
-                'salto/moved.nacl': [movedElem],
-              },
-              staticFilesSource: otherWorkspaceStaticFilesSource,
-            }),
-            fetchAccounts: ['salto'],
-            workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            currentConfigs: configs,
-            env: 'default',
-            fromState: false,
+        describe('without elementsScope', () => {
+          beforeEach(async () => {
+            fetchRes = await fetchChangesFromWorkspace({
+              otherWorkspace: mockWorkspace({
+                elements: mergedElements,
+                index: await awu(pi.entries()).toArray(),
+                accountConfigs: { salto: configs[0] },
+                stateElements,
+                parsedNaclFiles: {
+                  'salto/nopath.nacl': [noPathElementNACL],
+                  'salto/moved.nacl': [movedElem],
+                },
+                staticFilesSource: otherWorkspaceStaticFilesSource,
+              }),
+              fetchAccounts: ['salto'],
+              workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              currentConfigs: configs,
+              env: 'default',
+              fromState: false,
+            })
+            resElements = [...fetchRes.elements]
           })
-          resElements = [...fetchRes.elements]
+
+          it('should return all merged elements of the fetched services', () => {
+            expect(resElements.sort(elemIDSorter)).toEqual(mergedElements
+              .filter(e => e.elemID.adapter === 'salto')
+              .sort(elemIDSorter))
+          })
+
+          it('should return the elem with diff between merged and state with merged val', () => {
+            const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
+            expect(editElements).toHaveLength(1)
+            expect(editElements[0].isEqual(editNaclElem)).toBeTruthy()
+          })
+
+          it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
+            const unmerged = [...fetchRes.unmergedElements]
+            const expectedFrags = unmergedElementsWithEditNaclElem
+              .filter(e => e.elemID.adapter === 'salto')
+            expect(unmerged).toHaveLength(expectedFrags.length)
+            expectedFrags
+              .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
+                .toHaveLength(1))
+          })
+
+          it('should create changes based on the current elements', () => {
+            const changes = [...fetchRes.changes]
+            const unmergedDiffElement = unmergedElementsWithEditNaclElem
+              .filter(elem => elem.elemID.getFullName() === 'salto.obj')
+            const changesElements = changes
+              .map(change => getChangeData(change.change))
+            unmergedDiffElement
+              .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
+                .toHaveLength(1))
+          })
+
+          it('should return changes with static files content from the elements', async () => {
+            const changes = [...fetchRes.changes]
+            const newStaticInst = changes
+              .filter(change => change.change.id.isEqual(newNaclStaticInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(newStaticInst).toHaveLength(1)
+            expect(await newStaticInst[0].value.staticFileField.getContent())
+              .toEqual(await fileOne.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
+              .toEqual(await fileTwo.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
+              .toEqual(await fileThree.getContent())
+            const modifyStaticVals = changes
+              .filter(change =>
+                change.change.id.createTopLevelParentID().parent
+                  .isEqual(editNaclExistingInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(modifyStaticVals).toHaveLength(3)
+            const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
+            expect(staticFileModifies).toHaveLength(3)
+          })
         })
 
-        it('should return all merged elements of the fetched services', () => {
-          expect(resElements.sort(elemIDSorter)).toEqual(mergedElements
-            .filter(e => e.elemID.adapter === 'salto')
-            .sort(elemIDSorter))
-        })
+        describe('with elementsScope', () => {
+          const elementsScope = [
+            editNaclExistingInstance.elemID.getFullName(),
+            newNaclStaticInstance.elemID.getFullName(),
+            editNaclElem.elemID.getFullName(),
+          ]
+          beforeEach(async () => {
+            fetchRes = await fetchChangesFromWorkspace({
+              otherWorkspace: mockWorkspace({
+                elements: mergedElements,
+                index: await awu(pi.entries()).toArray(),
+                accountConfigs: { salto: configs[0] },
+                stateElements,
+                parsedNaclFiles: {
+                  'salto/nopath.nacl': [noPathElementNACL],
+                  'salto/moved.nacl': [movedElem],
+                },
+                staticFilesSource: otherWorkspaceStaticFilesSource,
+              }),
+              fetchAccounts: ['salto'],
+              workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              currentConfigs: configs,
+              env: 'default',
+              fromState: false,
+              elementsScope,
+            })
+            resElements = [...fetchRes.elements]
+          })
 
-        it('should return the elem with diff between merged and state with merged val', () => {
-          const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
-          expect(editElements).toHaveLength(1)
-          expect(editElements[0].isEqual(editNaclElem)).toBeTruthy()
-        })
+          it('should return only scoped merged elements of the fetched services', () => {
+            expect(resElements.sort(elemIDSorter)).toEqual(mergedElements
+              .filter(e => elementsScope.includes(e.elemID.getFullName()))
+              .sort(elemIDSorter))
+          })
 
-        it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
-          const unmerged = [...fetchRes.unmergedElements]
-          const expectedFrags = unmergedElementsWithEditNaclElem
-            .filter(e => e.elemID.adapter === 'salto')
-          expect(unmerged).toHaveLength(expectedFrags.length)
-          expectedFrags
-            .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
-              .toHaveLength(1))
-        })
+          it('should return the elem with diff between merged and state with merged val', () => {
+            const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
+            expect(editElements).toHaveLength(1)
+            expect(editElements[0].isEqual(editNaclElem)).toBeTruthy()
+          })
 
-        it('should create changes based on the current elements', () => {
-          const changes = [...fetchRes.changes]
-          const unmergedDiffElement = unmergedElementsWithEditNaclElem
-            .filter(elem => elem.elemID.getFullName() === 'salto.obj')
-          const changesElements = changes
-            .map(change => getChangeData(change.change))
-          unmergedDiffElement
-            .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
-              .toHaveLength(1))
-        })
+          it('should return only scoped unmerged elements fragments with the same paths as the source paths', () => {
+            const unmerged = [...fetchRes.unmergedElements]
+            const expectedFrags = unmergedElementsWithEditNaclElem
+              .filter(e => elementsScope.includes(e.elemID.getFullName()))
+            expect(unmerged).toHaveLength(expectedFrags.length)
+            expectedFrags
+              .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
+                .toHaveLength(1))
+          })
 
-        it('should return changes with static files content from the elements', async () => {
-          const changes = [...fetchRes.changes]
-          const newStaticInst = changes
-            .filter(change => change.change.id.isEqual(newNaclStaticInstance.elemID))
-            .map(change => getChangeData(change.change))
-          expect(newStaticInst).toHaveLength(1)
-          expect(await newStaticInst[0].value.staticFileField.getContent())
-            .toEqual(await fileOne.getContent())
-          expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
-            .toEqual(await fileTwo.getContent())
-          expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
-            .toEqual(await fileThree.getContent())
-          const modifyStaticVals = changes
-            .filter(change =>
-              change.change.id.createTopLevelParentID().parent
-                .isEqual(editNaclExistingInstance.elemID))
-            .map(change => getChangeData(change.change))
-          expect(modifyStaticVals).toHaveLength(3)
-          const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
-          expect(staticFileModifies).toHaveLength(3)
+          it('should create changes based on the scoped current elements', () => {
+            const changes = [...fetchRes.changes]
+            const unmergedDiffElement = unmergedElementsWithEditNaclElem
+              .filter(e => e.elemID.getFullName() === 'salto.existing.instance.new')
+            const changesElements = changes
+              .map(change => getChangeData(change.change))
+            unmergedDiffElement
+              .forEach(frag =>
+                expect(changesElements.filter(e => e.isEqual(frag)))
+                  .toHaveLength(1))
+          })
+
+          it('should return changes with static files content from the elements', async () => {
+            const changes = [...fetchRes.changes]
+            const newStaticInst = changes
+              .filter(change => change.change.id.isEqual(newNaclStaticInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(newStaticInst).toHaveLength(1)
+            expect(await newStaticInst[0].value.staticFileField.getContent())
+              .toEqual(await fileOne.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
+              .toEqual(await fileTwo.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
+              .toEqual(await fileThree.getContent())
+            const modifyStaticVals = changes
+              .filter(change =>
+                change.change.id.createTopLevelParentID().parent
+                  .isEqual(editNaclExistingInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(modifyStaticVals).toHaveLength(3)
+            const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
+            expect(staticFileModifies).toHaveLength(3)
+          })
         })
       })
 
@@ -1890,93 +1979,193 @@ describe('fetch from workspace', () => {
 
     describe('with fromState true', () => {
       describe('With no errors and warnings', () => {
-        beforeEach(async () => {
-          fetchRes = await fetchChangesFromWorkspace({
-            otherWorkspace: mockWorkspace({
-              elements: mergedElements,
-              index: await awu(pi.entries()).toArray(),
-              accountConfigs: { salto: configs[0] },
-              stateElements,
-              staticFilesSource: otherWorkspaceStaticFilesSource,
-            }),
-            fetchAccounts: ['salto'],
-            workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
-            currentConfigs: configs,
-            env: 'default',
-            fromState: true,
+        describe('without elementsScope', () => {
+          beforeEach(async () => {
+            fetchRes = await fetchChangesFromWorkspace({
+              otherWorkspace: mockWorkspace({
+                elements: mergedElements,
+                index: await awu(pi.entries()).toArray(),
+                accountConfigs: { salto: configs[0] },
+                stateElements,
+                staticFilesSource: otherWorkspaceStaticFilesSource,
+              }),
+              fetchAccounts: ['salto'],
+              workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              currentConfigs: configs,
+              env: 'default',
+              fromState: true,
+            })
+            resElements = [...fetchRes.elements]
           })
-          resElements = [...fetchRes.elements]
+
+          it('should return all merged elements of the fetched services', () => {
+            expect(resElements.sort(elemIDSorter)).toEqual(stateElements
+              .filter(e => e.elemID.adapter === 'salto')
+              .sort(elemIDSorter))
+          })
+
+          it('should return the elem with diff between merged and state with state val', () => {
+            const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
+            expect(editElements).toHaveLength(1)
+            expect(editElements[0].isEqual(editStateElem)).toBeTruthy()
+          })
+
+          it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
+            const unmerged = [...fetchRes.unmergedElements]
+            const expectedFrags = unmergedElements
+              .filter(e => e.elemID.adapter === 'salto')
+            expect(unmerged).toHaveLength(expectedFrags.length)
+            expectedFrags
+              .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
+                .toHaveLength(1))
+          })
+
+          it('should create changes based on the current elements', () => {
+            const changes = [...fetchRes.changes]
+            const unmergedDiffElement = unmergedElements
+              .filter(elem => elem.elemID.getFullName() === 'salto.obj')
+            const changesElements = changes
+              .map(change => getChangeData(change.change))
+            unmergedDiffElement
+              .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
+                .toHaveLength(1))
+          })
+
+          it('should return changes with static files content from otherWorkspace when hashes match', async () => {
+            const changes = [...fetchRes.changes]
+            const newStaticInst = changes
+              .filter(change => change.change.id.isEqual(newStateStaticInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(newStaticInst).toHaveLength(1)
+            expect(await newStaticInst[0].value.staticFileField.getContent())
+              .toEqual(await fileOne.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
+              .toEqual(await fileTwo.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
+              .toEqual(await fileThree.getContent())
+            const modifyStaticVals = changes
+              .filter(change =>
+                change.change.id.createTopLevelParentID().parent
+                  .isEqual(editStateExistingInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(modifyStaticVals).toHaveLength(3)
+            const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
+            expect(staticFileModifies).toHaveLength(3)
+          })
+
+          it('should not have a change on the val and a error if there is a hashes mismatch (for both inner modify and a whole addition)', () => {
+            const changes = [...fetchRes.changes]
+            const mismatchValFullName = `${editStateExistingInstance.elemID.getFullName()}.hashMismatchField`
+            const mismatchFieldValChange = changes
+              .find(c => c.change.id.getFullName() === mismatchValFullName)
+            expect(mismatchFieldValChange).toBeUndefined()
+            const newInstanceWithMismatchChange = changes
+              .find(c => c.change.id.isEqual(newWithMismatch.elemID))
+            expect(newInstanceWithMismatchChange).toBeUndefined()
+            expect(fetchRes.errors).toHaveLength(2)
+            const errorsMessages = fetchRes.errors.map(err => err.message)
+            expect(errorsMessages[0]).toContain(mismatchValFullName)
+            expect(errorsMessages[1]).toContain(newWithMismatch.elemID.getFullName())
+          })
         })
 
-        it('should return all merged elements of the fetched services', () => {
-          expect(resElements.sort(elemIDSorter)).toEqual(stateElements
-            .filter(e => e.elemID.adapter === 'salto')
-            .sort(elemIDSorter))
-        })
+        describe('with elementsScope', () => {
+          const elementsScope = [
+            editNaclExistingInstance.elemID.getFullName(),
+            newNaclStaticInstance.elemID.getFullName(),
+            editNaclElem.elemID.getFullName(),
+          ]
 
-        it('should return the elem with diff between merged and state with state val', () => {
-          const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
-          expect(editElements).toHaveLength(1)
-          expect(editElements[0].isEqual(editStateElem)).toBeTruthy()
-        })
+          beforeEach(async () => {
+            fetchRes = await fetchChangesFromWorkspace({
+              otherWorkspace: mockWorkspace({
+                elements: mergedElements,
+                index: await awu(pi.entries()).toArray(),
+                accountConfigs: { salto: configs[0] },
+                stateElements,
+                staticFilesSource: otherWorkspaceStaticFilesSource,
+              }),
+              fetchAccounts: ['salto'],
+              workspaceElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              stateElements: createInMemoryElementSource([existingElement, existingInstance, existingSubType]),
+              currentConfigs: configs,
+              env: 'default',
+              fromState: true,
+              elementsScope,
+            })
+            resElements = [...fetchRes.elements]
+          })
 
-        it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
-          const unmerged = [...fetchRes.unmergedElements]
-          const expectedFrags = unmergedElements
-            .filter(e => e.elemID.adapter === 'salto')
-          expect(unmerged).toHaveLength(expectedFrags.length)
-          expectedFrags
-            .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
-              .toHaveLength(1))
-        })
+          it('should return all merged elements of the fetched services', () => {
+            expect(resElements.sort(elemIDSorter)).toEqual(stateElements
+              .filter(e => elementsScope.includes(e.elemID.getFullName()))
+              .sort(elemIDSorter))
+          })
 
-        it('should create changes based on the current elements', () => {
-          const changes = [...fetchRes.changes]
-          const unmergedDiffElement = unmergedElements
-            .filter(elem => elem.elemID.getFullName() === 'salto.obj')
-          const changesElements = changes
-            .map(change => getChangeData(change.change))
-          unmergedDiffElement
-            .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
-              .toHaveLength(1))
-        })
+          it('should return the elem with diff between merged and state with state val', () => {
+            const editElements = resElements.filter(e => e.elemID.isEqual(editElemID))
+            expect(editElements).toHaveLength(1)
+            expect(editElements[0].isEqual(editStateElem)).toBeTruthy()
+          })
 
-        it('should return changes with static files content from otherWorkspace when hashes match', async () => {
-          const changes = [...fetchRes.changes]
-          const newStaticInst = changes
-            .filter(change => change.change.id.isEqual(newStateStaticInstance.elemID))
-            .map(change => getChangeData(change.change))
-          expect(newStaticInst).toHaveLength(1)
-          expect(await newStaticInst[0].value.staticFileField.getContent())
-            .toEqual(await fileOne.getContent())
-          expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
-            .toEqual(await fileTwo.getContent())
-          expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
-            .toEqual(await fileThree.getContent())
-          const modifyStaticVals = changes
-            .filter(change =>
-              change.change.id.createTopLevelParentID().parent
-                .isEqual(editStateExistingInstance.elemID))
-            .map(change => getChangeData(change.change))
-          expect(modifyStaticVals).toHaveLength(3)
-          const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
-          expect(staticFileModifies).toHaveLength(3)
-        })
+          it('should return all unmerged elements fragments with the same paths as the source paths', () => {
+            const unmerged = [...fetchRes.unmergedElements]
+            const expectedFrags = unmergedElements
+              .filter(e => elementsScope.includes(e.elemID.getFullName()))
+            expect(unmerged)
+              .toHaveLength(expectedFrags.filter(f => elementsScope.includes(f.elemID.getFullName())).length)
+            expectedFrags
+              .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag)))
+                .toHaveLength(1))
+          })
 
-        it('should not have a change on the val and a error if there is a hashes mismatch (for both inner modify and a whole addition)', () => {
-          const changes = [...fetchRes.changes]
-          const mismatchValFullName = `${editStateExistingInstance.elemID.getFullName()}.hashMismatchField`
-          const mismatchFieldValChange = changes
-            .find(c => c.change.id.getFullName() === mismatchValFullName)
-          expect(mismatchFieldValChange).toBeUndefined()
-          const newInstanceWithMismatchChange = changes
-            .find(c => c.change.id.isEqual(newWithMismatch.elemID))
-          expect(newInstanceWithMismatchChange).toBeUndefined()
-          expect(fetchRes.errors).toHaveLength(2)
-          const errorsMessages = fetchRes.errors.map(err => err.message)
-          expect(errorsMessages[0]).toContain(mismatchValFullName)
-          expect(errorsMessages[1]).toContain(newWithMismatch.elemID.getFullName())
+          it('should create changes based on the current elements', () => {
+            const changes = [...fetchRes.changes]
+            const unmergedDiffElement = unmergedElements
+              .filter(elem => elem.elemID.getFullName() === 'salto.existing.instance.new')
+            const changesElements = changes
+              .map(change => getChangeData(change.change))
+            unmergedDiffElement
+              .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag)))
+                .toHaveLength(1))
+          })
+
+          it('should return changes with static files content from otherWorkspace when hashes match', async () => {
+            const changes = [...fetchRes.changes]
+            const newStaticInst = changes
+              .filter(change => change.change.id.isEqual(newStateStaticInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(newStaticInst).toHaveLength(1)
+            expect(await newStaticInst[0].value.staticFileField.getContent())
+              .toEqual(await fileOne.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFileField.getContent())
+              .toEqual(await fileTwo.getContent())
+            expect(await newStaticInst[0].value.complexField.staticFilesArr[0].getContent())
+              .toEqual(await fileThree.getContent())
+            const modifyStaticVals = changes
+              .filter(change =>
+                change.change.id.createTopLevelParentID().parent
+                  .isEqual(editStateExistingInstance.elemID))
+              .map(change => getChangeData(change.change))
+            expect(modifyStaticVals).toHaveLength(3)
+            const staticFileModifies = modifyStaticVals.filter(val => isStaticFile(val))
+            expect(staticFileModifies).toHaveLength(3)
+          })
+
+          it('should not have a change on the val and a error if there is a hashes mismatch for elements in scope', () => {
+            const changes = [...fetchRes.changes]
+            const mismatchValFullName = `${editStateExistingInstance.elemID.getFullName()}.hashMismatchField`
+            const mismatchFieldValChange = changes
+              .find(c => c.change.id.getFullName() === mismatchValFullName)
+            expect(mismatchFieldValChange).toBeUndefined()
+            const newInstanceWithMismatchChange = changes
+              .find(c => c.change.id.isEqual(newWithMismatch.elemID))
+            expect(newInstanceWithMismatchChange).toBeUndefined()
+            expect(fetchRes.errors).toHaveLength(1)
+            const errorsMessages = fetchRes.errors.map(err => err.message)
+            expect(errorsMessages[0]).toContain(mismatchValFullName)
+          })
         })
       })
 

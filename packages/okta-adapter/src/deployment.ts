@@ -14,8 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange } from '@salto-io/adapter-api'
-import { config as configUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
+import Joi from 'joi'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID } from '@salto-io/adapter-api'
+import { config as configUtils, deployment, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
@@ -28,6 +30,38 @@ const { isDefined } = values
 const isStringArray = (
   value: unknown,
 ): value is string[] => _.isArray(value) && value.every(_.isString)
+
+type OktaError = {
+  errorSummary: string
+  errorCauses: {
+    errorSummary: string
+  }[]
+}
+
+const OKTA_ERROR_SCHEMA = Joi.object({
+  errorSummary: Joi.string().required(),
+  errorCauses: Joi.array().items(Joi.object({
+    errorSummary: Joi.string().required(),
+  }).unknown(true).optional()),
+}).unknown(true)
+
+const isOktaError = createSchemeGuard<OktaError>(OKTA_ERROR_SCHEMA, 'Received an invalid error')
+
+const getOktaError = (elemID: ElemID, error: Error): Error => {
+  if (!(error instanceof clientUtils.HTTPError)) {
+    return error
+  }
+  const { status, data } = error.response
+  const baseErrorMessage = `Deployment of ${elemID.typeName} instance ${elemID.name} failed with status code ${status}:`
+  if (isOktaError(data)) {
+    const { errorSummary, errorCauses } = data
+    const oktaErrorMessage = _.isEmpty(errorCauses) ? errorSummary : `${errorSummary}. More info: ${errorCauses.map(c => c.errorSummary).join(',')}`
+    log.error(`${baseErrorMessage} ${oktaErrorMessage}`)
+    return new Error(`${baseErrorMessage} ${oktaErrorMessage}`)
+  }
+  log.error(`${baseErrorMessage} ${error}`)
+  return new Error(`${baseErrorMessage} ${error}`)
+}
 
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
@@ -82,8 +116,7 @@ export const defaultDeployChange = async (
     }
     return response
   } catch (err) {
-    const errorMessage = `Deployment of instance ${getChangeData(change).elemID.getFullName()} failed: ${err}`
-    throw new Error(errorMessage)
+    throw getOktaError(getChangeData(change).elemID, err)
   }
 }
 
@@ -139,8 +172,8 @@ export const deployEdges = async (
       const response = await client[deployRequest.method]({ url, data: {} })
       return response.data
     } catch (err) {
-      // TODO handle error better
-      throw new Error(`Deploy values of ${fieldName} in instance ${instance.elemID.getFullName()} failed`)
+      log.error(`Deploy values of ${fieldName} in instance ${instance.elemID.getFullName()} failed`)
+      throw getOktaError(getChangeData(change).elemID, err)
     }
   }
 

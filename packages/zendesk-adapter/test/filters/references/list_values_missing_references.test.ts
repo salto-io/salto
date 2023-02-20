@@ -58,6 +58,7 @@ describe('list values missing references filter', () => {
           { field: 'notification_sms_group', value: ['123456789', '+123456678', 'sms message'] },
           { field: 'notification_sms_grouwp', value: ['group_id', '+123456678', 'sms message'] },
           { field: 'notification_webhook', value: ['01GB7WWYD3QM8G7BWTR7A28XWR', ['one', 'two']] },
+          { field: 'notification_webhook', value: "['01GB7WWYD3QM8G7BWTR7A28XWR', ['one', 'two']]" },
           { field: 'notification_target', value: ['01GB7WWYD3QM8G7BWTR7A28XWR', 'target'] },
         ],
       },
@@ -77,7 +78,7 @@ describe('list values missing references filter', () => {
         const brokenTrigger = elements.filter(
           e => isInstanceElement(e) && e.elemID.name === 'trigger1'
         )[0] as InstanceElement
-        expect(brokenTrigger.value.actions).toHaveLength(4)
+        expect(brokenTrigger.value.actions).toHaveLength(5)
         const triggerFirstAction = brokenTrigger.value.actions[0].value
         expect(triggerFirstAction[0]).toBeInstanceOf(ReferenceExpression)
         expect(triggerFirstAction[0].value.elemID.name)
@@ -100,8 +101,8 @@ describe('list values missing references filter', () => {
         const brokenTrigger = elements.filter(
           e => isInstanceElement(e) && e.elemID.name === 'trigger1'
         )[0] as InstanceElement
-        expect(brokenTrigger.value.actions[3].field).toBe('notification_target')
-        const targetAction = brokenTrigger.value.actions[3].value
+        expect(brokenTrigger.value.actions[4].field).toBe('notification_target')
+        const targetAction = brokenTrigger.value.actions[4].value
         expect(targetAction[0]).not.toBeInstanceOf(ReferenceExpression)
         expect(targetAction[0]).toEqual('01GB7WWYD3QM8G7BWTR7A28XWR')
         expect(targetAction[1]).not.toBeInstanceOf(ReferenceExpression)

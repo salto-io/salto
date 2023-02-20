@@ -19,7 +19,7 @@ import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
 import { getMetadataTypes, isCustomRecordType, isDataObjectType, metadataTypesToList } from '../types'
-import { SUPPORTED_TYPES } from '../data_elements/types'
+import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
@@ -33,8 +33,16 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
         .map(e => e.elemID.getFullName().toLowerCase())
     )
     const dataTypes = elements.filter(isObjectType).filter(isDataObjectType)
-    const supportedTypeNames = SUPPORTED_TYPES
-      .concat(dataTypes.filter(isCustomRecordType).map(({ elemID }) => elemID.name))
+    const supportedFetchedInstancesTypeNames = SUPPORTED_TYPES
+    // types we fetch without their instances
+    const additionalFetchedTypes = Object.keys(TYPES_TO_INTERNAL_ID)
+    const customRecordTypeNames = dataTypes.filter(isCustomRecordType).map(({ elemID }) => elemID.name)
+
+    const supportedTypeNames = _.uniq(
+      supportedFetchedInstancesTypeNames
+        .concat(additionalFetchedTypes)
+        .concat(customRecordTypeNames)
+    )
 
     const supportedDataTypes = (await elementUtils.filterTypes(NETSUITE, dataTypes, supportedTypeNames))
       .filter(e => !sdfTypeNames.has(e.elemID.getFullName().toLowerCase()))

@@ -131,19 +131,7 @@ describe('expression language filter', () => {
           const policyRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'policyRuleTest')
           expect(policyRule).toBeDefined()
           expect(policyRule?.value?.ACCESS_POLICY?.conditions?.elCondition?.condition)
-            .toEqual(new TemplateExpression({
-              parts: [
-                new ReferenceExpression(
-                  userSchemaInstance.elemID.createNestedID(...customPath),
-                  _.get(userSchemaInstance.value, customPath)
-                ),
-                ' == \'salto\' AND user.isMemberOf({\'group.id\':{',
-                new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),
-                ', ',
-                new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
-                '}})',
-              ],
-            }))
+            .toEqual(policyRuleTemplate)
         })
 
         it('should not create references if there is no match', async () => {
@@ -226,8 +214,8 @@ describe('expression language filter', () => {
           'policyRuleTest',
           policyRuleType,
           {
-            conditions: {
-              additionalProperties: {
+            ACCESS_POLICY: {
+              conditions: {
                 elCondition: {
                   condition: policyRuleTemplate,
                 },
@@ -249,7 +237,7 @@ describe('expression language filter', () => {
               .toEqual('(String.stringContains(user.department, "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup("123A") AND !isMemberOfAnyGroup("234B", "345C")')
             const policyRuleInstance = instances.find(i => i.elemID.name === 'policyRuleTest')
             expect(policyRuleInstance).toBeDefined()
-            expect(policyRuleInstance?.value?.conditions?.additionalProperties?.elCondition?.condition)
+            expect(policyRuleInstance?.value?.ACCESS_POLICY?.conditions?.elCondition?.condition)
               .toEqual('user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", "123A"}})')
           })
         })
@@ -268,7 +256,7 @@ describe('expression language filter', () => {
               .toEqual(groupRuleTemplate)
             const policyRuleInstance = instances.find(i => i.elemID.name === 'policyRuleTest')
             expect(policyRuleInstance).toBeDefined()
-            expect(policyRuleInstance?.value?.conditions?.additionalProperties?.elCondition?.condition)
+            expect(policyRuleInstance?.value?.ACCESS_POLICY?.conditions?.elCondition?.condition)
               .toEqual(policyRuleTemplate)
           })
         })

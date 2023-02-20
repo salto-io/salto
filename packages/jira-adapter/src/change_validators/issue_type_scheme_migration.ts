@@ -96,11 +96,14 @@ export const issueTypeSchemeMigrationValidator = (
       project => project.value.issueTypeScheme.elemID.getFullName(),
     )
     const errors = await awu(relevantChanges).map(async change => {
-      const removedIssueTypeNames = getRemovedIssueTypeIds(change)
-        .map(issueTypeId => issueTypeId.elemID.name)
       const issueTypeScheme = getChangeData(change)
       const linkedProjectNames = issueTypeSchemesToProjects[issueTypeScheme.elemID.getFullName()]
-        .map(project => project.value.name)
+        ?.map(project => project.value.name) ?? []
+      if (linkedProjectNames.length === 0) {
+        return undefined
+      }
+      const removedIssueTypeNames = getRemovedIssueTypeIds(change)
+        .map(issueTypeId => issueTypeId.elemID.name)
       const removedTypesWithIssues = await awu(removedIssueTypeNames).filter(async issueType => (
         areIssueTypesUsed(client, issueType, linkedProjectNames)
       )).toArray()

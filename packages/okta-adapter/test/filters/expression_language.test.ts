@@ -77,8 +77,8 @@ describe('expression language filter', () => {
         policyRuleType,
         {
           name: 'policy',
-          conditions: {
-            additionalProperties: {
+          ACCESS_POLICY: {
+            conditions: {
               elCondition: {
                 condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", \'123A\'}})',
               },
@@ -130,8 +130,20 @@ describe('expression language filter', () => {
           expect(groupRule?.value?.conditions?.expression?.value).toEqual(groupRuleTemplate)
           const policyRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'policyRuleTest')
           expect(policyRule).toBeDefined()
-          expect(policyRule?.value?.conditions?.additionalProperties?.elCondition?.condition)
-            .toEqual(policyRuleTemplate)
+          expect(policyRule?.value?.ACCESS_POLICY?.conditions?.elCondition?.condition)
+            .toEqual(new TemplateExpression({
+              parts: [
+                new ReferenceExpression(
+                  userSchemaInstance.elemID.createNestedID(...customPath),
+                  _.get(userSchemaInstance.value, customPath)
+                ),
+                ' == \'salto\' AND user.isMemberOf({\'group.id\':{',
+                new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),
+                ', ',
+                new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
+                '}})',
+              ],
+            }))
         })
 
         it('should not create references if there is no match', async () => {

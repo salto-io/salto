@@ -91,8 +91,9 @@ export const getDiscriminatorTypeEntries = async (entries: Values[], type: Objec
         return entry
       }
     }
-    _.set(entry, discriminatorValue, _.pick(entry, discValueToTypeFields[discriminatorValue]))
-    return _.omit(entry, discValueToTypeFields[discriminatorValue])
+    const newEntry = _.omit(entry, discValueToTypeFields[discriminatorValue])
+    _.set(newEntry, discriminatorValue, _.pick(entry, discValueToTypeFields[discriminatorValue]))
+    return newEntry
   }).toArray()
   return newEntries
 }

@@ -15,30 +15,18 @@
 */
 
 import { DeployMessage } from 'jsforce'
-import { decorators, values } from '@salto-io/lowerdash'
+import { decorators } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { ENOTFOUND, ERROR_HTTP_502, INVALID_GRANT, SF_REQUEST_LIMIT_EXCEEDED } from '../constants'
+import {
+  ENOTFOUND,
+  ERROR_HTTP_502,
+  ERROR_PROPERTIES,
+  INVALID_GRANT,
+  isSalesforceError, SALESFORCE_ERRORS, SalesforceError,
+} from '../constants'
 
 const log = logger(module)
-const { isDefined } = values
-
-
-/**
- * To allow more robust support and avoid boilerplate
- * for supporting different Error objects (e.g. Node DNSError, JSForce error)
- * this values can be any of the Error object properties.
- */
-export const MAPPABLE_ERROR_PROPERTIES = [
-  ERROR_HTTP_502,
-  SF_REQUEST_LIMIT_EXCEEDED,
-  INVALID_GRANT,
-  ENOTFOUND,
-] as const
-
-export type MappableErrorProperty = typeof MAPPABLE_ERROR_PROPERTIES[number]
-
-type MapErrorFunc = (error: Error) => string
 
 export const REQUEST_LIMIT_EXCEEDED_MESSAGE = 'Your Salesforce org has limited API calls for a 24-hour period. '
     + 'We are unable to connect to your org because this limit has been exceeded. '
@@ -52,25 +40,56 @@ export const ERROR_HTTP_502_MESSAGE = 'We are unable to connect to your Salesfor
 
 export const INVALID_GRANT_MESSAGE = 'Salesforce user is inactive, please re-authenticate'
 
-export const ENOTFOUND_MESSAGE = 'Unable to communicate with the salesforce org.'
-  + 'This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.'
-
-const mapRequestLimitExceededError: MapErrorFunc = (error: Error) => (
-  error.message.includes('TotalRequests Limit exceeded')
-    ? REQUEST_LIMIT_EXCEEDED_MESSAGE
-    : MAX_CONCURRENT_REQUESTS_MESSAGE
-)
-
-const ERROR_MAPPERS: Record<MappableErrorProperty, string | MapErrorFunc> = {
-  [ERROR_HTTP_502]: ERROR_HTTP_502_MESSAGE,
-  [SF_REQUEST_LIMIT_EXCEEDED]: mapRequestLimitExceededError,
-  [INVALID_GRANT]: INVALID_GRANT_MESSAGE,
-  [ENOTFOUND]: ENOTFOUND_MESSAGE,
+type DNSException = Error & {
+  [ERROR_PROPERTIES.CODE]: string
+  [ERROR_PROPERTIES.HOSTNAME]: string
 }
 
-export const isMappableErrorProperty = (errorProperty: string): errorProperty is MappableErrorProperty => (
-  (MAPPABLE_ERROR_PROPERTIES as ReadonlyArray<string>).includes(errorProperty)
+const isDNSException = (error: Error): error is DNSException => (
+  _.isString(_.get(error, ERROR_PROPERTIES.CODE)) && _.isString(_.get(error, ERROR_PROPERTIES.HOSTNAME))
 )
+
+type ErrorMapper<T extends Error> = {
+  test: (error: Error) => error is T
+  map: (error: T) => string
+}
+
+export type ErrorMappers = {
+  [ERROR_HTTP_502]: ErrorMapper<Error>
+  [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: ErrorMapper<SalesforceError>
+  [INVALID_GRANT]: ErrorMapper<Error>
+  [ENOTFOUND]: ErrorMapper<DNSException>
+}
+
+export const ERROR_MAPPERS: ErrorMappers = {
+  [ERROR_HTTP_502]: {
+    test: (error: Error): error is Error => error.message === ERROR_HTTP_502,
+    map: (_error: Error): string => ERROR_HTTP_502_MESSAGE,
+  },
+  [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: {
+    test: (error: Error): error is SalesforceError => (
+      isSalesforceError(error) && error[ERROR_PROPERTIES.ERROR_CODE] === SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED
+    ),
+    map: (error: SalesforceError): string => (
+      error.message.includes('TotalRequests Limit exceeded')
+        ? REQUEST_LIMIT_EXCEEDED_MESSAGE
+        : MAX_CONCURRENT_REQUESTS_MESSAGE
+    ),
+  },
+  [INVALID_GRANT]: {
+    test: (error: Error): error is Error => error.name === INVALID_GRANT,
+    map: (_error: Error): string => INVALID_GRANT_MESSAGE,
+  },
+  [ENOTFOUND]: {
+    test: (error: Error): error is DNSException => (
+      isDNSException(error) && error.code === ENOTFOUND
+    ),
+    map: (error: DNSException) => (
+      `Unable to communicate with the salesforce org at ${error[ERROR_PROPERTIES.HOSTNAME]}.`
+      + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.'
+    ),
+  },
+}
 
 // Deploy Errors Mapping
 
@@ -104,17 +123,27 @@ export const mapToUserFriendlyErrorMessages = decorators.wrapMethodWith(
     try {
       return await Promise.resolve(original.call())
     } catch (e) {
-      const mappableError = Object.values(e)
-        .filter(_.isString)
-        .find(isMappableErrorProperty)
-      if (isDefined(mappableError)) {
-        const stringOrFunction = ERROR_MAPPERS[mappableError]
-        const userVisibleErrorMessage = _.isString(stringOrFunction)
-          ? stringOrFunction
-          : stringOrFunction(e)
-        log.debug('Replacing error %s message to %s. Original error: %o', mappableError, userVisibleErrorMessage, e)
-        e.message = userVisibleErrorMessage
+      if (!_.isError(e)) {
+        throw e
       }
+      const userFriendlyMessageByMapperName = _.mapValues(
+        _.pickBy(
+          ERROR_MAPPERS,
+          mapper => mapper.test(e)
+        ),
+        mapper => mapper.map(e)
+      )
+
+      const matchedMapperNames = Object.keys(userFriendlyMessageByMapperName)
+      if (_.isEmpty(matchedMapperNames)) {
+        throw e
+      } else if (matchedMapperNames.length > 1) {
+        log.error('The error %o matched on more than one mapper. Matcher mappers: %o', e, matchedMapperNames)
+        throw e
+      }
+      const [mapperName, userFriendlyMessage] = Object.entries(userFriendlyMessageByMapperName)[0]
+      log.debug('Replacing error %s message to %s. Original error: %o', mapperName, userFriendlyMessage, e)
+      e.message = userFriendlyMessage
       throw e
     }
   }

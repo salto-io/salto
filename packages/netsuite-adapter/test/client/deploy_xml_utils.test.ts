@@ -20,18 +20,21 @@ import { FILE, FOLDER } from '../../src/constants'
 
 describe('deploy xml utils tests', () => {
   const emptyCustInfo = { typeName: '', values: {} }
-  const testNode1 = new GraphNode<SDFObjectNode>(
-    { elemIdFullName: 'fullName1', serviceid: 'scriptid1', changeType: 'addition', customizationInfo: emptyCustInfo }
-  )
-  const testNode2 = new GraphNode<SDFObjectNode>(
-    { elemIdFullName: 'fullName2', serviceid: 'scriptid2', changeType: 'addition', customizationInfo: emptyCustInfo }
-  )
-  const testNode3 = new GraphNode<SDFObjectNode>(
-    { elemIdFullName: 'fullName3', serviceid: 'scriptid3', changeType: 'addition', customizationInfo: emptyCustInfo }
-  )
-  testNode1.addEdge(testNode2)
-  testNode3.addEdge(testNode1)
-  const testGraph = new Graph<SDFObjectNode>('elemIdFullName', [testNode1, testNode2, testNode3])
+  let testGraph: Graph<SDFObjectNode>
+  beforeEach(() => {
+    const testNode1 = new GraphNode<SDFObjectNode>(
+      { elemIdFullName: 'fullName1', serviceid: 'scriptid1', changeType: 'addition', customizationInfo: emptyCustInfo }
+    )
+    const testNode2 = new GraphNode<SDFObjectNode>(
+      { elemIdFullName: 'fullName2', serviceid: 'scriptid2', changeType: 'addition', customizationInfo: emptyCustInfo }
+    )
+    const testNode3 = new GraphNode<SDFObjectNode>(
+      { elemIdFullName: 'fullName3', serviceid: 'scriptid3', changeType: 'addition', customizationInfo: emptyCustInfo }
+    )
+    testNode1.addEdge(testNode2)
+    testNode3.addEdge(testNode1)
+    testGraph = new Graph<SDFObjectNode>('elemIdFullName', [testNode1, testNode2, testNode3])
+  })
   const originalDeployXml = `<deploy>
     <configuration>
         <path>~/AccountConfiguration/*</path>
@@ -67,12 +70,12 @@ describe('deploy xml utils tests', () => {
   </translationimports>
 </deploy>
 `
-    expect(reorderDeployXml(originalDeployXml, testGraph, [emptyCustInfo])).toEqual(fixedDeployXml)
+    expect(reorderDeployXml(originalDeployXml, testGraph)).toEqual(fixedDeployXml)
   })
 
   it('should write files and folders to deploy xml according to ref level', async () => {
-    const emptyFileCustInfo = { typeName: FILE, values: {} }
-    const emptyFolderCustInfo = { typeName: FOLDER, values: {} }
+    const emptyFileCustInfo = { typeName: FILE, values: {}, path: ['SuiteScripts', 'shalomTest.js'], content: '' }
+    const emptyFolderCustInfo = { typeName: FOLDER, values: {}, path: ['SuiteScripts', 'InnerFolder'] }
     const fileTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFileName', serviceid: '/SuiteScripts/shalomTest.js', customizationInfo: emptyFileCustInfo, changeType: 'addition' })
     const folderTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFolderName', serviceid: '/SuiteScripts/InnerFolder', customizationInfo: emptyFolderCustInfo, changeType: 'addition' })
     fileTestNode.addEdge(folderTestNode)
@@ -96,8 +99,6 @@ describe('deploy xml utils tests', () => {
   </translationimports>
 </deploy>
 `
-    expect(reorderDeployXml(
-      originalDeployXml, testGraph, [emptyCustInfo, emptyFileCustInfo, emptyFolderCustInfo]
-    )).toEqual(fixedDeployXml)
+    expect(reorderDeployXml(originalDeployXml, testGraph)).toEqual(fixedDeployXml)
   })
 })

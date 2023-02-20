@@ -466,7 +466,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             appliedChanges: [change],
           })
           expect(mockSdfDeploy).toHaveBeenCalledWith(
-            [customizationInfo],
             undefined,
             {
               additionalDependencies: {
@@ -648,11 +647,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo })])
         await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).toHaveBeenCalledWith(
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
           {
             manifestDependencies: {

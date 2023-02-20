@@ -15,42 +15,69 @@
 */
 
 import xmlParser from 'fast-xml-parser'
+import osPath from 'path'
 import _ from 'lodash'
+import { CONFIG_FEATURES } from '../constants'
 import { Graph, SDFObjectNode } from './graph_utils'
-import { CustomizationInfo } from './types'
+import { CustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from './utils'
 
-const isFileOrFolder = (customizationInfo: CustomizationInfo): boolean =>
+type FileCabinetCustomType = FileCustomizationInfo | FolderCustomizationInfo
+
+export const XML_FILE_SUFFIX = '.xml'
+export const FILE_CABINET_DIR = 'FileCabinet'
+export const OBJECTS_DIR = 'Objects'
+export const ATTRIBUTES_FOLDER_NAME = '.attributes'
+export const FOLDER_ATTRIBUTES_FILE_SUFFIX = `.folder.attr${XML_FILE_SUFFIX}`
+export const ATTRIBUTES_FILE_SUFFIX = `.attr${XML_FILE_SUFFIX}`
+// The '/' prefix is needed to make osPath.resolve treat '~' as the root
+const PROJECT_ROOT_TILDE_PREFIX = '/~'
+
+const isFileCabinetCustomType = (customizationInfo: CustomizationInfo): customizationInfo is FileCabinetCustomType =>
   isFileCustomizationInfo(customizationInfo) || isFolderCustomizationInfo(customizationInfo)
 
-const getFileOrFolderString = (fileCabinetNode: SDFObjectNode): string => {
-  if (isFolderCustomizationInfo(fileCabinetNode.customizationInfo)) {
-    return `~/FileCabinet${fileCabinetNode.serviceid}/*`
+export const getCustomTypeInfoPath = (dirPath: string, servicId: string, fileExtension: string): string =>
+  osPath.resolve(dirPath, OBJECTS_DIR, `${servicId}${fileExtension}`)
+
+export const getFileCabinetTypesPath = (dirPath: string, fileCabinetCustTypeInfo: FileCabinetCustomType): string => {
+  if (isFileCustomizationInfo(fileCabinetCustTypeInfo)) {
+    return osPath.resolve(dirPath, 'FileCabinet', ...fileCabinetCustTypeInfo.path.slice(0, -1))
   }
-  return `~/FileCabinet${fileCabinetNode.serviceid}`
+  return osPath.resolve(dirPath, 'FileCabinet', ...fileCabinetCustTypeInfo.path)
+}
+
+const getFileOrFolderString = (fileCabinetCusTypeInfo: FileCabinetCustomType): string => {
+  const filename = fileCabinetCusTypeInfo.path.slice(-1)[0]
+  if (isFolderCustomizationInfo(fileCabinetCusTypeInfo)) {
+    return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}/*`
+  }
+  return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}/${filename}`
 }
 
 export const reorderDeployXml = (
   deployContent: string,
   dependencyGraph: Graph<SDFObjectNode>,
-  customizationInfos: CustomizationInfo[]
 ): string => {
   const nodesInTopologicalOrder = dependencyGraph.getTopologicalOrder()
     .map(node => node.value)
-    .filter(node => node.customizationInfo.typeName !== 'companyFeatures')
-    // remove nodes which were removed from deployment in previous iterations
-    .filter(node => customizationInfos.some(custInfo => _.isEqual(custInfo, node.customizationInfo)))
-  const orderedFileCabinetNodes = _.remove(
-    nodesInTopologicalOrder, node => isFileOrFolder(node.customizationInfo)
+    .filter(node => node.customizationInfo.typeName !== CONFIG_FEATURES)
+  const [fileCabinetNodes, objectNodes] = _.partition(
+    nodesInTopologicalOrder, node => isFileCabinetCustomType(node.customizationInfo)
   )
   const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })
   const { objects, files } = deployXml.deploy
-  if (nodesInTopologicalOrder.length > 0) {
-    objects.path = nodesInTopologicalOrder.map(node => `~/Objects/${node.serviceid}.xml`)
-    objects.path.push('~/Objects/*')
+  if (objectNodes.length > 0) {
+    objects.path = objectNodes
+      .map(node => getCustomTypeInfoPath(PROJECT_ROOT_TILDE_PREFIX, node.serviceid, XML_FILE_SUFFIX))
+      .map(path => path.slice(1)) // remove the '/' prefix
+    objects.path.push(`~/${OBJECTS_DIR}/*`)
   }
-  if (orderedFileCabinetNodes.length > 0) {
-    files.path = orderedFileCabinetNodes.map(node => getFileOrFolderString(node))
+  if (fileCabinetNodes.length > 0) {
+    files.path = fileCabinetNodes
+      .map(node => node.customizationInfo)
+      .filter(isFileCabinetCustomType) // for typecast purposes
+      .map(custInfo => getFileOrFolderString(custInfo))
+      .map(path => path.slice(1))
   }
 
   // eslint-disable-next-line new-cap

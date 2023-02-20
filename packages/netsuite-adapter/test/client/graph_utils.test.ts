@@ -32,7 +32,9 @@ describe('graph utils tests', () => {
 
 
   it('should find the nodes dependencies', async () => {
-    expect(testGraph.getNodeDependencies(testNode1)).toEqual([testNode2, testNode3, testNode1])
+    const result = testGraph.getNodeDependencies(testNode1)
+    expect(result).toHaveLength(3)
+    expect(result).toEqual(expect.arrayContaining([testNode2, testNode3, testNode1]))
   })
 
   it('should find the node through its value', async () => {
@@ -54,5 +56,11 @@ describe('graph utils tests', () => {
 
   it('should return nodes in topological sort', async () => {
     expect(testGraph.getTopologicalOrder()).toEqual([testNode1, testNode3, testNode2])
+  })
+
+  it('should remove node from graph and edges from nodes', async () => {
+    testGraph.removeNode('node1')
+    expect(testGraph.nodes.get('node1')).toBeUndefined()
+    expect(testNode2.edges).not.toContain(testNode1)
   })
 })

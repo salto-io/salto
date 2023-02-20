@@ -57,23 +57,22 @@ export class Graph<T> {
     })
   }
 
-  private dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>, resultArray: GraphNode<T>[]): void {
-    visited.set(node.value[this.key], node)
+  private dfs(node: GraphNode<T>, visited: Set<T[keyof T]>, resultArray: GraphNode<T>[]): void {
+    if (visited.has(node.value[this.key])) {
+      return
+    }
+    visited.add(node.value[this.key])
     node.edges.forEach(dependency => {
-      if (!visited.has(dependency.value[this.key])) {
-        this.dfs(dependency, visited, resultArray)
-      }
+      this.dfs(dependency, visited, resultArray)
     })
     resultArray.push(node)
   }
 
   getTopologicalOrder(): GraphNode<T>[] {
-    const visited = new Map<T[keyof T], GraphNode<T>>()
-    const sortedNodes:GraphNode<T>[] = []
+    const visited = new Set<T[keyof T]>()
+    const sortedNodes: GraphNode<T>[] = []
     Array.from(this.nodes.values()).forEach(node => {
-      if (!visited.has(node.value[this.key])) {
-        this.dfs(node, visited, sortedNodes)
-      }
+      this.dfs(node, visited, sortedNodes)
     })
     return sortedNodes.reverse()
   }
@@ -82,7 +81,7 @@ export class Graph<T> {
     if (_.isEmpty(startNode.edges)) {
       return [startNode]
     }
-    const visited = new Map<T[keyof T], GraphNode<T>>()
+    const visited = new Set<T[keyof T]>()
     const dependencies: GraphNode<T>[] = []
     this.dfs(startNode, visited, dependencies)
     return dependencies
@@ -98,5 +97,17 @@ export class Graph<T> {
 
   findNodeByField(key: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
     return wu(this.nodes.values()).find(node => _.isEqual(node.value[key], value))
+  }
+
+  removeNode(key: T[keyof T]): void {
+    const node = this.nodes.get(key)
+    if (node) {
+      Array.from(this.nodes.values()).forEach(otherNode => {
+        if (otherNode.edges.includes(node)) {
+          _.remove(otherNode.edges, edgeNode => _.isEqual(node, edgeNode))
+        }
+      })
+      this.nodes.delete(key)
+    }
   }
 }

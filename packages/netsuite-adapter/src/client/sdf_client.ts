@@ -56,7 +56,7 @@ import {
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph, SDFObjectNode } from './graph_utils'
-import { reorderDeployXml } from './deploy_xml_utils'
+import { reorderDeployXml, getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX, XML_FILE_SUFFIX } from './deploy_xml_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -90,12 +90,6 @@ export const COMMANDS = {
   IMPORT_CONFIGURATION: 'configuration:import',
 }
 
-
-export const ATTRIBUTES_FOLDER_NAME = '.attributes'
-export const ATTRIBUTES_FILE_SUFFIX = '.attr.xml'
-export const FOLDER_ATTRIBUTES_FILE_SUFFIX = '.folder.attr.xml'
-const FILE_CABINET_DIR = 'FileCabinet'
-const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
@@ -874,14 +868,14 @@ export default class SdfClient {
 
   @SdfClient.logDecorator
   async deploy(
-    customizationInfos: CustomizationInfo[],
     suiteAppId: string | undefined,
     { manifestDependencies, validateOnly = false }: SdfDeployParams,
     dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
-    const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
+    const srcDirPath = SdfClient.getSrcDirPath(project.projectName)
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
+    const customizationInfos = Array.from(dependencyGraph.nodes.values()).map(node => node.value.customizationInfo)
     // Delete the default FileCabinet folder to prevent permissions error
     await rm(fileCabinetDirPath)
     await Promise.all(customizationInfos.map(async customizationInfo => {
@@ -889,13 +883,13 @@ export default class SdfClient {
         return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectName)
       }
       if (isCustomTypeInfo(customizationInfo)) {
-        return SdfClient.addCustomTypeInfoToProject(customizationInfo, objectsDirPath)
+        return SdfClient.addCustomTypeInfoToProject(customizationInfo, srcDirPath)
       }
       if (isFileCustomizationInfo(customizationInfo)) {
-        return SdfClient.addFileInfoToProject(customizationInfo, fileCabinetDirPath)
+        return SdfClient.addFileInfoToProject(customizationInfo, srcDirPath)
       }
       if (isFolderCustomizationInfo(customizationInfo)) {
-        return SdfClient.addFolderInfoToProject(customizationInfo, fileCabinetDirPath)
+        return SdfClient.addFolderInfoToProject(customizationInfo, srcDirPath)
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
@@ -966,13 +960,12 @@ export default class SdfClient {
   private static async fixDeployXml(
     dependencyGraph: Graph<SDFObjectNode>,
     projectName: string,
-    customizationInfos: CustomizationInfo[]
   ): Promise<void> {
     const deployFilePath = SdfClient.getDeployFilePath(projectName)
     const deployXmlContent = (await readFile(deployFilePath)).toString()
     await writeFile(
       deployFilePath,
-      reorderDeployXml(deployXmlContent, dependencyGraph, customizationInfos)
+      reorderDeployXml(deployXmlContent, dependencyGraph)
     )
   }
 
@@ -985,7 +978,7 @@ export default class SdfClient {
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.fixManifest(projectName, customizationInfos, manifestDependencies)
-    await SdfClient.fixDeployXml(dependencyGraph, projectName, customizationInfos)
+    await SdfClient.fixDeployXml(dependencyGraph, projectName)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
@@ -1004,14 +997,14 @@ export default class SdfClient {
   }
 
   private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,
-    objectsDirPath: string): Promise<void> {
+    srcDirPath: string): Promise<void> {
     await writeFile(
-      osPath.resolve(objectsDirPath, `${customTypeInfo.scriptId}.xml`),
+      `${getCustomTypeInfoPath(srcDirPath, customTypeInfo.scriptId, XML_FILE_SUFFIX)}`,
       convertToXmlContent(customTypeInfo)
     )
     if (isTemplateCustomTypeInfo(customTypeInfo)) {
-      await writeFile(osPath.resolve(objectsDirPath,
-        `${customTypeInfo.scriptId}${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
+      await writeFile(getCustomTypeInfoPath(srcDirPath,
+        `${customTypeInfo.scriptId}${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`, ''),
       customTypeInfo.fileContent)
     }
   }
@@ -1031,15 +1024,13 @@ export default class SdfClient {
   }
 
   private static async addFileInfoToProject(fileCustomizationInfo: FileCustomizationInfo,
-    fileCabinetDirPath: string): Promise<void> {
+    srcDirPath: string): Promise<void> {
     const attrsFilename = fileCustomizationInfo.path.slice(-1)[0] + ATTRIBUTES_FILE_SUFFIX
-    const attrsFolderPath = osPath.resolve(fileCabinetDirPath,
-      ...fileCustomizationInfo.path.slice(0, -1), ATTRIBUTES_FOLDER_NAME)
-
+    const attrsFolderPath = osPath.resolve(
+      getFileCabinetTypesPath(srcDirPath, fileCustomizationInfo), ATTRIBUTES_FOLDER_NAME
+    )
     const filename = fileCustomizationInfo.path.slice(-1)[0]
-    const fileFolderPath = osPath.resolve(fileCabinetDirPath,
-      ...fileCustomizationInfo.path.slice(0, -1))
-
+    const fileFolderPath = getFileCabinetTypesPath(srcDirPath, fileCustomizationInfo)
     await Promise.all([
       writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent),
       writeFileInFolder(attrsFolderPath, attrsFilename, convertToXmlContent(fileCustomizationInfo)),
@@ -1047,15 +1038,20 @@ export default class SdfClient {
   }
 
   private static async addFolderInfoToProject(folderCustomizationInfo: FolderCustomizationInfo,
-    fileCabinetDirPath: string): Promise<void> {
-    const attrsFolderPath = osPath.resolve(fileCabinetDirPath, ...folderCustomizationInfo.path,
-      ATTRIBUTES_FOLDER_NAME)
+    srcDirPath: string): Promise<void> {
+    const attrsFolderPath = osPath.resolve(
+      getFileCabinetTypesPath(srcDirPath, folderCustomizationInfo), ATTRIBUTES_FOLDER_NAME
+    )
     await writeFileInFolder(attrsFolderPath, FOLDER_ATTRIBUTES_FILE_SUFFIX,
       convertToXmlContent(folderCustomizationInfo))
   }
 
   private static getProjectPath(projectName: string): string {
     return osPath.resolve(baseExecutionPath, projectName)
+  }
+
+  private static getSrcDirPath(projectName: string): string {
+    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR)
   }
 
   private static getObjectsDirPath(projectName: string): string {

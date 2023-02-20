@@ -53,7 +53,7 @@ describe('dashboardLayoutValidator', () => {
           elemID: instance.elemID,
           severity: 'Error',
           message: 'Dashboard gadget positions are out of bounds',
-          detailedMessage: 'This dashboard has gadgets with a column position which exceeds the number of columns (2) in the AA layout: jira.DashboardGadget.instance.inst. Please change the layout or re-position the gadgets to deploy this dashboard.',
+          detailedMessage: 'This dashboard has gadgets with a column position which exceeds the number of columns (2) in the AA layout: inst. Please change the layout or re-position the gadgets to deploy this dashboard.',
         },
       ])
   })

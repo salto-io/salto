@@ -56,7 +56,7 @@ describe('automationsValidator', () => {
           elemID: instance2.elemID,
           severity: 'Error',
           message: 'Automation name is already in use',
-          detailedMessage: 'The name someName of jira.Automation.instance.instance2 is already used by other automations: jira.Automation.instance.instance.',
+          detailedMessage: 'The automation name “someName” is already used by other automations in the target environment. To deploy this automation using Salto, rename it and try again.',
         },
       ])
   })

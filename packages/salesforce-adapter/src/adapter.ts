@@ -437,8 +437,14 @@ export default class SalesforceAdapter implements AdapterOperations {
         this.fetchProfile.dataManagement,
       )
     } else if (this.userConfig.client?.deploy?.quickDeployParams !== undefined) {
-      deployResult = await quickDeploy(resolvedChanges, this.client,
-        changeGroup.groupID, this.userConfig.client?.deploy?.quickDeployParams)
+      try {
+        deployResult = await quickDeploy(resolvedChanges, this.client,
+          changeGroup.groupID, this.userConfig.client?.deploy?.quickDeployParams)
+      } catch (e) {
+        log.info(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
+        deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
+          this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
+      }
     } else {
       deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)

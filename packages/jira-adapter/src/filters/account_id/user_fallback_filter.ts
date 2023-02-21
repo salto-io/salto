@@ -56,7 +56,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
     name: 'userFallbackFilter',
     preDeploy: async changes => {
       let userMap: UserMap
-      if (config.deploy.defaultMissingUserFallback === undefined || (config.fetch.convertUsersIds ?? true)) {
+      if (config.deploy.defaultMissingUserFallback === undefined) {
         return
       }
       try {

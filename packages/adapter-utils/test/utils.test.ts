@@ -1534,6 +1534,12 @@ describe('Test utils.ts', () => {
       expect(clonedMockInstance.value.str).toEqual('new val')
     })
 
+    it('should set field annotation', () => {
+      const clonedMockField = new Field(mockType, 'field', BuiltinTypes.STRING)
+      setPath(clonedMockField, clonedMockField.elemID.createNestedID('str'), 'new val')
+      expect(clonedMockField.annotations.str).toEqual('new val')
+    })
+
     it('should unset an instance value path', () => {
       const clonedMockInstance = mockInstance.clone()
       setPath(clonedMockInstance, clonedMockInstance.elemID.createNestedID('str'), undefined)

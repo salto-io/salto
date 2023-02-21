@@ -647,10 +647,14 @@ export const getPath = (
   rootElement: Element,
   fullElemID: ElemID,
 ): string[] | undefined => {
-  const { parent, path } = fullElemID.createTopLevelParentID()
+  const { parent, path } = rootElement.elemID.isTopLevel()
+    ? fullElemID.createTopLevelParentID()
+    : fullElemID.createBaseID()
+
   if (!parent.isEqual(rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []
-  if (fullElemID.isAttrID()) {
+  if (fullElemID.isAttrID()
+  || (fullElemID.idType === 'field' && fullElemID.getFullNameParts().length > 4)) {
     return ['annotations', ...path]
   }
   if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {

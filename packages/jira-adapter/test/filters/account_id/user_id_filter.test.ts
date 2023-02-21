@@ -495,5 +495,13 @@ describe('convert userId to key in Jira DC', () => {
       await filter.onDeploy([toChange({ after: instance })])
       common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
     })
+    it('should not raise error when user permission is missing', async () => {
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+      await expect(filter.preDeploy([])).resolves.not.toThrow()
+    })
+    it('should raise error on any other error', async () => {
+      mockConnection.get.mockRejectedValue(new Error('failed'))
+      await expect(filter.preDeploy([])).rejects.toThrow()
+    })
   })
 })

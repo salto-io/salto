@@ -69,7 +69,7 @@ describe('issueTypeSchemeValidator', () => {
         elemID: getChangeData(issueTypeSchemeChange).elemID,
         severity: 'Error',
         message: 'Cannot remove issue types from default issue type scheme',
-        detailedMessage: `Removing issue types from the default issue type scheme ${getChangeData(issueTypeSchemeChange).elemID.getFullName()} is not supported`,
+        detailedMessage: 'Removing issue types from the default issue type scheme is not supported',
       },
     ])
   })

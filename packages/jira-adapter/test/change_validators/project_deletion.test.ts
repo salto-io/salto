@@ -62,8 +62,8 @@ describe('projectDeletionValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Project has issues assigned to it.',
-        detailedMessage: 'The project jira.Project.instance.instance has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. If you are sure you want to delete the project use the "forceDelete" deploy option.',
+        message: 'Can’t delete Project with existing issues',
+        detailedMessage: 'This project has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. To delete this project anyway, and delete all its issues, add a "forceDelete=true" deploy option to your deploy configuration.',
       },
     ])
 
@@ -126,8 +126,8 @@ describe('projectDeletionValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Project has issues assigned to it.',
-        detailedMessage: 'The project jira.Project.instance.instance has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. If you are sure you want to delete the project use the "forceDelete" deploy option.',
+        message: 'Can’t delete Project with existing issues',
+        detailedMessage: 'This project has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. To delete this project anyway, and delete all its issues, add a "forceDelete=true" deploy option to your deploy configuration.',
       },
     ])
   })
@@ -146,8 +146,8 @@ describe('projectDeletionValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Project has issues assigned to it.',
-        detailedMessage: 'The project jira.Project.instance.instance has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. If you are sure you want to delete the project use the "forceDelete" deploy option.',
+        message: 'Can’t delete Project with existing issues',
+        detailedMessage: 'This project has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. To delete this project anyway, and delete all its issues, add a "forceDelete=true" deploy option to your deploy configuration.',
       },
     ])
   })

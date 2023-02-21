@@ -98,7 +98,8 @@ export const issueTypeSchemeMigrationValidator = (
       .map(id => elementSource.get(id))
       .toArray()
     const issueTypeSchemesToProjects = _.groupBy(
-      projects.filter(project => project.value.issueTypeScheme !== undefined),
+      projects.filter(project => project.value.issueTypeScheme !== undefined
+        && isReferenceExpression(project.value.issueTypeScheme)),
       project => project.value.issueTypeScheme.elemID.getFullName(),
     )
     const errors = await awu(relevantChanges).map(async change => {

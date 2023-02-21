@@ -43,7 +43,6 @@ const ELEMENTS_WITH_PARENTS = [
   'user_field__custom_field_options',
   'organization_field__custom_field_options',
   'business_hours_schedule_holiday',
-  // brand_logo, macro_attachment? not sure should have the same changed_at as parent or at all
 ]
 const GUIDE_ELEMENTS = new Set([...GUIDE_TYPES_TO_HANDLE_BY_BRAND, ...Object.keys(GUIDE_GLOBAL_TYPES)])
 export const DELETED_USER = 'deleted user'
@@ -56,7 +55,7 @@ type ValidAuditRes = {
 const AUDIT_SCHEMA = Joi.object({
   audit_logs: Joi.array().items(Joi.object({
     created_at: Joi.string().required(),
-    actor_name: Joi.string().required(),
+    actor_name: Joi.string().required().not(''),
   }).unknown(true)).required(),
 }).unknown(true).required()
 
@@ -278,9 +277,8 @@ const addNewChangedBy = async ({
 const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
   name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config[FETCH_CONFIG].enableAudit === false) { // temporary
-      // TODO change according to new chosen name
-      log.info('not running changeByAndChangedAt filter as enableAudit in the config is false')
+    if (config[FETCH_CONFIG].includeAuditDetails === false) { // temporary
+      log.info('not running changeByAndChangedAt filter as includeAuditDetails in the config is false')
       return
     }
     if (elementsSource === undefined) {

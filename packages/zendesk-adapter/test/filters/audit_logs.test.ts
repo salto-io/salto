@@ -128,7 +128,7 @@ describe('audit_logs filter', () => {
           guide: {
             brands: ['.*'],
           },
-          enableAudit: true,
+          includeAuditDetails: true,
         },
       },
       paginator: mockPaginator,
@@ -165,7 +165,7 @@ describe('audit_logs filter', () => {
             guide: {
               brands: ['.*'],
             },
-            enableAudit: false,
+            includeAuditDetails: false,
           },
         },
         paginator: mockPaginator,
@@ -275,7 +275,7 @@ describe('audit_logs filter', () => {
             guide: {
               brands: ['.*'],
             },
-            enableAudit: true,
+            includeAuditDetails: true,
           },
         },
         paginator: mockPaginator,
@@ -354,7 +354,7 @@ describe('audit_logs filter', () => {
             guide: {
               brands: ['.*'],
             },
-            enableAudit: true,
+            includeAuditDetails: true,
           },
         },
         paginator: mockPaginator,
@@ -402,7 +402,7 @@ describe('audit_logs filter', () => {
             guide: {
               brands: ['.*'],
             },
-            enableAudit: true,
+            includeAuditDetails: true,
           },
         },
         paginator: mockPaginator,
@@ -416,6 +416,7 @@ describe('audit_logs filter', () => {
               audit_logs: [
                 {
                   created_at: AFTER_TIME,
+                  actor_name: '',
                 },
               ],
             },
@@ -464,7 +465,7 @@ describe('audit_logs filter', () => {
             guide: {
               brands: ['.*'],
             },
-            enableAudit: true,
+            includeAuditDetails: true,
           },
         },
         paginator: mockPaginator,
@@ -510,7 +511,7 @@ describe('audit_logs filter', () => {
             guide: {
               brands: ['.*'],
             },
-            enableAudit: true,
+            includeAuditDetails: true,
           },
         },
         paginator: mockPaginator,

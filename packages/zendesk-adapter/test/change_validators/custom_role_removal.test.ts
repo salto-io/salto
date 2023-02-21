@@ -70,14 +70,14 @@ describe('customRoleRemovalValidator', () => {
       {
         elemID: customRole1.elemID,
         severity: 'Error',
-        message: 'Can not remove custom role with associated agents',
-        detailedMessage: `Can not remove ${customRole1.elemID.name} of type custom_role because 2 agents are associated with this role (partial list): [1@1, 5@5].\nPlease disconnect the agents from the role before deploying this change.`,
+        message: 'Can’t remove a custom role with associated agents',
+        detailedMessage: '2 agents are associated with this role (partial list): [1@1, 5@5].\nPlease disconnect the agents from the role in the Zendesk UI before deploying this change.',
       },
       {
         elemID: customRole2.elemID,
         severity: 'Error',
-        message: 'Can not remove custom role with associated agents',
-        detailedMessage: `Can not remove ${customRole2.elemID.name} of type custom_role because 1 agents are associated with this role (partial list): [2@2].\nPlease disconnect the agents from the role before deploying this change.`,
+        message: 'Can’t remove a custom role with associated agents',
+        detailedMessage: '1 agents are associated with this role (partial list): [2@2].\nPlease disconnect the agents from the role in the Zendesk UI before deploying this change.',
       },
     ])
   })

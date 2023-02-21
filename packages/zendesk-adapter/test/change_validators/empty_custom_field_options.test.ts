@@ -32,8 +32,8 @@ describe('emptyCustomFieldOptionsValidator', () => {
     expect(errors).toEqual([{
       elemID: userField.elemID,
       severity: 'Error',
-      message: `Can not change ${userField.elemID.getFullName()}' ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} to be empty`,
-      detailedMessage: `Can not change ${userField.elemID.getFullName()}' ${CUSTOM_FIELD_OPTIONS_FIELD_NAME} to be empty`,
+      message: 'Can’t make this change since dropdown, tagger and multi-select fields can’t to be empty',
+      detailedMessage: 'Custom field options are required for dropdown, tagger and multi select fields',
     }])
   })
   it('should not return an error when we remove a field', async () => {

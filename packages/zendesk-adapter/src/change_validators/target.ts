@@ -25,7 +25,7 @@ export const createChangeError = (
   elemID: instanceElemId,
   severity: 'Info',
   message: 'Target authentication change detected',
-  detailedMessage: '',
+  detailedMessage: 'Target authentication change detected',
   deployActions: {
     preAction: {
       title: 'Current authentication data for a target will be overridden',

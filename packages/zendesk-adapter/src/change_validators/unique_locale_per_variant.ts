@@ -22,8 +22,8 @@ import { isArrayOfRefExprToInstances } from '../filters/utils'
 const createFailedToFindVariantsErrorMessage = (fullName: string): string =>
   `Can not change ${fullName} because we failed to find all the relevant variants`
 
-const createEmptyLocaleIdErrorMessage = (fullName: string): string =>
-  `Can not change ${fullName} with invalid locale`
+const createEmptyLocaleIdErrorMessage = (): string =>
+  'Can’t change an instance with an invalid locale'
 
 const localeIdFromVariant = (variant: InstanceElement): number | undefined =>
   variant.value.locale_id?.value?.value?.id
@@ -51,8 +51,8 @@ export const noDuplicateLocaleIdInDynamicContentItemValidator: ChangeValidator =
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: createEmptyLocaleIdErrorMessage(instance.elemID.getFullName()),
-          detailedMessage: createEmptyLocaleIdErrorMessage(instance.elemID.getFullName()),
+          message: createEmptyLocaleIdErrorMessage(),
+          detailedMessage: createEmptyLocaleIdErrorMessage(),
         }]
       }
       const conflictedInstances = relevantVariants
@@ -66,9 +66,8 @@ export const noDuplicateLocaleIdInDynamicContentItemValidator: ChangeValidator =
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Can not change ${instance.elemID.getFullName()} because there are other variants with the same locale id`,
-          detailedMessage: `Can not change ${instance.elemID.getFullName()} because there are other variants with the same locale id: ${
-            conflictedInstances.map(conflictedInstance => conflictedInstance.elemID.getFullName()).join(', ')}`,
+          message: 'Can’t change instance since there are other variants with the same locale id',
+          detailedMessage: `The following variants have the same locale id: ${conflictedInstances.map(conflictedInstance => conflictedInstance.elemID.getFullName()).join(', ')}`,
         }]
       }
       return []

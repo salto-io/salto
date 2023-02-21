@@ -68,9 +68,8 @@ describe('noDuplicateLocaleIdInDynamicContentItemValidator', () => {
     expect(errors).toEqual([{
       elemID: variant2.elemID,
       severity: 'Error',
-      message: `Can not change ${clonedVariant.elemID.getFullName()} because there are other variants with the same locale id`,
-      detailedMessage: `Can not change ${clonedVariant.elemID.getFullName()} because there are other variants with the same locale id: ${
-        variant1.elemID.getFullName()}`,
+      message: 'Can’t change instance since there are other variants with the same locale id',
+      detailedMessage: `The following variants have the same locale id: ${variant1.elemID.getFullName()}`,
     }])
   })
   it('should not return an error when we add a variant with an new locale', async () => {
@@ -104,8 +103,8 @@ describe('noDuplicateLocaleIdInDynamicContentItemValidator', () => {
     expect(errors).toEqual([{
       elemID: clonedVariant.elemID,
       severity: 'Error',
-      message: `Can not change ${clonedVariant.elemID.getFullName()} with invalid locale`,
-      detailedMessage: `Can not change ${clonedVariant.elemID.getFullName()} with invalid locale`,
+      message: 'Can’t change an instance with an invalid locale',
+      detailedMessage: 'Can’t change an instance with an invalid locale',
     }])
   })
 })

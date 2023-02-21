@@ -47,7 +47,6 @@ const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
         userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
       } catch (e) {
         if (e instanceof MissingUsersPermissionError) {
-          config.fetch.convertUsersIds = false
           return
         }
         throw e

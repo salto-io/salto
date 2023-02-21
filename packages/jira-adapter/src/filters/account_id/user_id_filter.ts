@@ -64,7 +64,6 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       fetchUserMap = await getUserMapFunc()
     } catch (e) {
       if (e instanceof MissingUsersPermissionError) {
-        config.fetch.convertUsersIds = false
         return
       }
       throw e
@@ -92,7 +91,6 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       )
     } catch (e) {
       if (e instanceof MissingUsersPermissionError) {
-        config.fetch.convertUsersIds = false
         return
       }
       throw e
@@ -117,7 +115,6 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       deployUserMap = await getUserMapFunc()
     } catch (e) {
       if (e instanceof MissingUsersPermissionError) {
-        config.fetch.convertUsersIds = false
         return
       }
       throw e

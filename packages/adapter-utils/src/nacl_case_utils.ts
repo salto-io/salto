@@ -155,9 +155,11 @@ export const invertNaclCase = (name: string): string => {
   if (!suffix) {
     return prefix
   }
-  const specialCharsMappingList = listFromSuffix(suffix)
-  return prefix.replace(/_/g, () =>
+  const [suffixCode, ...rest] = suffix.split('.')
+  const specialCharsMappingList = listFromSuffix(suffixCode)
+  const updatedPrefix = prefix.replace(/_/g, () =>
     (specialCharsMappingList.length === 1
       ? specialCharsMappingList[0]
-      : specialCharsMappingList.shift() ?? ''))
+      : specialCharsMappingList.shift() ?? ''),)
+  return [updatedPrefix, ...rest].filter(Boolean).join('.')
 }

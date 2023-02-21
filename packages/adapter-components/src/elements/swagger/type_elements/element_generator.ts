@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, PrimitiveType, ElemID, BuiltinTypes, Field, MapType, ListType, TypeMap } from '@salto-io/adapter-api'
+import { ObjectType, PrimitiveType, ElemID, BuiltinTypes, Field, MapType, ListType, TypeMap, isObjectType } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { types as lowerdashTypes, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -41,6 +41,9 @@ type TypeAdderType = (
   endpointName?: string,
 ) => PrimitiveType | ObjectType | ListType
 
+export type PropertyDetails = { $ref: string; inheritParentProps: boolean }
+type AdditionalFieldsFunc = (schema: SchemaObject) => Record<string, PropertyDetails> | undefined
+
 /**
  * Helper function for creating type elements for the given swagger definitions.
  * Keeps track of already-generated subtypes to reuse existing elements and avoid duplications.
@@ -52,6 +55,7 @@ const typeAdder = ({
   definedTypes,
   parsedConfigs,
   refs,
+  additionalFieldsGetter,
 }: {
   adapterName: string
   toUpdatedResourceName: (origResourceName: string) => string
@@ -59,6 +63,7 @@ const typeAdder = ({
   definedTypes: Record<string, ObjectType>
   parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
   refs: SwaggerRefs
+  additionalFieldsGetter?: AdditionalFieldsFunc
 }): TypeAdderType => {
   // keep track of the top-level schemas, so that even if they are reached from another
   // endpoint before being reached directly, they will be treated as top-level
@@ -131,7 +136,10 @@ const typeAdder = ({
     definedTypes[naclObjName] = type
 
     const { allProperties, additionalProperties } = extractProperties(schemaDef, refs)
-
+    const customProperties = additionalFieldsGetter?.(schemaDef)
+    if (customProperties !== undefined) {
+      _.assign(allProperties, customProperties)
+    }
     Object.assign(
       type.fields,
       _.mapValues(allProperties, (fieldSchema, fieldName) => {
@@ -146,13 +154,18 @@ const typeAdder = ({
           return `${objName}_${fieldName}`
         }
 
+        const fullFieldType = createNestedType(
+          fieldSchema,
+          toNestedTypeName(fieldSchema),
+        )
+        // omit parent fields from type to avoid collisions
+        if (isObjectType(fullFieldType) && customProperties?.[fieldName]?.inheritParentProps === false) {
+          fullFieldType.fields = _.omit(fullFieldType.fields, Object.keys(allProperties))
+        }
         return new Field(
           type,
           fieldName,
-          createNestedType(
-            fieldSchema,
-            toNestedTypeName(fieldSchema),
-          ),
+          fullFieldType,
         )
       }),
     )
@@ -289,6 +302,7 @@ export const generateTypes = async (
   }: AdapterSwaggerApiConfig,
   preParsedDefs?: SchemasAndRefs,
   loadedSwagger?: LoadedSwagger,
+  additionalFieldsGetter?: AdditionalFieldsFunc,
 ): Promise<ParsedTypes> => {
   // TODO SALTO-1252 - persist swagger locally
 
@@ -311,6 +325,7 @@ export const generateTypes = async (
     definedTypes,
     parsedConfigs,
     refs,
+    additionalFieldsGetter,
   })
 
   Object.entries(getResponseSchemas).forEach(

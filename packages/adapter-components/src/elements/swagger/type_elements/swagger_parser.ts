@@ -28,6 +28,7 @@ const log = logger(module)
 
 export type ReferenceObject = OpenAPIV2.ReferenceObject | OpenAPIV3.ReferenceObject
 export type SchemaObject = OpenAPIV2.SchemaObject | OpenAPIV3.SchemaObject | IJsonSchema
+export type V3SchemaObject = OpenAPIV3.SchemaObject
 export type SwaggerRefs = Pick<SwaggerParser.$Refs, 'get'>
 
 export type SchemaOrReference = ReferenceObject | SchemaObject

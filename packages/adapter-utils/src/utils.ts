@@ -647,6 +647,9 @@ export const getPath = (
   rootElement: Element,
   fullElemID: ElemID,
 ): string[] | undefined => {
+  // If rootElement is an objectType or an instance (i.e., a top level element),
+  // we want to compare the top level id of fullElemID.
+  // If it is a field we want to compare the base id.
   const { parent, path } = rootElement.elemID.isTopLevel()
     ? fullElemID.createTopLevelParentID()
     : fullElemID.createBaseID()

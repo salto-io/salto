@@ -35,6 +35,7 @@ import {
   elementExpressionStringifyReplacer,
   createSchemeGuard,
   getParent,
+  getPath,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -1489,6 +1490,14 @@ describe('Test utils.ts', () => {
         expect(transformedChange.data.before).toEqual('changed')
         expect(transformedChange.data.after).toEqual('changed')
       })
+    })
+  })
+
+  describe('getPath', () => {
+    it('should get annotations inside fields', () => {
+      const clonedMockField = new Field(mockType, 'field', BuiltinTypes.STRING, { str: 'val' })
+      const annoPath = getPath(clonedMockField, clonedMockField.elemID.createNestedID('str'))
+      expect(annoPath).toEqual(['annotations', 'str'])
     })
   })
 

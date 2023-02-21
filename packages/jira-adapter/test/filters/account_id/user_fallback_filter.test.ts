@@ -21,7 +21,9 @@ import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import userFallbackFilter from '../../../src/filters/account_id/user_fallback_filter'
 import { JIRA } from '../../../src/constants'
+import { MissingUsersPermissionError } from '../../../src/users'
 
+jest.setTimeout(1111111)
 describe('user_fallback_filter', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
@@ -195,6 +197,17 @@ describe('user_fallback_filter', () => {
           ],
         }
       })
+    })
+    it('should not raise on missing user permission error', async () => {
+      config.deploy.defaultMissingUserFallback = 'name2'
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+      await expect(filter.preDeploy([toChange({ after: instance })])).resolves.not.toThrow()
+    })
+
+    it('should raise on any other error', async () => {
+      config.deploy.defaultMissingUserFallback = 'name2'
+      mockConnection.get.mockRejectedValue(new Error('failed'))
+      await expect(filter.preDeploy([toChange({ after: instance })])).rejects.toThrow()
     })
 
     it('should replace the account id with the default id if it does not exist', async () => {

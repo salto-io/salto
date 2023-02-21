@@ -39,13 +39,13 @@ export const isIssueTypeUsed = async (
       },
     })
   } catch (e) {
-    log.error(`Received an error Jira search API, ${e.message}. Assuming issue type ${instance.elemID.getFullName()} has issues.`)
-    return true
+    log.error(`Received an error Jira search API, ${e.message}. Assuming issue type ${instance.elemID.getFullName()} has no issues.`)
+    return false
   }
 
   if (Array.isArray(response.data) || response.data.total === undefined) {
-    log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming issue type ${instance.elemID.getFullName()} has issues.`)
-    return true
+    log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming issue type ${instance.elemID.getFullName()} has no issues.`)
+    return false
   }
 
   log.debug(`Project ${instance.elemID.getFullName()} has ${response.data.total} issues.`)
@@ -62,7 +62,7 @@ const getRemovedIssueTypeUsedError = (instance: InstanceElement): ChangeError =>
   elemID: instance.elemID,
   severity: 'Error' as SeverityLevel,
   message: 'Cannot remove issue type with existing issues.',
-  detailedMessage: 'This issue type has existing issues across all projects. You must delete all issues of this type before you can delete the issue type.',
+  detailedMessage: 'There are existing issues of this issue type. You must delete them before you can delete the issue type itself.',
 })
 
 export const issueTypeDeletionValidator: (client: JiraClient) =>

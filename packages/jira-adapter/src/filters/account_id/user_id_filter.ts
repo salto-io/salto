@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
-import { UserMap } from '../../users'
+import { JiraClientError, UserMap } from '../../users'
 import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
@@ -56,29 +56,48 @@ const convertUserNameToId = (userMap: UserMap): WalkOnUsersCallback => (
 const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
   name: 'userIdFilter',
   onFetch: async elements => {
+    let fetchUserMap: UserMap
     if (!(config.fetch.convertUsersIds ?? true)) {
       return
     }
-    const userMap = await getUserMapFunc()
+    try {
+      fetchUserMap = await getUserMapFunc()
+    } catch (e) {
+      if (e instanceof JiraClientError) {
+        config.fetch.convertUsersIds = false
+        return
+      }
+      throw e
+    }
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async element => {
         if (client.isDataCenter) {
-          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) })
+          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(fetchUserMap)) })
         } else {
-          walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap,)) })
+          walkOnElement({ element, func: walkOnUsers(addDisplayName(fetchUserMap,)) })
         }
       })
   },
   preDeploy: async changes => {
+    let preDeployUserMap: UserMap
     if (!(config.fetch.convertUsersIds ?? true) || !client.isDataCenter) {
       return
     }
 
-    const userMap = _.keyBy(
-      Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
-      userInfo => userInfo.username as string
-    )
+    try {
+      preDeployUserMap = _.keyBy(
+        Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
+        userInfo => userInfo.username as string
+      )
+    } catch (e) {
+      if (e instanceof JiraClientError) {
+        config.fetch.convertUsersIds = false
+        return
+      }
+      throw e
+    }
+
 
     changes
       .filter(isInstanceChange)
@@ -86,21 +105,30 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(userMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap)) }))
   },
   onDeploy: async changes => {
+    let deployUserMap: UserMap
     if (!(config.fetch.convertUsersIds ?? true)
        || !client.isDataCenter) {
       return
     }
-    const userMap = await getUserMapFunc()
+    try {
+      deployUserMap = await getUserMapFunc()
+    } catch (e) {
+      if (e instanceof JiraClientError) {
+        config.fetch.convertUsersIds = false
+        return
+      }
+      throw e
+    }
     changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(deployUserMap)) }))
   },
 })
 

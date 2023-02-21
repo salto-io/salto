@@ -16,7 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, decorators } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from './client/client'
@@ -34,6 +34,30 @@ export type UserInfo = {
 }
 export type UserMap = Record<string, UserInfo>
 export type GetUserMapFunc = () => Promise<UserMap>
+
+export class JiraClientError extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+export const ignoreJiraClientError = (): decorators.InstanceMethodDecorator => (
+  decorators.wrapMethodWith(
+    async (
+      originalMethod: decorators.OriginalCall,
+    ): Promise<unknown | undefined> => {
+      try {
+        const result = await originalMethod.call()
+        return result
+      } catch (err) {
+        if (!(err instanceof JiraClientError)) {
+          throw err
+        }
+      }
+      return undefined
+    }
+  )
+)
 
 const paginateUsers = async (paginator: clientUtils.Paginator, isDataCenter: boolean)
   : Promise<clientUtils.ResponseValue[][]> => {
@@ -118,11 +142,15 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
       if (usersCallPromise === undefined) {
         usersCallPromise = log.time(async () => paginateUsers(paginator, isDataCenter), 'users pagination')
       }
-      idMap = Object.fromEntries((await usersCallPromise)
-        .flat()
-        .filter(isUserResponse)
-        .map(parseUserResponse)
-        .map(userInfo => [userInfo.userId, userInfo]))
+      try {
+        idMap = Object.fromEntries((await usersCallPromise)
+          .flat()
+          .filter(isUserResponse)
+          .map(parseUserResponse)
+          .map(userInfo => [userInfo.userId, userInfo]))
+      } catch (e) {
+        throw new JiraClientError(e)
+      }
     }
     return idMap
   }

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, ChangeDataType } from '@salto-io/adapter-api'
-import { getUsersMapByVisibleId, UserMap } from '../../users'
+import { getUsersMapByVisibleId, JiraClientError, UserMap } from '../../users'
 import { FilterCreator } from '../../filter'
 import { omitChanges, OmitChangesPredicate, addBackPermissions, PermissionHolder } from './omit_permissions_common'
 
@@ -39,10 +39,19 @@ const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
   return ({
     name: 'wrongUserPermissionSchemeFilter',
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
+      let userMap: UserMap
       if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
-      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+      try {
+        userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+      } catch (e) {
+        if (e instanceof JiraClientError) {
+          config.fetch.convertUsersIds = false
+          return
+        }
+        throw e
+      }
 
       erroneousPermissionSchemes = omitChanges(
         changes,

@@ -19,7 +19,7 @@ import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { wrongUserPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_user_permission_scheme_filter'
-import { GetUserMapFunc, getUsersMapByVisibleId } from '../users'
+import { GetUserMapFunc, getUsersMapByVisibleId, JiraClientError, UserMap } from '../users'
 
 
 const createChangeError = (
@@ -47,11 +47,20 @@ export const wrongUserPermissionSchemeValidator: (
   config: JiraConfig,
   getUserMapFunc: GetUserMapFunc
   ) => ChangeValidator = (client, config, getUserMapFunc) => async changes => {
+    let userMap: UserMap
     if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
     const { baseUrl } = client
-    const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+    try {
+      userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+    } catch (e) {
+      if (e instanceof JiraClientError) {
+        config.fetch.convertUsersIds = false
+        return []
+      }
+      throw e
+    }
 
     const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(userMap)
     return changes

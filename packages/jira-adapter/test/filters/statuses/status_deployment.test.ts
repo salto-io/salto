@@ -23,7 +23,6 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
-jest.setTimeout(1000000)
 describe('statusDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let mockConnection: MockInterface<clientUtils.APIConnection>

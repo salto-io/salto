@@ -42,8 +42,8 @@ const isInvalidTypeChange = async (change: Change<Field>): Promise<boolean> => {
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Warning',
-  message: `You cannot create or modify a custom field type to ${field.refType.elemID.typeName}. Field: ${field.name}`,
-  detailedMessage: `You cannot create or modify a custom field type to ${field.refType.elemID.typeName}. Valid types can be found at:\nhttps://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype`,
+  message: 'Invalid custom field type',
+  detailedMessage: `Custom field type ${field.refType.elemID.typeName} is not valid.\nYou can edit the type in Salto and use a valid type, per the list at:\nhttps://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_field_types.htm#meta_type_fieldtype`,
 })
 
 /**

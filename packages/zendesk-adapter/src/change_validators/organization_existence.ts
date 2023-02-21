@@ -23,10 +23,11 @@ import {
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   createOrganizationPathEntries,
   getOrganizationsByIds,
-  getOrganizationsByNames,
+  getOrganizationsByNames, Organization,
   TYPE_NAME_TO_REPLACER,
 } from '../filters/organizations'
 import ZendeskClient from '../client/client'
@@ -35,6 +36,7 @@ import { ZendeskFetchConfig } from '../config'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
+const log = logger(module)
 
 /**
  * Validates the existence of organizations that are referenced in added or modified elements
@@ -58,9 +60,17 @@ export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig
       const orgIdentifiers = Array.from(new Set<string>(
         Object.values(entriesByInstance).flatMap(entries => entries.map(entry => entry.identifier))
       ))
-      const existingOrgs = orgIdsResolved
-        ? await getOrganizationsByNames(orgIdentifiers, paginator)
-        : await getOrganizationsByIds(orgIdentifiers, client)
+
+      let existingOrgs: Organization[]
+      try {
+        existingOrgs = orgIdsResolved
+          ? await getOrganizationsByNames(orgIdentifiers, paginator)
+          : await getOrganizationsByIds(orgIdentifiers, client)
+      } catch (e) {
+        // If we fail for any reason, we don't want to block the user from deploying
+        log.warn(`organizationExistenceValidator - Failed to get organizations from Zendesk: ${e.message}`)
+        return []
+      }
 
       const existingOrgsSet = new Set(
         existingOrgs.map(org => (orgIdsResolved ? org.name : org.id.toString())).filter(org => !_.isEmpty(org))

@@ -33,7 +33,7 @@ const { makeArray } = collections.array
 
 const DEFAULT_ORGANIZATION_FIELDS = [{ name: 'organization_id' }]
 
-type Organization = {
+export type Organization = {
   id: number
   name: string
 }

@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers } from './account_id_filter'
-import { getCurrentUserInfo, getUserIdFromEmail, getUsersMapByVisibleId, JiraClientError, UserMap } from '../../users'
+import { getCurrentUserInfo, getUserIdFromEmail, getUsersMapByVisibleId, MissingUsersPermissionError, UserMap } from '../../users'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
@@ -62,7 +62,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
       try {
         userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
       } catch (e) {
-        if (e instanceof JiraClientError) {
+        if (e instanceof MissingUsersPermissionError) {
           config.fetch.convertUsersIds = false
           return
         }

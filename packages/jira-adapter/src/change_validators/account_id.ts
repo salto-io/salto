@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
-import { getUserIdFromEmail, GetUserMapFunc, getUsersMapByVisibleId, JiraClientError, UserMap } from '../users'
+import { getUserIdFromEmail, GetUserMapFunc, getUsersMapByVisibleId, MissingUsersPermissionError, UserMap } from '../users'
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
@@ -254,7 +254,7 @@ export const accountIdValidator: (
       try {
         userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
       } catch (e) {
-        if (e instanceof JiraClientError) {
+        if (e instanceof MissingUsersPermissionError) {
           config.fetch.convertUsersIds = false
           return []
         }

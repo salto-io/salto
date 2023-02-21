@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
-import { JiraClientError, UserMap } from '../../users'
+import { MissingUsersPermissionError, UserMap } from '../../users'
 import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
@@ -63,7 +63,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
     try {
       fetchUserMap = await getUserMapFunc()
     } catch (e) {
-      if (e instanceof JiraClientError) {
+      if (e instanceof MissingUsersPermissionError) {
         config.fetch.convertUsersIds = false
         return
       }
@@ -91,7 +91,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
         userInfo => userInfo.username as string
       )
     } catch (e) {
-      if (e instanceof JiraClientError) {
+      if (e instanceof MissingUsersPermissionError) {
         config.fetch.convertUsersIds = false
         return
       }
@@ -116,7 +116,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
     try {
       deployUserMap = await getUserMapFunc()
     } catch (e) {
-      if (e instanceof JiraClientError) {
+      if (e instanceof MissingUsersPermissionError) {
         config.fetch.convertUsersIds = false
         return
       }

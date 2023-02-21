@@ -35,29 +35,15 @@ export type UserInfo = {
 export type UserMap = Record<string, UserInfo>
 export type GetUserMapFunc = () => Promise<UserMap>
 
-export class JiraClientError extends Error {
+export class MissingUsersPermissionError extends Error {
   constructor(message: string) {
     super(message)
   }
 }
 
-export const ignoreJiraClientError = (): decorators.InstanceMethodDecorator => (
-  decorators.wrapMethodWith(
-    async (
-      originalMethod: decorators.OriginalCall,
-    ): Promise<unknown | undefined> => {
-      try {
-        const result = await originalMethod.call()
-        return result
-      } catch (err) {
-        if (!(err instanceof JiraClientError)) {
-          throw err
-        }
-      }
-      return undefined
-    }
-  )
-)
+const isMissingUserPermissionError = (err: Error): boolean =>
+  err instanceof clientUtils.HTTPError && err.response.status === 403
+
 
 const paginateUsers = async (paginator: clientUtils.Paginator, isDataCenter: boolean)
   : Promise<clientUtils.ResponseValue[][]> => {
@@ -149,7 +135,10 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
           .map(parseUserResponse)
           .map(userInfo => [userInfo.userId, userInfo]))
       } catch (e) {
-        throw new JiraClientError(e)
+        if (isMissingUserPermissionError(e)) {
+          throw new MissingUsersPermissionError(e)
+        }
+        throw e
       }
     }
     return idMap

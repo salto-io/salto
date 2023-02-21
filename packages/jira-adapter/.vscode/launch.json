@@ -13,9 +13,7 @@
         "${workspaceRoot}/node_modules/.bin/jest",
         "--runInBand",
         "--config",
-        "${workspaceRoot}/jest.config.js",
-        "-t",
-        "issue type scheme validator"
+        "${workspaceRoot}/jest.config.js"
       ],
       "outFiles": [],
       "console": "integratedTerminal",

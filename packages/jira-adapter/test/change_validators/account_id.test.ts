@@ -20,6 +20,7 @@ import { mockClient } from '../utils'
 import { accountIdValidator } from '../../src/change_validators/account_id'
 import * as common from '../filters/account_id/account_id_common'
 import { getDefaultConfig } from '../../src/config/config'
+import { MissingUsersPermissionError } from '../../src/users'
 
 describe('accountIdValidator', () => {
   const { client, connection, getUserMapFunc } = mockClient()
@@ -190,6 +191,18 @@ Go to ${url} to see valid users and account IDs.`,
     const validator2 = accountIdValidator(client, config, getUserMapFunc)
     await validator2([toChange({ after: instances[1] })])
     expect(connection.get).toHaveBeenCalledOnce()
+  })
+
+  it('should not fail on missing permission error', async () => {
+    const mockedGetUserMapFunc = jest.fn().mockRejectedValue(new MissingUsersPermissionError('Missing permission'))
+    const validator2 = accountIdValidator(client, config, mockedGetUserMapFunc)
+    await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
+  })
+
+  it('should fail on other errors', async () => {
+    const mockedGetUserMapFunc = jest.fn().mockRejectedValue(new Error('Missing permission'))
+    const validator2 = accountIdValidator(client, config, mockedGetUserMapFunc)
+    await expect(validator2([toChange({ after: instances[1] })])).rejects.toThrow()
   })
 
   it('should return an info when there is no display name', async () => {
@@ -438,6 +451,16 @@ Go to ${url} to see valid users and account IDs.`,
         }),
       ])
       expect(changeErrors).toEqual([])
+    })
+    it('should not fail on missing permission error', async () => {
+      const mockedGetUserMapFunc = jest.fn().mockRejectedValue(new MissingUsersPermissionError('Missing permission'))
+      const validator2 = accountIdValidator(clientDC, configDC, mockedGetUserMapFunc)
+      await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
+    })
+    it('should fail on other errors', async () => {
+      const mockedGetUserMapFunc = jest.fn().mockRejectedValue(new Error('Missing permission'))
+      const validator2 = accountIdValidator(clientDC, configDC, mockedGetUserMapFunc)
+      await expect(validator2([toChange({ after: instances[1] })])).rejects.toThrow()
     })
     it('should raise an error when accountId does not exist in the target environment', async () => {
       const changeErrors = await validatorDC([

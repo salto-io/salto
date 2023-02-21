@@ -27,13 +27,13 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
   detailedMessage: '',
   deployActions: {
     preAction: {
-      title: 'Webhook\'s authentication credentails will not be set',
-      description: `Webhook ${instanceElemId.name} will be deployed with dummy credentials. Salto will guide you on modifying it post deploy`,
+      title: 'Webhook\'s authentication credentials will not be set',
+      description: `Webhook ${instanceElemId.name} will be deployed with placeholder credentials. Salto will guide you on modifying it post deploy`,
       subActions: [],
     },
     postAction: {
-      title: 'Set webhook authentication credentails',
-      description: `Please manually set the authentication credetials for webhook ${instanceElemId.name} via the Zendesk UI`,
+      title: 'Set webhook authentication credentials',
+      description: `Please manually set the authentication credentials for webhook ${instanceElemId.name} via the Zendesk UI`,
       subActions: [
         `Go to Zendesk Webhooks panel at ${baseUrl}${WEBHOOKS_SERVICE_URL}`,
         'Click on the modified webhook',

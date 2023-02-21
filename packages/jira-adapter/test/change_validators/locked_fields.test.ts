@@ -37,7 +37,7 @@ describe('lockedFieldsValidator', () => {
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Cannot deploy a locked field',
-        detailedMessage: 'The field jira.Field.instance.instance is locked and cannot be deployed',
+        detailedMessage: 'The field is locked and cannot be deployed. Learn more here: https://help.salto.io/en/articles/6933969-the-field-is-locked-and-cannot-be-deployed',
       },
     ])
   })

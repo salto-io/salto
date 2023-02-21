@@ -21,10 +21,21 @@ import { doesProjectHaveIssues } from './project_deletion'
 
 const { awu } = collections.asynciterable
 
-const projectWorkflowSchemeChanged = (change : ModificationChange<InstanceElement>): boolean =>
-  change.data.before.value.workflowScheme instanceof ReferenceExpression
-  && change.data.after.value.workflowScheme instanceof ReferenceExpression
-  && !change.data.before.value.workflowScheme.elemID.isEqual(change.data.after.value.workflowScheme.elemID)
+const RELEVANT_FIELDS = ['priorityScheme', 'workflowScheme']
+type RelevantField = typeof RELEVANT_FIELDS[number]
+const FIELD_FORMATS: Record<RelevantField, string> = {
+  priorityScheme: 'priority scheme',
+  workflowScheme: 'workflow scheme',
+}
+
+const projectSchemeChanged = (change : ModificationChange<InstanceElement>): RelevantField[] => {
+  const { before, after } = change.data
+  const changedFields = RELEVANT_FIELDS
+    .filter(field => before.value[field] instanceof ReferenceExpression
+      && after.value[field] instanceof ReferenceExpression)
+    .filter(type => !before.value[type].elemID.isEqual(after.value[type].elemID))
+  return changedFields
+}
 
 const getRelevantChanges = async (
   changes: ReadonlyArray<Change<ChangeDataType>>, client: JiraClient,
@@ -33,22 +44,24 @@ const getRelevantChanges = async (
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
-    .filter(projectWorkflowSchemeChanged)
+    .filter(change => projectSchemeChanged(change).length > 0)
     .filter(async change => doesProjectHaveIssues(getChangeData(change), client))
     .toArray()
 
-const getChangeErrorForChange = (change: ModificationChange<InstanceElement>): ChangeError =>
-  ({
+const getChangeErrorForChange = (change: ModificationChange<InstanceElement>): ChangeError[] => {
+  const changedFields = projectSchemeChanged(change)
+  return changedFields.map(field => ({
     elemID: getChangeData(change).elemID,
     severity: 'Error',
-    message: 'Can’t replace non-empty project workflow scheme',
-    detailedMessage: 'Salto cannot change the workflow scheme for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.',
-  })
+    message: `Can’t replace non-empty project ${FIELD_FORMATS[field]}`,
+    detailedMessage: `Salto cannot change ${FIELD_FORMATS[field]} for a project with existing issues. To perform this action manually, you can use the Jira interface. This will allow you to migrate the necessary issues.`,
+  }))
+}
 
-export const activeWorkflowSchemeChangeValidator = (
+export const activeSchemeChangeValidator = (
   client: JiraClient,
 ): ChangeValidator =>
   async changes => {
     const relevantChanges = await getRelevantChanges(changes, client)
-    return relevantChanges.map(getChangeErrorForChange)
+    return relevantChanges.flatMap(getChangeErrorForChange)
   }

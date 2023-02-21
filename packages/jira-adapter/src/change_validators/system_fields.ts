@@ -27,6 +27,6 @@ export const systemFieldsValidator: ChangeValidator = async changes => (
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Can not deploy changes to a Jira system field',
-      detailedMessage: `${instance.elemID.getFullName()} is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed`,
+      detailedMessage: 'This is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed.',
     }))
 )

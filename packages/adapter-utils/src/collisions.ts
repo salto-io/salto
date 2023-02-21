@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { safeJsonStringify, elementExpressionStringifyReplacer } from './utils'
@@ -40,6 +40,12 @@ export const createWarningFromMsg = (message: string): SaltoError =>
 
 export const getInstanceDesc = (instanceId: string, baseUrl?: string): string =>
   (baseUrl ? `${baseUrl}/${instanceId}` : `Instance with Id - ${instanceId}`)
+
+const getCollisionBreakdownTitle = (collidingInstanceName: string): string => (
+  collidingInstanceName === ElemID.CONFIG_NAME
+    ? 'Instances with empty name (Due to no values in any of the provided ID fields)'
+    : collidingInstanceName
+)
 
 export const getInstancesDetailsMsg = (
   instanceIds: string[],
@@ -127,7 +133,7 @@ Current Salto ID configuration for ${type} is defined as [${getIdFieldsByType(ty
       const collisionsHeader = 'Breakdown per colliding Salto ID:'
       const collisionsToDisplay = Object.entries(elemIDtoInstances).slice(0, maxBreakdownElements)
       const collisionMsgs = await Promise.all(collisionsToDisplay
-        .map(async ([elemID, collisionInstances]) => `- ${elemID}:
+        .map(async ([elemID, collisionInstances]) => `- ${getCollisionBreakdownTitle(elemID)}:
 ${getInstancesDetailsMsg(await Promise.all(collisionInstances.map(getInstanceName)), baseUrl, maxBreakdownDetailsElements)}`))
       const epilogue = `To resolve these collisions please take one of the following actions and fetch again:
 \t1. Change ${type}'s ${idFieldsName} to include all fields that uniquely identify the type's instances.

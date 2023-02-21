@@ -29,7 +29,7 @@ export const lockedFieldsValidator: ChangeValidator = async changes => (
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Cannot deploy a locked field',
-      detailedMessage: `The field ${instance.elemID.getFullName()} is locked and cannot be deployed`,
+      detailedMessage: 'The field is locked and cannot be deployed. Learn more here: https://help.salto.io/en/articles/6933969-the-field-is-locked-and-cannot-be-deployed',
     }))
     .toArray()
 )

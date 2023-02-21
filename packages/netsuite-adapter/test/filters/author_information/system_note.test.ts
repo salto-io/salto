@@ -56,6 +56,8 @@ describe('netsuite system note author information', () => {
     ])
     runSuiteQLMock.mockResolvedValueOnce([
       { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01' },
+      // Should ignore this record because it has a date in the future
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '3022-03-01' },
       { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01' },
       { recordid: '2', recordtypeid: '-112', field: '', name: '3', date: '2022-01-01' },
       { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01' },

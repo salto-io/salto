@@ -16,7 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, decorators } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from './client/client'

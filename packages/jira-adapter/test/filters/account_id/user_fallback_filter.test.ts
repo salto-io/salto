@@ -21,9 +21,7 @@ import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import userFallbackFilter from '../../../src/filters/account_id/user_fallback_filter'
 import { JIRA } from '../../../src/constants'
-import { MissingUsersPermissionError } from '../../../src/users'
 
-jest.setTimeout(1111111)
 describe('user_fallback_filter', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>

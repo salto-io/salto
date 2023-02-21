@@ -35,7 +35,7 @@ const compareScripts = (script1: string, script2: string): void => {
   expect(zipBuffer1).toEqual(zipBuffer2)
 }
 
-describe('Workflow post functions', () => {
+describe('Cloud Workflow post functions', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
@@ -113,14 +113,15 @@ describe('Workflow post functions', () => {
         await filter.preDeploy([toChange({ after: instance })])
         compareScripts(instance.value.transitions[0].rules.postFunctions[0].configuration.value, goodBase64)
       })
-      it('should fail if undefined', async () => {
+      it('should not decode if undefined', async () => {
         instance.value.transitions[0].rules.postFunctions[0].configuration.value = undefined
         await filter.preDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toBeUndefined()
       })
       it('should not encode if script runner not supported', async () => {
+        instance.value.transitions[0].rules.postFunctions[0].configuration.value = { a: 1 }
         await filterOff.preDeploy([toChange({ after: instance })])
-        compareScripts(instance.value.transitions[0].rules.postFunctions[0].configuration.value, goodBase64)
+        expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toEqual({ a: 1 })
       })
     })
     describe('on deploy', () => {

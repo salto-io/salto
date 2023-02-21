@@ -120,10 +120,10 @@ const walkOnWorkflow = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
     return WALK_NEXT_STEP.RECURSE
   })
 
-const filter: FilterCreator = ({ config }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   name: 'scriptRunnerWorkflowFilter',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetch.supportScriptRunner) {
+    if (!config.fetch.supportScriptRunner || client.isDataCenter) {
       return
     }
     elements
@@ -136,7 +136,7 @@ const filter: FilterCreator = ({ config }) => ({
       })
   },
   preDeploy: async changes => {
-    if (!config.fetch.supportScriptRunner) {
+    if (!config.fetch.supportScriptRunner || client.isDataCenter) {
       return
     }
     changes
@@ -151,7 +151,7 @@ const filter: FilterCreator = ({ config }) => ({
       })
   },
   onDeploy: async changes => {
-    if (!config.fetch.supportScriptRunner) {
+    if (!config.fetch.supportScriptRunner || client.isDataCenter) {
       return
     }
     changes

@@ -48,7 +48,7 @@ export const isIssueTypeUsed = async (
     return false
   }
 
-  log.debug(`Project ${instance.elemID.getFullName()} has ${response.data.total} issues.`)
+  log.debug(`Issue type ${instance.elemID.getFullName()} has ${response.data.total} issues.`)
 
   return response.data.total !== 0
 }

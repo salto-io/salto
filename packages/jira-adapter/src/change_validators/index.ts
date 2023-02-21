@@ -51,6 +51,7 @@ import { activeSchemeDeletionValidator } from './active_scheme_deletion'
 import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
+import { issueTypeDeletionValidator } from './issue_type_deletion'
 
 const {
   deployTypesNotSupportedValidator,
@@ -86,6 +87,7 @@ export default (
     workflowSchemeMigrationValidator(client, config, paginator),
     activeSchemeChangeValidator(client),
     maskingValidator(client),
+    issueTypeDeletionValidator(client),
     lockedFieldsValidator,
     fieldContextValidator,
     systemFieldsValidator,

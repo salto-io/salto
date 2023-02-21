@@ -22,10 +22,10 @@ import { issueTypeSchemeMigrationValidator } from '../../src/change_validators/i
 import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, PROJECT_TYPE } from '../../src/constants'
 
 describe('issue type scheme migration validator', () => {
-  const issueTypeReference = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'))
-  const issueTypeReference2 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'))
-  const issueTypeReference3 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType3'))
-  const issueTypeReference4 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType4'))
+  const issueTypeReference = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), new InstanceElement('issueType1', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType1' }))
+  const issueTypeReference2 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'), new InstanceElement('issueType2', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType2' }))
+  const issueTypeReference3 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType3'), new InstanceElement('issueType3', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType3' }))
+  const issueTypeReference4 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType4'), new InstanceElement('issueType4', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType4' }))
   const projectType = new ObjectType({ elemID: new ElemID(JIRA, PROJECT_TYPE) })
   let projectInstance: InstanceElement
   let secondProjectInstance: InstanceElement
@@ -127,16 +127,16 @@ describe('issue type scheme migration validator', () => {
     elementSource = buildElementsSourceFromElements([])
     expect(await callValidator()).toEqual([])
   })
-  it('should assume there are issues if error is returned from server', async () => {
+  it("should assume there aren't issues if error is returned from server", async () => {
     mockConnection.get.mockImplementation(async url => {
       if (url === '/rest/api/3/search') {
         throw new Error('error')
       }
       throw new Error(`Unexpected url ${url}`)
     })
-    expect(await callValidator()).toHaveLength(1)
+    expect(await callValidator()).toHaveLength(0)
   })
-  it('should assume there are issues bad response from server', async () => {
+  it("should assume there aren't issues bad response from server", async () => {
     mockConnection.get.mockResolvedValueOnce({
       status: 200,
       data: [],
@@ -148,9 +148,7 @@ describe('issue type scheme migration validator', () => {
       },
     })
     const errors = await callValidator()
-    expect(errors).toHaveLength(1)
-    expect(errors[0].message).toEqual('Cannot remove issue types from scheme')
-    expect(errors[0].detailedMessage).toEqual('The issue types issueType2, issueType3 have assigned issues and cannot be removed from this issue type scheme')
+    expect(errors).toHaveLength(0)
   })
   it('should return a error if there are linked issues', async () => {
     const errors = await callValidator()

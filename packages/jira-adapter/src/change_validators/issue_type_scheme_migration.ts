@@ -72,13 +72,13 @@ const areIssueTypesUsed = async (
       },
     })
   } catch (e) {
-    log.error(`Received an error Jira search API, ${e.message}. Assuming issue type "${issueType}" has issues.`)
-    return true
+    log.error(`Received an error Jira search API, ${e.message}. Assuming issue type "${issueType}" has no issues.`)
+    return false
   }
 
   if (Array.isArray(response.data) || response.data.total === undefined) {
-    log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming issue type "${issueType}" has issues.`)
-    return true
+    log.error(`Received invalid response from Jira search API, ${safeJsonStringify(response.data, undefined, 2)}. Assuming issue type "${issueType}" has no issues.`)
+    return false
   }
   return response.data.total !== 0
 }
@@ -110,7 +110,7 @@ export const issueTypeSchemeMigrationValidator = (
         return undefined
       }
       const removedIssueTypeNames = getRemovedIssueTypeIds(change)
-        .map(issueTypeId => issueTypeId.elemID.name)
+        .map(issueTypeId => issueTypeId.value.value.name)
       const removedTypesWithIssues = await awu(removedIssueTypeNames).filter(async issueType => (
         areIssueTypesUsed(client, issueType, linkedProjectNames)
       )).toArray()

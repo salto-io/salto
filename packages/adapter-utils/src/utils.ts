@@ -653,19 +653,19 @@ export const getPath = (
 
   if (!parent.isEqual(rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []
-  if (fullElemID.isAttrID()
-  || (fullElemID.idType === 'field' && fullElemID.getFullNameParts().length > 4)) {
+  if (fullElemID.isAttrID()) {
     return ['annotations', ...path]
   }
   if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {
     return ['value', ...path]
   }
 
-  if (isObjectType(rootElement) && fullElemID.idType === 'field') {
-    const fieldName = path[0]
-    const fieldAnnoPath = path.slice(1)
-    if (_.isEmpty(fieldAnnoPath)) return ['fields', fieldName]
-    return ['fields', fieldName, 'annotations', ...fieldAnnoPath]
+  if (fullElemID.idType === 'field') {
+    const fieldAnnotations = isObjectType(rootElement) ? path.slice(1) : path
+    const fieldAnnotationsPart = ['annotations', ...fieldAnnotations]
+    const objectPart = isObjectType(rootElement) ? ['fields', path[0]] : []
+
+    return _.isEmpty(fieldAnnotations) ? objectPart : [...objectPart, ...fieldAnnotationsPart]
   }
 
   if (isType(rootElement) && fullElemID.isAnnotationTypeID()) {

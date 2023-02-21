@@ -38,18 +38,10 @@ import { FIELD_HISTORY_TRACKING_ENABLED, HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_
 
 const log = logger(module)
 
-const trackedFields = (type: ObjectType): string[] => (
-  type.annotations[HISTORY_TRACKED_FIELDS]?.map((ref: ReferenceExpression) => ref.elemID.getFullName()) ?? []
-)
 
 const isHistoryTrackingEnabled = (type: ObjectType): boolean => (
   (type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] === true)
   || (type.annotations[HISTORY_TRACKED_FIELDS] !== undefined)
-)
-
-const isHistoryTrackedField = (field: Field): boolean => (
-  (field.annotations[FIELD_HISTORY_TRACKING_ENABLED] === true)
-  || trackedFields(field.parent).includes(field.elemID.getFullName())
 )
 
 const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void => {
@@ -135,6 +127,15 @@ const filter: LocalFilterCreator = () => ({
       .forEach(centralizeHistoryTrackingAnnotations)
   },
   preDeploy: async changes => {
+    const trackedFields = (type: ObjectType): string[] => (
+      // by the time preDeploy is called references are already resolved, so they won't be ref expressions anymore.
+      type.annotations[HISTORY_TRACKED_FIELDS] ?? []
+    )
+
+    const isHistoryTrackedField = (field: Field): boolean => (
+      (field.annotations[FIELD_HISTORY_TRACKING_ENABLED] === true)
+      || trackedFields(field.parent).includes(field.elemID.getFullName())
+    )
     const changedTrackedFields = (change: ModificationChange<ObjectType>):
       {
         typeBefore: ObjectType

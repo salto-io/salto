@@ -95,8 +95,8 @@ describe('History tracking filter', () => {
   })
   describe('preDeploy', () => {
     const typeForPreDeploy = (trackedFields?: string[], fields: string[] = []): ObjectType => {
-      const referenceToField = (objectType: ObjectType, fieldName: string): ReferenceExpression => (
-        new ReferenceExpression(objectType.elemID.createNestedID('field', fieldName))
+      const referenceToField = (objectType: ObjectType, fieldName: string): string => (
+        objectType.elemID.createNestedID('field', fieldName).getFullName()
       )
       const objectType = createCustomObjectType('SomeType', {
         fields: Object.fromEntries(fields.map(fieldName => [fieldName, {

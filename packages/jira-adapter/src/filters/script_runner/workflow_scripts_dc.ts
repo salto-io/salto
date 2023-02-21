@@ -39,7 +39,7 @@ const decodeBase64 = (base64: string): string => {
 
 const encodeBase64 = (script: string): string => DC_BASE64_PREFIX + Buffer.from(script).toString('base64')
 
-const decodeScriptObject = (base64: string): Value => {
+const decodeScriptObject = (base64: string): unknown => {
   const script = decodeBase64(base64)
   try {
     const value = JSON.parse(script)
@@ -81,10 +81,10 @@ const fieldToEncodeMap: FieldToCodeFuncMap = new Map([
   ['FIELD_COMMENT', encodeBase64],
 ])
 
-const walkOnWorkflow = (funcMap: FieldToCodeFuncMap): WalkOnFunc => (
+const transformConfigFields = (funcMap: FieldToCodeFuncMap): WalkOnFunc => (
   ({ value }): WALK_NEXT_STEP => {
     if (SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration !== undefined) {
-      Array.from(funcMap.keys()).forEach(fieldName => {
+      funcMap.forEach((_value, fieldName) => {
         // Field comment is base64 encoded only in some cases
         if (value.configuration[fieldName] !== undefined
           && (fieldName !== 'FIELD_COMMENT' || value.configuration[CANNED_SCRIPT] === FIELD_COMMENT_TYPE)) {
@@ -99,20 +99,20 @@ const walkOnWorkflow = (funcMap: FieldToCodeFuncMap): WalkOnFunc => (
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'scriptRunnerWorkflowDcFilter',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetch.supportScriptRunner || !client.isDataCenter) {
+    if (!config.fetch.enableScriptRunnerAddon || !client.isDataCenter) {
       return
     }
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID,
+        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: walkOnWorkflow(fieldToDecodeMap) })
+          func: transformConfigFields(fieldToDecodeMap) })
       })
   },
   preDeploy: async changes => {
-    if (!config.fetch.supportScriptRunner || !client.isDataCenter) {
+    if (!config.fetch.enableScriptRunnerAddon || !client.isDataCenter) {
       return
     }
     changes
@@ -121,13 +121,13 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID,
+        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: walkOnWorkflow(fieldToEncodeMap) })
+          func: transformConfigFields(fieldToEncodeMap) })
       })
   },
   onDeploy: async changes => {
-    if (!config.fetch.supportScriptRunner || !client.isDataCenter) {
+    if (!config.fetch.enableScriptRunnerAddon || !client.isDataCenter) {
       return
     }
     changes
@@ -136,9 +136,9 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID,
+        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: walkOnWorkflow(fieldToDecodeMap) })
+          func: transformConfigFields(fieldToDecodeMap) })
       })
   },
 })

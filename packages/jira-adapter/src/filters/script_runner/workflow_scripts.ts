@@ -37,7 +37,7 @@ const COMPRESSED_OBJECT_SCHEME = Joi.object({
 
 export const isCompressedObject = createSchemeGuard<CompressedObject>(COMPRESSED_OBJECT_SCHEME, 'ScriptRunner object not as expected')
 
-const decodeScriptRunner = (scriptRunnerString: string | undefined): Value => {
+const decodeScriptRunner = (scriptRunnerString: string | undefined): unknown => {
   if (scriptRunnerString === undefined) {
     return undefined
   }
@@ -111,9 +111,9 @@ const typeToDecodeFuncMap: TypeToCodeFuncMap = new Map([
   [SCRIPT_RUNNER_CONDITION_TYPE, fallBackJsonParse],
 ])
 
-const walkOnWorkflow = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
+const transfromConfigValue = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
   ({ value }): WALK_NEXT_STEP => {
-    if (Array.from(typeMap.keys()).includes(value.type) && value.configuration !== undefined) {
+    if (typeMap.has(value.type) && value.configuration !== undefined) {
       value.configuration.value = typeMap.get(value.type)(value.configuration.value)
       return WALK_NEXT_STEP.SKIP
     }
@@ -123,20 +123,20 @@ const walkOnWorkflow = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'scriptRunnerWorkflowFilter',
   onFetch: async (elements: Element[]) => {
-    if (!config.fetch.supportScriptRunner || client.isDataCenter) {
+    if (!config.fetch.enableScriptRunnerAddon || client.isDataCenter) {
       return
     }
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID,
+        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: walkOnWorkflow(typeToDecodeFuncMap) })
+          func: transfromConfigValue(typeToDecodeFuncMap) })
       })
   },
   preDeploy: async changes => {
-    if (!config.fetch.supportScriptRunner || client.isDataCenter) {
+    if (!config.fetch.enableScriptRunnerAddon || client.isDataCenter) {
       return
     }
     changes
@@ -145,13 +145,13 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID,
+        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: walkOnWorkflow(typeToEncodeFuncMap) })
+          func: transfromConfigValue(typeToEncodeFuncMap) })
       })
   },
   onDeploy: async changes => {
-    if (!config.fetch.supportScriptRunner || client.isDataCenter) {
+    if (!config.fetch.enableScriptRunnerAddon || client.isDataCenter) {
       return
     }
     changes
@@ -160,9 +160,9 @@ const filter: FilterCreator = ({ client, config }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
       .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID,
+        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: walkOnWorkflow(typeToDecodeFuncMap) })
+          func: transfromConfigValue(typeToDecodeFuncMap) })
       })
   },
 })

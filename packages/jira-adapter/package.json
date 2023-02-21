@@ -39,16 +39,17 @@
     "@salto-io/lowerdash": "0.3.31",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
+    "pako": "^1.0.11",
     "uuid": "^8.3.0",
     "wu": "^2.1.0",
-    "xml-js": "^1.6.11",
-    "pako": "^1.0.11"
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.3.31",
     "@salto-io/test-utils": "0.3.31",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
+    "@types/pako": "^1.0.1",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
     "axios": "^0.21.3",
@@ -68,7 +69,6 @@
     "jest-junit": "^12.0.0",
     "ts-jest": "^27.1.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "4.1.3",
-    "@types/pako": "^1.0.1"
+    "typescript": "4.1.3"
   }
 }

@@ -46,7 +46,7 @@ describe('Cloud Workflow post functions', () => {
   beforeEach(() => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-    config.fetch.supportScriptRunner = true
+    config.fetch.enableScriptRunnerAddon = true
     filter = workflowPostFunctionsFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
     filterOff = workflowPostFunctionsFilter(getFilterParams({ config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   })

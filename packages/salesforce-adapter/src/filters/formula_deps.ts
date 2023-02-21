@@ -42,7 +42,7 @@ const identifierTypeToElemIdType = (typeInfo: FormulaIdentifierInfo): ElemIDType
     [IdentifierType.STANDARD_OBJECT.name]: 'type',
     [IdentifierType.CUSTOM_METADATA_TYPE.name]: 'type',
     [IdentifierType.CUSTOM_OBJECT.name]: 'type',
-    [IdentifierType.CUSTOM_SETTING.name]: 'type', // TODO is this right?
+    [IdentifierType.CUSTOM_SETTING.name]: 'type',
     [IdentifierType.STANDARD_FIELD.name]: 'field',
     [IdentifierType.CUSTOM_FIELD.name]: 'field',
     [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'type',

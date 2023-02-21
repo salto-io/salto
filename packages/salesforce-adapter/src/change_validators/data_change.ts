@@ -24,7 +24,7 @@ const createChangeError = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
   severity: 'Info',
   message: 'Data instances will be changed in deployment.',
-  detailedMessage: 'Data instances will be changed in this deployment.',
+  detailedMessage: '',
 })
 
 /**

@@ -106,12 +106,10 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     expect(instances[1].value.permissions[0].holder.parameter.id).toEqual('id5')
   })
   it('should not raise error on missing user permission', async () => {
-    config.deploy.defaultMissingUserFallback = 'name2'
     mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
     await expect(filter.preDeploy(changes)).resolves.not.toThrow()
   })
   it('should raise error on any other error', async () => {
-    config.deploy.defaultMissingUserFallback = 'name2'
     mockConnection.get.mockRejectedValue(new Error('failed'))
     await expect(filter.preDeploy(changes)).rejects.toThrow()
   })

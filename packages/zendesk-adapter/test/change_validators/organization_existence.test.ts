@@ -145,4 +145,14 @@ describe('OrganizationExistence', () => {
     ])
     expect(getSinglePageMock).toHaveBeenCalledTimes(1)
   })
+  it('should not crash if the request for organizations fails', async () => {
+    const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG])
+    getSinglePageMock.mockRejectedValueOnce('')
+
+    const slaInstance = createSlaInstance()
+    const changes = [toChange({ after: slaInstance })]
+
+    const errors = await validator(changes)
+    expect(errors.length).toBe(0)
+  })
 })

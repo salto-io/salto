@@ -24,18 +24,12 @@ const CUSTOM_SETTING_PREFIX = '$SETUP.'
 const OBJECT_TYPE_PREFIX = '$OBJECTTYPE.'
 const SELF_REFERENTIAL_PARENT_FIELD = 'PARENTID'
 const SELF_REFERENTIAL_PARENT_OBJECT = 'PARENT'
-const PROCESS_BUILDER_BRACKET_START = '['
-const PROCESS_BUILDER_BRACKET_END = ']'
 const SPECIAL_PREFIXES = ['$USER', '$PROFILE', '$ORGANIZATION', '$USERROLE', '$SYSTEM']
 
-
 export const isUserField = (value: string): boolean => USER_FIELDS.includes($(getObject(value)))
-
 export const isCustom = (value: string): boolean => value.toLocaleLowerCase().endsWith(SALESFORCE_CUSTOM_SUFFIX)
-
 export const isCustomMetadata = (value: string): boolean => parts(value.toLocaleLowerCase())
   .some(part => part.includes(CUSTOM_METADATA_SUFFIX))
-
 export const isCustomLabel = (value: string): boolean => $(value).startsWith(CUSTOM_LABEL_PREFIX)
 export const isCustomSetting = (value: string): boolean => $(value).startsWith(CUSTOM_SETTING_PREFIX)
 export const isObjectType = (value: string): boolean => $(value).startsWith(OBJECT_TYPE_PREFIX)
@@ -44,8 +38,9 @@ export const isParent = (value: string): boolean => $(value) === SELF_REFERENTIA
 export const isStandardRelationship = (value: string): boolean => !$(value).endsWith(RELATIONSHIP_SUFFIX)
 export const isRelationshipField = (value: string): boolean => value.includes('.')
 export const isSpecialPrefix = (value: string): boolean => SPECIAL_PREFIXES.includes($(value))
-export const isProcessBuilderPrefix = (value: string): boolean => (
-  value.startsWith(PROCESS_BUILDER_BRACKET_START) && value.endsWith(PROCESS_BUILDER_BRACKET_END)
+export const isProcessBuilderIdentifier = (value: string): boolean => (
+  // https://help.salesforce.com/s/articleView?id=000383560&type=1
+  value.startsWith('[') && value.endsWith(']')
 )
 export const isCPQRelationship = (value: string): boolean => {
   const obj = $(getObject(value))

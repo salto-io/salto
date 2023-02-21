@@ -16,10 +16,10 @@
 import { logger } from '@salto-io/logging'
 import {
   isCPQRelationship, isCustom, isCustomLabel, isCustomMetadata, isCustomSetting, isObjectType, isParent, isParentField,
-  isProcessBuilderPrefix, isRelationshipField, isSpecialPrefix, isStandardRelationship, isUserField,
+  isProcessBuilderIdentifier, isRelationshipField, isSpecialPrefix, isStandardRelationship, isUserField,
 } from './grammar'
 import {
-  createApiName, getField, getObject, parts, removeFirstAndLastChars, removePrefix, replaceRwithC, transformToId,
+  createApiName, getField, getObject, parts, canonicalizeProcessBuilderIdentifier, transformToId,
   transformToUserField,
 } from './utils'
 import { mapCPQField } from './cpq'
@@ -132,7 +132,7 @@ export const parseFormulaIdentifier = (variableName: string, originalObject: str
   const types: FormulaIdentifierInfo[] = []
 
   const parseFieldIdentifier = (fieldWithPrefix: string, object: string): void => {
-    const field = removePrefix(fieldWithPrefix)
+    const field = fieldWithPrefix.startsWith('$') ? fieldWithPrefix.substring(1) : fieldWithPrefix
 
     // i.e Account.Industry
     if (parts(field).length === 2) {
@@ -160,7 +160,7 @@ export const parseFormulaIdentifier = (variableName: string, originalObject: str
     let lastKnownParent = ''
 
     parts(variableName).forEach((field, index, fields) => {
-      if (isSpecialPrefix(field) || isProcessBuilderPrefix(field)) return
+      if (isSpecialPrefix(field) || isProcessBuilderIdentifier(field)) return
 
       const isLastField = (fields.length - 1 === index)
 
@@ -170,8 +170,8 @@ export const parseFormulaIdentifier = (variableName: string, originalObject: str
       } else {
         baseObject = fields[index - 1]
 
-        if (isProcessBuilderPrefix(baseObject)) {
-          baseObject = removeFirstAndLastChars(baseObject)
+        if (isProcessBuilderIdentifier(baseObject)) {
+          baseObject = canonicalizeProcessBuilderIdentifier(baseObject)
         }
       }
 
@@ -185,7 +185,7 @@ export const parseFormulaIdentifier = (variableName: string, originalObject: str
         if (isStandardRelationship(fieldName)) {
           fieldName = transformToId(fieldName)
         } else {
-          fieldName = replaceRwithC(fieldName)
+          fieldName = fieldName.slice(0, -1).concat('c')
         }
       }
 

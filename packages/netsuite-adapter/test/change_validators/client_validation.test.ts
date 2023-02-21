@@ -88,9 +88,9 @@ File: ~/Objects/object_name.xml`
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: `SDF Objects validation error: ${detailedMessage}`,
       elemID: getChangeData(changes[0]).elemID,
-      message: 'SDF Objects Validation Error',
+      message: 'Netsuite\'s validation failed with an SDF Objects validation error',
       severity: 'Error',
     })
   })
@@ -115,9 +115,9 @@ File: ~/Objects/customrecord1.xml`
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: `SDF Objects validation error: ${detailedMessage}`,
       elemID: getChangeData(changes[1]).elemID,
-      message: 'SDF Objects Validation Error',
+      message: 'Netsuite\'s validation failed with an SDF Objects validation error',
       severity: 'Error',
     })
   })
@@ -145,9 +145,9 @@ File: ~/Objects/customrecord1.xml`
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: `SDF Objects validation error: ${detailedMessage}`,
       elemID: getChangeData(fieldChanges[0]).elemID,
-      message: 'SDF Objects Validation Error',
+      message: 'Netsuite\'s validation failed with an SDF Objects validation error',
       severity: 'Error',
     })
   })
@@ -177,9 +177,9 @@ ${detailedMessage}`
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: `SDF Objects validation error: ${detailedMessage}`,
       elemID: getChangeData(changes[0]).elemID,
-      message: 'SDF Objects Validation Error',
+      message: 'Netsuite\'s validation failed with an SDF Objects validation error',
       severity: 'Error',
     })
   })
@@ -241,9 +241,9 @@ If so, please make sure that all the bundles from the source account are install
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: `SDF validation error for SDF - create or update: ${detailedMessage}`,
       elemID: getChangeData(changes[0]).elemID,
-      message: 'Validation Error on SDF - create or update',
+      message: 'NetSuite validation error on SDF - create or update',
       severity: 'Error',
     })
   })
@@ -259,9 +259,9 @@ If so, please make sure that all the bundles from the source account are install
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage,
+      detailedMessage: `SDF Settings validation error: ${detailedMessage}`,
       elemID: getChangeData(changes[0]).elemID,
-      message: 'SDF Settings Validation Error',
+      message: 'Netsuite\'s validation failed with an SDF Settings validation error',
       severity: 'Error',
     })
   })
@@ -276,9 +276,9 @@ If so, please make sure that all the bundles from the source account are install
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors).toEqual(changes.map(change => ({
-      detailedMessage,
+      detailedMessage: `SDF Settings validation error: ${detailedMessage}`,
       elemID: getChangeData(change).elemID,
-      message: 'SDF Settings Validation Error',
+      message: 'Netsuite\'s validation failed with an SDF Settings validation error',
       severity: 'Error',
     })))
   })

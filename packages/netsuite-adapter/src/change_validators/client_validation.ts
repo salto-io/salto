@@ -115,10 +115,10 @@ const changeValidator: ClientChangeValidator = async (
             return groupChanges.map(getChangeData)
               .filter(element => scriptIdToErrorMap.get(element) !== undefined)
               .map(element => ({
-                message: 'SDF Objects Validation Error',
+                message: 'Netsuite\'s validation failed with an SDF Objects validation error',
                 severity: 'Error' as const,
                 elemID: element.elemID,
-                detailedMessage: scriptIdToErrorMap.get(element) ?? '',
+                detailedMessage: `SDF Objects validation error: ${scriptIdToErrorMap.get(element) ?? ''}`,
               }))
           }
           if (error instanceof SettingsDeployError) {
@@ -126,10 +126,10 @@ const changeValidator: ClientChangeValidator = async (
               .filter(change => error.failedConfigTypes.has(getChangeData(change).elemID.typeName))
             return (failedChanges.length > 0 ? failedChanges : groupChanges)
               .map(change => ({
-                message: 'SDF Settings Validation Error',
+                message: 'Netsuite\'s validation failed with an SDF Settings validation error',
                 severity: 'Error' as const,
                 elemID: getChangeData(change).elemID,
-                detailedMessage: error.message,
+                detailedMessage: `SDF Settings validation error: ${error.message}`,
               }))
           }
           if (error instanceof ManifestValidationError) {
@@ -156,10 +156,10 @@ If so, please make sure that all the bundles from the source account are install
           }
           return groupChanges
             .map(change => ({
-              message: `Validation Error on ${groupId}`,
+              message: `NetSuite validation error on ${groupId}`,
               severity: 'Error' as const,
               elemID: getChangeData(change).elemID,
-              detailedMessage: error.message,
+              detailedMessage: `SDF validation error for ${groupId}: ${error.message}`,
             }))
         })
       }

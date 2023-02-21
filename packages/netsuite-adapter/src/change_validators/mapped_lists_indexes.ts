@@ -42,26 +42,40 @@ const toChangeErrors = async (
   return items.map(([key, item]) => {
     const keyElemID = path.createNestedID(key)
     if (item[INDEX] === undefined) {
-      return { elemID: keyElemID, errorMessage: `${key} has no 'index' attribute. It is going to be located at the end of the list (index = ${items.length}).` }
+      return {
+        elemID: keyElemID,
+        severity: 'Warning' as const,
+        message: 'The missing index value will be set to the end of the list in the next fetch. No action item is required.',
+        detailedMessage: `The index value of ${key} is missing, we will set it to ${items.length} in the next fetch. No action item is required.`,
+      }
     }
     if (!_.isInteger(item[INDEX])) {
-      return { elemID: keyElemID, errorMessage: 'Index is not an integer. It will be override by an integer value in the next fetch.' }
+      return {
+        elemID: keyElemID,
+        severity: 'Warning' as const,
+        message: 'The index value will be changed in the next fetch. No action item is required.',
+        detailedMessage: `The index value of ${key} is not an integer, we will change it in the next fetch to a valid integer value. No action item is required.`,
+      }
     }
     if (item[INDEX] < 0 || item[INDEX] >= items.length) {
-      return { elemID: keyElemID, errorMessage: 'Index is out of range. It will be override by an in-range value in the next fetch.' }
+      return {
+        elemID: keyElemID,
+        severity: 'Warning' as const,
+        message: 'The index value will be changed in the next fetch. No action item is required.',
+        detailedMessage: `The index value of ${key} is out of range, we will change it in the next fetch to a valid integer value. No action item is required.`,
+      }
     }
     if (!indexes.has(item[INDEX])) {
-      return { elemID: path, errorMessage: `Some items has the same index value (index = ${item[INDEX]}). They will be sorted by their key name (${key}).` }
+      return {
+        elemID: path,
+        severity: 'Warning' as const,
+        message: 'The index value is not unique and will be changed in the next fetch. No action item is required.',
+        detailedMessage: `The index value of ${key} is not unique. We will sort the elements in ${field.name} that share the index ${item[INDEX]} by their key name, and change their index in the next fetch. No action item is required.`,
+      }
     }
     indexes.delete(item[INDEX])
     return undefined
   }).filter(isDefined)
-    .map(({ elemID, errorMessage }) => ({
-      elemID,
-      severity: 'Warning',
-      message: 'Invalid index attribute in a mapped list',
-      detailedMessage: errorMessage,
-    }))
 }
 
 const changeValidator: NetsuiteChangeValidator = async changes => (

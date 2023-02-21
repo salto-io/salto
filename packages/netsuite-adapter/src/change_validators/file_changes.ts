@@ -14,38 +14,54 @@
 * limitations under the License.
 */
 import {
-  getChangeData, Change, ChangeError,
+  getChangeData, Change, ChangeError, InstanceElement, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { fileCabinetTopLevelFolders } from '../client/constants'
-import { isFileCabinetInstance } from '../types'
+import { isFileCabinetType } from '../types'
 import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
 import { NetsuiteChangeValidator } from './types'
+import { FILE_CABINET_PATH_SEPARATOR } from '../constants'
 
 
 const { awu } = collections.asynciterable
 
-const isChangeSupported = async (change: Change): Promise<boolean> => {
-  const element = getChangeData(change)
-  if (!isFileCabinetInstance(element)) {
-    return true
-  }
+const isFileCabinetChangeSupportedWithSdf = async (
+  change: Change<InstanceElement>
+): Promise<boolean> =>
+  fileCabinetTopLevelFolders.some(folder => getChangeData(change).value.path.startsWith(`${folder}${FILE_CABINET_PATH_SEPARATOR}`))
 
-  return await suiteAppFileCabinet.isChangeDeployable(change) || fileCabinetTopLevelFolders.some(folder => element.value.path.startsWith(`${folder}/`))
-}
+const changeValidator: NetsuiteChangeValidator = async changes => {
+  const notSupportedChanges = await awu(changes)
+    .filter(isInstanceChange)
+    .filter(async change => isFileCabinetType(getChangeData(change).refType))
+    .filter(async change => !await isFileCabinetChangeSupportedWithSdf(change))
+    .filter(async change => !await suiteAppFileCabinet.isChangeDeployable(change))
+    .toArray()
 
-
-const changeValidator: NetsuiteChangeValidator = async changes => (
-  awu(changes)
-    .filter(async change => !await isChangeSupported(change))
+  const largeFileErrors = awu(notSupportedChanges)
+    .filter(async change => suiteAppFileCabinet.isTooBigFileForSuiteApp(change, getChangeData(change)))
     .map(getChangeData)
     .map((inst): ChangeError => ({
       elemID: inst.elemID,
       severity: 'Error',
-      message: 'File change is not supported',
-      detailedMessage: `Salto does not support deploying changes to files above 10 MB and to the generateurltimestamp field for files outside the folders ${fileCabinetTopLevelFolders.join(', ')}.`,
+      message: 'Can\'t deploy large files',
+      detailedMessage: 'Can\'t deploy this file since Salto does not support uploading files over 10 MB to the file cabinet.\n'
+        + 'Please remove this file from your deployment and add it directly in the NetSuite UI.',
     }))
     .toArray()
-)
+
+  const disallowedModificationErrors = notSupportedChanges
+    .filter(change => suiteAppFileCabinet.hasDisallowedValueModification(change))
+    .map(getChangeData)
+    .map((inst): ChangeError => ({
+      elemID: inst.elemID,
+      severity: 'Error',
+      message: 'Can\'t deploy the generateurltimestamp field for files outside specific folders',
+      detailedMessage: `The generateUrlTimestamp field can't be deployed since it is outside of the folders ${fileCabinetTopLevelFolders.join(', ')}.\n`
+        + 'To deploy this field, you can edit it in Salto. If it\'s a new field, set its value to false. If it\'s an existing field, please set it to the original value (false / true). Alternatively, you can edit the file in Salto, remove this field and do the change directly in the NetSuite UI.',
+    }))
+  return [...disallowedModificationErrors, ...(await largeFileErrors)]
+}
 
 export default changeValidator

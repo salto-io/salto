@@ -49,6 +49,13 @@ const recapitalize = (str: string): string => str.slice(0, 1).toUpperCase() + st
 
 
 // todo check what happens with fields (if they have @ in the types)
+/**
+ * 1. add a util function without the adapter-specific cases in adapter-utils next to the naclcase code
+ * 2. in each relevant adapter - add a filter that:
+ *   a. catches the special cases
+ *   b. assigns _alias for the relevant elements
+ * 3. everything else (in core) - if there is no alias, calculate prettifyName on the elem id name
+ */
 export const prettifyName = (name: string, adapter: string): string => {
   let cleanNaclCase = invertNaclCase(name)
 

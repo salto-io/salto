@@ -38,9 +38,9 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com' },
-              { id: 2, email: 'b@b.com' },
-              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
+              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
             ] },
           ]
         })
@@ -48,9 +48,9 @@ describe('userUtils', () => {
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
-          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+          { id: 1, email: 'a@a.com', name: 'a' },
+          { id: 2, email: 'b@b.com', name: 'b' },
+          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
         ]
       )
     })
@@ -59,23 +59,23 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com' },
-              { id: 2, email: 'b@b.com' },
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
             ] },
           ]
         })
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
+          { id: 1, email: 'a@a.com', name: 'a' },
+          { id: 2, email: 'b@b.com', name: 'b' },
         ]
       )
       const getUsersAfterCache = await userUtils.getUsers(mockPaginator)
       expect(getUsersAfterCache).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
+          { id: 1, email: 'a@a.com', name: 'a' },
+          { id: 2, email: 'b@b.com', name: 'b' },
         ]
       )
       await userUtils.getUsers(mockPaginator)
@@ -97,7 +97,140 @@ describe('userUtils', () => {
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
   })
+  describe('getIdByEmail', () => {
+    let userUtils: typeof usersUtilsModule
 
+    beforeEach(() => {
+      jest.isolateModules(() => {
+        // eslint-disable-next-line global-require
+        userUtils = require('../src/user_utils')
+      })
+    })
+    it('should return valid id-email record when called', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
+              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
+            ] },
+          ]
+        })
+
+      const idByEmail = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmail).toEqual({
+        1: 'a@a.com',
+        2: 'b@b.com',
+        3: 'c@c.com',
+      })
+    })
+    it('should cache results when between getIdByEmail calls', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
+            ] },
+          ]
+        })
+      const idByEmail = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmail).toEqual({
+        1: 'a@a.com',
+        2: 'b@b.com',
+      })
+      const idByEmailAfterCache = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmailAfterCache).toEqual({
+        1: 'a@a.com',
+        2: 'b@b.com',
+      })
+      await userUtils.getIdByEmail(mockPaginator)
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+    it('should return empty object if users are in invalid format, getIdByEmail', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1 },
+              { id: 2, email: 'b@b.com' },
+              { email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+            ] },
+          ]
+        })
+      const idByEmail = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmail).toEqual({})
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+  })
+  describe('getIdByName', () => {
+    let userUtils: typeof usersUtilsModule
+
+    beforeEach(() => {
+      jest.isolateModules(() => {
+        // eslint-disable-next-line global-require
+        userUtils = require('../src/user_utils')
+      })
+    })
+    it('should return valid id-name record when called', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
+              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
+            ] },
+          ]
+        })
+
+      const idByName = await userUtils.getIdByName(mockPaginator)
+      expect(idByName).toEqual({
+        1: 'a',
+        2: 'b',
+        3: 'c',
+      })
+    })
+    it('should cache results when between getIdByName calls', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a' },
+              { id: 2, email: 'b@b.com', name: 'b' },
+            ] },
+          ]
+        })
+      const idByName = await userUtils.getIdByName(mockPaginator)
+      expect(idByName).toEqual({
+        1: 'a',
+        2: 'b',
+      })
+      const idByEmailAfterCache = await userUtils.getIdByName(mockPaginator)
+      expect(idByEmailAfterCache).toEqual({
+        1: 'a',
+        2: 'b',
+      })
+      await userUtils.getIdByName(mockPaginator)
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+    it('should return empty object if users are in invalid format, getIdByName', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1 },
+              { id: 2, email: 'b@b.com' },
+              { email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+            ] },
+          ]
+        })
+      const idByName = await userUtils.getIdByName(mockPaginator)
+      expect(idByName).toEqual({})
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+  })
   describe('UserReplacers', () => {
     const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
     const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK, 'sla_policy') })
@@ -645,7 +778,7 @@ describe('userUtils', () => {
     })
     it('should return deployer user email', async () => {
       mockGet
-        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' } } })
+        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234', name: 'saltoo' } } })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }

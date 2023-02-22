@@ -50,11 +50,11 @@ describe('customRoleRemovalValidator', () => {
         status: 200,
         data: {
           users: [
-            { id: 1, email: '1@1', role: 'agent', custom_role_id: 123 },
-            { id: 2, email: '2@2', role: 'agent', custom_role_id: 234 },
-            { id: 3, email: '3@3', role: 'admin', custom_role_id: 234 },
-            { id: 4, email: '4@4', role: 'agent' },
-            { id: 5, email: '5@5', role: 'agent', custom_role_id: 123 },
+            { id: 1, email: '1@1', role: 'agent', custom_role_id: 123, name: '1' },
+            { id: 2, email: '2@2', role: 'agent', custom_role_id: 234, name: '2' },
+            { id: 3, email: '3@3', role: 'admin', custom_role_id: 234, name: '2' },
+            { id: 4, email: '4@4', role: 'agent', name: '2' },
+            { id: 5, email: '5@5', role: 'agent', custom_role_id: 123, name: '2' },
           ],
         },
       }

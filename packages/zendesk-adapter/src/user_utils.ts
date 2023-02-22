@@ -33,6 +33,7 @@ export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 
 
 type User = {
   id: number
+  name: string
   email: string
   role: string
   // eslint-disable-next-line camelcase
@@ -45,6 +46,7 @@ type CurrentUserResponse = {
 
 const EXPECTED_USER_SCHEMA = Joi.object({
   id: Joi.number().required(),
+  name: Joi.string().required(),
   email: Joi.string().required(),
   role: Joi.string(),
   custom_role_id: Joi.number(),
@@ -219,3 +221,47 @@ export const getUserFallbackValue = async (
   }
   return defaultMissingUserFallback
 }
+
+const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+  let idToEmail: Record<string, string>
+
+  const getIdByEmail = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+    if (idToEmail !== undefined) {
+      return idToEmail
+    }
+    const users = await getUsers(paginator)
+    if (_.isEmpty(users)) {
+      idToEmail = {}
+      return {}
+    }
+    idToEmail = Object.fromEntries(
+      users.map(user => [user.id.toString(), user.email])
+    ) as Record<string, string>
+    return idToEmail
+  }
+  return getIdByEmail
+}
+
+export const getIdByEmail = getIdByEmailFunc()
+
+const getIdByNameFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+  let idToName: Record<string, string>
+
+  const getIdByName = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+    if (idToName !== undefined) {
+      return idToName
+    }
+    const users = await getUsers(paginator)
+    if (_.isEmpty(users)) {
+      idToName = {}
+      return {}
+    }
+    idToName = Object.fromEntries(
+      users.map(user => [user.id.toString(), user.name])
+    ) as Record<string, string>
+    return idToName
+  }
+  return getIdByName
+}
+
+export const getIdByName = getIdByNameFunc()

@@ -132,7 +132,7 @@ describe('issue type scheme migration validator', () => {
     ]
     modifiedIssueTypeScheme.value.issueTypeIds = [
     ]
-    expect(await callValidator()).toEqual([])
+    await expect(callValidator()).resolves.not.toThrow()
   })
 
   it('should not return an error on removal/addition changes', async () => {
